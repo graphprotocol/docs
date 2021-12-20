@@ -1,0 +1,62 @@
+name: Production CI/CD
+
+on:
+  push:
+    tags:
+      - v*
+
+env:
+  BASE_IMAGE: ghcr.io/graphprotocol/graph-docs-production
+  HEALTH_CHECK_URL: https://thegraph.com/docs
+  APP_NAME: graph-docs
+  NEXT_PUBLIC_BASE_PATH: /docs
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout the repo
+        uses: actions/checkout@v2
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v1
+        with:
+          registry: ghcr.io
+          username: Jannis
+          password: ${{ secrets.GH_ACCESS_TOKEN_JANNIS }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v2
+        with:
+          context: . # required to respect .dockerignore
+          cache-from: type=registry,ref=${{ env.BASE_IMAGE }}:latest
+          cache-to: type=inline
+          secrets: npmrc=//registry.npmjs.org/:_authToken=${{ secrets.NPM_SECRET_TOKEN }}
+          tags: |
+            ${{ env.BASE_IMAGE }}:${{ github.sha }}
+            ${{ env.BASE_IMAGE }}:latest
+          push: true
+          build-args: NEXT_PUBLIC_BASE_PATH=${{ env.NEXT_PUBLIC_BASE_PATH }}
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Checkout the repo
+        uses: actions/checkout@v2
+
+      - name: Set up kubectl
+        uses: google-github-actions/get-gke-credentials@main
+        with:
+          cluster_name: hosted-service
+          location: us-central1-a
+          credentials: ${{ secrets.GCP_SA_KEY_PRODUCTION }}
+
+      - name: Set a new k8s image and apply the manifests
+        run: .github/scripts/kustomize-apply.sh production $APP_NAME=$BASE_IMAGE:$GITHUB_SHA
+
+      - name: Wait for pods to be ready
+        run: .github/scripts/kubectl-wait-ready.sh $APP_NAME
+
+      - name: Check the endpoints
+        run: .github/scripts/npx-wait-on/run.sh $HEALTH_CHECK_URL
