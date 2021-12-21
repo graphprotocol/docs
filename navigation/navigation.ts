@@ -2,7 +2,7 @@ import { NavItemDefinition } from './types'
 
 export const navigation: NavItemDefinition[] = [
   {
-    slug: '',
+    slug: ''
   },
   {
     title: {
@@ -11,141 +11,81 @@ export const navigation: NavItemDefinition[] = [
       ko: '[TODO: Translate]',
       zh: '[TODO: Translate]',
       ja: '[TODO: Translate]',
-      es: '[TODO: Translate]',
+      es: '[TODO: Translate]'
     },
     slug: 'about',
     children: [
       {
-        slug: 'introduction',
+        slug: 'introduction'
       },
       {
-        slug: 'network',
+        slug: 'faqs'
       },
-    ],
+      {
+        slug: 'glossary'
+      }
+    ]
   },
   {
-    divider: true,
+    divider: true
   },
   {
     title: {
-      en: 'Developer',
+      en: 'Developing subgraphs',
       ar: '[TODO: Translate]',
       ko: '[TODO: Translate]',
       zh: '[TODO: Translate]',
       ja: '[TODO: Translate]',
-      es: '[TODO: Translate]',
+      es: '[TODO: Translate]'
     },
-    slug: 'developer',
+    slug: 'developing-subgraphs',
     children: [
       {
-        slug: 'quick-start',
+        slug: 'getting-started'
       },
       {
-        slug: 'define-subgraph-hosted',
+        slug: 'manifest'
       },
       {
-        slug: 'create-subgraph-hosted',
+        slug: 'schema'
       },
       {
-        slug: 'publish-subgraph',
+        slug: 'assemblyscript-api'
       },
       {
-        slug: 'query-the-graph',
+        slug: 'unit-testing'
       },
       {
-        slug: 'querying-from-your-app',
+        slug: 'graph-cli'
       },
       {
-        slug: 'distributed-systems',
-      },
-      {
-        slug: 'assemblyscript-api',
-      },
-      {
-        slug: 'assemblyscript-migration-guide',
-      },
-      {
-        slug: 'graphql-api',
-      },
-      {
-        slug: 'matchstick',
-      },
-      {
-        slug: 'deprecating-a-subgraph',
-      },
-      {
-        slug: 'developer-faq',
-      },
-    ],
-  },
-  {
-    slug: 'indexing',
-  },
-  {
-    slug: 'delegating',
-  },
-  {
-    slug: 'curating',
-  },
-  {
-    divider: true,
-  },
-  {
-    title: 'Subgraph Studio',
-    slug: 'studio',
-    children: [
-      {
-        slug: 'subgraph-studio',
-      },
-      {
-        slug: 'deploy-subgraph-studio',
-      },
-      {
-        slug: 'billing',
-      },
-      {
-        slug: 'studio-faq',
-      },
-    ],
-  },
-  {
-    slug: 'explorer',
-  },
-  {
-    title: 'Hosted Service',
-    slug: 'hosted-service',
-    children: [
-      {
-        slug: 'what-is-hosted-service',
-      },
-      {
-        slug: 'deploy-subgraph-hosted',
-      },
-      {
-        slug: 'query-hosted-service',
-      },
-      {
-        slug: 'migrating-subgraph',
-      },
-    ],
-  },
-  {
-    divider: true,
+        slug: 'faqs'
+      }
+    ]
   },
   {
     title: {
-      en: 'Supported Networks',
+      en: 'Deploying subgraphs',
       ar: '[TODO: Translate]',
       ko: '[TODO: Translate]',
       zh: '[TODO: Translate]',
       ja: '[TODO: Translate]',
-      es: '[TODO: Translate]',
+      es: '[TODO: Translate]'
     },
-    slug: 'supported-networks',
+    slug: 'deploying-subgraphs',
     children: [
       {
-        slug: 'near',
+        slug: 'studio'
       },
-    ],
-  },
+      {
+        slug: 'hosted-service'
+      },
+      {
+        slug: 'local-graph-node'
+      },
+      {
+        slug: 'syncing'
+      }
+    ]
+  }
 ]
