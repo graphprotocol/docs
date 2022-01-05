@@ -53,17 +53,15 @@ const mdxStyles = {
     display: 'block',
     textAlign: 'center',
   },
-  '.video-iframe, .video-container': {
-    display: 'block',
+  '.video-container': {
+    paddingBottom: `${100 / (16 / 9)}%`,
+  },
+  '.video-iframe': {
+    position: 'absolute',
+    left: 0,
+    top: 0,
     width: '100%',
-    aspectRatio: '16/9',
-    '& iframe': {
-      position: 'absolute',
-      left: 0,
-      top: 0,
-      width: '100%',
-      height: '100%',
-    },
+    height: '100%',
   },
 } as ThemeUIStyleObject
 
