@@ -87,5 +87,111 @@ export const navigation: NavItemDefinition[] = [
         slug: 'syncing'
       }
     ]
+  },
+  {
+    title: {
+      en: 'Publishing subgraphs',
+      ar: '[TODO: Translate]',
+      ko: '[TODO: Translate]',
+      zh: '[TODO: Translate]',
+      ja: '[TODO: Translate]',
+      es: '[TODO: Translate]'
+    },
+    slug: 'publishing-subgraphs',
+    children: [
+      {
+        slug: 'publishing'
+      },
+      {
+        slug: 'managing'
+      }
+    ]
+  },
+  {
+    title: {
+      en: 'Querying subgraphs',
+      ar: '[TODO: Translate]',
+      ko: '[TODO: Translate]',
+      zh: '[TODO: Translate]',
+      ja: '[TODO: Translate]',
+      es: '[TODO: Translate]'
+    },
+    slug: 'querying-subgraphs',
+    children: [
+      {
+        slug: 'graphql-api'
+      },
+      {
+        slug: 'billing-and-api-keys'
+      },
+      {
+        slug: 'distributed-systems'
+      }
+    ]
+  },
+  {
+    title: {
+      en: 'Cookbook',
+      ar: '[TODO: Translate]',
+      ko: '[TODO: Translate]',
+      zh: '[TODO: Translate]',
+      ja: '[TODO: Translate]',
+      es: '[TODO: Translate]'
+    },
+    slug: 'cookbook',
+    children: [
+      {
+        slug: 'quick-start'
+      },
+      {
+        slug: 'assemblyscript-migration-guide'
+      },
+      {
+        slug: 'querying-from-your-app'
+      }
+    ]
+  },
+  {
+    divider: true
+  },
+  {
+    title: {
+      en: 'The Graph Network',
+      ar: '[TODO: Translate]',
+      ko: '[TODO: Translate]',
+      zh: '[TODO: Translate]',
+      ja: '[TODO: Translate]',
+      es: '[TODO: Translate]'
+    },
+    slug: 'network',
+    children: [
+      {
+        slug: 'overview'
+      },
+      {
+        slug: 'protocol-economics'
+      },
+      {
+        slug: 'network-components'
+      },
+      {
+        slug: 'indexing'
+      },
+      {
+        slug: 'curating'
+      },
+      {
+        slug: 'delegating'
+      },
+      {
+        slug: 'explorer'
+      }
+    ]
+  },
+  {
+    divider: true
+  },
+  {
+    slug: 'community-resources'
   }
 ]
