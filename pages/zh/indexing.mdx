@@ -129,13 +129,13 @@ Disputes can be viewed in the UI in an Indexer's profile page under the `Dispute
 
 ## 基础设施
 
-At the center of an indexer's infrastructure is the Graph Node which monitors Ethereum, extracts and loads data per a subgraph definition and serves it as a [GraphQL API](/about/introduction#how-the-graph-works). The Graph Node needs to be connected to Ethereum EVM node endpoints, and IPFS node for sourcing data; a PostgreSQL database for its store; and indexer components which facilitate its interactions with the network. The Graph Node needs to be connected to Ethereum EVM node endpoints, and IPFS node for sourcing data; a PostgreSQL database for its store; and indexer components which facilitate its interactions with the network.
+At the center of an indexer's infrastructure is the Graph Node which monitors Ethereum, extracts and loads data per a subgraph definition and serves it as a [GraphQL API](/about/introduction#how-the-graph-works). The Graph Node needs to be connected to Ethereum EVM node endpoints, and IPFS node for sourcing data; a PostgreSQL database for its store; and indexer components which facilitate its interactions with the network. The Graph Node needs to be connected to Ethereum EVM node endpoints, and IPFS node for sourcing data; a PostgreSQL database for its store; and indexer components which facilitate its interactions with the network. The Graph Node needs to be connected to Ethereum EVM node endpoints, and IPFS node for sourcing data; a PostgreSQL database for its store; and indexer components which facilitate its interactions with the network.
 
 - **PostgreSQL 数据库** - Graph 节点的主要存储，这是存储子图数据的地方。 索引人服务和代理也使用数据库来存储状态通道数据、成本模型和索引规则。
 
 - **Ethereum endpoint** -公开 Ethereum JSON-RPC API 的端点。 这可能采取单个 Ethereum 客户端的形式，也可能是一个更复杂的设置，在多个客户端之间进行负载平衡。 需要注意的是，某些子图将需要特定的 Ethereum 客户端功能，如存档模式和跟踪 API。
 
-- ** IPFS 节点（版本小于 5）** - 子图部署元数据存储在 IPFS 网络上。 The Graph Node primarily accesses the IPFS node during subgraph deployment to fetch the subgraph manifest and all linked files. The Graph Node primarily accesses the IPFS node during subgraph deployment to fetch the subgraph manifest and all linked files. Network indexers do not need to host their own IPFS node, an IPFS node for the network is hosted at https://ipfs.network.thegraph.com.
+- ** IPFS 节点（版本小于 5）** - 子图部署元数据存储在 IPFS 网络上。 The Graph Node primarily accesses the IPFS node during subgraph deployment to fetch the subgraph manifest and all linked files. The Graph Node primarily accesses the IPFS node during subgraph deployment to fetch the subgraph manifest and all linked files. Network indexers do not need to host their own IPFS node, an IPFS node for the network is hosted at https://ipfs.network.thegraph.com. The Graph Node primarily accesses the IPFS node during subgraph deployment to fetch the subgraph manifest and all linked files. Network indexers do not need to host their own IPFS node, an IPFS node for the network is hosted at https://ipfs.network.thegraph.com.
 
 - **索引人服务** -处理与网络的所有必要的外部通信。 共享成本模型和索引状态，将来自网关的查询请求传递给一个 Graph 节点，并通过状态通道与网关管理查询支付。
 
@@ -405,11 +405,40 @@ graph-indexer-agent start ...
 kubectl port-forward pod/POD_ID 18000:8000
 graph indexer connect http://localhost:18000/
 graph indexer ...
+
+# Indexer agent
+graph-indexer-agent start ...
+
+# Indexer CLI
+#Forward the port of your agent pod if using Kubernetes
+kubectl port-forward pod/POD_ID 18000:8000
+graph indexer connect http://localhost:18000/
+graph indexer ...
 ```
 
 #### 来自来源
 
 ```sh
+# From Repo root directory
+yarn
+
+# Indexer Service
+cd packages/indexer-service
+./bin/graph-indexer-service start ...
+
+# Indexer agent
+cd packages/indexer-agent
+./bin/graph-indexer-service start ...
+
+# Indexer CLI
+cd packages/indexer-cli
+./bin/graph-indexer-cli indexer connect http://localhost:18000/
+./bin/graph-indexer-cli indexer ...
+
+# Indexer agent
+cd packages/indexer-agent
+./bin/graph-indexer-service start ...
+
 # From Repo root directory
 yarn
 
@@ -484,6 +513,7 @@ docker build \
 
 ```sh
 docker run -p 7600:7600 -it indexer-service:latest ...
+docker run -p 18000:8000 -it indexer-agent:latest ...
 docker run -p 18000:8000 -it indexer-agent:latest ...
 docker run -p 18000:8000 -it indexer-agent:latest ...
 docker run -p 18000:8000 -it indexer-agent:latest ...
@@ -564,7 +594,7 @@ graph indexer status
 
 #### 使用索引人 CLI 管理索引人
 
-索引人代理需要来自索引人的输入，才能代表索引人自主地与网络交互。 定义索引人代理行为的机制是**索引规则**. 使用**索引规则**，索引人可以应用其特定的策略来选择子图进行索引和服务查询。 Using **indexing rules** an indexer can apply their specific strategy for picking subgraphs to index and serve queries for. 规则是通过由代理提供的 GraphQL API 来管理的，被称为索引人管理 API。 规则是通过由代理提供的GraphQL API来管理的，被称为索引人管理API。 与**索引管理 API**交互的建议工具是 **索引人 CLI** ，它是 **Graph CLI**的扩展。
+索引人代理需要来自索引人的输入，才能代表索引人自主地与网络交互。 定义索引人代理行为的机制是**索引规则**. 使用**索引规则**，索引人可以应用其特定的策略来选择子图进行索引和服务查询。 Using **indexing rules** an indexer can apply their specific strategy for picking subgraphs to index and serve queries for. 规则是通过由代理提供的 GraphQL API 来管理的，被称为索引人管理 API。 规则是通过由代理提供的 GraphQL API 来管理的，被称为索引人管理 API。 与**索引管理 API**交互的建议工具是 **索引人 CLI** ，它是 **Graph CLI**的扩展。
 
 #### 使用方法
 
@@ -632,6 +662,8 @@ Agora 语言提供了一种灵活的格式来声明查询的成本模型。 Agor
 query { pairs(skip: $skip) { id } } when $skip > 2000 => 0.0001 * $skip * $SYSTEM_LOAD;
 
 # This default will match any GraphQL expression.
+# It uses a Global substituted into the expression to calculate cost
+default => 0.1 * $SYSTEM_LOAD;
 # It uses a Global substituted into the expression to calculate cost
 default => 0.1 * $SYSTEM_LOAD;
 # It uses a Global substituted into the expression to calculate cost
