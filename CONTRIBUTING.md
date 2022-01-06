@@ -14,7 +14,7 @@ Direct contributions are much appreciated for simple things (corrections, small 
 
 Once you located the file that you want to update, click on “Edit” which will create a new forked repo. You can make your edits there, and submit a PR. Alternatively, you can manually fork the repo, create a branch in your fork and make all the edits you want before submitting a PR.
 
-Tag `@graphprotocol/docs-reviewers` in your PR to get the reviewers’ attention. Once we review it, we’ll likely provide feedback and might ask you for improvements. Once the review process is finalized and at least 2 people approve, the PR will be merged. We aim to provide a meaningful response to all PRs and issues from external contributors within 5 business days.
+Tag `graphprotocol/docs-reviewers` in your PR to get the reviewers’ attention. Once we review it, we’ll likely provide feedback and might ask you for improvements. Once the review process is finalized and at least 2 people approve, the PR will be merged. We aim to provide a meaningful response to all PRs and issues from external contributors within 5 business days.
 
 You can optionally [run the application locally](https://github.com/graphprotocol/docs/blob/main/README.md) to review your changes.
 
