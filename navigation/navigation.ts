@@ -1,4 +1,4 @@
-import { NavItemDefinition } from './types'
+import { NavItemDefinition from './types'
 
 export const navigation: NavItemDefinition[] = [
   {
