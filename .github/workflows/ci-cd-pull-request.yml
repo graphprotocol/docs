@@ -1,9 +1,6 @@
-name: Staging CI/CD
+name: Pull Request CI/CD
 
-on:
-  push:
-    branches:
-      - main
+on: pull_request
 
 env:
   BASE_IMAGE: ghcr.io/graphprotocol/graph-docs-staging
@@ -37,27 +34,3 @@ jobs:
             ${{ env.BASE_IMAGE }}:latest
           push: true
           build-args: NEXT_PUBLIC_BASE_PATH=${{ env.NEXT_PUBLIC_BASE_PATH }}
-
-  deploy:
-    if: github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
-    needs: build
-    steps:
-      - name: Checkout the repo
-        uses: actions/checkout@v2
-
-      - name: Set up kubectl
-        uses: google-github-actions/get-gke-credentials@main
-        with:
-          cluster_name: hosted-service
-          location: us-central1-a
-          credentials: ${{ secrets.GCP_SA_KEY_STAGING }}
-
-      - name: Set a new k8s image and apply the manifests
-        run: .github/scripts/kustomize-apply.sh staging $APP_NAME=$BASE_IMAGE:$GITHUB_SHA
-
-      - name: Wait for pods to be ready
-        run: .github/scripts/kubectl-wait-ready.sh $APP_NAME
-
-      - name: Check the endpoints
-        run: .github/scripts/npx-wait-on/run.sh $HEALTH_CHECK_URL
