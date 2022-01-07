@@ -68,11 +68,7 @@ export const Layout = ({ children, ...props }: ContainerProps) => {
         }}
       >
         <div sx={{ flexShrink: 0 }}>
-          <NavigationMarketing
-            activeRoute="docs"
-            NextLink={NextLink}
-            rightAlignItems={undefined /* [LocaleDropdown] */}
-          />
+          <NavigationMarketing activeRoute="docs" NextLink={NextLink} rightAlignItems={[LocaleDropdown]} />
         </div>
         <main sx={{ flexGrow: 1 }}>{children}</main>
         <div sx={{ flexShrink: 0 }}>
