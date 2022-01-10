@@ -1,5 +1,5 @@
 import { HTMLAttributes, useContext } from 'react'
-import { useUniqueId, Spacing, Glow } from '@edgeandnode/components'
+import { useUniqueId, Spacing, buildShadow } from '@edgeandnode/components'
 import classnames from 'classnames'
 import { useInView } from 'react-intersection-observer'
 import { useDebounce } from 'react-use'
@@ -34,7 +34,7 @@ export const Heading = ({ level, id, className, children, ...props }: HeadingPro
       innerRef={ref}
       as={`h${level}`}
       id={id}
-      weight="SemiBold"
+      weight="Semibold"
       color="White"
       className={classnames(rootClass, className)}
       sx={{ whiteSpace: 'nowrap' }}
@@ -58,7 +58,7 @@ export const Heading = ({ level, id, className, children, ...props }: HeadingPro
 }
 
 export const H1 = (props: HeadingSpecificProps) => {
-  return <Heading level={1} size="48px" sx={{ mb: Spacing.L, textShadow: Glow.L }} {...props} />
+  return <Heading level={1} size="48px" sx={{ mb: Spacing.L, textShadow: buildShadow('L') }} {...props} />
 }
 
 export const H2 = (props: HeadingSpecificProps) => {
@@ -69,7 +69,7 @@ export const H2 = (props: HeadingSpecificProps) => {
       sx={{
         mt: Spacing.XL_XXL,
         mb: Spacing.L_XL,
-        textShadow: Glow.M,
+        textShadow: buildShadow('M'),
       }}
       {...props}
     />
@@ -77,17 +77,25 @@ export const H2 = (props: HeadingSpecificProps) => {
 }
 
 export const H3 = (props: HeadingSpecificProps) => {
-  return <Heading level={3} size="24px" sx={{ mt: Spacing.XL, mb: Spacing.L_XL, textShadow: Glow.M }} {...props} />
+  return (
+    <Heading level={3} size="24px" sx={{ mt: Spacing.XL, mb: Spacing.L_XL, textShadow: buildShadow('M') }} {...props} />
+  )
 }
 
 export const H4 = (props: HeadingSpecificProps) => {
-  return <Heading level={4} size="20px" sx={{ mt: Spacing.XL, mb: Spacing.L, textShadow: Glow.S }} {...props} />
+  return (
+    <Heading level={4} size="20px" sx={{ mt: Spacing.XL, mb: Spacing.L, textShadow: buildShadow('S') }} {...props} />
+  )
 }
 
 export const H5 = (props: HeadingSpecificProps) => {
-  return <Heading level={5} size="18px" sx={{ mt: Spacing.XL, mb: Spacing.L, textShadow: Glow.S }} {...props} />
+  return (
+    <Heading level={5} size="18px" sx={{ mt: Spacing.XL, mb: Spacing.L, textShadow: buildShadow('S') }} {...props} />
+  )
 }
 
 export const H6 = (props: HeadingSpecificProps) => {
-  return <Heading level={6} size="16px" sx={{ mt: Spacing.XL, mb: Spacing.L, textShadow: Glow.S }} {...props} />
+  return (
+    <Heading level={6} size="16px" sx={{ mt: Spacing.XL, mb: Spacing.L, textShadow: buildShadow('S') }} {...props} />
+  )
 }

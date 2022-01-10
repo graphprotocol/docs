@@ -1,6 +1,6 @@
 import { HTMLAttributes } from 'react'
 import * as Popover from '@radix-ui/react-popover'
-import { Flex, Spacing, BorderRadius, Opacities } from '@edgeandnode/components'
+import { Flex, Spacing, BorderRadius, Opacity } from '@edgeandnode/components'
 
 import { Text, Diamond } from '@/components'
 
@@ -49,8 +49,8 @@ const DropdownMenuItem = ({ active = false, onSelect, children, ...props }: Drop
         sx={{
           px: Spacing.XL,
           py: Spacing.M,
-          opacity: Opacities[64],
-          '&:hover': { opacity: Opacities[100] },
+          opacity: Opacity['64%'],
+          '&:hover': { opacity: Opacity['100%'] },
           '&:focus': { outline: 'none', textDecoration: 'underline' },
           transition: 'opacity 200ms',
         }}

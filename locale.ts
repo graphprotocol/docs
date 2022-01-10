@@ -7,11 +7,37 @@ export enum Locale {
   Spanish = 'es',
 }
 
+export type LocaleDetails = {
+  nativeName: string
+}
+
 export type TranslatedString = {
   [key in Locale]: string
 }
 
 export const locales = Object.values(Locale)
+export const localesDetails: {
+  [key in Locale]: LocaleDetails
+} = {
+  [Locale.English]: {
+    nativeName: 'English',
+  },
+  [Locale.Arabic]: {
+    nativeName: 'العربية',
+  },
+  [Locale.Korean]: {
+    nativeName: '한국어',
+  },
+  [Locale.Chinese]: {
+    nativeName: '中文',
+  },
+  [Locale.Japanese]: {
+    nativeName: '日本語',
+  },
+  [Locale.Spanish]: {
+    nativeName: 'Español',
+  },
+}
 export const defaultLocale = Locale.English
 
 export const localeFromString = (str: string) => {
@@ -47,9 +73,4 @@ export const prependLocale = (path: string, locale: Locale) => {
 export const getPathWithLocale = (path: string, locale: Locale) => {
   const { pathWithoutLocale } = extractLocaleFromPath(path)
   return prependLocale(pathWithoutLocale, locale)
-}
-
-export const getLocaleName = (locale: Locale) => {
-  const localeNames = Object.keys(Locale) as (keyof typeof Locale)[]
-  return localeNames.find((localeName) => Locale[localeName] === locale)
 }

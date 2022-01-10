@@ -1,4 +1,4 @@
-import { PropsWithChildren, createContext, Context, useMemo, useCallback, useState } from 'react'
+import { PropsWithChildren, createContext, Context, useMemo, useCallback } from 'react'
 import { MDXProvider } from '@mdx-js/react'
 import Head from 'next/head'
 import { ThemeUIStyleObject } from 'theme-ui'
@@ -19,11 +19,13 @@ import {
   H5,
   H6,
   Image,
+  Link,
   LinkInline,
   ListOrdered,
   ListUnordered,
   Paragraph,
   Table,
+  Text,
 } from '@/components'
 import { useLocale } from '@/hooks'
 
@@ -89,7 +91,7 @@ export const DocumentContext = createContext(null) as Context<DocumentContextPro
 export type MDXLayoutProps = PropsWithChildren<NavContextProps & DocumentContextProps>
 
 export const MDXLayout = ({ navItems, frontmatter, outline, children }: MDXLayoutProps) => {
-  const { currentPathWithoutLocale } = useLocale()
+  const { currentLocale, currentPathWithoutLocale } = useLocale()
 
   // Compute some values for the `NavContext`
   const { pageNavItems, previousPage, currentPage, nextPage } = useMemo(() => {

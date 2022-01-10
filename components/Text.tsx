@@ -9,18 +9,18 @@ export type Opacity = 100 | 88 | 64 | 48 | 32 | 24 | 16 | 12 | 8 | 4 | 2
 export type Color = `${keyof typeof BaseColors}${Exclude<Opacity, 100> | ''}`
 
 export enum FontSize {
-  '96px',
-  '64px',
-  '48px',
-  '40px',
-  '32px',
-  '24px',
-  '20px',
-  '18px',
-  '16px',
-  '14px',
-  '12px',
-  '10px',
+  '96px' = '96px',
+  '64px' = '64px',
+  '48px' = '48px',
+  '40px' = '40px',
+  '32px' = '32px',
+  '24px' = '24px',
+  '20px' = '20px',
+  '18px' = '18px',
+  '16px' = '16px',
+  '14px' = '14px',
+  '12px' = '12px',
+  '10px' = '10px',
 }
 
 export type FontSizeProperties = {
@@ -137,12 +137,13 @@ export const Text = ({
           // OPTION A
           fontFamily: font ? FontFamily[font] : undefined,
           fontWeight: weight ? FontWeight[weight] : undefined,
+          fontSize: size ? FontSize[size] : undefined,
           // OPTION B
           /*
           fontFamily: font,
           fontWeight: weight,
-          */
           fontSize: size,
+          */
           lineHeight: size ? fontSizeProperties[size].lineHeight : undefined,
           letterSpacing: uppercase ? '0.15em' : size ? fontSizeProperties[size].letterSpacing : undefined,
           textTransform: uppercase ? 'uppercase' : undefined,

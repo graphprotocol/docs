@@ -5,7 +5,6 @@ import { keyframes } from '@emotion/react'
 
 import { NavContext } from '@/layout'
 import { NavTree, Text, Icon } from '@/components'
-import { useLocale } from '@/hooks'
 
 const animationExpand = keyframes({
   from: { height: 0 },
@@ -60,7 +59,13 @@ const MobileWrapper = ({ title, children }: PropsWithChildren<{ title?: string }
           border: '1px solid transparent',
         }}
       >
-        <Flex.Row as="span" justify="space-between" align="center" sx={{ px: Spacing.L_XL, py: '20px' }}>
+        <Flex.Row
+          as="span"
+          justify="space-between"
+          align="center"
+          gap={Spacing.L}
+          sx={{ px: Spacing.L_XL, py: '20px' }}
+        >
           <Flex.Column as="span">
             <Text size="10px" uppercase>
               Docs
@@ -70,7 +75,6 @@ const MobileWrapper = ({ title, children }: PropsWithChildren<{ title?: string }
           <Flex.Column
             as="span"
             sx={{
-              ml: Spacing.L,
               flex: 'none',
               transform: open ? 'rotate(90deg)' : 'rotate(0deg)',
               transition: 'transform 200ms',

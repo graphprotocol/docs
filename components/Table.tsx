@@ -1,5 +1,5 @@
 import { HTMLAttributes } from 'react'
-import { Spacing, FontWeight, Opacities, darkModeColors } from '@edgeandnode/components'
+import { Spacing, FontWeight, Opacity, darkModeColors } from '@edgeandnode/components'
 import Color from 'color'
 
 import { Text } from '@/components'
@@ -7,7 +7,7 @@ import { Text } from '@/components'
 // Using `color` to get an opaque version of `White16` for the table's borders, since a color with an alpha channel is ugly due to borders overlapping
 const WhiteColor = Color(darkModeColors.White)
 const MidnightColor = Color(darkModeColors.Midnight)
-const BorderColor = MidnightColor.mix(WhiteColor, Opacities[16])
+const BorderColor = MidnightColor.mix(WhiteColor, Opacity['16%'])
 
 export type TableProps = Omit<HTMLAttributes<HTMLTableElement>, 'color'>
 
@@ -23,7 +23,7 @@ export const Table = ({ children, ...props }: TableProps) => {
           },
           '& th': {
             bg: 'White4',
-            fontWeight: FontWeight.SemiBold,
+            fontWeight: FontWeight.Semibold,
             textAlign: 'center',
           },
         }}

@@ -4,11 +4,11 @@ import { useRouter } from 'next/router'
 import {
   Locale,
   locales,
+  localesDetails,
   defaultLocale,
   extractLocaleFromPath,
   prependLocale,
   getPathWithLocale,
-  getLocaleName,
 } from '@/locale'
 
 export const useLocale = () => {
@@ -16,7 +16,7 @@ export const useLocale = () => {
   const currentPath = router.pathname
   const { locale, pathWithoutLocale: currentPathWithoutLocale } = extractLocaleFromPath(currentPath)
   const currentLocale = locale ?? defaultLocale
-  const currentLocaleName = getLocaleName(currentLocale)
+  const currentLocaleDetails = localesDetails[currentLocale]
 
   const setLocale = useCallback(
     (locale: Locale) => {
@@ -34,14 +34,15 @@ export const useLocale = () => {
 
   return {
     locales,
+    localesDetails,
     defaultLocale,
     currentLocale,
-    currentLocaleName,
+    currentLocaleDetails,
+    currentPath,
     currentPathWithoutLocale,
     setLocale,
     extractLocaleFromPath,
     getPathWithLocale,
     getPathWithCurrentLocale,
-    getLocaleName,
   }
 }

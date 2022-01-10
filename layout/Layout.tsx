@@ -1,12 +1,12 @@
-import { forwardRef } from 'react'
 import NextLink from 'next/link'
 import { Flex, NavigationMarketing, FooterMarketing, Spacing, BorderRadius, useUniqueId } from '@edgeandnode/components'
 
-import { Container, ContainerProps, Text, Dropdown, Icon } from '@/components'
+import { Container, ContainerProps, Dropdown, Icon } from '@/components'
 import { useLocale } from '@/hooks'
+import { objectEntries } from '@/utils'
 
 export const Layout = ({ children, ...props }: ContainerProps) => {
-  const { locales, currentLocale, setLocale, getLocaleName } = useLocale()
+  const { localesDetails, currentLocale, setLocale } = useLocale()
   const localeDropdownButtonClass = useUniqueId('class')
 
   const LocaleDropdown = (
@@ -31,10 +31,10 @@ export const Layout = ({ children, ...props }: ContainerProps) => {
         </Flex.Row>
       </Dropdown.Button>
       <Dropdown.Menu align="end">
-        {locales.map((locale) => {
+        {objectEntries(localesDetails).map(([locale, localeDetails]) => {
           return (
             <Dropdown.Menu.Item key={locale} active={currentLocale === locale} onSelect={() => setLocale(locale)}>
-              {getLocaleName(locale)}
+              {localeDetails.nativeName}
             </Dropdown.Menu.Item>
           )
         })}
