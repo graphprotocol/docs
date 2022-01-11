@@ -35,9 +35,15 @@ export const MDXLayoutPagination = () => {
                 <Text
                   weight="Semibold"
                   size="16px"
-                  color="White"
+                  color="White88"
                   truncate
-                  sx={{ m: '-24px', p: '24px', maxWidth: 'calc(100% + 48px)' }}
+                  sx={{
+                    m: '-24px',
+                    p: '24px',
+                    maxWidth: 'calc(100% + 48px)',
+                    'a:hover &': { color: 'White' },
+                    transition: 'color 200ms',
+                  }}
                 >
                   {previousPage.title}
                 </Text>
@@ -69,9 +75,15 @@ export const MDXLayoutPagination = () => {
                 <Text
                   weight="Semibold"
                   size="16px"
-                  color="White"
+                  color="White88"
                   truncate
-                  sx={{ m: '-24px', p: '24px', maxWidth: 'calc(100% + 48px)' }}
+                  sx={{
+                    m: '-24px',
+                    p: '24px',
+                    maxWidth: 'calc(100% + 48px)',
+                    'a:hover &': { color: 'White' },
+                    transition: 'color 200ms',
+                  }}
                 >
                   {nextPage.title}
                 </Text>

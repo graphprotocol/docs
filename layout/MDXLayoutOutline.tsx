@@ -40,8 +40,8 @@ export const MDXLayoutOutline = () => {
           display: 'block',
           py: Spacing.S,
           borderRadius: BorderRadius.S,
-          '&:hover': { textShadow: buildShadow('M') },
-          transition: 'text-shadow 200ms',
+          '&:hover': { color: 'White', textShadow: buildShadow('M') },
+          transition: 'color 200ms, text-shadow 200ms',
         }}
       >
         <Flex.Row as="span" align="center" gap={Spacing.S}>
@@ -73,7 +73,7 @@ export const MDXLayoutOutline = () => {
                     display: 'block',
                     pl: `${8 * Math.max(0, outlineItem.level - 2)}px`,
                     py: '6px',
-                    color: outlineItem.id === highlightedOutlineItemId ? 'White' : undefined,
+                    color: outlineItem.id === highlightedOutlineItemId ? 'White88' : undefined,
                     '&:hover': { color: 'White' },
                     transition: 'color 200ms',
                   }}
