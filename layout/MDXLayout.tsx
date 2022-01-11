@@ -19,13 +19,11 @@ import {
   H5,
   H6,
   Image,
-  Link,
   LinkInline,
   ListOrdered,
   ListUnordered,
   Paragraph,
   Table,
-  Text,
 } from '@/components'
 import { useLocale } from '@/hooks'
 
@@ -167,7 +165,7 @@ export const MDXLayout = ({ navItems, frontmatter, outline, children }: MDXLayou
 
           <div
             sx={{
-              pt: [null, null, null, Spacing.XL_XXL],
+              pt: [null, null, null, Spacing.XL],
               pb: Spacing.XXL,
             }}
           >
@@ -185,7 +183,7 @@ export const MDXLayout = ({ navItems, frontmatter, outline, children }: MDXLayou
             </div>
           </div>
 
-          <div sx={{ display: ['none', null, null, 'block'], ml: '32px', mr: '-8px', mt: '48px' }}>
+          <div sx={{ display: ['none', null, null, 'block'], ml: '48px', mr: '-8px' }}>
             <MDXLayoutOutline />
           </div>
         </div>

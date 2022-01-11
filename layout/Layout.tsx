@@ -18,7 +18,7 @@ export const Layout = ({ children, ...props }: ContainerProps) => {
             height: '32px',
             px: Spacing.M,
             borderRadius: BorderRadius.FULL,
-            border: (theme) => `1px solid ${theme.colors!.White4}`,
+            border: 'White4',
             bg: 'White4',
             [`.${localeDropdownButtonClass}:hover &`]: {
               borderColor: 'White16',
@@ -30,7 +30,7 @@ export const Layout = ({ children, ...props }: ContainerProps) => {
           <Icon icon="Caret" size={12} direction="down" sx={{ ml: Spacing.S }} />
         </Flex.Row>
       </Dropdown.Button>
-      <Dropdown.Menu align="end">
+      <Dropdown.Menu align="end" sx={{ minWidth: '220px' }}>
         {objectEntries(localesDetails).map(([locale, localeDetails]) => {
           return (
             <Dropdown.Menu.Item key={locale} active={currentLocale === locale} onSelect={() => setLocale(locale)}>
@@ -68,7 +68,7 @@ export const Layout = ({ children, ...props }: ContainerProps) => {
         }}
       >
         <div sx={{ flexShrink: 0 }}>
-          <NavigationMarketing activeRoute="docs" NextLink={NextLink} rightAlignItems={[LocaleDropdown]} />
+          <NavigationMarketing activeRoute="/docs" NextLink={NextLink} rightAlignItems={[LocaleDropdown]} />
         </div>
         <main sx={{ flexGrow: 1 }}>{children}</main>
         <div sx={{ flexShrink: 0 }}>

@@ -12,7 +12,7 @@ export const Divider = ({ withVerticalMargin = false, ...props }: DividerProps) 
     <hr
       sx={{
         margin: `${withVerticalMargin ? Spacing.XL : '0'} 8px`,
-        borderTop: (theme) => `1px solid ${theme.colors!.White16}`,
+        borderTop: 'White16',
         '&::before, &::after': {
           content: `''`,
           position: 'absolute',
@@ -20,7 +20,7 @@ export const Divider = ({ withVerticalMargin = false, ...props }: DividerProps) 
           display: 'block',
           width: '5px',
           height: '5px',
-          border: (theme) => `1px solid ${theme.colors!.White48}`,
+          border: 'White48',
           transform: 'rotate(45deg)',
         },
         '&::before': {

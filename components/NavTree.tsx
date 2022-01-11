@@ -161,13 +161,7 @@ const NavTreeGroupContent = ({ children, ...props }: NavTreeGroupContentProps) =
 }
 
 const NavTreeDivider = (props: NavTreeDividerProps) => {
-  return (
-    <li
-      aria-hidden="true"
-      sx={{ my: Spacing.M, borderTop: (theme) => `1px solid ${theme.colors!.White16}` }}
-      {...props}
-    />
-  )
+  return <li aria-hidden="true" sx={{ my: Spacing.M, borderTop: 'White16' }} {...props} />
 }
 
 NavTree.Item = NavTreeItem

@@ -24,8 +24,8 @@ const DesktopWrapper = ({ children }: PropsWithChildren<{}>) => {
         position: 'sticky',
         top: 0,
         maxHeight: '100vh',
-        pr: '24px',
-        py: '32px',
+        pr: Spacing.L_XL,
+        py: Spacing.L,
         overflowY: 'auto',
       }}
     >
@@ -42,7 +42,7 @@ const MobileWrapper = ({ title, children }: PropsWithChildren<{ title?: string }
       onOpenChange={setOpen}
       sx={{
         borderRadius: BorderRadius.S,
-        border: (theme) => `1px solid ${open ? theme.colors!.White8 : theme.colors!.White4}`,
+        border: open ? 'White8' : 'White4',
         bg: open ? 'White8' : 'White4',
         '&:hover': {
           borderColor: 'White8',
@@ -86,7 +86,7 @@ const MobileWrapper = ({ title, children }: PropsWithChildren<{ title?: string }
       </Collapsible.Trigger>
       <Collapsible.Content
         sx={{
-          borderTop: (theme) => `1px solid ${theme.colors!.White8}`,
+          borderTop: 'White8',
           overflow: 'hidden',
           animation: `${open ? animationExpand : animationCollapse} 200ms ease-out`,
         }}

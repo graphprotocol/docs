@@ -129,7 +129,7 @@ export const CodeBlock = ({ children, ...props }: CodeBlockProps) => {
               overflowX: 'auto',
               p: Spacing.L,
               borderRadius: BorderRadius.M,
-              border: (theme) => `1px solid ${theme.colors!.White4}`,
+              border: 'White4',
               bg: 'White4',
               fontSize: '16px',
               lineHeight: '24px',
@@ -159,7 +159,7 @@ export const CodeInline = ({ children, ...props }: CodeInlineProps) => {
         px: '6px',
         py: Spacing.S,
         borderRadius: BorderRadius.S,
-        border: (theme) => `1px solid ${theme.colors!.White4}`,
+        border: 'White4',
         bg: 'White4',
         fontSize: '0.75em',
       }}

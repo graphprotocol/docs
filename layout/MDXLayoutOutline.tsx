@@ -1,5 +1,5 @@
 import { useContext } from 'react'
-import { Spacing, BorderRadius, Flex, Icon } from '@edgeandnode/components'
+import { Spacing, BorderRadius, Flex, Icon, buildShadow } from '@edgeandnode/components'
 
 import { DocumentContext } from '@/layout'
 import { Text, Link } from '@/components'
@@ -26,22 +26,22 @@ export const MDXLayoutOutline = () => {
         position: 'sticky',
         top: '-1px',
         maxHeight: 'calc(100vh + 2px)',
+        px: Spacing.M,
+        py: Spacing.XL,
         overflowY: 'auto',
       }}
     >
-      {/* TODO: Replace with `Button` component from the new GDS when it's ready */}
       <Link
         href={`https://github.com/graphprotocol/docs/edit/main/pages/${currentLocale}${currentPathWithoutLocale}${
           currentPathWithoutLocale.endsWith('/') ? 'index' : ''
         }.mdx`}
         target="_blank"
         sx={{
-          display: 'flex',
-          px: Spacing.M,
+          display: 'block',
           py: Spacing.S,
           borderRadius: BorderRadius.S,
-          '&:hover': { bg: 'White8' },
-          transition: 'background-color 200ms',
+          '&:hover': { textShadow: buildShadow('M') },
+          transition: 'text-shadow 200ms',
         }}
       >
         <Flex.Row as="span" align="center" gap={Spacing.S}>
@@ -49,43 +49,42 @@ export const MDXLayoutOutline = () => {
           <Text size="14px">Edit page</Text>
         </Flex.Row>
       </Link>
-      <div
+      <aside
         sx={{
           mt: Spacing.XL,
           pr: '16px',
-          py: '16px',
-          border: (theme) => `1px solid ${theme.colors!.White16}`,
-          borderLeft: 0,
-          borderRight: 0,
+          pt: Spacing.XL,
+          borderTop: 'White16',
         }}
       >
-        <Text as="div" size="14px" color="White64">
-          <ul role="list">
-            {outline.map((outlineItem, outlineItemIndex) => {
-              if (outlineItem.level > 3) {
-                return null
-              }
-              return (
-                <li key={outlineItemIndex}>
-                  <Link
-                    href={`#${outlineItem.id}`}
-                    sx={{
-                      display: 'block',
-                      pl: `${16 + 16 * Math.max(0, outlineItem.level - 2)}px`,
-                      py: Spacing.M_L,
-                      color: outlineItem.id === highlightedOutlineItemId ? 'White' : undefined,
-                      '&:hover': { color: 'White' },
-                      transition: 'color 200ms',
-                    }}
-                  >
-                    {outlineItem.title}
-                  </Link>
-                </li>
-              )
-            })}
-          </ul>
+        <Text as="header" weight="Medium" size="10px" color="White64" uppercase sx={{ mb: Spacing.M }}>
+          Page Sections
         </Text>
-      </div>
+        <Text as="ul" role="list" size="14px" color="White48">
+          {outline.map((outlineItem, outlineItemIndex) => {
+            if (outlineItem.level > 3) {
+              return null
+            }
+            return (
+              <li key={outlineItemIndex}>
+                <Link
+                  href={`#${outlineItem.id}`}
+                  sx={{
+                    display: 'block',
+                    pl: `${8 * Math.max(0, outlineItem.level - 2)}px`,
+                    py: '6px',
+                    color: outlineItem.id === highlightedOutlineItemId ? 'White' : undefined,
+                    '&:hover': { color: 'White' },
+                    transition: 'color 200ms',
+                  }}
+                >
+                  {outlineItem.title}
+                </Link>
+              </li>
+            )
+          })}
+        </Text>
+      </aside>
     </div>
   )
 }

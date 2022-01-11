@@ -1,5 +1,5 @@
 import { HTMLAttributes, useContext } from 'react'
-import { useUniqueId, Spacing, buildShadow } from '@edgeandnode/components'
+import { Spacing, Opacity, buildShadow, useUniqueId } from '@edgeandnode/components'
 import classnames from 'classnames'
 import { useInView } from 'react-intersection-observer'
 import { useDebounce } from 'react-use'
@@ -45,8 +45,8 @@ export const Heading = ({ level, id, className, children, ...props }: HeadingPro
         <span
           sx={{
             ml: '0.35em',
-            opacity: 0,
-            [`.${rootClass}:hover &`]: { opacity: 1 },
+            opacity: Opacity['0%'],
+            [`.${rootClass}:hover &`]: { opacity: Opacity['100%'] },
             transition: 'opacity 200ms',
           }}
         >
