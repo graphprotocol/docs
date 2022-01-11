@@ -12,6 +12,7 @@ import {
   CodeBlock,
   CodeInline,
   Divider,
+  EditPageLink,
   H1,
   H2,
   H3,
@@ -89,7 +90,7 @@ export const DocumentContext = createContext(null) as Context<DocumentContextPro
 export type MDXLayoutProps = PropsWithChildren<NavContextProps & DocumentContextProps>
 
 export const MDXLayout = ({ navItems, frontmatter, outline, children }: MDXLayoutProps) => {
-  const { currentLocale, currentPathWithoutLocale } = useLocale()
+  const { currentPathWithoutLocale } = useLocale()
 
   // Compute some values for the `NavContext`
   const { pageNavItems, previousPage, currentPage, nextPage } = useMemo(() => {
@@ -176,6 +177,10 @@ export const MDXLayout = ({ navItems, frontmatter, outline, children }: MDXLayou
             <div sx={mdxStyles}>
               {frontmatter?.title && <H1>{frontmatter.title}</H1>}
               <MDXProvider components={mdxComponents}>{children}</MDXProvider>
+            </div>
+
+            <div sx={{ display: ['flex', null, null, 'none'], mt: Spacing.XL_XXL }}>
+              <EditPageLink mobile />
             </div>
 
             <div sx={{ mt: Spacing.XXL }}>

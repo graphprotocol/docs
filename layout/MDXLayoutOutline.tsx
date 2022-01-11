@@ -1,9 +1,8 @@
 import { useContext } from 'react'
-import { Spacing, BorderRadius, Flex, Icon, buildShadow } from '@edgeandnode/components'
+import { Spacing } from '@edgeandnode/components'
 
 import { DocumentContext } from '@/layout'
-import { Text, Link } from '@/components'
-import { useLocale } from '@/hooks'
+import { Text, Link, EditPageLink } from '@/components'
 
 export type OutlineItem = {
   id: string
@@ -12,7 +11,6 @@ export type OutlineItem = {
 }
 
 export const MDXLayoutOutline = () => {
-  const { currentLocale, currentPathWithoutLocale } = useLocale()
   const { outline, highlightedOutlineItemId } = useContext(DocumentContext)!
 
   if (outline.length === 0) {
@@ -31,24 +29,7 @@ export const MDXLayoutOutline = () => {
         overflowY: 'auto',
       }}
     >
-      <Link
-        href={`https://github.com/graphprotocol/docs/edit/main/pages/${currentLocale}${currentPathWithoutLocale}${
-          currentPathWithoutLocale.endsWith('/') ? 'index' : ''
-        }.mdx`}
-        target="_blank"
-        sx={{
-          display: 'block',
-          py: Spacing.S,
-          borderRadius: BorderRadius.S,
-          '&:hover': { color: 'White', textShadow: buildShadow('M') },
-          transition: 'color 200ms, text-shadow 200ms',
-        }}
-      >
-        <Flex.Row as="span" align="center" gap={Spacing.S}>
-          <Icon.LogoGitHub />
-          <Text size="14px">Edit page</Text>
-        </Flex.Row>
-      </Link>
+      <EditPageLink />
       <aside
         sx={{
           mt: Spacing.XL,

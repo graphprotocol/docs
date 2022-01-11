@@ -5,7 +5,7 @@ import { Spacing } from '@edgeandnode/components'
 
 export type DividerProps = {
   withVerticalMargin?: boolean
-} & HTMLAttributes<HTMLHRElement>
+} & Omit<HTMLAttributes<HTMLHRElement>, 'children'>
 
 export const Divider = ({ withVerticalMargin = false, ...props }: DividerProps) => {
   return (

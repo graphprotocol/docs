@@ -1,6 +1,6 @@
 import { ImgHTMLAttributes } from 'react'
 
-export type ImageProps = ImgHTMLAttributes<HTMLImageElement>
+export type ImageProps = Omit<ImgHTMLAttributes<HTMLImageElement>, 'children'>
 
 export const Image = ({ src, ...props }: ImageProps) => {
   // If the URL is internal, automatically prepend the base path
