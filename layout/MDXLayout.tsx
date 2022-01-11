@@ -1,4 +1,4 @@
-import { PropsWithChildren, createContext, Context, useMemo, useCallback, useState } from 'react'
+import { PropsWithChildren, createContext, Context, useMemo, useCallback } from 'react'
 import { MDXProvider } from '@mdx-js/react'
 import Head from 'next/head'
 import { ThemeUIStyleObject } from 'theme-ui'
@@ -12,6 +12,7 @@ import {
   CodeBlock,
   CodeInline,
   Divider,
+  EditPageLink,
   H1,
   H2,
   H3,
@@ -165,7 +166,7 @@ export const MDXLayout = ({ navItems, frontmatter, outline, children }: MDXLayou
 
           <div
             sx={{
-              pt: [null, null, null, Spacing.XL_XXL],
+              pt: [null, null, null, Spacing.XL],
               pb: Spacing.XXL,
             }}
           >
@@ -178,12 +179,16 @@ export const MDXLayout = ({ navItems, frontmatter, outline, children }: MDXLayou
               <MDXProvider components={mdxComponents}>{children}</MDXProvider>
             </div>
 
+            <div sx={{ display: ['flex', null, null, 'none'], mt: Spacing.XL_XXL }}>
+              <EditPageLink mobile />
+            </div>
+
             <div sx={{ mt: Spacing.XXL }}>
               <MDXLayoutPagination />
             </div>
           </div>
 
-          <div sx={{ display: ['none', null, null, 'block'], ml: '32px', mr: '-8px', mt: '48px' }}>
+          <div sx={{ display: ['none', null, null, 'block'], ml: '48px', mr: '-8px' }}>
             <MDXLayoutOutline />
           </div>
         </div>

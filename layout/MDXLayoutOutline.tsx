@@ -2,7 +2,7 @@ import { useContext } from 'react'
 import { Spacing } from '@edgeandnode/components'
 
 import { DocumentContext } from '@/layout'
-import { Text, Link } from '@/components'
+import { Text, Link, EditPageLink } from '@/components'
 
 export type OutlineItem = {
   id: string
@@ -24,16 +24,24 @@ export const MDXLayoutOutline = () => {
         position: 'sticky',
         top: '-1px',
         maxHeight: 'calc(100vh + 2px)',
-        pr: '16px',
-        py: '16px',
-        border: (theme) => `1px solid ${theme.colors!.White16}`,
-        borderLeft: 0,
-        borderRight: 0,
+        px: Spacing.M,
+        py: Spacing.XL,
         overflowY: 'auto',
       }}
     >
-      <Text as="div" size="14px" color="White64">
-        <ul role="list">
+      <EditPageLink />
+      <aside
+        sx={{
+          mt: Spacing.XL,
+          pr: '16px',
+          pt: Spacing.XL,
+          borderTop: 'White16',
+        }}
+      >
+        <Text as="header" weight="Medium" size="10px" color="White64" uppercase sx={{ mb: Spacing.M }}>
+          Page Sections
+        </Text>
+        <Text as="ul" role="list" size="14px" color="White48">
           {outline.map((outlineItem, outlineItemIndex) => {
             if (outlineItem.level > 3) {
               return null
@@ -44,9 +52,9 @@ export const MDXLayoutOutline = () => {
                   href={`#${outlineItem.id}`}
                   sx={{
                     display: 'block',
-                    pl: `${16 + 16 * Math.max(0, outlineItem.level - 2)}px`,
-                    py: Spacing.M_L,
-                    color: outlineItem.id === highlightedOutlineItemId ? 'White' : undefined,
+                    pl: `${8 * Math.max(0, outlineItem.level - 2)}px`,
+                    py: '6px',
+                    color: outlineItem.id === highlightedOutlineItemId ? 'White88' : undefined,
                     '&:hover': { color: 'White' },
                     transition: 'color 200ms',
                   }}
@@ -56,8 +64,8 @@ export const MDXLayoutOutline = () => {
               </li>
             )
           })}
-        </ul>
-      </Text>
+        </Text>
+      </aside>
     </div>
   )
 }

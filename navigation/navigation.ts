@@ -7,11 +7,11 @@ export const navigation: NavItemDefinition[] = [
   {
     title: {
       en: 'About The Graph',
-      ar: '[TODO: Translate]',
-      ko: '[TODO: Translate]',
-      zh: '[TODO: Translate]',
-      ja: '[TODO: Translate]',
-      es: '[TODO: Translate]',
+      ar: 'حول The Graph',
+      ko: 'The Graph 소개',
+      zh: '关于 The Graph',
+      ja: 'The Graphについて',
+      es: 'Acerca de The Graph',
     },
     slug: 'about',
     children: [
@@ -29,11 +29,11 @@ export const navigation: NavItemDefinition[] = [
   {
     title: {
       en: 'Developer',
-      ar: '[TODO: Translate]',
-      ko: '[TODO: Translate]',
-      zh: '[TODO: Translate]',
-      ja: '[TODO: Translate]',
-      es: '[TODO: Translate]',
+      ar: 'مطور',
+      ko: '개발자',
+      zh: '开发商',
+      ja: 'デベロッパー',
+      es: 'Desarrollador',
     },
     slug: 'developer',
     children: [
@@ -135,11 +135,11 @@ export const navigation: NavItemDefinition[] = [
   {
     title: {
       en: 'Supported Networks',
-      ar: '[TODO: Translate]',
-      ko: '[TODO: Translate]',
-      zh: '[TODO: Translate]',
-      ja: '[TODO: Translate]',
-      es: '[TODO: Translate]',
+      ar: 'الشبكات المدعومة',
+      ko: '지원되는 네트워크',
+      zh: '支持的网络',
+      ja: 'サポートされているネットワーク',
+      es: 'Redes compatibles',
     },
     slug: 'supported-networks',
     children: [

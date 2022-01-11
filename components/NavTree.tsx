@@ -1,6 +1,6 @@
 import { HTMLAttributes, createContext, Context, useState, useContext } from 'react'
 import * as Collapsible from '@radix-ui/react-collapsible'
-import { Flex, Spacing, Opacities } from '@edgeandnode/components'
+import { Flex, Spacing, Opacity } from '@edgeandnode/components'
 import { keyframes } from '@emotion/react'
 import { SxProp } from 'theme-ui'
 
@@ -37,7 +37,7 @@ export type NavTreeDividerProps = Omit<HTMLAttributes<HTMLElement>, 'children'>
 const NavTree = ({ children, textProps, ...props }: NavTreeProps) => {
   return (
     <Flex.Column {...props}>
-      <Text weight="SemiBold" size="14px" as="ul" role="list" {...textProps}>
+      <Text weight="Semibold" size="14px" as="ul" role="list" {...textProps}>
         {children}
       </Text>
     </Flex.Column>
@@ -64,8 +64,8 @@ const NavTreeItem = ({
           display: 'block',
           px: Spacing.L_XL,
           py: Spacing.M_L,
-          opacity: !active ? Opacities[64] : undefined,
-          '&:hover': { opacity: Opacities[100] },
+          opacity: !active ? Opacity['64%'] : undefined,
+          '&:hover': { opacity: Opacity['100%'] },
           transition: 'opacity 200ms',
           ...linkSx,
         }}
@@ -118,19 +118,18 @@ const NavTreeGroupHeading = ({ children, buttonProps = {}, ...props }: NavTreeGr
           width: '100%',
           px: Spacing.L_XL,
           py: Spacing.M_L,
-          opacity: context.open || context.active ? Opacities[100] : Opacities[64],
-          '&:hover': { opacity: Opacities[100] },
+          opacity: context.open || context.active ? Opacity['100%'] : Opacity['64%'],
+          '&:hover': { opacity: Opacity['100%'] },
           transition: 'opacity 200ms',
           ...buttonSx,
         }}
         {...buttonOtherProps}
       >
-        <Flex.Row as="span" justify="space-between" align="center">
+        <Flex.Row as="span" justify="space-between" align="center" gap={Spacing.L}>
           <span>{children}</span>
           <Flex.Column
             as="span"
             sx={{
-              ml: Spacing.L,
               flex: 'none',
               transform: context.open ? 'rotate(90deg)' : 'rotate(0deg)',
               transition: 'transform 200ms',
@@ -162,13 +161,7 @@ const NavTreeGroupContent = ({ children, ...props }: NavTreeGroupContentProps) =
 }
 
 const NavTreeDivider = (props: NavTreeDividerProps) => {
-  return (
-    <li
-      aria-hidden="true"
-      sx={{ my: Spacing.M, borderTop: (theme) => `1px solid ${theme.colors!.White16}` }}
-      {...props}
-    />
-  )
+  return <li aria-hidden="true" sx={{ my: Spacing.M, borderTop: 'White16' }} {...props} />
 }
 
 NavTree.Item = NavTreeItem

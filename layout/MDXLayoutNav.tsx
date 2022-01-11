@@ -5,7 +5,6 @@ import { keyframes } from '@emotion/react'
 
 import { NavContext } from '@/layout'
 import { NavTree, Text, Icon } from '@/components'
-import { useLocale } from '@/hooks'
 
 const animationExpand = keyframes({
   from: { height: 0 },
@@ -25,8 +24,8 @@ const DesktopWrapper = ({ children }: PropsWithChildren<{}>) => {
         position: 'sticky',
         top: 0,
         maxHeight: '100vh',
-        pr: '24px',
-        py: '32px',
+        pr: Spacing.L_XL,
+        py: Spacing.L,
         overflowY: 'auto',
       }}
     >
@@ -43,7 +42,7 @@ const MobileWrapper = ({ title, children }: PropsWithChildren<{ title?: string }
       onOpenChange={setOpen}
       sx={{
         borderRadius: BorderRadius.S,
-        border: (theme) => `1px solid ${open ? theme.colors!.White8 : theme.colors!.White4}`,
+        border: open ? 'White8' : 'White4',
         bg: open ? 'White8' : 'White4',
         '&:hover': {
           borderColor: 'White8',
@@ -60,7 +59,13 @@ const MobileWrapper = ({ title, children }: PropsWithChildren<{ title?: string }
           border: '1px solid transparent',
         }}
       >
-        <Flex.Row as="span" justify="space-between" align="center" sx={{ px: Spacing.L_XL, py: '20px' }}>
+        <Flex.Row
+          as="span"
+          justify="space-between"
+          align="center"
+          gap={Spacing.L}
+          sx={{ px: Spacing.L_XL, py: '20px' }}
+        >
           <Flex.Column as="span">
             <Text size="10px" uppercase>
               Docs
@@ -70,7 +75,6 @@ const MobileWrapper = ({ title, children }: PropsWithChildren<{ title?: string }
           <Flex.Column
             as="span"
             sx={{
-              ml: Spacing.L,
               flex: 'none',
               transform: open ? 'rotate(90deg)' : 'rotate(0deg)',
               transition: 'transform 200ms',
@@ -82,7 +86,7 @@ const MobileWrapper = ({ title, children }: PropsWithChildren<{ title?: string }
       </Collapsible.Trigger>
       <Collapsible.Content
         sx={{
-          borderTop: (theme) => `1px solid ${theme.colors!.White8}`,
+          borderTop: 'White8',
           overflow: 'hidden',
           animation: `${open ? animationExpand : animationCollapse} 200ms ease-out`,
         }}

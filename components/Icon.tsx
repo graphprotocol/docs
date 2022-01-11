@@ -7,7 +7,7 @@ export type IconProps = {
   icon: keyof typeof Icons | ElementType
   size?: number | string
   direction?: 'right' | 'down' | 'left' | 'up'
-} & HTMLAttributes<HTMLElement>
+} & Omit<HTMLAttributes<HTMLElement>, 'children'>
 
 export const Icon = ({ icon, size = '1em', direction = 'right', ...props }: IconProps) => {
   const IconSvg =

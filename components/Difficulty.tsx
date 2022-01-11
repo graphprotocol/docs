@@ -3,8 +3,8 @@ export const Difficulty = ({ level }: { level: string }) => {
     <div
       sx={{
         padding: '15px 0px 18px',
-        borderTop: (theme) => `1px solid ${theme.colors!.White16}`,
-        borderBottom: (theme) => `1px solid ${theme.colors!.White16}`,
+        borderTop: 'White16',
+        borderBottom: 'White16',
         display: 'flex',
         alignItems: 'center',
         gap: '12px',

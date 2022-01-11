@@ -1,9 +1,8 @@
-import { useContext, useMemo } from 'react'
-import { Spacing, Flex, Glow } from '@edgeandnode/components'
+import { useContext } from 'react'
+import { Spacing, Flex, buildShadow } from '@edgeandnode/components'
 
 import { NavContext } from '@/layout'
 import { Divider, Icon, Link, Text } from '@/components'
-import { useLocale } from '@/hooks'
 
 export const MDXLayoutPagination = () => {
   const { previousPage, nextPage } = useContext(NavContext)!
@@ -22,11 +21,11 @@ export const MDXLayoutPagination = () => {
                 pl: [0, null, Spacing.L_XL],
                 pr: Spacing.M_L,
                 color: 'White64',
-                '&:hover': { color: 'White', textShadow: Glow.M },
+                '&:hover': { color: 'White', textShadow: buildShadow('M') },
                 transition: 'color 200ms, text-shadow 200ms',
               }}
             >
-              <Flex.Column gap={Spacing.S} align="start" sx={{ textAlign: 'left' }}>
+              <Flex.Column align="start" gap={Spacing.S} sx={{ textAlign: 'left' }}>
                 <Flex.Row align="center" gap={Spacing.S}>
                   <Icon icon="Arrow" direction="left" size={12} />
                   <Text weight="Medium" size="10px" uppercase>
@@ -34,11 +33,17 @@ export const MDXLayoutPagination = () => {
                   </Text>
                 </Flex.Row>
                 <Text
-                  weight="SemiBold"
+                  weight="Semibold"
                   size="16px"
-                  color="White"
+                  color="White88"
                   truncate
-                  sx={{ m: '-24px', p: '24px', maxWidth: 'calc(100% + 48px)' }}
+                  sx={{
+                    m: '-24px',
+                    p: '24px',
+                    maxWidth: 'calc(100% + 48px)',
+                    'a:hover &': { color: 'White' },
+                    transition: 'color 200ms',
+                  }}
                 >
                   {previousPage.title}
                 </Text>
@@ -56,11 +61,11 @@ export const MDXLayoutPagination = () => {
                 pl: Spacing.M_L,
                 pr: [0, null, Spacing.L_XL],
                 color: 'White64',
-                '&:hover': { color: 'White', textShadow: Glow.M },
+                '&:hover': { color: 'White', textShadow: buildShadow('M') },
                 transition: 'color 200ms, text-shadow 200ms',
               }}
             >
-              <Flex.Column gap={Spacing.S} align="end" sx={{ textAlign: 'right' }}>
+              <Flex.Column align="end" gap={Spacing.S} sx={{ textAlign: 'right' }}>
                 <Flex.Row align="center" gap={Spacing.S}>
                   <Text weight="Medium" size="10px" uppercase>
                     Next
@@ -68,11 +73,17 @@ export const MDXLayoutPagination = () => {
                   <Icon icon="Arrow" direction="right" size={12} />
                 </Flex.Row>
                 <Text
-                  weight="SemiBold"
+                  weight="Semibold"
                   size="16px"
-                  color="White"
+                  color="White88"
                   truncate
-                  sx={{ m: '-24px', p: '24px', maxWidth: 'calc(100% + 48px)' }}
+                  sx={{
+                    m: '-24px',
+                    p: '24px',
+                    maxWidth: 'calc(100% + 48px)',
+                    'a:hover &': { color: 'White' },
+                    transition: 'color 200ms',
+                  }}
                 >
                   {nextPage.title}
                 </Text>

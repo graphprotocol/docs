@@ -5,7 +5,7 @@ import { HTMLAttributes } from 'react'
 export type DiamondProps = {
   size?: number
   outline?: boolean
-} & HTMLAttributes<HTMLSpanElement>
+} & Omit<HTMLAttributes<HTMLElement>, 'children'>
 
 export const Diamond = ({ size = 5, outline = false, ...props }: DiamondProps) => {
   return (

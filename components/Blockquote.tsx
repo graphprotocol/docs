@@ -1,5 +1,5 @@
 import { HTMLAttributes } from 'react'
-import { Spacing } from '@edgeandnode/components'
+import { Spacing, buildBorder } from '@edgeandnode/components'
 
 import { Text, TextProps } from '@/components'
 
@@ -12,7 +12,7 @@ export const Blockquote = ({ children, ...props }: BlockquoteProps) => {
       sx={{
         my: Spacing.XL,
         p: Spacing.L_XL,
-        borderLeft: (theme) => `4px solid ${theme.colors!.Purple}`,
+        borderLeft: buildBorder('Purple', '4px' as any),
         bg: 'Purple8',
         '& > p': {
           my: 0,

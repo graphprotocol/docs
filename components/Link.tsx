@@ -1,6 +1,6 @@
 import { AnchorHTMLAttributes } from 'react'
 import NextLink, { LinkProps as NextLinkProps } from 'next/link'
-import { useTheme } from '@edgeandnode/components'
+import { useTheme, buildShadow } from '@edgeandnode/components'
 
 import { Locale } from '@/locale'
 import { useLocale } from '@/hooks'
@@ -72,7 +72,7 @@ export const LinkInline = (props: LinkProps) => {
           backgroundImage: `linear-gradient(to bottom, ${theme.colors!.Purple}, ${theme.colors!.Purple})`,
           backgroundPosition: '0% 95%',
           color: 'White',
-          textShadow: `${theme.colors!.Purple64} 0px 0px 16px`,
+          textShadow: buildShadow('S'),
         },
         transition: 'background-position 200ms, color 200ms, text-shadow 200ms',
       }}
