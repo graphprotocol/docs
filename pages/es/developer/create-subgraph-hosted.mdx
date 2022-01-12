@@ -175,7 +175,6 @@ The `Gravatar` entity below is structured around a Gravatar object and is a good
 ```graphql
 type Gravatar @entity {
   id: ID!
-  owner:
   owner: Bytes
   displayName: String
   imageUrl: String
@@ -189,7 +188,7 @@ The example `GravatarAccepted` and `GravatarDeclined` entities below are based a
 
 ```graphql
 type GravatarAccepted @entity {
-  id:
+  id: ID!
   owner: Bytes
   displayName: String
   imageUrl: String
@@ -219,15 +218,15 @@ Each entity must have an `id` field, which is of type `ID!` (string). The `id` f
 
 We support the following scalars in our GraphQL API:
 
-| Type         | Description                                                                                                                                                                          |
-| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `Bytes`      | Byte array, represented as a hexadecimal string. Commonly used for Ethereum hashes and addresses.                                                                                    |
-| `ID`         | Stored as a `string`.                                                                                                                                                                |
-| `String`     | Scalar for `string` values. Null characters are not supported and are automatically removed.                                                                                         |
-| `Boolean`    | Scalar for `boolean` values.                                                                                                                                                         |
-| `Int`        | The GraphQL spec defines `Int` to have size of 32 bytes.                                                                                                                             |
-| `BigInt`     | Large integers. Used for Ethereum's `uint32`, `int64`, `uint64`, ..., `uint256` types. Note: Everything below `uint32`, such as `int32`, `uint24` or `int8` is represented as `i32`. |
-| `BigDecimal` | `BigDecimal` High precision decimals represented as a signficand and an exponent. The exponent range is from −6143 to +6144. Rounded to 34 significant digits.                       |
+| Type | Description |
+| --- | --- |
+| `Bytes` | Byte array, represented as a hexadecimal string. Commonly used for Ethereum hashes and addresses. |
+| `ID` | Stored as a `string`. |
+| `String` | Scalar for `string` values. Null characters are not supported and are automatically removed. |
+| `Boolean` | Scalar for `boolean` values. |
+| `Int` | The GraphQL spec defines `Int` to have size of 32 bytes. |
+| `BigInt` | Large integers. Used for Ethereum's `uint32`, `int64`, `uint64`, ..., `uint256` types. Note: Everything below `uint32`, such as `int32`, `uint24` or `int8` is represented as `i32`. |
+| `BigDecimal` | `BigDecimal` High precision decimals represented as a signficand and an exponent. The exponent range is from −6143 to +6144. Rounded to 34 significant digits. |
 
 #### Enums
 
@@ -258,14 +257,12 @@ Define a `Transaction` entity type with an optional one-to-one relationship with
 ```graphql
 type Transaction @entity {
   id: ID!
-  ID!
   transactionReceipt: TransactionReceipt
 }
 
 type TransactionReceipt @entity {
   id: ID!
-  transaction:
-  Transaction
+  transaction: Transaction
 }
 ```
 
@@ -275,16 +272,13 @@ Define a `TokenBalance` entity type with a required one-to-many relationship wit
 
 ```graphql
 type Token @entity {
-  id:
-ID!
+  id: ID!
 }
 
 type TokenBalance @entity {
-  id:
-  ID!
-  amount:
-  Int!
-  token:
+  id: ID!
+  amount: Int!
+  token: Token!
 }
 ```
 
@@ -300,17 +294,14 @@ We can make the balances for a token accessible from the token by deriving a `to
 
 ```graphql
 type Token @entity {
-  id:
-  ID!
+  id: ID!
   tokenBalances: [TokenBalance!]! @derivedFrom(field: "token")
 }
 
 type TokenBalance @entity {
-  id:
-  ID!
-  amount:
-  Int!
-  token:
+  id: ID!
+  amount: Int!
+  token: Token!
 }
 ```
 
@@ -324,16 +315,15 @@ Define a reverse lookup from a `User` entity type to an `Organization` entity ty
 
 ```graphql
 type Organization @entity {
-  id:
+  id: ID!
   name: String!
   members: [User!]!
-[User!]!
 }
 
 type User @entity {
-  id:
+  id: ID!
   name: String!
-  organizations: [Organization!]! [Organization!]! @derivedFrom(field: "members")
+  organizations: [Organization!]! @derivedFrom(field: "members")
 }
 ```
 
@@ -341,23 +331,21 @@ A more performant way to store this relationship is through a mapping table that
 
 ```graphql
 type Organization @entity {
-  id:
+  id: ID!
   name: String!
-  members: [UserOrganization]! [UserOrganization]! @derivedFrom(field: "user")
+  members: [UserOrganization]! @derivedFrom(field: "user")
 }
 
 type User @entity {
-  id:
+  id: ID!
   name: String!
-  organizations: [UserOrganization!] [UserOrganization!] @derivedFrom(field: "organization")
+  organizations: [UserOrganization!] @derivedFrom(field: "organization")
 }
 
 type UserOrganization @entity {
   id: ID! # Set to `${user.id}-${organization.id}`
   user: User!
-  organization:
-  Organization!
-}
+  organization: Organization!
 }
 ```
 
@@ -385,9 +373,8 @@ As per GraphQL spec, comments can be added above schema entity attributes using 
 ```graphql
 type MyFirstEntity @entity {
   "unique identifier and primary key of the entity"
-  id:
-  ID!
-  address:
+  id: ID!
+  address: Bytes!
 }
 ```
 
@@ -409,20 +396,14 @@ type _Schema_
   )
 
 type Band @entity {
-  id:
+  id: ID!
   name: String!
-  ID!
-  name: String!
-  description:
-  String!
+  description: String!
   bio: String
   wallet: Address
-  labels:
-  [Label!]!
-  discography:
-  [Album!]!
+  labels: [Label!]!
+  discography: [Album!]!
   members: [Musician!]!
-}
 }
 ```
 
@@ -602,27 +583,33 @@ Then, you add _data source templates_ to the manifest. These are identical to re
 ```yaml
 dataSources:
   - kind: ethereum/contract
-    name: Gravity
-    network: dev
+    name: Factory
+    # ... other source fields for the main contract ...
+templates:
+  - name: Exchange
+    kind: ethereum/contract
+    network: mainnet
     source:
-      address: '0x731a10897d267e19b34503ad902d0a29173ba4b1'
-      abi:
-Gravity
+      abi: Exchange
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.6
       language: wasm/assemblyscript
+      file: ./src/mappings/exchange.ts
       entities:
-        - Gravatar
-        - Transaction
+        - Exchange
       abis:
-        - name: Gravity
-          file: ./abis/Gravity.json
-      blockHandlers:
-        - handler: handleBlock
-        - handler: handleBlockWithCallToContract
-          filter:
-            kind: call
+        - name: Exchange
+          file: ./abis/exchange.json
+      eventHandlers:
+        - event: TokenPurchase(address,uint256,uint256)
+          handler: handleTokenPurchase
+        - event: EthPurchase(address,uint256,uint256)
+          handler: handleEthPurchase
+        - event: AddLiquidity(address,uint256,uint256)
+          handler: handleAddLiquidity
+        - event: RemoveLiquidity(address,uint256,uint256)
+          handler: handleRemoveLiquidity
 ```
 
 ### Instantiating a Data Source Template
