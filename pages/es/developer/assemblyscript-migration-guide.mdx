@@ -2,7 +2,7 @@
 title: AssemblyScript Migration Guide
 ---
 
-Up until now, subgraphs have been using one of the [first versions of AssemblyScript](https://github.com/AssemblyScript/assemblyscript/tree/v0.6) (v0.6). Finally we've added support for the [newest one available](https://github.com/AssemblyScript/assemblyscript/tree/v0.19.10) (v0.19.10)! 🎉
+Up until now, subgraphs have been using one of the [first versions of AssemblyScript](https://github.com/AssemblyScript/assemblyscript/tree/v0.6) (v0.6). Finally we've added support for the [newest one available](https://github.com/AssemblyScript/assemblyscript/tree/v0.19.10) (v0.19.10)! 🎉 🎉
 
 That will enable subgraph developers to use newer features of the AS language and standard library.
 
@@ -48,11 +48,10 @@ This guide is applicable for anyone using `graph-cli`/`graph-ts` below version `
 
 ```yaml
 ...
-dataSources:
+...
+    dataSources:
   ...
-    mapping:
-      ...
-      apiVersion: 0.0.6
+      mapping:
       ...
 ```
 
@@ -82,10 +81,9 @@ npm install --save @graphprotocol/graph-ts@latest
 On the older version of AssemblyScript, you could create code like this:
 
 ```typescript
-function load(): Value | null { ... }
+let maybeValue = load()! // breaks in runtime if value is null
 
-let maybeValue = load();
-maybeValue.aMethod();
+maybeValue.aMethod()
 ```
 
 However on the newer version, because the value is nullable, it requires you to check, like this:
@@ -101,9 +99,10 @@ if (maybeValue) {
 Or force it like this:
 
 ```typescript
-let maybeValue = load()! // breaks in runtime if value is null
+function load(): Value | null { ... }
 
-maybeValue.aMethod()
+let maybeValue = load();
+maybeValue.aMethod();
 ```
 
 If you are unsure which to choose, we recommend always using the safe version. If the value doesn't exist you might want to just do an early if statement with a return in you subgraph handler.
@@ -257,20 +256,24 @@ if (something) {
   somethingOrElse = something
 } else {
   somethingOrElse = 'else'
+} something : 'else'
+
+// or
+
+let somethingOrElse
+
+if (something) {
+  somethingOrElse = something
+} else {
+  somethingOrElse = 'else'
 }
 ```
 
 However that only works when you're doing the `if` / ternary on a variable, not on a property access, like this:
 
 ```typescript
-class Container {
-  data: string | null
-}
-
-let container = new Container()
-container.data = 'data'
-
-let somethingOrElse: string = container.data ? container.data : 'else' // doesn't compile
+ERROR TS2322: Type '~lib/string/String | null' is not assignable to type '~lib/string/String'. let somethingOrElse: string = container.data ? container.data : "else";
+                                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ```
 
 Which outputs this error:
@@ -278,7 +281,14 @@ Which outputs this error:
 ```typescript
 ERROR TS2322: Type '~lib/string/String | null' is not assignable to type '~lib/string/String'.
 
-   let somethingOrElse: string = container.data ? container.data : "else";
+   class Container {
+  data: string | null
+}
+
+let container = new Container()
+container.data = 'data'
+
+let somethingOrElse: string = container.data ? container.data : 'else' // doesn't compile container.data : "else";
                                  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ```
 To fix this issue, you can create a variable for that property access so that the compiler can do the nullability check magic:
@@ -293,7 +303,7 @@ container.data = 'data'
 
 let data = container.data
 
-let somethingOrElse: string = data ? data : 'else' // compiles just fine :)
+let somethingOrElse: string = data ? data : 'else' // compiles just fine :) data : 'else' // compiles just fine :)
 ```
 
 ### Operator overloading with property access
@@ -357,6 +367,7 @@ Also if you have nullable properties in a GraphQL entity, like this:
 ```graphql
 type Total @entity {
   id: ID!
+  amount:
   amount: BigInt
 }
 ```
@@ -390,8 +401,9 @@ Or you can just change your GraphQL schema to not use a nullable type for this p
 
 ```graphql
 type Total @entity {
-  id: ID!
-  amount: BigInt!
+  id:
+  ID!
+  amount:
 }
 ```
 
@@ -449,11 +461,13 @@ Now you no longer can define fields in your types that are Non-Nullable Lists. I
 
 ```graphql
 type Something @entity {
-  id: ID!
+  id:
+ID!
 }
 
 type MyEntity @entity {
-  id: ID!
+  id:
+  ID!
   invalidField: [Something]! # no longer valid
 }
 ```
@@ -462,11 +476,13 @@ You'll have to add an `!` to the member of the List type, like this:
 
 ```graphql
 type Something @entity {
-  id: ID!
+  id:
+ID!
 }
 
 type MyEntity @entity {
-  id: ID!
+  id:
+  ID!
   invalidField: [Something!]! # valid
 }
 ```
