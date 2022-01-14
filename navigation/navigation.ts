@@ -71,6 +71,9 @@ export const navigation: NavItemDefinition[] = [
         slug: 'matchstick',
       },
       {
+        slug: 'subgraph-debug-forking',
+      },
+      {
         slug: 'deprecating-a-subgraph',
       },
       {
