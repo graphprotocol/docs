@@ -267,10 +267,10 @@ Como la entidad puede no existir todavía en el almacén, el `load` metodo retur
 
 Hay dos maneras de actualizar una entidad existente:
 
-1. Load the entity with e.g. `Transfer.load(id)`, set properties on the entity, then `.save()` it back to the store.
-2. Simply create the entity with e.g. `new Transfer(id)`, set properties on the entity, then `.save()` it to the store. If the entity already exists, the changes are merged into it.
+1. Cargar la entidad con, por ejemplo `Transfer.load(id)`, establecer propiedades en la entidad, entonces `.save()` de nuevo en el almacen.
+2. Simplemente crear una entidad con, por ejemplo `new Transfer(id)`, establecer las propiedades en la entidad, luego `.save()` en el almacen. Si la entidad ya existe, los cambios se fusionan con ella.
 
-Changing properties is straight forward in most cases, thanks to the generated property setters:
+Cambiar las propiedades es sencillo en la mayoría de los casos, gracias a los seteadores de propiedades generados:
 
 ```typescript
 let transfer = new Transfer(id)
@@ -279,16 +279,16 @@ transfer.to = ...
 transfer.amount = ...
 ```
 
-It is also possible to unset properties with one of the following two instructions:
+También es posible desajustar las propiedades con una de las dos instrucciones siguientes:
 
 ```typescript
 transfer.from.unset()
 transfer.from = null
 ```
 
-This only works with optional properties, i.e. properties that are declared without a `!` in GraphQL. Two examples would be `owner: Bytes` or `amount: BigInt`.
+Esto sólo funciona con propiedades opcionales, es decir, propiedades que se declaran sin un `!` en GraphQL. Dos ejemplos serian `owner: Bytes` o `amount: BigInt`.
 
-Updating array properties is a little more involved, as the getting an array from an entity creates a copy of that array. This means array properties have to be set again explicitly after changing the array. The following assumes `entity` has a `numbers: [BigInt!]!` field.
+La actualización de las propiedades de la matriz es un poco más complicada, ya que al obtener una matriz de una entidad se crea una copia de esa matriz. Esto significa que las propiedades de la matriz tienen que ser establecidas de nuevo explícitamente después de cambiar la matriz. El siguiente asume `entity` tiene un `numbers: [BigInt!]!` campo.
 
 ```typescript
 // This won't work
@@ -302,9 +302,9 @@ entity.numbers = numbers
 entity.save()
 ```
 
-#### Removing entities from the store
+#### Eliminar entidades del almacen
 
-There is currently no way to remove an entity via the generated types. Instead, removing an entity requires passing the name of the entity type and the entity ID to `store.remove`:
+Actualmente no hay forma de remover una entidad a través de los tipos generados. En cambio, para remover una entidad es necesario pasar el nombre del tipo de entidad y el ID de la misma a `store.remove`:
 
 ```typescript
 import { store } from '@graphprotocol/graph-ts'
@@ -313,29 +313,27 @@ let id = event.transaction.hash.toHex()
 store.remove('Transfer', id)
 ```
 
-### Ethereum API
+### API de Ethereum
 
-The Ethereum API provides access to smart contracts, public state variables, contract functions, events, transactions, blocks and the encoding/decoding Ethereum data.
+La API de Ethereum proporciona acceso a los contratos inteligentes, a las variables de estado públicas, a las funciones de los contratos, a los eventos, a las transacciones, a los bloques y a la codificación/decodificación de los datos de Ethereum.
 
-#### Support for Ethereum Types
+#### Compatibilidad con los tipos de Ethereum
 
-As with entities, `graph codegen` generates classes for all smart contracts and events used in a subgraph. For this, the contract ABIs need to be part of the data source in the subgraph manifest. Typically, the ABI files are stored in an `abis/` folder.
+Al igual que con las entidades, `graph codegen` genera clases para todos los contratos inteligentes y eventos utilizados en un subgrafo. Para ello, los ABIs del contrato deben formar parte de la fuente de datos en el manifiesto del subgrafo. Normalmente, los archivos ABI se almacenan en una carpeta `abis/`.
 
-With the generated classes, conversions between Ethereum types and the [built-in types](#built-in-types) take place behind the scenes so that subgraph authors do not have to worry about them.
+Con las clases generadas, las conversiones entre los tipos de Ethereum y los [built-in types](#built-in-types) tienen lugar detras de escena para que los autores de los subgrafos no tengan que preocuparse por ellos.
 
-The following example illustrates this. Given a subgraph schema like
+El siguiente ejemplo lo ilustra. Dado un esquema de subgrafos como
 
 ```graphql
 type Transfer @entity {
-  from:
-  Bytes!
-  to:
-  Bytes!
-  amount:
+  from: Bytes!
+  to: Bytes!
+  amount: BigInt!
 }
 ```
 
-and a `Transfer(address,address,uint256)` event signature on Ethereum, the `from`, `to` and `amount` values of type `address`, `address` and `uint256` are converted to `Address` and `BigInt`, allowing them to be passed on to the `Bytes!` and `BigInt!` properties of the `Transfer` entity:
+y un `Transfer(address,address,uint256)` evento firmado en Ethereum, los valores `from`, `to` y `amount` del tipo `address`, `address` y `uint256` se convierten en `Address` y `BigInt`, permitiendo que se transmitan al `Bytes!` y `BigInt!` las propiedades de la `Transfer` entidad:
 
 ```typescript
 let id = event.transaction.hash.toHex()
@@ -346,9 +344,9 @@ transfer.amount = event.params.amount
 transfer.save()
 ```
 
-#### Events and Block/Transaction Data
+#### Eventos y datos de bloques/transacciones
 
-Ethereum events passed to event handlers, such as the `Transfer` event in the previous examples, not only provide access to the event parameters but also to their parent transaction and the block they are part of. The following data can be obtained from `event` instances (these classes are a part of the `ethereum` module in `graph-ts`):
+Los eventos de Ethereum pasados a los manejadores de eventos, como el evento `Transfer` de los ejemplos anteriores, no sólo proporcionan acceso a los parámetros del evento, sino también a su transacción parent y al bloque del que forman parte. Los siguientes datos pueden ser obtenidos desde las instancias de `event` (estas clases forman parte del módulo `ethereum` en `graph-ts`):
 
 ```typescript
 class Event {
@@ -371,6 +369,7 @@ class Block {
   receiptsRoot: Bytes
   number: BigInt
   gasUsed: BigInt
+  gasLimit: BigInt
   timestamp: BigInt
   difficulty: BigInt
   totalDifficulty: BigInt
@@ -384,17 +383,18 @@ class Transaction {
   from: Address
   to: Address | null
   value: BigInt
+  gasLimit: BigInt
   gasPrice: BigInt
   input: Bytes
   nonce: BigInt
 }
 ```
 
-#### Access to Smart Contract State
+#### Acceso al Estado del Contrato Inteligente
 
-The code generated by `graph codegen` also includes classes for the smart contracts used in the subgraph. These can be used to access public state variables and call functions of the contract at the current block.
+El código generado por `graph codegen` también incluye clases para los contratos inteligentes utilizados en el subgrafo. Se pueden utilizar para acceder a variables de estado públicas y llamar a funciones del contrato en el bloque actual.
 
-A common pattern is to access the contract from which an event originates. This is achieved with the following code:
+Un patrón común es acceder al contrato desde el que se origina un evento. Esto se consigue con el siguiente código:
 
 ```typescript
 // Import the generated contract class
@@ -411,13 +411,13 @@ export function handleTransfer(event: Transfer) {
 }
 ```
 
-As long as the `ERC20Contract` on Ethereum has a public read-only function called `symbol`, it can be called with `.symbol()`. For public state variables a method with the same name is created automatically.
+Mientras el `ERC20Contract` en Ethereum tenga una función pública de sólo lectura llamada `symbol`, se puede llamar con `.symbol()`. Para las variables de estado públicas se crea automáticamente un método con el mismo nombre.
 
-Any other contract that is part of the subgraph can be imported from the generated code and can be bound to a valid address.
+Cualquier otro contrato que forme parte del subgrafo puede ser importado desde el código generado y puede ser vinculado a una dirección válida.
 
-#### Handling Reverted Calls
+#### Tratamiento de las llamadas revertidas
 
-If the read-only methods of your contract may revert, then you should handle that by calling the generated contract method prefixed with `try_`. For example, the Gravity contract exposes the `gravatarToOwner` method. This code would be able to handle a revert in that method:
+Si los métodos de sólo lectura de tu contrato pueden revertirse, entonces debes manejar eso llamando al método del contrato generado prefijado con `try_`. Por ejemplo, el contrato Gravity expone el método `gravatarToOwner`. Este código sería capaz de manejar una reversión en ese método:
 
 ```typescript
 let gravity = Gravity.bind(event.address)
@@ -429,52 +429,50 @@ if (callResult.reverted) {
 }
 ```
 
-Note that a Graph node connected to a Geth or Infura client may not detect all reverts, if you rely on this we recommend using a Graph node connected to a Parity client.
+Ten en cuenta que un nodo Graph conectado a un cliente Geth o Infura puede no detectar todas las reversiones, si confías en esto te recomendamos que utilices un nodo Graph conectado a un cliente Parity.
 
-#### Encoding/Decoding ABI
+#### Codificación/Descodificación ABI
 
-Data can be encoded and decoded according to Ethereum's ABI encoding format using the `encode` and `decode` functions in the `ethereum` module.
+Los datos pueden codificarse y descodificarse de acuerdo con el formato de codificación ABI de Ethereum utilizando las funciones `encode` y `decode` en el modulo `ethereum`.
 
 ```typescript
 import { Address, BigInt, ethereum } from '@graphprotocol/graph-ts'
 
 let tupleArray: Array<ethereum.Value> = [
-  ethereum. Value.fromAddress(Address.fromString('0x0000000000000000000000000000000000000420')),
-  ethereum. Value.fromUnsignedBigInt(BigInt.fromI32(62)),
+  ethereum.Value.fromAddress(Address.fromString('0x0000000000000000000000000000000000000420')),
+  ethereum.Value.fromUnsignedBigInt(BigInt.fromI32(62)),
 ]
 
-let tuple = tupleArray as ethereum. Tuple
+let tuple = tupleArray as ethereum.Tuple
 
 let encoded = ethereum.encode(ethereum.Value.fromTuple(tuple))!
 
 let decoded = ethereum.decode('(address,uint256)', encoded)
-
-let decoded = ethereum.decode('(address,uint256)', encoded)
 ```
 
-For more information:
+Para mas informacion:
 
 - [ABI Spec](https://docs.soliditylang.org/en/v0.7.4/abi-spec.html#types)
 - Encoding/decoding [Rust library/CLI](https://github.com/rust-ethereum/ethabi)
 - More [complex example](https://github.com/graphprotocol/graph-node/blob/6a7806cc465949ebb9e5b8269eeb763857797efc/tests/integration-tests/host-exports/src/mapping.ts#L72).
 
-### Logging API
+### API de Registro
 
 ```typescript
 import { log } from '@graphprotocol/graph-ts'
 ```
 
-The `log` API allows subgraphs to log information to the Graph Node standard output as well as the Graph Explorer. Messages can be logged using different log levels. A basic format string syntax is provided to compose log messages from argument.
+La API `log` permite a los subgrafos registrar información en la salida estándar del Graph Node así como en Graph Explorer. Los mensajes pueden ser registrados utilizando diferentes niveles de registro. Se proporciona una sintaxis de string de formato básico para componer los mensajes de registro a partir del argumento.
 
-The `log` API includes the following functions:
+La API `log` incluye las siguientes funciones:
 
-- `log.debug(fmt: string, args: Array<string>): void` - logs a debug message.
-- `log.info(fmt: string, args: Array<string>): void` - logs an informational message.
-- `log.warning(fmt: string, args: Array<string>): void` - logs a warning.
-- `log.error(fmt: string, args: Array<string>): void` - logs an error message.
-- `log.critical(fmt: string, args: Array<string>): void` – logs a critical message _and_ terminates the subgraph.
+- `log.debug(fmt: string, args: Array<string>): void` - registra un mensaje de depuración.
+- `log.info(fmt: string, args: Array<string>): void` - registra un mensaje informativo.
+- `log.warning(fmt: string, args: Array<string>): void` - registra una advertencia.
+- `log.error(fmt: string, args: Array<string>): void` - registra un error de mensaje.
+- `log.critical(fmt: string, args: Array<string>): void` – registra un mensaje critico _y_ termina el subgrafo.
 
-The `log` API takes a format string and an array of string values. It then replaces placeholders with the string values from the array. The first `{}` placeholder gets replaced by the first value in the array, the second `{}` placeholder gets replaced by the second value and so on.
+La API `log` toma un formato string y una matriz de valores de string. A continuación, sustituye los marcadores de posición por los valores de string de la matriz. The first `{}` placeholder gets replaced by the first value in the array, the second `{}` placeholder gets replaced by the second value and so on.
 
 ```typescript
 log.info('Message to be displayed: {}, {}, {}', [value.toString(), anotherValue.toString(), 'already a string'])
