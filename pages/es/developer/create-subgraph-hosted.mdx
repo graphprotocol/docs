@@ -65,19 +65,19 @@ El `<SUBGRAPH_SLUG>` es el ID de tu subgrafo en Subgraph Studio, y se puede enco
 
 ## Desde un Subgrafo de Ejemplo
 
-El segundo modo que admite `graph init` es la creación de un nuevo proyecto a partir de un subgrafo de ejemplo. The following command does this:
+El segundo modo que admite `graph init` es la creación de un nuevo proyecto a partir de un subgrafo de ejemplo. El siguiente comando lo hace:
 
 ```
 graph init --studio <SUBGRAPH_SLUG>
 ```
 
-The example subgraph is based on the Gravity contract by Dani Grant that manages user avatars and emits `NewGravatar` or `UpdateGravatar` events whenever avatars are created or updated. The subgraph handles these events by writing `Gravatar` entities to the Graph Node store and ensuring these are updated according to the events. The following sections will go over the files that make up the subgraph manifest for this example.
+El subgrafo de ejemplo se basa en el contrato Gravity de Dani Grant que gestiona los avatares de los usuarios y emite `NewGravatar` o `UpdateGravatar` cada vez que se crean o actualizan los avatares. El subgrafo maneja estos eventos escribiendo entidades `Gravatar` en el almacén de Graph Node y asegurándose de que éstas se actualicen según los eventos. Las siguientes secciones repasarán los archivos que componen el manifiesto del subgrafo para este ejemplo.
 
-## The Subgraph Manifest
+## El Manifiesto de Subgrafo
 
-The subgraph manifest `subgraph.yaml` defines the smart contracts your subgraph indexes, which events from these contracts to pay attention to, and how to map event data to entities that Graph Node stores and allows to query. The full specification for subgraph manifests can be found [here](https://github.com/graphprotocol/graph-node/blob/master/docs/subgraph-manifest.md).
+El manifiesto del subgrafo `subgraph.yaml` define los contratos inteligentes que indexa tu subgrafo, a qué eventos de estos contratos prestar atención, y cómo mapear los datos de los eventos a las entidades que Graph Node almacena y permite consultar. La especificación completa de los manifiestos de subgrafos puede encontrarse en [here](https://github.com/graphprotocol/graph-node/blob/master/docs/subgraph-manifest.md).
 
-For the example subgraph, `subgraph.yaml` is:
+Para este subgrafo de ejemplo, `subgraph.yaml` es:
 
 ```yaml
 specVersion: 0.0.4
@@ -118,64 +118,63 @@ dataSources:
       file: ./src/mapping.ts
 ```
 
-The important entries to update for the manifest are:
+Las entradas importantes a actualizar para el manifiesto son:
 
-- `description`: a human-readable description of what the subgraph is. This description is displayed by the Graph Explorer when the subgraph is deployed to the Hosted Service.
+- `description`: una descripción legible para el ser humano de lo que es el subgrafo. Esta descripción es mostrada por The Graph Explorer cuando el subgrafo se despliega en el Servicio Alojado.
 
-- `repository`: the URL of the repository where the subgraph manifest can be found. This is also displayed by the Graph Explorer.
+- `repository`: la URL del repositorio donde se encuentra el manifiesto del subgrafo. Esto también lo muestra The Graph Explorer.
 
-- `features`: a list of all used [feature](#experimental-features) names.
+- `features`: una lista de todos los nombres de las [feature](#experimental-features) usadas.
 
-- `dataSources.source`: the address of the smart contract the subgraph sources, and the abi of the smart contract to use. The address is optional; omitting it allows to index matching events from all contracts.
+- `dataSources.source`: la address del contrato inteligente, las fuentes del subgrafo, y el abi del contrato inteligente a utilizar. La address es opcional; omitirla permite indexar los eventos coincidentes de todos los contratos.
 
-- `dataSources.source.startBlock`: the optional number of the block that the data source starts indexing from. In most cases we suggest using the block in which the contract was created.
+- `dataSources.source.startBlock`: el número opcional del bloque desde el que la fuente de datos comienza a indexar. En la mayoría de los casos, sugerimos utilizar el bloque en el que se creó el contrato.
 
-- `dataSources.mapping.entities`: the entities that the data source writes to the store. The schema for each entity is defined in the the schema.graphql file.
+- `dataSources.mapping.entities`: las entidades que la fuente de datos escribe en el almacén. El esquema de cada entidad se define en el archivo schema.graphql.
 
-- `dataSources.mapping.abis`: one or more named ABI files for the source contract as well as any other smart contracts that you interact with from within the mappings.
+- `dataSources.mapping.abis`: uno o más archivos ABI con nombre para el contrato fuente, así como cualquier otro contrato inteligente con el que interactúes desde los mapeos.
 
-- `dataSources.mapping.eventHandlers`: lists the smart contract events this subgraph reacts to and the handlers in the mapping—./src/mapping.ts in the example—that transform these events into entities in the store.
+- `dataSources.mapping.eventHandlers`: enumera los eventos de contratos inteligentes a los que reacciona este subgrafo y los handlers en el mapeo -./src/mapping.ts en el ejemplo- que transforman estos eventos en entidades en el almacén.
 
-- `dataSources.mapping.callHandlers`: lists the smart contract functions this subgraph reacts to and handlers in the mapping that transform the inputs and outputs to function calls into entities in the store.
+- `dataSources.mapping.callHandlers`: enumera las funciones de contrato inteligente a las que reacciona este subgrafo y los handlers en el mapeo que transforman las entradas y salidas a las llamadas de función en entidades en el almacén.
 
-- `dataSources.mapping.blockHandlers`: lists the blocks this subgraph reacts to and handlers in the mapping to run when a block is appended to the chain. Without a filter, the block handler will be run every block. An optional filter can be provided with the following kinds: call`. A`call` filter will run the handler if the block contains at least one call to the data source contract.
+- `dataSources.mapping.blockHandlers`: enumera los bloques a los que reacciona este subgrafo y los handlers en el mapeo que se ejecutan cuando un bloque se agrega a la cadena. Sin un filtro, el handler de bloque se ejecutará en cada bloque. Se puede proporcionar un filtro opcional con los siguientes tipos: call`. Un filtro `call` ejecutará el handler si el bloque contiene al menos una llamada al contrato de la fuente de datos.
 
-A single subgraph can index data from multiple smart contracts. Add an entry for each contract from which data needs to be indexed to the `dataSources` array.
+Un único subgrafo puede indexar datos de múltiples contratos inteligentes. Añade una entrada por cada contrato del que haya que indexar datos a la array `dataSources`.
 
-The triggers for a data source within a block are ordered using the following process:
+Los disparadores (triggers) de una fuente de datos dentro de un bloque se ordenan mediante el siguiente proceso:
 
-1. Event and call triggers are first ordered by transaction index within the block.
-2. Event and call triggers with in the same transaction are ordered using a convention: event triggers first then call triggers, each type respecting the order they are defined in the manifest.
-3. Block triggers are run after event and call triggers, in the order they are defined in the manifest.
+1. Los disparadores de eventos y llamadas se ordenan primero por el índice de la transacción dentro del bloque.
+2. Los disparadores de eventos y llamadas dentro de la misma transacción se ordenan siguiendo una convención: primero los disparadores de eventos y luego los de llamadas, respetando cada tipo el orden en que se definen en el manifiesto.
+3. Los disparadores de bloque se ejecutan después de los disparadores de eventos y llamadas, en el orden en que están definidos en el manifiesto.
 
-These ordering rules are subject to change.
+Estas normas de orden están sujetas a cambios.
 
-### Getting The ABIs
+### Obtención de ABIs
 
-The ABI file(s) must match your contract(s). There are a few ways to obtain ABI files:
+Los archivos ABI deben coincidir con tu(s) contrato(s). Hay varias formas de obtener archivos ABI:
 
-- If you are building your own project, you will likely have access to your most current ABIs.
-- If you are building a subgraph for a public project, you can download that project to your computer and get the ABI by using [`truffle compile`](https://truffleframework.com/docs/truffle/overview) or using solc to compile.
-- You can also find the ABI on [Etherscan](https://etherscan.io/), but this isn't always reliable, as the ABI that is uploaded there may be out of date. Make sure you have the right ABI, otherwise running your subgraph will fail.
+- Si estás construyendo tu propio proyecto, es probable que tengas acceso a tus ABIs más actuales.
+- Si estás construyendo un subgrafo para un proyecto público, puedes descargar ese proyecto en tu computadora y obtener la ABI utilizando [`truffle compile`](https://truffleframework.com/docs/truffle/overview) or usando solc para compilar.
+- También puedes encontrar la ABI en [Etherscan](https://etherscan.io/), pero no siempre es fiable, ya que la ABI que se sube allí puede estar desactualizada. Asegúrate de que tienes la ABI correcta, de lo contrario la ejecución de tu subgrafo fallará.
 
-## The GraphQL Schema
+## El Esquema GraphQL
 
-The schema for your subgraph is in the file `schema.graphql`. GraphQL schemas are defined using the GraphQL interface definition language. If you've never written a GraphQL schema, it is recommended that you check out this primer on the GraphQL type system. Reference documentation for GraphQL schemas can be found in the [GraphQL API](/developer/graphql-api) section.
+El esquema para tu subgrafo está en el archivo `schema.graphql`. Los esquemas de GraphQL se definen utilizando el lenguaje de definición de interfaces de GraphQL. Si nunca has escrito un esquema GraphQL, es recomendable que consultes este manual sobre el sistema de tipos GraphQL. La documentación de referencia para los esquemas de GraphQL se puede encontrar en la sección [GraphQL API](/developer/graphql-api).
 
-## Defining Entities
+## Definir Entidades
 
-Before defining entities, it is important to take a step back and think about how your data is structured and linked. All queries will be made against the data model defined in the subgraph schema and the entities indexed by the subgraph. Because of this, it is good to define the subgraph schema in a way that matches the needs of your dapp. It may be useful to imagine entities as "objects containing data", rather than as events or functions.
+Antes de definir las entidades, es importante dar un paso atrás y pensar en cómo están estructurados y vinculados los datos. Todas las consultas se harán contra el modelo de datos definido en el esquema del subgrafo y las entidades indexadas por el subgrafo. Debido a esto, es bueno definir el esquema del subgrafo de una manera que coincida con las necesidades de tu dapp. Puede ser útil imaginar las entidades como "objetos que contienen datos", más que como eventos o funciones.
 
-With The Graph, you simply define entity types in `schema.graphql`, and Graph Node will generate top level fields for querying single instances and collections of that entity type. Each type that should be an entity is required to be annotated with an `@entity` directive.
+Con The Graph, simplemente defines los tipos de entidad en `schema.graphql`, y Graph Node generará campos de nivel superior para consultar instancias individuales y colecciones de ese tipo de entidad. Cada tipo que deba ser una entidad debe ser anotado con una directiva `@entity`.
 
-### Good Example
+### Buen Ejemplo
 
-The `Gravatar` entity below is structured around a Gravatar object and is a good example of how an entity could be defined.
+La entidad `Gravatar` que aparece a continuación está estructurada en torno a un objeto Gravatar y es un buen ejemplo de cómo podría definirse una entidad.
 
 ```graphql
 type Gravatar @entity {
   id: ID!
-  owner:
   owner: Bytes
   displayName: String
   imageUrl: String
@@ -183,13 +182,13 @@ type Gravatar @entity {
 }
 ```
 
-### Bad Example
+### Mal Ejemplo
 
-The example `GravatarAccepted` and `GravatarDeclined` entities below are based around events. It is not recommended to map events or function calls to entities 1:1.
+El ejemplo las entidades `GravatarAccepted` y `GravatarDeclined` que aparecen a continuación se basan en eventos. No se recomienda asignar eventos o llamadas a funciones a entidades 1:1.
 
 ```graphql
 type GravatarAccepted @entity {
-  id:
+  id: ID!
   owner: Bytes
   displayName: String
   imageUrl: String
@@ -203,19 +202,19 @@ type GravatarDeclined @entity {
 }
 ```
 
-### Optional and Required Fields
+### Campos Opcionales y Obligatorios
 
-Entity fields can be defined as required or optional. Required fields are indicated by the `!` in the schema. If a required field is not set in the mapping, you will receive this error when querying the field:
+Los campos de la entidad pueden definirse como obligatorios u opcionales. Los campos obligatorios se indican con el `!` en el esquema. Si un campo obligatorio no está establecido en la asignación, recibirá este error al consultar el campo:
 
 ```
 Null value resolved for non-null field 'name'
 ```
 
-Each entity must have an `id` field, which is of type `ID!` (string). The `id` field serves as the primary key, and needs to be unique among all entities of the same type.
+Cada entidad debe tener un campo `id`, que es de tipo `ID!` (string). El campo `id` sirve de clave primaria y debe ser único entre todas las entidades del mismo tipo.
 
-### Built-In Scalar Types
+### Tipos de Scalars incorporados
 
-#### GraphQL Supported Scalars
+#### GraphQL admite Scalars
 
 We support the following scalars in our GraphQL API:
 
