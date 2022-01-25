@@ -9,11 +9,12 @@ import {
   extractLocaleFromPath,
   prependLocale,
   getPathWithLocale,
-} from '@/locale'
+  translations,
+} from '@/i18n'
 
-export const useLocale = () => {
+export const useI18n = () => {
   const router = useRouter()
-  const currentPath = router.pathname
+  const currentPath = router.asPath.split(/[?#]/)[0].replace(/\/$/, '')
   const { locale, pathWithoutLocale: currentPathWithoutLocale } = extractLocaleFromPath(currentPath)
   const currentLocale = locale ?? defaultLocale
   const currentLocaleDetails = localesDetails[currentLocale]
@@ -44,5 +45,6 @@ export const useLocale = () => {
     extractLocaleFromPath,
     getPathWithLocale,
     getPathWithCurrentLocale,
+    translations: translations[currentLocale],
   }
 }
