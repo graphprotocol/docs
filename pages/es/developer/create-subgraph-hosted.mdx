@@ -545,13 +545,13 @@ import { Gravatar } from '../generated/schema'
 
 La generación de código no comprueba tu código de mapeo en `src/mapping.ts`. Si quieres comprobarlo antes de intentar desplegar tu subgrafo en the Graph Explorer, puedes ejecutar `yarn build` y corregir cualquier error de sintaxis que el compilador de TypeScript pueda encontrar.
 
-## Data Source Templates
+## Plantillas de Fuentes de Datos
 
-A common pattern in Ethereum smart contracts is the use of registry or factory contracts, where one contract creates, manages or references an arbitrary number of other contracts that each have their own state and events. The addresses of these sub-contracts may or may not be known upfront and many of these contracts may be created and/or added over time. This is why, in such cases, defining a single data source or a fixed number of data sources is impossible and a more dynamic approach is needed: _data source templates_.
+Un patrón común en los contratos inteligentes de Ethereum es el uso de contratos de registro o fábrica, donde un contrato crea, gestiona o hace referencia a un número arbitrario de otros contratos que tienen cada uno su propio estado y eventos. Las direcciones de estos subcontratos pueden o no conocerse de antemano y muchos de estos contratos pueden crearse y/o añadirse con el tiempo. Por eso, en estos casos, es imposible definir una única fuente de datos o un número fijo de fuentes de datos y se necesita un enfoque más dinámico: _data source templates_.
 
-### Data Source for the Main Contract
+### Fuente de Datos para el Contrato Principal
 
-First, you define a regular data source for the main contract. The snippet below shows a simplified example data source for the [Uniswap](https://uniswap.io) exchange factory contract. Note the `NewExchange(address,address)` event handler. This is emitted when a new exchange contract is created on chain by the factory contract.
+En primer lugar, define una fuente de datos regular para el contrato principal. El siguiente fragmento muestra un ejemplo simplificado de fuente de datos para el contrato de fábrica de exchange [Uniswap](https://uniswap.io). Nota el handler `NewExchange(address,address)` del evento. Se emite cuando el contrato de fábrica crea un nuevo contrato de exchange en la cadena.
 
 ```yaml
 dataSources:
@@ -576,39 +576,45 @@ dataSources:
           handler: handleNewExchange
 ```
 
-### Data Source Templates for Dynamically Created Contracts
+### Plantillas de Fuentes de Datos para Contratos Creados Dinámicamente
 
-Then, you add _data source templates_ to the manifest. These are identical to regular data sources, except that they lack a predefined contract address under `source`. Typically, you would define one template for each type of sub-contract managed or referenced by the parent contract.
+A continuación, añade _plantillas de origen de datos_ al manifiesto. Son idénticas a las fuentes de datos normales, salvo que carecen de una dirección de contrato predefinida en `source`. Normalmente, defines un modelo para cada tipo de subcontrato gestionado o referenciado por el contrato principal.
 
 ```yaml
 dataSources:
   - kind: ethereum/contract
-    name: Gravity
-    network: dev
+    name: Factory
+    # ... other source fields for the main contract ...
+templates:
+  - name: Exchange
+    kind: ethereum/contract
+    network: mainnet
     source:
-      address: '0x731a10897d267e19b34503ad902d0a29173ba4b1'
-      abi:
-Gravity
+      abi: Exchange
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.6
       language: wasm/assemblyscript
+      file: ./src/mappings/exchange.ts
       entities:
-        - Gravatar
-        - Transaction
+        - Exchange
       abis:
-        - name: Gravity
-          file: ./abis/Gravity.json
-      blockHandlers:
-        - handler: handleBlock
-        - handler: handleBlockWithCallToContract
-          filter:
-            kind: call
+        - name: Exchange
+          file: ./abis/exchange.json
+      eventHandlers:
+        - event: TokenPurchase(address,uint256,uint256)
+          handler: handleTokenPurchase
+        - event: EthPurchase(address,uint256,uint256)
+          handler: handleEthPurchase
+        - event: AddLiquidity(address,uint256,uint256)
+          handler: handleAddLiquidity
+        - event: RemoveLiquidity(address,uint256,uint256)
+          handler: handleRemoveLiquidity
 ```
 
-### Instantiating a Data Source Template
+### Instanciación de una Plantilla de Fuente de Datos
 
-In the final step, you update your main contract mapping to create a dynamic data source instance from one of the templates. In this example, you would change the main contract mapping to import the `Exchange` template and call the `Exchange.create(address)` method on it to start indexing the new exchange contract.
+En el último paso, actualiza la asignación del contrato principal para crear una instancia de fuente de datos dinámica a partir de una de las plantillas. En este ejemplo, cambiarías el mapeo del contrato principal para importar la plantilla `Exchange` y llamaría al método `Exchange.create(address)` en él para empezar a indexar el nuevo contrato de exchange.
 
 ```typescript
 import { Exchange } from '../generated/templates'
@@ -620,13 +626,13 @@ export function handleNewExchange(event: NewExchange): void {
 }
 ```
 
-> **Note:** A new data source will only process the calls and events for the block in which it was created and all following blocks, but will not process historical data, i.e., data that is contained in prior blocks.
+> **Nota:** Un nuevo origen de datos sólo procesará las llamadas y los eventos del bloque en el que fue creado y todos los bloques siguientes, pero no procesará los datos históricos, es decir, los datos que están contenidos en bloques anteriores.
 > 
-> If prior blocks contain data relevant to the new data source, it is best to index that data by reading the current state of the contract and creating entities representing that state at the time the new data source is created.
+> Si los bloques anteriores contienen datos relevantes para la nueva fuente de datos, lo mejor es indexar esos datos leyendo el estado actual del contrato y creando entidades que representen ese estado en el momento de crear la nueva fuente de datos.
 
-### Data Source Context
+### Contexto de la Fuente de Datos
 
-Data source contexts allow passing extra configuration when instantiating a template. In our example, let's say exchanges are associated with a particular trading pair, which is included in the `NewExchange` event. That information can be passed into the instantiated data source, like so:
+Los contextos de fuentes de datos permiten pasar una configuración extra al instanciar una plantilla. In our example, let's say exchanges are associated with a particular trading pair, which is included in the `NewExchange` event. That information can be passed into the instantiated data source, like so:
 
 ```typescript
 import { Exchange } from '../generated/templates'
