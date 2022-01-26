@@ -218,7 +218,7 @@ Cada entidad debe tener un campo `id`, que es de tipo `ID!` (string). El campo `
 
 Admitimos los siguientes scalars en nuestra API GraphQL:
 
-| Tipo         | Descripcion                                                                                                                                                                                        |
+| Tipo         | Descripción                                                                                                                                                                                        |
 | ------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `Bytes`      | Byte array, representado como un string hexadecimal. Comúnmente utilizado para los hashes y addresses de Ethereum.                                                                                 |
 | `ID`         | Almacenado como un `string`.                                                                                                                                                                       |
@@ -250,117 +250,106 @@ Una entidad puede tener una relación con una o más entidades de tu esquema. Es
 
 Las relaciones se definen en las entidades como cualquier otro campo, salvo que el tipo especificado es el de otra entidad.
 
-#### One-To-One Relationships
+#### Relaciones Uno a Uno
 
-Define a `Transaction` entity type with an optional one-to-one relationship with a `TransactionReceipt` entity type:
+Define un tipo de entidad `Transaction` con una relación opcional de uno a uno con un tipo de entidad `TransactionReceipt`:
 
 ```graphql
 type Transaction @entity {
   id: ID!
-  ID!
   transactionReceipt: TransactionReceipt
 }
 
 type TransactionReceipt @entity {
   id: ID!
-  transaction:
-  Transaction
+  transaction: Transaction
 }
 ```
 
-#### One-To-Many Relationships
+#### Relaciones Uno-a-Muchos
 
-Define a `TokenBalance` entity type with a required one-to-many relationship with a Token entity type:
+Define un tipo de entidad `TokenBalance` con una relación requerida de uno a varios con un tipo de entidad Token:
 
 ```graphql
 type Token @entity {
-  id:
-ID!
+  id: ID!
 }
 
 type TokenBalance @entity {
-  id:
-  ID!
-  amount:
-  Int!
-  token:
+  id: ID!
+  amount: Int!
+  token: Token!
 }
 ```
 
-#### Reverse Lookups
+#### Búsquedas Inversas
 
-Reverse lookups can be defined on an entity through the `@derivedFrom` field. This creates a virtual field on the entity that may be queried but cannot be set manually through the mappings API. Rather, it is derived from the relationship defined on the other entity. For such relationships, it rarely makes sense to store both sides of the relationship, and both indexing and query performance will be better when only one side is stored and the other is derived.
+Se pueden definir búsquedas inversas en una entidad a través del campo `@derivedFrom`. Esto crea un campo virtual en la entidad que puede ser consultado pero que no puede ser establecido manualmente a través de la API de mapeo. Más bien, se deriva de la relación definida en la otra entidad. Para este tipo de relaciones, rara vez tiene sentido almacenar ambos lados de la relación, y tanto la indexación como el rendimiento de la consulta serán mejores cuando sólo se almacene un lado y el otro se derive.
 
-For one-to-many relationships, the relationship should always be stored on the 'one' side, and the 'many' side should always be derived. Storing the relationship this way, rather than storing an array of entities on the 'many' side, will result in dramatically better performance for both indexing and querying the subgraph. In general, storing arrays of entities should be avoided as much as is practical.
+En el caso de las relaciones uno a muchos, la relación debe almacenarse siempre en el lado "uno", y el lado "muchos" debe derivarse siempre. Almacenar la relación de esta manera, en lugar de almacenar una array de entidades en el lado "muchos", resultará en un rendimiento dramáticamente mejor tanto para la indexación como para la consulta del subgrafo. En general, debe evitarse, en la medida de lo posible, el almacenamiento de arrays de entidades.
 
-#### Example
+#### Ejemplo
 
-We can make the balances for a token accessible from the token by deriving a `tokenBalances` field:
+Podemos hacer que los balances de un token sean accesibles desde el token derivando un campo `tokenBalances`:
 
 ```graphql
 type Token @entity {
-  id:
-  ID!
+  id: ID!
   tokenBalances: [TokenBalance!]! @derivedFrom(field: "token")
 }
 
 type TokenBalance @entity {
-  id:
-  ID!
-  amount:
-  Int!
-  token:
+  id: ID!
+  amount: Int!
+  token: Token!
 }
 ```
 
-#### Many-To-Many Relationships
+#### Relaciones de Muchos a Muchos
 
-For many-to-many relationships, such as users that each may belong to any number of organizations, the most straightforward, but generally not the most performant, way to model the relationship is as an array in each of the two entities involved. If the relationship is symmetric, only one side of the relationship needs to be stored and the other side can be derived.
+Para las relaciones de muchos a muchos, como los usuarios pueden pertenecer a cualquier número de organizaciones, la forma más directa, pero generalmente no la más eficaz, de modelar la relación es como un array en cada una de las dos entidades implicadas. Si la relación es simétrica, sólo es necesario almacenar un lado de la relación y el otro puede derivarse.
 
-#### Example
+#### Ejemplo
 
-Define a reverse lookup from a `User` entity type to an `Organization` entity type. In the example below, this is achieved by looking up the `members` attribute from within the `Organization` entity. In queries, the `organizations` field on `User` will be resolved by finding all `Organization` entities that include the user's ID.
+Define una búsqueda inversa desde un tipo de entidad `User` a un tipo de entidad `Organization`. En el ejemplo siguiente, esto se consigue buscando el atributo `members` desde la entidad `Organization`. En las consultas, el campo `organizations` en `User` se resolverá buscando todas las entidades de `Organization` que incluyan el ID del usuario.
 
 ```graphql
 type Organization @entity {
-  id:
+  id: ID!
   name: String!
   members: [User!]!
-[User!]!
 }
 
 type User @entity {
-  id:
+  id: ID!
   name: String!
-  organizations: [Organization!]! [Organization!]! @derivedFrom(field: "members")
+  organizations: [Organization!]! @derivedFrom(field: "members")
 }
 ```
 
-A more performant way to store this relationship is through a mapping table that has one entry for each `User` / `Organization` pair with a schema like
+Una forma más eficaz de almacenar esta relación es a través de una tabla de asignación que tiene una entrada para cada par `User` / `Organization` con un esquema como
 
 ```graphql
 type Organization @entity {
-  id:
+  id: ID!
   name: String!
-  members: [UserOrganization]! [UserOrganization]! @derivedFrom(field: "user")
+  members: [UserOrganization]! @derivedFrom(field: "user")
 }
 
 type User @entity {
-  id:
+  id: ID!
   name: String!
-  organizations: [UserOrganization!] [UserOrganization!] @derivedFrom(field: "organization")
+  organizations: [UserOrganization!] @derivedFrom(field: "organization")
 }
 
 type UserOrganization @entity {
   id: ID! # Set to `${user.id}-${organization.id}`
   user: User!
-  organization:
-  Organization!
-}
+  organization: Organization!
 }
 ```
 
-This approach requires that queries descend into one additional level to retrieve, for example, the organizations for users:
+Este enfoque requiere que las consultas desciendan a un nivel adicional para recuperar, por ejemplo, las organizaciones para los usuarios:
 
 ```graphql
 query usersWithOrganizations {
@@ -375,28 +364,27 @@ query usersWithOrganizations {
 }
 ```
 
-This more elaborate way of storing many-to-many relationships will result in less data stored for the subgraph, and therefore to a subgraph that is often dramatically faster to index and to query.
+Esta forma más elaborada de almacenar las relaciones de muchos a muchos se traducirá en menos datos almacenados para el subgrafo y, por tanto, en un subgrafo que suele ser mucho más rápido de indexar y consultar.
 
-#### Adding comments to the schema
+#### Agregar comentarios al esquema
 
-As per GraphQL spec, comments can be added above schema entity attributes using double quotations `""`. This is illustrated in the example below:
+Según la especificación GraphQL, se pueden añadir comentarios por encima de los atributos de entidad del esquema utilizando comillas dobles `""`. Esto se ilustra en el siguiente ejemplo:
 
 ```graphql
 type MyFirstEntity @entity {
   "unique identifier and primary key of the entity"
-  id:
-  ID!
-  address:
+  id: ID!
+  address: Bytes!
 }
 ```
 
-## Defining Fulltext Search Fields
+## Definición de Campos de Búsqueda de Texto Completo
 
-Fulltext search queries filter and rank entities based on a text search input. Fulltext queries are able to return matches for similar words by processing the query text input into stems before comparing to the indexed text data.
+Las consultas de búsqueda de texto completo filtran y clasifican las entidades basándose en una entrada de búsqueda de texto. Las consultas de texto completo pueden devolver coincidencias de palabras similares procesando el texto de la consulta en stems antes de compararlo con los datos del texto indexado.
 
-A fulltext query definition includes the query name, the language dictionary used to process the text fields, the ranking algorithm used to order the results, and the fields included in the search. Each fulltext query may span multiple fields, but all included fields must be from a single entity type.
+La definición de una consulta de texto completo incluye el nombre de la consulta, el diccionario lingüístico utilizado para procesar los campos de texto, el algoritmo de clasificación utilizado para ordenar los resultados y los campos incluidos en la búsqueda. Cada consulta de texto completo puede abarcar varios campos, pero todos los campos incluidos deben ser de un solo tipo de entidad.
 
-To add a fulltext query, include a `_Schema_` type with a fulltext directive in the GraphQL schema.
+Para agregar una consulta de texto completo, incluye un tipo `_Schema_` con una directiva de texto completo en el esquema GraphQL.
 
 ```graphql
 type _Schema_
@@ -408,20 +396,14 @@ type _Schema_
   )
 
 type Band @entity {
-  id:
+  id: ID!
   name: String!
-  ID!
-  name: String!
-  description:
-  String!
+  description: String!
   bio: String
   wallet: Address
-  labels:
-  [Label!]!
-  discography:
-  [Album!]!
+  labels: [Label!]!
+  discography: [Album!]!
   members: [Musician!]!
-}
 }
 ```
 
@@ -469,7 +451,7 @@ Supported language dictionaries:
 
 Supported algorithms for ordering results:
 
-| Algorithm     | Descripcion                                                             |
+| Algorithm     | Descripción                                                             |
 | ------------- | ----------------------------------------------------------------------- |
 | rank          | Use the match quality (0-1) of the fulltext query to order the results. |
 | proximityRank | Similar to rank but also includes the proximity of the matches.         |
