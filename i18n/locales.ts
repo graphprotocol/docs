@@ -2,11 +2,12 @@ import { LocaleDetails } from './types'
 
 export enum Locale {
   English = 'en',
+  Spanish = 'es',
   Arabic = 'ar',
   Korean = 'ko',
   Chinese = 'zh',
   Japanese = 'ja',
-  Spanish = 'es',
+  Vietnamese = 'vi',
 }
 
 export const locales = Object.values(Locale)
@@ -17,6 +18,10 @@ export const localesDetails: {
   [Locale.English]: {
     displayName: 'English',
     shortName: 'EN',
+  },
+  [Locale.Spanish]: {
+    displayName: 'Español',
+    shortName: 'ES',
   },
   [Locale.Arabic]: {
     displayName: 'العربية',
@@ -34,9 +39,9 @@ export const localesDetails: {
     displayName: '日本語',
     shortName: 'JA',
   },
-  [Locale.Spanish]: {
-    displayName: 'Español',
-    shortName: 'ES',
+  [Locale.Vietnamese]: {
+    displayName: 'Tiếng Việt',
+    shortName: 'VI',
   },
 }
 
