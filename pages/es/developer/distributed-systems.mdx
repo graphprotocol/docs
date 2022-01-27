@@ -1,37 +1,37 @@
 ---
-title: Distributed Systems
+title: Sistemas Distribuidos
 ---
 
-The Graph is a protocol implemented as a distributed system.
+The Graph es un protocolo implementado como un sistema distribuido.
 
-Connections fail. Requests arrive out of order. Different computers with out-of-sync clocks and states process related requests. Servers restart. Re-orgs happen between requests. These problems are inherent to all distributed systems but are exacerbated in systems operating at a global scale.
+Las conexiones fallan. Las solicitudes llegan fuera de orden. Diferentes computadoras con relojes y estados desincronizados procesan solicitudes relacionadas. Los servidores se reinician. Las reorganizaciones se producen entre las solicitudes. Estos problemas son inherentes a todos los sistemas distribuidos, pero se agravan en los sistemas que funcionan a escala mundial.
 
-Consider this example of what may occur if a client polls an Indexer for the latest data during a re-org.
+Considera este ejemplo de lo que puede ocurrir si un cliente pregunta a un Indexador por los últimos datos durante una reorganización.
 
-1. Indexer ingests block 8
-2. Request served to the client for block 8
-3. Indexer ingests block 9
-4. Indexer ingests block 10A
-5. Request served to the client for block 10A
-6. Indexer detects reorg to 10B and rolls back 10A
-7. Request served to the client for block 9
-8. Indexer ingests block 10B
-9. Indexer ingests block 11
-10. Request served to the client for block 11
+1. El indexador ingiere el bloque 8
+2. Solicitud servida al cliente para el bloque 8
+3. El indexador ingiere el bloque 9
+4. El indexador ingiere el bloque 10A
+5. Solicitud servida al cliente para el bloque 10A
+6. El indexador detecta la reorganización a 10B y retrocede a 10A
+7. Solicitud servida al cliente para el bloque 9
+8. El indexador ingiere el bloque 10B
+9. El indexador ingiere el bloque 11
+10. Solicitud servida al cliente para el bloque 11
 
-From the point of view of the Indexer, things are progressing forward logically. Time is moving forward, though we did have to roll back an uncle block and play the block under consensus forward on top of it. Along the way, the Indexer serves requests using the latest state it knows about at that time.
+Desde el punto de vista del indexador, las cosas avanzan lógicamente. El tiempo avanza, aunque tuvimos que hacer retroceder un uncle bloque y jugar el bloque bajo el consenso hacia adelante en la parte superior. En el camino, el Indexador sirve las peticiones utilizando el último estado que conoce en ese momento.
 
-From the point of view of the client, however, things appear chaotic. The client observes that the responses were for blocks 8, 10, 9, and 11 in that order. We call this the "block wobble" problem. When a client experiences block wobble, data may appear to contradict itself over time. The situation worsens when we consider that Indexers do not all ingest the latest blocks simultaneously, and your requests may be routed to multiple Indexers.
+Sin embargo, desde el punto de vista del cliente, las cosas parecen caóticas. El cliente observa que las respuestas fueron para los bloques 8, 10, 9 y 11 en ese orden. Lo llamamos el problema del "block wobble" (bamboleo del bloque). Cuando un cliente experimenta un bamboleo de bloques, los datos pueden parecer contradecirse a lo largo del tiempo. La situación se agrava si tenemos en cuenta que no todos los indexadores ingieren los últimos bloques de forma simultánea, y tus peticiones pueden ser dirigidas a varios indexadores.
 
-It is the responsibility of the client and server to work together to provide consistent data to the user. Different approaches must be used depending on the desired consistency as there is no one right program for every problem.
+Es responsabilidad del cliente y del servidor trabajar juntos para proporcionar datos coherentes al usuario. Hay que utilizar diferentes enfoques en función de la coherencia deseada, ya que no existe un programa adecuado para todos los problemas.
 
-Reasoning through the implications of distributed systems is hard, but the fix may not be! We've established APIs and patterns to help you navigate some common use-cases. The following examples illustrate those patterns but still elide details required by production code (like error handling and cancellation) to not obfuscate the main ideas.
+Razonar las implicancias de los sistemas distribuidos es difícil, pero la solución puede no serlo! Hemos establecido APIs y patrones para ayudarte a navegar por algunos casos de uso comunes. Los siguientes ejemplos ilustran estos patrones pero eluden los detalles requeridos por el código de producción (como el manejo de errores y la cancelación) para no ofuscar las ideas principales.
 
-## Polling for updated data
+## Sondeo para obtener datos actualizados
 
-The Graph provides the `block: { number_gte: $minBlock }` API, which ensures that the response is for a single block equal or higher to `$minBlock`. If the request is made to a `graph-node` instance and the min block is not yet synced, `graph-node` will return an error. If `graph-node` has synced min block, it will run the response for the latest block. If the request is made to an Edge & Node Gateway, the Gateway will filter out any Indexers that have not yet synced min block and make the request for the latest block the Indexer has synced.
+The Graph proporciona la API `block: { number_gte: $minBlock }`, que asegura que la respuesta es para un solo bloque igual o superior a `$minBlock`. Si la petición se realiza a una instancia de `graph-node` y el bloque mínimo no está aún sincronizado, `graph-node` devolverá un error. Si `graph-node` ha sincronizado el bloque mínimo, ejecutará la respuesta para el último bloque. Si la solicitud se hace a un Edge & Node Gateway, el Gateway filtrará los Indexadores que aún no hayan sincronizado el bloque mínimo y hará la solicitud para el último bloque que el Indexador haya sincronizado.
 
-We can use `number_gte` to ensure that time never travels backward when polling for data in a loop. Here is an example:
+Podemos utilizar `number_gte` para asegurarnos de que el tiempo nunca viaja hacia atrás cuando se realizan sondeos de datos en un loop. Aquí hay un ejemplo:
 
 ```javascript
 /// Updates the protocol.paused variable to the latest
@@ -73,11 +73,11 @@ async function updateProtocolPaused() {
 }
 ```
 
-## Fetching a set of related items
+## Obtención de un conjunto de elementos relacionados
 
-Another use-case is retrieving a large set or, more generally, retrieving related items across multiple requests. Unlike the polling case (where the desired consistency was to move forward in time), the desired consistency is for a single point in time.
+Otro caso de uso es la recuperación de un conjunto grande o, más generalmente, la recuperación de elementos relacionados a través de múltiples solicitudes. A diferencia del caso del sondeo (en el que la coherencia deseada era avanzar en el tiempo), la coherencia deseada es para un único punto en el tiempo.
 
-Here we will use the `block: { hash: $blockHash }` argument to pin all of our results to the same block.
+Aquí utilizaremos el argumento `block: { hash: $blockHash }` para anclar todos nuestros resultados al mismo bloque.
 
 ```javascript
 /// Gets a list of domain names from a single block using pagination
@@ -129,4 +129,4 @@ async function getDomainNames() {
 }
 ```
 
-Note that in case of a re-org, the client will need to retry from the first request to update the block hash to a non-uncle block.
+Ten en cuenta que en caso de reorganización, el cliente tendrá que reintentar desde la primera solicitud para actualizar el hash del bloque a un non-uncle bloque.
