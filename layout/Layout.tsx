@@ -49,15 +49,19 @@ export const Layout = ({ children, ...props }: ContainerProps) => {
           <NavigationMarketing
             activeRoute="/docs"
             NextLink={NextLink}
-            rightAlignItems={[
-              <LanguageSwitcher
-                key="languageSwitcher"
-                languages={languages}
-                value={currentLocale}
-                onSelect={(locale) => setLocale(locale as Locale)}
-                label={translations.global.language}
-              />,
-            ]}
+            rightAlignItems={
+              [
+                /*
+                <LanguageSwitcher
+                  key="languageSwitcher"
+                  languages={languages}
+                  value={currentLocale}
+                  onSelect={(locale) => setLocale(locale as Locale)}
+                  label={translations.global.language}
+                />,
+              */
+              ]
+            }
           />
         </div>
         <main sx={{ flexGrow: 1 }}>{children}</main>
