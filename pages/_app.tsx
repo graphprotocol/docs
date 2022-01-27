@@ -18,9 +18,8 @@ const seo: DefaultSeoProps = {
     locale: defaultLocale,
     images: [
       {
-        // TODO: This image is wrong (Explorer, not Docs)
-        url: 'https://storage.googleapis.com/graph-website/Graph%20Explorer%20SEO.png',
-        alt: 'The Graph Docs',
+        url: 'https://storage.googleapis.com/graph-website/seo/graph-website.jpg',
+        alt: 'The Graph',
       },
     ],
   },
