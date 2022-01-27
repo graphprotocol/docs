@@ -11,8 +11,7 @@ COPY ./package.json /app/package.json
 COPY ./yarn.lock /app/yarn.lock
 
 # install the packages
-RUN --mount=type=secret,id=npmrc,dst=/root/.npmrc \
-  yarn install
+RUN yarn install
 
 # copy the rest
 COPY . .
