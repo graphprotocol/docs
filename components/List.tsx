@@ -1,7 +1,5 @@
 import { HTMLAttributes } from 'react'
-import { Spacing } from '@edgeandnode/components'
-
-import { Text, TextProps } from '@/components'
+import { Text, TextProps, Spacing } from '@edgeandnode/components'
 
 export type ListProps = Omit<
   Omit<TextProps, 'as'> & {

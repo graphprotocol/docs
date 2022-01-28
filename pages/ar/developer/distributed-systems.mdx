@@ -1,37 +1,37 @@
 ---
-title: Distributed Systems
+title: الانظمة الموزعة
 ---
 
-The Graph is a protocol implemented as a distributed system.
+The Graph هو بروتوكول يتم تنفيذه كنظام موزع.
 
-Connections fail. Requests arrive out of order. Different computers with out-of-sync clocks and states process related requests. Servers restart. Re-orgs happen between requests. These problems are inherent to all distributed systems but are exacerbated in systems operating at a global scale.
+فشل الاتصالات. وصول الطلبات خارج الترتيب. أجهزة الكمبيوتر المختلفة ذات الساعات والحالات غير المتزامنة تعالج الطلبات ذات الصلة. الخوادم تعيد التشغيل. حدوث عمليات Re-orgs بين الطلبات. هذه المشاكل متأصلة في جميع الأنظمة الموزعة ولكنها تتفاقم في الأنظمة التي تعمل على نطاق عالمي.
 
-Consider this example of what may occur if a client polls an Indexer for the latest data during a re-org.
+ضع في اعتبارك هذا المثال لما قد يحدث إذا قام العميل بـ polls للمفهرس للحصول على أحدث البيانات أثناء re-org.
 
-1. Indexer ingests block 8
-2. Request served to the client for block 8
-3. Indexer ingests block 9
-4. Indexer ingests block 10A
-5. Request served to the client for block 10A
-6. Indexer detects reorg to 10B and rolls back 10A
-7. Request served to the client for block 9
-8. Indexer ingests block 10B
-9. Indexer ingests block 11
-10. Request served to the client for block 11
+1. المفهرس يستوعب الكتلة 8
+2. تقديم الطلب للعميل للمجموعة 8
+3. يستوعب المفهرس الكتلة 9
+4. المفهرس يستوعب الكتلة 10A
+5. تقديم الطلب للعميل للكتلة 10A
+6. يكتشف المفهرس reorg لـ 10B ويسترجع 10A
+7. تقديم الطلب للعميل للكتلة 9
+8. المفهرس يستوعب الكتلة 10B
+9. المفهرس يستوعب الكتلة 11
+10. تقديم الطلب للعميل للكتلة 11
 
-From the point of view of the Indexer, things are progressing forward logically. Time is moving forward, though we did have to roll back an uncle block and play the block under consensus forward on top of it. Along the way, the Indexer serves requests using the latest state it knows about at that time.
+من وجهة نظر المفهرس ، تسير الأمور إلى الأمام بشكل منطقي. الوقت يمضي قدما ، على الرغم من أننا اضطررنا إلى التراجع عن كتلة الـ uncle وتشغيل الكتلة وفقا للاتفاق. على طول الطريق ، يقدم المفهرس الطلبات باستخدام أحدث حالة يعرفها في ذلك الوقت.
 
-From the point of view of the client, however, things appear chaotic. The client observes that the responses were for blocks 8, 10, 9, and 11 in that order. We call this the "block wobble" problem. When a client experiences block wobble, data may appear to contradict itself over time. The situation worsens when we consider that Indexers do not all ingest the latest blocks simultaneously, and your requests may be routed to multiple Indexers.
+لكن من وجهة نظر العميل ، تبدو الأمور مشوشة. يلاحظ العميل أن الردود كانت للكتل 8 و 10 و 9 و 11 بهذا الترتيب. نسمي هذا مشكلة "تذبذب الكتلة". عندما يواجه العميل تذبذبا في الكتلة ، فقد تظهر البيانات متناقضة مع نفسها بمرور الوقت. يزداد الموقف سوءا عندما نعتبر أن المفهرسين لا يستوعبون جميع الكتل الأخيرة في وقت واحد ، وقد يتم توجيه طلباتك إلى عدة مفهرسين.
 
-It is the responsibility of the client and server to work together to provide consistent data to the user. Different approaches must be used depending on the desired consistency as there is no one right program for every problem.
+تقع على عاتق العميل والخادم مسؤولية العمل معا لتوفير بيانات متسقة للمستخدم. يجب استخدام طرق مختلفة اعتمادا على الاتساق المطلوب حيث لا يوجد برنامج واحد مناسب لكل مشكلة.
 
-Reasoning through the implications of distributed systems is hard, but the fix may not be! We've established APIs and patterns to help you navigate some common use-cases. The following examples illustrate those patterns but still elide details required by production code (like error handling and cancellation) to not obfuscate the main ideas.
+الاستنتاج من خلال الآثار المترتبة على الأنظمة الموزعة أمر صعب ، لكن الإصلاح قد لا يكون كذلك! لقد أنشأنا APIs وأنماط لمساعدتك على تصفح بعض حالات الاستخدام الشائعة. توضح الأمثلة التالية هذه الأنماط ولكنها لا تزال تتجاهل التفاصيل التي يتطلبها كود الإنتاج (مثل معالجة الأخطاء والإلغاء) حتى لا يتم تشويش الأفكار الرئيسية.
 
-## Polling for updated data
+## Polling للبيانات المحدثة
 
-The Graph provides the `block: { number_gte: $minBlock }` API, which ensures that the response is for a single block equal or higher to `$minBlock`. If the request is made to a `graph-node` instance and the min block is not yet synced, `graph-node` will return an error. If `graph-node` has synced min block, it will run the response for the latest block. If the request is made to an Edge & Node Gateway, the Gateway will filter out any Indexers that have not yet synced min block and make the request for the latest block the Indexer has synced.
+The Graph يوفر `block: { number_gte: $minBlock }` API ، والتي تضمن أن تكون الاستجابة لكتلة واحدة تزيد أو تساوي `$minBlock`. إذا تم إجراء الطلب لـ `graph-node` instance ولم تتم مزامنة الكتلة الدنيا بعد ، فسيرجع `graph-node` بخطأ. إذا قام `graph-node` بمزامنة الكتلة الدنيا ، فسيتم تشغيل الاستجابة لأحدث كتلة. إذا تم تقديم الطلب إلى Edge & Node Gateway ، ستقوم الـ Gateway بفلترة المفهرسين الذين لم يقوموا بعد بمزامنة الكتلة الدنيا وتجعل الطلب لأحدث كتلة قام المفهرس بمزامنتها.
 
-We can use `number_gte` to ensure that time never travels backward when polling for data in a loop. Here is an example:
+يمكننا استخدام `number_gte` لضمان عدم عودة الوقت إلى الوراء عند عمل polling للبيانات في الحلقة. هنا مثال لذلك:
 
 ```javascript
 /// Updates the protocol.paused variable to the latest
@@ -73,11 +73,11 @@ async function updateProtocolPaused() {
 }
 ```
 
-## Fetching a set of related items
+## جلب مجموعة من العناصر المرتبطة
 
-Another use-case is retrieving a large set or, more generally, retrieving related items across multiple requests. Unlike the polling case (where the desired consistency was to move forward in time), the desired consistency is for a single point in time.
+حالة أخرى هي جلب مجموعة كبيرة أو بشكل عام جلب العناصر المرتبطة عبر طلبات متعددة. على عكس حالة الـ polling (حيث كان التناسق المطلوب هو المضي قدما في الزمن) ، فإن الاتساق المطلوب هو لنقطة واحدة في الزمن.
 
-Here we will use the `block: { hash: $blockHash }` argument to pin all of our results to the same block.
+هنا سوف نستخدم الوسيطة `block: { hash: $blockHash }` لتثبيت جميع نتائجنا في نفس الكتلة.
 
 ```javascript
 /// Gets a list of domain names from a single block using pagination
@@ -129,4 +129,4 @@ async function getDomainNames() {
 }
 ```
 
-Note that in case of a re-org, the client will need to retry from the first request to update the block hash to a non-uncle block.
+لاحظ أنه في حالة re-org ، سيحتاج العميل إلى إعادة المحاولة من الطلب الأول لتحديث hash الكتلة إلى كتلة non-uncle.

@@ -1,1 +1,1 @@
-export * from './useLocale'
+export * from './useI18n'

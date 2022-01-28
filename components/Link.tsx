@@ -1,9 +1,9 @@
 import { AnchorHTMLAttributes } from 'react'
 import NextLink, { LinkProps as NextLinkProps } from 'next/link'
-import { useTheme, buildShadow } from '@edgeandnode/components'
+import { useTheme, buildShadow, buildTransition } from '@edgeandnode/components'
 
-import { Locale } from '@/locale'
-import { useLocale } from '@/hooks'
+import { Locale } from '@/i18n'
+import { useI18n } from '@/hooks'
 
 export type LinkProps = Pick<NextLinkProps, 'replace' | 'scroll' | 'shallow' | 'prefetch'> &
   Omit<AnchorHTMLAttributes<HTMLAnchorElement>, 'href'> & {
@@ -12,7 +12,7 @@ export type LinkProps = Pick<NextLinkProps, 'replace' | 'scroll' | 'shallow' | '
   }
 
 export const Link = ({ href, replace, scroll, shallow, prefetch, target, children, locale, ...props }: LinkProps) => {
-  const { currentLocale, getPathWithLocale } = useLocale()
+  const { currentLocale, getPathWithLocale } = useI18n()
   const rel = target === '_blank' ? 'noopener' : undefined
 
   // If `href` is undefined or links to an anchor on the same page, bypass `NextLink`
@@ -74,7 +74,7 @@ export const LinkInline = (props: LinkProps) => {
           color: 'White',
           textShadow: buildShadow('S'),
         },
-        transition: 'background-position 200ms, color 200ms, text-shadow 200ms',
+        transition: buildTransition('background-position, color, text-shadow' as any),
       }}
       {...props}
     />

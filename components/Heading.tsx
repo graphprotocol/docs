@@ -1,11 +1,12 @@
 import { HTMLAttributes, useContext } from 'react'
-import { Spacing, Opacity, buildShadow, useUniqueId } from '@edgeandnode/components'
-import classnames from 'classnames'
+import { Text, TextProps, Spacing, Opacity, buildShadow, buildTransition, useUniqueId } from '@edgeandnode/components'
+import * as VisuallyHidden from '@radix-ui/react-visually-hidden'
 import { useInView } from 'react-intersection-observer'
 import { useDebounce } from 'react-use'
 
-import { Text, TextProps, LinkInline } from '@/components'
 import { DocumentContext } from '@/layout'
+import { LinkInline } from '@/components'
+import { useI18n } from '@/hooks'
 
 export type HeadingProps = TextProps & {
   level: 1 | 2 | 3 | 4 | 5 | 6
@@ -13,7 +14,7 @@ export type HeadingProps = TextProps & {
 
 export type HeadingSpecificProps = Omit<HeadingProps, 'level' | 'color'>
 
-export const Heading = ({ level, id, className, children, ...props }: HeadingProps) => {
+const BaseHeading = ({ level, id, className, children, ...props }: HeadingProps) => {
   const rootClass = useUniqueId('class')
   const { markOutlineItem } = useContext(DocumentContext)!
   const { ref, inView: inOrAboveView } = useInView({
@@ -28,15 +29,16 @@ export const Heading = ({ level, id, className, children, ...props }: HeadingPro
     100,
     [id, inOrAboveView, markOutlineItem]
   )
+  const { translations } = useI18n()
 
   return (
     <Text
-      innerRef={ref}
+      ref={ref}
       as={`h${level}`}
       id={id}
       weight="Semibold"
       color="White"
-      className={classnames(rootClass, className)}
+      className={`${rootClass} ${className}`}
       sx={{ whiteSpace: 'nowrap' }}
       {...props}
     >
@@ -46,24 +48,27 @@ export const Heading = ({ level, id, className, children, ...props }: HeadingPro
           sx={{
             ml: '0.35em',
             opacity: Opacity['0%'],
-            [`.${rootClass}:hover &`]: { opacity: Opacity['100%'] },
-            transition: 'opacity 200ms',
+            [`.${rootClass}:hover &, &:focus-within`]: { opacity: Opacity['100%'] },
+            transition: buildTransition('OPACITY'),
           }}
         >
-          <LinkInline href={`#${id}`}>#</LinkInline>
+          <LinkInline href={`#${id}`}>
+            <span aria-hidden="true">#</span>
+            <VisuallyHidden.Root>{translations.global.linkToThisSection}</VisuallyHidden.Root>
+          </LinkInline>
         </span>
       )}
     </Text>
   )
 }
 
-export const H1 = (props: HeadingSpecificProps) => {
-  return <Heading level={1} size="48px" sx={{ mb: Spacing.L, textShadow: buildShadow('L') }} {...props} />
+const H1 = (props: HeadingSpecificProps) => {
+  return <BaseHeading level={1} size="48px" sx={{ mb: Spacing.L, textShadow: buildShadow('L') }} {...props} />
 }
 
-export const H2 = (props: HeadingSpecificProps) => {
+const H2 = (props: HeadingSpecificProps) => {
   return (
-    <Heading
+    <BaseHeading
       level={2}
       size="32px"
       sx={{
@@ -76,26 +81,57 @@ export const H2 = (props: HeadingSpecificProps) => {
   )
 }
 
-export const H3 = (props: HeadingSpecificProps) => {
+const H3 = (props: HeadingSpecificProps) => {
   return (
-    <Heading level={3} size="24px" sx={{ mt: Spacing.XL, mb: Spacing.L_XL, textShadow: buildShadow('M') }} {...props} />
+    <BaseHeading
+      level={3}
+      size="24px"
+      sx={{ mt: Spacing.XL, mb: Spacing.L_XL, textShadow: buildShadow('M') }}
+      {...props}
+    />
   )
 }
 
-export const H4 = (props: HeadingSpecificProps) => {
+const H4 = (props: HeadingSpecificProps) => {
   return (
-    <Heading level={4} size="20px" sx={{ mt: Spacing.XL, mb: Spacing.L, textShadow: buildShadow('S') }} {...props} />
+    <BaseHeading
+      level={4}
+      size="20px"
+      sx={{ mt: Spacing.XL, mb: Spacing.L, textShadow: buildShadow('S') }}
+      {...props}
+    />
   )
 }
 
-export const H5 = (props: HeadingSpecificProps) => {
+const H5 = (props: HeadingSpecificProps) => {
   return (
-    <Heading level={5} size="18px" sx={{ mt: Spacing.XL, mb: Spacing.L, textShadow: buildShadow('S') }} {...props} />
+    <BaseHeading
+      level={5}
+      size="18px"
+      sx={{ mt: Spacing.XL, mb: Spacing.L, textShadow: buildShadow('S') }}
+      {...props}
+    />
   )
 }
 
-export const H6 = (props: HeadingSpecificProps) => {
+const H6 = (props: HeadingSpecificProps) => {
   return (
-    <Heading level={6} size="16px" sx={{ mt: Spacing.XL, mb: Spacing.L, textShadow: buildShadow('S') }} {...props} />
+    <BaseHeading
+      level={6}
+      size="16px"
+      sx={{ mt: Spacing.XL, mb: Spacing.L, textShadow: buildShadow('S') }}
+      {...props}
+    />
   )
 }
+
+const Heading = Object.assign({}, BaseHeading, {
+  H1,
+  H2,
+  H3,
+  H4,
+  H5,
+  H6,
+})
+
+export { Heading }

@@ -2,23 +2,17 @@ import { PropsWithChildren, createContext, Context, useMemo, useCallback } from 
 import { MDXProvider } from '@mdx-js/react'
 import Head from 'next/head'
 import { ThemeUIStyleObject } from 'theme-ui'
-import { Spacing } from '@edgeandnode/components'
+import { NewGDSDivider as Divider, NewGDSDividerProps as DividerProps, Spacing, Flex } from '@edgeandnode/components'
 import { useSet } from 'react-use'
 
 import { NavItem, NavItemPage } from '@/navigation'
-import { MDXLayoutNav, MDXLayoutPagination, MDXLayoutOutline, OutlineItem } from '@/layout'
+import { MDXLayoutNav, MDXLayoutPagination, MDXLayoutOutline } from '@/layout'
 import {
   Blockquote,
   CodeBlock,
   CodeInline,
-  Divider,
   EditPageLink,
-  H1,
-  H2,
-  H3,
-  H4,
-  H5,
-  H6,
+  Heading,
   Image,
   LinkInline,
   ListOrdered,
@@ -26,19 +20,19 @@ import {
   Paragraph,
   Table,
 } from '@/components'
-import { useLocale } from '@/hooks'
+import { useI18n } from '@/hooks'
 
 const mdxComponents = {
   blockquote: Blockquote,
   pre: CodeBlock,
   code: CodeInline,
-  hr: (props: any) => <Divider withVerticalMargin {...props} />,
-  h1: H1,
-  h2: H2,
-  h3: H3,
-  h4: H4,
-  h5: H5,
-  h6: H6,
+  hr: (props: DividerProps) => <Divider sx={{ my: Spacing.XL }} {...props} />,
+  h1: Heading.H1,
+  h2: Heading.H2,
+  h3: Heading.H3,
+  h4: Heading.H4,
+  h5: Heading.H5,
+  h6: Heading.H6,
   img: Image,
   a: LinkInline,
   ol: ListOrdered,
@@ -76,10 +70,18 @@ export type NavContextProps = {
 
 export const NavContext = createContext(null) as Context<NavContextProps | null>
 
+export type Frontmatter = {
+  title?: string
+}
+
+export type OutlineItem = {
+  id: string
+  title: string
+  level: 1 | 2 | 3 | 4 | 5 | 6
+}
+
 export type DocumentContextProps = {
-  frontmatter?: {
-    title?: string
-  }
+  frontmatter?: Frontmatter
   outline: OutlineItem[]
   markOutlineItem: (id: string, inOrAboveView: boolean) => void
   highlightedOutlineItemId: string | null
@@ -87,10 +89,12 @@ export type DocumentContextProps = {
 
 export const DocumentContext = createContext(null) as Context<DocumentContextProps | null>
 
-export type MDXLayoutProps = PropsWithChildren<NavContextProps & DocumentContextProps>
+export type MDXLayoutProps = PropsWithChildren<
+  Pick<NavContextProps, 'navItems'> & Pick<DocumentContextProps, 'frontmatter' | 'outline'>
+>
 
 export const MDXLayout = ({ navItems, frontmatter, outline, children }: MDXLayoutProps) => {
-  const { currentPathWithoutLocale } = useLocale()
+  const { currentPathWithoutLocale } = useI18n()
 
   // Compute some values for the `NavContext`
   const { pageNavItems, previousPage, currentPage, nextPage } = useMemo(() => {
@@ -150,7 +154,7 @@ export const MDXLayout = ({ navItems, frontmatter, outline, children }: MDXLayou
     <NavContext.Provider value={{ navItems, pageNavItems, previousPage, currentPage, nextPage }}>
       <DocumentContext.Provider value={{ frontmatter, outline, markOutlineItem, highlightedOutlineItemId }}>
         <Head>
-          <title>{frontmatter?.title} - The Graph Docs</title>
+          <title>{frontmatter?.title ? `${frontmatter.title} - ` : ''}The Graph Docs</title>
         </Head>
 
         <div
@@ -175,13 +179,13 @@ export const MDXLayout = ({ navItems, frontmatter, outline, children }: MDXLayou
             </div>
 
             <div sx={mdxStyles}>
-              {frontmatter?.title && <H1>{frontmatter.title}</H1>}
+              {frontmatter?.title && <Heading.H1>{frontmatter.title}</Heading.H1>}
               <MDXProvider components={mdxComponents}>{children}</MDXProvider>
             </div>
 
-            <div sx={{ display: ['flex', null, null, 'none'], mt: Spacing.XL_XXL }}>
+            <Flex.Row sx={{ display: [null, null, null, 'none'], mt: Spacing.XL_XXL }}>
               <EditPageLink mobile />
-            </div>
+            </Flex.Row>
 
             <div sx={{ mt: Spacing.XXL }}>
               <MDXLayoutPagination />

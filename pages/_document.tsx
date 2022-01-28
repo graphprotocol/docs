@@ -1,9 +1,9 @@
-import Document, { Html, Head, Main, NextScript } from 'next/document'
+import Document, { DocumentContext, Html, Head, Main, NextScript } from 'next/document'
 
-import { extractLocaleFromPath } from '@/locale'
+import { extractLocaleFromPath } from '@/i18n'
 
 export default class MyDocument extends Document {
-  static async getInitialProps(context: any) {
+  static async getInitialProps(context: DocumentContext) {
     const { locale } = extractLocaleFromPath(context.pathname)
     const initialProps = await Document.getInitialProps(context)
     return { ...initialProps, locale }

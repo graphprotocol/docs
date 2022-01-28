@@ -1,10 +1,11 @@
 import { PropsWithChildren, useState, useContext, Fragment } from 'react'
 import * as Collapsible from '@radix-ui/react-collapsible'
-import { Spacing, BorderRadius, FontWeight, Flex } from '@edgeandnode/components'
+import { Text, Flex, Icon, Spacing, BorderRadius, buildTransition } from '@edgeandnode/components'
 import { keyframes } from '@emotion/react'
 
 import { NavContext } from '@/layout'
-import { NavTree, Text, Icon } from '@/components'
+import { NavTree } from '@/components'
+import { useI18n } from '@/hooks'
 
 const animationExpand = keyframes({
   from: { height: 0 },
@@ -36,6 +37,8 @@ const DesktopWrapper = ({ children }: PropsWithChildren<{}>) => {
 
 const MobileWrapper = ({ title, children }: PropsWithChildren<{ title?: string }>) => {
   const [open, setOpen] = useState(false)
+  const { translations } = useI18n()
+
   return (
     <Collapsible.Root
       open={open}
@@ -48,13 +51,12 @@ const MobileWrapper = ({ title, children }: PropsWithChildren<{ title?: string }
           borderColor: 'White8',
           bg: 'White8',
         },
-        transition: 'border-color 200ms, background-color 200ms',
+        transition: buildTransition('COLORS'),
       }}
     >
       <Collapsible.Trigger
         sx={{
           width: 'calc(100% + 2px)',
-          height: '(100% + 2px)',
           m: '-1px',
           border: '1px solid transparent',
         }}
@@ -66,21 +68,19 @@ const MobileWrapper = ({ title, children }: PropsWithChildren<{ title?: string }
           gap={Spacing.L}
           sx={{ px: Spacing.L_XL, py: '20px' }}
         >
-          <Flex.Column as="span">
-            <Text size="10px" uppercase>
-              Docs
-            </Text>
+          <Flex.Column as="span" gap={Spacing.S}>
+            <Text.T10 color="White64">Docs</Text.T10>
             <Text size="16px">{title}</Text>
           </Flex.Column>
           <Flex.Column
             as="span"
             sx={{
-              flex: 'none',
+              flexShrink: 0,
               transform: open ? 'rotate(90deg)' : 'rotate(0deg)',
-              transition: 'transform 200ms',
+              transition: buildTransition('TRANSFORM'),
             }}
           >
-            <Icon icon="Caret" direction="right" />
+            <Icon.CaretRight title={open ? translations.global.collapse : translations.global.expand} />
           </Flex.Column>
         </Flex.Row>
       </Collapsible.Trigger>
@@ -88,7 +88,7 @@ const MobileWrapper = ({ title, children }: PropsWithChildren<{ title?: string }
         sx={{
           borderTop: 'White8',
           overflow: 'hidden',
-          animation: `${open ? animationExpand : animationCollapse} 200ms ease-out`,
+          animation: buildTransition((open ? animationExpand.toString() : animationCollapse.toString()) as any),
         }}
       >
         <div

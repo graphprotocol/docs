@@ -1,11 +1,11 @@
-import type { AppProps } from 'next/app'
+import { AppProps } from 'next/app'
 import { DefaultSeo, DefaultSeoProps } from 'next-seo'
 import { ThemeProvider } from '@edgeandnode/components'
 import '@edgeandnode/components/build/components.css'
 
 import { Layout } from '@/layout'
-import { useLocale } from '@/hooks'
-import { defaultLocale } from '@/locale'
+import { useI18n } from '@/hooks'
+import { defaultLocale } from '@/i18n'
 import { useEffect } from 'react'
 
 const seo: DefaultSeoProps = {
@@ -30,8 +30,8 @@ const seo: DefaultSeoProps = {
   },
 }
 
-export default function MyApp({ Component, pageProps }: AppProps) {
-  const { currentLocale } = useLocale()
+const MyApp = ({ Component, pageProps }: AppProps) => {
+  const { currentLocale } = useI18n()
 
   useEffect(() => {
     document.documentElement.lang = currentLocale
@@ -48,3 +48,5 @@ export default function MyApp({ Component, pageProps }: AppProps) {
     </ThemeProvider>
   )
 }
+
+export default MyApp

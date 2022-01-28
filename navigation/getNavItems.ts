@@ -1,13 +1,16 @@
 import { NavItem, NavItemDefinition, NavItemPromise, NavItemPage } from './types'
-import { navigation as definitions } from './navigation'
-import { Locale, defaultLocale } from '@/locale'
+import { navigation } from './navigation'
+import { Locale, defaultLocale } from '@/i18n'
+import { Frontmatter } from '@/layout'
 
 const navItemsPromiseByLocale: { [key in Locale]?: Promise<NavItem[]> } = {}
 
-export async function getNavItems(locale: Locale = defaultLocale): Promise<NavItem[]> {
+export const getNavItems = async (locale: Locale = defaultLocale): Promise<NavItem[]> => {
   let navItemsPromise = navItemsPromiseByLocale[locale]
 
   if (!navItemsPromise) {
+    const definitions = navigation(locale)
+
     navItemsPromise = (async () => {
       const handleDefinition = (definition: NavItemDefinition, parentPath?: string): NavItemPromise => {
         if ('divider' in definition) {
@@ -22,13 +25,36 @@ export async function getNavItems(locale: Locale = defaultLocale): Promise<NavIt
           }
         }
         return (async () => {
-          let title = typeof definition.title === 'object' ? definition.title[locale] : definition.title
-          if (!title && !isGroup) {
-            try {
-              const { frontmatter } = await import(`../pages/${locale}${path}${path.endsWith('/') ? 'index' : ''}.mdx`)
-              title = frontmatter?.title ?? title
-            } catch {
-              return null
+          let title = definition.title
+          if (!isGroup) {
+            const filePath = `${path}${path.endsWith('/') ? 'index' : ''}`
+            const filesToTry = [
+              `${locale}${filePath}.mdx`,
+              `${locale}${filePath}.tdx`,
+              `[locale]${filePath}.mdx`,
+              `[locale]${filePath}.tsx`,
+            ]
+            let currentTry = 0
+            while (true) {
+              try {
+                const fileToTry = filesToTry[currentTry]
+                const { frontmatter }: { frontmatter?: Frontmatter | ((locale: Locale) => Frontmatter) } = await import(
+                  `../pages/${fileToTry}`
+                )
+                if (!title && frontmatter) {
+                  if (typeof frontmatter === 'function') {
+                    title = frontmatter(locale).title
+                  } else {
+                    title = frontmatter.title
+                  }
+                }
+                break
+              } catch (error) {
+                currentTry++
+                if (currentTry >= filesToTry.length) {
+                  return null
+                }
+              }
             }
           }
           title = title ?? '[MISSING TITLE]'
@@ -51,8 +77,6 @@ export async function getNavItems(locale: Locale = defaultLocale): Promise<NavIt
       for (const definition of definitions) {
         promises.push(handleDefinition(definition))
       }
-
-      // TODO: Flatten `promises` and await Promise.all()
 
       const handlePromise = async (promise: NavItemPromise): Promise<NavItem | null> => {
         const item = await promise

@@ -1,17 +1,13 @@
 import { useContext } from 'react'
-import { Spacing } from '@edgeandnode/components'
+import { Text, Flex, NewGDSDivider as Divider, Spacing, buildTransition } from '@edgeandnode/components'
 
 import { DocumentContext } from '@/layout'
-import { Text, Link, EditPageLink } from '@/components'
-
-export type OutlineItem = {
-  id: string
-  title: string
-  level: 1 | 2 | 3 | 4 | 5 | 6
-}
+import { Link, EditPageLink } from '@/components'
+import { useI18n } from '@/hooks'
 
 export const MDXLayoutOutline = () => {
   const { outline, highlightedOutlineItemId } = useContext(DocumentContext)!
+  const { translations } = useI18n()
 
   if (outline.length === 0) {
     return <div />
@@ -29,18 +25,14 @@ export const MDXLayoutOutline = () => {
         overflowY: 'auto',
       }}
     >
-      <EditPageLink />
-      <aside
-        sx={{
-          mt: Spacing.XL,
-          pr: '16px',
-          pt: Spacing.XL,
-          borderTop: 'White16',
-        }}
-      >
-        <Text as="header" weight="Medium" size="10px" color="White64" uppercase sx={{ mb: Spacing.M }}>
-          Page Sections
-        </Text>
+      <Flex.Row>
+        <EditPageLink />
+      </Flex.Row>
+      <Divider simple sx={{ my: Spacing.XL }} />
+      <aside sx={{ pr: '16px' }}>
+        <Text.T10 as="header" color="White64" sx={{ mb: Spacing.M_L }}>
+          {translations.global.pageSections}
+        </Text.T10>
         <Text as="ul" role="list" size="14px" color="White48">
           {outline.map((outlineItem, outlineItemIndex) => {
             if (outlineItem.level > 3) {
@@ -56,7 +48,7 @@ export const MDXLayoutOutline = () => {
                     py: '6px',
                     color: outlineItem.id === highlightedOutlineItemId ? 'White88' : undefined,
                     '&:hover': { color: 'White' },
-                    transition: 'color 200ms',
+                    transition: buildTransition('COLORS'),
                   }}
                 >
                   {outlineItem.title}

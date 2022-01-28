@@ -1,18 +1,12 @@
 import { NavItemDefinition } from './types'
+import { Locale, translations } from '@/i18n'
 
-export const navigation: NavItemDefinition[] = [
+export const navigation: (locale: Locale) => NavItemDefinition[] = (locale) => [
   {
     slug: '',
   },
   {
-    title: {
-      en: 'About The Graph',
-      ar: 'حول The Graph',
-      ko: 'The Graph 소개',
-      zh: '关于 The Graph',
-      ja: 'The Graphについて',
-      es: 'Acerca de The Graph',
-    },
+    title: translations[locale].global.aboutTheGraph,
     slug: 'about',
     children: [
       {
@@ -27,14 +21,7 @@ export const navigation: NavItemDefinition[] = [
     divider: true,
   },
   {
-    title: {
-      en: 'Developer',
-      ar: 'مطور',
-      ko: '개발자',
-      zh: '开发商',
-      ja: 'デベロッパー',
-      es: 'Desarrollador',
-    },
+    title: translations[locale].global.developer,
     slug: 'developer',
     children: [
       {
@@ -133,14 +120,7 @@ export const navigation: NavItemDefinition[] = [
     divider: true,
   },
   {
-    title: {
-      en: 'Supported Networks',
-      ar: 'الشبكات المدعومة',
-      ko: '지원되는 네트워크',
-      zh: '支持的网络',
-      ja: 'サポートされているネットワーク',
-      es: 'Redes compatibles',
-    },
+    title: translations[locale].global.supportedNetworks,
     slug: 'supported-networks',
     children: [
       {
