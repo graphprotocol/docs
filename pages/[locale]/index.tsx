@@ -366,6 +366,12 @@ const Index = ({ navItems }: { navItems: NavItem[] }) => {
               href: 'https://aurora.dev/',
               beta: true,
             },
+            {
+              title: 'Moonbeam',
+              image: '/img/networks/moonbeam.svg',
+              href: 'https://moonbeam.network/',
+              beta: true,
+            },
           ].map((network, index) => (
             <Flex.Column as="li" key={index}>
               <Text as="div" size="14px" color="White48" sx={{ textAlign: 'center' }}>
