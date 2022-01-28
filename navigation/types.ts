@@ -1,4 +1,4 @@
-import { TranslatedString } from '@/locale'
+import { Translations } from '@/i18n'
 
 export type NavItemPage = {
   title: string
@@ -9,7 +9,7 @@ export type NavItemPage = {
 export type NavItemPagePromise = Promise<NavItemPage | null>
 
 export type NavItemPageDefinition = {
-  title?: string | TranslatedString
+  title?: string
   slug: string
 }
 
@@ -25,7 +25,7 @@ export type NavItemGroupPromise = Omit<NavItemGroup, 'children'> & {
 }
 
 export type NavItemGroupDefinition = Omit<NavItemGroup, 'title' | 'children'> & {
-  title: string | TranslatedString
+  title: string
   children: NavItemPageDefinition[]
 }
 

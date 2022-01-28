@@ -1,10 +1,21 @@
 import { HTMLAttributes, createContext, Context, useState, useContext } from 'react'
 import * as Collapsible from '@radix-ui/react-collapsible'
-import { Flex, Spacing, Opacity } from '@edgeandnode/components'
+import {
+  Diamond,
+  DiamondProps,
+  NewGDSDivider as Divider,
+  Text,
+  TextProps,
+  Flex,
+  Icon,
+  Spacing,
+  buildTransition,
+} from '@edgeandnode/components'
 import { keyframes } from '@emotion/react'
 import { SxProp } from 'theme-ui'
 
-import { Text, TextProps, Link, LinkProps, Icon, Diamond } from '@/components'
+import { Link, LinkProps } from '@/components'
+import { useI18n } from '@/hooks'
 
 const animationExpand = keyframes({
   from: { height: 0 },
@@ -23,7 +34,7 @@ export type NavTreeItemProps = HTMLAttributes<HTMLElement> &
   Pick<LinkProps, 'href' | 'target'> & {
     active?: boolean
     linkProps?: LinkProps & SxProp
-    diamondProps?: HTMLAttributes<HTMLElement> & SxProp
+    diamondProps?: DiamondProps & SxProp
   }
 export type NavTreeGroupProps = HTMLAttributes<HTMLElement> & {
   active?: boolean
@@ -64,9 +75,9 @@ const NavTreeItem = ({
           display: 'block',
           px: Spacing.L_XL,
           py: Spacing.M_L,
-          opacity: !active ? Opacity['64%'] : undefined,
-          '&:hover': { opacity: Opacity['100%'] },
-          transition: 'opacity 200ms',
+          color: active ? 'White88' : 'White64',
+          '&:hover': { color: 'White' },
+          transition: buildTransition('COLORS'),
           ...linkSx,
         }}
         {...linkOtherProps}
@@ -111,6 +122,8 @@ const NavTreeGroup = ({ active = false, children, ...props }: NavTreeGroupProps)
 const NavTreeGroupHeading = ({ children, buttonProps = {}, ...props }: NavTreeGroupHeadingProps) => {
   const { sx: buttonSx, ...buttonOtherProps } = buttonProps
   const context = useContext(NavTreeGroupContext)!
+  const { translations } = useI18n()
+
   return (
     <div sx={{ py: Spacing.M }} {...props}>
       <Collapsible.Trigger
@@ -118,9 +131,9 @@ const NavTreeGroupHeading = ({ children, buttonProps = {}, ...props }: NavTreeGr
           width: '100%',
           px: Spacing.L_XL,
           py: Spacing.M_L,
-          opacity: context.open || context.active ? Opacity['100%'] : Opacity['64%'],
-          '&:hover': { opacity: Opacity['100%'] },
-          transition: 'opacity 200ms',
+          color: context.open || context.active ? 'White88' : 'White64',
+          '&:hover': { color: 'White' },
+          transition: buildTransition('COLORS'),
           ...buttonSx,
         }}
         {...buttonOtherProps}
@@ -130,12 +143,15 @@ const NavTreeGroupHeading = ({ children, buttonProps = {}, ...props }: NavTreeGr
           <Flex.Column
             as="span"
             sx={{
-              flex: 'none',
+              flexShrink: 0,
               transform: context.open ? 'rotate(90deg)' : 'rotate(0deg)',
-              transition: 'transform 200ms',
+              transition: buildTransition('TRANSFORM'),
             }}
           >
-            <Icon icon="Caret" direction="right" />
+            <Icon.CaretRight
+              size={['16px', null, null, '14px']}
+              title={context.open ? translations.global.collapse : translations.global.expand}
+            />
           </Flex.Column>
         </Flex.Row>
       </Collapsible.Trigger>
@@ -149,7 +165,7 @@ const NavTreeGroupContent = ({ children, ...props }: NavTreeGroupContentProps) =
     <Collapsible.Content
       sx={{
         overflow: 'hidden',
-        animation: `${context.open ? animationExpand : animationCollapse} 200ms ease-out`,
+        animation: buildTransition((context.open ? animationExpand.toString() : animationCollapse.toString()) as any),
       }}
       {...props}
     >
@@ -161,7 +177,11 @@ const NavTreeGroupContent = ({ children, ...props }: NavTreeGroupContentProps) =
 }
 
 const NavTreeDivider = (props: NavTreeDividerProps) => {
-  return <li aria-hidden="true" sx={{ my: Spacing.M, borderTop: 'White16' }} {...props} />
+  return (
+    <li aria-hidden="true" sx={{ my: Spacing.M }} {...props}>
+      <Divider simple />
+    </li>
+  )
 }
 
 NavTree.Item = NavTreeItem

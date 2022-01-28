@@ -1,18 +1,30 @@
 import { HTMLAttributes } from 'react'
-import { Spacing, BorderRadius, Flex, Icon, buildShadow } from '@edgeandnode/components'
+import {
+  Text,
+  Flex,
+  Icon,
+  Spacing,
+  BorderRadius,
+  Opacity,
+  buildShadow,
+  buildTransition,
+  useUniqueId,
+} from '@edgeandnode/components'
 
-import { Text, Link } from '@/components'
-import { useLocale } from '@/hooks'
+import { Link } from '@/components'
+import { useI18n } from '@/hooks'
 
 export type EditPageLinkProps = {
   mobile?: boolean
 } & Omit<HTMLAttributes<HTMLElement>, 'children'>
 
 export const EditPageLink = ({ mobile = false, ...props }: EditPageLinkProps) => {
-  const { currentLocale, currentPathWithoutLocale } = useLocale()
+  const { currentLocale, currentPathWithoutLocale, translations } = useI18n()
+  const linkClass = useUniqueId('class')
 
   return (
     <Link
+      className={linkClass}
       href={`https://github.com/graphprotocol/docs/blob/main/pages/${currentLocale}${currentPathWithoutLocale}${
         currentPathWithoutLocale.endsWith('/') ? 'index' : ''
       }.mdx`}
@@ -22,14 +34,22 @@ export const EditPageLink = ({ mobile = false, ...props }: EditPageLinkProps) =>
         py: Spacing.S,
         borderRadius: BorderRadius.S,
         '&:hover': { color: 'White', textShadow: buildShadow('M') },
-        transition: 'color 200ms, text-shadow 200ms',
+        transition: buildTransition(),
       }}
+      {...props}
     >
       <Flex.Row as="span" align="center" gap={Spacing.M}>
         <Icon.LogoGitHub />
-        <Text weight={mobile ? 'Semibold' : 'Normal'} size={mobile ? '16px' : '14px'}>
-          Edit page
+        <Text weight="Semibold" size={mobile ? '16px' : '14px'}>
+          {translations.global.editPage}
         </Text>
+        <Icon.ExternalLink
+          sx={{
+            opacity: Opacity['0%'],
+            [`.${linkClass}:hover &`]: { opacity: Opacity['32%'] },
+            transition: buildTransition('OPACITY'),
+          }}
+        />
       </Flex.Row>
     </Link>
   )

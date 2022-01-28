@@ -1,44 +1,4 @@
-export enum Locale {
-  English = 'en',
-  Arabic = 'ar',
-  Korean = 'ko',
-  Chinese = 'zh',
-  Japanese = 'ja',
-  Spanish = 'es',
-}
-
-export type LocaleDetails = {
-  nativeName: string
-}
-
-export type TranslatedString = {
-  [key in Locale]: string
-}
-
-export const locales = Object.values(Locale)
-export const localesDetails: {
-  [key in Locale]: LocaleDetails
-} = {
-  [Locale.English]: {
-    nativeName: 'English',
-  },
-  [Locale.Arabic]: {
-    nativeName: 'العربية',
-  },
-  [Locale.Korean]: {
-    nativeName: '한국어',
-  },
-  [Locale.Chinese]: {
-    nativeName: '中文',
-  },
-  [Locale.Japanese]: {
-    nativeName: '日本語',
-  },
-  [Locale.Spanish]: {
-    nativeName: 'Español',
-  },
-}
-export const defaultLocale = Locale.English
+import { Locale, locales } from './locales'
 
 export const localeFromString = (str: string) => {
   let bestMatch = locales[0]

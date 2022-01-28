@@ -1,9 +1,9 @@
 import { useEffect } from 'react'
 import { useRouter } from 'next/router'
 
-import { localeFromBrowser } from '@/locale'
+import { localeFromBrowser } from '@/i18n'
 
-// Redirect to user’s preferred locale
+// Redirect to the user’s preferred locale
 const Index = () => {
   const router = useRouter()
 
