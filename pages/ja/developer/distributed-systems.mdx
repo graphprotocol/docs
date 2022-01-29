@@ -1,37 +1,37 @@
 ---
-title: Distributed Systems
+title: 分散システム
 ---
 
-The Graph is a protocol implemented as a distributed system.
+The Grapは、分散システムとして実装されたプロトコルです。
 
-Connections fail. Requests arrive out of order. Different computers with out-of-sync clocks and states process related requests. Servers restart. Re-orgs happen between requests. These problems are inherent to all distributed systems but are exacerbated in systems operating at a global scale.
+接続に失敗する。リクエストの順番が狂う。時計や状態が同期していない別のコンピュータが、関連するリクエストを処理する。サーバーが再起動する。リクエストとリクエストの間に「再衝突」が起こる。これらの問題は、すべての分散システムに固有のものですが、グローバルな規模で運用されているシステムでは、さらに悪化します。
 
-Consider this example of what may occur if a client polls an Indexer for the latest data during a re-org.
+re-org中にクライアントがインデクサに最新のデータを要求した場合の例を考えてみましょう。
 
-1. Indexer ingests block 8
-2. Request served to the client for block 8
-3. Indexer ingests block 9
-4. Indexer ingests block 10A
-5. Request served to the client for block 10A
-6. Indexer detects reorg to 10B and rolls back 10A
-7. Request served to the client for block 9
-8. Indexer ingests block 10B
-9. Indexer ingests block 11
-10. Request served to the client for block 11
+1. インデクサーがブロック8を取り込む
+2. クライアントにブロック8のリクエストを送信
+3. インデクサーがブロック9を取り込む
+4. インデクサーがブロック10Aを取り込む
+5. ブロック10Aのクライアントにリクエストが提供される
+6. インデクサーは10Bへのreorgを検出し、10Aをロールバックする
+7. ブロック9に対してクライアントへのリクエストを提供
+8. インデクサーがブロック10Bを取り込む
+9. インデクサーがブロック11を取り込む
+10. ブロック11のクライアントにリクエストを提供
 
-From the point of view of the Indexer, things are progressing forward logically. Time is moving forward, though we did have to roll back an uncle block and play the block under consensus forward on top of it. Along the way, the Indexer serves requests using the latest state it knows about at that time.
+インデクサーの視点では、物事が論理的に進んでいます。時間は進んでいますが、アンクルブロックを巻き戻して、その上にコンセンサス中のブロックを再生する必要がありました。その間、インデクサーは、その時点で知っている最新の状態を使ってリクエストに対応します。
 
-From the point of view of the client, however, things appear chaotic. The client observes that the responses were for blocks 8, 10, 9, and 11 in that order. We call this the "block wobble" problem. When a client experiences block wobble, data may appear to contradict itself over time. The situation worsens when we consider that Indexers do not all ingest the latest blocks simultaneously, and your requests may be routed to multiple Indexers.
+クライアントから見ると、事態は混沌としているように見えます。クライアントは、ブロック8、10、9、11の順に応答があったことを確認します。これを「block wobble」問題と呼んでいます。block wobbleが発生すると、データが時間とともに矛盾していくように見えることがあります。インデクサがすべての最新ブロックを同時に取り込むわけではないことを考えると、状況は悪化し、クライアントのリクエストは複数のインデクサーにルーティングされる可能性があります。
 
-It is the responsibility of the client and server to work together to provide consistent data to the user. Different approaches must be used depending on the desired consistency as there is no one right program for every problem.
+一貫性のあるデータをユーザーに提供するには、クライアントとサーバーが協力して取り組む必要があります。すべての問題に対して正しいプログラムは存在しないため、必要な一貫性に応じて異なるアプローチを使用する必要があります。
 
-Reasoning through the implications of distributed systems is hard, but the fix may not be! We've established APIs and patterns to help you navigate some common use-cases. The following examples illustrate those patterns but still elide details required by production code (like error handling and cancellation) to not obfuscate the main ideas.
+分散システムの意味を理解するのは難しいですが、解決するのは難しいことではありません。私たちは、一般的な使用例をナビゲートするためのAPIとパターンを確立しました。以下の例では、これらのパターンを説明していますが、本番コードで必要とされる詳細（エラー処理やキャンセルなど）は省略していますので、主旨を理解していただくことはできません。
 
-## Polling for updated data
+## 更新データのポーリング
 
-The Graph provides the `block: { number_gte: $minBlock }` API, which ensures that the response is for a single block equal or higher to `$minBlock`. If the request is made to a `graph-node` instance and the min block is not yet synced, `graph-node` will return an error. If `graph-node` has synced min block, it will run the response for the latest block. If the request is made to an Edge & Node Gateway, the Gateway will filter out any Indexers that have not yet synced min block and make the request for the latest block the Indexer has synced.
+Graphは次のような`ブロック: { number_gte: $minBlock }`APIを提供しています。これは、レスポンスが`$minBlock`と同じかそれ以上の単一ブロックに対するものであることを保証するものです。リクエストが `graph-node`のインスタンスに対して行われ、min block がまだ同期されていない場合、`graph-node`はエラーを返します。`graph-node`が最小ブロックを同期している場合は、最新のブロックに対するレスポンスを実行します。Edge & Node Gatewayにリクエストが行われた場合、Edge & Node Gatewayは、min blockをまだ同期していないインデクサーをフィルタリングし、インデクサーが同期した最新ブロックのリクエストを行います。
 
-We can use `number_gte` to ensure that time never travels backward when polling for data in a loop. Here is an example:
+ループの中でデータをポーリングする際に、時間が後ろに移動しないように`number_gte`を使用することができます。以下にその例を示します:
 
 ```javascript
 /// Updates the protocol.paused variable to the latest
@@ -73,11 +73,11 @@ async function updateProtocolPaused() {
 }
 ```
 
-## Fetching a set of related items
+## 関連するアイテムのセットの取得
 
-Another use-case is retrieving a large set or, more generally, retrieving related items across multiple requests. Unlike the polling case (where the desired consistency was to move forward in time), the desired consistency is for a single point in time.
+もうひとつのケースは、大規模なセットを取得することで、一般的には、複数のリクエストにわたって関連するアイテムを取得するケースです。ポーリングの場合（時間を進めて一貫性を保つ必要があった）とは異なり、必要な一貫性はある時点でのものです。
 
-Here we will use the `block: { hash: $blockHash }` argument to pin all of our results to the same block.
+ここでは、 `block: { hash: $blockHash }`引数を使用して、すべての結果を同じブロックに固定します。
 
 ```javascript
 /// Gets a list of domain names from a single block using pagination
@@ -129,4 +129,4 @@ async function getDomainNames() {
 }
 ```
 
-Note that in case of a re-org, the client will need to retry from the first request to update the block hash to a non-uncle block.
+なお、re-orgが発生した場合、クライアントは最初のリクエストから再試行して、ブロックハッシュをアンクルではないブロックに更新する必要があります。
