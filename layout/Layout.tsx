@@ -48,7 +48,9 @@ export const Layout = ({ children }: PropsWithChildren<{}>) => {
             <NavigationMarketing
               activeRoute="/docs"
               NextLink={NextLink}
-              rightAlignItems={[
+              rightAlignItems={
+                [
+                  /*
                 <LanguageSwitcher
                   key="languageSwitcher"
                   languages={languages}
@@ -56,7 +58,9 @@ export const Layout = ({ children }: PropsWithChildren<{}>) => {
                   onSelect={(locale) => setLocale(locale as Locale)}
                   label={translations.global.language}
                 />,
-              ]}
+                */
+                ]
+              }
             />
           </Container>
         </div>
