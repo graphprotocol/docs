@@ -1,4 +1,4 @@
-import { HTMLAttributes } from 'react'
+import { HTMLAttributes, useContext } from 'react'
 import {
   Text,
   Flex,
@@ -11,6 +11,7 @@ import {
   useUniqueId,
 } from '@edgeandnode/components'
 
+import { NavContext } from '@/layout'
 import { Link } from '@/components'
 import { useI18n } from '@/hooks'
 
@@ -19,15 +20,14 @@ export type EditPageLinkProps = {
 } & Omit<HTMLAttributes<HTMLElement>, 'children'>
 
 export const EditPageLink = ({ mobile = false, ...props }: EditPageLinkProps) => {
-  const { currentLocale, currentPathWithoutLocale, translations } = useI18n()
+  const { pagePath } = useContext(NavContext)!
+  const { translations } = useI18n()
   const linkClass = useUniqueId('class')
 
   return (
     <Link
       className={linkClass}
-      href={`https://github.com/graphprotocol/docs/blob/main/pages/${currentLocale}${currentPathWithoutLocale}${
-        currentPathWithoutLocale.endsWith('/') ? 'index' : ''
-      }.mdx`}
+      href={`https://github.com/graphprotocol/docs/blob/main/pages/${pagePath}`}
       target="_blank"
       sx={{
         display: 'block',
