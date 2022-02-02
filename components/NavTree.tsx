@@ -3,7 +3,7 @@ import * as Collapsible from '@radix-ui/react-collapsible'
 import {
   Diamond,
   DiamondProps,
-  NewGDSDivider as Divider,
+  NewGDSDivider,
   Text,
   TextProps,
   Flex,
@@ -47,8 +47,8 @@ export type NavTreeDividerProps = Omit<HTMLAttributes<HTMLElement>, 'children'>
 
 const NavTree = ({ children, textProps, ...props }: NavTreeProps) => {
   return (
-    <Flex.Column {...props}>
-      <Text weight="Semibold" size="14px" as="ul" role="list" {...textProps}>
+    <Flex.Column as="nav" {...props}>
+      <Text weight="Semibold" size="14px" as="ul" {...textProps}>
         {children}
       </Text>
     </Flex.Column>
@@ -169,9 +169,7 @@ const NavTreeGroupContent = ({ children, ...props }: NavTreeGroupContentProps) =
       }}
       {...props}
     >
-      <ul role="list" sx={{ pl: Spacing.L }}>
-        {children}
-      </ul>
+      <ul sx={{ pl: Spacing.L }}>{children}</ul>
     </Collapsible.Content>
   )
 }
@@ -179,7 +177,7 @@ const NavTreeGroupContent = ({ children, ...props }: NavTreeGroupContentProps) =
 const NavTreeDivider = (props: NavTreeDividerProps) => {
   return (
     <li aria-hidden="true" sx={{ my: Spacing.M }} {...props}>
-      <Divider simple />
+      <NewGDSDivider simple />
     </li>
   )
 }

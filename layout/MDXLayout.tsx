@@ -2,7 +2,7 @@ import { PropsWithChildren, createContext, Context, useMemo, useCallback } from 
 import { MDXProvider } from '@mdx-js/react'
 import Head from 'next/head'
 import { ThemeUIStyleObject } from 'theme-ui'
-import { NewGDSDivider as Divider, NewGDSDividerProps as DividerProps, Spacing, Flex } from '@edgeandnode/components'
+import { NewGDSDivider, NewGDSDividerProps, Spacing, Flex } from '@edgeandnode/components'
 import { useSet } from 'react-use'
 
 import { NavItem, NavItemPage } from '@/navigation'
@@ -26,7 +26,7 @@ const mdxComponents = {
   blockquote: Blockquote,
   pre: CodeBlock,
   code: CodeInline,
-  hr: (props: DividerProps) => <Divider sx={{ my: Spacing.XL }} {...props} />,
+  hr: (props: NewGDSDividerProps) => <NewGDSDivider sx={{ my: Spacing.XL }} {...props} />,
   h1: Heading.H1,
   h2: Heading.H2,
   h3: Heading.H3,
@@ -160,11 +160,11 @@ export const MDXLayout = ({ navItems, frontmatter, outline, children }: MDXLayou
         <div
           sx={{
             display: ['flex', null, null, 'grid'],
-            gridTemplateColumns: '232px auto 216px',
+            gridTemplateColumns: '216px auto 216px',
             flexDirection: 'column',
           }}
         >
-          <div sx={{ display: ['none', null, null, 'block'], ml: '-8px', mr: '32px' }}>
+          <div sx={{ display: ['none', null, null, 'block'], ml: '-8px', mr: '24px' }}>
             <MDXLayoutNav />
           </div>
 
@@ -192,7 +192,7 @@ export const MDXLayout = ({ navItems, frontmatter, outline, children }: MDXLayou
             </div>
           </div>
 
-          <div sx={{ display: ['none', null, null, 'block'], ml: '48px', mr: '-8px' }}>
+          <div sx={{ display: ['none', null, null, 'block'], ml: '40px', mr: '-8px' }}>
             <MDXLayoutOutline />
           </div>
         </div>

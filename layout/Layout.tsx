@@ -1,12 +1,12 @@
-import { useMemo } from 'react'
+import { PropsWithChildren, useMemo } from 'react'
 import NextLink from 'next/link'
 import { NavigationMarketing, Footer, LanguageSwitcher, Flex, objectEntries } from '@edgeandnode/components'
 
-import { Container, ContainerProps } from '@/components'
+import { Container } from '@/components'
 import { useI18n } from '@/hooks'
 import { Locale } from '@/i18n'
 
-export const Layout = ({ children, ...props }: ContainerProps) => {
+export const Layout = ({ children }: PropsWithChildren<{}>) => {
   const { currentLocale, localesDetails, setLocale, translations } = useI18n()
 
   const languages = useMemo(
@@ -21,7 +21,7 @@ export const Layout = ({ children, ...props }: ContainerProps) => {
   )
 
   return (
-    <Container {...props}>
+    <div>
       <div
         sx={{
           position: 'absolute',
@@ -40,33 +40,37 @@ export const Layout = ({ children, ...props }: ContainerProps) => {
       />
       <Flex.Column
         sx={{
-          mx: 'auto',
-          maxWidth: '1288px',
           minHeight: '100vh',
         }}
       >
         <div sx={{ flexShrink: 0 }}>
-          <NavigationMarketing
-            activeRoute="/docs"
-            NextLink={NextLink}
-            rightAlignItems={[
-              <LanguageSwitcher
-                key="languageSwitcher"
-                languages={languages}
-                value={currentLocale}
-                onSelect={(locale) => setLocale(locale as Locale)}
-                label={translations.global.language}
-              />,
-            ]}
-          />
+          <Container sx={{ '--container-padding': '32px' }}>
+            <NavigationMarketing
+              activeRoute="/docs"
+              NextLink={NextLink}
+              rightAlignItems={[
+                <LanguageSwitcher
+                  key="languageSwitcher"
+                  languages={languages}
+                  value={currentLocale}
+                  onSelect={(locale) => setLocale(locale as Locale)}
+                  label={translations.global.language}
+                />,
+              ]}
+            />
+          </Container>
         </div>
-        <main sx={{ flexGrow: 1 }}>{children}</main>
+        <main sx={{ flexGrow: 1 }}>
+          <Container>{children}</Container>
+        </main>
         <div sx={{ flexShrink: 0 }}>
-          <div sx={{ mx: 'auto', maxWidth: [null, null, null, 'calc(100vw - 500px)'] }}>
-            <Footer />
-          </div>
+          <Container>
+            <div sx={{ mx: 'auto', maxWidth: [null, null, null, 'calc(100vw - 500px)'] }}>
+              <Footer />
+            </div>
+          </Container>
         </div>
       </Flex.Column>
-    </Container>
+    </div>
   )
 }
