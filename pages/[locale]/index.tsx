@@ -52,7 +52,12 @@ const Index = ({ navItems }: { navItems: NavItem[] }) => {
   const { currentLocale, translations } = useI18n()
 
   return (
-    <MDXLayout navItems={navItems} frontmatter={frontmatter(currentLocale)} outline={outline}>
+    <MDXLayout
+      pagePath="[locale]/index.tsx"
+      navItems={navItems}
+      frontmatter={frontmatter(currentLocale)}
+      outline={outline}
+    >
       <Paragraph>{translations.index.intro}</Paragraph>
       <ul
         sx={{

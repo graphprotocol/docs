@@ -61,6 +61,7 @@ const mdxStyles = {
 } as ThemeUIStyleObject
 
 export type NavContextProps = {
+  pagePath: string
   navItems: NavItem[]
   pageNavItems: NavItemPage[]
   previousPage: NavItemPage | null
@@ -90,10 +91,10 @@ export type DocumentContextProps = {
 export const DocumentContext = createContext(null) as Context<DocumentContextProps | null>
 
 export type MDXLayoutProps = PropsWithChildren<
-  Pick<NavContextProps, 'navItems'> & Pick<DocumentContextProps, 'frontmatter' | 'outline'>
+  Pick<NavContextProps, 'pagePath' | 'navItems'> & Pick<DocumentContextProps, 'frontmatter' | 'outline'>
 >
 
-export const MDXLayout = ({ navItems, frontmatter, outline, children }: MDXLayoutProps) => {
+export const MDXLayout = ({ pagePath, navItems, frontmatter, outline, children }: MDXLayoutProps) => {
   const { currentPathWithoutLocale } = useI18n()
 
   // Compute some values for the `NavContext`
@@ -151,7 +152,7 @@ export const MDXLayout = ({ navItems, frontmatter, outline, children }: MDXLayou
   }, [outline, outlineItemIsInOrAboveView])
 
   return (
-    <NavContext.Provider value={{ navItems, pageNavItems, previousPage, currentPage, nextPage }}>
+    <NavContext.Provider value={{ pagePath, navItems, pageNavItems, previousPage, currentPage, nextPage }}>
       <DocumentContext.Provider value={{ frontmatter, outline, markOutlineItem, highlightedOutlineItemId }}>
         <Head>
           <title>{frontmatter?.title ? `${frontmatter.title} - ` : ''}The Graph Docs</title>
