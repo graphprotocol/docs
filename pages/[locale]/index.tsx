@@ -88,7 +88,7 @@ const Index = ({ navItems }: { navItems: NavItem[] }) => {
           {
             title: translations.index.shortcuts.queryFromAnApplication.title,
             description: translations.index.shortcuts.queryFromAnApplication.description,
-            href: '/developer/querying-from-your-app'
+            href: '/developer/querying-from-your-app',
           },
           {
             title: translations.index.shortcuts.createASubgraph.title,
