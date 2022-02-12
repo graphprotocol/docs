@@ -11,7 +11,7 @@ export const MDXLayoutPagination = () => {
 
   return (
     <div sx={{ overflow: 'hidden' }}>
-      <NewGDSDivider />
+      <NewGDSDivider diamonds />
       <Flex.Row justify="space-between" sx={{ mt: Spacing.XL }}>
         <div>
           {previousPage && (
@@ -30,7 +30,7 @@ export const MDXLayoutPagination = () => {
               <Flex.Column align="start" gap={Spacing.S} sx={{ textAlign: 'left' }}>
                 <Flex.Row align="center" gap={Spacing.S}>
                   <Icon.ArrowLeft size="12px" />
-                  <Text.T10>{translations.global.previous}</Text.T10>
+                  <Text.S10>{translations.global.previous}</Text.S10>
                 </Flex.Row>
                 <Text
                   weight="Semibold"
@@ -67,7 +67,7 @@ export const MDXLayoutPagination = () => {
             >
               <Flex.Column align="end" gap={Spacing.S} sx={{ textAlign: 'right' }}>
                 <Flex.Row align="center" gap={Spacing.S}>
-                  <Text.T10>{translations.global.next}</Text.T10>
+                  <Text.S10>{translations.global.next}</Text.S10>
                   <Icon.ArrowRight size="12px" />
                 </Flex.Row>
                 <Text

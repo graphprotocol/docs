@@ -20,6 +20,19 @@ export const Layout = ({ children }: PropsWithChildren<{}>) => {
     [localesDetails]
   )
 
+  const languageSwitcher = useMemo(
+    () => (
+      <LanguageSwitcher
+        key="languageSwitcher"
+        languages={languages}
+        value={currentLocale}
+        onSelect={(locale) => setLocale(locale as Locale)}
+        label={translations.global.language}
+      />
+    ),
+    [languages, currentLocale, setLocale, translations]
+  )
+
   return (
     <div>
       <div
@@ -32,7 +45,6 @@ export const Layout = ({ children }: PropsWithChildren<{}>) => {
           backgroundImage: `url('${process.env.NEXT_PUBLIC_BASE_PATH}/img/page-background.png')`,
           backgroundSize: 'cover',
           backgroundPosition: 'center top',
-          backgroundRepeat: 'no-repeat',
           '@media (min-width: 1440px)': {
             aspectRatio: '1440/768',
           },
@@ -45,19 +57,7 @@ export const Layout = ({ children }: PropsWithChildren<{}>) => {
       >
         <div sx={{ flexShrink: 0 }}>
           <Container sx={{ '--container-padding': '32px' }}>
-            <NavigationMarketing
-              activeRoute="/docs"
-              NextLink={NextLink}
-              rightAlignItems={[
-                <LanguageSwitcher
-                  key="languageSwitcher"
-                  languages={languages}
-                  value={currentLocale}
-                  onSelect={(locale) => setLocale(locale as Locale)}
-                  label={translations.global.language}
-                />,
-              ]}
-            />
+            <NavigationMarketing activeRoute="/docs" NextLink={NextLink} rightAlignItems={[languageSwitcher]} />
           </Container>
         </div>
         <main sx={{ flexGrow: 1 }}>
@@ -66,7 +66,7 @@ export const Layout = ({ children }: PropsWithChildren<{}>) => {
         <div sx={{ flexShrink: 0 }}>
           <Container>
             <div sx={{ mx: 'auto', maxWidth: [null, null, null, 'calc(100vw - 500px)'] }}>
-              <Footer />
+              <Footer languageSwitcher={languageSwitcher} />
             </div>
           </Container>
         </div>
