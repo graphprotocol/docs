@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import { GetStaticPaths, GetStaticProps } from 'next'
 import { Text, Flex, Spacing, BorderRadius, buildBorder, buildShadow, buildTransition } from '@edgeandnode/components'
 
@@ -10,24 +11,6 @@ import { useI18n } from '@/hooks'
 export const frontmatter = (locale: Locale): Frontmatter => ({
   title: translations[locale].index.title,
 })
-
-const outline: OutlineItem[] = [
-  {
-    id: 'network-roles',
-    title: 'Network Roles',
-    level: 2,
-  },
-  {
-    id: 'products',
-    title: 'Products',
-    level: 2,
-  },
-  {
-    id: 'supported-networks',
-    title: 'Supported Networks',
-    level: 2,
-  },
-]
 
 export const getStaticPaths: GetStaticPaths = async () => {
   return {
@@ -50,6 +33,27 @@ export const getStaticProps: GetStaticProps = async (context) => {
 
 const Index = ({ navItems }: { navItems: NavItem[] }) => {
   const { currentLocale, translations } = useI18n()
+
+  const outline: OutlineItem[] = useMemo(
+    () => [
+      {
+        id: 'network-roles',
+        title: translations.index.networkRoles.title,
+        level: 2,
+      },
+      {
+        id: 'products',
+        title: translations.index.products.title,
+        level: 2,
+      },
+      {
+        id: 'supported-networks',
+        title: translations.index.supportedNetworks.title,
+        level: 2,
+      },
+    ],
+    [translations]
+  )
 
   return (
     <MDXLayout
