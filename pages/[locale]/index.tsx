@@ -52,10 +52,14 @@ const Index = ({ navItems }: { navItems: NavItem[] }) => {
   const { currentLocale, translations } = useI18n()
 
   return (
-    <MDXLayout navItems={navItems} frontmatter={frontmatter(currentLocale)} outline={outline}>
+    <MDXLayout
+      pagePath="[locale]/index.tsx"
+      navItems={navItems}
+      frontmatter={frontmatter(currentLocale)}
+      outline={outline}
+    >
       <Paragraph>{translations.index.intro}</Paragraph>
       <ul
-        role="list"
         sx={{
           mb: '96px',
           display: 'grid',
@@ -84,6 +88,7 @@ const Index = ({ navItems }: { navItems: NavItem[] }) => {
           {
             title: translations.index.shortcuts.queryFromAnApplication.title,
             description: translations.index.shortcuts.queryFromAnApplication.description,
+            href: '/developer/querying-from-your-app'
           },
           {
             title: translations.index.shortcuts.createASubgraph.title,
@@ -132,7 +137,6 @@ const Index = ({ navItems }: { navItems: NavItem[] }) => {
       <Heading.H2 id="network-roles">{translations.index.networkRoles.title}</Heading.H2>
       <Paragraph>{translations.index.networkRoles.description}</Paragraph>
       <ul
-        role="list"
         sx={{
           mt: Spacing.XL,
           mb: '128px',
@@ -186,7 +190,6 @@ const Index = ({ navItems }: { navItems: NavItem[] }) => {
 
       <Heading.H2 id="products">{translations.index.products.title}</Heading.H2>
       <ul
-        role="list"
         sx={{
           mt: Spacing.XL,
           mb: '128px',
@@ -233,7 +236,6 @@ const Index = ({ navItems }: { navItems: NavItem[] }) => {
       <div sx={{ mt: Spacing.XXL }}>
         <Heading.H4>{translations.index.supportedNetworks.graphNetworkAndHostedService}</Heading.H4>
         <ul
-          role="list"
           sx={{
             mt: Spacing.L_XL,
             display: 'grid',
@@ -279,7 +281,6 @@ const Index = ({ navItems }: { navItems: NavItem[] }) => {
         <Heading.H4>{translations.index.supportedNetworks.hostedService}</Heading.H4>
         <Paragraph>*{translations.index.supportedNetworks.betaWarning}</Paragraph>
         <ul
-          role="list"
           sx={{
             mt: Spacing.XL,
             display: 'grid',

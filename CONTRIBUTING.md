@@ -10,6 +10,8 @@ Most of our docs are written in Markdown. If you are not familiar with Markdown,
 
 Direct contributions are much appreciated for simple things (corrections, small additions to existing content). If the change is more complex, we encourage you to start a discussion in GitHub Issues or Discord first.
 
+Change proposals should only be made to the English language version of pages, as translations are handled by [Crowdin](https://crowdin.com/). If you spot an issue with a translation, please do open an issue to let us know!
+
 ## Making changes
 
 Once you located the file that you want to update, click on “Edit” which will create a new forked repo. You can make your edits there, and submit a PR. Alternatively, you can manually fork the repo, create a branch in your fork and make all the edits you want before submitting a PR.

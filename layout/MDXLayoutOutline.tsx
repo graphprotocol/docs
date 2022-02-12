@@ -29,11 +29,11 @@ export const MDXLayoutOutline = () => {
         <EditPageLink />
       </Flex.Row>
       <Divider simple sx={{ my: Spacing.XL }} />
-      <aside sx={{ pr: '16px' }}>
+      <nav sx={{ pr: '16px' }}>
         <Text.T10 as="header" color="White64" sx={{ mb: Spacing.M_L }}>
           {translations.global.pageSections}
         </Text.T10>
-        <Text as="ul" role="list" size="14px" color="White48">
+        <Text as="ul" size="14px" color="White48">
           {outline.map((outlineItem, outlineItemIndex) => {
             if (outlineItem.level > 3) {
               return null
@@ -57,7 +57,7 @@ export const MDXLayoutOutline = () => {
             )
           })}
         </Text>
-      </aside>
+      </nav>
     </div>
   )
 }
