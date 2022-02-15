@@ -58,9 +58,6 @@ export const navigation: (locale: Locale) => NavItemDefinition[] = (locale) => [
         slug: 'matchstick',
       },
       {
-        slug: 'subgraph-debug-forking',
-      },
-      {
         slug: 'deprecating-a-subgraph',
       },
       {
