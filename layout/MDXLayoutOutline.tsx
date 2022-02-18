@@ -3,7 +3,7 @@ import { Text, Flex, NewGDSDivider, Spacing, buildTransition } from '@edgeandnod
 
 import { DocumentContext } from '@/layout'
 import { Link, EditPageLink } from '@/components'
-import { useI18n } from '@/hooks'
+import { useI18n } from '@/i18n'
 
 export const MDXLayoutOutline = () => {
   const { outline, highlightedOutlineItemId } = useContext(DocumentContext)!

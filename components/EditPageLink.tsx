@@ -13,7 +13,7 @@ import {
 
 import { NavContext } from '@/layout'
 import { Link } from '@/components'
-import { useI18n } from '@/hooks'
+import { useI18n } from '@/i18n'
 
 export type EditPageLinkProps = {
   mobile?: boolean

@@ -14,7 +14,7 @@ import { keyframes } from '@emotion/react'
 import { SxProp } from 'theme-ui'
 
 import { Link, LinkProps } from '@/components'
-import { useI18n } from '@/hooks'
+import { useI18n } from '@/i18n'
 
 const animationExpand = keyframes({
   from: { height: 0 },

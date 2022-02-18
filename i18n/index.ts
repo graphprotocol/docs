@@ -1,4 +1,6 @@
-export * from './types'
+export * from './I18nContext'
 export * from './locales'
 export * from './translations'
+export * from './types'
+export * from './useI18n'
 export * from './utils'

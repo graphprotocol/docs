@@ -1,38 +1,20 @@
 import { useMemo } from 'react'
-import { GetStaticPaths, GetStaticProps } from 'next'
+import { NextPage } from 'next'
 import { Text, Flex, Spacing, BorderRadius, buildBorder, buildShadow, buildTransition } from '@edgeandnode/components'
 
 import { MDXLayout, Frontmatter, OutlineItem } from '@/layout'
 import { Heading, Image, Link, LinkInline, Paragraph } from '@/components'
 import { getNavItems, NavItem } from '@/navigation'
-import { Locale, translations } from '@/i18n'
-import { useI18n } from '@/hooks'
+import { useI18n, translations, Locale } from '@/i18n'
 
 export const frontmatter = (locale: Locale): Frontmatter => ({
   title: translations[locale].index.title,
 })
 
-export const getStaticPaths: GetStaticPaths = async () => {
-  return {
-    paths: Object.values(Locale).map((locale) => ({
-      params: { locale },
-    })),
-    fallback: false,
-  }
-}
+type IndexProps = { navItems: NavItem[] }
 
-export const getStaticProps: GetStaticProps = async (context) => {
-  const navItems = await getNavItems(context.params?.locale as Locale)
-
-  return {
-    props: {
-      navItems,
-    },
-  }
-}
-
-const Index = ({ navItems }: { navItems: NavItem[] }) => {
-  const { currentLocale, translations } = useI18n()
+const Index: NextPage<IndexProps> = ({ navItems }: IndexProps) => {
+  const { locale, translations } = useI18n()
 
   const outline: OutlineItem[] = useMemo(
     () => [
@@ -56,12 +38,7 @@ const Index = ({ navItems }: { navItems: NavItem[] }) => {
   )
 
   return (
-    <MDXLayout
-      pagePath="[locale]/index.tsx"
-      navItems={navItems}
-      frontmatter={frontmatter(currentLocale)}
-      outline={outline}
-    >
+    <MDXLayout pagePath="index.tsx" navItems={navItems} frontmatter={frontmatter(locale)} outline={outline}>
       <Paragraph>{translations.index.intro}</Paragraph>
       <ul
         sx={{
@@ -407,6 +384,17 @@ const Index = ({ navItems }: { navItems: NavItem[] }) => {
       </div>
     </MDXLayout>
   )
+}
+
+// TODO: Make DRY
+Index.getInitialProps = async (context) => {
+  const locale = context.query.locale as Locale
+  const navItems = await getNavItems(locale)
+
+  return {
+    locale,
+    navItems,
+  }
 }
 
 export default Index

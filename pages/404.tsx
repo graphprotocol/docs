@@ -1,9 +1,10 @@
+import { NextPage } from 'next'
 import { NotFound, Spacing } from '@edgeandnode/components'
 
 import { LinkInline } from '@/components'
-import { useI18n } from '@/hooks'
+import { useI18n } from '@/i18n'
 
-const Page = () => {
+const NotFoundPage: NextPage<{}> = () => {
   const { translations } = useI18n()
 
   return (
@@ -17,4 +18,4 @@ const Page = () => {
   )
 }
 
-export default Page
+export default NotFoundPage

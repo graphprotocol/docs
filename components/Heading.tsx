@@ -6,7 +6,7 @@ import { useDebounce } from 'react-use'
 
 import { DocumentContext } from '@/layout'
 import { LinkInline } from '@/components'
-import { useI18n } from '@/hooks'
+import { useI18n } from '@/i18n'
 
 export type HeadingProps = TextProps & {
   level: 1 | 2 | 3 | 4 | 5 | 6

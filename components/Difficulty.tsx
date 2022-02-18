@@ -1,4 +1,4 @@
-import { useI18n } from '@/hooks'
+import { useI18n } from '@/i18n'
 
 // TODO: Refactor this component
 export const Difficulty = ({ level }: { level: string }) => {

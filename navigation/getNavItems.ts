@@ -27,13 +27,8 @@ export const getNavItems = async (locale: Locale = defaultLocale): Promise<NavIt
         return (async () => {
           let title = definition.title
           if (!isGroup) {
-            const filePath = `${path}${path.endsWith('/') ? 'index' : ''}`
-            const filesToTry = [
-              `${locale}${filePath}.mdx`,
-              `${locale}${filePath}.tdx`,
-              `[locale]${filePath}.mdx`,
-              `[locale]${filePath}.tsx`,
-            ]
+            const filePath = `${path.replace(/^\//, '')}${path.endsWith('/') ? 'index' : ''}`
+            const filesToTry = [`${locale}/${filePath}.mdx`, `${locale}/${filePath}.tsx`, `${filePath}.tsx`]
             let currentTry = 0
             while (true) {
               try {

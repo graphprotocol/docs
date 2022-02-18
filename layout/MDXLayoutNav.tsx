@@ -5,7 +5,7 @@ import { keyframes } from '@emotion/react'
 
 import { NavContext } from '@/layout'
 import { NavTree } from '@/components'
-import { useI18n } from '@/hooks'
+import { useI18n } from '@/i18n'
 
 const animationExpand = keyframes({
   from: { height: 0 },

@@ -1,23 +1,5 @@
 import { Locale, locales } from './locales'
 
-export const localeFromString = (str: string) => {
-  let bestMatch = locales[0]
-
-  for (const locale of locales) {
-    if (locale === str) {
-      return locale
-    } else if (str.startsWith(locale)) {
-      bestMatch = locale
-    }
-  }
-
-  return bestMatch
-}
-
-export const localeFromBrowser = () => {
-  return localeFromString(window?.navigator?.language || locales[0])
-}
-
 export const extractLocaleFromPath = (path: string) => {
   const pathSegments = path.split('/')
   pathSegments.shift()

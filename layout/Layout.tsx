@@ -3,11 +3,10 @@ import NextLink from 'next/link'
 import { NavigationMarketing, Footer, LanguageSwitcher, Flex, objectEntries } from '@edgeandnode/components'
 
 import { Container } from '@/components'
-import { useI18n } from '@/hooks'
-import { Locale } from '@/i18n'
+import { useI18n, Locale } from '@/i18n'
 
 export const Layout = ({ children }: PropsWithChildren<{}>) => {
-  const { currentLocale, localesDetails, setLocale, translations } = useI18n()
+  const { locale, localesDetails, setLocale, translations } = useI18n()
 
   const languages = useMemo(
     () =>
@@ -25,12 +24,12 @@ export const Layout = ({ children }: PropsWithChildren<{}>) => {
       <LanguageSwitcher
         key="languageSwitcher"
         languages={languages}
-        value={currentLocale}
+        value={locale}
         onSelect={(locale) => setLocale(locale as Locale)}
         label={translations.global.language}
       />
     ),
-    [languages, currentLocale, setLocale, translations]
+    [languages, locale, setLocale, translations]
   )
 
   return (
@@ -42,7 +41,7 @@ export const Layout = ({ children }: PropsWithChildren<{}>) => {
           right: 0,
           top: 0,
           minHeight: '768px',
-          backgroundImage: `url('${process.env.NEXT_PUBLIC_BASE_PATH}/img/page-background.png')`,
+          backgroundImage: `url('${process.env.BASE_PATH}/img/page-background.png')`,
           backgroundSize: 'cover',
           backgroundPosition: 'center top',
           '@media (min-width: 1440px)': {
