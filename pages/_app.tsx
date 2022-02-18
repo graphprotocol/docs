@@ -1,4 +1,4 @@
-import { useCallback } from 'react'
+import { createContext, Context, useMemo, useCallback, useEffect } from 'react'
 import { AppProps } from 'next/app'
 import { DefaultSeo, DefaultSeoProps } from 'next-seo'
 import { useRouter } from 'next/router'
@@ -6,8 +6,7 @@ import { ThemeProvider } from '@edgeandnode/components'
 import '@edgeandnode/components/build/components.css'
 
 import { Layout } from '@/layout'
-import { I18nContextProvider, defaultLocale, Locale, extractLocaleFromPath, prependLocale } from '@/i18n'
-import { useEffect } from 'react'
+import { I18nContextProvider, defaultLocale, Locale } from '@/i18n'
 
 const seo: DefaultSeoProps = {
   title: 'The Graph Docs',
@@ -31,40 +30,47 @@ const seo: DefaultSeoProps = {
   },
 }
 
+export const AppContext = createContext(null) as Context<{
+  pathWithoutPrefix: string
+} | null>
+
 const MyApp = ({ Component, pageProps }: AppProps) => {
   const router = useRouter()
-  const { locale, pathWithoutLocale } = extractLocaleFromPath(router.pathname)
-  const currentLocale = locale ?? pageProps.locale ?? defaultLocale
+  const locale = pageProps.locale
 
-  console.log({ routerPathname: router.pathname })
-  console.log({ pathWithoutLocale })
-  console.log({ locale })
-  console.log({ pagePropsLocale: pageProps.locale })
-  console.log({ defaultLocale })
-  console.log({ currentLocale })
-
-  useEffect(() => {
-    document.documentElement.lang = currentLocale
-  }, [currentLocale])
-
-  seo.openGraph!.locale = currentLocale
+  const pathWithoutPrefix = useMemo(() => {
+    const pathParts = router.asPath.split(/[?#]/)[0].split('/').filter(Boolean)
+    pathParts.shift() // remove the locale
+    for (let i = 0; i < (process.env.APP_PREFIX!.match(/\//g)?.length ?? 0); i++) {
+      pathParts.shift() // remove the app prefix
+    }
+    return `/${pathParts.join('/')}`
+  }, [router])
 
   const setLocale = useCallback(
     (locale: Locale) => {
-      router.push(prependLocale(pathWithoutLocale, locale))
+      router.push(`/${locale}${process.env.APP_PREFIX}${pathWithoutPrefix}`)
     },
-    [router, pathWithoutLocale]
+    [router, pathWithoutPrefix]
   )
 
+  useEffect(() => {
+    document.documentElement.lang = locale
+  }, [locale])
+
+  seo.openGraph!.locale = locale
+
   return (
-    <I18nContextProvider locale={currentLocale} setLocale={setLocale}>
-      <ThemeProvider>
-        <DefaultSeo {...seo} />
-        <Layout>
-          <Component {...pageProps} />
-        </Layout>
-      </ThemeProvider>
-    </I18nContextProvider>
+    <AppContext.Provider value={{ pathWithoutPrefix }}>
+      <I18nContextProvider locale={locale} setLocale={setLocale}>
+        <ThemeProvider>
+          <DefaultSeo {...seo} />
+          <Layout>
+            <Component {...pageProps} />
+          </Layout>
+        </ThemeProvider>
+      </I18nContextProvider>
+    </AppContext.Provider>
   )
 }
 

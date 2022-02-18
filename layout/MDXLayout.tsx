@@ -1,11 +1,11 @@
-import { PropsWithChildren, createContext, Context, useMemo, useCallback } from 'react'
-import { useRouter } from 'next/router'
+import { PropsWithChildren, createContext, Context, useContext, useMemo, useCallback } from 'react'
 import Head from 'next/head'
 import { MDXProvider } from '@mdx-js/react'
 import { ThemeUIStyleObject } from 'theme-ui'
 import { NewGDSDivider, NewGDSDividerProps, Spacing, Flex } from '@edgeandnode/components'
 import { useSet } from 'react-use'
 
+import { AppContext } from '@/pages/_app'
 import { NavItem, NavItemPage } from '@/navigation'
 import { MDXLayoutNav, MDXLayoutPagination, MDXLayoutOutline } from '@/layout'
 import {
@@ -21,7 +21,6 @@ import {
   Paragraph,
   Table,
 } from '@/components'
-import { extractLocaleFromPath } from '@/i18n'
 
 const mdxComponents = {
   blockquote: Blockquote,
@@ -96,8 +95,7 @@ export type MDXLayoutProps = PropsWithChildren<
 >
 
 export const MDXLayout = ({ pagePath, navItems, frontmatter, outline, children }: MDXLayoutProps) => {
-  const router = useRouter()
-  const { pathWithoutLocale } = extractLocaleFromPath(router.pathname)
+  const { pathWithoutPrefix } = useContext(AppContext)!
 
   // Compute some values for the `NavContext`
   const { pageNavItems, previousPage, currentPage, nextPage } = useMemo(() => {
@@ -115,7 +113,7 @@ export const MDXLayout = ({ pagePath, navItems, frontmatter, outline, children }
     })
     let pageNavItemIndex = 0
     for (const pageNavItem of pageNavItems) {
-      if (pageNavItem.path === pathWithoutLocale) {
+      if (pageNavItem.path === pathWithoutPrefix) {
         previousPage = pageNavItems[pageNavItemIndex - 1] ?? null
         currentPage = pageNavItems[pageNavItemIndex] ?? null
         nextPage = pageNavItems[pageNavItemIndex + 1] ?? null
@@ -123,7 +121,7 @@ export const MDXLayout = ({ pagePath, navItems, frontmatter, outline, children }
       pageNavItemIndex++
     }
     return { pageNavItems, previousPage, currentPage, nextPage }
-  }, [navItems, pathWithoutLocale])
+  }, [navItems, pathWithoutPrefix])
 
   // Provide `markOutlineItem` to the `DocumentContext` so child `Heading` components can mark outline items as "in or above view" or not
   const [

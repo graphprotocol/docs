@@ -7,12 +7,3 @@ export const extractLocaleFromPath = (path: string) => {
   const pathWithoutLocale = `/${pathSegments.join('/')}`
   return { locale, pathWithoutLocale }
 }
-
-export const prependLocale = (path: string, locale: Locale) => {
-  return `/${locale}${path}`
-}
-
-export const getPathWithLocale = (path: string, locale: Locale) => {
-  const { pathWithoutLocale } = extractLocaleFromPath(path)
-  return prependLocale(pathWithoutLocale, locale)
-}

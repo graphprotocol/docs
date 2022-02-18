@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { NextPage } from 'next'
+import { GetStaticPaths, GetStaticProps, NextPage } from 'next'
 import { Text, Flex, Spacing, BorderRadius, buildBorder, buildShadow, buildTransition } from '@edgeandnode/components'
 
 import { MDXLayout, Frontmatter, OutlineItem } from '@/layout'
@@ -10,6 +10,29 @@ import { useI18n, translations, Locale } from '@/i18n'
 export const frontmatter = (locale: Locale): Frontmatter => ({
   title: translations[locale].index.title,
 })
+
+// TODO: Make DRY
+export const getStaticPaths: GetStaticPaths = async () => {
+  return {
+    paths: Object.values(Locale).map((locale) => ({
+      params: { locale },
+    })),
+    fallback: false,
+  }
+}
+
+// TODO: Make DRY
+export const getStaticProps: GetStaticProps = async (context) => {
+  const locale = context.params!.locale as Locale
+  const navItems = await getNavItems(locale)
+
+  return {
+    props: {
+      locale,
+      navItems,
+    },
+  }
+}
 
 type IndexProps = { navItems: NavItem[] }
 
@@ -38,7 +61,12 @@ const Index: NextPage<IndexProps> = ({ navItems }: IndexProps) => {
   )
 
   return (
-    <MDXLayout pagePath="index.tsx" navItems={navItems} frontmatter={frontmatter(locale)} outline={outline}>
+    <MDXLayout
+      pagePath={`[locale]${process.env.APP_PREFIX}/index.tsx`}
+      navItems={navItems}
+      frontmatter={frontmatter(locale)}
+      outline={outline}
+    >
       <Paragraph>{translations.index.intro}</Paragraph>
       <ul
         sx={{
@@ -384,17 +412,6 @@ const Index: NextPage<IndexProps> = ({ navItems }: IndexProps) => {
       </div>
     </MDXLayout>
   )
-}
-
-// TODO: Make DRY
-Index.getInitialProps = async (context) => {
-  const locale = context.query.locale as Locale
-  const navItems = await getNavItems(locale)
-
-  return {
-    locale,
-    navItems,
-  }
 }
 
 export default Index

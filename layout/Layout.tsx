@@ -41,7 +41,7 @@ export const Layout = ({ children }: PropsWithChildren<{}>) => {
           right: 0,
           top: 0,
           minHeight: '768px',
-          backgroundImage: `url('${process.env.BASE_PATH}/img/page-background.png')`,
+          backgroundImage: `url('${process.env.ASSET_PREFIX}/img/page-background.png')`,
           backgroundSize: 'cover',
           backgroundPosition: 'center top',
           '@media (min-width: 1440px)': {
