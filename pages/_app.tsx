@@ -1,4 +1,4 @@
-import { createContext, Context, useMemo, useCallback, useEffect } from 'react'
+import { useMemo, useCallback, useEffect } from 'react'
 import { AppProps } from 'next/app'
 import { DefaultSeo, DefaultSeoProps } from 'next-seo'
 import { useRouter } from 'next/router'
@@ -6,7 +6,7 @@ import { ThemeProvider } from '@edgeandnode/components'
 import '@edgeandnode/components/build/components.css'
 
 import { Layout } from '@/layout'
-import { I18nContextProvider, defaultLocale, Locale } from '@/i18n'
+import { I18nContextProvider, defaultLocale, extractLocaleFromPath, Locale } from '@/i18n'
 
 const seo: DefaultSeoProps = {
   title: 'The Graph Docs',
@@ -30,28 +30,22 @@ const seo: DefaultSeoProps = {
   },
 }
 
-export const AppContext = createContext(null) as Context<{
-  pathWithoutPrefix: string
-} | null>
-
 const MyApp = ({ Component, pageProps }: AppProps) => {
   const router = useRouter()
-  const locale = pageProps.locale
 
-  const pathWithoutPrefix = useMemo(() => {
-    const pathParts = router.asPath.split(/[?#]/)[0].split('/').filter(Boolean)
-    pathParts.shift() // remove the locale
-    for (let i = 0; i < (process.env.APP_PREFIX!.match(/\//g)?.length ?? 0); i++) {
-      pathParts.shift() // remove the app prefix
+  const { locale, pathWithoutLocale } = useMemo(() => {
+    let { locale, pathWithoutLocale } = extractLocaleFromPath(router.asPath.split(/[?#]/)[0])
+    return {
+      locale: locale ?? defaultLocale,
+      pathWithoutLocale,
     }
-    return `/${pathParts.join('/')}`
   }, [router])
 
   const setLocale = useCallback(
     (locale: Locale) => {
-      router.push(`/${locale}${process.env.APP_PREFIX}${pathWithoutPrefix}`)
+      router.push(`/${locale}${pathWithoutLocale}`)
     },
-    [router, pathWithoutPrefix]
+    [router, pathWithoutLocale]
   )
 
   useEffect(() => {
@@ -61,16 +55,14 @@ const MyApp = ({ Component, pageProps }: AppProps) => {
   seo.openGraph!.locale = locale
 
   return (
-    <AppContext.Provider value={{ pathWithoutPrefix }}>
-      <I18nContextProvider locale={locale} setLocale={setLocale}>
-        <ThemeProvider>
-          <DefaultSeo {...seo} />
-          <Layout>
-            <Component {...pageProps} />
-          </Layout>
-        </ThemeProvider>
-      </I18nContextProvider>
-    </AppContext.Provider>
+    <I18nContextProvider locale={locale} setLocale={setLocale} pathWithoutLocale={pathWithoutLocale}>
+      <ThemeProvider>
+        <DefaultSeo {...seo} />
+        <Layout>
+          <Component {...pageProps} />
+        </Layout>
+      </ThemeProvider>
+    </I18nContextProvider>
   )
 }
 

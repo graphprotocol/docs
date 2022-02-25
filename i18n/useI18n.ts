@@ -1,17 +1,34 @@
 import { useContext } from 'react'
 
-import { I18nContext, locales, localesDetails, defaultLocale, translations } from '@/i18n'
+import {
+  I18nContext,
+  I18nContextDataDefaults,
+  locales,
+  localesDetails,
+  defaultLocale,
+  translations,
+  extractLocaleFromPath,
+  Locale,
+} from '@/i18n'
 
 export const useI18n = () => {
-  const { locale, setLocale } = useContext(I18nContext)!
+  let contextData = useContext(I18nContext)
+
+  if (!contextData) {
+    contextData = I18nContextDataDefaults
+  }
+
+  const { locale, setLocale, pathWithoutLocale } = contextData
 
   return {
     locale,
     localeDetails: localesDetails[locale],
     setLocale,
+    pathWithoutLocale,
     locales,
     localesDetails,
     defaultLocale,
     translations: translations[locale],
+    extractLocaleFromPath,
   }
 }

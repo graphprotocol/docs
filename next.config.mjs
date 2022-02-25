@@ -6,8 +6,7 @@ import { remarkMdxFrontmatter } from 'remark-mdx-frontmatter'
 import { remarkMdxLayout } from './lib/remarkMdxLayout.mjs'
 
 const env = {
-  APP_PREFIX: '/docs',
-  ASSET_PREFIX: process.env.NODE_ENV === 'production' ? '/docs' : '',
+  BASE_PATH: process.env.NODE_ENV === 'production' ? '/docs' : '',
 }
 
 const withMDX = mdx({
@@ -21,10 +20,20 @@ const withMDX = mdx({
 
 export default withMDX({
   env,
+  basePath: env.BASE_PATH,
   pageExtensions: ['tsx', 'mdx'],
   trailingSlash: true,
-  assetPrefix: env.ASSET_PREFIX,
   reactStrictMode: true,
+
+  async redirects() {
+    return [
+      {
+        source: '/',
+        destination: '/en/',
+        permanent: false,
+      },
+    ]
+  },
 
   webpack(config) {
     config.module.rules.push({

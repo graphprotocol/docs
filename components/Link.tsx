@@ -2,7 +2,7 @@ import { AnchorHTMLAttributes } from 'react'
 import NextLink, { LinkProps as NextLinkProps } from 'next/link'
 import { useTheme, buildShadow, buildTransition } from '@edgeandnode/components'
 
-import { Locale, useI18n, extractLocaleFromPath } from '@/i18n'
+import { Locale, useI18n } from '@/i18n'
 
 export type LinkProps = Pick<NextLinkProps, 'replace' | 'scroll' | 'shallow' | 'prefetch'> &
   Omit<AnchorHTMLAttributes<HTMLAnchorElement>, 'href'> & {
@@ -21,7 +21,7 @@ export const Link = ({
   locale: linkLocale,
   ...props
 }: LinkProps) => {
-  const { locale: currentLocale } = useI18n()
+  const { locale: currentLocale, extractLocaleFromPath } = useI18n()
   const rel = target === '_blank' ? 'noopener' : undefined
 
   // If `href` is undefined or links to an anchor on the same page, bypass `NextLink`
@@ -37,11 +37,11 @@ export const Link = ({
     (typeof href === 'string' && href.startsWith('/')) ||
     (typeof href === 'object' && !href.host && href.pathname?.startsWith('/'))
 
-  // If the URL is internal, automatically prepend the locale and the app prefix
+  // If the URL is internal, automatically prepend the locale
   if (isInternal) {
     const path = typeof href === 'object' ? href.pathname ?? '' : href
     const { locale: pathLocale, pathWithoutLocale } = extractLocaleFromPath(path)
-    const finalPath = `/${linkLocale ?? pathLocale ?? currentLocale}${process.env.APP_PREFIX}${pathWithoutLocale}`
+    const finalPath = `/${linkLocale ?? pathLocale ?? currentLocale}${pathWithoutLocale}`
     if (typeof href === 'object') {
       href.pathname = finalPath
     } else {

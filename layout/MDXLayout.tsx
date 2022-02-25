@@ -5,7 +5,6 @@ import { ThemeUIStyleObject } from 'theme-ui'
 import { NewGDSDivider, NewGDSDividerProps, Spacing, Flex } from '@edgeandnode/components'
 import { useSet } from 'react-use'
 
-import { AppContext } from '@/pages/_app'
 import { NavItem, NavItemPage } from '@/navigation'
 import { MDXLayoutNav, MDXLayoutPagination, MDXLayoutOutline } from '@/layout'
 import {
@@ -21,6 +20,7 @@ import {
   Paragraph,
   Table,
 } from '@/components'
+import { I18nContext } from '@/i18n'
 
 const mdxComponents = {
   blockquote: Blockquote,
@@ -95,7 +95,7 @@ export type MDXLayoutProps = PropsWithChildren<
 >
 
 export const MDXLayout = ({ pagePath, navItems, frontmatter, outline, children }: MDXLayoutProps) => {
-  const { pathWithoutPrefix } = useContext(AppContext)!
+  const { pathWithoutLocale } = useContext(I18nContext)!
 
   // Compute some values for the `NavContext`
   const { pageNavItems, previousPage, currentPage, nextPage } = useMemo(() => {
@@ -113,7 +113,7 @@ export const MDXLayout = ({ pagePath, navItems, frontmatter, outline, children }
     })
     let pageNavItemIndex = 0
     for (const pageNavItem of pageNavItems) {
-      if (pageNavItem.path === pathWithoutPrefix) {
+      if (pageNavItem.path === pathWithoutLocale) {
         previousPage = pageNavItems[pageNavItemIndex - 1] ?? null
         currentPage = pageNavItems[pageNavItemIndex] ?? null
         nextPage = pageNavItems[pageNavItemIndex + 1] ?? null
@@ -121,7 +121,7 @@ export const MDXLayout = ({ pagePath, navItems, frontmatter, outline, children }
       pageNavItemIndex++
     }
     return { pageNavItems, previousPage, currentPage, nextPage }
-  }, [navItems, pathWithoutPrefix])
+  }, [navItems, pathWithoutLocale])
 
   // Provide `markOutlineItem` to the `DocumentContext` so child `Heading` components can mark outline items as "in or above view" or not
   const [

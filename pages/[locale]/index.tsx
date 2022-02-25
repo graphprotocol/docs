@@ -61,12 +61,7 @@ const Index: NextPage<IndexProps> = ({ navItems }: IndexProps) => {
   )
 
   return (
-    <MDXLayout
-      pagePath={`[locale]${process.env.APP_PREFIX}/index.tsx`}
-      navItems={navItems}
-      frontmatter={frontmatter(locale)}
-      outline={outline}
-    >
+    <MDXLayout pagePath={`[locale]/index.tsx`} navItems={navItems} frontmatter={frontmatter(locale)} outline={outline}>
       <Paragraph>{translations.index.intro}</Paragraph>
       <ul
         sx={{
