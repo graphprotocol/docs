@@ -8,7 +8,6 @@ import {
   defaultLocale,
   translations,
   extractLocaleFromPath,
-  Locale,
 } from '@/i18n'
 
 export const useI18n = () => {

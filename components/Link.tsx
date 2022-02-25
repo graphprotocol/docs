@@ -41,11 +41,11 @@ export const Link = ({
   if (isInternal) {
     const path = typeof href === 'object' ? href.pathname ?? '' : href
     const { locale: pathLocale, pathWithoutLocale } = extractLocaleFromPath(path)
-    const finalPath = `/${linkLocale ?? pathLocale ?? currentLocale}${pathWithoutLocale}`
+    const pathWithLocale = `/${linkLocale ?? pathLocale ?? currentLocale}${pathWithoutLocale}`
     if (typeof href === 'object') {
-      href.pathname = finalPath
+      href.pathname = pathWithLocale
     } else {
-      href = finalPath
+      href = pathWithLocale
     }
   }
 

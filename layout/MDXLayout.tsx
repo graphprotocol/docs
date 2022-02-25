@@ -1,4 +1,4 @@
-import { PropsWithChildren, createContext, Context, useContext, useMemo, useCallback } from 'react'
+import { PropsWithChildren, createContext, Context, useMemo, useCallback } from 'react'
 import Head from 'next/head'
 import { MDXProvider } from '@mdx-js/react'
 import { ThemeUIStyleObject } from 'theme-ui'
@@ -20,7 +20,7 @@ import {
   Paragraph,
   Table,
 } from '@/components'
-import { I18nContext } from '@/i18n'
+import { useI18n } from '@/i18n'
 
 const mdxComponents = {
   blockquote: Blockquote,
@@ -95,7 +95,7 @@ export type MDXLayoutProps = PropsWithChildren<
 >
 
 export const MDXLayout = ({ pagePath, navItems, frontmatter, outline, children }: MDXLayoutProps) => {
-  const { pathWithoutLocale } = useContext(I18nContext)!
+  const { pathWithoutLocale } = useI18n()
 
   // Compute some values for the `NavContext`
   const { pageNavItems, previousPage, currentPage, nextPage } = useMemo(() => {
