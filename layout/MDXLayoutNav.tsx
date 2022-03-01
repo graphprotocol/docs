@@ -69,7 +69,7 @@ const MobileWrapper = ({ title, children }: PropsWithChildren<{ title?: string }
           sx={{ px: Spacing.L_XL, py: '20px' }}
         >
           <Flex.Column as="span" gap={Spacing.S}>
-            <Text.T10 color="White64">Docs</Text.T10>
+            <Text.S10 color="White64">Docs</Text.S10>
             <Text size="16px">{title}</Text>
           </Flex.Column>
           <Flex.Column
@@ -145,7 +145,7 @@ export const MDXLayoutNav = ({ mobile = false }: { mobile?: boolean }) => {
                   active={currentPage?.path === navItem.path}
                   sx={mobile ? { py: 0 } : {}}
                   linkProps={{ sx: mobile ? {} : { pr: 0 } }}
-                  diamondProps={{ sx: mobile ? { left: '10px' } : {} }}
+                  diamondProps={{ sx: mobile ? { left: '6px' } : {} }}
                 >
                   {navItem.title}
                 </NavTree.Item>

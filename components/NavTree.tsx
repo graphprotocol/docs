@@ -1,13 +1,12 @@
 import { HTMLAttributes, createContext, Context, useState, useContext } from 'react'
 import * as Collapsible from '@radix-ui/react-collapsible'
 import {
-  Diamond,
-  DiamondProps,
   NewGDSDivider,
   Text,
   TextProps,
   Flex,
   Icon,
+  IconProps,
   Spacing,
   buildTransition,
 } from '@edgeandnode/components'
@@ -34,7 +33,7 @@ export type NavTreeItemProps = HTMLAttributes<HTMLElement> &
   Pick<LinkProps, 'href' | 'target'> & {
     active?: boolean
     linkProps?: LinkProps & SxProp
-    diamondProps?: DiamondProps & SxProp
+    diamondProps?: IconProps & SxProp
   }
 export type NavTreeGroupProps = HTMLAttributes<HTMLElement> & {
   active?: boolean
@@ -84,10 +83,11 @@ const NavTreeItem = ({
       >
         {children}
         {active && (
-          <Diamond
+          <Icon.DiamondSolid
+            size="12px"
             sx={{
               position: 'absolute',
-              left: '6px',
+              left: Spacing.S,
               top: 0,
               bottom: 0,
               my: 'auto',
@@ -177,7 +177,7 @@ const NavTreeGroupContent = ({ children, ...props }: NavTreeGroupContentProps) =
 const NavTreeDivider = (props: NavTreeDividerProps) => {
   return (
     <li aria-hidden="true" sx={{ my: Spacing.M }} {...props}>
-      <NewGDSDivider simple />
+      <NewGDSDivider />
     </li>
   )
 }
