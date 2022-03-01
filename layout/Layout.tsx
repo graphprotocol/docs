@@ -56,7 +56,7 @@ export const Layout = ({ children }: PropsWithChildren<{}>) => {
       >
         <div sx={{ flexShrink: 0 }}>
           <Container sx={{ '--container-padding': '32px' }}>
-            <NavigationMarketing activeRoute="/docs" NextLink={NextLink} rightAlignItems={[languageSwitcher]} />
+            <NavigationMarketing activeRoute="/docs" NextLink={NextLink} /* rightAlignItems={[languageSwitcher]} */ />
           </Container>
         </div>
         <main sx={{ flexGrow: 1 }}>
@@ -65,7 +65,7 @@ export const Layout = ({ children }: PropsWithChildren<{}>) => {
         <div sx={{ flexShrink: 0 }}>
           <Container>
             <div sx={{ mx: 'auto', maxWidth: [null, null, null, 'calc(100vw - 500px)'] }}>
-              <Footer languageSwitcher={languageSwitcher} />
+              <Footer /* languageSwitcher={languageSwitcher} */ />
             </div>
           </Container>
         </div>
