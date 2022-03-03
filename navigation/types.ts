@@ -1,5 +1,3 @@
-import { Translations } from '@/i18n'
-
 export type NavItemPage = {
   title: string
   slug: string

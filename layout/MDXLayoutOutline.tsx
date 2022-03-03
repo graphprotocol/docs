@@ -7,7 +7,7 @@ import { useI18n } from '@/i18n'
 
 export const MDXLayoutOutline = () => {
   const { outline, highlightedOutlineItemId } = useContext(DocumentContext)!
-  const { translations } = useI18n()
+  const { t } = useI18n()
 
   if (outline.length === 0) {
     return <div />
@@ -31,7 +31,7 @@ export const MDXLayoutOutline = () => {
       <NewGDSDivider sx={{ my: Spacing.XL }} />
       <nav sx={{ pr: '16px' }}>
         <Text.S10 as="header" color="White64" sx={{ mb: Spacing.M_L }}>
-          {translations.global.pageSections}
+          {t('global.pageSections')}
         </Text.S10>
         <Text as="ul" size="14px" color="White48">
           {outline.map((outlineItem, outlineItemIndex) => {

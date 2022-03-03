@@ -29,7 +29,7 @@ const BaseHeading = ({ level, id, className, children, ...props }: HeadingProps)
     100,
     [id, inOrAboveView, markOutlineItem]
   )
-  const { translations } = useI18n()
+  const { t } = useI18n()
 
   return (
     <Text
@@ -54,7 +54,7 @@ const BaseHeading = ({ level, id, className, children, ...props }: HeadingProps)
         >
           <LinkInline href={`#${id}`}>
             <span aria-hidden="true">#</span>
-            <VisuallyHidden.Root>{translations.global.linkToThisSection}</VisuallyHidden.Root>
+            <VisuallyHidden.Root>{t('global.linkToThisSection')}</VisuallyHidden.Root>
           </LinkInline>
         </span>
       )}

@@ -2,12 +2,12 @@ import { AnchorHTMLAttributes } from 'react'
 import NextLink, { LinkProps as NextLinkProps } from 'next/link'
 import { useTheme, buildShadow, buildTransition } from '@edgeandnode/components'
 
-import { Locale, useI18n } from '@/i18n'
+import { AppLocale, useI18n } from '@/i18n'
 
 export type LinkProps = Pick<NextLinkProps, 'replace' | 'scroll' | 'shallow' | 'prefetch'> &
   Omit<AnchorHTMLAttributes<HTMLAnchorElement>, 'href'> & {
     href?: NextLinkProps['href']
-    locale?: Locale
+    locale?: AppLocale
   }
 
 export const Link = ({

@@ -21,7 +21,7 @@ export type EditPageLinkProps = {
 
 export const EditPageLink = ({ mobile = false, ...props }: EditPageLinkProps) => {
   const { pagePath } = useContext(NavContext)!
-  const { translations } = useI18n()
+  const { t } = useI18n()
   const linkClass = useUniqueId('class')
 
   return (
@@ -39,9 +39,9 @@ export const EditPageLink = ({ mobile = false, ...props }: EditPageLinkProps) =>
       {...props}
     >
       <Flex.Row as="span" align="center" gap={Spacing.M}>
-        <Icon.LogoGitHub />
+        <Icon.LogoGitHub title="" />
         <Text weight="Semibold" size={mobile ? '16px' : '14px'}>
-          {translations.global.editPage}
+          {t('global.editPage')}
         </Text>
         <Icon.ExternalLink
           sx={{

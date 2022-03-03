@@ -4,17 +4,17 @@ import { Text, Flex, Spacing, BorderRadius, buildBorder, buildShadow, buildTrans
 
 import { MDXLayout, Frontmatter, OutlineItem } from '@/layout'
 import { Heading, Image, Link, LinkInline, Paragraph } from '@/components'
+import { AppLocale, supportedLocales, translations, useI18n } from '@/i18n'
 import { getNavItems, NavItem } from '@/navigation'
-import { useI18n, translations, Locale } from '@/i18n'
 
-export const frontmatter = (locale: Locale): Frontmatter => ({
+export const frontmatter = (locale: AppLocale): Frontmatter => ({
   title: translations[locale].index.title,
 })
 
 // TODO: Make DRY
 export const getStaticPaths: GetStaticPaths = async () => {
   return {
-    paths: Object.values(Locale).map((locale) => ({
+    paths: supportedLocales.map((locale) => ({
       params: { locale },
     })),
     fallback: false,
@@ -23,7 +23,7 @@ export const getStaticPaths: GetStaticPaths = async () => {
 
 // TODO: Make DRY
 export const getStaticProps: GetStaticProps = async (context) => {
-  const locale = context.params!.locale as Locale
+  const locale = context.params!.locale as AppLocale
   const navItems = await getNavItems(locale)
 
   return {
@@ -37,32 +37,37 @@ export const getStaticProps: GetStaticProps = async (context) => {
 type IndexProps = { navItems: NavItem[] }
 
 const Index: NextPage<IndexProps> = ({ navItems }: IndexProps) => {
-  const { locale, translations } = useI18n()
+  const { t, locale } = useI18n()
 
   const outline: OutlineItem[] = useMemo(
     () => [
       {
         id: 'network-roles',
-        title: translations.index.networkRoles.title,
+        title: t('index.networkRoles.title'),
         level: 2,
       },
       {
         id: 'products',
-        title: translations.index.products.title,
+        title: t('index.products.title'),
         level: 2,
       },
       {
         id: 'supported-networks',
-        title: translations.index.supportedNetworks.title,
+        title: t('index.supportedNetworks.title'),
         level: 2,
       },
     ],
-    [translations]
+    [t]
   )
 
   return (
-    <MDXLayout pagePath={`[locale]/index.tsx`} navItems={navItems} frontmatter={frontmatter(locale)} outline={outline}>
-      <Paragraph>{translations.index.intro}</Paragraph>
+    <MDXLayout
+      pagePath={`[locale]/index.tsx`}
+      navItems={navItems}
+      frontmatter={frontmatter(locale as AppLocale)}
+      outline={outline}
+    >
+      <Paragraph>{t('index.intro')}</Paragraph>
       <ul
         sx={{
           mb: '96px',
@@ -75,33 +80,33 @@ const Index: NextPage<IndexProps> = ({ navItems }: IndexProps) => {
       >
         {[
           {
-            title: translations.index.shortcuts.aboutTheGraph.title,
-            description: translations.index.shortcuts.aboutTheGraph.description,
+            title: t('index.shortcuts.aboutTheGraph.title'),
+            description: t('index.shortcuts.aboutTheGraph.description'),
             href: '/about/introduction',
           },
           {
-            title: translations.index.shortcuts.quickStart.title,
-            description: translations.index.shortcuts.quickStart.description,
+            title: t('index.shortcuts.quickStart.title'),
+            description: t('index.shortcuts.quickStart.description'),
             href: '/developer/quick-start',
           },
           {
-            title: translations.index.shortcuts.developerFaqs.title,
-            description: translations.index.shortcuts.developerFaqs.description,
+            title: t('index.shortcuts.developerFaqs.title'),
+            description: t('index.shortcuts.developerFaqs.description'),
             href: '/developer/developer-faq',
           },
           {
-            title: translations.index.shortcuts.queryFromAnApplication.title,
-            description: translations.index.shortcuts.queryFromAnApplication.description,
+            title: t('index.shortcuts.queryFromAnApplication.title'),
+            description: t('index.shortcuts.queryFromAnApplication.description'),
             href: '/developer/querying-from-your-app',
           },
           {
-            title: translations.index.shortcuts.createASubgraph.title,
-            description: translations.index.shortcuts.createASubgraph.description,
+            title: t('index.shortcuts.createASubgraph.title'),
+            description: t('index.shortcuts.createASubgraph.description'),
             href: '/developer/create-subgraph-hosted',
           },
           {
-            title: translations.index.shortcuts.migrateFromHostedService.title,
-            description: translations.index.shortcuts.migrateFromHostedService.description,
+            title: t('index.shortcuts.migrateFromHostedService.title'),
+            description: t('index.shortcuts.migrateFromHostedService.description'),
             href: '/hosted-service/migrating-subgraph',
           },
         ].map((card, index) => (
@@ -138,8 +143,8 @@ const Index: NextPage<IndexProps> = ({ navItems }: IndexProps) => {
         ))}
       </ul>
 
-      <Heading.H2 id="network-roles">{translations.index.networkRoles.title}</Heading.H2>
-      <Paragraph>{translations.index.networkRoles.description}</Paragraph>
+      <Heading.H2 id="network-roles">{t('index.networkRoles.title')}</Heading.H2>
+      <Paragraph>{t('index.networkRoles.description')}</Paragraph>
       <ul
         sx={{
           mt: Spacing.XL,
@@ -151,26 +156,26 @@ const Index: NextPage<IndexProps> = ({ navItems }: IndexProps) => {
       >
         {[
           {
-            title: translations.index.networkRoles.roles.developer.title,
-            description: translations.index.networkRoles.roles.developer.description,
+            title: t('index.networkRoles.roles.developer.title'),
+            description: t('index.networkRoles.roles.developer.description'),
             image: '/img/roles/developer.png',
             href: '/developer/quick-start',
           },
           {
-            title: translations.index.networkRoles.roles.indexer.title,
-            description: translations.index.networkRoles.roles.indexer.description,
+            title: t('index.networkRoles.roles.indexer.title'),
+            description: t('index.networkRoles.roles.indexer.description'),
             image: '/img/roles/indexer.png',
             href: '/indexing',
           },
           {
-            title: translations.index.networkRoles.roles.curator.title,
-            description: translations.index.networkRoles.roles.curator.description,
+            title: t('index.networkRoles.roles.curator.title'),
+            description: t('index.networkRoles.roles.curator.description'),
             image: '/img/roles/curator.png',
             href: '/curating',
           },
           {
-            title: translations.index.networkRoles.roles.delegator.title,
-            description: translations.index.networkRoles.roles.delegator.description,
+            title: t('index.networkRoles.roles.delegator.title'),
+            description: t('index.networkRoles.roles.delegator.description'),
             image: '/img/roles/delegator.png',
             href: '/delegating',
           },
@@ -186,13 +191,13 @@ const Index: NextPage<IndexProps> = ({ navItems }: IndexProps) => {
               </Text>
             </div>
             <Text as="div" weight="Semibold" size="16px" sx={{ mt: 'auto' }}>
-              <LinkInline href={role.href}>{translations.index.readMore}</LinkInline>
+              <LinkInline href={role.href}>{t('index.readMore')}</LinkInline>
             </Text>
           </Flex.Column>
         ))}
       </ul>
 
-      <Heading.H2 id="products">{translations.index.products.title}</Heading.H2>
+      <Heading.H2 id="products">{t('index.products.title')}</Heading.H2>
       <ul
         sx={{
           mt: Spacing.XL,
@@ -204,18 +209,18 @@ const Index: NextPage<IndexProps> = ({ navItems }: IndexProps) => {
       >
         {[
           {
-            title: translations.index.products.products.subgraphStudio.title,
-            description: translations.index.products.products.subgraphStudio.description,
+            title: t('index.products.products.subgraphStudio.title'),
+            description: t('index.products.products.subgraphStudio.description'),
             href: '/studio/subgraph-studio',
           },
           {
-            title: translations.index.products.products.graphExplorer.title,
-            description: translations.index.products.products.graphExplorer.description,
+            title: t('index.products.products.graphExplorer.title'),
+            description: t('index.products.products.graphExplorer.description'),
             href: '/explorer',
           },
           {
-            title: translations.index.products.products.hostedService.title,
-            description: translations.index.products.products.hostedService.description,
+            title: t('index.products.products.hostedService.title'),
+            description: t('index.products.products.hostedService.description'),
             href: '/hosted-service/what-is-hosted-service',
           },
         ].map((product, index) => (
@@ -229,16 +234,16 @@ const Index: NextPage<IndexProps> = ({ navItems }: IndexProps) => {
               </Text>
             </div>
             <Text as="div" weight="Semibold" size="16px" sx={{ mt: 'auto' }}>
-              <LinkInline href={product.href}>{translations.index.readMore}</LinkInline>
+              <LinkInline href={product.href}>{t('index.readMore')}</LinkInline>
             </Text>
           </Flex.Column>
         ))}
       </ul>
 
-      <Heading.H2 id="supported-networks">{translations.index.supportedNetworks.title}</Heading.H2>
-      <Paragraph>{translations.index.supportedNetworks.description}</Paragraph>
+      <Heading.H2 id="supported-networks">{t('index.supportedNetworks.title')}</Heading.H2>
+      <Paragraph>{t('index.supportedNetworks.description')}</Paragraph>
       <div sx={{ mt: Spacing.XXL }}>
-        <Heading.H4>{translations.index.supportedNetworks.graphNetworkAndHostedService}</Heading.H4>
+        <Heading.H4>{t('index.supportedNetworks.graphNetworkAndHostedService')}</Heading.H4>
         <ul
           sx={{
             mt: Spacing.L_XL,
@@ -282,8 +287,8 @@ const Index: NextPage<IndexProps> = ({ navItems }: IndexProps) => {
         </ul>
       </div>
       <div sx={{ mt: Spacing.XXL }}>
-        <Heading.H4>{translations.index.supportedNetworks.hostedService}</Heading.H4>
-        <Paragraph>*{translations.index.supportedNetworks.betaWarning}</Paragraph>
+        <Heading.H4>{t('index.supportedNetworks.hostedService')}</Heading.H4>
+        <Paragraph>*{t('index.supportedNetworks.betaWarning')}</Paragraph>
         <ul
           sx={{
             mt: Spacing.XL,

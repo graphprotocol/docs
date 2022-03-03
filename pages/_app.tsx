@@ -2,11 +2,11 @@ import { useMemo, useCallback, useEffect } from 'react'
 import { AppProps } from 'next/app'
 import { DefaultSeo, DefaultSeoProps } from 'next-seo'
 import { useRouter } from 'next/router'
-import { ThemeProvider } from '@edgeandnode/components'
+import { Locale, defaultLocale, extractLocaleFromPath, I18nProvider, ThemeProvider } from '@edgeandnode/components'
 import '@edgeandnode/components/build/components.css'
 
 import { Layout } from '@/layout'
-import { I18nContextProvider, defaultLocale, extractLocaleFromPath, Locale } from '@/i18n'
+import { supportedLocales, translations } from '@/i18n'
 
 const seo: DefaultSeoProps = {
   title: 'The Graph Docs',
@@ -36,7 +36,7 @@ const MyApp = ({ Component, pageProps }: AppProps) => {
   const { locale, pathWithoutLocale } = useMemo(() => {
     let { locale, pathWithoutLocale } = extractLocaleFromPath(router.asPath.split(/[?#]/)[0])
     return {
-      locale: locale ?? defaultLocale,
+      locale,
       pathWithoutLocale,
     }
   }, [router])
@@ -55,14 +55,20 @@ const MyApp = ({ Component, pageProps }: AppProps) => {
   seo.openGraph!.locale = locale
 
   return (
-    <I18nContextProvider locale={locale} setLocale={setLocale} pathWithoutLocale={pathWithoutLocale}>
+    <I18nProvider
+      supportedLocales={supportedLocales}
+      translations={translations}
+      locale={locale ?? undefined}
+      setLocale={setLocale}
+      pathWithoutLocale={pathWithoutLocale}
+    >
       <ThemeProvider>
         <DefaultSeo {...seo} />
         <Layout>
           <Component {...pageProps} />
         </Layout>
       </ThemeProvider>
-    </I18nContextProvider>
+    </I18nProvider>
   )
 }
 

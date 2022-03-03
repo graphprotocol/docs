@@ -1,6 +1,5 @@
 import Document, { DocumentContext, Html, Head, Main, NextScript } from 'next/document'
-
-import { extractLocaleFromPath } from '@/i18n'
+import { extractLocaleFromPath } from '@edgeandnode/components'
 
 export default class MyDocument extends Document {
   static async getInitialProps(context: DocumentContext) {

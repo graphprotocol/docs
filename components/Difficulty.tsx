@@ -2,7 +2,7 @@ import { useI18n } from '@/i18n'
 
 // TODO: Refactor this component
 export const Difficulty = ({ level }: { level: string }) => {
-  const { translations } = useI18n()
+  const { t } = useI18n()
 
   return (
     <div
@@ -21,7 +21,7 @@ export const Difficulty = ({ level }: { level: string }) => {
           margin: 0,
         }}
       >
-        {translations.global.technicalLevelRequired}
+        {t('global.technicalLevelRequired')}
       </p>
       <div
         sx={{

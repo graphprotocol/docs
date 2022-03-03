@@ -1,11 +1,13 @@
+import { defaultLocale } from '@edgeandnode/components'
+
 import { NavItem, NavItemDefinition, NavItemPromise, NavItemPage } from './types'
 import { navigation } from './navigation'
-import { Locale, defaultLocale } from '@/i18n'
 import { Frontmatter } from '@/layout'
+import { AppLocale } from '@/i18n'
 
-const navItemsPromiseByLocale: { [key in Locale]?: Promise<NavItem[]> } = {}
+const navItemsPromiseByLocale: { [key in AppLocale]?: Promise<NavItem[]> } = {}
 
-export const getNavItems = async (locale: Locale = defaultLocale): Promise<NavItem[]> => {
+export const getNavItems = async (locale: AppLocale = defaultLocale): Promise<NavItem[]> => {
   let navItemsPromise = navItemsPromiseByLocale[locale]
 
   if (!navItemsPromise) {
@@ -33,9 +35,8 @@ export const getNavItems = async (locale: Locale = defaultLocale): Promise<NavIt
             while (true) {
               try {
                 const fileToTry = filesToTry[currentTry]
-                const { frontmatter }: { frontmatter?: Frontmatter | ((locale: Locale) => Frontmatter) } = await import(
-                  `../pages/${fileToTry}`
-                )
+                const { frontmatter }: { frontmatter?: Frontmatter | ((locale: AppLocale) => Frontmatter) } =
+                  await import(`../pages/${fileToTry}`)
                 if (!title && frontmatter) {
                   if (typeof frontmatter === 'function') {
                     title = frontmatter(locale).title

@@ -1,36 +1,11 @@
 import { PropsWithChildren, useMemo } from 'react'
 import NextLink from 'next/link'
-import { NavigationMarketing, Footer, LanguageSwitcher, Flex, objectEntries } from '@edgeandnode/components'
+import { NavigationMarketing, Footer, LocaleSwitcher, Flex } from '@edgeandnode/components'
 
 import { Container } from '@/components'
-import { useI18n, Locale } from '@/i18n'
 
 export const Layout = ({ children }: PropsWithChildren<{}>) => {
-  const { locale, localesDetails, setLocale, translations } = useI18n()
-
-  const languages = useMemo(
-    () =>
-      objectEntries(localesDetails).map(([locale, localeDetails]) => {
-        return {
-          ...localeDetails,
-          value: locale,
-        }
-      }),
-    [localesDetails]
-  )
-
-  const languageSwitcher = useMemo(
-    () => (
-      <LanguageSwitcher
-        key="languageSwitcher"
-        languages={languages}
-        value={locale}
-        onSelect={(locale) => setLocale(locale as Locale)}
-        label={translations.global.language}
-      />
-    ),
-    [languages, locale, setLocale, translations]
-  )
+  const localeSwitcher = useMemo(() => <LocaleSwitcher key="localeSwitcher" />, [])
 
   return (
     <div>
@@ -56,7 +31,7 @@ export const Layout = ({ children }: PropsWithChildren<{}>) => {
       >
         <div sx={{ flexShrink: 0 }}>
           <Container sx={{ '--container-padding': '32px' }}>
-            <NavigationMarketing activeRoute="/docs" NextLink={NextLink} /* rightAlignItems={[languageSwitcher]} */ />
+            <NavigationMarketing activeRoute="/docs" NextLink={NextLink} rightAlignItems={[localeSwitcher]} />
           </Container>
         </div>
         <main sx={{ flexGrow: 1 }}>
@@ -65,7 +40,7 @@ export const Layout = ({ children }: PropsWithChildren<{}>) => {
         <div sx={{ flexShrink: 0 }}>
           <Container>
             <div sx={{ mx: 'auto', maxWidth: [null, null, null, 'calc(100vw - 500px)'] }}>
-              <Footer /* languageSwitcher={languageSwitcher} */ />
+              <Footer localeSwitcher={localeSwitcher} />
             </div>
           </Container>
         </div>
