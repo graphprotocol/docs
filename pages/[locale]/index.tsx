@@ -308,8 +308,8 @@ const Index = ({ navItems }: { navItems: NavItem[] }) => {
               beta: true,
             },
             {
-              title: 'BSC',
-              image: '/img/networks/bsc.svg',
+              title: 'BNB',
+              image: '/img/networks/bnb.svg',
               href: 'https://www.binance.org/',
               beta: true,
             },
