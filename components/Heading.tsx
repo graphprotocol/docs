@@ -6,7 +6,7 @@ import { useDebounce } from 'react-use'
 
 import { DocumentContext } from '@/layout'
 import { LinkInline } from '@/components'
-import { useI18n } from '@/hooks'
+import { useI18n } from '@/i18n'
 
 export type HeadingProps = TextProps & {
   level: 1 | 2 | 3 | 4 | 5 | 6
@@ -29,7 +29,7 @@ const BaseHeading = ({ level, id, className, children, ...props }: HeadingProps)
     100,
     [id, inOrAboveView, markOutlineItem]
   )
-  const { translations } = useI18n()
+  const { t } = useI18n()
 
   return (
     <Text
@@ -54,7 +54,7 @@ const BaseHeading = ({ level, id, className, children, ...props }: HeadingProps)
         >
           <LinkInline href={`#${id}`}>
             <span aria-hidden="true">#</span>
-            <VisuallyHidden.Root>{translations.global.linkToThisSection}</VisuallyHidden.Root>
+            <VisuallyHidden.Root>{t('global.linkToThisSection')}</VisuallyHidden.Root>
           </LinkInline>
         </span>
       )}

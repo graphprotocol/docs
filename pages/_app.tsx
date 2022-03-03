@@ -1,12 +1,12 @@
+import { useMemo, useCallback, useEffect } from 'react'
 import { AppProps } from 'next/app'
 import { DefaultSeo, DefaultSeoProps } from 'next-seo'
-import { ThemeProvider } from '@edgeandnode/components'
+import { useRouter } from 'next/router'
+import { Locale, defaultLocale, extractLocaleFromPath, I18nProvider, ThemeProvider } from '@edgeandnode/components'
 import '@edgeandnode/components/build/components.css'
 
 import { Layout } from '@/layout'
-import { useI18n } from '@/hooks'
-import { defaultLocale } from '@/i18n'
-import { useEffect } from 'react'
+import { supportedLocales, translations } from '@/i18n'
 
 const seo: DefaultSeoProps = {
   title: 'The Graph Docs',
@@ -31,21 +31,44 @@ const seo: DefaultSeoProps = {
 }
 
 const MyApp = ({ Component, pageProps }: AppProps) => {
-  const { currentLocale } = useI18n()
+  const router = useRouter()
+
+  const { locale, pathWithoutLocale } = useMemo(() => {
+    let { locale, pathWithoutLocale } = extractLocaleFromPath(router.asPath.split(/[?#]/)[0])
+    return {
+      locale,
+      pathWithoutLocale,
+    }
+  }, [router])
+
+  const setLocale = useCallback(
+    (locale: Locale) => {
+      router.push(`/${locale}${pathWithoutLocale}`)
+    },
+    [router, pathWithoutLocale]
+  )
 
   useEffect(() => {
-    document.documentElement.lang = currentLocale
-  }, [currentLocale])
+    document.documentElement.lang = locale
+  }, [locale])
 
-  seo.openGraph!.locale = currentLocale
+  seo.openGraph!.locale = locale
 
   return (
-    <ThemeProvider>
-      <DefaultSeo {...seo} />
-      <Layout>
-        <Component {...pageProps} />
-      </Layout>
-    </ThemeProvider>
+    <I18nProvider
+      supportedLocales={supportedLocales}
+      translations={translations}
+      locale={locale ?? undefined}
+      setLocale={setLocale}
+      pathWithoutLocale={pathWithoutLocale}
+    >
+      <ThemeProvider>
+        <DefaultSeo {...seo} />
+        <Layout>
+          <Component {...pageProps} />
+        </Layout>
+      </ThemeProvider>
+    </I18nProvider>
   )
 }
 

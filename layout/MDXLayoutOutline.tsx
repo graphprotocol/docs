@@ -1,13 +1,13 @@
 import { useContext } from 'react'
-import { Text, Flex, NewGDSDivider as Divider, Spacing, buildTransition } from '@edgeandnode/components'
+import { Text, Flex, NewGDSDivider, Spacing, buildTransition } from '@edgeandnode/components'
 
 import { DocumentContext } from '@/layout'
 import { Link, EditPageLink } from '@/components'
-import { useI18n } from '@/hooks'
+import { useI18n } from '@/i18n'
 
 export const MDXLayoutOutline = () => {
   const { outline, highlightedOutlineItemId } = useContext(DocumentContext)!
-  const { translations } = useI18n()
+  const { t } = useI18n()
 
   if (outline.length === 0) {
     return <div />
@@ -28,11 +28,11 @@ export const MDXLayoutOutline = () => {
       <Flex.Row>
         <EditPageLink />
       </Flex.Row>
-      <Divider simple sx={{ my: Spacing.XL }} />
+      <NewGDSDivider sx={{ my: Spacing.XL }} />
       <nav sx={{ pr: '16px' }}>
-        <Text.T10 as="header" color="White64" sx={{ mb: Spacing.M_L }}>
-          {translations.global.pageSections}
-        </Text.T10>
+        <Text.S10 as="header" color="White64" sx={{ mb: Spacing.M_L }}>
+          {t('global.pageSections')}
+        </Text.S10>
         <Text as="ul" size="14px" color="White48">
           {outline.map((outlineItem, outlineItemIndex) => {
             if (outlineItem.level > 3) {

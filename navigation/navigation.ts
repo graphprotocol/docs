@@ -1,7 +1,7 @@
 import { NavItemDefinition } from './types'
-import { Locale, translations } from '@/i18n'
+import { AppLocale, translations } from '@/i18n'
 
-export const navigation: (locale: Locale) => NavItemDefinition[] = (locale) => [
+export const navigation: (locale: AppLocale) => NavItemDefinition[] = (locale) => [
   {
     slug: '',
   },

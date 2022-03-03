@@ -2,17 +2,26 @@ import { AnchorHTMLAttributes } from 'react'
 import NextLink, { LinkProps as NextLinkProps } from 'next/link'
 import { useTheme, buildShadow, buildTransition } from '@edgeandnode/components'
 
-import { Locale } from '@/i18n'
-import { useI18n } from '@/hooks'
+import { AppLocale, useI18n } from '@/i18n'
 
 export type LinkProps = Pick<NextLinkProps, 'replace' | 'scroll' | 'shallow' | 'prefetch'> &
   Omit<AnchorHTMLAttributes<HTMLAnchorElement>, 'href'> & {
     href?: NextLinkProps['href']
-    locale?: Locale | false
+    locale?: AppLocale
   }
 
-export const Link = ({ href, replace, scroll, shallow, prefetch, target, children, locale, ...props }: LinkProps) => {
-  const { currentLocale, getPathWithLocale } = useI18n()
+export const Link = ({
+  href,
+  replace,
+  scroll,
+  shallow,
+  prefetch,
+  target,
+  children,
+  locale: linkLocale,
+  ...props
+}: LinkProps) => {
+  const { locale: currentLocale, extractLocaleFromPath } = useI18n()
   const rel = target === '_blank' ? 'noopener' : undefined
 
   // If `href` is undefined or links to an anchor on the same page, bypass `NextLink`
@@ -28,11 +37,11 @@ export const Link = ({ href, replace, scroll, shallow, prefetch, target, childre
     (typeof href === 'string' && href.startsWith('/')) ||
     (typeof href === 'object' && !href.host && href.pathname?.startsWith('/'))
 
-  // If the URL is internal, automatically prepend the locale (unless `locale` is `false`)
-  if (isInternal && locale !== false) {
+  // If the URL is internal, automatically prepend the locale
+  if (isInternal) {
     const path = typeof href === 'object' ? href.pathname ?? '' : href
-    locale = locale ?? currentLocale
-    const pathWithLocale = getPathWithLocale(path, locale)
+    const { locale: pathLocale, pathWithoutLocale } = extractLocaleFromPath(path)
+    const pathWithLocale = `/${linkLocale ?? pathLocale ?? currentLocale}${pathWithoutLocale}`
     if (typeof href === 'object') {
       href.pathname = pathWithLocale
     } else {

@@ -1,26 +1,28 @@
 ---
-title: Quick and easy subgraph debugging using forks
+title: フォークを使った迅速で簡単なサブグラフのデバッギング
 ---
 
-As with many systems processing large amounts of data, The Graph's Indexers (Graph nodes) may take quite some time to sync-up your subgraph with the target blockchain. The discrepancy between quick changes with the purpose of debugging and long wait times needed for indexing is extremely counterproductive and we are well aware of that. This is why we are introducing **subgraph forking**, developed by [LimeChain](https://limechain.tech/), and in this article I will show you how this feature can be used to substantially speed-up subgraph debugging!
+> 注：この`graph-node` [commit](https://github.com/graphprotocol/graph-node/commit/f4e6992d7949b18f990045c8babdcd205a060ef6) または、この[docker tag ](https://hub.docker.com/layers/graphprotocol/graph-node/f4e6992/images/sha256-51ad494a2ecc387bef2359d863b596ad5bd44436808964cf221e60365a7c00c8?context=explore) 以降でのみ利用可能で、マイナーリリース（例：0.26.0）ではまだリリースされていません。
 
-## Ok, what is it?
+大量のデータを処理する多くのシステムと同様に、The Graph の Indexers（グラフノード）は、サブグラフとターゲットブロックチェーンの同期にかなりの時間がかかる場合があります。デバッグを目的とした素早い変更と、インデックス作成に必要な長い待ち時間の不一致は非常に逆効果であり、私たちはそれを十分に認識しています。そこで、[LimeChain](https://limechain.tech/)が開発した**subgraph forking**を導入し、今回はこの機能を使ってサブグラフのデバッグを大幅に高速化する方法を紹介します。
 
-**Subgraph forking** is the process of lazily fetching entities from _another_ subgraph's store (usually a remote one).
+## さて、それは何でしょうか？
 
-In the context of debugging, **subgraph forking** allows you to debug your failed subgraph at block _X_ without needing to wait to sync-up to block _X_.
+**サブグラフのフォーク**とは、*他*のサブグラフのストア(通常はリモート) からエンティティをフェッチするプロセスです。
 
-## What?! How?
+デバッグの文脈では、**サブグラフのフォーク**により、ブロック*X*への同期を待つことなく、ブロック*X*で失敗したサブグラフのデバッグを行うことができます。
 
-When you deploy a subgraph to a remote Graph node for indexing and it fails at block _X_, the good news is that the Graph node will still serve GraphQL queries using its store, which is synced-up to block _X_. That's great! This means we can take advantage of this "up-to-date" store to fix the bugs arising when indexing block _X_.
+## その方法は？
 
-In a nutshell, we are going to _fork the failing subgraph_ from a remote Graph node that is guaranteed to have the subgraph indexed up to block _X_ in order to provide the locally deployed subgraph being debugged at block _X_ an up-to-date view of the indexing state.
+インデックス作成のためにリモートの Graph ノードにサブグラフをデプロイし、ブロック*X*で失敗した場合でも、ブロック*X*と同期しているストアを使用して GraphQL クエリを提供することができます。つまり、ブロック _X_ のインデックス作成時に発生するバグを修正するために、この最新のストアを利用できるのです。
 
-## Please, show me some code!
+簡単に言うと、ブロック*X*でデバッグされているローカルにデプロイされたサブグラフにインデックス状態の最新のビューを提供するために、ブロック*X*までインデックスされたサブグラフを持つことが保証されているリモート Graph ノードから *失敗したサブグラフをフォーク*しようとしているのです。
 
-To stay focused on subgraph debugging, let's keep things simple and run along with the [example-subgraph](https://github.com/graphprotocol/example-subgraph) indexing the Ethereum Gravity smart contract.
+## コードを見てみましょう
 
-Here are the handlers defined for indexing `Gravatar`s, with no bugs whatsoever:
+サブグラフのデバッグに集中するために、物事をシンプルにして、Ethereum Gravity スマートコントラクトのサブグラフのインデックス作成の[例](https://github.com/graphprotocol/example-subgraph)に沿って実行しましょう。
+
+以下は、`Gravatar`のインデックスを作成するために定義されたハンドラで、バグが全くありません。
 
 ```tsx
 export function handleNewGravatar(event: NewGravatar): void {
@@ -44,41 +46,43 @@ export function handleUpdatedGravatar(event: UpdatedGravatar): void {
 }
 ```
 
-Oops, how unfortunate, when I deploy my perfect looking subgraph to the [HostedService](https://thegraph.com/hosted-service/) it fails with the _"Gravatar not found!"_ error.
+この場合、残念なことに、この完璧に見えるサブグラフを[HostedService](https://thegraph.com/hosted-service/) にデプロイすると、*"Gravatar not found!"*というエラーで失敗してしまいます。
 
-The usual way to attempt a fix is:
+通常の試すであろう修正方法：
 
-1. Make a change in the mappings source, which you believe will solve the issue (while I know it won't).
-2. Re-deploy the subgraph to the [HostedService](https://thegraph.com/hosted-service/) (or another remote Graph node).
-3. Wait for it to sync-up.
-4. If it breaks again go back to 1, otherwise: Hooray!
+1. マッピングソースを変更して問題の解決を試す（解決されないことは分かっていても）
+2. サブグラフを[HostedService](https://thegraph.com/hosted-service/)（または別のリモート Graph ノード）に再デプロイする
+3. 同期を待つ
+4. 再び問題が発生した場合は、1 に戻る
 
-It is indeed pretty familiar to an ordinary debug process, but there is one step that horribly slows down the process: _3. Wait for it to sync-up._
+このように、通常のデバッグ処理とほぼ同じですが、1 つだけ、処理を恐ろしく遅くするステップがあります：_3. 同期を待つ_
 
-Using **subgraph forking** we can essentially eliminate this step. Here is how it looks:
+**サブグラフのフォーク**を利用することで、このステップを実質的に省略することができます。その方法は次の通りです：
 
-0. Spin-up a local Graph node with the **_appropriate fork-base_** set.
-1. Make a change in the mappings source, which you believe will solve the issue.
-2. Deploy to the local Graph node, **_forking the failing subgraph_** and **_starting from the problematic block_**.
-3. If it breaks again, go back to 1, otherwise: Hooray!
+0. **_適切なフォークベース_**セットを持つローカルのグラフ・ノードをスピンアップする
+1. マッピングのソースを変更し、問題を解決する
+2. ローカル Graph ノードにデプロイし、**_失敗したサブグラフをフォーク_**して、**_問題のブロックから開始_**する
+3. もし再度、壊れる場合 1 に戻る
 
-Now, you may have 2 questions:
+さて、ここで 2 つの疑問が生じます：
 
-1. fork-base what??? 2) Forking who?!
+1. フォークベースとは？
+2. 誰がフォークするのか？
 
-And I answer:
+回答：
 
-1. `fork-base` is the "base" URL, such that when the _subgraph id_ is appended the resulting URL (`<fork-base>/<subgraph-id>`) is a valid GraphQL endpoint for the subgraph's store. 2) Forking is easy, no need to sweat:
+1. `fork-base`は「ベース」URL で、*subgraph id*が追加されたときの URL (`<fork-base>/<subgraph-id>`) はサブグラフのストアに対する有効な GraphQL endpoint であることを示します。
+2. フォーキングは簡単であり煩雑な手間はありません
 
 ```bash
 $ graph deploy <subgraph-name> --debug-fork <subgraph-id> --ipfs http://localhost:5001 --node http://localhost:8020
 ```
 
-Also, don't forget to set the `dataSources.source.startBlock` field in the subgraph manifest to the number of the problematic block, so you can skip indexing unnecessary blocks and take advantage of the fork!
+また、サブグラフマニフェストの`dataSources.source.startBlock`フィールドを問題のあるブロックの番号に設定することを忘れないでください。そうすれば、不要なブロックのインデックス作成を省略して、フォークを利用することができます。
 
-So, here is what I do:
+そこで、以下の通りです：
 
-0. I spin-up a local graph node ([here is how to do it](https://github.com/graphprotocol/graph-node#running-a-local-graph-node)) with the `fork-base` option set to: `https://api.thegraph.com/subgraphs/id/`, since I will fork a subgraph, the buggy one I deployed earlier, from the [HostedService](https://thegraph.com/hosted-service/).
+0. [こちらの方法](https://github.com/graphprotocol/graph-node#running-a-local-graph-node)で、`fork-base` オプションをセットして、ローカルグラフノードをスピンアップします。[HostedService](https://thegraph.com/hosted-service/) から、先にデプロイしたバグのあるサブグラフをフォークするからです。
 
 ```
 $ cargo run -p graph-node --release -- \
@@ -88,13 +92,13 @@ $ cargo run -p graph-node --release -- \
     --fork-base https://api.thegraph.com/subgraphs/id/
 ```
 
-1. After careful inspection I notice that there is a mismatch in the `id` representations used when indexing `Gravatar`s in my two handlers. While `handleNewGravatar` converts it to a hex (`event.params.id.toHex()`), `handleUpdatedGravatar` uses an int32 (`event.params.id.toI32()`) which causes the `handleUpdatedGravatar` to panic with "Gravatar not found!". I make them both convert the `id` to a hex.
-2. After I made the changes I deploy my subgraph to the local Graph node, **_forking the failing subgraph_** and setting `dataSources.source.startBlock` to `6190343` in `subgraph.yaml`:
+1. よく調べてみると、2 つのハンドラで `Gravatar` をインデックスする際に使用される `id` 表現にミスマッチがあることに気づきました。`handleNewGravatar` はそれを hex (`event.params.id.toHex()`) に変換しますが、`handleUpdatedGravatar` は int32 (`event.params.id.toI32()`) を使用するので `handleUpdatedGravatar` は "Gravatar not found!" でパニックになってしまうのです。両方とも`id`を 16 進数に変換するようにしています。
+2. 変更後、ローカルの Graph ノードにサブグラフをデプロイし、**_失敗したサブグラフのフォーク_**と `subgraph.yaml` で `dataSources.source.startBlock` を `6190343` にセットしてください。
 
 ```bash
   $ graph deploy gravity --debug-fork QmNp169tKvomnH3cPXTfGg4ZEhAHA6kEq5oy1XDqAxqHmW --ipfs http://localhost:5001 --node http://localhost:8020
 ```
 
-3. I inspect the logs produced by the local Graph node and, Hooray!, everything seems to be working.
-4. I deploy my now bug-free subgraph to a remote Graph node and live happily ever after! (no potatoes tho)
-5. The end...
+3. ローカルの Graph ノードが出力するログを調べてみると、すべてうまくいっていることがわかります。
+4. バグのないサブグラフをリモートの Graph ノードにデプロイすることができました。
+5. 完了です。

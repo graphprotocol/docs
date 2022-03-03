@@ -2,7 +2,12 @@ import mdx from '@next/mdx'
 import remarkGfm from 'remark-gfm'
 import remarkFrontmatter from 'remark-frontmatter'
 import { remarkMdxFrontmatter } from 'remark-mdx-frontmatter'
+
 import { remarkMdxLayout } from './lib/remarkMdxLayout.mjs'
+
+const env = {
+  BASE_PATH: process.env.NODE_ENV === 'production' ? '/docs' : '',
+}
 
 const withMDX = mdx({
   extension: /\.mdx?$/,
@@ -14,7 +19,8 @@ const withMDX = mdx({
 })
 
 export default withMDX({
-  basePath: process.env.NEXT_PUBLIC_BASE_PATH,
+  env,
+  basePath: env.BASE_PATH,
   pageExtensions: ['tsx', 'mdx'],
   trailingSlash: true,
   reactStrictMode: true,
@@ -23,8 +29,7 @@ export default withMDX({
     return [
       {
         source: '/',
-        destination: process.env.NEXT_PUBLIC_BASE_PATH,
-        basePath: false,
+        destination: '/en/',
         permanent: false,
       },
     ]
