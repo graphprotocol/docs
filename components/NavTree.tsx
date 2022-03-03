@@ -1,13 +1,12 @@
 import { HTMLAttributes, createContext, Context, useState, useContext } from 'react'
 import * as Collapsible from '@radix-ui/react-collapsible'
 import {
-  Diamond,
-  DiamondProps,
   NewGDSDivider,
   Text,
   TextProps,
   Flex,
   Icon,
+  IconProps,
   Spacing,
   buildTransition,
 } from '@edgeandnode/components'
@@ -15,7 +14,7 @@ import { keyframes } from '@emotion/react'
 import { SxProp } from 'theme-ui'
 
 import { Link, LinkProps } from '@/components'
-import { useI18n } from '@/hooks'
+import { useI18n } from '@/i18n'
 
 const animationExpand = keyframes({
   from: { height: 0 },
@@ -34,7 +33,7 @@ export type NavTreeItemProps = HTMLAttributes<HTMLElement> &
   Pick<LinkProps, 'href' | 'target'> & {
     active?: boolean
     linkProps?: LinkProps & SxProp
-    diamondProps?: DiamondProps & SxProp
+    diamondProps?: IconProps & SxProp
   }
 export type NavTreeGroupProps = HTMLAttributes<HTMLElement> & {
   active?: boolean
@@ -84,10 +83,11 @@ const NavTreeItem = ({
       >
         {children}
         {active && (
-          <Diamond
+          <Icon.DiamondSolid
+            size="12px"
             sx={{
               position: 'absolute',
-              left: '6px',
+              left: Spacing.S,
               top: 0,
               bottom: 0,
               my: 'auto',
@@ -122,7 +122,7 @@ const NavTreeGroup = ({ active = false, children, ...props }: NavTreeGroupProps)
 const NavTreeGroupHeading = ({ children, buttonProps = {}, ...props }: NavTreeGroupHeadingProps) => {
   const { sx: buttonSx, ...buttonOtherProps } = buttonProps
   const context = useContext(NavTreeGroupContext)!
-  const { translations } = useI18n()
+  const { t } = useI18n()
 
   return (
     <div sx={{ py: Spacing.M }} {...props}>
@@ -149,8 +149,8 @@ const NavTreeGroupHeading = ({ children, buttonProps = {}, ...props }: NavTreeGr
             }}
           >
             <Icon.CaretRight
+              title={context.open ? t('global.collapse') : t('global.expand')}
               size={['16px', null, null, '14px']}
-              title={context.open ? translations.global.collapse : translations.global.expand}
             />
           </Flex.Column>
         </Flex.Row>
@@ -177,7 +177,7 @@ const NavTreeGroupContent = ({ children, ...props }: NavTreeGroupContentProps) =
 const NavTreeDivider = (props: NavTreeDividerProps) => {
   return (
     <li aria-hidden="true" sx={{ my: Spacing.M }} {...props}>
-      <NewGDSDivider simple />
+      <NewGDSDivider />
     </li>
   )
 }

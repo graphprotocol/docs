@@ -1,7 +1,5 @@
 FROM node:16.13.1-alpine3.14 as builder
 
-ARG NEXT_PUBLIC_BASE_PATH
-
 RUN apk add --no-cache git
 
 WORKDIR /app
