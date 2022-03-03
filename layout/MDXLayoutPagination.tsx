@@ -3,11 +3,11 @@ import { Text, Flex, NewGDSDivider, Icon, Spacing, buildShadow, buildTransition 
 
 import { NavContext } from '@/layout'
 import { Link } from '@/components'
-import { useI18n } from '@/hooks'
+import { useI18n } from '@/i18n'
 
 export const MDXLayoutPagination = () => {
   const { previousPage, nextPage } = useContext(NavContext)!
-  const { translations } = useI18n()
+  const { t } = useI18n()
 
   return (
     <div sx={{ overflow: 'hidden' }}>
@@ -29,8 +29,8 @@ export const MDXLayoutPagination = () => {
             >
               <Flex.Column align="start" gap={Spacing.S} sx={{ textAlign: 'left' }}>
                 <Flex.Row align="center" gap={Spacing.S}>
-                  <Icon.ArrowLeft size="12px" />
-                  <Text.S10>{translations.global.previous}</Text.S10>
+                  <Icon.ArrowLeft title="" size="12px" />
+                  <Text.S10>{t('global.previous')}</Text.S10>
                 </Flex.Row>
                 <Text
                   weight="Semibold"
@@ -67,8 +67,8 @@ export const MDXLayoutPagination = () => {
             >
               <Flex.Column align="end" gap={Spacing.S} sx={{ textAlign: 'right' }}>
                 <Flex.Row align="center" gap={Spacing.S}>
-                  <Text.S10>{translations.global.next}</Text.S10>
-                  <Icon.ArrowRight size="12px" />
+                  <Text.S10>{t('global.next')}</Text.S10>
+                  <Icon.ArrowRight title="" size="12px" />
                 </Flex.Row>
                 <Text
                   weight="Semibold"

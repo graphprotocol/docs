@@ -1,37 +1,11 @@
 import { PropsWithChildren, useMemo } from 'react'
 import NextLink from 'next/link'
-import { NavigationMarketing, Footer, LanguageSwitcher, Flex, objectEntries } from '@edgeandnode/components'
+import { NavigationMarketing, Footer, LocaleSwitcher, Flex } from '@edgeandnode/components'
 
 import { Container } from '@/components'
-import { useI18n } from '@/hooks'
-import { Locale } from '@/i18n'
 
 export const Layout = ({ children }: PropsWithChildren<{}>) => {
-  const { currentLocale, localesDetails, setLocale, translations } = useI18n()
-
-  const languages = useMemo(
-    () =>
-      objectEntries(localesDetails).map(([locale, localeDetails]) => {
-        return {
-          ...localeDetails,
-          value: locale,
-        }
-      }),
-    [localesDetails]
-  )
-
-  const languageSwitcher = useMemo(
-    () => (
-      <LanguageSwitcher
-        key="languageSwitcher"
-        languages={languages}
-        value={currentLocale}
-        onSelect={(locale) => setLocale(locale as Locale)}
-        label={translations.global.language}
-      />
-    ),
-    [languages, currentLocale, setLocale, translations]
-  )
+  const localeSwitcher = useMemo(() => <LocaleSwitcher key="localeSwitcher" />, [])
 
   return (
     <div>
@@ -42,7 +16,7 @@ export const Layout = ({ children }: PropsWithChildren<{}>) => {
           right: 0,
           top: 0,
           minHeight: '768px',
-          backgroundImage: `url('${process.env.NEXT_PUBLIC_BASE_PATH}/img/page-background.png')`,
+          backgroundImage: `url('${process.env.BASE_PATH}/img/page-background.png')`,
           backgroundSize: 'cover',
           backgroundPosition: 'center top',
           '@media (min-width: 1440px)': {
@@ -57,7 +31,7 @@ export const Layout = ({ children }: PropsWithChildren<{}>) => {
       >
         <div sx={{ flexShrink: 0 }}>
           <Container sx={{ '--container-padding': '32px' }}>
-            <NavigationMarketing activeRoute="/docs" NextLink={NextLink} /* rightAlignItems={[languageSwitcher]} */ />
+            <NavigationMarketing activeRoute="/docs" NextLink={NextLink} rightAlignItems={[localeSwitcher]} />
           </Container>
         </div>
         <main sx={{ flexGrow: 1 }}>
@@ -66,7 +40,7 @@ export const Layout = ({ children }: PropsWithChildren<{}>) => {
         <div sx={{ flexShrink: 0 }}>
           <Container>
             <div sx={{ mx: 'auto', maxWidth: [null, null, null, 'calc(100vw - 500px)'] }}>
-              <Footer /* languageSwitcher={languageSwitcher} */ />
+              <Footer localeSwitcher={localeSwitcher} />
             </div>
           </Container>
         </div>

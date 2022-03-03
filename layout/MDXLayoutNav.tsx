@@ -5,7 +5,7 @@ import { keyframes } from '@emotion/react'
 
 import { NavContext } from '@/layout'
 import { NavTree } from '@/components'
-import { useI18n } from '@/hooks'
+import { useI18n } from '@/i18n'
 
 const animationExpand = keyframes({
   from: { height: 0 },
@@ -37,7 +37,7 @@ const DesktopWrapper = ({ children }: PropsWithChildren<{}>) => {
 
 const MobileWrapper = ({ title, children }: PropsWithChildren<{ title?: string }>) => {
   const [open, setOpen] = useState(false)
-  const { translations } = useI18n()
+  const { t } = useI18n()
 
   return (
     <Collapsible.Root
@@ -80,7 +80,7 @@ const MobileWrapper = ({ title, children }: PropsWithChildren<{ title?: string }
               transition: buildTransition('TRANSFORM'),
             }}
           >
-            <Icon.CaretRight title={open ? translations.global.collapse : translations.global.expand} />
+            <Icon.CaretRight title={open ? t('global.collapse') : t('global.expand')} />
           </Flex.Column>
         </Flex.Row>
       </Collapsible.Trigger>

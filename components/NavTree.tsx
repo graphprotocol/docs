@@ -14,7 +14,7 @@ import { keyframes } from '@emotion/react'
 import { SxProp } from 'theme-ui'
 
 import { Link, LinkProps } from '@/components'
-import { useI18n } from '@/hooks'
+import { useI18n } from '@/i18n'
 
 const animationExpand = keyframes({
   from: { height: 0 },
@@ -122,7 +122,7 @@ const NavTreeGroup = ({ active = false, children, ...props }: NavTreeGroupProps)
 const NavTreeGroupHeading = ({ children, buttonProps = {}, ...props }: NavTreeGroupHeadingProps) => {
   const { sx: buttonSx, ...buttonOtherProps } = buttonProps
   const context = useContext(NavTreeGroupContext)!
-  const { translations } = useI18n()
+  const { t } = useI18n()
 
   return (
     <div sx={{ py: Spacing.M }} {...props}>
@@ -149,8 +149,8 @@ const NavTreeGroupHeading = ({ children, buttonProps = {}, ...props }: NavTreeGr
             }}
           >
             <Icon.CaretRight
+              title={context.open ? t('global.collapse') : t('global.expand')}
               size={['16px', null, null, '14px']}
-              title={context.open ? translations.global.collapse : translations.global.expand}
             />
           </Flex.Column>
         </Flex.Row>
