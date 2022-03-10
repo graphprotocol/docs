@@ -93,6 +93,9 @@ export const navigation: (locale: AppLocale) => NavItemDefinition[] = (locale) =
       {
         slug: 'studio-faq',
       },
+      {
+        slug: 'transferring-subgraph-ownership'
+      }
     ],
   },
   {
