@@ -61,7 +61,7 @@ export function createNewGravatarEvent(
 }
 ```
 
-We first have to create a test file in our project. We have chosen the name `gravity.test.ts`. In the newly created file we need to define a function named `runTests()`. It is important that the function has that exact name. This is an example of how our tests might look like:
+We first have to create a test file in our project. This is an example of how that might look like:
 
 ```typescript
 import { clearStore, test, assert } from 'matchstick-as/assembly/index'
@@ -69,30 +69,31 @@ import { Gravatar } from '../../generated/schema'
 import { NewGravatar } from '../../generated/Gravity/Gravity'
 import { createNewGravatarEvent, handleNewGravatars } from '../mappings/gravity'
 
-export function runTests(): void {
-  test('Can call mappings with custom events', () => {
-    // Initialise
-    let gravatar = new Gravatar('gravatarId0')
-    gravatar.save()
+test('Can call mappings with custom events', () => {
+  // Create a test entity and save it in the store as initial state (optional)
+  let gravatar = new Gravatar('gravatarId0')
+  gravatar.save()
 
-    // Call mappings
-    let newGravatarEvent = createNewGravatarEvent(12345, '0x89205A3A3b2A69De6Dbf7f01ED13B2108B2c43e7', 'cap', 'pac')
+  // Create mock events
+  let newGravatarEvent = createNewGravatarEvent(12345, '0x89205A3A3b2A69De6Dbf7f01ED13B2108B2c43e7', 'cap', 'pac')
+  let anotherGravatarEvent = createNewGravatarEvent(3546, '0x89205A3A3b2A69De6Dbf7f01ED13B2108B2c43e7', 'cap', 'pac')
 
-    let anotherGravatarEvent = createNewGravatarEvent(3546, '0x89205A3A3b2A69De6Dbf7f01ED13B2108B2c43e7', 'cap', 'pac')
+  // Call mapping functions passing the events we just created
+  handleNewGravatars([newGravatarEvent, anotherGravatarEvent])
 
-    handleNewGravatars([newGravatarEvent, anotherGravatarEvent])
+  // Assert the state of the store
+  assert.fieldEquals('Gravatar', 'gravatarId0', 'id', 'gravatarId0')
+  assert.fieldEquals('Gravatar', '12345', 'owner', '0x89205A3A3b2A69De6Dbf7f01ED13B2108B2c43e7')
+  assert.fieldEquals('Gravatar', '3546', 'displayName', 'cap')
 
-    assert.fieldEquals('Gravatar', 'gravatarId0', 'id', 'gravatarId0')
-    assert.fieldEquals('Gravatar', '12345', 'owner', '0x89205A3A3b2A69De6Dbf7f01ED13B2108B2c43e7')
-    assert.fieldEquals('Gravatar', '3546', 'displayName', 'cap')
+  // Clear the store in order to start the next test off on a clean slate
+  clearStore()
+})
 
-    clearStore()
-  })
+test('Next test', () => {
+  //...
+})
 
-  test('Next test', () => {
-    //...
-  })
-}
 ```
 
 That's a lot to unpack! First off, an important thing to notice is that we're importing things from `matchstick-as`, our AssemblyScript helper library (distributed as an npm module). You can find the repository [here](https://github.com/LimeChain/matchstick-as). `matchstick-as` provides us with useful testing methods and also defines the `test()` function which we will use to build our test blocks. The rest of it is pretty straightforward - here's what happens:
@@ -104,24 +105,6 @@ That's a lot to unpack! First off, an important thing to notice is that we're im
 - And lastly - we're cleaning the store using `clearStore()` so that our next test can start with a fresh and empty store object. We can define as many test blocks as we want.
 
 There we go - we've created our first test! 👏
-
-❗ **IMPORTANT:** _In order for the tests to work, we need to export the `runTests()` function in our mappings file. It won't be used there, but the export statement has to be there so that it can get picked up by Rust later when running the tests._
-
-You can export the tests wrapper function in your mappings file like this:
-
-```
-export { runTests } from "../tests/gravity.test.ts";
-```
-
-❗ **IMPORTANT:** _Currently there's an issue with using Matchstick when deploying your subgraph. Please only use Matchstick for local testing, and remove/comment out this line (`export { runTests } from "../tests/gravity.test.ts"`) once you're done. We expect to resolve this issue shortly, sorry for the inconvenience!_
-
-_If you don't remove that line, you will get the following error message when attempting to deploy your subgraph:_
-
-```
-/...
-Mapping terminated before handling trigger: oneshot canceled
-.../
-```
 
 Now in order to run our tests you simply need to run the following in your subgraph root folder:
 
@@ -255,6 +238,141 @@ Users can assert that an entity does not exist in the store. The function takes 
 ```typescript
 assert.notInStore('Gravatar', '23')
 ```
+
+### Printing the whole store (for debug purposes)
+
+You can print the whole store to the console using this helper function:
+
+```typescript
+import { logStore } from "matchstick-as/assembly/store";
+
+logStore();
+```
+
+### Expected failure
+
+Users can have expected test failures, using the shouldFail flag on the test() functions:
+
+```typescript
+test("Should throw an error", () => {
+  throw new Error();
+}, true);
+```
+
+If the test is marked with shouldFail = true but DOES NOT fail, that will show up as an error in the logs and the test block will fail. Also, if it's marked with shouldFail = false (the default state), the test executor will crash.
+
+### Logging
+
+Having custom logs in the unit tests is exactly the same as logging in the mappings. The difference is that the log object needs to be imported from matchstick-as rather than graph-ts. Here's a simple example with all non-critical log types:
+
+```typescript
+import { test } from "matchstick-as/assembly/index";
+import { log } from "matchstick-as/assembly/log";
+
+test("Success", () => {
+    log.success("Success!". []);
+});
+test("Error", () => {
+    log.error("Error :( ", []);
+});
+test("Debug", () => {
+    log.debug("Debugging...", []);
+});
+test("Info", () => {
+    log.info("Info!", []);
+});
+test("Warning", () => {
+    log.warning("Warning!", []);
+});
+```
+
+Users can also simulate a critical failure, like so:
+
+```typescript
+test("Blow everything up", () => {
+    log.critical("Boom!");
+});
+```
+
+Logging critical errors will stop the execution of the tests and blow everything up. After all - we want to make sure you're code doesn't have critical logs in deployment, and you should notice right away if that were to happen.
+
+### Testing derived fields
+
+Testing derived fields is a feature which (as the example below shows) allows the user to set a field in a certain entity and have another entity be updated automatically if it derives one of its fields from the first entity. Important thing to note is that the first entity needs to be reloaded as the automatic update happens in the store in rust of which the AS code is agnostic.
+
+```typescript
+test("Derived fields example test", () => {
+    let mainAccount = new GraphAccount("12")
+    mainAccount.save()
+    let operatedAccount = new GraphAccount("1")
+    operatedAccount.operators = ["12"]
+    operatedAccount.save()
+    let nst = new NameSignalTransaction("1234")
+    nst.signer = "12";
+    nst.save()
+
+    assert.assertNull(mainAccount.get("nameSignalTransactions"))
+    assert.assertNull(mainAccount.get("operatorOf"))
+
+    mainAccount = GraphAccount.load("12")!
+
+    assert.i32Equals(1, mainAccount.nameSignalTransactions.length)
+    assert.stringEquals("1", mainAccount.operatorOf[0])
+})
+```
+
+### Testing dynamic data sources
+
+Testing dynamic data sources can be be done by mocking the return value of the context(), address() and network() functions of the dataSource namespace. These functions currently return the following: context - returns an empty entity (DataSourceContext), address - returns "0x0000000000000000000000000000000000000000", network - returns "mainnet". The create(...) and createWithContext(...) functions are mocked to do nothing so they don't need to be called in the tests at all. Changes to the return values can be done through the functions of the dataSourceMock namespace in matchstick-as (version 0.3.0+). Example below: First we have the following event handler (which has been intentionally repurposed to showcase datasource mocking):
+
+```typescript
+export function handleApproveTokenDestinations(event: ApproveTokenDestinations): void {
+  let tokenLockWallet = TokenLockWallet.load(dataSource.address().toHexString())!
+  if (dataSource.network() == "rinkeby") {
+    tokenLockWallet.tokenDestinationsApproved = true
+  }
+  let context = dataSource.context()
+  if (context.get("contextVal")!.toI32() > 0) {
+    tokenLockWallet.setBigInt("tokensReleased", BigInt.fromI32(context.get("contextVal")!.toI32()))
+  }
+  tokenLockWallet.save()
+}
+```
+
+And then we have the test using one of the methods in the dataSourceMock namespace to set a new return value for all of the dataSource functions:
+
+```typescript
+import { assert, test, newMockEvent, dataSourceMock } from "matchstick-as/assembly/index"
+import { BigInt, DataSourceContext, Value } from "@graphprotocol/graph-ts"
+
+import { handleApproveTokenDestinations } from "../../src/token-lock-wallet"
+import { ApproveTokenDestinations } from "../../generated/templates/GraphTokenLockWallet/GraphTokenLockWallet"
+import { TokenLockWallet } from "../../generated/schema"
+
+test("Data source simple mocking example", () => {
+    let addressString = "0xA16081F360e3847006dB660bae1c6d1b2e17eC2A"
+    let address = Address.fromString(addressString)
+
+    let wallet = new TokenLockWallet(address.toHexString())
+    wallet.save()
+    let context = new DataSourceContext()
+    context.set("contextVal", Value.fromI32(325))
+    dataSourceMock.setReturnValues(addressString, "rinkeby", context)
+    let event = changetype<ApproveTokenDestinations>(newMockEvent())
+
+    assert.assertTrue(!wallet.tokenDestinationsApproved)
+
+    handleApproveTokenDestinations(event)
+
+    wallet = TokenLockWallet.load(address.toHexString())!
+    assert.assertTrue(wallet.tokenDestinationsApproved)
+    assert.bigIntEquals(wallet.tokensReleased, BigInt.fromI32(325))
+
+    dataSourceMock.resetValues()
+})
+```
+
+Notice that dataSourceMock.resetValues() is called at the end. That's because the values are remembered when they are changed and need to be reset if you want to go back to the default values.
 
 ### Test run time duration in the log output
 
