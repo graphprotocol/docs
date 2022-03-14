@@ -61,7 +61,7 @@ export function createNewGravatarEvent(
 }
 ```
 
-まず、プロジェクトの中にテストファイルを作らなければなりません。ファイル名は`gravity.test.ts`としました。新しく作ったファイルの中で、`runTests()`という名前の関数を定義する必要があります。この関数がその通りの名前であることが重要です。これは、テストがどのように見えるかの例です:
+We first have to create a test file in our project. This is an example of how that might look like:
 
 ```typescript
 import { clearStore, test, assert } from 'matchstick-as/assembly/index'
@@ -69,30 +69,31 @@ import { Gravatar } from '../../generated/schema'
 import { NewGravatar } from '../../generated/Gravity/Gravity'
 import { createNewGravatarEvent, handleNewGravatars } from '../mappings/gravity'
 
-export function runTests(): void {
-  test('Can call mappings with custom events', () => {
-    // Initialise
-    let gravatar = new Gravatar('gravatarId0')
-    gravatar.save()
+test('Can call mappings with custom events', () => {
+  // Create a test entity and save it in the store as initial state (optional)
+  let gravatar = new Gravatar('gravatarId0')
+  gravatar.save()
 
-    // Call mappings
-    let newGravatarEvent = createNewGravatarEvent(12345, '0x89205A3A3b2A69De6Dbf7f01ED13B2108B2c43e7', 'cap', 'pac')
+  // Create mock events
+  let newGravatarEvent = createNewGravatarEvent(12345, '0x89205A3A3b2A69De6Dbf7f01ED13B2108B2c43e7', 'cap', 'pac')
+  let anotherGravatarEvent = createNewGravatarEvent(3546, '0x89205A3A3b2A69De6Dbf7f01ED13B2108B2c43e7', 'cap', 'pac')
 
-    let anotherGravatarEvent = createNewGravatarEvent(3546, '0x89205A3A3b2A69De6Dbf7f01ED13B2108B2c43e7', 'cap', 'pac')
+  // Call mapping functions passing the events we just created
+  handleNewGravatars([newGravatarEvent, anotherGravatarEvent])
 
-    handleNewGravatars([newGravatarEvent, anotherGravatarEvent])
+  // Assert the state of the store
+  assert.fieldEquals('Gravatar', 'gravatarId0', 'id', 'gravatarId0')
+  assert.fieldEquals('Gravatar', '12345', 'owner', '0x89205A3A3b2A69De6Dbf7f01ED13B2108B2c43e7')
+  assert.fieldEquals('Gravatar', '3546', 'displayName', 'cap')
 
-    assert.fieldEquals('Gravatar', 'gravatarId0', 'id', 'gravatarId0')
-    assert.fieldEquals('Gravatar', '12345', 'owner', '0x89205A3A3b2A69De6Dbf7f01ED13B2108B2c43e7')
-    assert.fieldEquals('Gravatar', '3546', 'displayName', 'cap')
+  // Clear the store in order to start the next test off on a clean slate
+  clearStore()
+})
 
-    clearStore()
-  })
+test('Next test', () => {
+  //...
+})
 
-  test('Next test', () => {
-    //...
-  })
-}
 ```
 
 まず重要なのは、`matchstick-as`という AssemblyScript のヘルパーライブラリ(npm モジュールとして配布)からインポートしていることです。リポジトリは[ここ](https://github.com/LimeChain/matchstick-as)にあります。`matchstick-as` は便利なテストメソッドを提供してくれますし、テストブロックを構築するのに使う`test()`関数も定義しています。残りの部分はとても簡単で、以下のようになります:
@@ -105,29 +106,11 @@ export function runTests(): void {
 
 これで最初のテストが完成しました! 👏
 
-❗ **重要:** _テストを動作させるには、 `runTests()`関数を mappings ファイルにエクスポートする必要があります。ここでは使われませんが、後でテストを実行するときに Rust に拾われるように、export 文が必要なのです。_
+Now in order to run our tests you simply need to run the following in your subgraph root folder:
 
-テスト用の wrapper 関数は，mappings ファイルの中で次のようにエクスポートできます:
+`graph test Gravity`
 
-```
-export { runTests } from "../tests/gravity.test.ts";
-```
-
-❗ **重要:** _現在、サブグラフをデプロイする際に Matchstick を使用すると問題があります。Matchstick はローカルでのテストにのみ使用し、テストが終わったらこの行 (`export { runTests } from "../tests/gravity.test.ts"`) を削除するかコメントアウトしてください。ご迷惑をおかけして申し訳ありませんが、この問題はまもなく解決する予定です。_
-
-_この行を削除しないと、サブグラフをデプロイしようとしたときに次のようなエラーメッセージが表示されます:_
-
-```
-/...
-Mapping terminated before handling trigger: oneshot canceled
-.../
-```
-
-テストを実行するには、サブグラフのルートフォルダで以下を実行する必要があります:
-
-`gravityのテスト`
-
-すべてがうまくいくと、以下のようなメッセージが表示されます:
+And if all goes well you should be greeted with the following:
 
 ![Matchstick saying “All tests passed!”](/img/matchstick-tests-passed.png)
 
@@ -135,7 +118,7 @@ Mapping terminated before handling trigger: oneshot canceled
 
 ### 特定の状態でストアにハイドレーティングする
 
-ユーザーは、既知のエンティティのセットでストアをハイドレートすることができます。ここでは、Gravatar のエンティティでストアを初期化する例を示します:
+Users are able to hydrate the store with a known set of entities. Here's an example to initialise the store with a Gravatar entity:
 
 ```typescript
 let gravatar = new Gravatar('entryId')
@@ -144,7 +127,7 @@ gravatar.save()
 
 ### イベントを使ったマッピング関数の呼び出し
 
-ユーザーはカスタムイベントを作成し、それをストアにバインドされたマッピング関数に渡すことができます:
+A user can create a custom event and pass it to a mapping function that is bound to the store:
 
 ```typescript
 import { store } from 'matchstick-as/assembly/store'
@@ -158,7 +141,7 @@ handleNewGravatar(newGravatarEvent)
 
 ### イベントフィクスチャですべてのマッピングを呼び出す
 
-ユーザーはテストフィクスチャでマッピングを呼び出すことができます。
+Users can call the mappings with test fixtures.
 
 ```typescript
 import { NewGravatar } from '../../generated/Gravity/Gravity'
@@ -182,7 +165,7 @@ export function handleNewGravatars(events: NewGravatar[]): void {
 
 ### コントラクトコールのモック
 
-ユーザーはコントラクトコールをモックすることができます:
+Users can mock contract calls:
 
 ```typescript
 import { addMetadata, assert, createMockedFunction, clearStore, test } from 'matchstick-as/assembly/index'
@@ -202,9 +185,9 @@ let result = gravity.gravatarToOwner(bigIntParam)
 assert.equals(ethereum.Value.fromAddress(expectedResult), ethereum.Value.fromAddress(result))
 ```
 
-このように、コントラクトコールをモックして戻り値をハードコアするためには、ユーザーはコントラクトアドレス、関数名、関数シグネチャ、引数の配列、そしてもちろん戻り値を提供する必要があります。
+As demonstrated, in order to mock a contract call and hardcore a return value, the user must provide a contract address, function name, function signature, an array of arguments, and of course - the return value.
 
-また、関数の戻り値をモックすることもできます:
+Users can also mock function reverts:
 
 ```typescript
 let contractAddress = Address.fromString('0x89205A3A3b2A69De6Dbf7f01ED13B2108B2c43e7')
@@ -215,7 +198,7 @@ createMockedFunction(contractAddress, 'getGravatar', 'getGravatar(address):(stri
 
 ### ストアの状態をアサートする
 
-ユーザーは、エンティティをアサートすることで、ストアの最終的な状態（または途中の状態）をアサートすることができます。これを行うためには、ユーザーは Entity タイプ、Entity の特定の ID、Entity のフィールド名、フィールドの期待値を指定する必要があります。以下に簡単な例を示します:
+Users are able to assert the final (or midway) state of the store through asserting entities. In order to do this, the user has to supply an Entity type, the specific ID of an Entity, a name of a field on that Entity, and the expected value of the field. Here's a quick example:
 
 ```typescript
 import { assert } from 'matchstick-as/assembly/index'
@@ -227,11 +210,11 @@ gravatar.save()
 assert.fieldEquals('Gravatar', 'gravatarId0', 'id', 'gravatarId0')
 ```
 
-assert.fieldEquals()関数を実行すると、指定されたフィールドが指定された期待値と等しいかどうかをチェックします。値が**等しくない** 場合は、テストは失敗し、エラーメッセージが出力されます。それ以外の場合は、テストは正常に通過します。
+Running the assert.fieldEquals() function will check for equality of the given field against the given expected value. The test will fail and an error message will be outputted if the values are **NOT** equal. Otherwise the test will pass successfully.
 
 ### イベントメタデータとのやりとり
 
-ユーザーは、`newMockEvent()`関数を使用して ethereum.Event として返されるデフォルトのトランザクションのメタデータを使用することができます。以下の例では、Event オブジェクトのこれらのフィールドを読み書きする方法を示しています:
+Users can use default transaction metadata, which could be returned as an ethereum.Event by using the `newMockEvent()` function. The following example shows how you can read/write to those fields on the Event object:
 
 ```typescript
 // Read
@@ -250,18 +233,153 @@ assert.equals(ethereum.Value.fromString("hello"); ethereum.Value.fromString("hel
 
 ### エンティティがストアに**ない**ことをアサートする
 
-ユーザーは、あるエンティティがストアに存在しないことをアサートできます。この関数は、エンティティタイプと id を受け取ります。エンティティが実際にストア内にある場合、テストは関連するエラーメッセージを表示して失敗します。この機能を使った簡単な例をご紹介します:
+Users can assert that an entity does not exist in the store. The function takes an entity type and an id. If the entity is in fact in the store, the test will fail with a relevant error message. Here's a quick example of how to use this functionality:
 
 ```typescript
 assert.notInStore('Gravatar', '23')
 ```
 
-### ログ出力でのテスト実行時間の表示
+### Printing the whole store (for debug purposes)
 
-ログ出力にテスト実行時間が含まれるようになりました。以下はその例です:
+You can print the whole store to the console using this helper function:
+
+```typescript
+import { logStore } from "matchstick-as/assembly/store";
+
+logStore();
+```
+
+### Expected failure
+
+Users can have expected test failures, using the shouldFail flag on the test() functions:
+
+```typescript
+test("Should throw an error", () => {
+  throw new Error();
+}, true);
+```
+
+If the test is marked with shouldFail = true but DOES NOT fail, that will show up as an error in the logs and the test block will fail. Also, if it's marked with shouldFail = false (the default state), the test executor will crash.
+
+### Logging
+
+Having custom logs in the unit tests is exactly the same as logging in the mappings. The difference is that the log object needs to be imported from matchstick-as rather than graph-ts. Here's a simple example with all non-critical log types:
+
+```typescript
+import { test } from "matchstick-as/assembly/index";
+import { log } from "matchstick-as/assembly/log";
+
+test("Success", () => {
+    log.success("Success!". []);
+});
+test("Error", () => {
+    log.error("Error :( ", []);
+});
+test("Debug", () => {
+    log.debug("Debugging...", []);
+});
+test("Info", () => {
+    log.info("Info!", []);
+});
+test("Warning", () => {
+    log.warning("Warning!", []);
+});
+```
+
+Users can also simulate a critical failure, like so:
+
+```typescript
+test("Blow everything up", () => {
+    log.critical("Boom!");
+});
+```
+
+Logging critical errors will stop the execution of the tests and blow everything up. After all - we want to make sure you're code doesn't have critical logs in deployment, and you should notice right away if that were to happen.
+
+### Testing derived fields
+
+Testing derived fields is a feature which (as the example below shows) allows the user to set a field in a certain entity and have another entity be updated automatically if it derives one of its fields from the first entity. Important thing to note is that the first entity needs to be reloaded as the automatic update happens in the store in rust of which the AS code is agnostic.
+
+```typescript
+test("Derived fields example test", () => {
+    let mainAccount = new GraphAccount("12")
+    mainAccount.save()
+    let operatedAccount = new GraphAccount("1")
+    operatedAccount.operators = ["12"]
+    operatedAccount.save()
+    let nst = new NameSignalTransaction("1234")
+    nst.signer = "12";
+    nst.save()
+
+    assert.assertNull(mainAccount.get("nameSignalTransactions"))
+    assert.assertNull(mainAccount.get("operatorOf"))
+
+    mainAccount = GraphAccount.load("12")!
+
+    assert.i32Equals(1, mainAccount.nameSignalTransactions.length)
+    assert.stringEquals("1", mainAccount.operatorOf[0])
+})
+```
+
+### Testing dynamic data sources
+
+Testing dynamic data sources can be be done by mocking the return value of the context(), address() and network() functions of the dataSource namespace. These functions currently return the following: context - returns an empty entity (DataSourceContext), address - returns "0x0000000000000000000000000000000000000000", network - returns "mainnet". The create(...) and createWithContext(...) functions are mocked to do nothing so they don't need to be called in the tests at all. Changes to the return values can be done through the functions of the dataSourceMock namespace in matchstick-as (version 0.3.0+). Example below: First we have the following event handler (which has been intentionally repurposed to showcase datasource mocking):
+
+```typescript
+export function handleApproveTokenDestinations(event: ApproveTokenDestinations): void {
+  let tokenLockWallet = TokenLockWallet.load(dataSource.address().toHexString())!
+  if (dataSource.network() == "rinkeby") {
+    tokenLockWallet.tokenDestinationsApproved = true
+  }
+  let context = dataSource.context()
+  if (context.get("contextVal")!.toI32() > 0) {
+    tokenLockWallet.setBigInt("tokensReleased", BigInt.fromI32(context.get("contextVal")!.toI32()))
+  }
+  tokenLockWallet.save()
+}
+```
+
+And then we have the test using one of the methods in the dataSourceMock namespace to set a new return value for all of the dataSource functions:
+
+```typescript
+import { assert, test, newMockEvent, dataSourceMock } from "matchstick-as/assembly/index"
+import { BigInt, DataSourceContext, Value } from "@graphprotocol/graph-ts"
+
+import { handleApproveTokenDestinations } from "../../src/token-lock-wallet"
+import { ApproveTokenDestinations } from "../../generated/templates/GraphTokenLockWallet/GraphTokenLockWallet"
+import { TokenLockWallet } from "../../generated/schema"
+
+test("Data source simple mocking example", () => {
+    let addressString = "0xA16081F360e3847006dB660bae1c6d1b2e17eC2A"
+    let address = Address.fromString(addressString)
+
+    let wallet = new TokenLockWallet(address.toHexString())
+    wallet.save()
+    let context = new DataSourceContext()
+    context.set("contextVal", Value.fromI32(325))
+    dataSourceMock.setReturnValues(addressString, "rinkeby", context)
+    let event = changetype<ApproveTokenDestinations>(newMockEvent())
+
+    assert.assertTrue(!wallet.tokenDestinationsApproved)
+
+    handleApproveTokenDestinations(event)
+
+    wallet = TokenLockWallet.load(address.toHexString())!
+    assert.assertTrue(wallet.tokenDestinationsApproved)
+    assert.bigIntEquals(wallet.tokensReleased, BigInt.fromI32(325))
+
+    dataSourceMock.resetValues()
+})
+```
+
+Notice that dataSourceMock.resetValues() is called at the end. That's because the values are remembered when they are changed and need to be reset if you want to go back to the default values.
+
+### Test run time duration in the log output
+
+The log output includes the test run duration. Here's an example:
 
 `Jul 09 14:54:42.420 INFO Program execution time: 10.06022ms`
 
 ## フィードバック
 
-質問、フィードバック、機能要求などがありましたら、The Graph Discord に Matchstick 専用のチャンネル 🔥| unit-testing がありますので、そちらにお問い合わせください。
+If you have any questions, feedback, feature requests or just want to reach out, the best place would be The Graph Discord where we have a dedicated channel for Matchstick, called 🔥| unit-testing.
