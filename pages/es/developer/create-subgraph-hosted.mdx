@@ -728,7 +728,7 @@ La `función` es la firma de la función normalizada por la que se filtran las l
 
 ### Función mapeo
 
-Cada handler de llamadas toma un solo parámetro que tiene un tipo correspondiente al nombre de la función llamada. En el subgrafo de ejemplo anterior, el mapeo contiene un handler para cuando la función `createGravatar` es llamada y recibe un parámetro `CreateGravatarCall` como argumento:
+Cada handler de llamadas toma un solo parámetro que tiene un tipo correspondiente al nombre de la función llamada. En el subgrafo de ejemplo anterior, el mapping contiene un handler para cuando se llama a la función `createGravatar` y recibe un parámetro `CreateGravatarCall` como argumento:
 
 ```typescript
 import { CreateGravatarCall } from '../generated/Gravity/Gravity'
@@ -852,11 +852,11 @@ Los errores de indexación en subgrafos ya sincronizados harán que, por defecto
 
 ### Errores no fatales
 
-La activación de los errores no fatales requiere el establecimiento de la siguiente bandera de características en el manifiesto del subgrafo:
+Los errores de indexación en subgrafos ya sincronizados provocarán, por defecto, que el subgrafo falle y deje de sincronizarse. Los subgrafos pueden ser configurados para continuar la sincronización en presencia de errores, ignorando los cambios realizados por el handler que provocó el error. Esto da a los autores de los subgrafos tiempo para corregir sus subgrafos mientras las consultas continúan siendo servidas contra el último bloque, aunque los resultados serán posiblemente inconsistentes debido al bug que provocó el error. Nótese que algunos errores siguen siendo siempre fatales, para que el error no sea fatal debe saberse que es deterministico.
 
 > **Nota:** The Graph Network todavía no admite errores no fatales, y los desarrolladores no deben desplegar subgrafos que utilicen esa funcionalidad en la red a través de Studio.
 
-La consulta también debe optar por consultar datos con posibles inconsistencias a través del argumento `subgraphError`. También se recomienda consultar `_meta` para comprobar si el subgrafo ha saltado los errores, como en el ejemplo:
+La activación de los errores no fatales requiere el establecimiento de la siguiente bandera de características en el manifiesto del subgrafo:
 
 ```yaml
 specVersion: 0.0.4
@@ -866,7 +866,7 @@ features:
     ...
 ```
 
-Si el subgrafo encuentra un error esa consulta devolverá tanto los datos como un error de graphql con el mensaje `"indexing_error"`, como en este ejemplo de respuesta:
+La consulta también debe optar por consultar los datos con posibles incoherencias a través del argumento `subgraphError`. También se recomienda consultar `_meta` para comprobar si el subgrafo ha saltado por encima de los errores, como en el ejemplo:
 
 ```graphql
 foos(first: 100, subgraphError: allow) {
@@ -878,7 +878,7 @@ _meta {
 }
 ```
 
-Cuando un subgrafo se despliega por primera vez, comienza a indexar eventos en el bloque génesis de la cadena correspondiente (o en el `startBlock` definido con cada fuente de datos) En algunas circunstancias, es beneficioso reutilizar los datos de un subgrafo existente y comenzar a indexar en un bloque mucho más tarde. Este modo de indexación se denomina _Grafting_. El grafting es, por ejemplo, útil durante el desarrollo para superar rápidamente errores simples en los mapeos, o para hacer funcionar temporalmente un subgrafo existente después de que haya fallado.
+Si el subgrafo encuentra un error esa consulta devolverá tanto los datos como un error de graphql con el mensaje `"indexing_error"`, como en este ejemplo de respuesta:
 
 ```graphql
 "data": {
@@ -900,11 +900,11 @@ Cuando un subgrafo se despliega por primera vez, comienza a indexar eventos en e
 
 ### Grafting en subgrafos existentes
 
-Un subgrafo se injerta en un subgrafo base cuando el manifiesto del subgrafo en `subgraph.yaml` contiene un bloque `graft` en el nivel superior:
+Cuando un subgrafo se despliega por primera vez, comienza a indexar eventos en el bloque génesis de la cadena correspondiente (o en el `startBlock` definido con cada fuente de datos) En algunas circunstancias, es beneficioso reutilizar los datos de un subgrafo existente y comenzar a indexar en un bloque mucho más tardío. Este modo de indexación se denomina _Grafting_. El Grafting es, por ejemplo, útil durante el desarrollo para superar rápidamente errores simples en los mapeos, o para hacer funcionar temporalmente un subgrafo existente después de que haya fallado.
 
 > **Nota:** El grafting requiere que el indexador haya indexado el subgrafo base. No se recomienda en The Graph Network en este momento, y los desarrolladores no deberían desplegar subgrafos que utilicen esa funcionalidad en la red a través de Studio.
 
-Cuando se despliega un subgrafo cuyo manifiesto contiene un bloque `graft`, Graph Node copiará los datos del subgrafo `base` hasta e incluyendo el `block` dado y luego continuará indexando el nuevo subgrafo a partir de ese bloque. El subgrafo base debe existir en el target de Graph Node de destino y debe haber indexado hasta al menos el bloque dado. Debido a esta restricción, el grafting sólo debería utilizarse durante el desarrollo o durante una emergencia para acelerar la producción de un subgrafo equivalente no grafted.
+Un subgrafo se injerta en un subgrafo base cuando el manifiesto de subgrafo `subgraph.yaml` contiene un bloque `graft` en el nivel superior:
 
 ```yaml
 descripción: ...
@@ -913,11 +913,11 @@ graft:
   block: 7345624 # Block number
 ```
 
-Dado que el grafting copia en lugar de indexar los datos de base, es mucho más rápido llevar el subgrafo al bloque deseado que indexar desde cero, aunque la copia inicial de los datos puede tardar varias horas en el caso de subgrafos muy grandes. Mientras se inicializa el subgrafo grafteado, the Graph Node registrará información sobre los tipos de entidad que ya han sido copiados.
+Cuando se despliega un subgrafo cuyo manifiesto contiene un bloque `graft`, Graph Node copiará los datos del subgrafo `base` hasta el  `block` dado, inclusive, y luego continuará indexando el nuevo subgrafo a partir de ese bloque. El subgrafo base debe existir en la instancia de Graph Node de destino y debe haber indexado hasta al menos el bloque dado. Debido a esta restricción, el grafting sólo debería utilizarse durante el desarrollo o durante una emergencia para acelerar la producción de un subgrafo equivalente no grafted (injertado).
 
-El subgrafo grafteado puede utilizar un esquema GraphQL que no es idéntico al del subgrafo base, sino simplemente compatible con él. Tiene que ser un esquema de subgrafo válido por sí mismo, pero puede desviarse del esquema del subgrafo base de las siguientes maneras:
+Debido a que el grafting copia en lugar de indexar los datos base, es mucho más rápido llevar el subgrafo al bloque deseado que indexar desde cero, aunque la copia inicial de los datos aún puede llevar varias horas para subgrafos muy grandes. Mientras se inicializa el subgrafo grafted, el Nodo Graph registrará información sobre los tipos de entidad que ya han sido copiados.
 
-The grafted subgraph can use a GraphQL schema that is not identical to the one of the base subgraph, but merely compatible with it. It has to be a valid subgraph schema in its own right but may deviate from the base subgraph's schema in the following ways:
+El subgrafo grafted puede utilizar un esquema GraphQL que no sea idéntico al del subgrafo base, sino simplemente compatible con él. Tiene que ser un esquema de subgrafo válido por derecho propio, pero puede desviarse del esquema del subgrafo base de las siguientes maneras:
 
 - Agrega o elimina tipos de entidades
 - Elimina los atributos de los tipos de entidad
