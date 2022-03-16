@@ -1,4 +1,3 @@
-export * from './Layout'
 export * from './MDXLayout'
 export * from './MDXLayoutNav'
 export * from './MDXLayoutPagination'
