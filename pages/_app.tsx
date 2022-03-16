@@ -54,6 +54,15 @@ const MyApp = ({ Component, pageProps }: AppProps) => {
 
   seo.openGraph!.locale = locale
 
+  // Disable smooth scrolling while switching routes
+  const disableSmoothScrolling = useCallback(
+    (disableFn) => {
+      router.events.on('routeChangeStart', disableFn)
+      return () => router.events.off('routeChangeStart', disableFn)
+    },
+    [router]
+  )
+
   return (
     <I18nProvider
       supportedLocales={supportedLocales}
@@ -62,7 +71,7 @@ const MyApp = ({ Component, pageProps }: AppProps) => {
       setLocale={setLocale}
       pathWithoutLocale={pathWithoutLocale}
     >
-      <ThemeProvider>
+      <ThemeProvider disableSmoothScrolling={disableSmoothScrolling}>
         <DefaultSeo {...seo} />
         <Layout>
           <Component {...pageProps} />
