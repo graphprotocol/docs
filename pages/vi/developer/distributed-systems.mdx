@@ -50,8 +50,8 @@ async function updateProtocolPaused() {
     })
 
     const query = `
-        {
-            protocol(block: { number_gte: ${minBlock} }  id: "0") {
+        query GetProtocol($minBlock: Int!) {
+            protocol(block: { number_gte: $minBlock }  id: "0") {
               paused
             }
             _meta {
@@ -61,7 +61,8 @@ async function updateProtocolPaused() {
             }
         }`
 
-    const response = await graphql(query)
+    const variables = { minBlock }
+    const response = await graphql(query, variables)
     minBlock = response._meta.block.number
 
     // VIỆC CẦN LÀM: Làm điều gì đó với dữ liệu phản hồi tại đây thay vì ghi lại dữ liệu đó.
@@ -88,9 +89,9 @@ async function getDomainNames() {
 
   // Truy vấn đầu tiên sẽ nhận được trang kết quả đầu tiên và cũng nhận được khối
   // băm để phần còn lại của các truy vấn nhất quán với phần đầu tiên.
-  let query = `
-    {
-        domains(first: ${perPage}) {
+  const listDomainsQuery = `
+    query ListDomains($perPage: Int!) {
+        domains(first: $perPage) {
             name
             id
         }
@@ -101,24 +102,25 @@ async function getDomainNames() {
         }
     }`
 
-  let data = await graphql(query)
+  let data = await graphql(listDomainsQuery, { perPage })
   let result = data.domains.map((d) => d.name)
   let blockHash = data._meta.block.hash
 
+  let query
   // Tiếp tục tìm nạp các trang bổ sung cho đến khi chúng ta đạt đến giới hạn
   // Tổng cộng 5 trang (đã nêu ở trên) hoặc chúng ta biết rằng chúng ta đã đến trang cuối cùng
   // bởi vì trang có ít thực thể hơn một trang đầy đủ.
   while (data.domains.length == perPage && --pages) {
     let lastID = data.domains[data.domains.length - 1].id
     query = `
-        {
-            domains(first: ${perPage}, where: { id_gt: "${lastID}" }, block: { hash: "${blockHash}" }) {
+        query ListDomains($perPage: Int!, $lastID: ID!, $blockHash: Bytes!) {
+            domains(first: $perPage, where: { id_gt: $lastID }, block: { hash: $blockHash }) {
                 name
                 id
             }
         }`
 
-    data = await graphql(query)
+    data = await graphql(query, { perPage, lastID, blockHash })
 
     // Tích lũy tên miền vào kết quả
     for (domain of data.domains) {
