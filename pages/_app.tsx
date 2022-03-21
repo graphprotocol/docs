@@ -92,6 +92,7 @@ const MyApp = ({ Component, pageProps }: AppProps) => {
           }}
         />
         <Layout
+          headerSticky
           mainContainer
           headerContent={
             <NavigationMarketing activeRoute="/docs" NextLink={NextLink} rightAlignItems={[localeSwitcher]} />
