@@ -1,7 +1,8 @@
 import { useMemo, useCallback, useEffect } from 'react'
 import { AppProps } from 'next/app'
-import { DefaultSeo, DefaultSeoProps } from 'next-seo'
 import { useRouter } from 'next/router'
+import Head from 'next/head'
+import { DefaultSeo, DefaultSeoProps } from 'next-seo'
 import { Locale, defaultLocale, extractLocaleFromPath, I18nProvider, ThemeProvider } from '@edgeandnode/components'
 import '@edgeandnode/components/build/components.css'
 
@@ -64,20 +65,22 @@ const MyApp = ({ Component, pageProps }: AppProps) => {
   )
 
   return (
-    <I18nProvider
-      supportedLocales={supportedLocales}
-      translations={translations}
-      locale={locale ?? undefined}
-      setLocale={setLocale}
-      pathWithoutLocale={pathWithoutLocale}
-    >
-      <ThemeProvider disableSmoothScrolling={disableSmoothScrolling}>
-        <DefaultSeo {...seo} />
-        <Layout>
-          <Component {...pageProps} />
-        </Layout>
-      </ThemeProvider>
-    </I18nProvider>
+    <>
+      <DefaultSeo {...seo} />
+      <I18nProvider
+        supportedLocales={supportedLocales}
+        translations={translations}
+        locale={locale ?? undefined}
+        setLocale={setLocale}
+        pathWithoutLocale={pathWithoutLocale}
+      >
+        <ThemeProvider disableSmoothScrolling={disableSmoothScrolling} headComponent={Head}>
+          <Layout>
+            <Component {...pageProps} />
+          </Layout>
+        </ThemeProvider>
+      </I18nProvider>
+    </>
   )
 }
 
