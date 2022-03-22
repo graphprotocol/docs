@@ -16,10 +16,11 @@ import {
   extractLocaleFromPath,
 } from '@edgeandnode/components'
 import '@edgeandnode/components/build/components.css'
+import { merge } from 'lodash-es'
 
-import { supportedLocales, translations } from '@/i18n'
+import { supportedLocales, translations, useI18n } from '@/i18n'
 
-const seo: DefaultSeoProps = {
+const DEFAULT_SEO_PROPS: DefaultSeoProps = {
   title: 'The Graph Docs',
   description: 'Browse the latest developer documentation including API reference, articles, and sample code',
   openGraph: {
@@ -41,6 +42,26 @@ const seo: DefaultSeoProps = {
   },
 }
 
+const DefaultSeoWithLocale = () => {
+  const { locale } = useI18n()
+
+  useEffect(() => {
+    document.documentElement.lang = locale
+  }, [locale])
+
+  const seoProps = useMemo(
+    () =>
+      merge(DEFAULT_SEO_PROPS, {
+        openGraph: {
+          locale,
+        },
+      }),
+    [locale]
+  )
+
+  return <DefaultSeo {...seoProps} />
+}
+
 const MyApp = ({ Component, pageProps }: AppProps) => {
   const router = useRouter()
 
@@ -59,12 +80,6 @@ const MyApp = ({ Component, pageProps }: AppProps) => {
     [router, pathWithoutLocale]
   )
 
-  useEffect(() => {
-    document.documentElement.lang = locale
-  }, [locale])
-
-  seo.openGraph!.locale = locale
-
   const localeSwitcher = useMemo(() => <LocaleSwitcher key="localeSwitcher" />, [])
 
   // Disable smooth scrolling while switching routes
@@ -78,14 +93,14 @@ const MyApp = ({ Component, pageProps }: AppProps) => {
 
   return (
     <>
-      <DefaultSeo {...seo} />
       <I18nProvider
         supportedLocales={supportedLocales}
         translations={translations}
-        locale={locale ?? undefined}
+        locale={locale}
         setLocale={setLocale}
         pathWithoutLocale={pathWithoutLocale}
       >
+        <DefaultSeoWithLocale />
         <ThemeProvider disableSmoothScrolling={disableSmoothScrolling} headComponent={Head}>
           <div
             sx={{

@@ -1,5 +1,5 @@
-import { PropsWithChildren, createContext, Context, useMemo, useCallback } from 'react'
-import Head from 'next/head'
+import { PropsWithChildren, useMemo, useCallback } from 'react'
+import { NextSeo } from 'next-seo'
 import { MDXProvider } from '@mdx-js/react'
 import { ThemeUIStyleObject } from 'theme-ui'
 import { NewGDSDivider, NewGDSDividerProps, Spacing, Flex } from '@edgeandnode/components'
@@ -131,9 +131,7 @@ export const MDXLayout = ({ pagePath, navItems, frontmatter, outline, children }
   return (
     <NavContext.Provider value={{ pagePath, navItems, pageNavItems, previousPage, currentPage, nextPage }}>
       <DocumentContext.Provider value={{ frontmatter, outline, markOutlineItem, highlightedOutlineItemId }}>
-        <Head>
-          <title>{frontmatter?.title ? `${frontmatter.title} - ` : ''}The Graph Docs</title>
-        </Head>
+        <NextSeo title={`${frontmatter?.title ? `${frontmatter.title} - ` : ''} The Graph Docs`} />
 
         <div
           sx={{
