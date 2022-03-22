@@ -1,18 +1,19 @@
 import { useMemo, useCallback, useEffect } from 'react'
 import { AppProps } from 'next/app'
+import { useRouter } from 'next/router'
+import Head from 'next/head'
 import NextLink from 'next/link'
 import { DefaultSeo, DefaultSeoProps } from 'next-seo'
-import { useRouter } from 'next/router'
 import {
+  I18nProvider,
+  ThemeProvider,
   Layout,
   NavigationMarketing,
   Footer,
   Locale,
+  LocaleSwitcher,
   defaultLocale,
   extractLocaleFromPath,
-  I18nProvider,
-  ThemeProvider,
-  LocaleSwitcher,
 } from '@edgeandnode/components'
 import '@edgeandnode/components/build/components.css'
 
@@ -66,44 +67,55 @@ const MyApp = ({ Component, pageProps }: AppProps) => {
 
   const localeSwitcher = useMemo(() => <LocaleSwitcher key="localeSwitcher" />, [])
 
+  // Disable smooth scrolling while switching routes
+  const disableSmoothScrolling = useCallback(
+    (disableFn) => {
+      router.events.on('routeChangeStart', disableFn)
+      return () => router.events.off('routeChangeStart', disableFn)
+    },
+    [router]
+  )
+
   return (
-    <I18nProvider
-      supportedLocales={supportedLocales}
-      translations={translations}
-      locale={locale ?? undefined}
-      setLocale={setLocale}
-      pathWithoutLocale={pathWithoutLocale}
-    >
-      <ThemeProvider>
-        <DefaultSeo {...seo} />
-        <div
-          sx={{
-            position: 'absolute',
-            left: 0,
-            right: 0,
-            top: 0,
-            minHeight: '768px',
-            backgroundImage: `url('${process.env.BASE_PATH}/img/page-background.png')`,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center top',
-            '@media (min-width: 1440px)': {
-              aspectRatio: '1440/768',
-            },
-          }}
-        />
-        <Layout
-          mainContainer
-          headerContent={
-            <NavigationMarketing activeRoute="/docs" NextLink={NextLink} rightAlignItems={[localeSwitcher]} />
-          }
-          footerContent={<Footer localeSwitcher={localeSwitcher} />}
-        >
-          <div>
-            <Component {...pageProps} />
-          </div>
-        </Layout>
-      </ThemeProvider>
-    </I18nProvider>
+    <>
+      <DefaultSeo {...seo} />
+      <I18nProvider
+        supportedLocales={supportedLocales}
+        translations={translations}
+        locale={locale ?? undefined}
+        setLocale={setLocale}
+        pathWithoutLocale={pathWithoutLocale}
+      >
+        <ThemeProvider disableSmoothScrolling={disableSmoothScrolling} headComponent={Head}>
+          <div
+            sx={{
+              position: 'absolute',
+              left: 0,
+              right: 0,
+              top: 0,
+              minHeight: '768px',
+              backgroundImage: `url('${process.env.BASE_PATH}/img/page-background.png')`,
+              backgroundSize: 'cover',
+              backgroundPosition: 'center top',
+              '@media (min-width: 1440px)': {
+                aspectRatio: '1440/768',
+              },
+            }}
+          />
+          <Layout
+            mainContainer
+            headerContent={
+              <NavigationMarketing activeRoute="/docs" NextLink={NextLink} rightAlignItems={[localeSwitcher]} />
+            }
+            footerContent={<Footer localeSwitcher={localeSwitcher} />}
+          >
+            <div>
+              <Component {...pageProps} />
+            </div>
+          </Layout>
+        </ThemeProvider>
+      </I18nProvider>
+    </>
   )
 }
 
