@@ -11,7 +11,7 @@ import {
   useUniqueId,
 } from '@edgeandnode/components'
 
-import { NavContext } from '@/layout'
+import { NavContext } from '@/layout/NavContext'
 import { Link } from '@/components'
 import { useI18n } from '@/i18n'
 

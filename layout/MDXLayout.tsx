@@ -5,8 +5,15 @@ import { ThemeUIStyleObject } from 'theme-ui'
 import { NewGDSDivider, NewGDSDividerProps, Spacing, Flex } from '@edgeandnode/components'
 import { useSet } from 'react-use'
 
-import { NavItem, NavItemPage } from '@/navigation'
-import { MDXLayoutNav, MDXLayoutPagination, MDXLayoutOutline } from '@/layout'
+import {
+  NavContext,
+  NavContextProps,
+  DocumentContext,
+  DocumentContextProps,
+  MDXLayoutNav,
+  MDXLayoutPagination,
+  MDXLayoutOutline,
+} from '@/layout'
 import {
   Blockquote,
   CodeBlock,
@@ -59,36 +66,6 @@ const mdxStyles = {
     height: '100%',
   },
 } as ThemeUIStyleObject
-
-export type NavContextProps = {
-  pagePath: string
-  navItems: NavItem[]
-  pageNavItems: NavItemPage[]
-  previousPage: NavItemPage | null
-  currentPage: NavItemPage | null
-  nextPage: NavItemPage | null
-}
-
-export const NavContext = createContext(null) as Context<NavContextProps | null>
-
-export type Frontmatter = {
-  title?: string
-}
-
-export type OutlineItem = {
-  id: string
-  title: string
-  level: 1 | 2 | 3 | 4 | 5 | 6
-}
-
-export type DocumentContextProps = {
-  frontmatter?: Frontmatter
-  outline: OutlineItem[]
-  markOutlineItem: (id: string, inOrAboveView: boolean) => void
-  highlightedOutlineItemId: string | null
-}
-
-export const DocumentContext = createContext(null) as Context<DocumentContextProps | null>
 
 export type MDXLayoutProps = PropsWithChildren<
   Pick<NavContextProps, 'pagePath' | 'navItems'> & Pick<DocumentContextProps, 'frontmatter' | 'outline'>

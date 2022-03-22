@@ -103,10 +103,11 @@ const MyApp = ({ Component, pageProps }: AppProps) => {
             }}
           />
           <Layout
-            mainContainer
+            headerSticky
             headerContent={
               <NavigationMarketing activeRoute="/docs" NextLink={NextLink} rightAlignItems={[localeSwitcher]} />
             }
+            mainContainer
             footerContent={<Footer localeSwitcher={localeSwitcher} />}
           >
             <div>
