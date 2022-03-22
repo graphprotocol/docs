@@ -14,8 +14,6 @@ export default class MyDocument extends Document {
     return (
       <Html lang={locale}>
         <Head>
-          <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-          <link rel="stylesheet" href="https://storage.googleapis.com/graph-fonts/EuclidCircular/fonts.css" />
           <link rel="icon" type="image/png" href="https://storage.googleapis.com/graph-web/favicon.png" />
         </Head>
         <body>

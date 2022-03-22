@@ -30,7 +30,7 @@ export const MDXLayoutPagination = () => {
               <Flex.Column align="start" gap={Spacing.S} sx={{ textAlign: 'left' }}>
                 <Flex.Row align="center" gap={Spacing.S}>
                   <Icon.ArrowLeft title="" size="12px" />
-                  <Text.S10>{t('global.previous')}</Text.S10>
+                  <Text.C10>{t('global.previous')}</Text.C10>
                 </Flex.Row>
                 <Text
                   weight="Semibold"
@@ -67,7 +67,7 @@ export const MDXLayoutPagination = () => {
             >
               <Flex.Column align="end" gap={Spacing.S} sx={{ textAlign: 'right' }}>
                 <Flex.Row align="center" gap={Spacing.S}>
-                  <Text.S10>{t('global.next')}</Text.S10>
+                  <Text.C10>{t('global.next')}</Text.C10>
                   <Icon.ArrowRight title="" size="12px" />
                 </Flex.Row>
                 <Text
