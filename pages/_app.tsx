@@ -99,9 +99,7 @@ const MyApp = ({ Component, pageProps }: AppProps) => {
           }
           footerContent={<Footer localeSwitcher={localeSwitcher} />}
         >
-          <div>
-            <Component {...pageProps} />
-          </div>
+          <Component {...pageProps} />
         </Layout>
       </ThemeProvider>
     </I18nProvider>
