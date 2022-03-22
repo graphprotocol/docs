@@ -10,9 +10,9 @@ export const MDXLayoutPagination = () => {
   const { t } = useI18n()
 
   return (
-    <div sx={{ overflow: 'hidden' }}>
+    <div>
       <NewGDSDivider diamonds />
-      <Flex.Row justify="space-between" sx={{ mt: Spacing.XL }}>
+      <Flex.Row justify="space-between" sx={{ mt: Spacing.XL, overflow: 'hidden' }}>
         <div>
           {previousPage && (
             <Link
