@@ -2,11 +2,21 @@ import { useMemo, useCallback, useEffect } from 'react'
 import { AppProps } from 'next/app'
 import { useRouter } from 'next/router'
 import Head from 'next/head'
+import NextLink from 'next/link'
 import { DefaultSeo, DefaultSeoProps } from 'next-seo'
-import { Locale, defaultLocale, extractLocaleFromPath, I18nProvider, ThemeProvider } from '@edgeandnode/components'
+import {
+  I18nProvider,
+  ThemeProvider,
+  Layout,
+  NavigationMarketing,
+  Footer,
+  Locale,
+  LocaleSwitcher,
+  defaultLocale,
+  extractLocaleFromPath,
+} from '@edgeandnode/components'
 import '@edgeandnode/components/build/components.css'
 
-import { Layout } from '@/layout'
 import { supportedLocales, translations } from '@/i18n'
 
 const seo: DefaultSeoProps = {
@@ -55,6 +65,8 @@ const MyApp = ({ Component, pageProps }: AppProps) => {
 
   seo.openGraph!.locale = locale
 
+  const localeSwitcher = useMemo(() => <LocaleSwitcher key="localeSwitcher" />, [])
+
   // Disable smooth scrolling while switching routes
   const disableSmoothScrolling = useCallback(
     (disableFn) => {
@@ -75,7 +87,29 @@ const MyApp = ({ Component, pageProps }: AppProps) => {
         pathWithoutLocale={pathWithoutLocale}
       >
         <ThemeProvider disableSmoothScrolling={disableSmoothScrolling} headComponent={Head}>
-          <Layout>
+          <div
+            sx={{
+              position: 'absolute',
+              left: 0,
+              right: 0,
+              top: 0,
+              minHeight: '768px',
+              backgroundImage: `url('${process.env.BASE_PATH}/img/page-background.png')`,
+              backgroundSize: 'cover',
+              backgroundPosition: 'center top',
+              '@media (min-width: 1440px)': {
+                aspectRatio: '1440/768',
+              },
+            }}
+          />
+          <Layout
+            headerSticky
+            headerContent={
+              <NavigationMarketing activeRoute="/docs" NextLink={NextLink} rightAlignItems={[localeSwitcher]} />
+            }
+            mainContainer
+            footerContent={<Footer localeSwitcher={localeSwitcher} />}
+          >
             <Component {...pageProps} />
           </Layout>
         </ThemeProvider>
