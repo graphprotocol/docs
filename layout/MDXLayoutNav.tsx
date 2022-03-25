@@ -69,7 +69,7 @@ const MobileWrapper = ({ title, children }: PropsWithChildren<{ title?: string }
           sx={{ px: Spacing.L_XL, py: '20px' }}
         >
           <Flex.Column as="span" gap={Spacing.S}>
-            <Text.S10 color="White64">Docs</Text.S10>
+            <Text.C10 color="White64">Docs</Text.C10>
             <Text size="16px">{title}</Text>
           </Flex.Column>
           <Flex.Column
