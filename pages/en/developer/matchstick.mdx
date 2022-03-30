@@ -6,13 +6,60 @@ Matchstick is a unit testing framework, developed by [LimeChain](https://limecha
 
 Follow the [Matchstick installation guide](https://github.com/LimeChain/matchstick/blob/main/README.md#quick-start-) to install. Now, you can move on to writing your first unit test.
 
+## Getting Started
+
+### Install dependencies
+In order to use the test helper methods and run the tests, you will need to install the following dependencies:
+
+```
+yarn add --dev matchstick-as
+```
+
+❗ Since `graph-node` depends on diesel (and diesel requires a local postgres installation) we highly advise using the commands below as adding it in any other way may cause unexpected errors! If you don't have Postgres installed, you will need to install it:
+
+
+#### MacOS
+Postgres installation command:
+```
+brew install postgresql
+```
+
+#### Linux
+Postgres installation command (depends on your distro):
+```
+sudo apt install postgresql
+```
+
+### OS-specific release binaries
+The release binary comes in two flavours - for **МacOS** and **Linux**. To add **Matchstick** to your subgraph project just open up a terminal, navigate to the root folder of your project and simply run `graph test` - it downloads the latest **Matchstick** binary and runs the specified test or all tests in a test folder (or all existing tests if no datasource flag is specified). Example usage: `graph test gravity`.
+
+### Docker
+
+From `graph-cli 0.25.2`, the `graph test` command supports running `matchstick` in a docker container with the `-d` flag.
+The docker implementation uses [bind mount](https://docs.docker.com/storage/bind-mounts/) so it does not have to rebuild the docker image every time the `graph test -d` command is executed.
+Or you can follow the instructions from the [matchstick](https://github.com/LimeChain/matchstick#docker-) repository to run docker manually.
+
+❗ If you have previously ran `graph test` you may encounter the following error during docker build:
+```
+  error from sender: failed to xattr node_modules/binary-install-raw/bin/binary-<platform>: permission denied
+```
+ In this case create a file named `.dockerignore` in the root folder and add `node_modules/binary-install-raw/bin`
+
+
+### Configuration
+Matchstick can be configured to use a custom tests and libs folder via `matchstick.yaml` config file:
+
+- To change the default tests location (./tests), add `testsFolder: ./custom/path`
+
+- To change the default libs location (./node_modules), add `libsFolder: ./custom/path`
+
 ## Write a Unit Test
 
 Let's see how a simple unit test would look like, using the Gravatar [Example Subgraph](https://github.com/graphprotocol/example-subgraph).
 
 Assuming we have the following handler function (along with two helper functions to make our life easier):
 
-```javascript
+```typescript
 export function handleNewGravatar(event: NewGravatar): void {
   let gravatar = new Gravatar(event.params.id.toHex())
   gravatar.owner = event.params.owner
@@ -196,6 +243,94 @@ createMockedFunction(contractAddress, 'getGravatar', 'getGravatar(address):(stri
   .reverts()
 ```
 
+### Mocking IPFS files (from matchstick 0.4.1)
+Users can mock IPFS files by using `mockIpfsFile(hash, filePath)` function. The function accepts two arguments, the first one is the IPFS file hash/path and the second one is the path to a local file.
+
+NOTE: When testing `ipfs.map/ipfs.mapJSON`, the callback function must be exported from the test file in order for matchstck to detect it, like the `processGravatar()` function in the test example bellow:
+
+`.test.ts` file:
+
+```typescript
+import { assert, test, mockIpfsFile } from "matchstick-as/assembly/index"
+import { ipfs } from "@graphprotocol/graph-ts"
+import { gravatarFromIpfs } from "./utils"
+
+# Export ipfs.map() callback in order for matchstck to detect it
+export { processGravatar } from "./utils"
+
+test("ipfs.cat", () => {
+  mockIpfsFile("ipfsCatfileHash", "tests/ipfs/cat.json")
+
+  assert.entityCount(GRAVATAR_ENTITY_TYPE, 0)
+
+  gravatarFromIpfs()
+
+  assert.entityCount(GRAVATAR_ENTITY_TYPE, 1)
+  assert.fieldEquals(GRAVATAR_ENTITY_TYPE, "1", "imageUrl", "https://i.ytimg.com/vi/MELP46s8Cic/maxresdefault.jpg")
+
+  clearStore()
+})
+
+test("ipfs.map", () => {
+  mockIpfsFile("ipfsMapfileHash", "tests/ipfs/map.json")
+
+  assert.entityCount(GRAVATAR_ENTITY_TYPE, 0)
+
+  ipfs.map("ipfsMapfileHash", 'processGravatar', Value.fromString('Gravatar'), ['json'])
+
+  assert.entityCount(GRAVATAR_ENTITY_TYPE, 3)
+  assert.fieldEquals(GRAVATAR_ENTITY_TYPE, "1", "displayName", "Gravatar1")
+  assert.fieldEquals(GRAVATAR_ENTITY_TYPE, "2", "displayName", "Gravatar2")
+  assert.fieldEquals(GRAVATAR_ENTITY_TYPE, "3", "displayName", "Gravatar3")
+})
+```
+
+`utils.ts` file:
+```typescript
+import { Address, ethereum, JSONValue, Value, ipfs, json, Bytes } from "@graphprotocol/graph-ts"
+import { Gravatar } from "../../generated/schema"
+
+...
+
+// ipfs.map callback
+export function processGravatar(value: JSONValue, userData: Value): void {
+  // See the JSONValue documentation for details on dealing
+  // with JSON values
+  let obj = value.toObject()
+  let id = obj.get('id')
+
+  if (!id) {
+    return
+  }
+
+  // Callbacks can also created entities
+  let gravatar = new Gravatar(id.toString())
+  gravatar.displayName = userData.toString() + id.toString()
+  gravatar.save()
+}
+
+// function that calls ipfs.cat
+export function gravatarFromIpfs(): void {
+  let rawData = ipfs.cat("ipfsCatfileHash")
+
+  if (!rawData) {
+    return
+  }
+
+  let jsonData = json.fromBytes(rawData as Bytes).toObject()
+
+  let id = jsonData.get('id')
+  let url = jsonData.get("imageUrl")
+
+  if (!id || !url) {
+    return
+  }
+
+  let gravatar = new Gravatar(id.toString())
+  gravatar.imageUrl = url.toString()
+  gravatar.save()
+}
+```
 ### Asserting the state of the store
 
 Users are able to assert the final (or midway) state of the store through asserting entities. In order to do this, the user has to supply an Entity type, the specific ID of an Entity, a name of a field on that Entity, and the expected value of the field. Here's a quick example:
@@ -373,6 +508,84 @@ test("Data source simple mocking example", () => {
 ```
 
 Notice that dataSourceMock.resetValues() is called at the end. That's because the values are remembered when they are changed and need to be reset if you want to go back to the default values.
+
+## Test Coverage
+
+Using **Matchstick**, subgraph developers are able to run a script that will calculate the test coverage of the written unit tests. The tool only works on **Linux** and **MacOS**, but when we add support for Docker (see progress on that [here](https://github.com/LimeChain/matchstick/issues/222)) users should be able to use it on any machine and almost any OS.
+
+The test coverage tool is really simple - it takes the compiled test `wasm` binaries and converts them to `wat` files, which can then be easily inspected to see whether or not the handlers defined in `subgraph.yaml` have actually been called. Since code coverage (and testing as whole) is in very early stages in AssemblyScript and WebAssembly, **Matchstick** cannot check for branch coverage. Instead we rely on the assertion that if a given handler has been called, the event/function for it have been properly mocked.
+
+### Prerequisites
+To run the test coverage functionality provided in **Matchstick**, there are a few things you need to prepare beforehand:
+
+#### Export your handlers
+In order for **Matchstick** to check which handlers are being run, those handlers need to be exported from the **test file**. So for instance in our example, in our gravity.test.ts file we have the following handler being imported:
+```ts
+import  { handleNewGravatar } from "../../src/gravity";
+```
+In order for that function to be visible (for it to be included in the `wat` file **by name**) we need to also export it, like this:
+```ts
+export { handleNewGravatar };
+```
+
+### Usage
+Once that's all set up, to run the test coverage tool, simply run:
+```
+graph test -- -c
+```
+You could also add a custom `coverage` command to your `package.json` file, like so:
+```ts
+ "scripts": {
+    /.../
+    "coverage": "graph test -- -c"
+  },
+```
+
+Hopefully that should execute the coverage tool without any issues. You should see something like this in the terminal:
+```console
+$ graph test -c
+Skipping download/install step because binary already exists at /Users/petko/work/demo-subgraph/node_modules/binary-install-raw/bin/0.4.0
+
+___  ___      _       _         _   _      _
+|  \/  |     | |     | |       | | (_)    | |
+| .  . | __ _| |_ ___| |__  ___| |_ _  ___| | __
+| |\/| |/ _` | __/ __| '_ \/ __| __| |/ __| |/ /
+| |  | | (_| | || (__| | | \__ \ |_| | (__|   <
+\_|  |_/\__,_|\__\___|_| |_|___/\__|_|\___|_|\_\
+
+Compiling...
+
+Running in coverage report mode.
+ ️
+Downloading necessary tools... 🛠️
+Building. This might take a while... ⌛️
+Reading generated test modules... 🔎️
+Generating coverage report 📝
+
+Handlers for source 'cryptopunks':
+Handler 'handleAssign' is tested.
+Handler 'handlePunkTransfer' is not tested.
+Handler 'handlePunkOffered' is not tested.
+Handler 'handlePunkBidEntered' is not tested.
+Handler 'handlePunkBidWithdrawn' is not tested.
+Handler 'handlePunkBought' is not tested.
+Handler 'handlePunkNoLongerForSale' is not tested.
+Test coverage: 14% (1/7 handlers).
+
+Handlers for source 'WrappedPunks':
+Handler 'handleWrappedPunkTransfer' is not tested.
+Test coverage: 0% (0/1 handlers).
+
+Handlers for source 'Gravity':
+Handler 'handleNewGravatar' is tested.
+Handler 'handleUpdatedGravatar' is not tested.
+Handler 'handleCreateGravatar' is not tested.
+Test coverage: 33% (1/3 handlers).
+
+Global test coverage: 18% (2/11 handlers).
+
+✨  Done in 65.76s.
+```
 
 ### Test run time duration in the log output
 
