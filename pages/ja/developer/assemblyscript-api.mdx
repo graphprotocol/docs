@@ -81,7 +81,8 @@ _型変換_
 _オペレーター_
 
 - `equals(y: ByteArray): bool` – can be written as `x == y`.
-
+- `concat(other: ByteArray) : ByteArray` - return a new `ByteArray` consisting of `this` directly followed by `other`
+- `concatI32(other: i32) : ByteArray` - return a new `ByteArray` consisting of `this` directly follow by the byte representation of `other`
 #### BigDecimal
 
 ```typescript
@@ -187,9 +188,21 @@ TypedMap クラスは以下のような API を持っています。
 
 `Bytes`クラスは AssemblyScript の[Uint8Array](https://github.com/AssemblyScript/assemblyscript/blob/3b1852bc376ae799d9ebca888e6413afac7b572f/std/assembly/typedarray.ts#L64)を継承しており、`Uint8Array` のすべての機能に加えて、以下の新しいメソッドをサポートしています。
 
+_構造_
+
+- `fromHexString(hex: string) : Bytes` - Convert the string `hex` which must consist of an even number of hexadecimal digits to a `ByteArray`. The string `hex` can optionally start with `0x`
+- `fromI32(i: i32) : Bytes` - Convert `i` to an array of bytes
+
+_型変換_
+
 - `b.toHex()` – returns a hexadecimal string representing the bytes in the array
 - `b.toString()` – converts the bytes in the array to a string of unicode characters
 - `b.toBase58()` – turns an Ethereum Bytes value to base58 encoding (used for IPFS hashes)
+
+_オペレーター_
+
+- `b.concat(other: Bytes) : Bytes` - - return new `Bytes` consisting of `this` directly followed by `other`
+- `b.concatI32(other: i32) : ByteArray` - return new `Bytes` consisting of `this` directly follow by the byte representation of `other`
 
 #### Address
 
@@ -197,11 +210,12 @@ TypedMap クラスは以下のような API を持っています。
 '@graphprotocol/graph-ts'から { Address } をインポートします。
 ```
 
-`Address`は Ethereum の`address`値を表現するために`Bytes`を拡張しています。
+`Address` extends `Bytes` to represent Ethereum `address` values.
 
-`Bytes`の API の上に以下のメソッドを追加しています。
+It adds the following method on top of the `Bytes` API:
 
 - `Address.fromString(s: string): Address` – creates an `Address` from a hexadecimal string
+- `Address.fromBytes(b: Bytes): Address` – create an `Address` from `b` which must be exactly 20 bytes long. Passing in a value with fewer or more bytes will result in an error
 
 ### Store API
 
@@ -209,13 +223,13 @@ TypedMap クラスは以下のような API を持っています。
 '@graphprotocol/graph-ts'から { store } をインポートします。
 ```
 
-`store` API は、グラフノードのストアにエンティティを読み込んだり、保存したり、削除したりすることができます。
+The `store` API allows to load, save and remove entities from and to the Graph Node store.
 
-ストアに書き込まれたエンティティは、サブグラフの GraphQL スキーマで定義された`@entity`タイプに一対一でマッピングされます。 これらのエンティティの扱いを便利にするために、[Graph CLI](https://github.com/graphprotocol/graph-cli)で提供される `graph codegen` コマンドは、組み込みの`Entity`型のサブクラスであるエンティティ・クラスを生成します。
+Entities written to the store map one-to-one to the `@entity` types defined in the subgraph's GraphQL schema. To make working with these entities convenient, the `graph codegen` command provided by the [Graph CLI](https://github.com/graphprotocol/graph-cli) generates entity classes, which are subclasses of the built-in `Entity` type, with property getters and setters for the fields in the schema as well as methods to load and save these entities.
 
 #### エンティティの作成
 
-Ethereum のイベントからエンティティを作成する際の一般的なパターンを以下に示します。
+The following is a common pattern for creating entities from Ethereum events.
 
 ```typescript
 // Import the Transfer event class generated from the ERC20 ABI
@@ -226,9 +240,8 @@ import { Transfer } from '../generated/schema'
 
 // Transfer event handler
 export function handleTransfer(event: TransferEvent): void {
-  // Create a Transfer entity, using the hexadecimal string representation
-  // of the transaction hash as the entity ID
-  let id = event.transaction.hash.toHex()
+  // Create a Transfer entity, using the transaction hash as the entity ID
+  let id = event.transaction.hash
   let transfer = new Transfer(id)
 
   // Set properties on the entity, using the event parameters
@@ -241,16 +254,16 @@ export function handleTransfer(event: TransferEvent): void {
 }
 ```
 
-チェーンの処理中に`Transfer` イベントが発生すると、生成された`Transfer`タイプ（ここではエンティティタイプとの名前の衝突を避けるために`TransferEvent`とエイリアスされています）を使用して、`handleTransfer`イベントハンドラに渡されます。 このタイプでは、イベントの親トランザクションやそのパラメータなどのデータにアクセスすることができます。
+When a `Transfer` event is encountered while processing the chain, it is passed to the `handleTransfer` event handler using the generated `Transfer` type (aliased to `TransferEvent` here to avoid a naming conflict with the entity type). This type allows accessing data such as the event's parent transaction and its parameters.
 
-各エンティティは、他のエンティティとの衝突を避けるために、ユニークな ID を持たなければなりません。 イベントのパラメータには、使用可能な一意の識別子が含まれているのが一般的です。 注：トランザクションのハッシュを ID として使用することは、同じトランザクション内の他のイベントがこのハッシュを ID としてエンティティを作成しないことを前提としています。
+Each entity must have a unique ID to avoid collisions with other entities. It is fairly common for event parameters to include a unique identifier that can be used. Note: Using the transaction hash as the ID assumes that no other events in the same transaction create entities with this hash as the ID.
 
 #### ストアからのエンティティの読み込み
 
-エンティティがすでに存在する場合、以下の方法でストアからロードすることができます。
+If an entity already exists, it can be loaded from the store with the following:
 
 ```typescript
-let id = event.transaction.hash.toHex() // or however the ID is constructed
+let id = event.transaction.hash // or however the ID is constructed
 let transfer = Transfer.load(id)
 if (transfer == null) {
   transfer = new Transfer(id)
@@ -259,18 +272,18 @@ if (transfer == null) {
 // Use the Transfer entity as before
 ```
 
-エンティティはまだストアに存在していない可能性があるため、`load`メソッドは`Transfer | null`型の値を返します。 そのため、値を使用する前に、`null`のケースをチェックする必要があるかもしれません。
+As the entity may not exist in the store yet, the `load` method returns a value of type `Transfer | null`. It may thus be necessary to check for the `null` case before using the value.
 
 > **Note:** エンティティのロードは、マッピングでの変更がエンティティの以前のデータに依存する場合にのみ必要です。 既存のエンティティを更新する 2 つの方法については、次のセクションを参照してください。
 
 #### 既存のエンティティの更新
 
-既存のエンティティを更新するには 2 つの方法があります。
+There are two ways to update an existing entity:
 
 1. `Transfer.load(id)`などでエンティティをロードし、エンティティにプロパティを設定した後、`.save()`でストアに戻す。
 2. 単純に`new Transfer(id)`でエンティティを作成し、エンティティにプロパティを設定し、ストアに `.save()`します。 エンティティがすでに存在する場合は、変更内容がマージされます。
 
-プロパティの変更は、生成されたプロパティセッターのおかげで、ほとんどの場合、簡単です。
+Changing properties is straight forward in most cases, thanks to the generated property setters:
 
 ```typescript
 let transfer = new Transfer(id)
@@ -279,16 +292,16 @@ transfer.to = ...
 transfer.amount = ...
 ```
 
-また、次の 2 つの命令のいずれかで、プロパティの設定を解除することも可能です。
+It is also possible to unset properties with one of the following two instructions:
 
 ```typescript
 transfer.from.unset()
 transfer.from = null
 ```
 
-これは、オプションのプロパティ、つまり GraphQL で`!`を付けずに宣言されているプロパティでのみ機能します。 例としては、`owner: Bytes`や`amount: BigInt`です。
+This only works with optional properties, i.e. properties that are declared without a `!` in GraphQL. Two examples would be `owner: Bytes` or `amount: BigInt`.
 
-エンティティから配列を取得すると、その配列のコピーが作成されるため、配列のプロパティの更新には少し手間がかかります。 つまり、配列を変更した後は、明示的に配列のプロパティを設定し直す必要があります。 次の例では、`entity` が `numbers: [BigInt!]!` を持っていると仮定します。
+Updating array properties is a little more involved, as the getting an array from an entity creates a copy of that array. This means array properties have to be set again explicitly after changing the array. The following assumes `entity` has a `numbers: [BigInt!]!` field.
 
 ```typescript
 // This won't work
@@ -304,29 +317,30 @@ entity.save()
 
 #### ストアからのエンティティの削除
 
-現在、生成された型を使ってエンティティを削除する方法はありません。 代わりに、エンティティを削除するには、エンティティタイプの名前とエンティティ ID を`store.remove`に渡す必要があります。
+There is currently no way to remove an entity via the generated types. Instead, removing an entity requires passing the name of the entity type and the entity ID to `store.remove`:
 
 ```typescript
 import { store } from '@graphprotocol/graph-ts'
 ...
-let id = event.transaction.hash.toHex()
+let id = event.transaction.hash
 store.remove('Transfer', id)
 ```
 
 ### Ethereum API
 
-Ethereum API は、スマートコントラクト、パブリックステート変数、コントラクト関数、イベント、トランザクション、ブロック、および Ethereum データのエンコード/デコードへのアクセスを提供します。
+The Ethereum API provides access to smart contracts, public state variables, contract functions, events, transactions, blocks and the encoding/decoding Ethereum data.
 
 #### Ethereum タイプのサポート
 
-エンティティと同様に、`graph codegen`は、サブグラフで使用されるすべてのスマートコントラクトとイベントのためのクラスを生成します。 このためには、コントラクト ABI がサブグラフマニフェストのデータソースの一部である必要があります。 通常、ABI ファイルは`abis/`フォルダに格納されています。
+As with entities, `graph codegen` generates classes for all smart contracts and events used in a subgraph. For this, the contract ABIs need to be part of the data source in the subgraph manifest. Typically, the ABI files are stored in an `abis/` folder.
 
-生成されたクラスでは、Ethereum 型と [組み込み型](#built-in-types)の間の変換が背後で行われるため、サブグラフの作成者はそれらを気にする必要がありません。
+With the generated classes, conversions between Ethereum types and the [built-in types](#built-in-types) take place behind the scenes so that subgraph authors do not have to worry about them.
 
-以下の例で説明します。 以下のようなサブグラフのスキーマが与えられます。
+The following example illustrates this. Given a subgraph schema like
 
 ```graphql
 type Transfer @entity {
+  id: Bytes!
   from: Bytes!
   to: Bytes!
   amount: BigInt!
@@ -336,7 +350,7 @@ type Transfer @entity {
 and a `Transfer(address,address,uint256)` event signature on Ethereum, the `from`, `to` and `amount` values of type `address`, `address` and `uint256` are converted to `Address` and `BigInt`, allowing them to be passed on to the `Bytes!` and `BigInt!` properties of the `Transfer` entity:
 
 ```typescript
-let id = event.transaction.hash.toHex()
+let id = event.transaction.hash
 let transfer = new Transfer(id)
 transfer.from = event.params.from
 transfer.to = event.params.to
@@ -346,7 +360,7 @@ transfer.save()
 
 #### イベントとブロック/トランザクションデータ
 
-前述の例の`Transfer`イベントのように、イベントハンドラに渡された Ethereum イベントは、イベントパラメータへのアクセスだけでなく、その親となるトランザクションや、それらが属するブロックへのアクセスも提供します。 `event` インスタンスからは、以下のデータを取得することができます（これらのクラスは、 `graph-ts`の`ethereum`モジュールの一部です）。
+Ethereum events passed to event handlers, such as the `Transfer` event in the previous examples, not only provide access to the event parameters but also to their parent transaction and the block they are part of. The following data can be obtained from `event` instances (these classes are a part of the `ethereum` module in `graph-ts`):
 
 ```typescript
 class Event {
@@ -392,9 +406,9 @@ class Transaction {
 
 #### スマートコントラクトの状態へのアクセス
 
-`graph codegen`が生成するコードには、サブグラフで使用されるスマートコントラクトのクラスも含まれています。 これらを使って、パブリックな状態変数にアクセスしたり、現在のブロックにあるコントラクトの関数を呼び出したりすることができます。
+The code generated by `graph codegen` also includes classes for the smart contracts used in the subgraph. These can be used to access public state variables and call functions of the contract at the current block.
 
-よくあるパターンは、イベントが発生したコントラクトにアクセスすることです。 これは以下のコードで実現できます。
+A common pattern is to access the contract from which an event originates. This is achieved with the following code:
 
 ```typescript
 // Import the generated contract class
@@ -411,13 +425,13 @@ export function handleTransfer(event: Transfer) {
 }
 ```
 
-Ethereum の `ERC20Contract`に`symbol`というパブリックな読み取り専用の関数があれば、`.symbol()`で呼び出すことができます。 パブリックな状態変数については、同じ名前のメソッドが自動的に作成されます。
+As long as the `ERC20Contract` on Ethereum has a public read-only function called `symbol`, it can be called with `.symbol()`. For public state variables a method with the same name is created automatically.
 
-サブグラフの一部である他のコントラクトは、生成されたコードからインポートすることができ、有効なアドレスにバインドすることができます。
+Any other contract that is part of the subgraph can be imported from the generated code and can be bound to a valid address.
 
 #### リバートされた呼び出しの処理
 
-コントラクトの読み取り専用メソッドが復帰する可能性がある場合は、`try_`を前置して生成されたコントラクトメソッドを呼び出すことで対処しなければなりません。 例えば、Gravity コントラクトでは`gravatarToOwner`メソッドを公開しています。 このコードでは、そのメソッドの復帰を処理することができます。
+If the read-only methods of your contract may revert, then you should handle that by calling the generated contract method prefixed with `try_`. For example, the Gravity contract exposes the `gravatarToOwner` method. This code would be able to handle a revert in that method:
 
 ```typescript
 let gravity = Gravity.bind(event.address)
@@ -429,11 +443,11 @@ if (callResult.reverted) {
 }
 ```
 
-ただし、Geth や Infura のクライアントに接続された Graph ノードでは、すべてのリバートを検出できない場合があるので、これに依存する場合は Parity のクライアントに接続された Graph ノードを使用することをお勧めします。
+Note that a Graph node connected to a Geth or Infura client may not detect all reverts, if you rely on this we recommend using a Graph node connected to a Parity client.
 
 #### 符号化/復号化 ABI
 
-`ethereum`モジュールの`encode`/ `decode`関数を使用して、Ethereum の ABI エンコーディングフォーマットに従ってデータをエンコード/デコードすることができます。
+Data can be encoded and decoded according to Ethereum's ABI encoding format using the `encode` and `decode` functions in the `ethereum` module.
 
 ```typescript
 import { Address, BigInt, ethereum } from '@graphprotocol/graph-ts'
@@ -450,7 +464,7 @@ let encoded = ethereum.encode(ethereum.Value.fromTuple(tuple))!
 let decoded = ethereum.decode('(address,uint256)', encoded)
 ```
 
-その他の情報:
+For more information:
 
 - [ABI Spec](https://docs.soliditylang.org/en/v0.7.4/abi-spec.html#types)
 - Encoding/decoding [Rust library/CLI](https://github.com/rust-ethereum/ethabi)
@@ -462,9 +476,9 @@ let decoded = ethereum.decode('(address,uint256)', encoded)
 '@graphprotocol/graph-ts'から{ log } をインポートします。
 ```
 
-`log` API は、サブグラフがグラフノードの標準出力やグラフエクスプローラに情報を記録するためのものです。 メッセージは、異なるログレベルを使って記録することができます。 基本的なフォーマット文字列の構文が提供されており、引数からログメッセージを構成することができます。
+The `log` API allows subgraphs to log information to the Graph Node standard output as well as the Graph Explorer. Messages can be logged using different log levels. A basic format string syntax is provided to compose log messages from argument.
 
-`log` API には以下の機能があります:
+The `log` API includes the following functions:
 
 - `log.debug(fmt: string, args: Array<string>): void` - logs a debug message.
 - `log.info(fmt: string, args: Array<string>): void` - logs an informational message.
@@ -472,7 +486,7 @@ let decoded = ethereum.decode('(address,uint256)', encoded)
 - `log.error(fmt: string, args: Array<string>): void` - logs an error message.
 - `log.critical(fmt: string, args: Array<string>): void` – logs a critical message _and_ terminates the subgraph.
 
-`log` API は、フォーマット文字列と文字列値の配列を受け取ります。 そして、プレースホルダーを配列の文字列値で置き換えます。 最初の`{}`プレースホルダーは配列の最初の値に置き換えられ、2 番目の`{}`プレースホルダーは 2 番目の値に置き換えられ、以下のようになります。
+The `log` API takes a format string and an array of string values. It then replaces placeholders with the string values from the array. The first `{}` placeholder gets replaced by the first value in the array, the second `{}` placeholder gets replaced by the second value and so on.
 
 ```typescript
 log.info('表示されるメッセージ。{}, {}, {}', [value.toString(), anotherValue.toString(), 'すでに文字列'])
@@ -482,7 +496,7 @@ log.info('表示されるメッセージ。{}, {}, {}', [value.toString(), anoth
 
 ##### 1 つの値を記録する
 
-以下の例では、文字列値 "A" を配列に渡して`['A']` にしてからログに記録しています。
+In the example below, the string value "A" is passed into an array to become`['A']` before being logged:
 
 ```typescript
 let myValue = 'A'
@@ -495,7 +509,7 @@ export function handleSomeEvent(event: SomeEvent): void {
 
 ##### 既存の配列から 1 つのエントリをロギングする
 
-以下の例では、配列に 3 つの値が含まれているにもかかわらず、引数の配列の最初の値だけがログに記録されます。
+In the example below, only the first value of the argument array is logged, despite the array containing three values.
 
 ```typescript
 let myArray = ['A', 'B', 'C']
@@ -508,7 +522,7 @@ export function handleSomeEvent(event: SomeEvent): void {
 
 #### 既存の配列から複数のエントリを記録する
 
-引数配列の各エントリは、ログメッセージ文字列に独自のプレースホルダー`{}`を必要とします。 以下の例では、ログメッセージに 3 つのプレースホルダー`{}`が含まれています。 このため、`myArray`の 3 つの値すべてがログに記録されます。
+Each entry in the arguments array requires its own placeholder `{}` in the log message string. The below example contains three placeholders `{}` in the log message. Because of this, all three values in `myArray` are logged.
 
 ```typescript
 let myArray = ['A', 'B', 'C']
@@ -521,7 +535,7 @@ export function handleSomeEvent(event: SomeEvent): void {
 
 ##### 既存の配列から特定のエントリをロギングする
 
-配列内の特定の値を表示するには、インデックス化された値を指定する必要があります。
+To display a specific value in the array, the indexed value must be provided.
 
 ```typescript
 export function handleSomeEvent(event: SomeEvent): void {
@@ -532,7 +546,7 @@ export function handleSomeEvent(event: SomeEvent): void {
 
 ##### イベント情報の記録
 
-以下の例では、イベントからブロック番号、ブロックハッシュ、トランザクションハッシュをログに記録しています。
+The example below logs the block number, block hash and transaction hash from an event:
 
 ```typescript
 '@graphprotocol/graph-ts'から { log } をインポートします。
@@ -552,9 +566,9 @@ export function handleSomeEvent(event: SomeEvent): void {
 '@graphprotocol/graph-ts'から { ipfs } をインポートします。
 ```
 
-スマートコントラクトは時折、チェーン上の IPFS ファイルをアンカリングします。 これにより、マッピングはコントラクトから IPFS ハッシュを取得し、IPFS から対応するファイルを読み取ることができます。 ファイルのデータは`Bytes`として返されますが、通常は、このページで後述する `json` API などを使ってさらに処理する必要があります。
+Smart contracts occasionally anchor IPFS files on chain. This allows mappings to obtain the IPFS hashes from the contract and read the corresponding files from IPFS. The file data will be returned as `Bytes`, which usually requires further processing, e.g. with the `json` API documented later on this page.
 
-IPFS のハッシュやパスが与えられた場合、IPFS からのファイルの読み込みは以下のように行われます。
+Given an IPFS hash or path, reading a file from IPFS is done as follows:
 
 ```typescript
 // Put this inside an event handler in the mapping
@@ -567,9 +581,9 @@ let path = 'QmTkzDwWqPbnAh5YiV5VwcTLnGdwSNsNTn2aDxdXBFca7D/Makefile'
 let data = ipfs.cat(path)
 ```
 
-**注意:** `ipfs.cat` は現時点では決定論的ではありません。 このため、結果に`null`が含まれていないかどうかを常にチェックする必要があります。 リクエストがタイムアウトする前に、Ipfs ネットワーク上でファイルを取得できない場合は、`null`が返されます。 ファイルを確実に取得するためには、グラフノードが接続する IPFS ノードにファイルを固定する必要があります。 [hosted service](https://thegraph.com/hosted-service)では、[https://api.thegraph.com/ipfs/](https://api.thegraph.com/ipfs)です。 詳細は、[IPFS pinning](/developer/create-subgraph-hosted#ipfs-pinning) のセクションを参照してください。
+**Note:** `ipfs.cat` is not deterministic at the moment. If the file cannot be retrieved over the IPFS network before the request times out, it will return `null`. Due to this, it's always worth checking the result for `null`. To ensure that files can be retrieved, they have to be pinned to the IPFS node that Graph Node connects to. On the [hosted service](https://thegraph.com/hosted-service), this is [https://api.thegraph.com/ipfs/](https://api.thegraph.com/ipfs). See the [IPFS pinning](/developer/create-subgraph-hosted#ipfs-pinning) section for more information.
 
-また、`ipfs.map`.を使って、大きなファイルをストリーミングで処理することも可能です。 この関数は、IPFS ファイルのハッシュまたはパス、コールバックの名前、そして動作を変更するためのフラグを受け取ります。
+It is also possible to process larger files in a streaming fashion with `ipfs.map`. The function expects the hash or path for an IPFS file, the name of a callback, and flags to modify its behavior:
 
 ```typescript
 import { JSONValue, Value } from '@graphprotocol/graph-ts'
@@ -586,7 +600,7 @@ export function processItem(value: JSONValue, userData: Value): void {
   }
 
   // Callbacks can also created entities
-  let newItem = new Item(id.toString())
+  let newItem = new Item(id)
   newItem.title = title.toString()
   newitem.parent = userData.toString() // Set parent to "parentId"
   newitem.save()
@@ -599,9 +613,9 @@ ipfs.map('Qm...', 'processItem', Value.fromString('parentId'), ['json'])
 ipfs.mapJSON('Qm...', 'processItem', Value.fromString('parentId'))
 ```
 
-現在サポートされている唯一のフラグは`json`で、これを`ipfs.map`に渡さなければなりません。 `json`フラグを使用すると、IPFS ファイルは一連の JSON 値で構成され、1 行に 1 つの値が必要です。 `ipfs.map`への呼び出しは、ファイルの各行を読み込み、`JSONValue`にデシリアライズし、それぞれのコールバックを呼び出します。 コールバックは、エンティティ・オペレーションを使って、`JSONValue`からデータを保存することができます。 エンティティの変更は、`ipfs.map`を呼び出したハンドラが正常に終了したときにのみ保存されます。それまでの間は、メモリ上に保持されるため、`ipfs.map`が処理できるファイルのサイズは制限されます。
+The only flag currently supported is `json`, which must be passed to `ipfs.map`. With the `json` flag, the IPFS file must consist of a series of JSON values, one value per line. The call to `ipfs.map` will read each line in the file, deserialize it into a `JSONValue` and call the callback for each of them. The callback can then use entity operations to store data from the `JSONValue`. Entity changes are stored only when the handler that called `ipfs.map` finishes successfully; in the meantime, they are kept in memory, and the size of the file that `ipfs.map` can process is therefore limited.
 
-成功すると，`ipfs.map`は `void`を返します。 コールバックの呼び出しでエラーが発生した場合、`ipfs.map`を呼び出したハンドラは中止され、サブグラフは失敗とマークされます。
+On success, `ipfs.map` returns `void`. If any invocation of the callback causes an error, the handler that invoked `ipfs.map` is aborted, and the subgraph is marked as failed.
 
 ### Crypto API
 
@@ -609,7 +623,7 @@ ipfs.mapJSON('Qm...', 'processItem', Value.fromString('parentId'))
 '@graphprotocol/graph-ts'から { crypto } をインポートします。
 ```
 
-`crypto` API は、マッピングで使用できる暗号化関数を提供します。 今のところ、1 つしかありません。
+The `crypto` API makes a cryptographic functions available for use in mappings. Right now, there is only one:
 
 - `crypto.keccak256(input: ByteArray): ByteArray`
 
@@ -619,14 +633,14 @@ ipfs.mapJSON('Qm...', 'processItem', Value.fromString('parentId'))
 '@graphprotocol/graph-ts'から{ json, JSONValueKind } をインポートします。
 ```
 
-JSON データは、`json` API を使って解析することができます。
+JSON data can be parsed using the `json` API:
 
-- `json.fromBytes(data: Bytes): JSONValue` – parses JSON data from a `Bytes` array
+- `json.fromBytes(data: Bytes): JSONValue` – parses JSON data from a `Bytes` array interpreted as a valid UTF-8 sequence
 - `json.try_fromBytes(data: Bytes): Result<JSONValue, boolean>` – safe version of `json.fromBytes`, it returns an error variant if the parsing failed
-- `json.fromString(data: Bytes): JSONValue` – parses JSON data from a valid UTF-8 `String`
-- `json.try_fromString(data: Bytes): Result<JSONValue, boolean>` – safe version of `json.fromString`, it returns an error variant if the parsing failed
+- `json.fromString(data: string): JSONValue` – parses JSON data from a valid UTF-8 `String`
+- `json.try_fromString(data: string): Result<JSONValue, boolean>` – safe version of `json.fromString`, it returns an error variant if the parsing failed
 
-`JSONValue` クラスは、任意の JSON ドキュメントから値を引き出す方法を提供します。 JSON の値には、ブーリアン、数値、配列などがあるため、`JSONValue`には、値の種類をチェックするための`kind`プロパティが付属しています。
+The `JSONValue` class provides a way to pull values out of an arbitrary JSON document. Since JSON values can be booleans, numbers, arrays and more, `JSONValue` comes with a `kind` property to check the type of a value:
 
 ```typescript
 let value = json.fromBytes(...)
@@ -635,11 +649,11 @@ if (value.kind == JSONValueKind.BOOL) {
 }
 ```
 
-さらに、値が`null`かどうかをチェックするメソッドもあります:
+In addition, there is a method to check if the value is `null`:
 
 - `value.isNull(): boolean`
 
-値の型が確定している場合は，以下のいずれかの方法で[組み込み型](#built-in-types)に変換することができます。
+When the type of a value is certain, it can be converted to a [built-in type](#built-in-types) using one of the following methods:
 
 - `value.toBool(): boolean`
 - `value.toI64(): i64`
@@ -653,7 +667,6 @@ if (value.kind == JSONValueKind.BOOL) {
 | Source(s)            | Destination          | Conversion function          |
 | -------------------- | -------------------- | ---------------------------- |
 | Address              | Bytes                | none                         |
-| Address              | ID                   | s.toHexString()              |
 | Address              | String               | s.toHexString()              |
 | BigDecimal           | String               | s.toString()                 |
 | BigInt               | BigDecimal           | s.toBigDecimal()             |
@@ -690,7 +703,7 @@ if (value.kind == JSONValueKind.BOOL) {
 
 ### データソースのメタデータ
 
-ハンドラを起動した`データソース`のコントラクトアドレス、ネットワーク、コンテキストは、以下のようにして調べることができます。
+You can inspect the contract address, network and context of the data source that invoked the handler through the `dataSource` namespace:
 
 - `dataSource.address(): Address`
 - `dataSource.network(): string`
@@ -698,7 +711,7 @@ if (value.kind == JSONValueKind.BOOL) {
 
 ### エンティティと DataSourceContext
 
-ベースとなる`エンティティ`クラスと子クラスの`DataSourceContext`クラスには、フィールドを動的に設定・取得するためのヘルパーが用意されています。
+The base `Entity` class and the child `DataSourceContext` class have helpers to dynamically set and get fields:
 
 - `setString(key: string, value: string): void`
 - `setI32(key: string, value: i32): void`
