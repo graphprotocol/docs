@@ -50,8 +50,8 @@ async function updateProtocolPaused() {
     })
 
     const query = `
-        {
-            protocol(block: { number_gte: ${minBlock} }  id: "0") {
+        query GetProtocol($minBlock: Int!) {
+            protocol(block: { number_gte: $minBlock }  id: "0") {
               paused
             }
             _meta {
@@ -61,7 +61,8 @@ async function updateProtocolPaused() {
             }
         }`
 
-    const response = await graphql(query)
+    const variables = { minBlock }
+    const response = await graphql(query, variables)
     minBlock = response._meta.block.number
 
     // TODO: Do something with the response data here instead of logging it.
@@ -88,9 +89,9 @@ async function getDomainNames() {
 
   // The first query will get the first page of results and also get the block
   // hash so that the remainder of the queries are consistent with the first.
-  let query = `
-    {
-        domains(first: ${perPage}) {
+  const listDomainsQuery = `
+    query ListDomains($perPage: Int!) {
+        domains(first: $perPage) {
             name
             id
         }
@@ -101,24 +102,25 @@ async function getDomainNames() {
         }
     }`
 
-  let data = await graphql(query)
+  let data = await graphql(listDomainsQuery, { perPage })
   let result = data.domains.map((d) => d.name)
   let blockHash = data._meta.block.hash
 
+  let query
   // Continue fetching additional pages until either we run into the limit of
   // 5 pages total (specified above) or we know we have reached the last page
   // because the page has fewer entities than a full page.
   while (data.domains.length == perPage && --pages) {
     let lastID = data.domains[data.domains.length - 1].id
     query = `
-        {
-            domains(first: ${perPage}, where: { id_gt: "${lastID}" }, block: { hash: "${blockHash}" }) {
+        query ListDomains($perPage: Int!, $lastID: ID!, $blockHash: Bytes!) {
+            domains(first: $perPage, where: { id_gt: $lastID }, block: { hash: $blockHash }) {
                 name
                 id
             }
         }`
 
-    data = await graphql(query)
+    data = await graphql(query, { perPage, lastID, blockHash })
 
     // Accumulate domain names into the result
     for (domain of data.domains) {
