@@ -81,7 +81,8 @@ _تحويل الأنواع_
 _العوامل_
 
 - `equals(y: ByteArray): bool` – يمكن كتابتها كـ `x == y`.
-
+- `concat(other: ByteArray) : ByteArray` - return a new `ByteArray` consisting of `this` directly followed by `other`
+- `concatI32(other: i32) : ByteArray` - return a new `ByteArray` consisting of `this` directly follow by the byte representation of `other`
 #### BigDecimal
 
 ```typescript
@@ -187,9 +188,21 @@ _رياضيات_
 
 فئة `Bytes` ترث من [ Uint8Array ](https://github.com/AssemblyScript/assemblyscript/blob/3b1852bc376ae799d9ebca888e6413afac7b572f/std/assembly/typedarray.ts#L64) و لذا فهو يدعم جميع وظائف `Uint8Array` ، بالإضافة إلى الـ methods الجديدة التالية:
 
-- `()b.toHex` – ترجع بسلسلة سداسية عشرية تمثل الـ bytes في المصفوفة
-- `()b.toString` – يحول الـ bytes في المصفوفة إلى سلسلة من unicode
-- `()b.toBase58` – يحول قيمة Ethereum Bytes إلى ترميز base58 (يستخدم لـ IPFS hashes)
+_البناء(Construction)_
+
+- `fromHexString(hex: string) : Bytes` - Convert the string `hex` which must consist of an even number of hexadecimal digits to a `ByteArray`. The string `hex` can optionally start with `0x`
+- `fromI32(i: i32) : Bytes` - Convert `i` to an array of bytes
+
+_تحويل الأنواع_
+
+- `b.toHex()` – returns a hexadecimal string representing the bytes in the array
+- `b.toString()` – converts the bytes in the array to a string of unicode characters
+- `b.toBase58()` – turns an Ethereum Bytes value to base58 encoding (used for IPFS hashes)
+
+_العوامل_
+
+- `b.concat(other: Bytes) : Bytes` - - return new `Bytes` consisting of `this` directly followed by `other`
+- `b.concatI32(other: i32) : ByteArray` - return new `Bytes` consisting of `this` directly follow by the byte representation of `other`
 
 #### العنوان (Address)
 
@@ -197,11 +210,12 @@ _رياضيات_
 'import { Address } from '@graphprotocol/graph-ts
 ```
 
-`Address` امتداد لـ`Bytes` لتمثيل قيم Ethereum `address`.
+`Address` extends `Bytes` to represent Ethereum `address` values.
 
-إنها تضيف الـ method التالية أعلىAPI الـ `Bytes`:
+It adds the following method on top of the `Bytes` API:
 
-- `Address.fromString(s: string): Address` – ينشئ `Address` من سلسلة سداسية عشرية
+- `Address.fromString(s: string): Address` – creates an `Address` from a hexadecimal string
+- `Address.fromBytes(b: Bytes): Address` – create an `Address` from `b` which must be exactly 20 bytes long. Passing in a value with fewer or more bytes will result in an error
 
 ### مخزن API
 
@@ -209,13 +223,13 @@ _رياضيات_
 'import { store } from '@graphprotocol/graph-ts
 ```
 
-تسمح واجهة برمجة التطبيقات `store` بتحميل وحفظ وإزالة الكيانات من وإلى مخزن Graph Node.
+The `store` API allows to load, save and remove entities from and to the Graph Node store.
 
-الكيانات المكتوبة في المخزن تقوم بـ map one-to-one لأنواع `entity@` المعرفة في مخطط subgraph's GraphQL. ولجعل العمل مع هذه الكيانات مناسبا ، ينشئ الأمر `graph codegen` المقدم من [Graph CLI](https://github.com/graphprotocol/graph-cli) فئات الكيانات ، وهي فئات فرعية مضمنة من النوع `Entity` ، مع خواص getters و setters للحقول في المخطط بالإضافة إلى طرق تحميل هذه الكيانات وحفظها.
+Entities written to the store map one-to-one to the `@entity` types defined in the subgraph's GraphQL schema. To make working with these entities convenient, the `graph codegen` command provided by the [Graph CLI](https://github.com/graphprotocol/graph-cli) generates entity classes, which are subclasses of the built-in `Entity` type, with property getters and setters for the fields in the schema as well as methods to load and save these entities.
 
 #### إنشاء الكيانات (entities)
 
-ما يلي هو نمط شائع لإنشاء كيانات من أحداث Ethereum.
+The following is a common pattern for creating entities from Ethereum events.
 
 ```typescript
 // Import the Transfer event class generated from the ERC20 ABI
@@ -226,9 +240,8 @@ import { Transfer } from '../generated/schema'
 
 // Transfer event handler
 export function handleTransfer(event: TransferEvent): void {
-  // Create a Transfer entity, using the hexadecimal string representation
-  // of the transaction hash as the entity ID
-  let id = event.transaction.hash.toHex()
+  // Create a Transfer entity, using the transaction hash as the entity ID
+  let id = event.transaction.hash
   let transfer = new Transfer(id)
 
   // Set properties on the entity, using the event parameters
@@ -241,16 +254,16 @@ export function handleTransfer(event: TransferEvent): void {
 }
 ```
 
-عند مواجهة حدث `Transfer` أثناء معالجة السلسلة ، يتم تمريره إلى معالج الحدث `handleTransfer` باستخدام نوع `Transfer` المولدة (الاسم المستعار هنا لـ `TransferEvent` لتجنب تعارض التسمية مع نوع الكيان). يسمح هذا النوع بالوصول إلى البيانات مثل الإجراء الأصلي للحدث وبارامتراته.
+When a `Transfer` event is encountered while processing the chain, it is passed to the `handleTransfer` event handler using the generated `Transfer` type (aliased to `TransferEvent` here to avoid a naming conflict with the entity type). This type allows accessing data such as the event's parent transaction and its parameters.
 
-يجب أن يكون لكل كيان ID فريد لتجنب التضارب مع الكيانات الأخرى. من الشائع إلى حد ما أن تتضمن بارامترات الأحداث معرفا فريدا يمكن استخدامه. ملاحظة: استخدام hash الـ الإجراء كـ ID يفترض أنه لا توجد أحداث أخرى في نفس الإجراء تؤدي إلى إنشاء كيانات بهذا الـ hash كـ ID.
+Each entity must have a unique ID to avoid collisions with other entities. It is fairly common for event parameters to include a unique identifier that can be used. Note: Using the transaction hash as the ID assumes that no other events in the same transaction create entities with this hash as the ID.
 
 #### تحميل الكيانات من المخزن
 
-إذا كان الكيان موجودا بالفعل ، فيمكن تحميله من المخزن بالتالي:
+If an entity already exists, it can be loaded from the store with the following:
 
 ```typescript
-let id = event.transaction.hash.toHex() // or however the ID is constructed
+let id = event.transaction.hash // or however the ID is constructed
 let transfer = Transfer.load(id)
 if (transfer == null) {
   transfer = new Transfer(id)
@@ -259,18 +272,18 @@ if (transfer == null) {
 // Use the Transfer entity as before
 ```
 
-نظرا لأن الكيان قد لا يكون موجودا في المخزن، فإن method `load` تُرجع قيمة من النوع `Transfer | null`. وبالتالي قد يكون من الضروري التحقق من حالة `null` قبل استخدام القيمة.
+As the entity may not exist in the store yet, the `load` method returns a value of type `Transfer | null`. It may thus be necessary to check for the `null` case before using the value.
 
 > **ملاحظة:** تحميل الكيانات ضروري فقط إذا كانت التغييرات التي تم إجراؤها في الـ mapping تعتمد على البيانات السابقة للكيان. انظر القسم التالي للتعرف على الطريقتين لتحديث الكيانات الموجودة.
 
 #### تحديث الكيانات الموجودة
 
-هناك طريقتان لتحديث كيان موجود:
+There are two ways to update an existing entity:
 
 1. حمل الكيان بـ `Transfer.load (id)` على سبيل المثال، قم بتعيين الخصائص على الكيان ، ثم `()save.` للمخزن.
 2. ببساطة أنشئ الكيان بـ `new Transfer(id)` على سبيل المثال، قم بتعيين الخصائص على الكيان ، ثم `()save.` للمخزن. إذا كان الكيان موجودا بالفعل ، يتم دمج التغييرات فيه.
 
-يتم تغيير الخصائص بشكل مباشر في معظم الحالات ، وذلك بفضل خاصية الـ setters التي تم إنشاؤها:
+Changing properties is straight forward in most cases, thanks to the generated property setters:
 
 ```typescript
 let transfer = new Transfer(id)
@@ -279,16 +292,16 @@ transfer.to = ...
 transfer.amount = ...
 ```
 
-من الممكن أيضا إلغاء الخصائص بإحدى التعليمات التالية:
+It is also possible to unset properties with one of the following two instructions:
 
 ```typescript
 transfer.from.unset()
 transfer.from = null
 ```
 
-يعمل هذا فقط مع الخصائص الاختيارية ، أي الخصائص التي تم التصريح عنها بدون `!` في GraphQL. كمثالان `owner: Bytes` أو `amount: BigInt`.
+This only works with optional properties, i.e. properties that are declared without a `!` in GraphQL. Two examples would be `owner: Bytes` or `amount: BigInt`.
 
-يعد تحديث خصائص المصفوفة أكثر تعقيدا ، حيث يؤدي الحصول على مصفوفة من كيان إلى إنشاء نسخة من تلك المصفوفة. هذا يعني أنه يجب تعيين خصائص المصفوفة مرة أخرى بشكل صريح بعد تغيير المصفوفة. التالي يفترض `entity` به حقل `أرقام: [BigInt!]!`.
+Updating array properties is a little more involved, as the getting an array from an entity creates a copy of that array. This means array properties have to be set again explicitly after changing the array. The following assumes `entity` has a `numbers: [BigInt!]!` field.
 
 ```typescript
 // This won't work
@@ -304,39 +317,40 @@ entity.save()
 
 #### إزالة الكيانات من المخزن
 
-لا توجد حاليا طريقة لإزالة كيان عبر الأنواع التي تم إنشاؤها. بدلاً من ذلك ، تتطلب إزالة الكيان تمرير اسم نوع الكيان و ID الكيان إلى `store.remove`:
+There is currently no way to remove an entity via the generated types. Instead, removing an entity requires passing the name of the entity type and the entity ID to `store.remove`:
 
 ```typescript
 import { store } from '@graphprotocol/graph-ts'
 ...
-()let id = event.transaction.hash.toHex
+let id = event.transaction.hash
 store.remove('Transfer', id)
 ```
 
 ### API إيثيريوم
 
-يوفر Ethereum API الوصول إلى العقود الذكية ومتغيرات الحالة العامة ووظائف العقد والأحداث والإجراءات والكتل وتشفير / فك تشفير بيانات Ethereum.
+The Ethereum API provides access to smart contracts, public state variables, contract functions, events, transactions, blocks and the encoding/decoding Ethereum data.
 
 #### دعم أنواع الإيثيريوم
 
-كما هو الحال مع الكيانات ، `graph codegen` ينشئ فئات لجميع العقود الذكية والأحداث المستخدمة في الـ subgraph. لهذا ، يجب أن يكون ABI العقد جزءا من مصدر البيانات في subgraph manifest. عادة ما يتم تخزين ملفات ABI في مجلد `/abis`.
+As with entities, `graph codegen` generates classes for all smart contracts and events used in a subgraph. For this, the contract ABIs need to be part of the data source in the subgraph manifest. Typically, the ABI files are stored in an `abis/` folder.
 
-باستخدام الفئات التي تم إنشاؤها ، تحدث التحويلات بين أنواع Ethereum و [ الأنواع المضمنة ](#built-in-types) خلف الكواليس بحيث لا يضطر منشؤوا الـ subgraph إلى القلق بشأنها.
+With the generated classes, conversions between Ethereum types and the [built-in types](#built-in-types) take place behind the scenes so that subgraph authors do not have to worry about them.
 
-المثال التالي يوضح ذلك. مخطط subgraph معطى مثل
+The following example illustrates this. Given a subgraph schema like
 
 ```graphql
 type Transfer @entity {
+  id: Bytes!
   from: Bytes!
   to: Bytes!
   amount: BigInt!
 }
 ```
 
-و توقيع الحدث `Transfer(address,address,uint256)` على Ethereum ، قيم `from` ، `to` و `amount` من النوع `address` و `address` و `uint256` يتم تحويلها إلى `Address` و `BigInt` ، مما يسمح بتمريرها إلى خصائص `!Bytes` و `!BigInt` للكيان `Transfer`:
+and a `Transfer(address,address,uint256)` event signature on Ethereum, the `from`, `to` and `amount` values of type `address`, `address` and `uint256` are converted to `Address` and `BigInt`, allowing them to be passed on to the `Bytes!` and `BigInt!` properties of the `Transfer` entity:
 
 ```typescript
-let id = event.transaction.hash.toHex()
+let id = event.transaction.hash
 let transfer = new Transfer(id)
 transfer.from = event.params.from
 transfer.to = event.params.to
@@ -346,7 +360,7 @@ transfer.save()
 
 #### الأحداث وبيانات الكتلة/ الإجراء
 
-أحداث Ethereum التي تم تمريرها إلى معالجات الأحداث ، مثل حدث `Transfer` في الأمثلة السابقة ، لا توفر فقط الوصول إلى بارامترات الحدث ولكن أيضا إلى الإجراء الأصلي والكتلة التي تشكل جزءا منها. ويمكن الحصول على البيانات التالية من `event` instances (هذه الفئات (classes) هي جزء من وحدة الـ `ethereum` في `graph-ts`):
+Ethereum events passed to event handlers, such as the `Transfer` event in the previous examples, not only provide access to the event parameters but also to their parent transaction and the block they are part of. The following data can be obtained from `event` instances (these classes are a part of the `ethereum` module in `graph-ts`):
 
 ```typescript
 class Event {
@@ -392,9 +406,9 @@ class Transaction {
 
 #### الوصول إلى حالة العقد الذكي Smart Contract
 
-يشتمل الكود أيضا الذي تم إنشاؤه بواسطة `graph codegen` على فئات للعقود الذكية المستخدمة في الـ subgraph. يمكن استخدامها للوصول إلى متغيرات الحالة العامة واستدعاء دوال العقد في الكتلة الحالية.
+The code generated by `graph codegen` also includes classes for the smart contracts used in the subgraph. These can be used to access public state variables and call functions of the contract at the current block.
 
-النمط الشائع هو الوصول إلى العقد الذي ينشأ منه الحدث. يتم تحقيق ذلك من خلال الكود التالي:
+A common pattern is to access the contract from which an event originates. This is achieved with the following code:
 
 ```typescript
 // Import the generated contract class
@@ -411,13 +425,13 @@ export function handleTransfer(event: Transfer) {
 }
 ```
 
-طالما أن `ERC20Contract` في الـ Ethereum له دالة عامة للقراءة فقط تسمى `symbol` ، فيمكن استدعاؤها بـ `()symbol.`. بالنسبة لمتغيرات الحالة العامة ، يتم إنشاء method بنفس الاسم تلقائيا.
+As long as the `ERC20Contract` on Ethereum has a public read-only function called `symbol`, it can be called with `.symbol()`. For public state variables a method with the same name is created automatically.
 
-أي عقد آخر يمثل جزءا من الـ subgraph يمكن استيراده من الكود الذي تم انشاؤه ويمكن ربطه بعنوان صالح.
+Any other contract that is part of the subgraph can be imported from the generated code and can be bound to a valid address.
 
 #### معالجة الاستدعاءات المعادة
 
-إذا كان من الممكن التراجع عن read-only methods للعقد الخاص بك، فيجب عليك معالجة ذلك عن طريق استدعاء method العقد التي تم انشاؤها والمسبوقة بـ `_try`. على سبيل المثال ، يكشف عقد Gravity عن method `gravatarToOwner`. سيكون هذا الكود قادرا على معالجة التراجع في ذلك الـ method:
+If the read-only methods of your contract may revert, then you should handle that by calling the generated contract method prefixed with `try_`. For example, the Gravity contract exposes the `gravatarToOwner` method. This code would be able to handle a revert in that method:
 
 ```typescript
 let gravity = Gravity.bind(event.address)
@@ -429,11 +443,11 @@ if (callResult.reverted) {
 }
 ```
 
-لاحظ أن Graph node المتصلة بعميل Geth أو Infura قد لا تكتشف جميع المرتجعات ، إذا كنت تعتمد على ذلك ، فإننا نوصي باستخدام Graph node المتصلة بعميل Parity.
+Note that a Graph node connected to a Geth or Infura client may not detect all reverts, if you rely on this we recommend using a Graph node connected to a Parity client.
 
 #### تشفير/فك تشفير ABI
 
-يمكن تشفير البيانات وفك تشفيرها وفقا لتنسيق تشفير ABI الـ Ethereum باستخدام دالتي `encode` و `decode` في الوحدة الـ `ethereum`.
+Data can be encoded and decoded according to Ethereum's ABI encoding format using the `encode` and `decode` functions in the `ethereum` module.
 
 ```typescript
 import { Address, BigInt, ethereum } from '@graphprotocol/graph-ts'
@@ -450,11 +464,11 @@ let encoded = ethereum.encode(ethereum.Value.fromTuple(tuple))!
 let decoded = ethereum.decode('(address,uint256)', encoded)
 ```
 
-لمزيد من المعلومات:
+For more information:
 
-- [مواصفات ABI الفنية](https://docs.soliditylang.org/en/v0.7.4/abi-spec.html#types)
-- تشفير/فك تشفير [Rust library/CLI](https://github.com/rust-ethereum/ethabi)
-- [أمثلة معقدة](https://github.com/graphprotocol/graph-node/blob/6a7806cc465949ebb9e5b8269eeb763857797efc/tests/integration-tests/host-exports/src/mapping.ts#L72) أكثر.
+- [ABI Spec](https://docs.soliditylang.org/en/v0.7.4/abi-spec.html#types)
+- Encoding/decoding [Rust library/CLI](https://github.com/rust-ethereum/ethabi)
+- More [complex example](https://github.com/graphprotocol/graph-node/blob/6a7806cc465949ebb9e5b8269eeb763857797efc/tests/integration-tests/host-exports/src/mapping.ts#L72).
 
 ### Logging API
 
@@ -462,17 +476,17 @@ let decoded = ethereum.decode('(address,uint256)', encoded)
 import { log } from '@graphprotocol/graph-ts
 ```
 
-تسمح واجهة برمجة التطبيقات `log` لـ subgraphs بتسجيل المعلومات إلى الخرج القياسي لـ Graph Node بالإضافة إلى Graph Explorer. يمكن تسجيل الرسائل باستخدام مستويات سجل مختلفة. بنية سلسلة التنسيق الأساسي يتم توفيرها لتكوين رسائل السجل من argument.
+The `log` API allows subgraphs to log information to the Graph Node standard output as well as the Graph Explorer. Messages can be logged using different log levels. A basic format string syntax is provided to compose log messages from argument.
 
-تتضمن واجهة برمجة التطبيقات `log` الدوال التالية:
+The `log` API includes the following functions:
 
-- `log.debug(fmt: string, args: Array<string>): void` - تسجل رسالة debug.
-- `log.info(fmt: string, args: Array<string>): void` - تسجل رسالة اعلامية.
-- `log.warning(fmt: string, args: Array<string>): void` - تسجل تحذير.
-- `log.error(fmt: string, args: Array<string>): void` - تسجل رسالة خطأ.
-- `log.critical(fmt: string, args: Array<string>): void` – تسجل رسالة حرجة _و_ وتنهي الـ subgraph.
+- `log.debug(fmt: string, args: Array<string>): void` - logs a debug message.
+- `log.info(fmt: string, args: Array<string>): void` - logs an informational message.
+- `log.warning(fmt: string, args: Array<string>): void` - logs a warning.
+- `log.error(fmt: string, args: Array<string>): void` - logs an error message.
+- `log.critical(fmt: string, args: Array<string>): void` – logs a critical message _and_ terminates the subgraph.
 
-واجهة برمجة التطبيقات `log` تأخذ تنسيق string ومصفوفة من قيم string. ثم يستبدل placeholders بقيم string من المصفوفة. يتم استبدال placeholder `{}` الأول بالقيمة الأولى في المصفوفة ، ويتم استبدال placeholder `{}` الثاني بالقيمة الثانية وهكذا.
+The `log` API takes a format string and an array of string values. It then replaces placeholders with the string values from the array. The first `{}` placeholder gets replaced by the first value in the array, the second `{}` placeholder gets replaced by the second value and so on.
 
 ```typescript
 log.info('Message to be displayed: {}, {}, {}', [value.toString(), anotherValue.toString(), 'already a string'])
@@ -482,7 +496,7 @@ log.info('Message to be displayed: {}, {}, {}', [value.toString(), anotherValue.
 
 ##### تسجيل قيمة واحدة
 
-في المثال أدناه ، يتم تمرير قيمة السلسلة "A" إلى مصفوفة لتصبح `['A']` قبل تسجيلها:
+In the example below, the string value "A" is passed into an array to become`['A']` before being logged:
 
 ```typescript
 let myValue = 'A'
@@ -495,7 +509,7 @@ export function handleSomeEvent(event: SomeEvent): void {
 
 ##### تسجيل إدخال واحد من مصفوفة موجودة
 
-في المثال أدناه ، يتم تسجيل القيمة الأولى فقط لـ argument المصفوفة، على الرغم من احتواء المصفوفة على ثلاث قيم.
+In the example below, only the first value of the argument array is logged, despite the array containing three values.
 
 ```typescript
 let myArray = ['A', 'B', 'C']
@@ -508,7 +522,7 @@ export function handleSomeEvent(event: SomeEvent): void {
 
 #### تسجيل إدخالات متعددة من مصفوفة موجودة
 
-يتطلب كل إدخال في arguments المصفوفة placeholder `{}` خاص به في سلسلة رسالة السجل. يحتوي المثال أدناه على ثلاثة placeholders `{}` في رسالة السجل. ولهذا السبب ، يتم تسجيل جميع القيم الثلاث في `myArray`.
+Each entry in the arguments array requires its own placeholder `{}` in the log message string. The below example contains three placeholders `{}` in the log message. Because of this, all three values in `myArray` are logged.
 
 ```typescript
 let myArray = ['A', 'B', 'C']
@@ -521,7 +535,7 @@ export function handleSomeEvent(event: SomeEvent): void {
 
 ##### تسجيل إدخال محدد من مصفوفة موجودة
 
-لعرض قيمة محددة في المصفوفة ، يجب توفير القيمة المفهرسة.
+To display a specific value in the array, the indexed value must be provided.
 
 ```typescript
 export function handleSomeEvent(event: SomeEvent): void {
@@ -532,7 +546,7 @@ export function handleSomeEvent(event: SomeEvent): void {
 
 ##### تسجيل معلومات الحدث
 
-يسجل المثال أدناه رقم الكتلة و hash الكتلة و hash الإجراء من حدث:
+The example below logs the block number, block hash and transaction hash from an event:
 
 ```typescript
 import { log } from '@graphprotocol/graph-ts'
@@ -552,9 +566,9 @@ export function handleSomeEvent(event: SomeEvent): void {
 'import { ipfs } from '@graphprotocol/graph-ts
 ```
 
-تقوم العقود الذكية أحيانا بإرساء ملفات IPFS على السلسلة. يسمح هذا للـ mappings بالحصول على IPFS hashes من العقد وقراءة الملفات المقابلة من IPFS. سيتم إرجاع بيانات الملف كـ `Bytes` ، والتي تتطلب عادة مزيدا من المعالجة ، على سبيل المثال مع واجهة برمجة التطبيقات `json` الموثقة لاحقا في هذه الصفحة.
+Smart contracts occasionally anchor IPFS files on chain. This allows mappings to obtain the IPFS hashes from the contract and read the corresponding files from IPFS. The file data will be returned as `Bytes`, which usually requires further processing, e.g. with the `json` API documented later on this page.
 
-IPFS hash أو مسار معطى، تتم قراءة ملف من IPFS على النحو التالي:
+Given an IPFS hash or path, reading a file from IPFS is done as follows:
 
 ```typescript
 // Put this inside an event handler in the mapping
@@ -567,9 +581,9 @@ let path = 'QmTkzDwWqPbnAh5YiV5VwcTLnGdwSNsNTn2aDxdXBFca7D/Makefile'
 let data = ipfs.cat(path)
 ```
 
-**ملاحظة:** `ipfs.cat` ليست إجبارية في الوقت الحالي. لهذا السبب ، من المفيد دائما التحقق من نتيجة `null`. إذا تعذر استرداد الملف عبر شبكة Ipfs قبل انتهاء مهلة الطلب ، فسيعود `null`. لضمان إمكانية استرداد الملفات ، يجب تثبيتها في IPFS node التي تتصل بها Graph Node. على [الخدمة المستضافة ](https://thegraph.com/hosted-service) ، هذا هو [https://api.thegraph.com/ipfs/](https://api.thegraph.com/ipfs/). راجع قسم [تثبيت IPFS](/developer/create-subgraph-hosted#ipfs-pinning) لمزيد من المعلومات.
+**Note:** `ipfs.cat` is not deterministic at the moment. If the file cannot be retrieved over the IPFS network before the request times out, it will return `null`. Due to this, it's always worth checking the result for `null`. To ensure that files can be retrieved, they have to be pinned to the IPFS node that Graph Node connects to. On the [hosted service](https://thegraph.com/hosted-service), this is [https://api.thegraph.com/ipfs/](https://api.thegraph.com/ipfs). See the [IPFS pinning](/developer/create-subgraph-hosted#ipfs-pinning) section for more information.
 
-من الممكن أيضا معالجة الملفات الأكبر حجما بطريقة متدفقة باستخدام `ipfs.map`. الدالة تتوقع الـ hash أو مسارا لملف IPFS واسم الـ callback والـ flags لتعديل سلوكه:
+It is also possible to process larger files in a streaming fashion with `ipfs.map`. The function expects the hash or path for an IPFS file, the name of a callback, and flags to modify its behavior:
 
 ```typescript
 import { JSONValue, Value } from '@graphprotocol/graph-ts'
@@ -586,7 +600,7 @@ export function processItem(value: JSONValue, userData: Value): void {
   }
 
   // Callbacks can also created entities
-  let newItem = new Item(id.toString())
+  let newItem = new Item(id)
   newItem.title = title.toString()
   newitem.parent = userData.toString() // Set parent to "parentId"
   newitem.save()
@@ -599,9 +613,9 @@ ipfs.map('Qm...', 'processItem', Value.fromString('parentId'), ['json'])
 ipfs.mapJSON('Qm...', 'processItem', Value.fromString('parentId'))
 ```
 
-الـ flag الوحيد المدعوم حاليا هو `json` ، والذي يجب تمريره إلى `ipfs.map`. وباستخدام flag الـ `json` ، يجب أن يتكون ملف IPFS من سلسلة من قيم JSON ، قيمة واحدة لكل سطر. وسيؤدي استدعاء `ipfs.map` إلى قراءة كل سطر في الملف ، وإلغاء تسلسله إلى `JSONValue` واستدعاء الـ callback لكل منها. ويمكن لـ callback بعد ذلك استخدام عمليات الكيان لتخزين البيانات من `JSONValue`. ويتم تخزين تغييرات الكيان فقط عندما ينتهي المعالج الذي يسمى `ipfs.map` بنجاح ؛ في غضون ذلك ، يتم الاحتفاظ بها في الذاكرة ، وبالتالي يكون حجم الملف الذي يمكن لـ `ipfs.map` معالجته محدودا.
+The only flag currently supported is `json`, which must be passed to `ipfs.map`. With the `json` flag, the IPFS file must consist of a series of JSON values, one value per line. The call to `ipfs.map` will read each line in the file, deserialize it into a `JSONValue` and call the callback for each of them. The callback can then use entity operations to store data from the `JSONValue`. Entity changes are stored only when the handler that called `ipfs.map` finishes successfully; in the meantime, they are kept in memory, and the size of the file that `ipfs.map` can process is therefore limited.
 
-عند النجاح ، يرجع `ipfs.map` `بـ void`. إذا تسبب أي استدعاء لـ callback في حدوث خطأ ، فسيتم إحباط المعالج الذي استدعى `ipfs.map` ، ويتم وضع علامة على الـ subgraph على أنه فشل.
+On success, `ipfs.map` returns `void`. If any invocation of the callback causes an error, the handler that invoked `ipfs.map` is aborted, and the subgraph is marked as failed.
 
 ### Crypto API
 
@@ -609,7 +623,7 @@ ipfs.mapJSON('Qm...', 'processItem', Value.fromString('parentId'))
 'import { crypto } from '@graphprotocol/graph-ts
 ```
 
-توفر واجهة برمجة تطبيقات `crypto` دوال التشفير للاستخدام في mappings. الآن ، يوجد واحد فقط:
+The `crypto` API makes a cryptographic functions available for use in mappings. Right now, there is only one:
 
 - `crypto.keccak256(input: ByteArray): ByteArray`
 
@@ -619,14 +633,14 @@ ipfs.mapJSON('Qm...', 'processItem', Value.fromString('parentId'))
 'import { json, JSONValueKind } from '@graphprotocol/graph-ts
 ```
 
-يمكن تحليل بيانات JSON باستخدام `json` API:
+JSON data can be parsed using the `json` API:
 
-- `json.fromBytes(data: Bytes): JSONValue` – يحول بيانات JSON من مصفوفة `Bytes`
-- `json.try_fromBytes(data: Bytes): Result<JSONValue, boolean>` – إصدار آمن من `json.fromBytes` ، يقوم بإرجاع متغير الخطأ إذا فشل التحليل
-- `json.fromString(data: Bytes): JSONValue` – يحلل بيانات JSON من UTF-8 `String` صالح
-- `json.try_fromString(data: Bytes): Result<JSONValue, boolean>` – اصدار آمن من `json.fromString`, يقوم بإرجاع متغير الخطأ إذا فشل التحليل
+- `json.fromBytes(data: Bytes): JSONValue` – parses JSON data from a `Bytes` array interpreted as a valid UTF-8 sequence
+- `json.try_fromBytes(data: Bytes): Result<JSONValue, boolean>` – safe version of `json.fromBytes`, it returns an error variant if the parsing failed
+- `json.fromString(data: string): JSONValue` – parses JSON data from a valid UTF-8 `String`
+- `json.try_fromString(data: string): Result<JSONValue, boolean>` – safe version of `json.fromString`, it returns an error variant if the parsing failed
 
-توفر فئة `JSONValue` طريقة لسحب القيم من مستند JSON عشوائي. نظرا لأن قيم JSON يمكن أن تكون منطقية وأرقاما ومصفوفات وغيرها، فإن `JSONValue` يأتي مع خاصية `kind` للتحقق من نوع القيمة:
+The `JSONValue` class provides a way to pull values out of an arbitrary JSON document. Since JSON values can be booleans, numbers, arrays and more, `JSONValue` comes with a `kind` property to check the type of a value:
 
 ```typescript
 let value = json.fromBytes(...)
@@ -635,39 +649,38 @@ if (value.kind == JSONValueKind.BOOL) {
 }
 ```
 
-بالإضافة إلى ذلك ، هناك method للتحقق مما إذا كانت القيمة `null`:
+In addition, there is a method to check if the value is `null`:
 
 - `value.isNull(): boolean`
 
-عندما يكون نوع القيمة مؤكدا ، يمكن تحويلها إلى [ نوع مضمن ](#built-in-types) باستخدام إحدى الـ methods التالية:
+When the type of a value is certain, it can be converted to a [built-in type](#built-in-types) using one of the following methods:
 
 - `value.toBool(): boolean`
 - `value.toI64(): i64`
 - `value.toF64(): f64`
 - `value.toBigInt(): BigInt`
 - `value.toString(): string`
-- `value.toArray(): Array<JSONValue>` - (ثم قم بتحويل `JSONValue` بإحدى الـ methods الخمس المذكورة أعلاه)
+- `value.toArray(): Array<JSONValue>` - (and then convert `JSONValue` with one of the 5 methods above)
 
 ### مرجع تحويلات الأنواع
 
 | المصدر(المصادر)      | الغاية               | دالة التحويل                 |
 | -------------------- | -------------------- | ---------------------------- |
 | Address              | Bytes                | لا يوجد                      |
-| Address              | ID                   | ()s.toHexString              |
 | Address              | String               | ()s.toHexString              |
-| BigDecimal           | String               | ()s.toString                 |
-| BigInt               | BigDecimal           | ()s.toBigDecimal             |
-| BigInt               | String (hexadecimal) | ()s.toHexString() or s.toHex |
-| BigInt               | String (unicode)     | ()s.toString                 |
-| BigInt               | i32                  | ()s.toI32                    |
+| BigDecimal           | String               | s.toString()                 |
+| BigInt               | BigDecimal           | s.toBigDecimal()             |
+| BigInt               | String (hexadecimal) | s.toHexString() or s.toHex() |
+| BigInt               | String (unicode)     | s.toString()                 |
+| BigInt               | i32                  | s.toI32()                    |
 | Boolean              | Boolean              | لا يوجد                      |
 | Bytes (signed)       | BigInt               | BigInt.fromSignedBytes(s)    |
 | Bytes (unsigned)     | BigInt               | BigInt.fromUnsignedBytes(s)  |
 | Bytes                | String (hexadecimal) | s.toHexString() or s.toHex() |
-| Bytes                | String (unicode)     | ()s.toString                 |
-| Bytes                | String (base58)      | ()s.toBase58                 |
-| Bytes                | i32                  | ()s.toI32                    |
-| Bytes                | u32                  | ()s.toU32                    |
+| Bytes                | String (unicode)     | s.toString()                 |
+| Bytes                | String (base58)      | s.toBase58()                 |
+| Bytes                | i32                  | s.toI32()                    |
+| Bytes                | u32                  | s.toU32()                    |
 | Bytes                | JSON                 | json.fromBytes(s)            |
 | int8                 | i32                  | لا يوجد                      |
 | int32                | i32                  | لا يوجد                      |
@@ -675,22 +688,22 @@ if (value.kind == JSONValueKind.BOOL) {
 | uint24               | i32                  | لا يوجد                      |
 | int64 - int256       | BigInt               | لا يوجد                      |
 | uint32 - uint256     | BigInt               | لا يوجد                      |
-| JSON                 | boolean              | ()s.toBool                   |
-| JSON                 | i64                  | ()s.toI64                    |
-| JSON                 | u64                  | ()s.toU64                    |
-| JSON                 | f64                  | ()s.toF64                    |
-| JSON                 | BigInt               | ()s.toBigInt                 |
-| JSON                 | string               | ()s.toString                 |
-| JSON                 | Array                | ()s.toArray                  |
-| JSON                 | Object               | ()s.toObject                 |
-| String               | Address              | Address.fromString(s)        |
+| JSON                 | boolean              | s.toBool()                   |
+| JSON                 | i64                  | s.toI64()                    |
+| JSON                 | u64                  | s.toU64()                    |
+| JSON                 | f64                  | s.toF64()                    |
+| JSON                 | BigInt               | s.toBigInt()                 |
+| JSON                 | string               | s.toString()                 |
+| JSON                 | Array                | s.toArray()                  |
+| JSON                 | Object               | s.toObject()                 |
+| String               | العنوان (Address)    | Address.fromString(s)        |
 | String               | BigDecimal           | BigDecimal.fromString(s)     |
 | String (hexadecimal) | Bytes                | ByteArray.fromHexString(s)   |
 | String (UTF-8)       | Bytes                | ByteArray.fromUTF8(s)        |
 
 ### البيانات الوصفية لمصدر البيانات
 
-يمكنك فحص عنوان العقد والشبكة وسياق مصدر البيانات الذي استدعى المعالج من خلال `dataSource` namespace:
+You can inspect the contract address, network and context of the data source that invoked the handler through the `dataSource` namespace:
 
 - `dataSource.address(): Address`
 - `dataSource.network(): string`
@@ -698,7 +711,7 @@ if (value.kind == JSONValueKind.BOOL) {
 
 ### الكيان و DataSourceContext
 
-تحتوي فئة `Entity` الأساسية والفئة الفرعية `DataSourceContext` على مساعدين لتعيين الحقول والحصول عليها ديناميكيا:
+The base `Entity` class and the child `DataSourceContext` class have helpers to dynamically set and get fields:
 
 - `setString(key: string, value: string): void`
 - `setI32(key: string, value: i32): void`
