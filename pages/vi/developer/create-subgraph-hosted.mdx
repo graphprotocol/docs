@@ -166,15 +166,15 @@ Lược đồ cho subgraph của bạn nằm trong tệp `schema.graphql`. Các 
 
 Trước khi xác định các thực thể (entities), điều quan trọng là phải lùi lại một bước và suy nghĩ về cách dữ liệu của bạn được cấu trúc và liên kết. Tất cả các truy vấn sẽ được thực hiện dựa trên mô hình dữ liệu được xác định trong lược đồ subgraph và các thực thể được lập chỉ mục bởi subgraph. Bởi vì điều này, rất tốt để xác định lược đồ subgraph theo cách phù hợp với nhu cầu của dapp của bạn. Có thể hữu ích khi hình dung các thực thể là "đối tượng chứa dữ liệu", chứ không phải là các sự kiện hoặc chức năng.
 
-Với The Graph, bạn chỉ cần xác định các loại thực thể trong `schema.graphql` và Graph Node sẽ tạo ra các trường cấp cao nhất để truy vấn các trường hợp và tập hợp đơn lẻ của loại thực thể đó. Mỗi loại phải là một thực thể bắt buộc phải được chú thích bằng chỉ thị `@entity`.
+With The Graph, you simply define entity types in `schema.graphql`, and Graph Node will generate top level fields for querying single instances and collections of that entity type. Each type that should be an entity is required to be annotated with an `@entity` directive. By default, entities are mutable, meaning that mappings can load existing entities, modify them and store a new version of that entity. Mutability comes at a price, and for entity types for which it is known that they will never be modified, for example, because they simply contain data extracted verbatim from the chain, it is recommended to mark them as immutable with `@entity(immutable: true)`. Mappings can make changes to immutable entities as long as those changes happen in the same block in which the entity was created. Immutable entities are much faster to write and to query, and should therefore be used whenever possible.
 
 ### Ví dụ tốt
 
 Thực thể `Gravatar` bên dưới được cấu trúc xung quanh một đối tượng Gravatar và là một ví dụ điển hình về cách một thực thể có thể được xác định.
 
 ```graphql
-type Gravatar @entity {
-  id: ID!
+type Gravatar @entity(immutable: true) {
+  id: Bytes!
   owner: Bytes
   displayName: String
   imageUrl: String
@@ -188,14 +188,14 @@ Ví dụ về các thực thể `GravatarAccepted` và `GravatarDecline` bên d�
 
 ```graphql
 type GravatarAccepted @entity {
-  id: ID!
+  id: Bytes!
   owner: Bytes
   displayName: String
   imageUrl: String
 }
 
 type GravatarDeclined @entity {
-  id: ID!
+  id: Bytes!
   owner: Bytes
   displayName: String
   imageUrl: String
@@ -210,27 +210,28 @@ Các trường thực thể có thể được xác định theo yêu cầu ho�
 Giá trị rỗng (null) được giải quyết cho trường không phải null 'name'
 ```
 
-Mỗi thực thể phải có một trường `id`, thuộc loại `ID!` (string). Trường `id` đóng vai trò là khóa chính và cần phải là duy nhất giữa tất cả các thực thể cùng loại.
+Each entity must have an `id` field, which must be of type `Bytes!` or `String!`. It is generally recommended to use `Bytes!`, unless the `id` contains human-readable text, since entities with `Bytes!` id's will be faster to write and query as those with a `String!` `id`. The `id` field serves as the primary key, and needs to be unique among all entities of the same type. For historical reasons, the type `ID!` is also accepted and is a synonym for `String!`.
+
+For some entity types the `id` is constructed from the id's of two other entities; that is possible using `concat`, e.g., `let id = left.id.concat(right.id)` to form the id from the id's of `left` and `right`. Similarly, to construct an id from the id of an existing entity and a counter `count`, `let id = left.id.concatI32(count)` can be used. The concatenation is guaranteed to produce unique id's as long as the length of `left` is the same for all such entities, for example, because `left.id` is an `Address`.
 
 ### Các loại vô hướng tích hợp
 
 #### GraphQL Vô hướng được hỗ trợ
 
-Chúng tôi hỗ trợ các đại lượng vô hướng sau trong API GraphQL của chúng tôi:
+We support the following scalars in our GraphQL API:
 
 | Loại | Miêu tả |
 | --- | --- |
 | `Bytes` | Mảng byte, được biểu diễn dưới dạng chuỗi thập lục phân. Thường được sử dụng cho các mã băm và địa chỉ Ethereum. |
-| `ID` | Được lưu trữ dưới dạng `string`. |
-| `String` | Vô hướng cho các giá trị `string`. Các ký tự rỗng không được hỗ trợ và tự động bị xóa. |
-| `Boolean` | Vô hướng cho các giá trị `boolean`. |
-| `Int` | Thông số GraphQL xác định `Int` có kích thước 32 byte. |
-| `BigInt` | Số nguyên lớn. Được sử dụng cho các loại `uint32`, `int64`, `uint64`, ..., `uint256` của Ethereum. Lưu ý: mọi thứ dưới `uint32`, như là `int32`, `uint24` or `int8` được đại diện như là `i32`. |
-| `BigDecimal` | `BigDecimal` Các số thập phân có độ chính xác cao được biểu diễn dưới dạng dấu hiệu và số mũ. Phạm vi số mũ là từ −6143 đến +6144. Được làm tròn đến 34 chữ số có nghĩa. |
+| `String` | Scalar for `string` values. Null characters are not supported and are automatically removed. |
+| `Boolean` | Scalar for `boolean` values. |
+| `Int` | The GraphQL spec defines `Int` to have size of 32 bytes. |
+| `BigInt` | Large integers. Used for Ethereum's `uint32`, `int64`, `uint64`, ..., `uint256` types. Note: Everything below `uint32`, such as `int32`, `uint24` or `int8` is represented as `i32`. |
+| `BigDecimal` | `BigDecimal` High precision decimals represented as a signficand and an exponent. The exponent range is from −6143 to +6144. Rounded to 34 significant digits. |
 
 #### Enums
 
-Bạn cũng có thể tạo enums trong một lược đồ. Enums có cú pháp sau:
+You can also create enums within a schema. Enums have the following syntax:
 
 ```graphql
 enum TokenStatus {
@@ -240,43 +241,43 @@ enum TokenStatus {
 }
 ```
 
-Khi enum được xác định trong lược đồ, bạn có thể sử dụng biểu diễn chuỗi của giá trị enum để đặt một trường enum trên một thực thể. Ví dụ: bạn có thể đặt `tokenStatus` thành `SecondOwner` bằng cách xác định thực thể của bạn trước tiên và sau đó đặt trường với `entity.tokenStatus = "SecondOwner`. Ví dụ bên dưới minh họa thực thể Token sẽ trông như thế nào với trường enum:
+Once the enum is defined in the schema, you can use the string representation of the enum value to set an enum field on an entity. For example, you can set the `tokenStatus` to `SecondOwner` by first defining your entity and subsequently setting the field with `entity.tokenStatus = "SecondOwner"`. The example below demonstrates what the Token entity would look like with an enum field:
 
-Bạn có thể tìm thấy thêm chi tiết về cách viết enums trong [Tài liệu GraphQL](https://graphql.org/learn/schema/).
+More detail on writing enums can be found in the [GraphQL documentation](https://graphql.org/learn/schema/).
 
 #### Mối quan hệ thực thể
 
-Một thực thể có thể có mối quan hệ với một hoặc nhiều thực thể khác trong lược đồ của bạn. Những mối quan hệ này có thể được duyệt qua trong các truy vấn của bạn. Các mối quan hệ trong The Graph là một chiều. Có thể mô phỏng mối quan hệ hai chiều bằng cách xác định mối quan hệ một chiều ở một trong hai "điểm cuối" của mối quan hệ.
+An entity may have a relationship to one or more other entities in your schema. These relationships may be traversed in your queries. Relationships in The Graph are unidirectional. It is possible to simulate bidirectional relationships by defining a unidirectional relationship on either "end" of the relationship.
 
-Mối quan hệ được xác định trên các thực thể giống như bất kỳ trường nào khác ngoại trừ kiểu được chỉ định là của một thực thể khác.
+Relationships are defined on entities just like any other field except that the type specified is that of another entity.
 
 #### Mối quan hệ một-một
 
-Xác định loại thực thể `Transaction` với mối quan hệ 1-1 tùy chọn với loại thực thể `TransactionReceipt`:
+Define a `Transaction` entity type with an optional one-to-one relationship with a `TransactionReceipt` entity type:
 
 ```graphql
-type Transaction @entity {
-  id: ID!
+type Transaction @entity(immutable: true) {
+  id: Bytes!
   transactionReceipt: TransactionReceipt
 }
 
-type TransactionReceipt @entity {
-  id: ID!
+type TransactionReceipt @entity(immutable: true) {
+  id: Bytes!
   transaction: Transaction
 }
 ```
 
 #### Mối quan hệ một-nhiều
 
-Xác định loại thực thể `TokenBalance` với mối quan hệ một-nhiều bắt buộc với loại thực thể Token:
+Define a `TokenBalance` entity type with a required one-to-many relationship with a Token entity type:
 
 ```graphql
-type Token @entity {
-  id: ID!
+type Token @entity(immutable: true) {
+  id: Bytes!
 }
 
 type TokenBalance @entity {
-  id: ID!
+  id: Bytes!
   amount: Int!
   token: Token!
 }
@@ -284,22 +285,22 @@ type TokenBalance @entity {
 
 #### Tra cứu ngược
 
-Tra cứu ngược có thể được xác định trên một thực thể thông qua trường `@derivedFrom`. Điều này tạo ra một trường ảo trên thực thể có thể được truy vấn nhưng không thể được đặt theo cách thủ công thông qua API ánh xạ. Đúng hơn, nó có nguồn gốc từ mối quan hệ được xác định trên thực thể khác. Đối với các mối quan hệ như vậy, hiếm khi có ý nghĩa khi lưu trữ cả hai bên của mối quan hệ và cả hiệu suất lập chỉ mục và truy vấn sẽ tốt hơn khi chỉ một bên được lưu trữ và bên kia được dẫn xuất.
+Reverse lookups can be defined on an entity through the `@derivedFrom` field. This creates a virtual field on the entity that may be queried but cannot be set manually through the mappings API. Rather, it is derived from the relationship defined on the other entity. For such relationships, it rarely makes sense to store both sides of the relationship, and both indexing and query performance will be better when only one side is stored and the other is derived.
 
-Đối với các mối quan hệ một-nhiều, mối quan hệ phải luôn được lưu trữ ở bên 'một' và bên 'nhiều' phải luôn được bắt nguồn. Lưu trữ mối quan hệ theo cách này, thay vì lưu trữ một mảng các thực thể ở phía 'nhiều', sẽ dẫn đến hiệu suất tốt hơn đáng kể cho cả lập chỉ mục và truy vấn subgraph. Nói chung, việc lưu trữ các mảng thực thể nên tránh càng nhiều càng tốt.
+For one-to-many relationships, the relationship should always be stored on the 'one' side, and the 'many' side should always be derived. Storing the relationship this way, rather than storing an array of entities on the 'many' side, will result in dramatically better performance for both indexing and querying the subgraph. In general, storing arrays of entities should be avoided as much as is practical.
 
 #### Ví dụ
 
-Chúng tôi có thể tạo số dư cho một token có thể truy cập được từ token bằng cách lấy trường `tokenBalances`:
+We can make the balances for a token accessible from the token by deriving a `tokenBalances` field:
 
 ```graphql
-type Token @entity {
-  id: ID!
+type Token @entity(immutable: true) {
+  id: Bytes!
   tokenBalances: [TokenBalance!]! @derivedFrom(field: "token")
 }
 
 type TokenBalance @entity {
-  id: ID!
+  id: Bytes!
   amount: Int!
   token: Token!
 }
@@ -307,49 +308,49 @@ type TokenBalance @entity {
 
 #### Mối quan hệ nhiều-nhiều
 
-Đối với các mối quan hệ nhiều-nhiều, chẳng hạn như người dùng mà mỗi người có thể thuộc bất kỳ số lượng tổ chức nào, thì cách đơn giản nhất, nhưng không phải là hoạt động hiệu quả nhất, để lập mô hình mối quan hệ là một mảng trong mỗi thực thể trong số hai thực thể có liên quan. Nếu mối quan hệ là đối xứng, chỉ một mặt của mối quan hệ cần được lưu trữ và mặt còn lại có thể được suy ra.
+For many-to-many relationships, such as users that each may belong to any number of organizations, the most straightforward, but generally not the most performant, way to model the relationship is as an array in each of the two entities involved. If the relationship is symmetric, only one side of the relationship needs to be stored and the other side can be derived.
 
 #### Ví dụ
 
-Xác định tra cứu ngược từ loại thực thể `User` đến một loại thực thể `Organization`. Trong ví dụ dưới đây, điều này đạt được bằng cách tra cứu thuộc tính `members` từ bên trong thực thể `Organization`. Trong các truy vấn, trường `organizations` trên `User` sẽ được giải quyết bằng cách tìm tất cả các thực thể `Organization` bao gồm ID của người dùng.
+Define a reverse lookup from a `User` entity type to an `Organization` entity type. In the example below, this is achieved by looking up the `members` attribute from within the `Organization` entity. In queries, the `organizations` field on `User` will be resolved by finding all `Organization` entities that include the user's ID.
 
 ```graphql
 type Organization @entity {
-  id: ID!
+  id: Bytes!
   name: String!
   members: [User!]!
 }
 
 type User @entity {
-  id: ID!
+  id: Bytes!
   name: String!
   organizations: [Organization!]! @derivedFrom(field: "members")
 }
 ```
 
-Một cách hiệu quả hơn để lưu trữ mối quan hệ này là thông qua bảng ánh xạ có một mục nhập cho mỗi cặp `User` / `Organization` với một lược đồ như
+A more performant way to store this relationship is through a mapping table that has one entry for each `User` / `Organization` pair with a schema like
 
 ```graphql
 type Organization @entity {
-  id: ID!
+  id: Bytes!
   name: String!
   members: [UserOrganization]! @derivedFrom(field: "organization")
 }
 
 type User @entity {
-  id: ID!
+  id: Bytes!
   name: String!
   organizations: [UserOrganization!] @derivedFrom(field: "user")
 }
 
 type UserOrganization @entity {
-  id: ID! # Set to `${user.id}-${organization.id}`
+  id: Bytes! # Set to `user.id.concat(organization.id)`
   user: User!
   organization: Organization!
 }
 ```
 
-Cách tiếp cận này yêu cầu các truy vấn giảm xuống một cấp bổ sung để truy xuất, ví dụ: tổ chức cho người dùng:
+This approach requires that queries descend into one additional level to retrieve, for example, the organizations for users:
 
 ```graphql
 query usersWithOrganizations {
@@ -364,27 +365,27 @@ query usersWithOrganizations {
 }
 ```
 
-Cách lưu trữ các mối quan hệ nhiều-nhiều phức tạp hơn này sẽ dẫn đến việc lưu trữ ít dữ liệu hơn cho subgraph, và do đó, một subgraph thường nhanh hơn đáng kể để lập chỉ mục và truy vấn.
+This more elaborate way of storing many-to-many relationships will result in less data stored for the subgraph, and therefore to a subgraph that is often dramatically faster to index and to query.
 
 #### Thêm nhận xét vào lược đồ
 
-Theo thông số kỹ thuật của GraphQL, các nhận xét có thể được thêm vào bên trên các thuộc tính thực thể lược đồ bằng cách sử dụng dấu ngoặc kép `""`. Điều này được minh họa trong ví dụ dưới đây:
+As per GraphQL spec, comments can be added above schema entity attributes using double quotations `""`. This is illustrated in the example below:
 
 ```graphql
 type MyFirstEntity @entity {
   "unique identifier and primary key of the entity"
-  id: ID!
+  id: Bytes!
   address: Bytes!
 }
 ```
 
 ## Xác định các Trường Tìm kiếm toàn Văn bản
 
-Truy vấn tìm kiếm toàn văn bản lọc và xếp hạng các thực thể dựa trên đầu vào tìm kiếm văn bản. Các truy vấn toàn văn bản có thể trả về các kết quả phù hợp cho các từ tương tự bằng cách xử lý đầu vào văn bản truy vấn thành các gốc trước khi so sánh với dữ liệu văn bản được lập chỉ mục.
+Fulltext search queries filter and rank entities based on a text search input. Fulltext queries are able to return matches for similar words by processing the query text input into stems before comparing to the indexed text data.
 
-Định nghĩa truy vấn toàn văn bao gồm tên truy vấn, từ điển ngôn ngữ được sử dụng để xử lý các trường văn bản, thuật toán xếp hạng được sử dụng để sắp xếp kết quả và các trường được bao gồm trong tìm kiếm. Mỗi truy vấn toàn văn bản có thể kéo dài nhiều trường, nhưng tất cả các trường được bao gồm phải từ một loại thực thể duy nhất.
+A fulltext query definition includes the query name, the language dictionary used to process the text fields, the ranking algorithm used to order the results, and the fields included in the search. Each fulltext query may span multiple fields, but all included fields must be from a single entity type.
 
-Để thêm truy vấn toàn văn bản, hãy bao gồm loại `_Schema_` với chỉ thị toàn văn bản trong lược đồ GraphQL.
+To add a fulltext query, include a `_Schema_` type with a fulltext directive in the GraphQL schema.
 
 ```graphql
 type _Schema_
@@ -396,7 +397,7 @@ type _Schema_
   )
 
 type Band @entity {
-  id: ID!
+  id: Bytes!
   name: String!
   description: String!
   bio: String
@@ -407,7 +408,7 @@ type Band @entity {
 }
 ```
 
-Trường `bandSearch` mẫu có thể được sử dụng trong các truy vấn để lọc các thực thể `Band` dựa trên các tài liệu văn bản trong `name`, `description` và các trường `bio`. Chuyển đến [GraphQL API - Truy vấn](/developer/graphql-api#queries) để biết mô tả về API tìm kiếm Toàn văn bản và để biết thêm ví dụ về cách sử dụng.
+The example `bandSearch` field can be used in queries to filter `Band` entities based on the text documents in the `name`, `description`, and `bio` fields. Jump to [GraphQL API - Queries](/developer/graphql-api#queries) for a description of the Fulltext search API and for more example usage.
 
 ```graphql
 query {
@@ -424,9 +425,9 @@ query {
 
 ### Các ngôn ngữ được hỗ trợ
 
-Việc chọn một ngôn ngữ khác sẽ có tác động dứt khoát, mặc dù đôi khi hơi tinh tế, đối với API tìm kiếm toàn văn bản. Các trường được bao phủ bởi trường truy vấn toàn văn bản được kiểm tra trong ngữ cảnh của ngôn ngữ đã chọn, vì vậy các từ vựng được tạo ra bởi phân tích và truy vấn tìm kiếm khác nhau giữa ngôn ngữ. Ví dụ: khi sử dụng từ điển tiếng Thổ Nhĩ Kỳ được hỗ trợ, "token" được đặt gốc thành "toke" trong khi tất nhiên, từ điển tiếng Anh sẽ bắt nguồn từ "token".
+Choosing a different language will have a definitive, though sometimes subtle, effect on the fulltext search API. Fields covered by a fulltext query field are examined in the context of the chosen language, so the lexemes produced by analysis and search queries vary language to language. For example: when using the supported Turkish dictionary "token" is stemmed to "toke" while, of course, the English dictionary will stem it to "token".
 
-Từ điển ngôn ngữ được hỗ trợ:
+Supported language dictionaries:
 
 | Mã     | Từ điển           |
 | ------ | ----------------- |
@@ -449,7 +450,7 @@ Từ điển ngôn ngữ được hỗ trợ:
 
 ### Thuật toán Xếp hạng
 
-Các thuật toán được hỗ trợ để sắp xếp kết quả:
+Supported algorithms for ordering results:
 
 | Thuật toán    | Miêu tả                                                                         |
 | ------------- | ------------------------------------------------------------------------------- |
@@ -458,18 +459,18 @@ Các thuật toán được hỗ trợ để sắp xếp kết quả:
 
 ## Viết Ánh xạ
 
-Các ánh xạ biến đổi dữ liệu Ethereum mà các ánh xạ của bạn đang cung cấp thành các thực thể được xác định trong lược đồ của bạn. Các ánh xạ được viết trong một tập hợp con của [TypeScript](https://www.typescriptlang.org/docs/handbook/typescript-in-5-minutes.html) được gọi là [AssemblyScript](https://github.com/AssemblyScript/assemblyscript/wiki) có thể được biên dịch thành WASM ([WebAssembly](https://webassembly.org/)). AssemblyScript nghiêm ngặt hơn TypeScript bình thường, nhưng vẫn cung cấp một cú pháp quen thuộc.
+The mappings transform the Ethereum data your mappings are sourcing into entities defined in your schema. Mappings are written in a subset of [TypeScript](https://www.typescriptlang.org/docs/handbook/typescript-in-5-minutes.html) called [AssemblyScript](https://github.com/AssemblyScript/assemblyscript/wiki) which can be compiled to WASM ([WebAssembly](https://webassembly.org/)). AssemblyScript is stricter than normal TypeScript, yet provides a familiar syntax.
 
-Đối với mỗi trình xử lý sự kiện được xác định trong `subgraph.yaml` dưới `mapping.eventHandlers`, tạo một hàm xuất cùng tên. Mỗi trình xử lý phải chấp nhận một tham số duy nhất được gọi là `event` với kiểu tương ứng với tên của sự kiện đang được xử lý.
+For each event handler that is defined in `subgraph.yaml` under `mapping.eventHandlers`, create an exported function of the same name. Each handler must accept a single parameter called `event` with a type corresponding to the name of the event which is being handled.
 
-Trong subgraph mẫu, `src/mapping.ts` chứa các trình xử lý cho `NewGravatar` và các sự kiện `UpdatedGravatar`:
+In the example subgraph, `src/mapping.ts` contains handlers for the `NewGravatar` and `UpdatedGravatar` events:
 
 ```javascript
 import { NewGravatar, UpdatedGravatar } from '../generated/Gravity/Gravity'
 import { Gravatar } from '../generated/schema'
 
 export function handleNewGravatar(event: NewGravatar): void {
-  let gravatar = new Gravatar(event.params.id.toHex())
+  let gravatar = new Gravatar(event.params.id)
   gravatar.owner = event.params.owner
   gravatar.displayName = event.params.displayName
   gravatar.imageUrl = event.params.imageUrl
@@ -477,7 +478,7 @@ export function handleNewGravatar(event: NewGravatar): void {
 }
 
 export function handleUpdatedGravatar(event: UpdatedGravatar): void {
-  let id = event.params.id.toHex()
+  let id = event.params.id
   let gravatar = Gravatar.load(id)
   if (gravatar == null) {
     gravatar = new Gravatar(id)
@@ -489,31 +490,31 @@ export function handleUpdatedGravatar(event: UpdatedGravatar): void {
 }
 ```
 
-Trình xử lý đầu tiên lấy một sự kiện `NewGravatar` và tạo một thực thể `Gravatar` mới với `new Gravatar(event.params.id.toHex())`, điền các trường thực thể bằng cách sử dụng các tham số sự kiện tương ứng. Cá thể thực thể này được đại diện bởi biến `gravatar`, với giá trị id là `event.params.id.toHex()`.
+The first handler takes a `NewGravatar` event and creates a new `Gravatar` entity with `new Gravatar(event.params.id.toHex())`, populating the entity fields using the corresponding event parameters. This entity instance is represented by the variable `gravatar`, with an id value of `event.params.id.toHex()`.
 
-Trình xử lý thứ hai cố gắng tải `Gravatar` hiện có từ cửa hàng Graph Node. Nếu nó chưa tồn tại, nó được tạo ra theo yêu cầu. Sau đó, thực thể được cập nhật để khớp với các tham số sự kiện mới, trước khi được lưu trở lại cửa hàng bằng cách sử dụng `gravatar.save()`.
+The second handler tries to load the existing `Gravatar` from the Graph Node store. If it does not exist yet, it is created on demand. The entity is then updated to match the new event parameters, before it is saved back to the store using `gravatar.save()`.
 
 ### Các ID được Đề xuất để tạo các Thực thể Mới
 
-Mọi thực thể phải có `id` là duy nhất trong số tất cả các thực thể cùng loại. Giá trị `id` của đối tượng được đặt khi đối tượng được tạo. Dưới đây là một số giá trị `id` được đề xuất cần xem xét khi tạo các thực thể mới. LƯU Ý: Giá trị của `id` phải là một `string`.
+Every entity has to have an `id` that is unique among all entities of the same type. An entity's `id` value is set when the entity is created. Below are some recommended `id` values to consider when creating new entities. NOTE: The value of `id` must be a `string`.
 
 - `event.params.id.toHex()`
 - `event.transaction.from.toHex()`
 - `event.transaction.hash.toHex() + "-" + event.logIndex.toString()`
 
-Chúng tôi cung cấp [Thư viện Typescript Graph](https://github.com/graphprotocol/graph-ts) chứa các tiện ích để tương tác với cửa hàng Graph Node và các tiện ích để xử lý dữ liệu hợp đồng thông minh và các thực thể. Bạn có thể sử dụng thư viện này trong ánh xạ của mình bằng cách nhập `@graphprotocol/graph-ts` trong `mapping.ts`.
+We provide the [Graph Typescript Library](https://github.com/graphprotocol/graph-ts) which contains utilies for interacting with the Graph Node store and conveniences for handling smart contract data and entities. You can use this library in your mappings by importing `@graphprotocol/graph-ts` in `mapping.ts`.
 
 ## Tạo mã
 
-Để làm cho các hợp đồng, sự kiện và thực thể thông minh hoạt động dễ dàng và an toàn về kiểu, Graph CLI có thể tạo các loại AssemblyScript từ lược đồ GraphQL của subgraph và các ABI hợp đồng được bao gồm trong các nguồn dữ liệu.
+In order to make working smart contracts, events and entities easy and type-safe, the Graph CLI can generate AssemblyScript types from the subgraph's GraphQL schema and the contract ABIs included in the data sources.
 
-Điều này được thực hiện với
+This is done with
 
 ```sh
 graph codegen [--output-dir <OUTPUT_DIR>] [<MANIFEST>]
 ```
 
-nhưng trong hầu hết các trường hợp, các subgraph đã được định cấu hình trước qua `package.json` để cho phép bạn chỉ cần chạy một trong những thao tác sau để đạt được điều tương tự:
+but in most cases, subgraphs are already preconfigured via `package.json` to allow you to simply run one of the following to achieve the same:
 
 ```sh
 # Yarn
@@ -523,7 +524,7 @@ yarn codegen
 npm run codegen
 ```
 
-Điều này sẽ tạo ra một lớp AssemblyScript cho mọi hợp đồng thông minh trong các tệp ABI được đề cập trong `subgraph.yaml`, cho phép bạn liên kết các hợp đồng này với các địa chỉ cụ thể trong ánh xạ và gọi các phương thức hợp đồng chỉ đọc đối với khối đang xử lý. Nó cũng sẽ tạo một lớp cho mọi sự kiện hợp đồng để cung cấp khả năng truy cập dễ dàng vào các tham số sự kiện cũng như khối và giao dịch mà sự kiện bắt nguồn từ đó. Tất cả các loại này đều được ghi vào `<OUTPUT_DIR>/<DATA_SOURCE_NAME>/<ABI_NAME>.ts`. Trong subgraph mẫu, đây sẽ là `generated/Gravity/Gravity.ts`, cho phép các ánh xạ nhập các loại này với
+This will generate an AssemblyScript class for every smart contract in the ABI files mentioned in `subgraph.yaml`, allowing you to bind these contracts to specific addresses in the mappings and call read-only contract methods against the block being processed. It will also generate a class for every contract event to provide easy access to event parameters as well as the block and transaction the event originated from. All of these types are written to `<OUTPUT_DIR>/<DATA_SOURCE_NAME>/<ABI_NAME>.ts`. In the example subgraph, this would be `generated/Gravity/Gravity.ts`, allowing mappings to import these types with
 
 ```javascript
 import {
@@ -535,7 +536,7 @@ import {
 } from '../generated/Gravity/Gravity'
 ```
 
-Ngoài ra, một lớp được tạo cho mỗi loại thực thể trong lược đồ GraphQL của đồ thị con. Các lớp này cung cấp quyền truy cập tải, đọc và ghi thực thể an toàn kiểu đối với các trường thực thể cũng như phương thức `save()` để ghi các thực thể vào lưu trữ. Tất cả các lớp thực thể được ghi vào `<OUTPUT_DIR>/schema.ts`,, cho phép các ánh xạ nhập chúng với
+In addition to this, one class is generated for each entity type in the subgraph's GraphQL schema. These classes provide type-safe entity loading, read and write access to entity fields as well as a `save()` method to write entities to store. All entity classes are written to `<OUTPUT_DIR>/schema.ts`, allowing mappings to import them with
 
 ```javascript
 import { Gravatar } from '../generated/schema'
@@ -543,15 +544,15 @@ import { Gravatar } from '../generated/schema'
 
 > **Lưu ý:** Việc tạo mã phải được thực hiện lại sau mỗi lần thay đổi đối với giản đồ GraphQL hoặc ABI có trong tệp kê khai. Nó cũng phải được thực hiện ít nhất một lần trước khi xây dựng hoặc triển khai subgraph.
 
-Tạo mã không kiểm tra mã ánh xạ của bạn trong `src/mapping.ts`. Nếu bạn muốn kiểm tra điều đó trước khi cố gắng triển khai subgraph của mình cho Graph Explorer, bạn có thể chạy `yarn build` và sửa bất kỳ lỗi cú pháp nào mà trình biên dịch TypeScript có thể tìm thấy.
+Code generation does not check your mapping code in `src/mapping.ts`. If you want to check that before trying to deploy your subgraph to the Graph Explorer, you can run `yarn build` and fix any syntax errors that the TypeScript compiler might find.
 
 ## Mẫu Nguồn Dữ liệu
 
-Một mô hình phổ biến trong hợp đồng thông minh Ethereum là sử dụng hợp đồng đăng ký hoặc hợp đồng nhà máy, trong đó một hợp đồng tạo, quản lý hoặc tham chiếu đến một số lượng tùy ý các hợp đồng khác mà mỗi hợp đồng có trạng thái và sự kiện riêng. Địa chỉ của các hợp đồng phụ này có thể được biết trước hoặc có thể không được biết trước và nhiều hợp đồng trong số này có thể được tạo và / hoặc thêm vào theo thời gian. Đây là lý do tại sao, trong những trường hợp như vậy, việc xác định một nguồn dữ liệu duy nhất hoặc một số lượng nguồn dữ liệu cố định là không thể và cần có một cách tiếp cận năng động hơn: _các mẫu nguồn dữ liệu_.
+A common pattern in Ethereum smart contracts is the use of registry or factory contracts, where one contract creates, manages or references an arbitrary number of other contracts that each have their own state and events. The addresses of these sub-contracts may or may not be known upfront and many of these contracts may be created and/or added over time. This is why, in such cases, defining a single data source or a fixed number of data sources is impossible and a more dynamic approach is needed: _data source templates_.
 
 ### Nguồn Dữ liệu cho Hợp đồng Chính
 
-Đầu tiên, bạn xác định nguồn dữ liệu thông thường cho hợp đồng chính. Đoạn mã dưới đây hiển thị nguồn dữ liệu mẫu đơn giản cho hợp đồng exchange factory của [Uniswap](https://uniswap.io). Lưu ý trình xử lý sự kiện `NewExchange(address,address)`. Điều này được tạo ra khi một hợp đồng exchange mới được tạo ra trên chuỗi bởi hợp đồng factory.
+First, you define a regular data source for the main contract. The snippet below shows a simplified example data source for the [Uniswap](https://uniswap.io) exchange factory contract. Note the `NewExchange(address,address)` event handler. This is emitted when a new exchange contract is created on chain by the factory contract.
 
 ```yaml
 dataSources:
@@ -578,7 +579,7 @@ dataSources:
 
 ### Mẫu Nguồn Dữ liệu cho các Hợp đồng được Tạo Tự động
 
-Sau đó, bạn thêm _mẫu nguồn dữ liệu_ vào tệp kê khai. Chúng giống với các nguồn dữ liệu thông thường, ngoại trừ việc chúng thiếu địa chỉ hợp đồng được xác định trước trong `source`. Thông thường, bạn sẽ xác định một mẫu cho từng loại hợp đồng phụ do hợp đồng mẹ quản lý hoặc tham chiếu.
+Then, you add _data source templates_ to the manifest. These are identical to regular data sources, except that they lack a predefined contract address under `source`. Typically, you would define one template for each type of sub-contract managed or referenced by the parent contract.
 
 ```yaml
 dataSources:
@@ -614,7 +615,7 @@ templates:
 
 ### Khởi tạo một Mẫu Nguồn Dữ liệu
 
-Trong bước cuối cùng, bạn cập nhật ánh xạ hợp đồng chính của mình để tạo phiên bản nguồn dữ liệu động từ một trong các mẫu. Trong ví dụ này, bạn sẽ thay đổi ánh xạ hợp đồng chính để nhập mẫu `Exchange` và gọi phương thức `Exchange.create(address)` trên đó để bắt đầu lập chỉ mục hợp đồng exchange mới.
+In the final step, you update your main contract mapping to create a dynamic data source instance from one of the templates. In this example, you would change the main contract mapping to import the `Exchange` template and call the `Exchange.create(address)` method on it to start indexing the new exchange contract.
 
 ```typescript
 import { Exchange } from '../generated/templates'
@@ -632,7 +633,7 @@ export function handleNewExchange(event: NewExchange): void {
 
 ### Bối cảnh Nguồn Dữ liệu
 
-Các ngữ cảnh nguồn dữ liệu cho phép chuyển cấu hình bổ sung khi khởi tạo một mẫu. Trong ví dụ của chúng tôi, giả sử các sàn giao dịch được liên kết với một cặp giao dịch cụ thể, được bao gồm trong sự kiện `NewExchange`. Thông tin đó có thể được chuyển vào nguồn dữ liệu được khởi tạo, như sau:
+Data source contexts allow passing extra configuration when instantiating a template. In our example, let's say exchanges are associated with a particular trading pair, which is included in the `NewExchange` event. That information can be passed into the instantiated data source, like so:
 
 ```typescript
 import { Exchange } from '../generated/templates'
@@ -644,7 +645,7 @@ export function handleNewExchange(event: NewExchange): void {
 }
 ```
 
-Bên trong ánh xạ của mẫu `Exchange`, ngữ cảnh sau đó có thể được truy cập:
+Inside a mapping of the `Exchange` template, the context can then be accessed:
 
 ```typescript
 import { dataSource } from '@graphprotocol/graph-ts'
@@ -653,11 +654,11 @@ let context = dataSource.context()
 let tradingPair = context.getString('tradingPair')
 ```
 
-Có các setters và getters như `setString` và `getString` cho tất cả các loại giá trị.
+There are setters and getters like `setString` and `getString` for all value types.
 
 ## Khối Bắt đầu
 
-`startBlock` là một cài đặt tùy chọn cho phép bạn xác định từ khối nào trong chuỗi mà nguồn dữ liệu sẽ bắt đầu lập chỉ mục. Đặt khối bắt đầu cho phép nguồn dữ liệu bỏ qua hàng triệu khối có khả năng không liên quan. Thông thường, một nhà phát triển subgraph sẽ đặt `startBlock` thành khối mà hợp đồng thông minh của nguồn dữ liệu được tạo.
+The `startBlock` is an optional setting that allows you to define from which block in the chain the data source will start indexing. Setting the start block allows the data source to skip potentially millions of blocks that are irrelevant. Typically, a subgraph developer will set `startBlock` to the block in which the smart contract of the data source was created.
 
 ```yaml
 dataSources:
@@ -691,15 +692,15 @@ dataSources:
 
 ## Trình xử lý lệnh gọi
 
-Trong khi các sự kiện cung cấp một cách hiệu quả để thu thập các thay đổi liên quan đến trạng thái của hợp đồng, nhiều hợp đồng tránh tạo log để tối ưu hóa chi phí gas. Trong những trường hợp này, một subgraph có thể đăng ký các lệnh gọi được thực hiện tới hợp đồng nguồn dữ liệu. Điều này đạt được bằng cách xác định tham chiếu trình xử lý lệnh gọi đến chữ ký hàm và trình xử lý ánh xạ sẽ xử lý các cuộc gọi đến hàm này. Để xử lý các lệnh gọi này, trình xử lý ánh xạ sẽ nhận được `ethereum.Call` làm đối số với các đầu vào và đầu ra đã nhập từ lệnh gọi. Các lệnh gọi được thực hiện ở bất kỳ độ sâu nào trong chuỗi lệnh gọi của giao dịch sẽ kích hoạt ánh xạ, cho phép ghi lại hoạt động với hợp đồng nguồn dữ liệu thông qua các hợp đồng ủy quyền.
+While events provide an effective way to collect relevant changes to the state of a contract, many contracts avoid generating logs to optimize gas costs. In these cases, a subgraph can subscribe to calls made to the data source contract. This is achieved by defining call handlers referencing the function signature and the mapping handler that will process calls to this function. To process these calls, the mapping handler will receive an `ethereum.Call` as an argument with the typed inputs to and outputs from the call. Calls made at any depth in a transaction's call chain will trigger the mapping, allowing activity with the data source contract through proxy contracts to be captured.
 
-Trình xử lý lệnh gọi sẽ chỉ kích hoạt trong một trong hai trường hợp: khi hàm được chỉ định được gọi bởi một tài khoản khác với chính hợp đồng hoặc khi nó được đánh dấu là bên ngoài (external) trong Solidity và được gọi như một phần của một chức năng khác trong cùng một hợp đồng.
+Call handlers will only trigger in one of two cases: when the function specified is called by an account other than the contract itself or when it is marked as external in Solidity and called as part of another function in the same contract.
 
 > **Lưu ý:** Trình xử lý lệnh gọi không được hỗ trợ trên Rinkeby, Goerli hoặc Ganache. Các trình xử lý lệnh gọi hiện phụ thuộc vào API theo dõi Parity và các mạng này không hỗ trợ nó.
 
 ### Xác định một Trình xử lý lệnh gọi
 
-Để xác định trình xử lý lệnh gọi trong tệp kê khai của bạn, chỉ cần thêm mảng `callHandlers` dưới nguồn dữ liệu bạn muốn đăng ký.
+To define a call handler in your manifest simply add a `callHandlers` array under the data source you would like to subscribe to.
 
 ```yaml
 dataSources:
@@ -724,18 +725,18 @@ dataSources:
           handler: handleCreateGravatar
 ```
 
-Hàm `function` là chữ ký hàm được chuẩn hóa để lọc các lệnh call. Thuộc tính `handler` là tên của hàm trong ánh xạ của bạn mà bạn muốn thực thi khi hàm đích được gọi trong hợp đồng nguồn dữ liệu.
+The `function` is the normalized function signature to filter calls by. The `handler` property is the name of the function in your mapping you would like to execute when the target function is called in the data source contract.
 
 ### Chức năng Ánh xạ
 
-Mỗi trình xử lý lệnh gọi nhận một tham số duy nhất có kiểu tương ứng với tên của hàm được gọi. Trong đoạn phụ mẫu ở trên, ánh xạ chứa trình xử lý khi hàm `createGravatar` được gọi và nhận tham số `CreateGravatarCall` làm đối số:
+Each call handler takes a single parameter that has a type corresponding to the name of the called function. In the example subgraph above, the mapping contains a handler for when the `createGravatar` function is called and receives a `CreateGravatarCall` parameter as an argument:
 
 ```typescript
 import { CreateGravatarCall } from '../generated/Gravity/Gravity'
 import { Transaction } from '../generated/schema'
 
 export function handleCreateGravatar(call: CreateGravatarCall): void {
-  let id = call.transaction.hash.toHex()
+  let id = call.transaction.hash
   let transaction = new Transaction(id)
   transaction.displayName = call.inputs._displayName
   transaction.imageUrl = call.inputs._imageUrl
@@ -743,11 +744,11 @@ export function handleCreateGravatar(call: CreateGravatarCall): void {
 }
 ```
 
-Hàm `handleCreateGravatar` lấy một `CreateGravatarCall` mới, là một lớp con của `ethereum.Call`, được cung cấp bởi `@graphprotocol/graph-ts`, bao gồm các đầu vào và đầu ra đã nhập của lệnh gọi. Loại `CreateGravatarCall` được tạo cho bạn khi bạn chạy `graph codegen`.
+The `handleCreateGravatar` function takes a new `CreateGravatarCall` which is a subclass of `ethereum.Call`, provided by `@graphprotocol/graph-ts`, that includes the typed inputs and outputs of the call. The `CreateGravatarCall` type is generated for you when you run `graph codegen`.
 
 ## Trình xử lý Khối
 
-Ngoài việc đăng ký các sự kiện hợp đồng hoặc lệnh gọi hàm, một subgraph có thể muốn cập nhật dữ liệu của nó khi các khối mới được thêm vào chuỗi. Để đạt được điều này, một subgraph có thể chạy một hàm sau mỗi khối hoặc sau các khối phù hợp với một bộ lọc được xác định trước.
+In addition to subscribing to contract events or function calls, a subgraph may want to update its data as new blocks are appended to the chain. To achieve this a subgraph can run a function after every block or after blocks that match a predefined filter.
 
 ### Bộ lọc được hỗ trợ
 
@@ -756,9 +757,9 @@ filter:
   kind: call
 ```
 
-_Trình xử lý đã xác định sẽ được gọi một lần cho mỗi khối chứa lệnh gọi đến hợp đồng (nguồn dữ liệu) mà trình xử lý được định nghĩa theo._
+_The defined handler will be called once for every block which contains a call to the contract (data source) the handler is defined under._
 
-Việc không có bộ lọc cho trình xử lý khối sẽ đảm bảo rằng trình xử lý được gọi là mọi khối. Nguồn dữ liệu chỉ có thể chứa một trình xử lý khối cho mỗi loại bộ lọc.
+The absense of a filter for a block handler will ensure that the handler is called every block. A data source can only contain one block handler for each filter type.
 
 ```yaml
 dataSources:
@@ -787,13 +788,13 @@ dataSources:
 
 ### Chức năng Ánh xạ
 
-Hàm ánh xạ sẽ nhận `ethereum.Block` làm đối số duy nhất của nó. Giống như các chức năng ánh xạ cho các sự kiện, chức năng này có thể truy cập các thực thể subgraph hiện có trong cửa hàng, gọi các hợp đồng thông minh và tạo hoặc cập nhật các thực thể.
+The mapping function will receive an `ethereum.Block` as its only argument. Like mapping functions for events, this function can access existing subgraph entities in the store, call smart contracts and create or update entities.
 
 ```typescript
 import { ethereum } from '@graphprotocol/graph-ts'
 
 export function handleBlock(block: ethereum.Block): void {
-  let id = block.hash.toHex()
+  let id = block.hash
   let entity = new Block(id)
   entity.save()
 }
@@ -801,7 +802,7 @@ export function handleBlock(block: ethereum.Block): void {
 
 ## Sự kiện Ẩn danh
 
-Nếu bạn cần xử lý các sự kiện ẩn danh trong Solidity, bạn có thể đạt được điều đó bằng cách cung cấp chủ đề 0 của sự kiện, như trong ví dụ:
+If you need to process anonymous events in Solidity, that can be achieved by providing the topic 0 of the event, as in the example:
 
 ```yaml
 eventHandlers:
@@ -810,11 +811,11 @@ eventHandlers:
     handler: handleGive
 ```
 
-Một sự kiện sẽ chỉ được kích hoạt khi cả chữ ký và chủ đề 0 trùng khớp. Theo mặc định, `topic0` bằng với hàm băm của chữ ký sự kiện.
+An event will only be triggered when both the signature and topic 0 match. By default, `topic0` is equal to the hash of the event signature.
 
 ## Các tính năng thử nghiệm
 
-Bắt đầu từ `specVersion` `0.0.4`, các tính năng của subgraph phải được khai báo rõ ràng trong phần `features` ở cấp cao nhất của tệp kê khai, bằng cách sử dụng `camelCase` name, như được liệt kê trong bảng bên dưới:
+Starting from `specVersion` `0.0.4`, subgraph features must be explicitly declared in the `features` section at the top level of the manifest file, using their `camelCase` name, as listed in the table below:
 
 | Tính năng                                                  | Tên                       |
 | ---------------------------------------------------------- | ------------------------- |
@@ -823,7 +824,7 @@ Bắt đầu từ `specVersion` `0.0.4`, các tính năng của subgraph phải 
 | [Ghép](#grafting-onto-existing-subgraphs)                  | `grafting`                |
 | [IPFS trên hợp đồng Ethereum](#ipfs-on-ethereum-contracts) | `ipfsOnEthereumContracts` |
 
-Ví dụ: nếu một subgraph sử dụng các tính năng **Tìm kiếm toàn văn** và **Lỗi không nghiệm trọng**, thì < trường `features` trong tệp kê khai phải là:
+For instance, if a subgraph uses the **Full-Text Search** and the **Non-fatal Errors** features, the `features` field in the manifest should be:
 
 ```yaml
 specVersion: 0.0.4
@@ -834,27 +835,29 @@ features:
 dataSources: ...
 ```
 
-Lưu ý rằng việc sử dụng một tính năng mà không khai báo nó sẽ gặp phải **lỗi xác thực** trong quá trình triển khai subgraph, nhưng sẽ không có lỗi nào xảy ra nếu một tính năng được khai báo nhưng không được sử dụng.
+Note that using a feature without declaring it will incur in a **validation error** during subgraph deployment, but no errors will occur if a feature is declared but not used.
 
 ### IPFS trên hợp đồng Ethereum
 
-Một trường hợp sử dụng phổ biến để kết hợp IPFS với Ethereum là lưu trữ dữ liệu trên IPFS sẽ quá đắt để duy trì trên chuỗi và tham chiếu hàm băm IPFS trong các hợp đồng Ethereum.
+A common use case for combining IPFS with Ethereum is to store data on IPFS that would be too expensive to maintain on chain, and reference the IPFS hash in Ethereum contracts.
 
-Với các hàm băm IPFS như vậy, các subgraph có thể đọc các tệp tương ứng từ IPFS bằng cách sử dụng `ipfs.cat` và `ipfs.map`. Tuy nhiên, để thực hiện điều này một cách đáng tin cậy, yêu cầu các tệp này phải được ghim trên nút IPFS mà Graph Node lập chỉ mục subgraph kết nối với. Trong trường hợp của [dịch vụ được lưu trữ](https://thegraph.com/hosted-service), đây là [https://api.thegraph.com/ipfs/](https://api.thegraph.com/ipfs/).
+Given such IPFS hashes, subgraphs can read the corresponding files from IPFS using `ipfs.cat` and `ipfs.map`. To do this reliably, however, it is required that these files are pinned on the IPFS node that the Graph Node indexing the subgraph connects to. In the case of the [hosted service](https://thegraph.com/hosted-service), this is [https://api.thegraph.com/ipfs/](https://api.thegraph.com/ipfs/).
 
 > **Lưu ý:** Mạng The Graph chưa hỗ trợ `ipfs.cat` and `ipfs.map`, và các nhà phát triển không nên triển khai các subgraphs sử dụng chức năng đó vào mạng thông qua Studio.
 
-Để giúp các nhà phát triển subgraph trở nên dễ dàng, đội ngũ The Graph đã viết một công cụ để truyền tệp từ node IPFS này sang node IPFS khác, được gọi là [ipfs-sync](https://github.com/graphprotocol/ipfs-sync).
+In order to make this easy for subgraph developers, The Graph team wrote a tool for transfering files from one IPFS node to another, called [ipfs-sync](https://github.com/graphprotocol/ipfs-sync).
 
 > **[Quản lý Tính năng](#experimental-features):** `ipfsOnEthereumContracts` phải được khai báo dưới `features` trong tệp kê khai subgraph.
 
+When running a local Graph Node, the `GRAPH_ALLOW_NON_DETERMINISTIC_IPFS` environment variable must be set in order to index subgraphs using this experimental functionality.
+
 ### Lỗi không nghiêm trọng
 
-Theo mặc định, lỗi lập chỉ mục trên các subgrap đã được đồng bộ hóa sẽ làm cho subgraph bị lỗi và ngừng đồng bộ hóa. Theo cách khác, các subgraph có thể được định cấu hình để tiếp tục đồng bộ hóa khi có lỗi, bằng cách bỏ qua các thay đổi do trình xử lý thực hiện gây ra lỗi. Điều này cho phép các tác giả bài subgraph có thời gian để sửa các subgraph của họ trong khi các truy vấn tiếp tục được phân phát đối với khối mới nhất, mặc dù kết quả có thể sẽ không nhất quán do lỗi gây ra lỗi. Lưu ý rằng một số lỗi vẫn luôn gây tử vong, để không nghiêm trọng thì lỗi đó phải được biết là có tính xác định.
+Indexing errors on already synced subgraphs will, by default, cause the subgraph to fail and stop syncing. Subgraphs can alternatively be configured to continue syncing in the presence of errors, by ignoring the changes made by the handler which provoked the error. This gives subgraph authors time to correct their subgraphs while queries continue to be served against the latest block, though the results will possibly be inconsistent due to the bug that caused the error. Note that some errors are still always fatal, to be non-fatal the error must be known to be deterministic.
 
 > **Lưu ý:** Mạng The Graph chưa hỗ trợ các lỗi không nghiêm trọng và các nhà phát triển không nên triển khai các subgraph sử dụng chức năng đó vào mạng thông qua Studio.
 
-Việc kích hoạt lỗi không nghiêm trọng yêu cầu đặt cờ tính năng sau trên tệp kê khai subgraph:
+Enabling non-fatal errors requires setting the following feature flag on the subgraph manifest:
 
 ```yaml
 specVersion: 0.0.4
@@ -864,7 +867,7 @@ features:
     ...
 ```
 
-Truy vấn cũng phải chọn tham gia truy vấn dữ liệu có khả năng mâu thuẫn thông qua đối số `subgraphError`. Bạn cũng nên truy vấn `_meta` để kiểm tra xem subgraph có bỏ qua lỗi hay không, như trong ví dụ:
+The query must also opt-in to querying data with potential inconsistencies through the `subgraphError` argument. It is also recommended to query `_meta` to check if the subgraph has skipped over errors, as in the example:
 
 ```graphql
 foos(first: 100, subgraphError: allow) {
@@ -876,13 +879,13 @@ _meta {
 }
 ```
 
-Nếu subgraph gặp lỗi, truy vấn sẽ trả về cả dữ liệu và lỗi graphql với thông báo `"indexing_error"`, như trong phản hồi ví dụ này:
+If the subgraph encounters an error that query will return both the data and a graphql error with the message `"indexing_error"`, as in this example response:
 
 ```graphql
 "data": {
     "foos": [
         {
-          "id": "fooId"
+          "id": "0xdead"
         }
     ],
     "_meta": {
@@ -898,11 +901,11 @@ Nếu subgraph gặp lỗi, truy vấn sẽ trả về cả dữ liệu và lỗ
 
 ### Ghép vào các Subgraph Hiện có
 
-Khi một subgraph được triển khai lần đầu tiên, nó bắt đầu lập chỉ mục các sự kiện tại khối khởi đầu của chuỗi tương ứng (hoặc tại `startBlock` được xác định với mỗi nguồn dữ liệu) Trong một số trường hợp, việc sử dụng lại dữ liệu từ một subgraph hiện có và bắt đầu lập chỉ mục ở một khối muộn hơn nhiều. Chế độ lập chỉ mục này được gọi là _Grafting_ (Ghép). Ví dụ, ghép là hữu ích trong quá trình phát triển để nhanh chóng vượt qua các lỗi đơn giản trong ánh xạ hoặc để tạm thời làm cho một subgraph hiện có hoạt động trở lại sau khi nó bị lỗi.
+When a subgraph is first deployed, it starts indexing events at the genesis block of the corresponding chain (or at the `startBlock` defined with each data source) In some circumstances, it is beneficial to reuse the data from an existing subgraph and start indexing at a much later block. This mode of indexing is called _Grafting_. Grafting is, for example, useful during development to get past simple errors in the mappings quickly, or to temporarily get an existing subgraph working again after it has failed.
 
 > **Lưu ý:** Việc ghép yêu cầu Indexer đã lập chỉ mục cho subgraph cơ sở. Nó không được khuyến nghị trên Mạng The Graph vào lúc này và các nhà phát triển không nên triển khai các subgraph sử dụng chức năng đó vào mạng thông qua Studio.
 
-Một subgraph được ghép vào một subgraph cơ sở khi bản kê khai subgraph trong `subgraph.yaml` chứa một khối `graft` ở cấp trên cùng:
+A subgraph is grafted onto a base subgraph when the subgraph manifest in `subgraph.yaml` contains a `graft` block at the toplevel:
 
 ```yaml
 description: ...
@@ -911,11 +914,11 @@ graft:
   block: 7345624 # Block number
 ```
 
-Khi một subgraph có tệp kê khai chứa khối `graft` được triển khai, Graph Node sẽ sao chép dữ liệu của subgraph `base` lên đến và bao gồm cả `block` đã cho và sau đó tiếp tục lập chỉ mục cho subgraph mới từ khối đó trở đi. Subgraph cơ sở phải tồn tại trên phiên bản Graph Node mục tiêu và phải được lập chỉ mục tối thiểu là khối nhất định. Do hạn chế này, việc ghép chỉ nên được sử dụng trong quá trình phát triển hoặc trong trường hợp khẩn cấp để tăng tốc độ tạo ra một subgraph không ghép tương đương.
+When a subgraph whose manifest contains a `graft` block is deployed, Graph Node will copy the data of the `base` subgraph up to and including the given `block` and then continue indexing the new subgraph from that block on. The base subgraph must exist on the target Graph Node instance and must have indexed up to at least the given block. Because of this restriction, grafting should only be used during development or during an emergency to speed up producing an equivalent non-grafted subgraph.
 
-Bởi vì việc ghép các bản sao thay vì lập chỉ mục dữ liệu cơ sở, việc đưa subgraph đến khối mong muốn nhanh hơn nhiều so với việc lập chỉ mục từ đầu, mặc dù bản sao dữ liệu ban đầu vẫn có thể mất vài giờ đối với các subgraph rất lớn. Trong khi subgraph được ghép đang được khởi tạo, Graph Node sẽ ghi thông tin về các loại thực thể đã được sao chép.
+Because grafting copies rather than indexes base data it is much quicker in getting the subgraph to the desired block than indexing from scratch, though the initial data copy can still take several hours for very large subgraphs. While the grafted subgraph is being initialized, the Graph Node will log information about the entity types that have already been copied.
 
-Subgraph được ghép có thể sử dụng một lược đồ GraphQL không giống với một trong subgraph cơ sở, nhưng chỉ tương thích với nó. Nó phải là một lược đồ subgraph hợp lệ theo đúng nghĩa của nó nhưng có thể đi chệch khỏi lược đồ của subgraph cơ sở theo những cách sau:
+The grafted subgraph can use a GraphQL schema that is not identical to the one of the base subgraph, but merely compatible with it. It has to be a valid subgraph schema in its own right but may deviate from the base subgraph's schema in the following ways:
 
 - Nó thêm hoặc xóa các loại thực thể
 - Nó loại bỏ các thuộc tính khỏi các loại thực thể

@@ -1,6 +1,5 @@
 export * from './Blockquote'
 export * from './Code'
-export * from './Container'
 export * from './Difficulty'
 export * from './EditPageLink'
 export * from './Heading'

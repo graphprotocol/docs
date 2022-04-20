@@ -30,9 +30,9 @@ export const MDXLayoutOutline = () => {
       </Flex.Row>
       <NewGDSDivider sx={{ my: Spacing.XL }} />
       <nav sx={{ pr: '16px' }}>
-        <Text.S10 as="header" color="White64" sx={{ mb: Spacing.M_L }}>
+        <Text.C10 as="header" color="White64" sx={{ mb: Spacing.M_L }}>
           {t('global.pageSections')}
-        </Text.S10>
+        </Text.C10>
         <Text as="ul" size="14px" color="White48">
           {outline.map((outlineItem, outlineItemIndex) => {
             if (outlineItem.level > 3) {

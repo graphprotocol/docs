@@ -364,7 +364,7 @@ value.y = 'content'
 
 ```graphql
 type Total @entity {
-  id: ID!
+  id: Bytes!
   amount: BigInt
 }
 ```
@@ -398,7 +398,7 @@ total.tokens = total.tokens + BigInt.fromI32(1)
 
 ```graphql
 type Total @entity {
-  id: ID!
+  id: Bytes!
   amount: BigInt!
 }
 ```
@@ -449,37 +449,69 @@ export class Something {
 }
 ```
 
-### GraphQL 模式
+### Array initialization
 
-这不是一个直接 AssemblyScript 更改，但您可能需要更新 `schema.graphql` 文件。
+The `Array` class still accepts a number to initialize the length of the list, however you should take care because operations like `.push` will actually increase the size instead of adding to the beginning, for example:
 
-现在，您不再可以在您的类型中定义不可为空的列表的字段。 如果您有这样的模式：
+```typescript
+let arr = new Array<string>(5) // ["", "", "", "", ""]
+
+arr.push('something') // ["", "", "", "", "", "something"] // size 6 :(
+```
+
+Depending on the types you're using, eg nullable ones, and how you're accessing them, you might encounter a runtime error like this one:
+
+```
+ERRO Handler skipped due to execution failure, error: Mapping aborted at ~lib/array.ts, line 110, column 40, with message: Element type must be nullable if array is holey  wasm backtrace:     0: 0x19c4 - <unknown>!~lib/@graphprotocol/graph-ts/index/format         1: 0x1e75 - <unknown>!~lib/@graphprotocol/graph-ts/common/collections/Entity#constructor        2: 0x30b9 - <unknown>!node_modules/@graphprotocol/graph-ts/global/global/id_of_type
+```
+
+To actually push at the beginning you should either, initialize the `Array` with size zero, like this:
+
+```typescript
+let arr = new Array<string>(0) // []
+
+arr.push('something') // ["something"]
+```
+
+Or you should mutate it via index:
+
+```typescript
+let arr = new Array<string>(5) // ["", "", "", "", ""]
+
+arr[0] = 'something' // ["something", "", "", "", ""]
+```
+
+### GraphQL schema
+
+This is not a direct AssemblyScript change, but you may have to update your `schema.graphql` file.
+
+Now you no longer can define fields in your types that are Non-Nullable Lists. If you have a schema like this:
 
 ```graphql
 type Something @entity {
-  id: ID!
+  id: Bytes!
 }
 
 type MyEntity @entity {
-  id: ID!
+  id: Bytes!
   invalidField: [Something]! # no longer valid
 }
 ```
 
-您必须将 `!` 添加到 List 类型的成员，如下所示：
+You'll have to add an `!` to the member of the List type, like this:
 
 ```graphql
 type Something @entity {
-  id: ID!
+  id: Bytes!
 }
 
 type MyEntity @entity {
-  id: ID!
+  id: Bytes!
   invalidField: [Something!]! # valid
 }
 ```
 
-AssemblyScript 版本之间的可空性差异导致了这种改变, 并且这也与 `src/generated/schema.ts`文件(默认路径，您可能已更改)有关。
+This changed because of nullability differences between AssemblyScript versions, and it's related to the `src/generated/schema.ts` file (default path, you might have changed this).
 
 ### 其他
 

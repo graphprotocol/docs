@@ -101,10 +101,10 @@ const NavTreeItem = ({
   )
 }
 
-export const NavTreeGroupContext = createContext(null) as Context<{
-  active: boolean
-  open: boolean
-} | null>
+export const NavTreeGroupContext = createContext({
+  active: false,
+  open: false,
+})
 
 const NavTreeGroup = ({ active = false, children, ...props }: NavTreeGroupProps) => {
   const [open, setOpen] = useState(active)
@@ -121,7 +121,7 @@ const NavTreeGroup = ({ active = false, children, ...props }: NavTreeGroupProps)
 
 const NavTreeGroupHeading = ({ children, buttonProps = {}, ...props }: NavTreeGroupHeadingProps) => {
   const { sx: buttonSx, ...buttonOtherProps } = buttonProps
-  const context = useContext(NavTreeGroupContext)!
+  const context = useContext(NavTreeGroupContext)
   const { t } = useI18n()
 
   return (
@@ -160,7 +160,7 @@ const NavTreeGroupHeading = ({ children, buttonProps = {}, ...props }: NavTreeGr
 }
 
 const NavTreeGroupContent = ({ children, ...props }: NavTreeGroupContentProps) => {
-  const context = useContext(NavTreeGroupContext)!
+  const context = useContext(NavTreeGroupContext)
   return (
     <Collapsible.Content
       sx={{
