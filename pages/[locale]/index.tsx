@@ -409,9 +409,7 @@ const Index: NextPage<IndexProps> = ({ navItems }: IndexProps) => {
             </Flex.Column>
           ))}
         </ul>
-        <Paragraph size="14px" sx={{ textAlign: 'center' }}>
-          *{t('index.supportedNetworks.betaWarning')}
-        </Paragraph>
+        <Paragraph size="14px">*{t('index.supportedNetworks.betaWarning')}</Paragraph>
       </div>
     </MDXLayout>
   )
