@@ -288,7 +288,7 @@ const Index: NextPage<IndexProps> = ({ navItems }: IndexProps) => {
       </div>
       <div sx={{ mt: Spacing.XXL }}>
         <Heading.H4>{t('index.supportedNetworks.hostedService')}</Heading.H4>
-        <Paragraph>*{t('index.supportedNetworks.betaWarning')}</Paragraph>
+
         <ul
           sx={{
             mt: Spacing.XL,
@@ -409,6 +409,7 @@ const Index: NextPage<IndexProps> = ({ navItems }: IndexProps) => {
             </Flex.Column>
           ))}
         </ul>
+        <Paragraph size="14px">*{t('index.supportedNetworks.betaWarning')}</Paragraph>
       </div>
     </MDXLayout>
   )
