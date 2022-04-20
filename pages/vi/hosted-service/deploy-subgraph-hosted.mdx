@@ -46,9 +46,119 @@ When making changes to your subgraph definition, for example to fix a problem in
 
 If your previously deployed subgraph is still in status `Syncing`, it will be immediately replaced with the newly deployed version. If the previously deployed subgraph is already fully synced, Graph Node will mark the newly deployed version as the `Pending Version`, sync it in the background, and only replace the currently deployed version with the new one once syncing the new version has finished. This ensures that you have a subgraph to work with while the new version is syncing.
 
-### Deploying the subgraph to multiple Ethereum networks
+## Deploying the subgraph to multiple Ethereum networks
 
-In some cases, you will want to deploy the same subgraph to multiple Ethereum networks without duplicating all of its code. The main challenge that comes with this is that the contract addresses on these networks are different. One solution that allows to parameterize aspects like contract addresses is to generate parts of it using a templating system like [Mustache](https://mustache.github.io/) or [Handlebars](https://handlebarsjs.com/).
+In some cases, you will want to deploy the same subgraph to multiple Ethereum networks without duplicating all of its code. The main challenge that comes with this is that the contract addresses on these networks are different.
+
+### graph-cli >=0.29.0
+
+From version `0.29.0` the `build` command accepts two new options:
+
+```sh
+graph build [options] [<subgraph-manifest>]
+
+Options:
+
+      ...
+      --network <name>          Network to use from networks.json
+      --network-file <path>     Networks file (default: "./networks.json")
+```
+
+You can use the `--network` option to specify a network configuration from a `json` standard file (defaults to `networks.json`) to easily update your subgraph during development.
+
+**Note:** The `init` command will now auto-generate a `networks.json` based on the provided information. You will then be able to update existing or add additional networks.
+
+If you don't have a `networks.json` file, you'll need to manually create one with the follwing structure:
+
+```json
+{
+    "network1": { // the network name
+        "dataSource1": { // the dataSource name
+            "address": "0xabc...", // the contract address (optional)
+            "startBlock": 123456 // the startBlock (optional)
+        },
+        "dataSource2": {
+            "address": "0x123...",
+            "startBlock": 123444
+        }
+    },
+    "network2": {
+        "dataSource1": {
+            "address": "0x987...",
+            "startBlock": 123
+        },
+        "dataSource2": {
+            "address": "0xxyz..",
+            "startBlock": 456
+        }
+    },
+    ...
+}
+```
+**Note:** You don't have to specify any of the `templates` (if you have any) in the config file, only the `dataSources`. If there are any `templates` declared in the `subgraph.yaml` file, their network will be automatically updated to the one specified with the `--network` option.
+
+Now, let's assume you want to be able to deploy your subgraph to the `mainnet` and `ropsten` networks, and this is your `subgraph.yaml`:
+
+```yaml
+# ...
+dataSources:
+  - kind: ethereum/contract
+    name: Gravity
+    network: mainnet
+    source:
+      address: '0x123...'
+      abi: Gravity
+    mapping:
+      kind: ethereum/events
+```
+
+This is what your networks config file should look like:
+
+```json
+{
+    "mainnet": {
+        "Gravity": {
+            "address": "0x123..."
+        }
+    },
+    "ropsten": {
+        "Gravity": {
+            "address": "0xabc..."
+        }
+    }
+}
+```
+
+Now we can run the following command:
+
+```sh
+# Using default networks.json file
+yarn build --network ropsten
+
+# Using custom named file
+yarn build --network ropsten --network-file path/to/config
+```
+
+The `build` command will update your `subgraph.yaml` with the `ropsten` configuration and then re-compile the subgraph. Your `subgraph.yaml` file now should look like this:
+
+```yaml
+# ...
+dataSources:
+  - kind: ethereum/contract
+    name: Gravity
+    network: ropsten
+    source:
+      address: '0xabc...'
+      abi: Gravity
+    mapping:
+      kind: ethereum/events
+```
+
+Now you are ready to `yarn deploy`
+
+### graph-cli \<0.29.0
+
+One solution for older graph-cli versions that allows to parameterize aspects like contract addresses is to generate parts of it using a templating system like [Mustache](https://mustache.github.io/) or [Handlebars](https://handlebarsjs.com/).
 
 To illustrate this approach, let's assume a subgraph should be deployed to mainnet and Ropsten using different contract addresses. You could then define two config files providing the addresses for each network:
 
