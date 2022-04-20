@@ -46,11 +46,121 @@ title: نشر Subgraph على الخدمة المستضافة (Hosted Service)
 
 إذا كان الـ subgraph المنشور سابقا لا يزال في حالة`Syncing` ، فسيتم استبداله على الفور بالإصدار المنشور حديثا. وإذا كان الـ subgraph المنشور سابقا متزامنا بالكامل بالفعل ، فسيقوم Graph Node بوضع علامة على الإصدار المنشور حديثا على أنه `Pending Version` ، ويتم مزامنته في الخلفية ، ويستبدل الإصدار المنشور حاليا بالإصدار الجديد بمجرد الانتهاء من مزامنة الإصدار الجديد. هذا يضمن أن لديك subgraph تعمل به أثناء مزامنة الإصدار الجديد.
 
-### نشر الـ subgraph على شبكات Ethereum متعددة
+## Deploying the subgraph to multiple Ethereum networks
 
-في بعض الحالات ، قد ترغب في نشر نفس الـ subgraph على شبكات Ethereum متعددة دون تكرار كل الأكواد الخاصة بها. التحدي الرئيسي الذي يأتي مع ذلك هو أن عناوين العقود على هذه الشبكات مختلفة. أحد الحلول هو إنشاء أجزاء من عناوين العقود باستخدام نظام قوالب مثل [Mustache](https://mustache.github.io/) أو [Handlebars](https://handlebarsjs.com/).
+In some cases, you will want to deploy the same subgraph to multiple Ethereum networks without duplicating all of its code. The main challenge that comes with this is that the contract addresses on these networks are different.
 
-لتوضيح هذه الطريقة، لنفترض أنه يجب نشر subgraph على mainnet و Ropsten باستخدام عناوين عقد مختلفة. يمكنك بعد ذلك تعريف ملفي تكوين(config) واللذان يوفران العناوين لكل شبكة:
+### graph-cli >=0.29.0
+
+From version `0.29.0` the `build` command accepts two new options:
+
+```sh
+graph build [options] [<subgraph-manifest>]
+
+Options:
+
+      ...
+      --network <name>          Network to use from networks.json
+      --network-file <path>     Networks file (default: "./networks.json")
+```
+
+You can use the `--network` option to specify a network configuration from a `json` standard file (defaults to `networks.json`) to easily update your subgraph during development.
+
+**Note:** The `init` command will now auto-generate a `networks.json` based on the provided information. You will then be able to update existing or add additional networks.
+
+If you don't have a `networks.json` file, you'll need to manually create one with the follwing structure:
+
+```json
+{
+    "network1": { // the network name
+        "dataSource1": { // the dataSource name
+            "address": "0xabc...", // the contract address (optional)
+            "startBlock": 123456 // the startBlock (optional)
+        },
+        "dataSource2": {
+            "address": "0x123...",
+            "startBlock": 123444
+        }
+    },
+    "network2": {
+        "dataSource1": {
+            "address": "0x987...",
+            "startBlock": 123
+        },
+        "dataSource2": {
+            "address": "0xxyz..",
+            "startBlock": 456
+        }
+    },
+    ...
+}
+```
+**Note:** You don't have to specify any of the `templates` (if you have any) in the config file, only the `dataSources`. If there are any `templates` declared in the `subgraph.yaml` file, their network will be automatically updated to the one specified with the `--network` option.
+
+Now, let's assume you want to be able to deploy your subgraph to the `mainnet` and `ropsten` networks, and this is your `subgraph.yaml`:
+
+```yaml
+# ...
+dataSources:
+  - kind: ethereum/contract
+    name: Gravity
+    network: mainnet
+    source:
+      address: '0x123...'
+      abi: Gravity
+    mapping:
+      kind: ethereum/events
+```
+
+This is what your networks config file should look like:
+
+```json
+{
+    "mainnet": {
+        "Gravity": {
+            "address": "0x123..."
+        }
+    },
+    "ropsten": {
+        "Gravity": {
+            "address": "0xabc..."
+        }
+    }
+}
+```
+
+Now we can run the following command:
+
+```sh
+# Using default networks.json file
+yarn build --network ropsten
+
+# Using custom named file
+yarn build --network ropsten --network-file path/to/config
+```
+
+The `build` command will update your `subgraph.yaml` with the `ropsten` configuration and then re-compile the subgraph. Your `subgraph.yaml` file now should look like this:
+
+```yaml
+# ...
+dataSources:
+  - kind: ethereum/contract
+    name: Gravity
+    network: ropsten
+    source:
+      address: '0xabc...'
+      abi: Gravity
+    mapping:
+      kind: ethereum/events
+```
+
+Now you are ready to `yarn deploy`
+
+### graph-cli \<0.29.0
+
+One solution for older graph-cli versions that allows to parameterize aspects like contract addresses is to generate parts of it using a templating system like [Mustache](https://mustache.github.io/) or [Handlebars](https://handlebarsjs.com/).
+
+To illustrate this approach, let's assume a subgraph should be deployed to mainnet and Ropsten using different contract addresses. You could then define two config files providing the addresses for each network:
 
 ```json
 {
@@ -59,7 +169,7 @@ title: نشر Subgraph على الخدمة المستضافة (Hosted Service)
 }
 ```
 
-و
+and
 
 ```json
 {
@@ -68,7 +178,7 @@ title: نشر Subgraph على الخدمة المستضافة (Hosted Service)
 }
 ```
 
-إلى جانب ذلك ، يمكنك استبدال اسم الشبكة والعناوين في الـ manifest بمتغيرات (placeholders) `{{network}}` و `{{address}}` وإعادة تسمية الـ manifest إلى `subgraph.template.yaml` على سبيل المثال:
+Along with that, you would substitute the network name and addresses in the manifest with variable placeholders `{{network}}` and `{{address}}` and rename the manifest to e.g. `subgraph.template.yaml`:
 
 ```yaml
 # ...
@@ -85,7 +195,7 @@ dataSources:
       kind: ethereum/events
 ```
 
-من أجل توليد manifest لأي من الشبكتين ، يمكنك إضافة أمرين إضافيين إلى `package.json` و dependency على `mustache`:
+In order generate a manifest to either network, you could add two additional commands to `package.json` along with a dependency on `mustache`:
 
 ```json
 {
@@ -102,7 +212,7 @@ dataSources:
 }
 ```
 
-لنشر هذا الـ subgraph على mainnet أو Ropsten ، يمكنك الآن ببساطة تنفيذ أحد الأمرين التاليين:
+To deploy this subgraph for mainnet or Ropsten you would now simply run one of the two following commands:
 
 ```sh
 # Mainnet:
@@ -112,15 +222,15 @@ yarn prepare:mainnet && yarn deploy
 yarn prepare:ropsten && yarn deploy
 ```
 
-يمكن العثور على مثال لهذا [هنا](https://github.com/graphprotocol/example-subgraph/tree/371232cf68e6d814facf5e5413ad0fef65144759).
+A working example of this can be found [here](https://github.com/graphprotocol/example-subgraph/tree/371232cf68e6d814facf5e5413ad0fef65144759).
 
-**ملاحظة:** يمكن أيضا تطبيق هذه الطريقة في مواقف أكثر تعقيدا ، حيث يكون من الضروري استبدال أكثر من عناوين العقود وأسماء الشبكات أو عند توليد الـ mappings أو الـ ABI من القوالب أيضا.
+**Note:** This approach can also be applied more complex situations, where it is necessary to substitute more than contract addresses and network names or where generating mappings or ABIs from templates as well.
 
-## التحقق من سلامة الـ subgraph
+## Checking subgraph health
 
-إذا تمت مزامنة الـ subgraph بنجاح ، فهذه علامة جيدة على أنه سيستمر في العمل بشكل جيد إلى الأبد. ومع ذلك ، قد تتسبب المشغلات (triggers) الجديدة في السلسلة في إصابة الـ subgraph بحالة خطأ لم يتم اختبارها أو قد يبدأ في التأخر بسبب مشكلات في الأداء أو مشكلات مع مشغلي العقدة(node).
+If a subgraph syncs successfully, that is a good sign that it will continue to run well forever. However, new triggers on the chain might cause your subgraph to hit an untested error condition or it may start to fall behind due to performance issues or issues with the node operators.
 
-Graph Node تقوم بعرض graphql endpoint والتي يمكنك الاستعلام عنها للتحقق من حالة الـ subgraph الخاص بك. في الـ Hosted Service ، يتوفر في `https://api.thegraph.com/index-node/graphql`. على عقدة محلية(local node) ، يتوفر في المنفذ `8030/graphql` بشكل افتراضي. ويمكن العثور على المخطط الكامل لهذا الـ endpoint [ هنا ](https://github.com/graphprotocol/graph-node/blob/master/server/index-node/src/schema.graphql). فيما يلي مثال على استعلام يتحقق من حالة الإصدار الحالي لـ subgraph:
+Graph Node exposes a graphql endpoint which you can query to check the status of your subgraph. On the Hosted Service, it is available at `https://api.thegraph.com/index-node/graphql`. On a local node it is available on port `8030/graphql` by default. The full schema for this endpoint can be found [here](https://github.com/graphprotocol/graph-node/blob/master/server/index-node/src/schema.graphql). Here is an example query that checks the status of the current version of a subgraph:
 
 ```graphql
 {
@@ -147,14 +257,14 @@ Graph Node تقوم بعرض graphql endpoint والتي يمكنك الاستع
 }
 ```
 
-هذا سيعطيك `chainHeadBlock` والذي يمكنك مقارنته بـ `latestBlock` في الـ subgraph الخاص بك وذلك للتحقق مما إذا كان يعمل في الخلف. `synced` يخبر ما إذا كان الـ subgraph مواكبا للسلسلة(chain). وحاليا يمكن أن تأخذ `health` قيم `health` في حالة عدم حدوث أخطاء ، أو `failed` إذا كان هناك خطأ أدى إلى توقف تقدم الـ subgraph. وفي هذه الحالة ، يمكنك التحقق من حقل `fatalError` للحصول على تفاصيل حول هذا الخطأ.
+This will give you the `chainHeadBlock` which you can compare with the `latestBlock` on your subgraph to check if it is running behind. `synced` informs if the subgraph has ever caught up to the chain. `health` can currently take the values of `healthy` if no errors ocurred, or `failed` if there was an error which halted the progress of the subgraph. In this case you can check the `fatalError` field for details on this error.
 
-## سياسة أرشيف الـ Subgraph
+## Subgraph archive policy
 
-الـ Hosted Service عبارة عن مفهرس Graph Node مجاني. يمكن للمطورين نشر الـ subgraphs لفهرسة مجموعة من الشبكات ، والتي سيتم فهرستها وإتاحتها للاستعلام عبر GraphQL.
+The Hosted Service is a free Graph Node indexer. Developers can deploy subgraphs indexing a range of networks, which will be indexed, and made available to query via graphQL.
 
-لتحسين أداء خدمة الـ subgraphs النشط ، سيقوم Hosted Service بأرشفة الـ subgraphs غير النشط.
+To improve the performance of the service for active subgraphs, the Hosted Service will archive subgraphs which are inactive.
 
-**يتم تعريف الـ subgraph على أنه "غير نشط" إذا تم نشره على Hosted Service منذ أكثر من 45 يوما ، وإذا كان قد تلقى 0 استعلام في آخر 30 يوما.**
+**A subgraph is defined as "inactive" if it was deployed to the Hosted Service more than 45 days ago, and if it has received 0 queries in the last 30 days.**
 
-سيتم إخطار المطورين عن طريق البريد الإلكتروني إذا تم وضع علامة على أحد الـ subgraphs الخاصة بهم على أنه غير نشط قبل 7 أيام من إزالته. وإذا كانوا يرغبون في "تنشيط" الـ subgraph الخاص بهم ، فيمكنهم القيام بذلك عن طريق إجراء استعلام في subgraph's Hosted Service graphQL playground الخاص بهم. يمكن للمطورين دائما إعادة نشر subgraph مؤرشف إذا كان مطلوبا مرة أخرى.
+Developers will be notified by email if one of their subgraphs has been marked as inactive 7 days before it is removed. If they wish to "activate" their subgraph, they can do so by making a query in their subgraph's Hosted Service graphQL playground. Developers can always redeploy an archived subgraph if it is required again.
