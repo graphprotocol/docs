@@ -3,7 +3,7 @@ import { extractLocaleFromPath } from '@edgeandnode/components'
 
 export default class MyDocument extends Document {
   static async getInitialProps(context: DocumentContext) {
-    const { locale } = extractLocaleFromPath(context.pathname)
+    const { locale } = extractLocaleFromPath(context.asPath ?? context.pathname)
     const initialProps = await Document.getInitialProps(context)
     return { ...initialProps, locale }
   }
@@ -12,9 +12,14 @@ export default class MyDocument extends Document {
     const { locale } = this.props
 
     return (
-      <Html lang={locale}>
+      <Html lang={locale} data-theme="dark">
         <Head>
           <link rel="icon" type="image/png" href="https://storage.googleapis.com/graph-web/favicon.png" />
+          <link
+            rel="preconnect"
+            href={`https://${process.env.ALGOLIA_APP_ID}-dsn.algolia.net`}
+            crossOrigin="anonymous"
+          />
         </Head>
         <body>
           <Main />

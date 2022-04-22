@@ -1,10 +1,10 @@
-import { PropsWithChildren, useState, useContext, Fragment } from 'react'
+import { PropsWithChildren, useState, useEffect, useContext, Fragment } from 'react'
 import * as Collapsible from '@radix-ui/react-collapsible'
 import { Text, Flex, Icon, Spacing, BorderRadius, buildTransition } from '@edgeandnode/components'
 import { keyframes } from '@emotion/react'
 
 import { NavContext } from '@/layout'
-import { NavTree } from '@/components'
+import { NavTree, DocSearch } from '@/components'
 import { useI18n } from '@/i18n'
 
 const animationExpand = keyframes({
@@ -18,6 +18,13 @@ const animationCollapse = keyframes({
 })
 
 const DesktopWrapper = ({ children }: PropsWithChildren<{}>) => {
+  const [enableTransition, setEnableTransition] = useState(false)
+
+  // Fix issue where the `translateY` is animated on initial load
+  useEffect(() => {
+    setTimeout(() => setEnableTransition(true), 0)
+  }, [])
+
   return (
     <div
       sx={{
@@ -26,8 +33,11 @@ const DesktopWrapper = ({ children }: PropsWithChildren<{}>) => {
         top: 0,
         maxHeight: '100vh',
         pr: Spacing.L_XL,
-        py: Spacing.L,
+        pt: Spacing.XL,
+        pb: Spacing.L,
         overflowY: 'auto',
+        transform: 'translateY(calc(var(--gds-header-height-visible) * var(--gds-header-fixed)))',
+        transition: enableTransition ? buildTransition('TRANSFORM', '400ms') : undefined,
       }}
     >
       {children}
@@ -105,11 +115,38 @@ const MobileWrapper = ({ title, children }: PropsWithChildren<{ title?: string }
 
 export const MDXLayoutNav = ({ mobile = false }: { mobile?: boolean }) => {
   const { navItems, currentPage } = useContext(NavContext)!
+  const { t, locale } = useI18n()
 
   const Wrapper = mobile ? MobileWrapper : DesktopWrapper
 
   return (
     <Wrapper {...(mobile ? { title: currentPage?.title } : {})}>
+      <div sx={{ mb: Spacing.L }}>
+        <DocSearch
+          apiKey={process.env.ALGOLIA_API_KEY ?? ''}
+          appId={process.env.ALGOLIA_APP_ID ?? ''}
+          indexName="thegraph"
+          searchParameters={{
+            facetFilters: [`language:${locale}`],
+          }}
+          disableUserPersonalization={true}
+          transformItems={(items) => {
+            return items.map((item) => ({
+              ...item,
+              url: item.url.replace('https://thegraph.com/docs', process.env.BASE_PATH ?? ''),
+            }))
+          }}
+          hitComponent={/* TODO */ undefined}
+          navigator={
+            /* TODO {
+            navigate(url) {},
+            navigateNewTab(url) {},
+            navigateNewWindow(url) {},
+          }*/ undefined
+          }
+          translations={/* TODO */ undefined}
+        />
+      </div>
       <NavTree textProps={mobile ? { weight: 'Normal', size: '16px' } : undefined}>
         {navItems.map((navItem, navItemIndex) => (
           <Fragment key={navItemIndex}>
