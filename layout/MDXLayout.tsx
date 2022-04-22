@@ -154,10 +154,10 @@ export const MDXLayout = ({ pagePath, navItems, frontmatter, outline, children }
               <MDXLayoutNav mobile />
             </div>
 
-            <div sx={mdxStyles}>
+            <article className="graph-docs-content" sx={mdxStyles}>
               {frontmatter?.title && <Heading.H1>{frontmatter.title}</Heading.H1>}
               <MDXProvider components={mdxComponents}>{children}</MDXProvider>
-            </div>
+            </article>
 
             <Flex.Row sx={{ display: [null, null, null, 'none'], mt: Spacing.XL_XXL }}>
               <EditPageLink mobile />
