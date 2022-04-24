@@ -4,7 +4,7 @@ import * as VisuallyHidden from '@radix-ui/react-visually-hidden'
 import { useInView } from 'react-intersection-observer'
 import { useDebounce } from 'react-use'
 
-import { DocumentContext } from '@/layout'
+import { DocumentContext } from '@/layout/DocumentContext'
 import { LinkInline } from '@/components'
 import { useI18n } from '@/i18n'
 

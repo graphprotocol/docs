@@ -364,7 +364,7 @@ value.y = 'content'
 
 ```graphql
 type Total @entity {
-  id: ID!
+  id: Bytes!
   amount: BigInt
 }
 ```
@@ -398,7 +398,7 @@ total.tokens = total.tokens + BigInt.fromI32(1)
 
 ```graphql
 type Total @entity {
-  id: ID!
+  id: Bytes!
   amount: BigInt!
 }
 ```
@@ -449,37 +449,69 @@ export class Something {
 }
 ```
 
+### 配列の初期化
+
+`Array`クラスは、リストの長さを初期化するための数値を依然として受け取ります。しかし、例えば`.push`のような操作は、先頭に追加するのではなく、実際にサイズを大きくするので、注意が必要です。
+
+```typescript
+let arr = new Array<string>(5) // ["", "", "", "", ""]
+
+arr.push('something') // ["", "", "", "", "", "something"] // size 6 :(
+```
+
+使用している型(例えば null 可能な型) とそのアクセス方法によっては、次のようなランタイムエラーに遭遇する可能性があります。
+
+```
+ERRO Handler skipped due to execution failure, error: Mapping aborted at ~lib/array.ts, line 110, column 40, with message: Element type must be nullable if array is holey  wasm backtrace:     0: 0x19c4 - <unknown>!~lib/@graphprotocol/graph-ts/index/format         1: 0x1e75 - <unknown>!~lib/@graphprotocol/graph-ts/common/collections/Entity#constructor        2: 0x30b9 - <unknown>!node_modules/@graphprotocol/graph-ts/global/global/id_of_type
+```
+
+実際に最初にプッシュするには、以下のように、サイズゼロの `Array`を初期化する必要があります：
+
+```typescript
+let arr = new Array<string>(0) // []
+
+arr.push('something') // ["something"]
+```
+
+あるいは、インデックス経由で変異させるべきでしょう：
+
+```typescript
+let arr = new Array<string>(5) // ["", "", "", "", ""]
+
+arr[0] = 'something' // ["something", "", "", "", ""]
+```
+
 ### GraphQL スキーマ
 
-これは AssemblyScript の直接的な変更ではありませんが、`schema.graphql`ファイルを更新する必要があるかもしれません。
+これは直接の AssemblyScript の変更ではありませんが、`schema.graphql` ファイルを更新する必要があるかもしれません。
 
-タイプの中に Non-Nullable List のフィールドを定義することができなくなりました。 次のようなスキーマを持っているとします。
+この変更により、Non-Nullable List のフィールドを型に定義することができなくなりました。仮に、以下のようなスキーマがあった場合：
 
 ```graphql
 type Something @entity {
-  id: ID!
+  id: Bytes!
 }
 
 type MyEntity @entity {
-  id: ID!
+  id: Bytes!
   invalidField: [Something]! # no longer valid
 }
 ```
 
-List タイプのメンバーには、以下のように`!` を付ける必要があります。
+List タイプのメンバーには、以下のように`!` を付ける必要があります：
 
 ```graphql
 type Something @entity {
-  id: ID!
+  id: Bytes!
 }
 
 type MyEntity @entity {
-  id: ID!
+  id: Bytes!
   invalidField: [Something!]! # valid
 }
 ```
 
-これは AssemblyScript のバージョンによる nullability の違いから変更されたもので、`src/generated/schema.ts`ファイル（デフォルトのパス、あなたはこれを変更したかもしれません）に関連しています。
+これは AssemblyScript のバージョンによる Nullability の違いで変わったもので、`src/generated/schema.ts`ファイル（デフォルトパス、変更されているかもしれません）に関連しています。
 
 ### その他
 
