@@ -115,7 +115,7 @@ const MobileWrapper = ({ title, children }: PropsWithChildren<{ title?: string }
 
 export const MDXLayoutNav = ({ mobile = false }: { mobile?: boolean }) => {
   const { navItems, currentPage } = useContext(NavContext)!
-  const { t, locale } = useI18n()
+  const { t, translations, locale } = useI18n()
 
   const Wrapper = mobile ? MobileWrapper : DesktopWrapper
 
@@ -136,15 +136,16 @@ export const MDXLayoutNav = ({ mobile = false }: { mobile?: boolean }) => {
               url: item.url.replace('https://thegraph.com/docs', process.env.BASE_PATH ?? ''),
             }))
           }}
-          hitComponent={/* TODO */ undefined}
-          navigator={
-            /* TODO {
-            navigate(url) {},
-            navigateNewTab(url) {},
-            navigateNewWindow(url) {},
-          }*/ undefined
-          }
-          translations={/* TODO */ undefined}
+          /* TODO: Set those props so that selecting a search result doesn't reload the app.
+          hitComponent={...}
+          navigator={{
+            navigate(url) {...},
+            navigateNewTab(url) {...},
+            navigateNewWindow(url) {...},
+          }}
+          */
+          translations={translations.docsearch}
+          placeholder={t('docsearch.button.buttonText')}
         />
       </div>
       <NavTree textProps={mobile ? { weight: 'Normal', size: '16px' } : undefined}>

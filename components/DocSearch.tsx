@@ -32,7 +32,9 @@ export function DocSearch(props: DocSearchProps) {
 
   const onClose = useCallback(() => {
     setIsOpen(false)
-    dispatch(EventType.SEARCH_CLOSE)
+    setTimeout(() => {
+      dispatch(EventType.SEARCH_CLOSE)
+    }, 0)
   }, [setIsOpen])
 
   const onInput = useCallback(
@@ -71,7 +73,7 @@ export function DocSearch(props: DocSearchProps) {
           }}
         >
           <Icon.Search size="14px" title="" />
-          <Text.P14 size="14px">{t('global.search')}</Text.P14>
+          <Text.P14 size="14px">{props?.translations?.button?.buttonText ?? 'Search'}</Text.P14>
         </Flex.Row>
       </button>
 
@@ -90,7 +92,7 @@ export function DocSearch(props: DocSearchProps) {
       <Global
         styles={(theme: GlobalTheme) => ({
           html: {
-            '--docsearch-modal-width': 'min(calc(100vw - 32px), 1124px) !important',
+            '--docsearch-modal-width': 'min(calc(100vw - 32px), 864px) !important',
             '--docsearch-modal-background': '#1b1631 !important',
             '--docsearch-modal-shadow': 'none !important',
             '--docsearch-searchbox-focus-background': 'transparent !important',
@@ -125,6 +127,9 @@ export function DocSearch(props: DocSearchProps) {
           '.DocSearch-Hits': {
             marginBottom: '0 !important',
             padding: `${Spacing.L} 0`,
+          },
+          '.DocSearch-Hits, .DocSearch-NoResults': {
+            width: 'auto',
             '&::before': {
               content: `''`,
               position: 'absolute',
@@ -168,12 +173,35 @@ export function DocSearch(props: DocSearchProps) {
             display: 'none',
           },
           '.DocSearch-Footer': {
-            // TODO: We should display the Algolia logo somewhere
+            position: 'fixed',
+            bottom: 0,
+            left: 0,
+            right: 0,
+            backgroundColor: 'transparent',
+            boxShadow: 'none',
+          },
+          '.DocSearch-Logo': {
+            a: {
+              opacity: 0.64,
+              willChange: 'opacity',
+              transition: buildTransition('OPACITY'),
+              '&:hover': {
+                opacity: 0.88,
+              },
+            },
+          },
+          '.DocSearch-Commands': {
             display: 'none',
           },
           '.DocSearch-Screen-Icon': {
+            padding: 0,
+            marginBottom: Spacing.L,
             display: 'flex',
             justifyContent: 'center',
+          },
+          '.DocSearch-NoResults-Prefill-List': {
+            padding: 0,
+            marginTop: Spacing.L,
           },
         })}
       />
