@@ -46,11 +46,122 @@ title: 将子图部署到托管服务上
 
 如果您之前部署的子图仍处于`Syncing`状态，系统则会立即将其替换为新部署的版本。 如果之前部署的子图已经完全同步，Graph 节点会将新部署的版本标记为`Pending Version`，在后台进行同步，只有在新版本同步完成后，才会用新的版本替换当前部署的版本。 这样做可以确保在新版本同步时您仍然有子图可以使用。
 
-### 将子图部署到多个以太坊网络
+## Deploying the subgraph to multiple Ethereum networks
 
-在某些情况下，您可能希望将相同的子图部署到多个以太坊网络，而无需复制其所有代码。 这样做的主要挑战是这些网络上的合约地址不同。 允许参数化合约地址等配置的一种解决方案是使用 [Mustache](https://mustache.github.io/)或 [Handlebars](https://handlebarsjs.com/)等模板系统。
+In some cases, you will want to deploy the same subgraph to multiple Ethereum networks without duplicating all of its code. The main challenge that comes with this is that the contract addresses on these networks are different.
 
-为了说明这种方法，我们假设使用不同的合约地址将子图部署到主网和 Ropsten 上。 您可以定义两个配置文件，为每个网络提供相应的地址：
+### graph-cli >=0.29.0
+
+From version `0.29.0` the `build` command accepts two new options:
+
+```sh
+graph build [options] [<subgraph-manifest>]
+
+Options:
+
+      ...
+      --network <name>          Network to use from networks.json
+      --network-file <path>     Networks file (default: "./networks.json")
+```
+
+You can use the `--network` option to specify a network configuration from a `json` standard file (defaults to `networks.json`) to easily update your subgraph during development.
+
+**Note:** The `init` command will now auto-generate a `networks.json` based on the provided information. You will then be able to update existing or add additional networks.
+
+If you don't have a `networks.json` file, you'll need to manually create one with the follwing structure:
+
+```json
+{
+    "network1": { // the network name
+        "dataSource1": { // the dataSource name
+            "address": "0xabc...", // the contract address (optional)
+            "startBlock": 123456 // the startBlock (optional)
+        },
+        "dataSource2": {
+            "address": "0x123...",
+            "startBlock": 123444
+        }
+    },
+    "network2": {
+        "dataSource1": {
+            "address": "0x987...",
+            "startBlock": 123
+        },
+        "dataSource2": {
+            "address": "0xxyz..",
+            "startBlock": 456
+        }
+    },
+    ...
+}
+```
+
+**Note:** You don't have to specify any of the `templates` (if you have any) in the config file, only the `dataSources`. If there are any `templates` declared in the `subgraph.yaml` file, their network will be automatically updated to the one specified with the `--network` option.
+
+Now, let's assume you want to be able to deploy your subgraph to the `mainnet` and `ropsten` networks, and this is your `subgraph.yaml`:
+
+```yaml
+# ...
+dataSources:
+  - kind: ethereum/contract
+    name: Gravity
+    network: mainnet
+    source:
+      address: '0x123...'
+      abi: Gravity
+    mapping:
+      kind: ethereum/events
+```
+
+This is what your networks config file should look like:
+
+```json
+{
+  "mainnet": {
+    "Gravity": {
+      "address": "0x123..."
+    }
+  },
+  "ropsten": {
+    "Gravity": {
+      "address": "0xabc..."
+    }
+  }
+}
+```
+
+Now we can run the following command:
+
+```sh
+# Using default networks.json file
+yarn build --network ropsten
+
+# Using custom named file
+yarn build --network ropsten --network-file path/to/config
+```
+
+The `build` command will update your `subgraph.yaml` with the `ropsten` configuration and then re-compile the subgraph. Your `subgraph.yaml` file now should look like this:
+
+```yaml
+# ...
+dataSources:
+  - kind: ethereum/contract
+    name: Gravity
+    network: ropsten
+    source:
+      address: '0xabc...'
+      abi: Gravity
+    mapping:
+      kind: ethereum/events
+```
+
+Now you are ready to `yarn deploy`
+
+### graph-cli \<0.29.0
+
+One solution for older graph-cli versions that allows to parameterize aspects like contract addresses is to generate parts of it using a templating system like [Mustache](https://mustache.github.io/) or [Handlebars](https://handlebarsjs.com/).
+
+To illustrate this approach, let's assume a subgraph should be deployed to mainnet and Ropsten using different contract addresses. You could then define two config files providing the addresses for each network:
 
 ```json
 {
@@ -59,7 +170,7 @@ title: 将子图部署到托管服务上
 }
 ```
 
-和
+and
 
 ```json
 {
@@ -68,7 +179,7 @@ title: 将子图部署到托管服务上
 }
 ```
 
-除此之外，您可以用变量占位符 `{{network}}` 和 `{{address}}` 替换清单中的网络名称和地址，并将清单重命名为例如 `subgraph.template.yaml`：
+Along with that, you would substitute the network name and addresses in the manifest with variable placeholders `{{network}}` and `{{address}}` and rename the manifest to e.g. `subgraph.template.yaml`:
 
 ```yaml
 # ...
@@ -85,7 +196,7 @@ dataSources:
       kind: ethereum/events
 ```
 
-为了给每个网络生成清单，您可以向 `package.json` 添加两个附加命令，以及对 `mustache` 的依赖项：
+In order generate a manifest to either network, you could add two additional commands to `package.json` along with a dependency on `mustache`:
 
 ```json
 {
@@ -102,7 +213,7 @@ dataSources:
 }
 ```
 
-要为主网或 Ropsten 部署此子图，您现在只需运行以下两个命令中的任意一个：
+To deploy this subgraph for mainnet or Ropsten you would now simply run one of the two following commands:
 
 ```sh
 # Mainnet:
@@ -112,15 +223,15 @@ yarn prepare:mainnet && yarn deploy
 yarn prepare:ropsten && yarn deploy
 ```
 
-您可以在[这里](https://github.com/graphprotocol/example-subgraph/tree/371232cf68e6d814facf5e5413ad0fef65144759)找到一个工作示例。
+A working example of this can be found [here](https://github.com/graphprotocol/example-subgraph/tree/371232cf68e6d814facf5e5413ad0fef65144759).
 
-**注意：** 这种方法也可以应用在更复杂的情况下，例如：需要替换的不仅仅是合约地址和网络名称，或者还需要从模板生成映射或 ABI。
+**Note:** This approach can also be applied more complex situations, where it is necessary to substitute more than contract addresses and network names or where generating mappings or ABIs from templates as well.
 
-## 检查子图状态
+## Checking subgraph health
 
-如果子图成功同步，这是表明它将运行良好的一个好的信号。 但是，链上的新事件可能会导致您的子图遇到未经测试的错误环境，或者由于性能或节点方面的问题而开始落后于链上数据。
+If a subgraph syncs successfully, that is a good sign that it will continue to run well forever. However, new triggers on the chain might cause your subgraph to hit an untested error condition or it may start to fall behind due to performance issues or issues with the node operators.
 
-Graph 节点公开了一个 graphql 端点，您可以通过查询该端点来检查子图的状态。 在托管服务上，该端点的链接是 `https://api.thegraph.com/index-node/graphql`。 在本地节点上，默认情况下该端点在端口 `8030/graphql` 上可用。 该端点的完整数据模式可以在[此处](https://github.com/graphprotocol/graph-node/blob/master/server/index-node/src/schema.graphql)找到。 这是一个检查子图当前版本状态的示例查询：
+Graph Node exposes a graphql endpoint which you can query to check the status of your subgraph. On the Hosted Service, it is available at `https://api.thegraph.com/index-node/graphql`. On a local node it is available on port `8030/graphql` by default. The full schema for this endpoint can be found [here](https://github.com/graphprotocol/graph-node/blob/master/server/index-node/src/schema.graphql). Here is an example query that checks the status of the current version of a subgraph:
 
 ```graphql
 {
@@ -147,14 +258,14 @@ Graph 节点公开了一个 graphql 端点，您可以通过查询该端点来�
 }
 ```
 
-这将为您提供 `chainHeadBlock`，您可以将其与子图上的 `latestBlock` 进行比较，以检查子图是否落后。 通过`synced`，可以了解子图是否与链上数据完全同步。 如果子图没有发生错误，`health` 将返回`healthy`，如果有一个错误导致子图的同步进度停止，那么 `health`将返回`failed` 。 在这种情况下，您可以检查 `fatalError` 字段以获取有关此错误的详细信息。
+This will give you the `chainHeadBlock` which you can compare with the `latestBlock` on your subgraph to check if it is running behind. `synced` informs if the subgraph has ever caught up to the chain. `health` can currently take the values of `healthy` if no errors ocurred, or `failed` if there was an error which halted the progress of the subgraph. In this case you can check the `fatalError` field for details on this error.
 
-## 子图归档策略
+## Subgraph archive policy
 
-托管服务是一个免费的 Graph 节点索引器。 开发人员可以部署索引一系列网络的子图，这些网络将被索引，并可以通过 graphQL 进行查询。
+The Hosted Service is a free Graph Node indexer. Developers can deploy subgraphs indexing a range of networks, which will be indexed, and made available to query via graphQL.
 
-为了提高活跃子图的服务性能，托管服务将归档不活跃的子图。
+To improve the performance of the service for active subgraphs, the Hosted Service will archive subgraphs which are inactive.
 
-**如果一个子图在 45 天前部署到托管服务，并且在过去 30 天内收到 0 个查询，则将其定义为“不活跃”。**
+**A subgraph is defined as "inactive" if it was deployed to the Hosted Service more than 45 days ago, and if it has received 0 queries in the last 30 days.**
 
-如果开发人员的一个子图被标记为不活跃，并将 7 天后被删除，托管服务会通过电子邮件通知开发者。 如果他们希望“激活”他们的子图，他们可以通过在其子图的托管服务 graphQL playground 中发起查询来实现。 如果再次需要使用这个子图，开发人员也可以随时重新部署存档的子图。
+Developers will be notified by email if one of their subgraphs has been marked as inactive 7 days before it is removed. If they wish to "activate" their subgraph, they can do so by making a query in their subgraph's Hosted Service graphQL playground. Developers can always redeploy an archived subgraph if it is required again.
