@@ -2,7 +2,7 @@
 title: Querying from an Application
 ---
 
-Once a subgraph is deployed to the Subgraph Studio or to the Graph Explorer, you will be given the endpoint for your GraphQL API that should look something like this:
+Once a subgraph is deployed to the Subgraph Studio or to The Graph Explorer, you will be given the endpoint for your GraphQL API that should look something like this:
 
 **Subgraph Studio (testing endpoint)**
 
@@ -24,9 +24,9 @@ Here are a couple of the more popular GraphQL clients in the ecosystem and how t
 
 ### Apollo client
 
-[Apollo client](https://www.apollographql.com/docs/) supports web projects including frameworks like React and Vue, as well as mobile clients like iOS, Android, and React Native.
+[Apollo client](https://www.apollographql.com/docs/) supports web projects, including frameworks like React and Vue, as well as mobile clients like iOS, Android, and React Native.
 
-Let's look at how fetch data from a subgraph with Apollo client in a web project.
+Let's look at how to fetch data from a subgraph with Apollo client in a web project.
 
 First, install `@apollo/client` and `graphql`:
 
@@ -100,9 +100,9 @@ client
 
 ### URQL
 
-Another option is [URQL](https://formidable.com/open-source/urql/), a somewhat lighter weight GraphQL client library.
+Another option is [URQL](https://formidable.com/open-source/urql/), a somewhat lighter-weight GraphQL client library.
 
-Let's look at how fetch data from a subgraph with URQL in a web project.
+Let's look at how to fetch data from a subgraph with URQL in a web project.
 
 First, install `urql` and `graphql`:
 

@@ -24,4 +24,4 @@ Subgraphs can be published to the decentralized network directly from the Subgra
 
 ### Updating metadata for a published subgraph
 
-Once your subgraph has been published to the decentralized network, you can modify the metadata at any time by making the update in the Subgraph Studio dashboard of the subgraph. After saving the changes and publishing your updates to the network, they will be reflected in the Graph Explorer. This won’t create a new version, as your deployment hasn’t changed.
+Once your subgraph has been published to the decentralized network, you can modify the metadata at any time by making the update in the Subgraph Studio dashboard of the subgraph. After saving the changes and publishing your updates to the network, they will be reflected in The Graph Explorer. This won’t create a new version, as your deployment hasn’t changed.

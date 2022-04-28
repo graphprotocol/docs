@@ -20,7 +20,7 @@ In order to add GRT to your account, you will need to go through the following s
 
 4. Add bridged GRT to the billing contract on Polygon. The billing contract address is: [0x10829DB618E6F520Fa3A01c75bC6dDf8722fA9fE](https://polygonscan.com/address/0x10829DB618E6F520Fa3A01c75bC6dDf8722fA9fE).
 
-   a) In order to complete step #4, you'll need to switch your network in your wallet to Polygon. You can add Polygon's network by connecting your wallet and clicking on "Choose Matic (Polygon) Mainnet" [here.](https://chainlist.org/) Once you've added the network, switch it over in your wallet by navigating to the network pill on the top right hand side corner. In Metamask, the network is called **Matic Mainnnet.**
+   a) In order to complete step #4, you'll need to switch your network in your wallet to Polygon. You can add Polygon's network by connecting your wallet and clicking on "Choose Matic (Polygon) Mainnet" [here.](https://chainlist.org/) Once you've added the network, switch it over in your wallet by navigating to the network pill on the top right-hand side corner. In Metamask, the network is called **Matic Mainnnet.**
 
 At the end of each week, if you used your API keys, you will receive an invoice based on the query fees you have generated during this period. This invoice will be paid using GRT available in your balance. Query volume is evaluated by the API keys you own. Your balance will be updated after fees are withdrawn.
 
@@ -51,7 +51,7 @@ For a quick demo of how billing works on the Subgraph Studio, check out the vide
 
 ### Multisig Users
 
-Multisigs are smart-contracts that can exist only on the network they have been created, so if you created one on Ethereum Mainnet - it will only exist on Mainnet. Since our billing uses Polygon, if you were to bridge GRT to the multisig address on Polygon the funds would be lost.
+Multisigs are smart contracts that can exist only on the network they have been created, so if you created one on Ethereum Mainnet - it will only exist on Mainnet. Since our billing uses Polygon, if you were to bridge GRT to the multisig address on Polygon the funds would be lost.
 
 To overcome this issue, we created [a dedicated tool](https://multisig-billing.thegraph.com/) that will help you deposit GRT on our billing contract (on behalf of the multisig) with a standard wallet / EOA (an account controlled by a private key).
 
