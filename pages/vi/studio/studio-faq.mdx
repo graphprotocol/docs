@@ -12,7 +12,7 @@ A: Yes! You can create multiple API Keys to use in different projects. Check out
 
 ### 3. How do I restrict a domain for an API Key?
 
-After creating an API Key, in the Security section you can define the domains that can query a specific API Key.
+After creating an API Key, in the Security section, you can define the domains that can query a specific API Key.
 
 ### 4. Can I transfer my subgraph to another owner?
 
