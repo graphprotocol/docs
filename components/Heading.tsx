@@ -43,7 +43,7 @@ const BaseHeading = ({ level, id, className, children, ...props }: HeadingProps)
       {...props}
     >
       <span sx={{ whiteSpace: 'normal' }}>{children}</span>
-      {id && (
+      {id ? (
         <span
           sx={{
             ml: '0.35em',
@@ -57,7 +57,7 @@ const BaseHeading = ({ level, id, className, children, ...props }: HeadingProps)
             <VisuallyHidden.Root>{t('global.linkToThisSection')}</VisuallyHidden.Root>
           </LinkInline>
         </span>
-      )}
+      ) : null}
     </Text>
   )
 }

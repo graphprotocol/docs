@@ -8,8 +8,8 @@ import {
   Icon,
   Spacing,
   BorderRadius,
-  FontSize,
   FontWeight,
+  FontSize,
   buildTransition,
   buildBorder,
   GlobalTheme,
@@ -18,6 +18,8 @@ import { dispatch } from 'use-bus'
 
 import { useI18n } from '../i18n'
 import { EventType } from '../types'
+
+const BREAKPOINT = '751px'
 
 export function DocSearch(props: DocSearchProps) {
   const searchButtonRef = useRef<HTMLButtonElement>(null)
@@ -77,24 +79,27 @@ export function DocSearch(props: DocSearchProps) {
         </Flex.Row>
       </button>
 
-      {isOpen &&
-        createPortal(
-          <DocSearchModal
-            {...props}
-            initialScrollY={window.scrollY}
-            initialQuery={initialQuery}
-            translations={props?.translations?.modal}
-            onClose={onClose}
-          />,
-          document.body
-        )}
+      {isOpen
+        ? createPortal(
+            <DocSearchModal
+              {...props}
+              initialScrollY={window.scrollY}
+              initialQuery={initialQuery}
+              translations={props?.translations?.modal}
+              onClose={onClose}
+            />,
+            document.body
+          )
+        : null}
 
       <Global
         styles={(theme: GlobalTheme) => ({
           html: {
-            '--docsearch-modal-width': 'min(calc(100vw - 32px), 864px) !important',
-            '--docsearch-modal-background': '#1b1631 !important',
+            '--docsearch-spacing': '0 !important',
+            '--docsearch-modal-width': 'min(calc(100vw - 32px), 840px) !important',
+            '--docsearch-modal-background': '#292738 !important',
             '--docsearch-modal-shadow': 'none !important',
+            '--docsearch-searchbox-height': '96px !important',
             '--docsearch-searchbox-focus-background': 'transparent !important',
             '--docsearch-searchbox-shadow': 'none !important',
             '--docsearch-hit-background': 'transparent !important',
@@ -102,9 +107,25 @@ export function DocSearch(props: DocSearchProps) {
           },
           '.DocSearch-Modal': {
             border: buildBorder('White8')(theme),
+            overflow: 'hidden',
+            [`@media (min-width: ${BREAKPOINT})`]: {
+              margin: '96px auto auto',
+            },
           },
           '.DocSearch-SearchBar': {
-            padding: `${Spacing.M} 28px`,
+            padding: `0 ${Spacing.L_XL}`,
+            '&::after': {
+              content: `''`,
+              position: 'absolute',
+              left: Spacing.XL,
+              right: Spacing.XL,
+              bottom: '-1px',
+              borderBottom: buildBorder('White16')(theme),
+              [`@media (min-width: ${BREAKPOINT})`]: {
+                left: Spacing.XL_XXL,
+                right: Spacing.XL_XXL,
+              },
+            },
           },
           '.DocSearch-Form': {
             padding: 0,
@@ -112,39 +133,49 @@ export function DocSearch(props: DocSearchProps) {
           '.DocSearch-MagnifierLabel, .DocSearch-LoadingIndicator': {
             color: 'white',
             svg: {
-              width: '16px',
-              height: '16px',
+              width: '18px',
+              height: '18px',
             },
           },
           '.DocSearch-Input': {
-            paddingLeft: Spacing.L,
+            padding: `${Spacing.XL} ${Spacing.L}`,
             outline: 'none',
-            fontSize: FontSize['16px'],
+            fontSize: FontSize['18px'],
           },
-          '.DocSearch-Dropdown': {
-            minHeight: 0,
+          '.DocSearch-Cancel': {
+            marginLeft: Spacing.L,
+            marginRight: Spacing.M,
+            color: 'inherit',
           },
           '.DocSearch-Hits': {
             marginBottom: '0 !important',
-            padding: `${Spacing.L} 0`,
+            padding: `${Spacing.L_XL} ${Spacing.L}`,
+            [`@media (min-width: ${BREAKPOINT})`]: {
+              padding: `${Spacing.L_XL} ${Spacing.XL}`,
+            },
+            mark: {
+              color: 'inherit',
+              textDecoration: 'underline',
+            },
           },
           '.DocSearch-Hits, .DocSearch-NoResults': {
             width: 'auto',
-            '&::before': {
-              content: `''`,
-              position: 'absolute',
-              left: Spacing.L,
-              right: Spacing.L,
-              top: 0,
-              borderTop: buildBorder('White16')(theme),
-            },
           },
           '.DocSearch-Hit-source': {
-            display: 'none',
+            padding: `${Spacing.XS} ${Spacing.L}`,
+            fontWeight: FontWeight.Medium,
+            fontSize: FontSize['12px'],
+            textTransform: 'uppercase',
+            letterSpacing: '0.15em',
+            color: `${theme.colors!.White32}`,
           },
           '.DocSearch-Hit': {
             a: {
-              padding: `0 ${Spacing.L}`,
+              padding: `${Spacing.XS} ${Spacing.L}`,
+              borderRadius: BorderRadius.NONE,
+            },
+            '&[aria-selected=true] a': {
+              backgroundColor: `${theme.colors!.White8}`,
             },
           },
           '.DocSearch-Hit-Container': {
@@ -177,6 +208,7 @@ export function DocSearch(props: DocSearchProps) {
             bottom: 0,
             left: 0,
             right: 0,
+            padding: Spacing.L,
             backgroundColor: 'transparent',
             boxShadow: 'none',
           },
@@ -199,9 +231,12 @@ export function DocSearch(props: DocSearchProps) {
             display: 'flex',
             justifyContent: 'center',
           },
+          '.DocSearch-NoResults': {
+            padding: `${Spacing.XXL} 0`,
+          },
           '.DocSearch-NoResults-Prefill-List': {
             padding: 0,
-            marginTop: Spacing.L,
+            marginTop: Spacing.XL,
           },
         })}
       />

@@ -82,7 +82,7 @@ const NavTreeItem = ({
         {...linkOtherProps}
       >
         {children}
-        {active && (
+        {active ? (
           <Icon.DiamondSolid
             size="12px"
             sx={{
@@ -95,7 +95,7 @@ const NavTreeItem = ({
             }}
             {...diamondOtherProps}
           />
-        )}
+        ) : null}
       </Link>
     </li>
   )

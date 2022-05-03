@@ -20,7 +20,7 @@ new Crawler({
         return helpers.docsearch({
           recordProps: {
             lvl0: {
-              selectors: '',
+              selectors: '.graph-docs-current-group',
               defaultValue: 'The Graph Docs',
             },
             lvl1: '.graph-docs-content h1 > span:first-of-type',
