@@ -28,6 +28,7 @@ import {
   Table,
 } from '@/components'
 import { useI18n } from '@/i18n'
+import { NavItemGroup } from '@/navigation'
 
 const mdxComponents = {
   blockquote: Blockquote,
@@ -75,13 +76,21 @@ export const MDXLayout = ({ pagePath, navItems, frontmatter, outline, children }
   const { pathWithoutLocale } = useI18n()
 
   // Compute some values for the `NavContext`
-  const { pageNavItems, previousPage, currentPage, nextPage } = useMemo(() => {
+  const { previousPage, currentPage, nextPage, currentGroup } = useMemo(() => {
     let previousPage = null
     let currentPage = null
     let nextPage = null
+    let currentGroup = null
     const pageNavItems = navItems.flatMap((navItem) => {
       if ('children' in navItem) {
-        return navItem.children.filter((childNavItem) => 'path' in childNavItem)
+        return navItem.children.filter((childNavItem) => {
+          if ('path' in childNavItem) {
+            if (childNavItem.path === pathWithoutLocale) {
+              currentGroup = navItem
+            }
+            return true
+          }
+        })
       }
       if ('path' in navItem) {
         return [navItem]
@@ -97,7 +106,7 @@ export const MDXLayout = ({ pagePath, navItems, frontmatter, outline, children }
       }
       pageNavItemIndex++
     }
-    return { pageNavItems, previousPage, currentPage, nextPage }
+    return { previousPage, currentPage, nextPage, currentGroup: currentGroup as NavItemGroup | null }
   }, [navItems, pathWithoutLocale])
 
   // Provide `markOutlineItem` to the `DocumentContext` so child `Heading` components can mark outline items as "in or above view" or not
@@ -129,7 +138,7 @@ export const MDXLayout = ({ pagePath, navItems, frontmatter, outline, children }
   }, [outline, outlineItemIsInOrAboveView])
 
   return (
-    <NavContext.Provider value={{ pagePath, navItems, pageNavItems, previousPage, currentPage, nextPage }}>
+    <NavContext.Provider value={{ pagePath, navItems, previousPage, currentPage, nextPage, currentGroup }}>
       <DocumentContext.Provider value={{ frontmatter, outline, markOutlineItem, highlightedOutlineItemId }}>
         <NextSeo title={`${frontmatter?.title ? `${frontmatter.title} - ` : ''} The Graph Docs`} />
 
@@ -155,7 +164,12 @@ export const MDXLayout = ({ pagePath, navItems, frontmatter, outline, children }
             </div>
 
             <article className="graph-docs-content" sx={mdxStyles}>
-              {frontmatter?.title && <Heading.H1>{frontmatter.title}</Heading.H1>}
+              {currentGroup ? (
+                <div className="graph-docs-current-group" sx={{ display: 'none' }}>
+                  {currentGroup.title}
+                </div>
+              ) : null}
+              {frontmatter?.title ? <Heading.H1>{frontmatter.title}</Heading.H1> : null}
               <MDXProvider components={mdxComponents}>{children}</MDXProvider>
             </article>
 
