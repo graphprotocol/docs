@@ -382,6 +382,12 @@ const Index: NextPage<IndexProps> = ({ navItems }: IndexProps) => {
               href: 'https://moonbeam.network/',
               beta: true,
             },
+            {
+              title: 'Boba Network',
+              image: '/img/networks/boba.svg',
+              href: 'https://boba.network/',
+              beta: true,
+            },
           ].map((network, index) => (
             <Flex.Column as="li" key={index}>
               <Text as="div" size="14px" color="White48" sx={{ textAlign: 'center' }}>
