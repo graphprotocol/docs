@@ -111,8 +111,8 @@ dataSources:
         - function: createGravatar(string,string)
           handler: handleCreateGravatar
       blockHandlers:
-        - function: handleBlock
-        - function: handleBlockWithCall
+        - handler: handleBlock
+        - handler: handleBlockWithCall
           filter:
             kind: call
       file: ./src/mapping.ts
@@ -166,15 +166,15 @@ dataSources:
 
 قبل تعريف الكيانات ، من المهم التراجع والتفكير في كيفية هيكلة بياناتك وربطها. سيتم إجراء جميع الاستعلامات لنموذج البيانات المعرفة في مخطط الـ subgraph والكيانات المفهرسة بواسطة الـ subgraph. لهذا السبب ، من الجيد تعريف مخطط الـ subgraph بطريقة تتوافق مع احتياجات الـ dapp الخاص بك. قد يكون من المفيد تصور الكيانات على أنها "كائنات (objects) تحتوي على بيانات" ، وليس أحداثا أو دوال.
 
-بواسطة The Graph ، يمكنك ببساطة تحديد أنواع الكيانات في `schema.graphql` ، وسيقوم Graph Node بإنشاء حقول المستوى الأعلى للاستعلام عن الـ instances الفردية والمجموعات من هذا النوع من الكيانات. كل نوع يجب أن يكون كيانا يكون مطلوبا للتعليق عليه باستخدام التوجيه `entity`.
+With The Graph, you simply define entity types in `schema.graphql`, and Graph Node will generate top level fields for querying single instances and collections of that entity type. Each type that should be an entity is required to be annotated with an `@entity` directive. By default, entities are mutable, meaning that mappings can load existing entities, modify them and store a new version of that entity. Mutability comes at a price, and for entity types for which it is known that they will never be modified, for example, because they simply contain data extracted verbatim from the chain, it is recommended to mark them as immutable with `@entity(immutable: true)`. Mappings can make changes to immutable entities as long as those changes happen in the same block in which the entity was created. Immutable entities are much faster to write and to query, and should therefore be used whenever possible.
 
 ### مثال جيد
 
 تم تنظيم الكيان `Gravatar` أدناه حول كائن Gravatar وهو مثال جيد لكيفية تعريف الكيان.
 
 ```graphql
-type Gravatar @entity {
-  id: ID!
+type Gravatar @entity(immutable: true) {
+  id: Bytes!
   owner: Bytes
   displayName: String
   imageUrl: String
@@ -188,14 +188,14 @@ type Gravatar @entity {
 
 ```graphql
 type GravatarAccepted @entity {
-  id: ID!
+  id: Bytes!
   owner: Bytes
   displayName: String
   imageUrl: String
 }
 
 type GravatarDeclined @entity {
-  id: ID!
+  id: Bytes!
   owner: Bytes
   displayName: String
   imageUrl: String
@@ -210,27 +210,28 @@ type GravatarDeclined @entity {
 'Null value resolved for non-null field 'name
 ```
 
-يجب أن يكون لكل كيان حقل `id` ، وهو من النوع `ID!` (string). حقل `id` يتم تقديمه كمفتاح رئيسي ويجب أن يكون فريدا في كل الكيانات لنفس النوع.
+Each entity must have an `id` field, which must be of type `Bytes!` or `String!`. It is generally recommended to use `Bytes!`, unless the `id` contains human-readable text, since entities with `Bytes!` id's will be faster to write and query as those with a `String!` `id`. The `id` field serves as the primary key, and needs to be unique among all entities of the same type. For historical reasons, the type `ID!` is also accepted and is a synonym for `String!`.
+
+For some entity types the `id` is constructed from the id's of two other entities; that is possible using `concat`, e.g., `let id = left.id.concat(right.id)` to form the id from the id's of `left` and `right`. Similarly, to construct an id from the id of an existing entity and a counter `count`, `let id = left.id.concatI32(count)` can be used. The concatenation is guaranteed to produce unique id's as long as the length of `left` is the same for all such entities, for example, because `left.id` is an `Address`.
 
 ### أنواع المقاييس المضمنة (Scalar Types)
 
 #### المقاييس المدعومة من GraphQL
 
-ندعم المقاييس التالية في GraphQL API الخاصة بنا:
+We support the following scalars in our GraphQL API:
 
 | النوع | الوصف |
 | --- | --- |
 | `Bytes` | مصفوفة Byte ، ممثلة كسلسلة سداسية عشرية. يشيع استخدامها في Ethereum hashes وعناوينه. |
-| `ID` | يتم تخزينه كـ `string`. |
-| `String` | لقيم `string`. لا يتم دعم اNull ويتم إزالتها تلقائيا. |
-| `Boolean` | لقيم `boolean`. |
-| `Int` | المواصفات الفنية لـ GraphQL تعرف `Int` بحجم 32 بايت. |
-| `BigInt` | أعداد صحيحة كبيرة. يستخدم لأنواع Ethereum `uint32` ، `int64` ، `uint64` ، ... ، `uint256`. ملاحظة: كل شيء تحت `uint32` ، مثل `int32` أو `uint24` أو `int8` يتم تمثيله كـ `i32`. |
-| `BigDecimal` | `BigDecimal` يتم تمثيل الكسور العشرية عالية الدقة على أنها signficand وأسس.. يتراوح نطاق الأس من −6143 إلى +6144. مقربة إلى 34 رقما. |
+| `String` | Scalar for `string` values. Null characters are not supported and are automatically removed. |
+| `Boolean` | Scalar for `boolean` values. |
+| `Int` | The GraphQL spec defines `Int` to have size of 32 bytes. |
+| `BigInt` | Large integers. Used for Ethereum's `uint32`, `int64`, `uint64`, ..., `uint256` types. Note: Everything below `uint32`, such as `int32`, `uint24` or `int8` is represented as `i32`. |
+| `BigDecimal` | `BigDecimal` High precision decimals represented as a signficand and an exponent. The exponent range is from −6143 to +6144. Rounded to 34 significant digits. |
 
 #### Enums
 
-يمكنك أيضا إنشاء enums داخل مخطط. Enums لها البناء التالي:
+You can also create enums within a schema. Enums have the following syntax:
 
 ```graphql
 enum TokenStatus {
@@ -240,43 +241,43 @@ enum TokenStatus {
 }
 ```
 
-بمجرد تعريف الـ enum في المخطط ، يمكنك استخدام string لقيمة الـ enum لتعيين حقل الـ enum في الكيان. على سبيل المثال ، يمكنك تعيين `tokenStatus` إلى `SecondOwner` عن طريق تعريف الكيان أولا ثم تعيين الحقل بعد ذلك بـ `entity.tokenStatus = "SecondOwner`. يوضح المثال أدناه الشكل الذي سيبدو عليه كيان التوكن في حقل الـ enum:
+Once the enum is defined in the schema, you can use the string representation of the enum value to set an enum field on an entity. For example, you can set the `tokenStatus` to `SecondOwner` by first defining your entity and subsequently setting the field with `entity.tokenStatus = "SecondOwner"`. The example below demonstrates what the Token entity would look like with an enum field:
 
-يمكن العثور على مزيد من التفاصيل حول كتابة الـ enums في [GraphQL documentation](https://graphql.org/learn/schema/).
+More detail on writing enums can be found in the [GraphQL documentation](https://graphql.org/learn/schema/).
 
 #### علاقات الكيانات (Entity)
 
-قد يكون للكيان علاقة بواحد أو أكثر من الكيانات الأخرى في مخططك. قد يتم اجتياز هذه العلاقات في استعلاماتك. العلاقات في The Graph تكون أحادية الاتجاه. من الممكن محاكاة العلاقات ثنائية الاتجاه من خلال تعريف علاقة أحادية الاتجاه على "طرفي" العلاقة.
+An entity may have a relationship to one or more other entities in your schema. These relationships may be traversed in your queries. Relationships in The Graph are unidirectional. It is possible to simulate bidirectional relationships by defining a unidirectional relationship on either "end" of the relationship.
 
-يتم تعريف العلاقات للكيانات تماما مثل أي حقل آخر عدا أن النوع المحدد هو كيان آخر.
+Relationships are defined on entities just like any other field except that the type specified is that of another entity.
 
 #### العلاقات واحد-لواحد
 
-عرف نوع كيان `Transaction` بعلاقة فردية اختيارية مع نوع كيان `TransactionReceipt`:
+Define a `Transaction` entity type with an optional one-to-one relationship with a `TransactionReceipt` entity type:
 
 ```graphql
-type Transaction @entity {
-  id: ID!
+type Transaction @entity(immutable: true) {
+  id: Bytes!
   transactionReceipt: TransactionReceipt
 }
 
-type TransactionReceipt @entity {
-  id: ID!
+type TransactionReceipt @entity(immutable: true) {
+  id: Bytes!
   transaction: Transaction
 }
 ```
 
 #### علاقات واحد-لمتعدد
 
-عرف نوع كيان `TokenBalance` بعلاقة واحد لمتعدد المطلوبة مع نوع كيان Token:
+Define a `TokenBalance` entity type with a required one-to-many relationship with a Token entity type:
 
 ```graphql
-type Token @entity {
-  id: ID!
+type Token @entity(immutable: true) {
+  id: Bytes!
 }
 
 type TokenBalance @entity {
-  id: ID!
+  id: Bytes!
   amount: Int!
   token: Token!
 }
@@ -284,22 +285,22 @@ type TokenBalance @entity {
 
 #### البحث العكسي (Reverse Lookups)
 
-يمكن تعريف البحث العكسي لكيان من خلال حقل `derivedFrom`. ويؤدي هذا إلى إنشاء حقل افتراضي للكيان الذي قد يتم الاستعلام عنه ولكن لا يمكن تعيينه يدويا من خلال الـ mappings API. بالأحرى، هو مشتق من العلاقة المعرفة للكيان الآخر. وبالنسبة لمثل هذه العلاقات ، نادرا ما يكون من المنطقي تخزين جانبي العلاقة ، وسيكون أداء الفهرسة والاستعلام أفضل عندما يتم تخزين جانب واحد فقط ويتم اشتقاق الجانب الآخر.
+Reverse lookups can be defined on an entity through the `@derivedFrom` field. This creates a virtual field on the entity that may be queried but cannot be set manually through the mappings API. Rather, it is derived from the relationship defined on the other entity. For such relationships, it rarely makes sense to store both sides of the relationship, and both indexing and query performance will be better when only one side is stored and the other is derived.
 
-بالنسبة لعلاقات واحد_لمتعدد ، يجب دائما تخزين العلاقة في جانب "واحد" ، ويجب دائما اشتقاق جانب "المتعدد". سيؤدي تخزين العلاقة بهذه الطريقة ، بدلا من تخزين مجموعة من الكيانات على الجانب "متعدد" ، إلى أداء أفضل بشكل كبير لكل من فهرسة واستعلام الـ subgraph. بشكل عام ، يجب تجنب تخزين مصفوفات الكيانات.
+For one-to-many relationships, the relationship should always be stored on the 'one' side, and the 'many' side should always be derived. Storing the relationship this way, rather than storing an array of entities on the 'many' side, will result in dramatically better performance for both indexing and querying the subgraph. In general, storing arrays of entities should be avoided as much as is practical.
 
 #### مثال
 
-يمكننا إنشاء أرصدة لتوكن يمكن الوصول إليه من التوكن عن طريق اشتقاق حقل `tokenBalances`:
+We can make the balances for a token accessible from the token by deriving a `tokenBalances` field:
 
 ```graphql
-type Token @entity {
-  id: ID!
+type Token @entity(immutable: true) {
+  id: Bytes!
   tokenBalances: [TokenBalance!]! @derivedFrom(field: "token")
 }
 
 type TokenBalance @entity {
-  id: ID!
+  id: Bytes!
   amount: Int!
   token: Token!
 }
@@ -307,49 +308,49 @@ type TokenBalance @entity {
 
 #### علاقات متعدد_لمتعدد
 
-بالنسبة لعلاقات متعدد_لمتعدد ، مثل المستخدمين الذين قد ينتمي كل منهم إلى عدد من المؤسسات ، فإن الطريقة الأكثر وضوحا ، ولكنها ليست الأكثر أداء بشكل عام ، طريقة لنمذجة العلاقة كمصفوفة في كل من الكيانين المعنيين. إذا كانت العلاقة متماثلة ، فيجب تخزين جانب واحد فقط من العلاقة ويمكن اشتقاق الجانب الآخر.
+For many-to-many relationships, such as users that each may belong to any number of organizations, the most straightforward, but generally not the most performant, way to model the relationship is as an array in each of the two entities involved. If the relationship is symmetric, only one side of the relationship needs to be stored and the other side can be derived.
 
 #### مثال
 
-عرف البحث العكسي من نوع كيان `User` إلى نوع كيان `Organization`. في المثال أدناه ، يتم تحقيق ذلك من خلال البحث عن خاصية`members` من داخل كيان `Organization`. في الاستعلامات ، سيتم حل حقل `organizations` في `User` من خلال البحث عن جميع كيانات `Organization` التي تتضمن ID المستخدم.
+Define a reverse lookup from a `User` entity type to an `Organization` entity type. In the example below, this is achieved by looking up the `members` attribute from within the `Organization` entity. In queries, the `organizations` field on `User` will be resolved by finding all `Organization` entities that include the user's ID.
 
 ```graphql
 type Organization @entity {
-  id: ID!
+  id: Bytes!
   name: String!
   members: [User!]!
 }
 
 type User @entity {
-  id: ID!
+  id: Bytes!
   name: String!
   organizations: [Organization!]! @derivedFrom(field: "members")
 }
 ```
 
-هناك طريقة أكثر فاعلية لتخزين هذه العلاقة وهي من خلال جدول mapping يحتوي على إدخال واحد لكل زوج `User` / `Organization` بمخطط مثل
+A more performant way to store this relationship is through a mapping table that has one entry for each `User` / `Organization` pair with a schema like
 
 ```graphql
 type Organization @entity {
-  id: ID!
+  id: Bytes!
   name: String!
-  members: [UserOrganization]! @derivedFrom(field: "organization")
+  members: [UserOrganization!]! @derivedFrom(field: "organization")
 }
 
 type User @entity {
-  id: ID!
+  id: Bytes!
   name: String!
   organizations: [UserOrganization!] @derivedFrom(field: "user")
 }
 
 type UserOrganization @entity {
-  id: ID! # Set to `${user.id}-${organization.id}`
+  id: Bytes! # Set to `user.id.concat(organization.id)`
   user: User!
   organization: Organization!
 }
 ```
 
-يتطلب هذا الأسلوب أن تنحدر الاستعلامات إلى مستوى إضافي واحد لاستردادها ، على سبيل المثال ، المؤسسات للمستخدمين:
+This approach requires that queries descend into one additional level to retrieve, for example, the organizations for users:
 
 ```graphql
 query usersWithOrganizations {
@@ -364,27 +365,27 @@ query usersWithOrganizations {
 }
 ```
 
-هذه الطريقة الأكثر إتقانا لتخزين علاقات متعدد_لمتعدد والتي ستؤدي إلى تخزين بيانات أقل للـ subgraph، وبالتالي غالبا إلى subgraph ما يكون أسرع في الفهرسة والاستعلام.
+This more elaborate way of storing many-to-many relationships will result in less data stored for the subgraph, and therefore to a subgraph that is often dramatically faster to index and to query.
 
 #### إضافة تعليقات إلى المخطط (schema)
 
-وفقا لمواصفات GraphQL الفنية ، يمكن إضافة التعليقات فوق خاصيات كيان المخطط باستخدام الاقتباسات المزدوجة `""`. هذا موضح في المثال أدناه:
+As per GraphQL spec, comments can be added above schema entity attributes using double quotations `""`. This is illustrated in the example below:
 
 ```graphql
 type MyFirstEntity @entity {
   "unique identifier and primary key of the entity"
-  id: ID!
+  id: Bytes!
   address: Bytes!
 }
 ```
 
 ## تعريف حقول البحث عن النص الكامل
 
-استعلامات بحث النص الكامل تقوم بفلترة وترتيب الكيانات بناء على إدخال نص البحث. استعلامات النص الكامل قادرة على إرجاع التطابقات للكلمات المتشابهة عن طريق معالجة إدخال نص الاستعلام إلى جذر الكلمة (stems) قبل مقارنة ببيانات النص المفهرس.
+Fulltext search queries filter and rank entities based on a text search input. Fulltext queries are able to return matches for similar words by processing the query text input into stems before comparing to the indexed text data.
 
-تعريف استعلام النص الكامل يتضمن اسم الاستعلام وقاموس اللغة المستخدمة لمعالجة حقول النص وخوارزمية الترتيب المستخدمة لترتيب النتائج والحقول المضمنة في البحث. كل استعلام نص كامل قد يمتد إلى عدة حقول ، ولكن يجب أن تكون جميع الحقول المضمنة من نوع كيان واحد.
+A fulltext query definition includes the query name, the language dictionary used to process the text fields, the ranking algorithm used to order the results, and the fields included in the search. Each fulltext query may span multiple fields, but all included fields must be from a single entity type.
 
-لإضافة استعلام نص كامل ، قم بتضمين نوع `_Schema_` مع نص كامل موجه في مخطط GraphQL.
+To add a fulltext query, include a `_Schema_` type with a fulltext directive in the GraphQL schema.
 
 ```graphql
 type _Schema_
@@ -396,7 +397,7 @@ type _Schema_
   )
 
 type Band @entity {
-  id: ID!
+  id: Bytes!
   name: String!
   description: String!
   bio: String
@@ -407,7 +408,7 @@ type Band @entity {
 }
 ```
 
-يمكن استخدام حقل المثال `bandSearch` في الاستعلامات وذلك لفلترة كيانات `Band` استنادا إلى المستندات النصية في الـ `name` ، `description` و `bio`. انتقل إلى [GraphQL API - Queries](/developer/graphql-api#queries) للحصول على وصف لـ API الخاص ببحث النص الكامل ولمزيد من الأمثلة المستخدمة.
+The example `bandSearch` field can be used in queries to filter `Band` entities based on the text documents in the `name`, `description`, and `bio` fields. Jump to [GraphQL API - Queries](/developer/graphql-api#queries) for a description of the Fulltext search API and for more example usage.
 
 ```graphql
 query {
@@ -424,9 +425,9 @@ query {
 
 ### اللغات المدعومة
 
-اختيار لغة مختلفة سيكون له تأثير نهائي ، على الرغم من دقتها في بعض الأحيان ، إلا أنها تؤثر على API بحث النص الكامل. يتم فحص الحقول التي يغطيها حقل استعلام نص_كامل في سياق اللغة المختارة ، وبالتالي فإن المفردات الناتجة عن التحليل واستعلامات البحث تختلف من لغة إلى لغة. على سبيل المثال: عند استخدام القاموس التركي المدعوم ، فإن "token" ينشأ من "toke" بينما قاموس اللغة الإنجليزية سيشتقها إلى "token".
+Choosing a different language will have a definitive, though sometimes subtle, effect on the fulltext search API. Fields covered by a fulltext query field are examined in the context of the chosen language, so the lexemes produced by analysis and search queries vary language to language. For example: when using the supported Turkish dictionary "token" is stemmed to "toke" while, of course, the English dictionary will stem it to "token".
 
-قواميس اللغة المدعومة:
+Supported language dictionaries:
 
 | الرمز  | القاموس |
 | ------ | ------- |
@@ -449,7 +450,7 @@ query {
 
 ### خوارزميات التصنيف
 
-الخوارزميات المدعومة لترتيب النتائج:
+Supported algorithms for ordering results:
 
 | الخوارزمية    | الوصف                                                        |
 | ------------- | ------------------------------------------------------------ |
@@ -458,18 +459,18 @@ query {
 
 ## كتابة الـ Mappings
 
-تعمل الـ mappings على تحويل بيانات الإيثيريوم التي تصدرها الـ mappings الخاصة بك إلى كيانات محددة في مخططك. تتم كتابة الـ mappings في مجموعة فرعية من [ TypeScript ](https://www.typescriptlang.org/docs/handbook/typescript-in-5-minutes.html) تسمى [AssemblyScript](https://github.com/AssemblyScript/assemblyscript/wiki) والتي يمكن ترجمتها إلى ([WebAssembly](https://webassembly.org/)). ويعتبر AssemblyScript أكثر صرامة من TypeScript العادي ، ولكنه يوفر تركيبا مألوفا للجمل.
+The mappings transform the Ethereum data your mappings are sourcing into entities defined in your schema. Mappings are written in a subset of [TypeScript](https://www.typescriptlang.org/docs/handbook/typescript-in-5-minutes.html) called [AssemblyScript](https://github.com/AssemblyScript/assemblyscript/wiki) which can be compiled to WASM ([WebAssembly](https://webassembly.org/)). AssemblyScript is stricter than normal TypeScript, yet provides a familiar syntax.
 
-لكل معالج حدث تم تعريفه في `subgraph.yaml` ضمن `mapping.eventHandlers` ، قم بإنشاء دالة صادرة بنفس الاسم. يجب أن يقبل كل معالج بارمترا واحدا يسمى `event` بنوع مطابق لاسم الحدث الذي تتم معالجته.
+For each event handler that is defined in `subgraph.yaml` under `mapping.eventHandlers`, create an exported function of the same name. Each handler must accept a single parameter called `event` with a type corresponding to the name of the event which is being handled.
 
-في مثال الـ subgraph ، يحتوي `src / mapping.ts` على معالجات لأحداث `NewGravatar` و `UpdatedGravatar`:
+In the example subgraph, `src/mapping.ts` contains handlers for the `NewGravatar` and `UpdatedGravatar` events:
 
 ```javascript
 import { NewGravatar, UpdatedGravatar } from '../generated/Gravity/Gravity'
 import { Gravatar } from '../generated/schema'
 
 export function handleNewGravatar(event: NewGravatar): void {
-  let gravatar = new Gravatar(event.params.id.toHex())
+  let gravatar = new Gravatar(event.params.id)
   gravatar.owner = event.params.owner
   gravatar.displayName = event.params.displayName
   gravatar.imageUrl = event.params.imageUrl
@@ -477,7 +478,7 @@ export function handleNewGravatar(event: NewGravatar): void {
 }
 
 export function handleUpdatedGravatar(event: UpdatedGravatar): void {
-  let id = event.params.id.toHex()
+  let id = event.params.id
   let gravatar = Gravatar.load(id)
   if (gravatar == null) {
     gravatar = new Gravatar(id)
@@ -489,31 +490,31 @@ export function handleUpdatedGravatar(event: UpdatedGravatar): void {
 }
 ```
 
-يأخذ المعالج الأول حدث `NewGravatar` وينشئ كيان `Gravatar` جديد بـ `new Gravatar (event.params.id.toHex ())` ،مالئا حقول الكيان باستخدام بارامترات الحدث المقابلة. ويتم تمثيل instance الكيان بالمتغير `gravatar` ، مع قيمة معرف `()event.params.id.toHex`.
+The first handler takes a `NewGravatar` event and creates a new `Gravatar` entity with `new Gravatar(event.params.id.toHex())`, populating the entity fields using the corresponding event parameters. This entity instance is represented by the variable `gravatar`, with an id value of `event.params.id.toHex()`.
 
-يحاول المعالج الثاني تحميل `Gravatar` الموجود من مخزن Graph Node. إذا لم يكن موجودا بعد ، فإنه يتم إنشاؤه عند الطلب. يتم بعد ذلك تحديث الكيان لمطابقة بارامترات الحدث الجديدة ، قبل حفظه مرة أخرى في المخزن باستخدام `()gravatar.save`.
+The second handler tries to load the existing `Gravatar` from the Graph Node store. If it does not exist yet, it is created on demand. The entity is then updated to match the new event parameters, before it is saved back to the store using `gravatar.save()`.
 
 ### الـ IDs الموصى بها لإنشاء كيانات جديدة
 
-يجب أن يكون لكل كيان `id` فريدا بين جميع الكيانات من نفس النوع. يتم تعيين قيمة `id` للكيان عند إنشاء الكيان. فيما يلي بعض قيم `id` الموصى بها التي يجب مراعاتها عند إنشاء كيانات جديدة. ملاحظة: قيمة `id`يجب أن تكون `string`.
+Every entity has to have an `id` that is unique among all entities of the same type. An entity's `id` value is set when the entity is created. Below are some recommended `id` values to consider when creating new entities. NOTE: The value of `id` must be a `string`.
 
 - `()event.params.id.toHex`
 - `()event.transaction.from.toHex`
 - `()event.transaction.hash.toHex() + "-" + event.logIndex.toString`
 
-نحن نقدم [Graph Typescript مكتبة ](https://github.com/graphprotocol/graph-ts) والتي تحتوي على أدوات مساعدة للتفاعل مع مخزن Graph Node حيث أنها ملائمة لمعالجة بيانات العقد الذكي والكيانات. ويمكنك استخدام هذه المكتبة في mappings الخاص بك عن طريق استيراد `graphprotocol/graph-ts` in `mapping.ts@`.
+We provide the [Graph Typescript Library](https://github.com/graphprotocol/graph-ts) which contains utilies for interacting with the Graph Node store and conveniences for handling smart contract data and entities. You can use this library in your mappings by importing `@graphprotocol/graph-ts` in `mapping.ts`.
 
 ## توليد الكود(Code Generation)
 
-من أجل جعل العقود الذكية والأحداث والكيانات سهلة وآمنة ، يمكن لـ Graph CLI إنشاء أنواع AssemblyScript من مخطط subgraph's GraphQL وعقد الـ ABIs المضمنة في مصادر البيانات.
+In order to make it easy and type-safe to work with smart contracts, events and entities, the Graph CLI can generate AssemblyScript types from the subgraph's GraphQL schema and the contract ABIs included in the data sources.
 
-يتم ذلك بـ
+This is done with
 
 ```sh
 graph codegen [--output-dir <OUTPUT_DIR>] [<MANIFEST>]
 ```
 
-ولكن في معظم الحالات ، تكون الـ subgraphs مهيأة مسبقا بالفعل عبر `package.json` للسماح لك ببساطة بتشغيل واحد مما يلي لتحقيق نفس الشيء:
+but in most cases, subgraphs are already preconfigured via `package.json` to allow you to simply run one of the following to achieve the same:
 
 ```sh
 # Yarn
@@ -523,7 +524,7 @@ yarn codegen
 npm run codegen
 ```
 
-سيؤدي هذا إلى إنشاء فئة AssemblyScript لكل عقد ذكي في ملفات ABI المذكورة في `subgraph.yaml` ، مما يسمح لك بربط هذه العقود بعناوين محددة في الـ mappings واستدعاء methods العقد للكتلة التي تتم معالجتها. وستنشئ أيضا فئة(class) لكل حدث للعقد لتوفير وصول سهل إلى بارامترات الحدث بالإضافة إلى الكتلة والإجراء التي نشأ منها الحدث. كل هذه الأنواع تكتب إلى `<OUTPUT_DIR>/<DATA_SOURCE_NAME>/<ABI_NAME>.ts`. في مثال الـ subgraph ، سيكون هذا `generated/Gravity/Gravity.ts`,مما يسمح للـ mappings باستيراد هذه الأنواع باستخدام
+This will generate an AssemblyScript class for every smart contract in the ABI files mentioned in `subgraph.yaml`, allowing you to bind these contracts to specific addresses in the mappings and call read-only contract methods against the block being processed. It will also generate a class for every contract event to provide easy access to event parameters as well as the block and transaction the event originated from. All of these types are written to `<OUTPUT_DIR>/<DATA_SOURCE_NAME>/<ABI_NAME>.ts`. In the example subgraph, this would be `generated/Gravity/Gravity.ts`, allowing mappings to import these types with
 
 ```javascript
 import {
@@ -535,7 +536,7 @@ import {
 } from '../generated/Gravity/Gravity'
 ```
 
-بالإضافة إلى ذلك ، يتم إنشاء فئة واحدة لكل نوع كيان في مخطط الـ subgraph's GraphQL. وتوفر هذه الفئات إمكانية تحميل كيان نوع-آمن (type-safe) والقراءة والكتابة إلى حقول الكيان بالإضافة إلى `save()` method لكتابة الكيانات للمخزن. تمت كتابة جميع فئات الكيانات إلى `<OUTPUT_DIR>/schema.ts`, مما يسمح للـ mappings باستيرادها باستخدام
+In addition to this, one class is generated for each entity type in the subgraph's GraphQL schema. These classes provide type-safe entity loading, read and write access to entity fields as well as a `save()` method to write entities to store. All entity classes are written to `<OUTPUT_DIR>/schema.ts`, allowing mappings to import them with
 
 ```javascript
 'import { Gravatar } from '../generated/schema
@@ -543,15 +544,15 @@ import {
 
 > **Note:** يجب إجراء إنشاء الكود مرة أخرى بعد كل تغيير في مخطط GraphQL أو ABI المضمنة في الـ manifest. يجب أيضا إجراؤه مرة واحدة على الأقل قبل بناء أو نشر الـ subgraph.
 
-إنشاء الكود لا يتحقق من كود الـ mapping الخاص بك في `src/mapping.ts`. إذا كنت تريد التحقق من ذلك قبل محاولة نشر الـ subgraph الخاص بك في Graph Explorer ، فيمكنك تشغيل `yarn build` وإصلاح أي أخطاء في تركيب الجملة التي قد يعثر عليها المترجم TypeScript.
+Code generation does not check your mapping code in `src/mapping.ts`. If you want to check that before trying to deploy your subgraph to the Graph Explorer, you can run `yarn build` and fix any syntax errors that the TypeScript compiler might find.
 
 ## قوالب مصدر البيانات(data source templates)
 
-النمط الشائع في عقود Ethereum الذكية هو استخدام عقود السجل أو المصنع (registry or factory)، حيث أن أحد العقود ينشئ أو يدير أو يشير إلى عدد اعتباطي من العقود الأخرى التي لكل منها حالتها وأحداثها الخاصة. وعناوين هذه العقود الفرعية قد تكون أو لا تكون معروفة مقدما وقد يتم إنشاء و / أو إضافة العديد من هذه العقود بمرور الوقت. وهذا هو السبب في أنه في مثل هذه الحالات ، يكون تعريف مصدر بيانات واحد أو عدد ثابت من مصادر البيانات أمرا مستحيلا ويلزم اتباع نهج أكثر ديناميكية: _قوالب مصدر البيانات_.
+A common pattern in Ethereum smart contracts is the use of registry or factory contracts, where one contract creates, manages or references an arbitrary number of other contracts that each have their own state and events. The addresses of these sub-contracts may or may not be known upfront and many of these contracts may be created and/or added over time. This is why, in such cases, defining a single data source or a fixed number of data sources is impossible and a more dynamic approach is needed: _data source templates_.
 
 ### مصدر البيانات للعقد الرئيسي
 
-أولاً ، تقوم بتعريف مصدر بيانات منتظم للعقد الرئيسي. يُظهر المقتطف أدناه مثالا مبسطا لمصدر البيانات لعقد تبادل[ Uniswap ](https://uniswap.io). لاحظ معالج الحدث `NewExchange(address,address)`. يتم اصدار هذا عندما يتم إنشاء عقد تبادل جديد على السلسلة بواسطة عقد المصنع.
+First, you define a regular data source for the main contract. The snippet below shows a simplified example data source for the [Uniswap](https://uniswap.io) exchange factory contract. Note the `NewExchange(address,address)` event handler. This is emitted when a new exchange contract is created on chain by the factory contract.
 
 ```yaml
 dataSources:
@@ -578,7 +579,7 @@ dataSources:
 
 ### قوالب مصدر البيانات للعقود التي تم إنشاؤها ديناميكيا
 
-بعد ذلك ، أضف _ قوالب مصدر البيانات _ إلى الـ manifest. وهي متطابقة مع مصادر البيانات العادية ، باستثناء أنها تفتقر إلى عنوان عقد معرف مسبقا تحت `source`. عادة ، يمكنك تعريف قالب واحد لكل نوع من أنواع العقود الفرعية المدارة أو المشار إليها بواسطة العقد الأصلي.
+Then, you add _data source templates_ to the manifest. These are identical to regular data sources, except that they lack a predefined contract address under `source`. Typically, you would define one template for each type of sub-contract managed or referenced by the parent contract.
 
 ```yaml
 dataSources:
@@ -614,7 +615,7 @@ templates:
 
 ### إنشاء قالب مصدر البيانات
 
-في الخطوة الأخيرة ، تقوم بتحديث الـ mapping لعقدك الرئيسي وذلك لإنشاء instance لمصدر بيانات ديناميكي من أحد القوالب. في هذا المثال ، يمكنك تغيير mapping العقد الرئيسي لاستيراد قالب `Exchange` واستدعاء method الـ`Exchange.create(address)` لبدء فهرسة عقد التبادل الجديد.
+In the final step, you update your main contract mapping to create a dynamic data source instance from one of the templates. In this example, you would change the main contract mapping to import the `Exchange` template and call the `Exchange.create(address)` method on it to start indexing the new exchange contract.
 
 ```typescript
 import { Exchange } from '../generated/templates'
@@ -632,7 +633,7 @@ export function handleNewExchange(event: NewExchange): void {
 
 ### سياق (Context) مصدر البيانات
 
-تسمح سياقات مصدر البيانات بتمرير تكوين (configuration) إضافي عند عمل instantiating للقالب. في مثالنا ، لنفترض أن التبادلات مرتبطة بزوج تداول معين ، والذي تم تضمينه في حدث `NewExchange`. يمكن تمرير هذه المعلومات إلى مصدر البيانات الذي تم إنشاء instance له ، مثل:
+Data source contexts allow passing extra configuration when instantiating a template. In our example, let's say exchanges are associated with a particular trading pair, which is included in the `NewExchange` event. That information can be passed into the instantiated data source, like so:
 
 ```typescript
 import { Exchange } from '../generated/templates'
@@ -644,7 +645,7 @@ export function handleNewExchange(event: NewExchange): void {
 }
 ```
 
-داخل mapping قالب `Exchange` ، يمكن الوصول إلى السياق بعد ذلك:
+Inside a mapping of the `Exchange` template, the context can then be accessed:
 
 ```typescript
 import { dataSource } from '@graphprotocol/graph-ts'
@@ -653,11 +654,11 @@ let context = dataSource.context()
 let tradingPair = context.getString('tradingPair')
 ```
 
-هناك setters و getters مثل `setString` و `getString` لجميع أنواع القيم.
+There are setters and getters like `setString` and `getString` for all value types.
 
 ## كتل البدء (Start Blocks)
 
-يعد `startBlock` إعدادا اختياريا يسمح لك بتحديد كتلة في السلسلة والتي سيبدأ مصدر البيانات بالفهرسة. وتعيين كتلة البدء يسمح لمصدر البيانات بتخطي الملايين من الكتل التي ربما ليست ذات صلة. عادةً ما يقوم مطور الـ subgraph بتعيين `startBlock` إلى الكتلة التي تم فيها إنشاء العقد الذكي لمصدر البيانات.
+The `startBlock` is an optional setting that allows you to define from which block in the chain the data source will start indexing. Setting the start block allows the data source to skip potentially millions of blocks that are irrelevant. Typically, a subgraph developer will set `startBlock` to the block in which the smart contract of the data source was created.
 
 ```yaml
 dataSources:
@@ -691,15 +692,15 @@ dataSources:
 
 ## معالجات الاستدعاء(Call Handlers)
 
-بينما توفر الأحداث طريقة فعالة لجمع التغييرات ذات الصلة بحالة العقد ، تتجنب العديد من العقود إنشاء سجلات لتحسين تكاليف الغاز. في هذه الحالات ، يمكن لـ subgraph الاشتراك في الاستدعاء الذي يتم إجراؤه على عقد مصدر البيانات. ويتم تحقيق ذلك من خلال تعريف معالجات الاستدعاء التي تشير إلى توقيع (signature) الدالة ومعالج الـ mapping الذي سيعالج الاستدعاءات لهذه الدالة. لمعالجة هذه الاستدعاءات، سيتلقى معالج الـ mapping الـ`ethereum.Call` كـ argument مع المدخلات المكتوبة والمخرجات من الاستدعاء. وستؤدي الاستدعاءات التي يتم إجراؤها على أي عمق في سلسلة استدعاء الاجراء إلى تشغيل الـ mapping، مما يسمح بالتقاط النشاط مع عقد مصدر البيانات من خلال عقود الـ proxy.
+While events provide an effective way to collect relevant changes to the state of a contract, many contracts avoid generating logs to optimize gas costs. In these cases, a subgraph can subscribe to calls made to the data source contract. This is achieved by defining call handlers referencing the function signature and the mapping handler that will process calls to this function. To process these calls, the mapping handler will receive an `ethereum.Call` as an argument with the typed inputs to and outputs from the call. Calls made at any depth in a transaction's call chain will trigger the mapping, allowing activity with the data source contract through proxy contracts to be captured.
 
-لن يتم تشغيل معالجات الاستدعاء إلا في إحدى الحالتين: عندما يتم استدعاء الدالة المحددة بواسطة حساب آخر غير العقد نفسه أو عندما يتم تمييزها على أنها خارجية في Solidity ويتم استدعاؤها كجزء من دالة أخرى في نفس العقد.
+Call handlers will only trigger in one of two cases: when the function specified is called by an account other than the contract itself or when it is marked as external in Solidity and called as part of another function in the same contract.
 
 > **ملاحظة:** معالجات الاستدعاء غير مدعومة في Rinkeby أو Goerli أو Ganache. تعتمد معالجات الاستدعاء حاليا على Parity tracing API و هذه الشبكات لا تدعمها.
 
 ### تعريف معالج الاستدعاء
 
-لتعريف معالج استدعاء في الـ manifest الخاص بك ، ما عليك سوى إضافة مصفوفة `callHandlers` أسفل مصدر البيانات الذي ترغب في الاشتراك فيه.
+To define a call handler in your manifest simply add a `callHandlers` array under the data source you would like to subscribe to.
 
 ```yaml
 dataSources:
@@ -724,18 +725,18 @@ dataSources:
           handler: handleCreateGravatar
 ```
 
-الـ `function` هي توقيع الدالة المعياري لفلترة الاستدعاءات من خلالها. وخاصية `handler` هي اسم الدالة في الـ mapping الذي ترغب في تنفيذه عندما يتم استدعاء الدالة المستهدفة في عقد مصدر البيانات.
+The `function` is the normalized function signature to filter calls by. The `handler` property is the name of the function in your mapping you would like to execute when the target function is called in the data source contract.
 
 ### دالة الـ Mapping
 
-كل معالج استدعاء يأخذ بارامترا واحدا له نوع يتوافق مع اسم الدالة التي تم استدعاؤها. في مثال الـ subgraph أعلاه ، يحتوي الـ mapping على معالج عندما يتم استدعاء الدالة `createGravatar` ويتلقى البارامتر `CreateGravatarCall` كـ argument:
+Each call handler takes a single parameter that has a type corresponding to the name of the called function. In the example subgraph above, the mapping contains a handler for when the `createGravatar` function is called and receives a `CreateGravatarCall` parameter as an argument:
 
 ```typescript
 import { CreateGravatarCall } from '../generated/Gravity/Gravity'
 import { Transaction } from '../generated/schema'
 
 export function handleCreateGravatar(call: CreateGravatarCall): void {
-  let id = call.transaction.hash.toHex()
+  let id = call.transaction.hash
   let transaction = new Transaction(id)
   transaction.displayName = call.inputs._displayName
   transaction.imageUrl = call.inputs._imageUrl
@@ -743,11 +744,11 @@ export function handleCreateGravatar(call: CreateGravatarCall): void {
 }
 ```
 
-الدالة `handleCreateGravatar` تأخذ `CreateGravatarCall` جديد وهو فئة فرعية من`ethereum.Call`, ، مقدم بواسطة `graphprotocol/graph-ts@`, والذي يتضمن المدخلات والمخرجات المكتوبة للاستدعاء. يتم إنشاء النوع `CreateGravatarCall` من أجلك عندما تشغل`graph codegen`.
+The `handleCreateGravatar` function takes a new `CreateGravatarCall` which is a subclass of `ethereum.Call`, provided by `@graphprotocol/graph-ts`, that includes the typed inputs and outputs of the call. The `CreateGravatarCall` type is generated for you when you run `graph codegen`.
 
 ## معالجات الكتلة (Block Handlers)
 
-بالإضافة إلى الاشتراك في أحداث العقد أو استدعاءات الدوال، قد يرغب الـ subgraph في تحديث بياناته عند إلحاق كتل جديدة بالسلسلة. لتحقيق ذلك ، يمكن لـ subgraph تشغيل دالة بعد كل كتلة أو بعد الكتل التي تطابق فلترا معرفا مسبقا.
+In addition to subscribing to contract events or function calls, a subgraph may want to update its data as new blocks are appended to the chain. To achieve this a subgraph can run a function after every block or after blocks that match a predefined filter.
 
 ### الفلاتر المدعومة
 
@@ -756,9 +757,9 @@ filter:
   kind: call
 ```
 
-_سيتم استدعاء المعالج المعرف مرة واحدة لكل كتلة تحتوي على استدعاء للعقد (مصدر البيانات) الذي تم تعريف المعالج ضمنه._
+_The defined handler will be called once for every block which contains a call to the contract (data source) the handler is defined under._
 
-عدم وجود فلتر لمعالج الكتلة سيضمن أن المعالج يتم استدعاؤه في كل كتلة. يمكن أن يحتوي مصدر البيانات على معالج كتلة واحد فقط لكل نوع فلتر.
+The absense of a filter for a block handler will ensure that the handler is called every block. A data source can only contain one block handler for each filter type.
 
 ```yaml
 dataSources:
@@ -787,13 +788,13 @@ dataSources:
 
 ### دالة الـ Mapping
 
-دالة الـ mapping ستتلقى `ethereum.Block` كوسيطتها الوحيدة. مثل دوال الـ mapping للأحداث ، يمكن لهذه الدالة الوصول إلى كيانات الـ subgraph الموجودة في المخزن، واستدعاء العقود الذكية وإنشاء الكيانات أو تحديثها.
+The mapping function will receive an `ethereum.Block` as its only argument. Like mapping functions for events, this function can access existing subgraph entities in the store, call smart contracts and create or update entities.
 
 ```typescript
 import { ethereum } from '@graphprotocol/graph-ts'
 
 export function handleBlock(block: ethereum.Block): void {
-  let id = block.hash.toHex()
+  let id = block.hash
   let entity = new Block(id)
   entity.save()
 }
@@ -801,7 +802,7 @@ export function handleBlock(block: ethereum.Block): void {
 
 ## أحداث الـ Anonymous
 
-إذا كنت بحاجة إلى معالجة أحداث anonymous في Solidity ، فيمكن تحقيق ذلك من خلال توفير topic0 للحدث ، كما في المثال:
+If you need to process anonymous events in Solidity, that can be achieved by providing the topic 0 of the event, as in the example:
 
 ```yaml
 eventHandlers:
@@ -810,11 +811,11 @@ eventHandlers:
     handler: handleGive
 ```
 
-سيتم تشغيل حدث فقط عندما يتطابق كل من التوقيع و topic0. بشكل افتراضي ، `topic0` يساوي hash توقيع الحدث.
+An event will only be triggered when both the signature and topic 0 match. By default, `topic0` is equal to the hash of the event signature.
 
 ## الميزات التجريبية
 
-بدءًا من `specVersion` `0.0.4` ، يجب الإعلان صراحة عن ميزات الـ subgraph في قسم `features` في المستوى العلوي من ملف الـ manifest ، باستخدام اسم `camelCase` الخاص بهم ، كما هو موضح في الجدول أدناه:
+Starting from `specVersion` `0.0.4`, subgraph features must be explicitly declared in the `features` section at the top level of the manifest file, using their `camelCase` name, as listed in the table below:
 
 | الميزة                                                | الاسم                     |
 | ----------------------------------------------------- | ------------------------- |
@@ -823,7 +824,7 @@ eventHandlers:
 | [تطعيم(Grafting)](#grafting-onto-existing-subgraphs)  | `grafting`                |
 | [IPFS على عقود Ethereum](#ipfs-on-ethereum-contracts) | `ipfsOnEthereumContracts` |
 
-على سبيل المثال ، إذا كان الـ subgraph يستخدم ** بحث النص الكامل** و **أخطاء غير فادحة** ، فإن حقل `features` في الـ manifest يجب أن يكون:
+For instance, if a subgraph uses the **Full-Text Search** and the **Non-fatal Errors** features, the `features` field in the manifest should be:
 
 ```yaml
 specVersion: 0.0.4
@@ -834,37 +835,39 @@ features:
 dataSources: ...
 ```
 
-لاحظ أن استخدام ميزة بدون الإعلان عنها سيؤدي إلى حدوث **validation error** أثناء نشر الـ subgraph ، ولكن لن تحدث أخطاء إذا تم الإعلان عن الميزة ولكن لم يتم استخدامها.
+Note that using a feature without declaring it will incur in a **validation error** during subgraph deployment, but no errors will occur if a feature is declared but not used.
 
 ### IPFS على عقود Ethereum
 
-حالة الاستخدام الشائعة لدمج IPFS مع Ethereum هي تخزين البيانات على IPFS التي ستكون مكلفة للغاية للحفاظ عليها في السلسلة ، وتشير إلى IPFS hash في عقود Ethereum.
+A common use case for combining IPFS with Ethereum is to store data on IPFS that would be too expensive to maintain on chain, and reference the IPFS hash in Ethereum contracts.
 
-بالنظر إلى IPFS hashes هذه ، يمكن لـ subgraphs قراءة الملفات المقابلة من IPFS باستخدام `ipfs.cat` و `ipfs.map`. للقيام بذلك بشكل موثوق ، من الضروري أن يتم تثبيت هذه الملفات على عقدة IPFS التي تتصل بها Graph Node التي تقوم بفهرسة الـ subgraph. في حالة [hosted service](https://thegraph.com/hosted-service),يكون هذا [https://api.thegraph.com/ipfs/](https://api.thegraph.com/ipfs/).
+Given such IPFS hashes, subgraphs can read the corresponding files from IPFS using `ipfs.cat` and `ipfs.map`. To do this reliably, however, it is required that these files are pinned on the IPFS node that the Graph Node indexing the subgraph connects to. In the case of the [hosted service](https://thegraph.com/hosted-service), this is [https://api.thegraph.com/ipfs/](https://api.thegraph.com/ipfs/).
 
 > **ملاحظة:** لا تدعم شبكة Graph حتى الآن `ipfs.cat` و `ipfs.map` ، ويجب على المطورين عدم النشر الـ subgraphs للشبكة باستخدام تلك الدالة عبر الـ Studio.
 
-من أجل تسهيل ذلك على مطوري الـ subgraph ، فريق Graph كتب أداة لنقل الملفات من عقدة IPFS إلى أخرى ، تسمى [ ipfs-sync ](https://github.com/graphprotocol/ipfs-sync).
+In order to make this easy for subgraph developers, The Graph team wrote a tool for transfering files from one IPFS node to another, called [ipfs-sync](https://github.com/graphprotocol/ipfs-sync).
 
 > **[إدارة الميزات](#experimental-features):** يجب الإعلان عن `ipfsOnEthereumContracts` ضمن `features` في subgraph manifest.
 
+When running a local Graph Node, the `GRAPH_ALLOW_NON_DETERMINISTIC_IPFS` environment variable must be set in order to index subgraphs using this experimental functionality.
+
 ### أخطاء غير فادحة
 
-افتراضيا ستؤدي أخطاء الفهرسة في الـ subgraphs التي تمت مزامنتها بالفعل ، إلى فشل الـ subgraph وإيقاف المزامنة. يمكن بدلا من ذلك تكوين الـ Subgraphs لمواصلة المزامنة في حالة وجود أخطاء ، عن طريق تجاهل التغييرات التي أجراها المعالج والتي تسببت في حدوث الخطأ. يمنح هذا منشئوا الـ subgraph الوقت لتصحيح الـ subgraphs الخاصة بهم بينما يستمر تقديم الاستعلامات للكتلة الأخيرة ، على الرغم من أن النتائج قد تكون متعارضة بسبب الخطأ الذي تسبب في الخطأ. لاحظ أن بعض الأخطاء لا تزال كارثية دائما ، ولكي تكون غير فادحة ، يجب أن يُعرف الخطأ بأنه حتمي.
+Indexing errors on already synced subgraphs will, by default, cause the subgraph to fail and stop syncing. Subgraphs can alternatively be configured to continue syncing in the presence of errors, by ignoring the changes made by the handler which provoked the error. This gives subgraph authors time to correct their subgraphs while queries continue to be served against the latest block, though the results will possibly be inconsistent due to the bug that caused the error. Note that some errors are still always fatal, to be non-fatal the error must be known to be deterministic.
 
 > **ملاحظة:** لا تدعم شبكة Graph حتى الآن الأخطاء غير الفادحة ، ويجب على المطورين عدم نشر الـ subgraphs على الشبكة باستخدام تلك الدالة عبر الـ Studio.
 
-يتطلب تمكين الأخطاء غير الفادحة تعيين flag الميزة في subgraph manifest كالتالي:
+Enabling non-fatal errors requires setting the following feature flag on the subgraph manifest:
 
 ```yaml
 specVersion: 0.0.4
 description: Gravatar for Ethereum
 features:
-    - fullTextSearch
+    - nonFatalErrors
     ...
 ```
 
-يجب أن يتضمن الاستعلام أيضا الاستعلام عن البيانات ذات التناقضات المحتملة من خلال الوسيطة `subgraphError`. ويوصى أيضا بالاستعلام عن `meta_` للتحقق مما إذا كان الـ subgraph قد تخطى الأخطاء ، كما في المثال:
+The query must also opt-in to querying data with potential inconsistencies through the `subgraphError` argument. It is also recommended to query `_meta` to check if the subgraph has skipped over errors, as in the example:
 
 ```graphql
 foos(first: 100, subgraphError: allow) {
@@ -876,13 +879,13 @@ _meta {
 }
 ```
 
-إذا واجه الـ subgraph خطأ فسيرجع هذا الاستعلام كلا من البيانات وخطأ الـ graphql ضمن رسالة `"indexing_error"` ، كما في مثال الاستجابة هذا:
+If the subgraph encounters an error that query will return both the data and a graphql error with the message `"indexing_error"`, as in this example response:
 
 ```graphql
 "data": {
     "foos": [
         {
-          "id": "fooId"
+          "id": "0xdead"
         }
     ],
     "_meta": {
@@ -898,11 +901,11 @@ _meta {
 
 ### Grafting على Subgraphs موجودة
 
-عندما يتم نشر الـ subgraph لأول مرة ، فإنه يبدأ في فهرسة الأحداث من كتلة نشوء السلسلة المتوافقة (أو من `startBlock` المعرفة مع كل مصدر بيانات) في بعض الحالات ، يكون من المفيد إعادة استخدام البيانات من subgraph موجود وبدء الفهرسة من كتلة لاحقة. يسمى هذا الوضع من الفهرسة بـ _Grafting_. Grafting ، على سبيل المثال ، مفيد أثناء التطوير لتجاوز الأخطاء البسيطة بسرعة في الـ mappings ، أو للحصول مؤقتا على subgraph موجود يعمل مرة أخرى بعد فشله.
+When a subgraph is first deployed, it starts indexing events at the genesis block of the corresponding chain (or at the `startBlock` defined with each data source) In some circumstances, it is beneficial to reuse the data from an existing subgraph and start indexing at a much later block. This mode of indexing is called _Grafting_. Grafting is, for example, useful during development to get past simple errors in the mappings quickly, or to temporarily get an existing subgraph working again after it has failed.
 
 > **ملاحظة:** الـ Grafting يتطلب أن المفهرس قد فهرس الـ subgraph الأساسي. لا يوصى باستخدامه على شبكة The Graph في الوقت الحالي ، ولا ينبغي للمطورين نشر الـ subgraphs على الشبكة باستخدام تلك الدالة عبر الـ Studio.
 
-يتم عمل Grafte لـ subgraph في الـ subgraph الأساسي عندما يحتوي الـ subgraph manifest في `subgraph.yaml` على كتلة `graft` في المستوى العلوي:
+A subgraph is grafted onto a base subgraph when the subgraph manifest in `subgraph.yaml` contains a `graft` block at the toplevel:
 
 ```yaml
 description: ...
@@ -911,11 +914,11 @@ graft:
   block: 7345624 # Block number
 ```
 
-عندما يتم نشر subgraph يحتوي الـ manifest على كتلة `graft` ، فإن Graph Node سوف تنسخ بيانات `base` subgraph بما في ذلك الـ `block` المعطى ثم يتابع فهرسة الـ subgraph الجديد من تلك الكتلة. يجب أن يوجد الـ subgraph الأساسي في instance الـ Graph Node المستهدف ويجب أن يكون قد تمت فهرسته حتى الكتلة المحددة على الأقل. بسبب هذا التقييد ، يجب استخدام الـ grafting فقط أثناء التطوير أو أثناء الطوارئ لتسريع إنتاج non-grafted subgraph مكافئ.
+When a subgraph whose manifest contains a `graft` block is deployed, Graph Node will copy the data of the `base` subgraph up to and including the given `block` and then continue indexing the new subgraph from that block on. The base subgraph must exist on the target Graph Node instance and must have indexed up to at least the given block. Because of this restriction, grafting should only be used during development or during an emergency to speed up producing an equivalent non-grafted subgraph.
 
-لأن تطعيم (grafting) النُسخ بدلا من فهرسة البيانات الأساسية قإنه يكون أسرع بكثير في الحصول على subgraph للكتلة المطلوبة من الفهرسة من نقطة الصفر ، على الرغم من أن نسخة البيانات الأولية يمكن أن تستغرق عدة ساعات لـ subgraphs كبيرة جدا. أثناء بدء الـ grafted subgraph ، سيقوم Graph Node بتسجيل المعلومات حول أنواع الكيانات التي تم نسخها بالفعل.
+Because grafting copies rather than indexes base data it is much quicker in getting the subgraph to the desired block than indexing from scratch, though the initial data copy can still take several hours for very large subgraphs. While the grafted subgraph is being initialized, the Graph Node will log information about the entity types that have already been copied.
 
-يمكن أن يستخدم الـ grafted subgraph مخطط GraphQL غير مطابق لمخطط الـ subgraph الأساسي ، ولكنه متوافق معه. يجب أن يكون مخطط الـ subgraph صالحا في حد ذاته ولكنه قد ينحرف عن مخطط الـ subgraph الأساسي بالطرق التالية:
+The grafted subgraph can use a GraphQL schema that is not identical to the one of the base subgraph, but merely compatible with it. It has to be a valid subgraph schema in its own right but may deviate from the base subgraph's schema in the following ways:
 
 - يضيف أو يزيل أنواع الكيانات
 - يزيل الصفات من أنواع الكيانات

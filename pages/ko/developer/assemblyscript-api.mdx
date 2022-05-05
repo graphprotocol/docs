@@ -81,6 +81,8 @@ _유형 변환_
 _연산자_
 
 - `equals(y: ByteArray): bool` – `x == y`로 쓸 수 있습니다
+- `concat(other: ByteArray) : ByteArray` - return a new `ByteArray` consisting of `this` directly followed by `other`
+- `concatI32(other: i32) : ByteArray` - return a new `ByteArray` consisting of `this` directly follow by the byte representation of `other`
 
 #### BigDecimal
 
@@ -187,9 +189,21 @@ _Math_
 
 `Bytes` 클래스는 AssemblyScript의 [Uint8Array](https://github.com/AssemblyScript/assemblyscript/blob/3b1852bc376ae799d9ebca888e6413afac7b572f/std/assembly/typedarray.ts#L64)를 확장하며, 모든 `Uint8Array` 기능과 다음과 같은 새 매서드를 지원합니다:
 
-- `b.toHex()` – 배열상의 바이트를 나타내는 16진수 문자열을 반환합니다.
-- `b.toString()` – 배열상의 바이트를 유니코드 문자 문자열로 변환합니다.
-- `b.toBase58()` – 이더리움 바이트 값을 base58 인코딩(IPFS 해시에 사용)으로 변환합니다.
+_Construction_
+
+- `fromHexString(hex: string) : Bytes` - Convert the string `hex` which must consist of an even number of hexadecimal digits to a `ByteArray`. The string `hex` can optionally start with `0x`
+- `fromI32(i: i32) : Bytes` - Convert `i` to an array of bytes
+
+_유형 변환_
+
+- `b.toHex()` – returns a hexadecimal string representing the bytes in the array
+- `b.toString()` – converts the bytes in the array to a string of unicode characters
+- `b.toBase58()` – turns an Ethereum Bytes value to base58 encoding (used for IPFS hashes)
+
+_연산자_
+
+- `b.concat(other: Bytes) : Bytes` - - return new `Bytes` consisting of `this` directly followed by `other`
+- `b.concatI32(other: i32) : ByteArray` - return new `Bytes` consisting of `this` directly follow by the byte representation of `other`
 
 #### Address
 
@@ -197,11 +211,12 @@ _Math_
 '@graphprotocol/graph-ts'에서 { Address } 를 입력합니다.
 ```
 
-`Address`는 `Bytes`를 확장하여 이더리움 `address` 값을 나타냅니다.
+`Address` extends `Bytes` to represent Ethereum `address` values.
 
-`Bytes` API 위에 다음 메서드를 추가합니다:
+It adds the following method on top of the `Bytes` API:
 
-- `Address.fromString(s: string): Address` – 16진수 문자열에서 `Address` 를 생성합니다.
+- `Address.fromString(s: string): Address` – creates an `Address` from a hexadecimal string
+- `Address.fromBytes(b: Bytes): Address` – create an `Address` from `b` which must be exactly 20 bytes long. Passing in a value with fewer or more bytes will result in an error
 
 ### Store API
 
@@ -209,13 +224,13 @@ _Math_
 '@graphprotocol/graph-ts'에서 { store }를 입력합니다.
 ```
 
-`store` API 를 사용하면 더 그래프 노드 스토어에서 엔티티를 로드, 저장 및 제거할 수 있습니다.
+The `store` API allows to load, save and remove entities from and to the Graph Node store.
 
-스토어에 작성된 엔티티는 서브그래프의 GraphQL 스키마에 정의된 `@entity` 유형에 일대일로 매핑됩니다. 이러한 엔터티 작업을 편리하게 하기 위해 [Graph CLI](https://github.com/graphprotocol/graph-cli)에서 제공하는 `graph codegen` 명령은 기본 제공 `Entity` 유형의 서브 클래스인 엔터티 클래스를 생성하며, 스키마의 필드에 대한 속성 getter 및 setter와 이러한 엔티티를 로드 및 저장하는 메서드를 사용합니다.
+Entities written to the store map one-to-one to the `@entity` types defined in the subgraph's GraphQL schema. To make working with these entities convenient, the `graph codegen` command provided by the [Graph CLI](https://github.com/graphprotocol/graph-cli) generates entity classes, which are subclasses of the built-in `Entity` type, with property getters and setters for the fields in the schema as well as methods to load and save these entities.
 
 #### 엔티티 생성
 
-다음은 이더리움 이벤트에서 엔티티를 생성하기 위한 일반적인 패턴입니다.
+The following is a common pattern for creating entities from Ethereum events.
 
 ```typescript
 // Import the Transfer event class generated from the ERC20 ABI
@@ -226,9 +241,8 @@ import { Transfer } from '../generated/schema'
 
 // Transfer event handler
 export function handleTransfer(event: TransferEvent): void {
-  // Create a Transfer entity, using the hexadecimal string representation
-  // of the transaction hash as the entity ID
-  let id = event.transaction.hash.toHex()
+  // Create a Transfer entity, using the transaction hash as the entity ID
+  let id = event.transaction.hash
   let transfer = new Transfer(id)
 
   // Set properties on the entity, using the event parameters
@@ -241,16 +255,16 @@ export function handleTransfer(event: TransferEvent): void {
 }
 ```
 
-체인을 처리하는 동안 `Transfer` 이벤트가 발생하면, 이는 생성된 `Transfer` 유형(엔터티 유형과 이름 충돌이 발생하지 않도록 여기서 `TransferEvent`로 별칭 지정)을 사용하여 `handleTransfer` 이벤트 핸들러에 전달됩니다. 이 유형을 사용하면 이벤트의 상위 트랜잭션 및 해당 매개 변수와 같은 데이터에 액세스할 수 있습니다.
+When a `Transfer` event is encountered while processing the chain, it is passed to the `handleTransfer` event handler using the generated `Transfer` type (aliased to `TransferEvent` here to avoid a naming conflict with the entity type). This type allows accessing data such as the event's parent transaction and its parameters.
 
-각 엔티티는 다른 엔티티와의 충돌을 피하기 위해 고유한 ID를 가져야 합니다. 이벤트 매개변수에 사용할 수 있는 고유 식별자가 포함되는 것은 매우 일반적입니다. 참고: 트랜잭션 해시를 ID로 사용하면 동일한 트랜잭션의 다른 이벤트가 이 해시를 ID로 사용하여 엔티티를 만들지 않는다고 가정합니다.
+Each entity must have a unique ID to avoid collisions with other entities. It is fairly common for event parameters to include a unique identifier that can be used. Note: Using the transaction hash as the ID assumes that no other events in the same transaction create entities with this hash as the ID.
 
 #### 스토어에서 엔티티 로드
 
-엔티티가 이미 존재하는 경우, 이는 다음을 사용하여 스토어에서 로드할 수 있습니다.
+If an entity already exists, it can be loaded from the store with the following:
 
 ```typescript
-let id = event.transaction.hash.toHex() // or however the ID is constructed
+let id = event.transaction.hash // or however the ID is constructed
 let transfer = Transfer.load(id)
 if (transfer == null) {
   transfer = new Transfer(id)
@@ -259,18 +273,18 @@ if (transfer == null) {
 // Use the Transfer entity as before
 ```
 
-엔티티가 스토어에 아직 존재하지 않을 수도 있으므로, `load` 메서드는 `Transfer | null` 유형의 값을 반환합니다. 떠라서 해당 값을 사용하기 전에 `null` 케이스를 확인해야 할 수 있습니다.
+As the entity may not exist in the store yet, the `load` method returns a value of type `Transfer | null`. It may thus be necessary to check for the `null` case before using the value.
 
 > **Note:**: 매핑에서 변경한 내용이 엔티티의 이전 데이터에 종속된 경우에만 엔티티 로드가 필요합니다. 다음 섹션에서 기존 엔티티들을 업데이트하는 두 가지 방법을 확인하시기 바랍니다.
 
 #### 기존 엔티티 업데이트
 
-기존 엔티티를 업데이트 하는 방법에는 두 가지가 있습니다.
+There are two ways to update an existing entity:
 
 1. 엔터티를 로드합니다. `Transfer.load(id)`를 예로들어, 엔터티의 속성을 설정한 다음, 스토어에 다시 `.save()`합니다.
 2. `new Transfer(id)`를 예로 들어, 간단하게 엔티티를 생성하기만 하면 됩니다. 엔티티의 속성을 설정한 다음 이를 스토어에 `.save()` 합니다. 만약 엔티티가 이미 존재하는 경우, 변경사항들은 병합됩니다.
 
-속성 변경은 생성된 속성 설정기 덕분에 대부분의 경우 간단합니다.
+Changing properties is straight forward in most cases, thanks to the generated property setters:
 
 ```typescript
 let transfer = new Transfer(id)
@@ -279,16 +293,16 @@ transfer.to = ...
 transfer.amount = ...
 ```
 
-다음 두 가지 지침 중 하나로 속성을 설정 해제할 수도 있습니다.
+It is also possible to unset properties with one of the following two instructions:
 
 ```typescript
 transfer.from.unset()
 transfer.from = null
 ```
 
-이는 오직 선택적 속성으로만 작동하는데, 예를 들어 GraphQL에서 `!` 없이 표기된 속성들입니다. `owner: Bytes` 혹은 `amount: BigInt`를 두 가지 예로 들 수 있습니다.
+This only works with optional properties, i.e. properties that are declared without a `!` in GraphQL. Two examples would be `owner: Bytes` or `amount: BigInt`.
 
-엔터티에서 배열을 가져오면 해당 배열의 복사본이 생성되기 때문에 배열 속성 업데이트는 조금 더 복잡합니다. 이는 배열을 변경한 후 명시적으로 배열 속성을 다시 설정해야 함을 의미합니다. 다음은 `entity`에 `numbers: [BigInt!]!` 필드가 있다고 가정합니다.
+Updating array properties is a little more involved, as the getting an array from an entity creates a copy of that array. This means array properties have to be set again explicitly after changing the array. The following assumes `entity` has a `numbers: [BigInt!]!` field.
 
 ```typescript
 // 이는 작동하지 않을 것입니다.
@@ -304,39 +318,40 @@ entity.save()
 
 #### 스토어에서 엔티티 제거하기
 
-현재 생성된 유형을 통해 엔티티를 제거할 수 있는 방법은 없습니다. 대신 엔티티를 제거하려면 엔티티 유형의 이름과 엔티티 ID를 `store.remove`에 전달해야 합니다.
+There is currently no way to remove an entity via the generated types. Instead, removing an entity requires passing the name of the entity type and the entity ID to `store.remove`:
 
 ```typescript
-'@graphprotocol/graph-ts'에서 { store }를 입력합니다.
+import { store } from '@graphprotocol/graph-ts'
 ...
-let id = event.transaction.hash.toHex()
+let id = event.transaction.hash
 store.remove('Transfer', id)
 ```
 
 ### 이더리움 API
 
-이더리움 API는 스마트 컨트렉트, 퍼블릭 상태 변수, 컨트렉트 기능, 이벤트, 트랜잭션, 블록 및 이더리움 데이터 인코딩/디코딩에 대한 액세스를 제공합니다.
+The Ethereum API provides access to smart contracts, public state variables, contract functions, events, transactions, blocks and the encoding/decoding Ethereum data.
 
 #### 이더리움 유형 지원
 
-엔터티와 마찬가지로 `graph codegen`은 서브그래프에서 사용되는 모든 스마트 컨트랙트 및 이벤트에 대한 클래스를 생성합니다. 이를 위해 컨트랙트 ABI는 서브그래프 매니페스트에서 데이터 소스의 일부여야 합니다. 일반적으로 ABI 파일은 `abis/` 폴더에 저장됩니다.
+As with entities, `graph codegen` generates classes for all smart contracts and events used in a subgraph. For this, the contract ABIs need to be part of the data source in the subgraph manifest. Typically, the ABI files are stored in an `abis/` folder.
 
-생성된 클래스를 사용하면 이더리움 유형과 [빌트인 유형](#built-in-types) 간의 변환이 뒤에서 이루어지므로 서브그래프 작성자는 이에 대해 걱정할 필요가 없습니다.
+With the generated classes, conversions between Ethereum types and the [built-in types](#built-in-types) take place behind the scenes so that subgraph authors do not have to worry about them.
 
-다음의 예가 이를 보여줍니다. 다음과 같은 서브그래프 스키마가 주어지면
+The following example illustrates this. Given a subgraph schema like
 
 ```graphql
 type Transfer @entity {
+  id: Bytes!
   from: Bytes!
   to: Bytes!
   amount: BigInt!
 }
 ```
 
-그리고 이더리움 상의 `Transfer(address,address,uint256)` 이벤트 서명, `from`, `to` 및 `amount` 유형 값 `address`, `address` 그리고 `uint256`는 `Address` 및 `BigInt`로 변환되고, `Bytes!` 및 `Transfer` 엔티티의 `BigInt!` 속성에 전달됩니다:
+and a `Transfer(address,address,uint256)` event signature on Ethereum, the `from`, `to` and `amount` values of type `address`, `address` and `uint256` are converted to `Address` and `BigInt`, allowing them to be passed on to the `Bytes!` and `BigInt!` properties of the `Transfer` entity:
 
 ```typescript
-let id = event.transaction.hash.toHex()
+let id = event.transaction.hash
 let transfer = new Transfer(id)
 transfer.from = event.params.from
 transfer.to = event.params.to
@@ -346,7 +361,7 @@ transfer.save()
 
 #### 이벤트 및 블록/트랜젝션 데이터
 
-이전의 예시에서 `Transfer` 이벤트에 대해 설명한 바와 같이, 이벤트 핸들로들에게 전달된 이더리움 이벤트들은 이벤트 매개변수에 엑세스를 제공할 뿐만 아니라 상위 트랜잭션과 이벤트 핸들러가 속한 블록에 대한 액세스를 제공합니다. 다음의 데이터는 이벤트 인스턴스(이러한 클래스들은 `graph-ts`의 `ethereum` 모듈의 일부입니다)에서 얻을 수 있습니다:
+Ethereum events passed to event handlers, such as the `Transfer` event in the previous examples, not only provide access to the event parameters but also to their parent transaction and the block they are part of. The following data can be obtained from `event` instances (these classes are a part of the `ethereum` module in `graph-ts`):
 
 ```typescript
 class Event {
@@ -392,9 +407,9 @@ class Transaction {
 
 #### 스마트 컨트렉트 상태에 대한 엑세스
 
-`graph codegen`에 의해 생성된 코드는 서브그래프에 사용되는 스마트 컨트렉트에 대한 클래스도 포함합니다. 이들은 퍼블릭 상태 변수에 접근하고 현재 블록에서 컨트렉트의 기능들을 호출하는 데 사용될 수 있습니다.
+The code generated by `graph codegen` also includes classes for the smart contracts used in the subgraph. These can be used to access public state variables and call functions of the contract at the current block.
 
-일반적인 패턴은 이벤트가 발생한 곳에서 컨트렉트에 액세스하는 것입니다. 이 작업은 다음 코드를 사용하여 수행할 수 있습니다.
+A common pattern is to access the contract from which an event originates. This is achieved with the following code:
 
 ```typescript
 // Import the generated contract class
@@ -411,13 +426,13 @@ export function handleTransfer(event: Transfer) {
 }
 ```
 
-Ethereum의 `ERC20Contract`에 `symbol`이라는 공개 읽기 전용 기능이 있는 한 `.symbol()`을 사용하여 호출할 수 있습니다. 공개 상태 변수의 경우 동일한 이름의 메서드가 자동으로 생성됩니다.
+As long as the `ERC20Contract` on Ethereum has a public read-only function called `symbol`, it can be called with `.symbol()`. For public state variables a method with the same name is created automatically.
 
-서브그래프의 일부인 다른 컨트렉트는 생성된 코드에서 가져올 수 있으며 유효한 주소에 바인딩할 수 있습니다.
+Any other contract that is part of the subgraph can be imported from the generated code and can be bound to a valid address.
 
 #### Handling Reverted Calls
 
-컨트렉트의 읽기 전용 메서드가 revert 될 경우, `try_` 접두사가 붙은 생성된 컨트렉트 메서드를 호출하여 이를 처리해야 합니다. 예를 들어, Gravity 컨트렉트는 `gravatarToOwner` 메서드를 노출합니다. 이 코드는 해당 메서드에서 revert를 처리할 수 있습니다.
+If the read-only methods of your contract may revert, then you should handle that by calling the generated contract method prefixed with `try_`. For example, the Gravity contract exposes the `gravatarToOwner` method. This code would be able to handle a revert in that method:
 
 ```typescript
 let gravity = Gravity.bind(event.address)
@@ -429,11 +444,11 @@ if (callResult.reverted) {
 }
 ```
 
-Geth 또는 Infura 클라이언트에 연결된 Graph 노드가 모든 revert들을 탐지하지 못할 수 있으므로, 이 경우 패리티 클라이언트에 연결된 Graph 노드를 사용하는 것이 좋습니다.
+Note that a Graph node connected to a Geth or Infura client may not detect all reverts, if you rely on this we recommend using a Graph node connected to a Parity client.
 
 #### Encoding/Decoding ABI
 
-`ethereum` 모듈의 `encode` 및 `decode` 기능을 이용해 이더리움의 ABI 인코딩 형식에 따라 데이터를 인코딩하고 디코딩할 수 있습니다.
+Data can be encoded and decoded according to Ethereum's ABI encoding format using the `encode` and `decode` functions in the `ethereum` module.
 
 ```typescript
 import { Address, BigInt, ethereum } from '@graphprotocol/graph-ts'
@@ -450,11 +465,11 @@ let encoded = ethereum.encode(ethereum.Value.fromTuple(tuple))!
 let decoded = ethereum.decode('(address,uint256)', encoded)
 ```
 
-추가 정보:
+For more information:
 
 - [ABI Spec](https://docs.soliditylang.org/en/v0.7.4/abi-spec.html#types)
 - Encoding/decoding [Rust library/CLI](https://github.com/rust-ethereum/ethabi)
-- 더 [복잡한 예시](https://github.com/graphprotocol/graph-node/blob/6a7806cc465949ebb9e5b8269eeb763857797efc/tests/integration-tests/host-exports/src/mapping.ts#L72).
+- More [complex example](https://github.com/graphprotocol/graph-node/blob/6a7806cc465949ebb9e5b8269eeb763857797efc/tests/integration-tests/host-exports/src/mapping.ts#L72).
 
 ### Logging API
 
@@ -462,17 +477,17 @@ let decoded = ethereum.decode('(address,uint256)', encoded)
 '@graphprotocol/graph-ts'에서 { log }를 입력합니다.
 ```
 
-`log` API를 사용하면 서브그래프에서 그래프 탐색기뿐만 아니라 그래프 노드 표준 출력에 정보를 기록할 수 있습니다. 메시지는 다른 로그 레벨을 사용하여 기록할 수 있습니다. 인수의 로그 메시지를 구성하기 위한 기본 형식 문자열 구문이 제공됩니다.
+The `log` API allows subgraphs to log information to the Graph Node standard output as well as the Graph Explorer. Messages can be logged using different log levels. A basic format string syntax is provided to compose log messages from argument.
 
-`log` API는 다음과 같은 기능들을 포함합니다.
+The `log` API includes the following functions:
 
-- `log.debug(fmt: string, args: Array<string>): void` - 디버그 메세지를 기록합니다.
-- `log.info(fmt: string, args: Array<string>): void` - 정보 메세지를 기록합니다.
-- `log.warning(fmt: string, args: Array<string>): void` - 경고 메세지를 기록합니다.
-- `log.error(fmt: string, args: Array<string>): void` - 에러 메세지를 기록합니다.
-- `log.critical(fmt: string, args: Array<string>): void` – 중요한 메세지 기록 _및_ 서브그래프를 종료합니다.
+- `log.debug(fmt: string, args: Array<string>): void` - logs a debug message.
+- `log.info(fmt: string, args: Array<string>): void` - logs an informational message.
+- `log.warning(fmt: string, args: Array<string>): void` - logs a warning.
+- `log.error(fmt: string, args: Array<string>): void` - logs an error message.
+- `log.critical(fmt: string, args: Array<string>): void` – logs a critical message _and_ terminates the subgraph.
 
-`log` API는 형식 문자열과 문자열 값의 배열을 사용합니다. 그런 다음 자리 표시자를 배열의 문자열 값으로 바꿉니다. 첫 번째 `{}` 자리 표시자는 어레이의 첫 번째 값으로 바뀌고 두 번째 `{}` 자리 표시자는 두 번째 값으로 바뀝니다.
+The `log` API takes a format string and an array of string values. It then replaces placeholders with the string values from the array. The first `{}` placeholder gets replaced by the first value in the array, the second `{}` placeholder gets replaced by the second value and so on.
 
 ```typescript
 log.info('Message to be displayed: {}, {}, {}', [value.toString(), anotherValue.toString(), 'already a string'])
@@ -482,7 +497,7 @@ log.info('Message to be displayed: {}, {}, {}', [value.toString(), anotherValue.
 
 ##### 단일 값 로깅
 
-아래 예에서 문자열 값 "A"는 기록되기 전에 `['A']`가 되도록 배열에 전달됩니다.
+In the example below, the string value "A" is passed into an array to become`['A']` before being logged:
 
 ```typescript
 let myValue = 'A'
@@ -495,7 +510,7 @@ export function handleSomeEvent(event: SomeEvent): void {
 
 ##### 기존 배열에서 단일 항목 로깅
 
-아래 예에서는 배열에 세 개의 값이 포함되어 있음에도 불구하고 인수 배열의 첫 번째 값만 기록됩니다.
+In the example below, only the first value of the argument array is logged, despite the array containing three values.
 
 ```typescript
 let myArray = ['A', 'B', 'C']
@@ -508,7 +523,7 @@ export function handleSomeEvent(event: SomeEvent): void {
 
 #### 기존 배열에서 여러 항목 로깅
 
-인수 배열의 각 항목에는 로그 메시지 문자열에 고유한 자리 표시자 `{}`가 필요합니다. 아래 예시는 로그 메시지에 세 개의 자리 표시자 `{}` 를 포함합니다. 이 때문에 `myArray`의 세 값이 모두 기록됩니다.
+Each entry in the arguments array requires its own placeholder `{}` in the log message string. The below example contains three placeholders `{}` in the log message. Because of this, all three values in `myArray` are logged.
 
 ```typescript
 let myArray = ['A', 'B', 'C']
@@ -521,7 +536,7 @@ export function handleSomeEvent(event: SomeEvent): void {
 
 ##### 기존 배열에서 특정 항목 로깅
 
-배열의 특정 값을 표시하려면 인덱싱된 값이 제공되어야만 합니다.
+To display a specific value in the array, the indexed value must be provided.
 
 ```typescript
 export function handleSomeEvent(event: SomeEvent): void {
@@ -532,7 +547,7 @@ export function handleSomeEvent(event: SomeEvent): void {
 
 ##### 이벤트 정보 로깅
 
-아래 예는 이벤트의 블록 번호, 블록 해시 및 트랜잭션 해시를 기록합니다:
+The example below logs the block number, block hash and transaction hash from an event:
 
 ```typescript
 import { log } from '@graphprotocol/graph-ts'
@@ -552,9 +567,9 @@ export function handleSomeEvent(event: SomeEvent): void {
 '@graphprotocol/graph-ts'에서 { ipfs }를 입력합니다.
 ```
 
-스마트컨트렉트는 때때로 체인에 IPFS 파일을 고정합니다. 이를 통해 매핑들은 컨트랙트에서 IPFS 해시를 얻고 IPFS에서 해당 파일을 읽을 수 있습니다. 파일 데이터는 일반적으로 추가 처리가 필요한 `Bytes`로 반환됩니다. 예를 들어, 이 페이지의 뒷부분에 설명된 `json` API를 사용합니다.
+Smart contracts occasionally anchor IPFS files on chain. This allows mappings to obtain the IPFS hashes from the contract and read the corresponding files from IPFS. The file data will be returned as `Bytes`, which usually requires further processing, e.g. with the `json` API documented later on this page.
 
-IPFS 해시 또는 경로가 주어지면 IPFS에서 파일을 읽는 것은 다음과 같이 이루어집니다:
+Given an IPFS hash or path, reading a file from IPFS is done as follows:
 
 ```typescript
 // Put this inside an event handler in the mapping
@@ -567,9 +582,9 @@ let path = 'QmTkzDwWqPbnAh5YiV5VwcTLnGdwSNsNTn2aDxdXBFca7D/Makefile'
 let data = ipfs.cat(path)
 ```
 
-**Note:** `ipfs.cat`은 현재로서는 결정적이지 않습니다. 요청 시간이 초과되기 전에 IPFS 네트워크를 통해 파일을 검색할 수 없으면 `null`을 반환합니다. 이 때문에 `null`에 대한 결과를 확인하는 것은 항상 가치가 있습니다. 파일을 검색할 수 있도록 하려면 그래프 노드가 연결되는 IPFS 노드에 파일을 고정해야 합니다. [hosted service](https://thegraph.com/hosted-service)에서, 이는 [https://api.thegraph.com/ipfs/](https://api.thegraph.com/ipfs)입니다. 자세한 내용은 [IPFS pinning](/developer/create-subgraph-hosted#ipfs-pinning) 섹션을 참조 하시기 바랍니다.
+**Note:** `ipfs.cat` is not deterministic at the moment. If the file cannot be retrieved over the IPFS network before the request times out, it will return `null`. Due to this, it's always worth checking the result for `null`. To ensure that files can be retrieved, they have to be pinned to the IPFS node that Graph Node connects to. On the [hosted service](https://thegraph.com/hosted-service), this is [https://api.thegraph.com/ipfs/](https://api.thegraph.com/ipfs). See the [IPFS pinning](/developer/create-subgraph-hosted#ipfs-pinning) section for more information.
 
-`ipfs.map`으로 더 큰 파일을 스트리밍 방식으로 처리할 수도 있습니다. 이 함수는 IPFS 파일의 해시 또는 경로, 콜백 이름 및 동작을 수정하는 플래그를 예상합니다.
+It is also possible to process larger files in a streaming fashion with `ipfs.map`. The function expects the hash or path for an IPFS file, the name of a callback, and flags to modify its behavior:
 
 ```typescript
 import { JSONValue, Value } from '@graphprotocol/graph-ts'
@@ -586,7 +601,7 @@ export function processItem(value: JSONValue, userData: Value): void {
   }
 
   // Callbacks can also created entities
-  let newItem = new Item(id.toString())
+  let newItem = new Item(id)
   newItem.title = title.toString()
   newitem.parent = userData.toString() // Set parent to "parentId"
   newitem.save()
@@ -599,9 +614,9 @@ ipfs.map('Qm...', 'processItem', Value.fromString('parentId'), ['json'])
 ipfs.mapJSON('Qm...', 'processItem', Value.fromString('parentId'))
 ```
 
-현재 지원되는 유일한 플래그는 `ipfs.map`에 전달되어야 하는 `json`입니다. `json` 플래그를 사용하면 IPFS 파일은 한 줄에 하나의 값으로 구성된 일련의 JSON 값으로 구성되어야 합니다. `ipfs.map`에 대한 호출은 파일의 각 줄을 읽고 `JSONValue`로 역직렬화하고 각각에 대한 콜백을 호출합니다. 그런 다음 콜백은 엔터티 작업을 사용하여 `JSONValue`의 데이터를 저장할 수 있습니다. 엔티티 변경 사항은 `ipfs.map`을 호출한 핸들러가 성공적으로 완료된 경우에만 저장됩니다. 그 동안에는 메모리에 보관되므로 `ipfs.map`이 처리할 수 있는 파일의 크기가 제한됩니다.
+The only flag currently supported is `json`, which must be passed to `ipfs.map`. With the `json` flag, the IPFS file must consist of a series of JSON values, one value per line. The call to `ipfs.map` will read each line in the file, deserialize it into a `JSONValue` and call the callback for each of them. The callback can then use entity operations to store data from the `JSONValue`. Entity changes are stored only when the handler that called `ipfs.map` finishes successfully; in the meantime, they are kept in memory, and the size of the file that `ipfs.map` can process is therefore limited.
 
-성공하면 `ipfs.map`이 `void`를 반환합니다. 콜백 호출로 인해 오류가 발생하면 `ipfs.map`을 호출한 핸들러가 중단되고 서브그래프가 실패로 표시됩니다.
+On success, `ipfs.map` returns `void`. If any invocation of the callback causes an error, the handler that invoked `ipfs.map` is aborted, and the subgraph is marked as failed.
 
 ### Crypto API
 
@@ -609,7 +624,7 @@ ipfs.mapJSON('Qm...', 'processItem', Value.fromString('parentId'))
 '@graphprotocol/graph-ts'에서 { crypto }를 입력합니다.
 ```
 
-`crypto` API는 매핑에서 사용할 수 있는 암호화 기능들을 만듭니다. 현재는 한가지만 존재합니다:
+The `crypto` API makes a cryptographic functions available for use in mappings. Right now, there is only one:
 
 - `crypto.keccak256(input: ByteArray): ByteArray`
 
@@ -619,14 +634,14 @@ ipfs.mapJSON('Qm...', 'processItem', Value.fromString('parentId'))
 '@graphprotocol/graph-ts'에서 { json, JSONValueKind }를 입력합니다.
 ```
 
-JSON 데이터는 `json` API를 사용하여 구문 분석할 수 있습니다.
+JSON data can be parsed using the `json` API:
 
-- `json.fromBytes(data: Bytes): JSONValue` – 유효한 UTF-8 시퀀스로 해석되는 `Bytes` 배열에서 JSON 데이터를 구문 분석합니다.
-- `json.try_fromBytes(data: Bytes): Result<JSONValue, boolean>` – 안전한 버전의 `json.fromBytes`, 구문 분석에 실패한 경우 오류 변형을 반환합니다.
-- `json.fromString(data: string): JSONValue` – 유효한 UTF-8 `String`에서 JSON data를 구문분석합니다.
-- `json.try_fromString(data: string): Result<JSONValue, boolean>` – 안전한 버전의 `json.fromString`, 구문 분석에 실패한 경우 오류 변형을 반환합니다.
+- `json.fromBytes(data: Bytes): JSONValue` – parses JSON data from a `Bytes` array interpreted as a valid UTF-8 sequence
+- `json.try_fromBytes(data: Bytes): Result<JSONValue, boolean>` – safe version of `json.fromBytes`, it returns an error variant if the parsing failed
+- `json.fromString(data: string): JSONValue` – parses JSON data from a valid UTF-8 `String`
+- `json.try_fromString(data: string): Result<JSONValue, boolean>` – safe version of `json.fromString`, it returns an error variant if the parsing failed
 
-`JSONValue` 클래스는 임의의 JSON 문서에서 값을 가져오는 방법을 제공합니다. JSON 값은 불 방식(booleans), 숫자, 배열 등일 수 있으므로 `JSONValue`에는 값 유형을 확인하는 `kind` 속성이 함께 제공됩니다.
+The `JSONValue` class provides a way to pull values out of an arbitrary JSON document. Since JSON values can be booleans, numbers, arrays and more, `JSONValue` comes with a `kind` property to check the type of a value:
 
 ```typescript
 let value = json.fromBytes(...)
@@ -635,25 +650,24 @@ if (value.kind == JSONValueKind.BOOL) {
 }
 ```
 
-또한 값이 `null`l인지 확인하는 방법이 존재합니다:
+In addition, there is a method to check if the value is `null`:
 
 - `value.isNull(): boolean`
 
-값의 유형이 확실한 경우 다음 방법 중 하나를 사용하여 [built-in type](#built-in-types)으로 변환할 수 있습니다.
+When the type of a value is certain, it can be converted to a [built-in type](#built-in-types) using one of the following methods:
 
 - `value.toBool(): boolean`
 - `value.toI64(): i64`
 - `value.toF64(): f64`
 - `value.toBigInt(): BigInt`
 - `value.toString(): string`
-- `value.toArray(): Array<JSONValue>` - (이후 `JSONValue`를 상기 5개 방법 중 하나로 변환합니다.)
+- `value.toArray(): Array<JSONValue>` - (and then convert `JSONValue` with one of the 5 methods above)
 
 ### 유형 변환 참조
 
 | Source(s)            | Destination          | Conversion function          |
 | -------------------- | -------------------- | ---------------------------- |
 | Address              | Bytes                | none                         |
-| Address              | ID                   | s.toHexString()              |
 | Address              | String               | s.toHexString()              |
 | BigDecimal           | String               | s.toString()                 |
 | BigInt               | BigDecimal           | s.toBigDecimal()             |
@@ -671,7 +685,7 @@ if (value.kind == JSONValueKind.BOOL) {
 | Bytes                | JSON                 | json.fromBytes(s)            |
 | int8                 | i32                  | none                         |
 | int32                | i32                  | none                         |
-| int32                | BigInt               | Bigint.fromI32(s)            |
+| int32                | BigInt               | BigInt.fromI32(s)            |
 | uint24               | i32                  | none                         |
 | int64 - int256       | BigInt               | none                         |
 | uint32 - uint256     | BigInt               | none                         |
@@ -684,13 +698,14 @@ if (value.kind == JSONValueKind.BOOL) {
 | JSON                 | Array                | s.toArray()                  |
 | JSON                 | Object               | s.toObject()                 |
 | String               | Address              | Address.fromString(s)        |
+| String               | BigInt               | BigInt.fromString(s)         |
 | String               | BigDecimal           | BigDecimal.fromString(s)     |
 | String (hexadecimal) | Bytes                | ByteArray.fromHexString(s)   |
 | String (UTF-8)       | Bytes                | ByteArray.fromUTF8(s)        |
 
 ### 데이터 소스 메타데이터
 
-`dataSource` 네임스페이스를 통해 핸들러를 호출한 데이터 소스의 계약 주소, 네트워크 및 컨텍스트를 검사할 수 있습니다
+You can inspect the contract address, network and context of the data source that invoked the handler through the `dataSource` namespace:
 
 - `dataSource.address(): Address`
 - `dataSource.network(): string`
@@ -698,7 +713,7 @@ if (value.kind == JSONValueKind.BOOL) {
 
 ### 엔티티 및 Entity and DataSourceContext
 
-기본 `Entity` 클래스 및 child `DataSourceContext`는 필드를 동적으로 설정하고 필드를 가져오는 도우미가 있습니다.
+The base `Entity` class and the child `DataSourceContext` class have helpers to dynamically set and get fields:
 
 - `setString(key: string, value: string): void`
 - `setI32(key: string, value: i32): void`

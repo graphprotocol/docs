@@ -288,7 +288,7 @@ const Index: NextPage<IndexProps> = ({ navItems }: IndexProps) => {
       </div>
       <div sx={{ mt: Spacing.XXL }}>
         <Heading.H4>{t('index.supportedNetworks.hostedService')}</Heading.H4>
-        <Paragraph>*{t('index.supportedNetworks.betaWarning')}</Paragraph>
+
         <ul
           sx={{
             mt: Spacing.XL,
@@ -382,6 +382,12 @@ const Index: NextPage<IndexProps> = ({ navItems }: IndexProps) => {
               href: 'https://moonbeam.network/',
               beta: true,
             },
+            {
+              title: 'Boba Network',
+              image: '/img/networks/boba.svg',
+              href: 'https://boba.network/',
+              beta: true,
+            },
           ].map((network, index) => (
             <Flex.Column as="li" key={index}>
               <Text as="div" size="14px" color="White48" sx={{ textAlign: 'center' }}>
@@ -409,6 +415,7 @@ const Index: NextPage<IndexProps> = ({ navItems }: IndexProps) => {
             </Flex.Column>
           ))}
         </ul>
+        <Text.P14 sx={{ mt: '32px' }}>*{t('index.supportedNetworks.betaWarning')}</Text.P14>
       </div>
     </MDXLayout>
   )

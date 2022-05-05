@@ -58,6 +58,9 @@ export const navigation: (locale: AppLocale) => NavItemDefinition[] = (locale) =
         slug: 'matchstick',
       },
       {
+        slug: 'subgraph-debug-forking',
+      },
+      {
         slug: 'deprecating-a-subgraph',
       },
       {
@@ -97,8 +100,8 @@ export const navigation: (locale: AppLocale) => NavItemDefinition[] = (locale) =
         slug: 'studio-faq',
       },
       {
-        slug: 'transferring-subgraph-ownership'
-      }
+        slug: 'transferring-subgraph-ownership',
+      },
     ],
   },
   {

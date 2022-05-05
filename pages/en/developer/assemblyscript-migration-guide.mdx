@@ -364,7 +364,7 @@ Also if you have nullable properties in a GraphQL entity, like this:
 
 ```graphql
 type Total @entity {
-  id: ID!
+  id: Bytes!
   amount: BigInt
 }
 ```
@@ -398,7 +398,7 @@ Or you can just change your GraphQL schema to not use a nullable type for this p
 
 ```graphql
 type Total @entity {
-  id: ID!
+  id: Bytes!
   amount: BigInt!
 }
 ```
@@ -456,7 +456,7 @@ The `Array` class still accepts a number to initialize the length of the list, h
 ```typescript
 let arr = new Array<string>(5) // ["", "", "", "", ""]
 
-arr.push("something") // ["", "", "", "", "", "something"] // size 6 :(
+arr.push('something') // ["", "", "", "", "", "something"] // size 6 :(
 ```
 
 Depending on the types you're using, eg nullable ones, and how you're accessing them, you might encounter a runtime error like this one:
@@ -470,7 +470,7 @@ To actually push at the beginning you should either, initialize the `Array` with
 ```typescript
 let arr = new Array<string>(0) // []
 
-arr.push("something") // ["something"]
+arr.push('something') // ["something"]
 ```
 
 Or you should mutate it via index:
@@ -478,7 +478,7 @@ Or you should mutate it via index:
 ```typescript
 let arr = new Array<string>(5) // ["", "", "", "", ""]
 
-arr[0] = "something" // ["something", "", "", "", ""]
+arr[0] = 'something' // ["something", "", "", "", ""]
 ```
 
 ### GraphQL schema
@@ -489,11 +489,11 @@ Now you no longer can define fields in your types that are Non-Nullable Lists. I
 
 ```graphql
 type Something @entity {
-  id: ID!
+  id: Bytes!
 }
 
 type MyEntity @entity {
-  id: ID!
+  id: Bytes!
   invalidField: [Something]! # no longer valid
 }
 ```
@@ -502,11 +502,11 @@ You'll have to add an `!` to the member of the List type, like this:
 
 ```graphql
 type Something @entity {
-  id: ID!
+  id: Bytes!
 }
 
 type MyEntity @entity {
-  id: ID!
+  id: Bytes!
   invalidField: [Something!]! # valid
 }
 ```

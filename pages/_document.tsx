@@ -3,7 +3,7 @@ import { extractLocaleFromPath } from '@edgeandnode/components'
 
 export default class MyDocument extends Document {
   static async getInitialProps(context: DocumentContext) {
-    const { locale } = extractLocaleFromPath(context.pathname)
+    const { locale } = extractLocaleFromPath(context.asPath ?? context.pathname)
     const initialProps = await Document.getInitialProps(context)
     return { ...initialProps, locale }
   }

@@ -45,6 +45,7 @@ The `apiVersion` in the subgraph manifest specifies the mapping API version whic
 
 | Version | Release notes |
 | :-: | --- |
+| 0.0.7 | Added `TransactionReceipt` and `Log` classes to the Ethereum types<br />Added `receipt` field to the Ethereum Event object|
 | 0.0.6 | Added `nonce` field to the Ethereum Transaction object<br />Added `baseFeePerGas` to the Ethereum Block object |
 | 0.0.5 | AssemblyScript upgraded to version 0.19.10 (this includes breaking changes, please see the [`Migration Guide`](/developer/assemblyscript-migration-guide))<br />`ethereum.transaction.gasUsed` renamed to `ethereum.transaction.gasLimit` |
 | 0.0.4 | Added `functionSignature` field to the Ethereum SmartContractCall object |
@@ -81,6 +82,8 @@ _Type conversions_
 _Operators_
 
 - `equals(y: ByteArray): bool` – can be written as `x == y`.
+- `concat(other: ByteArray) : ByteArray` - return a new `ByteArray` consisting of `this` directly followed by `other`
+- `concatI32(other: i32) : ByteArray` - return a new `ByteArray` consisting of `this` directly follow by the byte representation of `other`
 
 #### BigDecimal
 
@@ -187,9 +190,21 @@ import { Bytes } from '@graphprotocol/graph-ts'
 
 The `Bytes` class extends AssemblyScript's [Uint8Array](https://github.com/AssemblyScript/assemblyscript/blob/3b1852bc376ae799d9ebca888e6413afac7b572f/std/assembly/typedarray.ts#L64) and this supports all the `Uint8Array` functionality, plus the following new methods:
 
+_Construction_
+
+- `fromHexString(hex: string) : Bytes` - Convert the string `hex` which must consist of an even number of hexadecimal digits to a `ByteArray`. The string `hex` can optionally start with `0x`
+- `fromI32(i: i32) : Bytes` - Convert `i` to an array of bytes
+
+_Type conversions_
+
 - `b.toHex()` – returns a hexadecimal string representing the bytes in the array
 - `b.toString()` – converts the bytes in the array to a string of unicode characters
 - `b.toBase58()` – turns an Ethereum Bytes value to base58 encoding (used for IPFS hashes)
+
+_Operators_
+
+- `b.concat(other: Bytes) : Bytes` - - return new `Bytes` consisting of `this` directly followed by `other`
+- `b.concatI32(other: i32) : ByteArray` - return new `Bytes` consisting of `this` directly follow by the byte representation of `other`
 
 #### Address
 
@@ -202,6 +217,7 @@ import { Address } from '@graphprotocol/graph-ts'
 It adds the following method on top of the `Bytes` API:
 
 - `Address.fromString(s: string): Address` – creates an `Address` from a hexadecimal string
+- `Address.fromBytes(b: Bytes): Address` – create an `Address` from `b` which must be exactly 20 bytes long. Passing in a value with fewer or more bytes will result in an error
 
 ### Store API
 
@@ -226,9 +242,8 @@ import { Transfer } from '../generated/schema'
 
 // Transfer event handler
 export function handleTransfer(event: TransferEvent): void {
-  // Create a Transfer entity, using the hexadecimal string representation
-  // of the transaction hash as the entity ID
-  let id = event.transaction.hash.toHex()
+  // Create a Transfer entity, using the transaction hash as the entity ID
+  let id = event.transaction.hash
   let transfer = new Transfer(id)
 
   // Set properties on the entity, using the event parameters
@@ -250,7 +265,7 @@ Each entity must have a unique ID to avoid collisions with other entities. It is
 If an entity already exists, it can be loaded from the store with the following:
 
 ```typescript
-let id = event.transaction.hash.toHex() // or however the ID is constructed
+let id = event.transaction.hash // or however the ID is constructed
 let transfer = Transfer.load(id)
 if (transfer == null) {
   transfer = new Transfer(id)
@@ -309,7 +324,7 @@ There is currently no way to remove an entity via the generated types. Instead, 
 ```typescript
 import { store } from '@graphprotocol/graph-ts'
 ...
-let id = event.transaction.hash.toHex()
+let id = event.transaction.hash
 store.remove('Transfer', id)
 ```
 
@@ -327,6 +342,7 @@ The following example illustrates this. Given a subgraph schema like
 
 ```graphql
 type Transfer @entity {
+  id: Bytes!
   from: Bytes!
   to: Bytes!
   amount: BigInt!
@@ -336,7 +352,7 @@ type Transfer @entity {
 and a `Transfer(address,address,uint256)` event signature on Ethereum, the `from`, `to` and `amount` values of type `address`, `address` and `uint256` are converted to `Address` and `BigInt`, allowing them to be passed on to the `Bytes!` and `BigInt!` properties of the `Transfer` entity:
 
 ```typescript
-let id = event.transaction.hash.toHex()
+let id = event.transaction.hash
 let transfer = new Transfer(id)
 transfer.from = event.params.from
 transfer.to = event.params.to
@@ -357,6 +373,7 @@ class Event {
   block: Block
   transaction: Transaction
   parameters: Array<EventParam>
+  receipt: TransactionReceipt | null
 }
 
 class Block {
@@ -387,6 +404,34 @@ class Transaction {
   gasPrice: BigInt
   input: Bytes
   nonce: BigInt
+}
+
+class TransactionReceipt {
+  transactionHash: Bytes
+  transactionIndex: BigInt
+  blockHash: Bytes
+  blockNumber: BigInt
+  cumulativeGasUsed: BigInt
+  gasUsed: BigInt
+  contractAddress: Address
+  logs: Array<Log>
+  status: BigInt
+  root: Bytes
+  logsBloom: Bytes
+ }
+
+class Log {
+  address: Address
+  topics: Array<Bytes>
+  data: Bytes
+  blockHash: Bytes
+  blockNumber: Bytes
+  transactionHash: Bytes
+  transactionIndex: BigInt
+  logIndex: BigInt
+  transactionLogIndex: BigInt
+  logType: string
+  removed: bool | null
 }
 ```
 
@@ -586,7 +631,7 @@ export function processItem(value: JSONValue, userData: Value): void {
   }
 
   // Callbacks can also created entities
-  let newItem = new Item(id.toString())
+  let newItem = new Item(id)
   newItem.title = title.toString()
   newitem.parent = userData.toString() // Set parent to "parentId"
   newitem.save()
@@ -653,7 +698,6 @@ When the type of a value is certain, it can be converted to a [built-in type](#b
 | Source(s)            | Destination          | Conversion function          |
 | -------------------- | -------------------- | ---------------------------- |
 | Address              | Bytes                | none                         |
-| Address              | ID                   | s.toHexString()              |
 | Address              | String               | s.toHexString()              |
 | BigDecimal           | String               | s.toString()                 |
 | BigInt               | BigDecimal           | s.toBigDecimal()             |
@@ -671,7 +715,7 @@ When the type of a value is certain, it can be converted to a [built-in type](#b
 | Bytes                | JSON                 | json.fromBytes(s)            |
 | int8                 | i32                  | none                         |
 | int32                | i32                  | none                         |
-| int32                | BigInt               | Bigint.fromI32(s)            |
+| int32                | BigInt               | BigInt.fromI32(s)            |
 | uint24               | i32                  | none                         |
 | int64 - int256       | BigInt               | none                         |
 | uint32 - uint256     | BigInt               | none                         |
@@ -684,6 +728,7 @@ When the type of a value is certain, it can be converted to a [built-in type](#b
 | JSON                 | Array                | s.toArray()                  |
 | JSON                 | Object               | s.toObject()                 |
 | String               | Address              | Address.fromString(s)        |
+| String               | BigInt               | BigInt.fromString(s)         |
 | String               | BigDecimal           | BigDecimal.fromString(s)     |
 | String (hexadecimal) | Bytes                | ByteArray.fromHexString(s)   |
 | String (UTF-8)       | Bytes                | ByteArray.fromUTF8(s)        |

@@ -81,6 +81,8 @@ _Chuyển đổi Loại_
 _Toán tử_
 
 - `equals(y: ByteArray): bool` – có thể được viết là `x == y`.
+- `concat(other: ByteArray) : ByteArray` - return a new `ByteArray` consisting of `this` directly followed by `other`
+- `concatI32(other: i32) : ByteArray` - return a new `ByteArray` consisting of `this` directly follow by the byte representation of `other`
 
 #### BigDecimal
 
@@ -187,9 +189,21 @@ import { Bytes } from '@graphprotocol/graph-ts'
 
 Lớp `Bytes` mở rộng [Uint8Array](https://github.com/AssemblyScript/assemblyscript/blob/3b1852bc376ae799d9ebca888e6413afac7b572f/std/assembly/typedarray.ts#L64) của AssemblyScript và điều này hỗ trợ tất cả chức năng `Uint8Array`, cộng với các phương pháp mới sau:
 
-- `b.toHex()` – trả về một chuỗi thập lục phân đại diện cho các byte trong array
-- `b.toString()` – chuyển đổi các byte trong mảng thành một chuỗi ký tự unicode
-- `b.toBase58()` – chuyển một giá trị Ethereum Byte thành mã hóa base58 (được sử dụng cho các hàm băm IPFS)
+_Construction_
+
+- `fromHexString(hex: string) : Bytes` - Convert the string `hex` which must consist of an even number of hexadecimal digits to a `ByteArray`. The string `hex` can optionally start with `0x`
+- `fromI32(i: i32) : Bytes` - Convert `i` to an array of bytes
+
+_Chuyển đổi Loại_
+
+- `b.toHex()` – returns a hexadecimal string representing the bytes in the array
+- `b.toString()` – converts the bytes in the array to a string of unicode characters
+- `b.toBase58()` – turns an Ethereum Bytes value to base58 encoding (used for IPFS hashes)
+
+_Toán tử_
+
+- `b.concat(other: Bytes) : Bytes` - - return new `Bytes` consisting of `this` directly followed by `other`
+- `b.concatI32(other: i32) : ByteArray` - return new `Bytes` consisting of `this` directly follow by the byte representation of `other`
 
 #### Address
 
@@ -197,11 +211,12 @@ Lớp `Bytes` mở rộng [Uint8Array](https://github.com/AssemblyScript/assembl
 import { Address } from '@graphprotocol/graph-ts'
 ```
 
-`Address` kéo dài `Bytes` để đại diện các giá trị `address` Ethereum.
+`Address` extends `Bytes` to represent Ethereum `address` values.
 
-Nó thêm phương thức sau vào đầu API `Bytes`:
+It adds the following method on top of the `Bytes` API:
 
-- `Address.fromString(s: string): Address` – tạo một `Address` từ một chuỗi thập lục phân
+- `Address.fromString(s: string): Address` – creates an `Address` from a hexadecimal string
+- `Address.fromBytes(b: Bytes): Address` – create an `Address` from `b` which must be exactly 20 bytes long. Passing in a value with fewer or more bytes will result in an error
 
 ### API cửa hàng
 
@@ -209,13 +224,13 @@ Nó thêm phương thức sau vào đầu API `Bytes`:
 import { store } from '@graphprotocol/graph-ts'
 ```
 
-API `store` cho phép tải, lưu và xóa các thực thể từ và đến cửa hàng Graph Node.
+The `store` API allows to load, save and remove entities from and to the Graph Node store.
 
-Các thực thể được ghi vào cửa hàng ánh xạ 1-1 với các loại `@entity` được xác định trong lược đồ GraphQL của subgraph. Để làm việc với các thực thể này thuận tiện, lệnh `graph codegen` được cung cấp bởi [Graph CLI](https://github.com/graphprotocol/graph-cli) tạo thực thể các lớp, là các lớp con của kiểu `Entity` được tích hợp sẵn, với các trình lấy thuộc tính và trình thiết lập cho các trường trong lược đồ cũng như các phương thức để tải và lưu các thực thể này.
+Entities written to the store map one-to-one to the `@entity` types defined in the subgraph's GraphQL schema. To make working with these entities convenient, the `graph codegen` command provided by the [Graph CLI](https://github.com/graphprotocol/graph-cli) generates entity classes, which are subclasses of the built-in `Entity` type, with property getters and setters for the fields in the schema as well as methods to load and save these entities.
 
 #### Tạo các thực thể
 
-Sau đây là một mẫu chung để tạo các thực thể từ các sự kiện Ethereum.
+The following is a common pattern for creating entities from Ethereum events.
 
 ```typescript
 // Import the Transfer event class generated from the ERC20 ABI
@@ -226,9 +241,8 @@ import { Transfer } from '../generated/schema'
 
 // Transfer event handler
 export function handleTransfer(event: TransferEvent): void {
-  // Create a Transfer entity, using the hexadecimal string representation
-  // of the transaction hash as the entity ID
-  let id = event.transaction.hash.toHex()
+  // Create a Transfer entity, using the transaction hash as the entity ID
+  let id = event.transaction.hash
   let transfer = new Transfer(id)
 
   // Set properties on the entity, using the event parameters
@@ -241,16 +255,16 @@ export function handleTransfer(event: TransferEvent): void {
 }
 ```
 
-Khi sự kiện `Transfer` gặp phải trong khi xử lý chuỗi, nó được chuyển đến trình xử lý sự kiện `handleTransfer` bằng cách sử dụng loại `Transfer` đã tạo (bí danh là `TransferEvent` tại đây để tránh xung đột đặt tên với loại thực thể). Loại này cho phép truy cập dữ liệu như giao dịch mẹ của sự kiện và các tham số của nó.
+When a `Transfer` event is encountered while processing the chain, it is passed to the `handleTransfer` event handler using the generated `Transfer` type (aliased to `TransferEvent` here to avoid a naming conflict with the entity type). This type allows accessing data such as the event's parent transaction and its parameters.
 
-Mỗi thực thể phải có một ID duy nhất để tránh va chạm với các thực thể khác. Các tham số sự kiện bao gồm một số nhận dạng duy nhất có thể được sử dụng là điều khá phổ biến. Lưu ý: Việc sử dụng hàm băm giao dịch làm ID giả định rằng không có sự kiện nào khác trong cùng một giao dịch tạo ra các thực thể có hàm băm này làm ID.
+Each entity must have a unique ID to avoid collisions with other entities. It is fairly common for event parameters to include a unique identifier that can be used. Note: Using the transaction hash as the ID assumes that no other events in the same transaction create entities with this hash as the ID.
 
 #### Tải các thực thể từ cửa hàng
 
-Nếu một thực thể đã tồn tại, nó có thể được tải từ cửa hàng với những mã sau:
+If an entity already exists, it can be loaded from the store with the following:
 
 ```typescript
-let id = event.transaction.hash.toHex() // or however the ID is constructed
+let id = event.transaction.hash // or however the ID is constructed
 let transfer = Transfer.load(id)
 if (transfer == null) {
   transfer = new Transfer(id)
@@ -259,18 +273,18 @@ if (transfer == null) {
 // Use the Transfer entity as before
 ```
 
-Vì thực thể có thể chưa tồn tại trong cửa hàng, phương thức `load` trả về giá trị loại `Transfer | null`. Do đó, có thể cần phải kiểm tra trường hợp `null` trước khi sử dụng giá trị.
+As the entity may not exist in the store yet, the `load` method returns a value of type `Transfer | null`. It may thus be necessary to check for the `null` case before using the value.
 
 > **Lưu ý:** Việc tải các thực thể chỉ cần thiết nếu những thay đổi được thực hiện trong ánh xạ phụ thuộc vào dữ liệu trước đó của một thực thể. Xem phần tiếp theo để biết hai cách cập nhật các thực thể hiện có.
 
 #### Cập nhật các thực thể hiện có
 
-Có hai cách để cập nhật một thực thể hiện có:
+There are two ways to update an existing entity:
 
 1. Tải thực thể với ví dụ:`Transfer.load(id)`, đặt thuộc tính trên thực thể, sau đó `.save ()` nó trở lại cửa hàng.
 2. Chỉ cần tạo thực thể với ví dụ: `new Transfer(id)`, đặt thuộc tính trên thực thể, sau đó `.save()` nó vào cửa hàng. Nếu thực thể đã tồn tại, các thay đổi sẽ được hợp nhất vào nó.
 
-Trong hầu hết các trường hợp, việc thay đổi thuộc tính diễn ra ngay lập tức, nhờ vào các bộ thiết lập thuộc tính đã tạo:
+Changing properties is straight forward in most cases, thanks to the generated property setters:
 
 ```typescript
 let transfer = new Transfer(id)
@@ -279,16 +293,16 @@ transfer.to = ...
 transfer.amount = ...
 ```
 
-Cũng có thể hủy đặt thuộc tính bằng một trong hai hướng dẫn sau:
+It is also possible to unset properties with one of the following two instructions:
 
 ```typescript
 transfer.from.unset()
 transfer.from = null
 ```
 
-Điều này chỉ hoạt động với các thuộc tính tùy chọn, tức là các thuộc tính được khai báo mà không có `!` trong GraphQL. Hai ví dụ sẽ là `owner: Bytes` hoặc `amount: BigInt`.
+This only works with optional properties, i.e. properties that are declared without a `!` in GraphQL. Two examples would be `owner: Bytes` or `amount: BigInt`.
 
-Cập nhật các thuộc tính array có liên quan nhiều hơn một chút, vì việc lấy một array từ một thực thể sẽ tạo ra một bản sao của array đó. Điều này có nghĩa là các thuộc tính array phải được đặt lại một cách rõ ràng sau khi thay đổi mảng. Giả sử sau đây `entity` có trường `number: [BigInt!]!`.
+Updating array properties is a little more involved, as the getting an array from an entity creates a copy of that array. This means array properties have to be set again explicitly after changing the array. The following assumes `entity` has a `numbers: [BigInt!]!` field.
 
 ```typescript
 // This won't work
@@ -304,39 +318,40 @@ entity.save()
 
 #### Xóa các thực thể khỏi cửa hàng
 
-Hiện không có cách nào để xóa một thực thể thông qua các loại đã tạo. Thay vào đó, việc xóa một thực thể yêu cầu chuyển tên của loại thực thể và ID thực thể vào `store.remove`:
+There is currently no way to remove an entity via the generated types. Instead, removing an entity requires passing the name of the entity type and the entity ID to `store.remove`:
 
 ```typescript
 import { store } from '@graphprotocol/graph-ts'
 ...
-let id = event.transaction.hash.toHex()
+let id = event.transaction.hash
 store.remove('Transfer', id)
 ```
 
 ### Ethereum API
 
-API Ethereum cung cấp quyền truy cập vào các hợp đồng thông minh, các biến trạng thái công khai, chức năng hợp đồng, sự kiện, giao dịch, khối và mã hóa / giải mã dữ liệu Ethereum.
+The Ethereum API provides access to smart contracts, public state variables, contract functions, events, transactions, blocks and the encoding/decoding Ethereum data.
 
 #### Hỗ trợ các loại Ethereum
 
-Cũng như các thực thể, `graph codegen` tạo các lớp cho tất cả các hợp đồng và sự kiện thông minh được sử dụng trong một subgraph. Đối với điều này, các ABI theo hợp đồng cần phải là một phần của nguồn dữ liệu trong tệp kê khai subgraph. Thông thường, các tệp ABI được lưu trữ trong thư mục `abis/`.
+As with entities, `graph codegen` generates classes for all smart contracts and events used in a subgraph. For this, the contract ABIs need to be part of the data source in the subgraph manifest. Typically, the ABI files are stored in an `abis/` folder.
 
-Với các lớp được tạo, chuyển đổi giữa các loại Ethereum và [các loại tích hợp sẵn](#built-in-types) diễn ra ở hậu trường để các tác giả subgraph không phải lo lắng về chúng.
+With the generated classes, conversions between Ethereum types and the [built-in types](#built-in-types) take place behind the scenes so that subgraph authors do not have to worry about them.
 
-Ví dụ sau đây minh họa điều này. Đưa ra một lược đồ subgraph như
+The following example illustrates this. Given a subgraph schema like
 
 ```graphql
 type Transfer @entity {
+  id: Bytes!
   from: Bytes!
   to: Bytes!
   amount: BigInt!
 }
 ```
 
-và một chữ ký sự kiện `Transfer(address,address,uint256)` trên Ethereum, `from`, `to` và `amount` giá trị của loại `address`, `address` và `uint256` được chuyển đổi thành `Address` và `BigInt`, cho phép chúng được chuyển cho `Bytes!` và `BigInt!` thuộc tính của thực thể `Transfer`:
+and a `Transfer(address,address,uint256)` event signature on Ethereum, the `from`, `to` and `amount` values of type `address`, `address` and `uint256` are converted to `Address` and `BigInt`, allowing them to be passed on to the `Bytes!` and `BigInt!` properties of the `Transfer` entity:
 
 ```typescript
-let id = event.transaction.hash.toHex()
+let id = event.transaction.hash
 let transfer = new Transfer(id)
 transfer.from = event.params.from
 transfer.to = event.params.to
@@ -346,7 +361,7 @@ transfer.save()
 
 #### Sự kiện và dữ liệu Khối/Giao dịch
 
-Các sự kiện Ethereum được chuyển đến các trình xử lý sự kiện, chẳng hạn như sự kiện `Transfer` trong các ví dụ trước, không chỉ cung cấp quyền truy cập vào các tham số sự kiện mà còn cho giao dịch mẹ của chúng và khối mà chúng là một phần của nó. Dữ liệu sau đây có thể được lấy từ các trường hợp `event` (các lớp này là một phần của `ethereum` mô-đun trong `graph-ts`):
+Ethereum events passed to event handlers, such as the `Transfer` event in the previous examples, not only provide access to the event parameters but also to their parent transaction and the block they are part of. The following data can be obtained from `event` instances (these classes are a part of the `ethereum` module in `graph-ts`):
 
 ```typescript
 class Event {
@@ -392,9 +407,9 @@ class Transaction {
 
 #### Quyền truy cập vào Trạng thái Hợp đồng Thông minh
 
-Mã được tạo bởi `graph codegen` cũng bao gồm các lớp cho các hợp đồng thông minh được sử dụng trong subgraph. Chúng có thể được sử dụng để truy cập các biến trạng thái công khai và gọi các hàm của hợp đồng tại khối hiện tại.
+The code generated by `graph codegen` also includes classes for the smart contracts used in the subgraph. These can be used to access public state variables and call functions of the contract at the current block.
 
-Một mẫu phổ biến là truy cập vào hợp đồng mà từ đó một sự kiện bắt nguồn. Điều này đạt được với đoạn mã sau:
+A common pattern is to access the contract from which an event originates. This is achieved with the following code:
 
 ```typescript
 // Import the generated contract class
@@ -411,13 +426,13 @@ export function handleTransfer(event: Transfer) {
 }
 ```
 
-Miễn là `ERC20Contract` trên Ethereum có chức năng chỉ đọc công khai được gọi là `symbol`, thì nó có thể được gọi bằng `.symbol()`. Đối với các biến trạng thái công khai, một phương thức có cùng tên được tạo tự động.
+As long as the `ERC20Contract` on Ethereum has a public read-only function called `symbol`, it can be called with `.symbol()`. For public state variables a method with the same name is created automatically.
 
-Bất kỳ hợp đồng nào khác là một phần của subgraph đều có thể được nhập từ mã đã tạo và có thể được ràng buộc với một địa chỉ hợp lệ.
+Any other contract that is part of the subgraph can be imported from the generated code and can be bound to a valid address.
 
 #### Xử lý các lệnh gọi được hoàn nguyên
 
-Nếu các phương thức chỉ đọc trong hợp đồng của bạn có thể hoàn nguyên, thì bạn nên xử lý điều đó bằng cách gọi phương thức hợp đồng đã tạo có tiền tố là `try_`. Ví dụ, hợp đồng Gravity hiển thị phương thức `gravatarToOwner`. Mã này sẽ có thể xử lý việc hoàn nguyên trong phương thức đó:
+If the read-only methods of your contract may revert, then you should handle that by calling the generated contract method prefixed with `try_`. For example, the Gravity contract exposes the `gravatarToOwner` method. This code would be able to handle a revert in that method:
 
 ```typescript
 let gravity = Gravity.bind(event.address)
@@ -429,11 +444,11 @@ if (callResult.reverted) {
 }
 ```
 
-Lưu ý rằng node Graph được kết nối với máy khách Geth hoặc Infura có thể không phát hiện tất cả các lần hoàn nguyên, nếu bạn dựa vào điều này, chúng tôi khuyên bạn nên sử dụng node Graph được kết nối với máy khách Parity.
+Note that a Graph node connected to a Geth or Infura client may not detect all reverts, if you rely on this we recommend using a Graph node connected to a Parity client.
 
 #### Mã hóa / Giải mã ABI
 
-Dữ liệu có thể được mã hóa và giải mã theo định dạng mã hóa ABI của Ethereum bằng cách sử dụng hàm `encode` và `decode` trong mô-đun `ethereum`.
+Data can be encoded and decoded according to Ethereum's ABI encoding format using the `encode` and `decode` functions in the `ethereum` module.
 
 ```typescript
 import { Address, BigInt, ethereum } from '@graphprotocol/graph-ts'
@@ -450,11 +465,11 @@ let encoded = ethereum.encode(ethereum.Value.fromTuple(tuple))!
 let decoded = ethereum.decode('(address,uint256)', encoded)
 ```
 
-Để biết thêm thông tin:
+For more information:
 
 - [ABI Spec](https://docs.soliditylang.org/en/v0.7.4/abi-spec.html#types)
-- [Thư viện Rust/CLI](https://github.com/rust-ethereum/ethabi) Mã hóa/Giải mã
-- Thêm [nhiều ví dụ phức tạp](https://github.com/graphprotocol/graph-node/blob/6a7806cc465949ebb9e5b8269eeb763857797efc/tests/integration-tests/host-exports/src/mapping.ts#L72).
+- Encoding/decoding [Rust library/CLI](https://github.com/rust-ethereum/ethabi)
+- More [complex example](https://github.com/graphprotocol/graph-node/blob/6a7806cc465949ebb9e5b8269eeb763857797efc/tests/integration-tests/host-exports/src/mapping.ts#L72).
 
 ### Logging API
 
@@ -462,17 +477,17 @@ let decoded = ethereum.decode('(address,uint256)', encoded)
 import { log } from '@graphprotocol/graph-ts'
 ```
 
-API `log` cho phép các subgraph ghi thông tin vào đầu ra chuẩn của Graph Node cũng như Graph Explorer. Tin nhắn có thể được ghi lại bằng cách sử dụng các cấp độ log khác nhau. Cú pháp chuỗi định dạng cơ bản được cung cấp để soạn tin nhắn log từ đối số.
+The `log` API allows subgraphs to log information to the Graph Node standard output as well as the Graph Explorer. Messages can be logged using different log levels. A basic format string syntax is provided to compose log messages from argument.
 
-API `log` bao gồm các chức năng sau:
+The `log` API includes the following functions:
 
-- `log.debug(fmt: string, args: Array<string>): void` - ghi lại một thông báo gỡ lỗi.
-- `log.info(fmt: string, args: Array<string>): void` - ghi nhật ký một tin nhắn thông tin.
-- `log.warning(fmt: string, args: Array<string>): void` - ghi lại một cảnh báo.
-- `log.error(fmt: string, args: Array<string>): void` - ghi lại một thông báo lỗi.
-- `log.critical(fmt: string, args: Array<string>): void` – ghi lại một thông báo quan trọng _và_ kết thúc subgraph.
+- `log.debug(fmt: string, args: Array<string>): void` - logs a debug message.
+- `log.info(fmt: string, args: Array<string>): void` - logs an informational message.
+- `log.warning(fmt: string, args: Array<string>): void` - logs a warning.
+- `log.error(fmt: string, args: Array<string>): void` - logs an error message.
+- `log.critical(fmt: string, args: Array<string>): void` – logs a critical message _and_ terminates the subgraph.
 
-API `log` nhận một chuỗi định dạng và một mảng giá trị chuỗi. Sau đó, nó thay thế trình giữ chỗ bằng các giá trị chuỗi từ mảng. Trình giữ chỗ `{}` đầu tiên được thay thế bằng giá trị đầu tiên trong mảng, trình giữ chỗ `{}` thứ hai được thay thế bằng giá trị thứ hai, v. v.
+The `log` API takes a format string and an array of string values. It then replaces placeholders with the string values from the array. The first `{}` placeholder gets replaced by the first value in the array, the second `{}` placeholder gets replaced by the second value and so on.
 
 ```typescript
 log.info('Message to be displayed: {}, {}, {}', [value.toString(), anotherValue.toString(), 'already a string'])
@@ -482,7 +497,7 @@ log.info('Message to be displayed: {}, {}, {}', [value.toString(), anotherValue.
 
 ##### Logging một giá trị duy nhất
 
-Trong ví dụ bên dưới, giá trị chuỗi "A" được chuyển vào một mảng để trở thành `['A']` trước khi được ghi:
+In the example below, the string value "A" is passed into an array to become`['A']` before being logged:
 
 ```typescript
 let myValue = 'A'
@@ -495,7 +510,7 @@ export function handleSomeEvent(event: SomeEvent): void {
 
 ##### Logging một mục nhập từ một mảng hiện có
 
-Trong ví dụ dưới đây, chỉ giá trị đầu tiên của mảng đối số được ghi lại, mặc dù mảng có chứa ba giá trị.
+In the example below, only the first value of the argument array is logged, despite the array containing three values.
 
 ```typescript
 let myArray = ['A', 'B', 'C']
@@ -508,7 +523,7 @@ export function handleSomeEvent(event: SomeEvent): void {
 
 #### Logging nhiều mục nhập từ một mảng hiện có
 
-Mỗi mục nhập trong mảng đối số yêu cầu trình giữ chỗ riêng của nó `{}` trong chuỗi thông báo log. Ví dụ dưới đây chứa ba trình giữ chỗ `{}` trong thông báo log. Do đó, cả ba giá trị trong `myArray` đều được ghi lại.
+Each entry in the arguments array requires its own placeholder `{}` in the log message string. The below example contains three placeholders `{}` in the log message. Because of this, all three values in `myArray` are logged.
 
 ```typescript
 let myArray = ['A', 'B', 'C']
@@ -521,7 +536,7 @@ export function handleSomeEvent(event: SomeEvent): void {
 
 ##### Logging một mục cụ thể từ một mảng hiện có
 
-Để hiển thị một giá trị cụ thể trong mảng, giá trị được lập chỉ mục phải được cung cấp.
+To display a specific value in the array, the indexed value must be provided.
 
 ```typescript
 export function handleSomeEvent(event: SomeEvent): void {
@@ -532,7 +547,7 @@ export function handleSomeEvent(event: SomeEvent): void {
 
 ##### Logging thông tin sự kiện
 
-Ví dụ bên dưới ghi lại số khối, băm khối và băm giao dịch từ một sự kiện:
+The example below logs the block number, block hash and transaction hash from an event:
 
 ```typescript
 import { log } from '@graphprotocol/graph-ts'
@@ -552,9 +567,9 @@ export function handleSomeEvent(event: SomeEvent): void {
 import { ipfs } from '@graphprotocol/graph-ts'
 ```
 
-Các hợp đồng thông minh đôi khi cố định các tệp IPFS trên chuỗi. Điều này cho phép ánh xạ để lấy các băm IPFS từ hợp đồng và đọc các tệp tương ứng từ IPFS. Dữ liệu tệp sẽ được trả về dưới dạng `Byte`, thường yêu cầu xử lý thêm, ví dụ: với API `json` được ghi lại sau trên trang này.
+Smart contracts occasionally anchor IPFS files on chain. This allows mappings to obtain the IPFS hashes from the contract and read the corresponding files from IPFS. The file data will be returned as `Bytes`, which usually requires further processing, e.g. with the `json` API documented later on this page.
 
-Với một mã băm hoặc đường dẫn IPFS, việc đọc tệp từ IPFS được thực hiện như sau:
+Given an IPFS hash or path, reading a file from IPFS is done as follows:
 
 ```typescript
 // Put this inside an event handler in the mapping
@@ -567,9 +582,9 @@ let path = 'QmTkzDwWqPbnAh5YiV5VwcTLnGdwSNsNTn2aDxdXBFca7D/Makefile'
 let data = ipfs.cat(path)
 ```
 
-**Lưu ý:** `ipfs.cat` không phải là xác định vào lúc này. Nếu không thể truy xuất tệp qua mạng IPFS trước khi hết thời gian yêu cầu, tệp sẽ trả về `null`. Do đó, luôn nên kiểm tra kết quả `null`. Để đảm bảo rằng các tệp có thể được truy xuất, chúng phải được ghim vào node IPFS mà Graph Node kết nối với. Trên [dịch vụ được lưu trữ](https://thegraph.com/hosted-service), đây là [https://api.thegraph.com/ipfs/](https://api.thegraph.com/ipfs). Xem phần [IPFS pinning](/developer/create-subgraph-hosted#ipfs-pinning) để biết thêm thông tin.
+**Note:** `ipfs.cat` is not deterministic at the moment. If the file cannot be retrieved over the IPFS network before the request times out, it will return `null`. Due to this, it's always worth checking the result for `null`. To ensure that files can be retrieved, they have to be pinned to the IPFS node that Graph Node connects to. On the [hosted service](https://thegraph.com/hosted-service), this is [https://api.thegraph.com/ipfs/](https://api.thegraph.com/ipfs). See the [IPFS pinning](/developer/create-subgraph-hosted#ipfs-pinning) section for more information.
 
-Cũng có thể xử lý các tệp lớn hơn theo cách truyền trực tuyến với `ipfs.map`. Hàm yêu cầu băm hoặc đường dẫn cho tệp IPFS, tên của lệnh gọi lại và cờ để sửa đổi hành vi của nó:
+It is also possible to process larger files in a streaming fashion with `ipfs.map`. The function expects the hash or path for an IPFS file, the name of a callback, and flags to modify its behavior:
 
 ```typescript
 import { JSONValue, Value } from '@graphprotocol/graph-ts'
@@ -586,7 +601,7 @@ export function processItem(value: JSONValue, userData: Value): void {
   }
 
   // Callbacks can also created entities
-  let newItem = new Item(id.toString())
+  let newItem = new Item(id)
   newItem.title = title.toString()
   newitem.parent = userData.toString() // Set parent to "parentId"
   newitem.save()
@@ -599,9 +614,9 @@ ipfs.map('Qm...', 'processItem', Value.fromString('parentId'), ['json'])
 ipfs.mapJSON('Qm...', 'processItem', Value.fromString('parentId'))
 ```
 
-Cờ duy nhất hiện được hỗ trợ là `json`, cờ này phải được chuyển tới `ipfs.map`. Với cờ `json`, tệp IPFS phải bao gồm một loạt các giá trị JSON, một giá trị trên mỗi dòng. Lệnh gọi tới `ipfs.map` sẽ đọc từng dòng trong tệp, giải mã hóa nó thành một `JSONValue` và gọi lại cho từng dòng. Sau đó, lệnh gọi lại có thể sử dụng các thao tác thực thể để lưu trữ dữ liệu từ `JSONValue`. Các thay đổi đối tượng chỉ được lưu trữ khi trình xử lý được gọi là `ipfs.map` kết thúc thành công; trong khi đó, chúng được lưu trong bộ nhớ và do đó kích thước của tệp mà `ipfs.map` có thể xử lý bị hạn chế.
+The only flag currently supported is `json`, which must be passed to `ipfs.map`. With the `json` flag, the IPFS file must consist of a series of JSON values, one value per line. The call to `ipfs.map` will read each line in the file, deserialize it into a `JSONValue` and call the callback for each of them. The callback can then use entity operations to store data from the `JSONValue`. Entity changes are stored only when the handler that called `ipfs.map` finishes successfully; in the meantime, they are kept in memory, and the size of the file that `ipfs.map` can process is therefore limited.
 
-Khi thành công, `ipfs.map` trả về `void`. Nếu bất kỳ lệnh gọi lại nào gây ra lỗi, trình xử lý đã gọi `ipfs.map` bị hủy bỏ và subgraph được đánh dấu là không thành công.
+On success, `ipfs.map` returns `void`. If any invocation of the callback causes an error, the handler that invoked `ipfs.map` is aborted, and the subgraph is marked as failed.
 
 ### Crypto API
 
@@ -609,7 +624,7 @@ Khi thành công, `ipfs.map` trả về `void`. Nếu bất kỳ lệnh gọi l�
 import { crypto } from '@graphprotocol/graph-ts'
 ```
 
-API `crypto` cung cấp một hàm mật mã để sử dụng trong ánh xạ. Hiện tại, chỉ có một:
+The `crypto` API makes a cryptographic functions available for use in mappings. Right now, there is only one:
 
 - `crypto.keccak256(input: ByteArray): ByteArray`
 
@@ -619,14 +634,14 @@ API `crypto` cung cấp một hàm mật mã để sử dụng trong ánh xạ. 
 import { json, JSONValueKind } from '@graphprotocol/graph-ts'
 ```
 
-Dữ liệu JSON có thể được phân tích cú pháp bằng API `json`:
+JSON data can be parsed using the `json` API:
 
-- `json.fromBytes(data: Bytes): JSONValue` – phân tích cú pháp dữ liệu JSON từ mảng `Bytes` được hiểu là chuỗi UTF-8 hợp lệ
-- `json.try_fromBytes(data: Bytes): Result<JSONValue, boolean>`- phiên bản an toàn của `json.fromBytes`, nó trả về một biến thể lỗi nếu phân tích cú pháp không thành công
-- `json.fromString(data: Bytes): JSONValue` – phân tích cú pháp dữ liệu JSON từ một `String` UTF-8 hợp lệ
-- `json.try_fromString(data: Bytes): Result<JSONValue, boolean>` – safe version of `json.fromString`, it returns an error variant if the parsing failed
+- `json.fromBytes(data: Bytes): JSONValue` – parses JSON data from a `Bytes` array interpreted as a valid UTF-8 sequence
+- `json.try_fromBytes(data: Bytes): Result<JSONValue, boolean>` – safe version of `json.fromBytes`, it returns an error variant if the parsing failed
+- `json.fromString(data: string): JSONValue` – parses JSON data from a valid UTF-8 `String`
+- `json.try_fromString(data: string): Result<JSONValue, boolean>` – safe version of `json.fromString`, it returns an error variant if the parsing failed
 
-Lớp `JSONValue` cung cấp một cách để lấy các giá trị ra khỏi một tài liệu JSON tùy ý. Vì các giá trị JSON có thể là boolean, số, mảng và hơn thế nữa, `JSONValue` đi kèm với thuộc tính `kind` để kiểm tra loại giá trị:
+The `JSONValue` class provides a way to pull values out of an arbitrary JSON document. Since JSON values can be booleans, numbers, arrays and more, `JSONValue` comes with a `kind` property to check the type of a value:
 
 ```typescript
 let value = json.fromBytes(...)
@@ -635,25 +650,24 @@ if (value.kind == JSONValueKind.BOOL) {
 }
 ```
 
-Ngoài ra, có một phương pháp để kiểm tra xem giá trị có phải là `null` hay không:
+In addition, there is a method to check if the value is `null`:
 
 - `value.isNull(): boolean`
 
-Khi loại giá trị chắc chắn, nó có thể được chuyển đổi thành [loại tích hợp sẵn](#built-in-types) bằng một trong các phương pháp sau:
+When the type of a value is certain, it can be converted to a [built-in type](#built-in-types) using one of the following methods:
 
 - `value.toBool(): boolean`
 - `value.toI64(): i64`
 - `value.toF64(): f64`
 - `value.toBigInt(): BigInt`
 - `value.toString(): string`
-- `value.toArray(): Array<JSONValue>` - (và sau đó chuyển đổi `JSONValue` bằng một trong 5 phương pháp ở trên)
+- `value.toArray(): Array<JSONValue>` - (and then convert `JSONValue` with one of the 5 methods above)
 
 ### Tham chiếu Chuyển đổi Loại
 
 | Nguồn                | Mục tiêu             | Hàm chuyển đổi               |
 | -------------------- | -------------------- | ---------------------------- |
 | Address              | Bytes                | none                         |
-| Address              | ID                   | s.toHexString()              |
 | Address              | String               | s.toHexString()              |
 | BigDecimal           | String               | s.toString()                 |
 | BigInt               | BigDecimal           | s.toBigDecimal()             |
@@ -671,7 +685,7 @@ Khi loại giá trị chắc chắn, nó có thể được chuyển đổi thà
 | Bytes                | JSON                 | json.fromBytes(s)            |
 | int8                 | i32                  | none                         |
 | int32                | i32                  | none                         |
-| int32                | BigInt               | Bigint.fromI32(s)            |
+| int32                | BigInt               | BigInt.fromI32(s)            |
 | uint24               | i32                  | none                         |
 | int64 - int256       | BigInt               | none                         |
 | uint32 - uint256     | BigInt               | none                         |
@@ -684,13 +698,14 @@ Khi loại giá trị chắc chắn, nó có thể được chuyển đổi thà
 | JSON                 | Array                | s.toArray()                  |
 | JSON                 | Object               | s.toObject()                 |
 | String               | Address              | Address.fromString(s)        |
+| String               | BigInt               | BigInt.fromString(s)         |
 | String               | BigDecimal           | BigDecimal.fromString(s)     |
 | String (hexadecimal) | Bytes                | ByteArray.fromHexString(s)   |
 | String (UTF-8)       | Bytes                | ByteArray.fromUTF8(s)        |
 
 ### Siêu Dữ liệu Nguồn Dữ liệu
 
-Bạn có thể kiểm tra địa chỉ hợp đồng, mạng và ngữ cảnh của nguồn dữ liệu đã gọi trình xử lý thông qua không gian tên `dataSource`:
+You can inspect the contract address, network and context of the data source that invoked the handler through the `dataSource` namespace:
 
 - `dataSource.address(): Address`
 - `dataSource.network(): string`
@@ -698,7 +713,7 @@ Bạn có thể kiểm tra địa chỉ hợp đồng, mạng và ngữ cảnh c
 
 ### Entity và DataSourceContext
 
-Lớp `Entity` cơ sở và lớp con `DataSourceContext` có các trình trợ giúp để đặt động và lấy các trường:
+The base `Entity` class and the child `DataSourceContext` class have helpers to dynamically set and get fields:
 
 - `setString(key: string, value: string): void`
 - `setI32(key: string, value: i32): void`

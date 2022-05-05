@@ -35,7 +35,7 @@ graph init --studio <SUBGRAPH_SLUG>
 
 ### 3. Write your Subgraph
 
-The previous commands creates a scaffold subgraph that you can use as a starting point for building your subgraph. When making changes to the subgraph, you will mainly work with three files:
+The previous commands create a scaffold subgraph that you can use as a starting point for building your subgraph. When making changes to the subgraph, you will mainly work with three files:
 
 - Manifest (subgraph.yaml) - The manifest defines what datasources your subgraphs will index.
 - Schema (schema.graphql) - The GraphQL schema defines what data you wish to retreive from the subgraph.
@@ -111,7 +111,7 @@ The logs should tell you if there are any errors. If your subgraph is failing, y
 
 ### 6. Query your Subgraph
 
-You can now query your subgraph by following [these instructions](/developer/query-the-graph). You can query from your dapp if you don't have your API key via the free, rate limited temporary query URL that can be used for development and staging. You can read the additional instructions for how to query a subgraph from a frontend application [here](/developer/querying-from-your-app).
+You can now query your subgraph by following [these instructions](/developer/query-the-graph). You can query from your dApp if you don't have your API key via the free, rate-limited temporary query URL that can be used for development and staging. You can read the additional instructions for how to query a subgraph from a frontend application [here](/developer/querying-from-your-app).
 
 ## Hosted Service
 
@@ -157,9 +157,9 @@ For more information on how to write your subgraph, see [Create a Subgraph](/dev
 
 ### 4. Deploy your Subgraph
 
-- Sign into the [Hosted Service](https://thegraph.com/hosted-service/) using your github account
+- Sign into the [Hosted Service](https://thegraph.com/hosted-service/) using your GitHub account
 - Click Add Subgraph and fill out the required information. Use the same subgraph name as in step 2.
-- Run codegen in the subgraph folder
+- Run `codegen` in the subgraph folder
 
 ```sh
  # NPM

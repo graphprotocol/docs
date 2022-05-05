@@ -111,8 +111,8 @@ dataSources:
         - function: createGravatar(string,string)
           handler: handleCreateGravatar
       blockHandlers:
-        - function: handleBlock
-        - function: handleBlockWithCall
+        - handler: handleBlock
+        - handler: handleBlockWithCall
           filter:
             kind: call
       file: ./src/mapping.ts
@@ -166,15 +166,15 @@ ABI ファイルは、契約内容と一致している必要があります。A
 
 エンティティを定義する前に、一歩下がって、データがどのように構造化され、リンクされているかを考えることが重要です。すべてのクエリは、サブグラフのスキーマで定義されたデータモデルと、サブグラフでインデックス化されたエンティティに対して行われます。このため、Dap のニーズに合わせてサブグラフ・スキーマを定義すると良いでしょう。エンティティは、イベントや関数ではなく、「データを含むオブジェクト」と考えるとよいでしょう。
 
-The Graph では、`schema.graphql`でエンティティタイプを定義するだけで、Graph Node がそのエンティティタイプの単一のインスタンスやコレクションをクエリするためのトップレベルのフィールドを生成してくれます。なお、エンティティとなるべき各タイプには、 `@entity`ディレクティブのアノテーションが必要です。
+With The Graph, you simply define entity types in `schema.graphql`, and Graph Node will generate top level fields for querying single instances and collections of that entity type. Each type that should be an entity is required to be annotated with an `@entity` directive. By default, entities are mutable, meaning that mappings can load existing entities, modify them and store a new version of that entity. Mutability comes at a price, and for entity types for which it is known that they will never be modified, for example, because they simply contain data extracted verbatim from the chain, it is recommended to mark them as immutable with `@entity(immutable: true)`. Mappings can make changes to immutable entities as long as those changes happen in the same block in which the entity was created. Immutable entities are much faster to write and to query, and should therefore be used whenever possible.
 
 ### 良い例
 
 以下の`Gravatar`エンティティは、Gravatar オブジェクトを中心に構成されており、エンティティを定義する上での良い例です。
 
 ```graphql
-type Gravatar @entity {
-  id: ID!
+type Gravatar @entity(immutable: true) {
+  id: Bytes!
   owner: Bytes
   displayName: String
   imageUrl: String
@@ -188,14 +188,14 @@ type Gravatar @entity {
 
 ```graphql
 type GravatarAccepted @entity {
-  id: ID!
+  id: Bytes!
   owner: Bytes
   displayName: String
   imageUrl: String
 }
 
 type GravatarDeclined @entity {
-  id: ID!
+  id: Bytes!
   owner: Bytes
   displayName: String
   imageUrl: String
@@ -210,27 +210,28 @@ type GravatarDeclined @entity {
 Null value resolved for non-null field 'name'
 ```
 
-各エンティティは`id`フィールドを持たなければなりません。id フィールドの型は`ID!`(文字列) 型の `id`フィールドを持つ必要があります。id フィールドは主キーとして機能し、同じタイプのすべてのエンティティ間で一意である必要があります。
+Each entity must have an `id` field, which must be of type `Bytes!` or `String!`. It is generally recommended to use `Bytes!`, unless the `id` contains human-readable text, since entities with `Bytes!` id's will be faster to write and query as those with a `String!` `id`. The `id` field serves as the primary key, and needs to be unique among all entities of the same type. For historical reasons, the type `ID!` is also accepted and is a synonym for `String!`.
+
+For some entity types the `id` is constructed from the id's of two other entities; that is possible using `concat`, e.g., `let id = left.id.concat(right.id)` to form the id from the id's of `left` and `right`. Similarly, to construct an id from the id of an existing entity and a counter `count`, `let id = left.id.concatI32(count)` can be used. The concatenation is guaranteed to produce unique id's as long as the length of `left` is the same for all such entities, for example, because `left.id` is an `Address`.
 
 ### 組み込みの Scalar タイプ
 
 #### GraphQL がサポートする Scalar
 
-GraphQL API では、以下の Scalar をサポートしています:
+We support the following scalars in our GraphQL API:
 
 | タイプ | 説明 |
 | --- | --- |
 | `Bytes` | Byte 配列で、16 進数の文字列で表されます。Ethereum のハッシュやアドレスによく使われます。 |
-| `ID` | `string`として格納されます。 |
-| `String` | `string`値の Scalar であり、Null 文字はサポートされておらず、自動的に削除されます。 |
-| `Boolean` | `boolean`値を表す Scalar。 |
-| `Int` | Int GraphQL の仕様では、`Int`のサイズは 32 バイトと定義されています。 |
-| `BigInt` | 大きな整数。Ethereum の`uint32`, `int64`, `uint64`, ..., `uint256` タイプに使用されます。注: `int32`, `uint24` `int8`など`uint32`以下のものは`i32`として表現されます。 |
-| `BigDecimal` | `BigDecimal`は、高精度の 10 進数を記号と指数で表します。指数の範囲は -6143 ～ +6144 です。有効数字 34 桁にまとめられます。 |
+| `String` | Scalar for `string` values. Null characters are not supported and are automatically removed. |
+| `Boolean` | Scalar for `boolean` values. |
+| `Int` | The GraphQL spec defines `Int` to have size of 32 bytes. |
+| `BigInt` | Large integers. Used for Ethereum's `uint32`, `int64`, `uint64`, ..., `uint256` types. Note: Everything below `uint32`, such as `int32`, `uint24` or `int8` is represented as `i32`. |
+| `BigDecimal` | `BigDecimal` High precision decimals represented as a signficand and an exponent. The exponent range is from −6143 to +6144. Rounded to 34 significant digits. |
 
 #### Enums
 
-スキーマ内に enums を作成することもできます。enums は次のような構文になっています:
+You can also create enums within a schema. Enums have the following syntax:
 
 ```graphql
 enum TokenStatus {
@@ -240,43 +241,43 @@ enum TokenStatus {
 }
 ```
 
-スキーマで enum が定義されると、enum 値の文字列表現を使用してエンティティに enum フィールドを設定することができます。例えば、`tokenStatus`を`SecondOwner`に設定するには、まずエンティティを定義し、続いて`entity.tokenStatus = "SecondOwner`でフィールドを設定します。以下の例は、Token エンティティが enum フィールドを持つように見えることを示しています:
+Once the enum is defined in the schema, you can use the string representation of the enum value to set an enum field on an entity. For example, you can set the `tokenStatus` to `SecondOwner` by first defining your entity and subsequently setting the field with `entity.tokenStatus = "SecondOwner"`. The example below demonstrates what the Token entity would look like with an enum field:
 
-enums の記述についての詳細は、[GraphQL documentation](https://graphql.org/learn/schema/)を参照してください。
+More detail on writing enums can be found in the [GraphQL documentation](https://graphql.org/learn/schema/).
 
 #### エンティティのリレーションシップ
 
-エンティティは、スキーマ内の 1 つ以上の他のエンティティとリレーションシップを持つことができます。これらの関係は、クエリの中で走査されることがあります。The Graph のリレーションシップは単方向です。リレーションシップのどちらかの "端 "に単方向のリレーションシップを定義することで、双方向のリレーションシップをシミュレートすることができます。
+An entity may have a relationship to one or more other entities in your schema. These relationships may be traversed in your queries. Relationships in The Graph are unidirectional. It is possible to simulate bidirectional relationships by defining a unidirectional relationship on either "end" of the relationship.
 
-リレーションシップは、指定されたタイプが他のエンティティのものであることを除けば、他のフィールドと同様にエンティティに定義されます。
+Relationships are defined on entities just like any other field except that the type specified is that of another entity.
 
 #### 1 対 1 のリレーションシップ
 
-`TransactionReceipt`エンティティタイプとの 1 対 1 の関係を持つ`Transaction`エンティティタイプを定義します:
+Define a `Transaction` entity type with an optional one-to-one relationship with a `TransactionReceipt` entity type:
 
 ```graphql
-type Transaction @entity {
-  id: ID!
+type Transaction @entity(immutable: true) {
+  id: Bytes!
   transactionReceipt: TransactionReceipt
 }
 
-type TransactionReceipt @entity {
-  id: ID!
+type TransactionReceipt @entity(immutable: true) {
+  id: Bytes!
   transaction: Transaction
 }
 ```
 
 #### 1 対多のリレーションシップ
 
-`TokenBalance`エンティティタイプに、Token エンティティタイプとの 1 対多の関係が必要なものを定義します:
+Define a `TokenBalance` entity type with a required one-to-many relationship with a Token entity type:
 
 ```graphql
-type Token @entity {
-  id: ID!
+type Token @entity(immutable: true) {
+  id: Bytes!
 }
 
 type TokenBalance @entity {
-  id: ID!
+  id: Bytes!
   amount: Int!
   token: Token!
 }
@@ -284,22 +285,22 @@ type TokenBalance @entity {
 
 #### 逆引き(Reverse lookups)
 
-逆引きは、`@derivedFrom`フィールドを使ってエンティティに定義できます。これにより、エンティティ上に仮想的なフィールドが作成されます。このフィールドにはクエリをかけることができますが、マッピング API を通じて手動で設定することはできません。むしろ、他のエンティティで定義された関係から派生します。このような関係では、関係の両側を保存することに意味があることはほとんどありません。一方の側だけを保存し、もう一方の側を派生させた方が、インデックス作成とクエリのパフォーマンスの両方が向上します。
+Reverse lookups can be defined on an entity through the `@derivedFrom` field. This creates a virtual field on the entity that may be queried but cannot be set manually through the mappings API. Rather, it is derived from the relationship defined on the other entity. For such relationships, it rarely makes sense to store both sides of the relationship, and both indexing and query performance will be better when only one side is stored and the other is derived.
 
-1 対多の関係では、関係は常に「1」側に格納され、「多」側は常に派生されるべきです。「多」側にエンティティの配列を格納するのではなく、このように関係を格納することで、サブグラフのインデックス作成と問い合わせの両方で劇的にパフォーマンスが向上します。一般的に、エンティティの配列を保存することは、現実的に可能な限り避けるべきです。
+For one-to-many relationships, the relationship should always be stored on the 'one' side, and the 'many' side should always be derived. Storing the relationship this way, rather than storing an array of entities on the 'many' side, will result in dramatically better performance for both indexing and querying the subgraph. In general, storing arrays of entities should be avoided as much as is practical.
 
 #### 例
 
-`tokenBalances`フィールドを派生させることで、トークンの残高にアクセスできるようになります:
+We can make the balances for a token accessible from the token by deriving a `tokenBalances` field:
 
 ```graphql
-type Token @entity {
-  id: ID!
+type Token @entity(immutable: true) {
+  id: Bytes!
   tokenBalances: [TokenBalance!]! @derivedFrom(field: "token")
 }
 
 type TokenBalance @entity {
-  id: ID!
+  id: Bytes!
   amount: Int!
   token: Token!
 }
@@ -307,49 +308,49 @@ type TokenBalance @entity {
 
 #### 多対多のリレーションシップ
 
-ユーザーがそれぞれ任意の数の組織に所属しているような多対多の関係の場合、関係をモデル化する最も簡単な方法は、関係する 2 つのエンティティのそれぞれに配列として格納することですが、一般的には最もパフォーマンスの高い方法ではありません。対称的な関係であれば、関係の片側のみを保存する必要があり、もう片側は派生させることができます。
+For many-to-many relationships, such as users that each may belong to any number of organizations, the most straightforward, but generally not the most performant, way to model the relationship is as an array in each of the two entities involved. If the relationship is symmetric, only one side of the relationship needs to be stored and the other side can be derived.
 
 #### 例
 
-`User`エンティティタイプから`Organization`エンティティタイプへの逆引きを定義します。以下の例では、`Organization`エンティティの中から`members`属性を検索することで実現しています。クエリでは、`User`の`organizations`フィールドは、ユーザの ID を含むすべての`Organization`エンティティを見つけることで解決されます。
+Define a reverse lookup from a `User` entity type to an `Organization` entity type. In the example below, this is achieved by looking up the `members` attribute from within the `Organization` entity. In queries, the `organizations` field on `User` will be resolved by finding all `Organization` entities that include the user's ID.
 
 ```graphql
 type Organization @entity {
-  id: ID!
+  id: Bytes!
   name: String!
   members: [User!]!
 }
 
 type User @entity {
-  id: ID!
+  id: Bytes!
   name: String!
   organizations: [Organization!]! @derivedFrom(field: "members")
 }
 ```
 
-この関係を保存するためのより効率的な方法は、次のようなスキーマを持つ `User`/ `Organization`のペアごとに 1 つのエントリを持つマッピングテーブルを使用することです。
+A more performant way to store this relationship is through a mapping table that has one entry for each `User` / `Organization` pair with a schema like
 
 ```graphql
 type Organization @entity {
-  id: ID!
+  id: Bytes!
   name: String!
-  members: [UserOrganization]! @derivedFrom(field: "user")
+  members: [UserOrganization!]! @derivedFrom(field: "organization")
 }
 
 type User @entity {
-  id: ID!
+  id: Bytes!
   name: String!
-  organizations: [UserOrganization!] @derivedFrom(field: "organization")
+  organizations: [UserOrganization!] @derivedFrom(field: "user")
 }
 
 type UserOrganization @entity {
-  id: ID! # Set to `${user.id}-${organization.id}`
+  id: Bytes! # Set to `user.id.concat(organization.id)`
   user: User!
   organization: Organization!
 }
 ```
 
-このアプローチでは、例えばユーザーの組織を取得するために、クエリをさらに 1 つのレベルに下げる必要があります:
+This approach requires that queries descend into one additional level to retrieve, for example, the organizations for users:
 
 ```graphql
 query usersWithOrganizations {
@@ -364,27 +365,27 @@ query usersWithOrganizations {
 }
 ```
 
-このように多対多の関係をより精巧に保存する方法では、サブグラフに保存されるデータが少なくなるため、サブグラフのインデックス作成や問い合わせが劇的に速くなります。
+This more elaborate way of storing many-to-many relationships will result in less data stored for the subgraph, and therefore to a subgraph that is often dramatically faster to index and to query.
 
 #### スキーマへのコメントの追加
 
-GraphQL の仕様では、スキーマのエンティティ属性の上にダブルクォーテーション`""`を使ってコメントを追加できます。これを以下の例で説明します:
+As per GraphQL spec, comments can be added above schema entity attributes using double quotations `""`. This is illustrated in the example below:
 
 ```graphql
 type MyFirstEntity @entity {
   "unique identifier and primary key of the entity"
-  id: ID!
+  id: Bytes!
   address: Bytes!
 }
 ```
 
 ## フルテキスト検索フィールド（Full Text Search）の定義
 
-フルテキスト検索クエリは、テキスト検索入力に基づいてエンティティをフィルタリングし、ランク付けします。フルテキストクエリは、インデックス化されたテキストデータと比較する前に、クエリテキストの入力をステム処理することで、類似した単語のマッチを返すことができます。
+Fulltext search queries filter and rank entities based on a text search input. Fulltext queries are able to return matches for similar words by processing the query text input into stems before comparing to the indexed text data.
 
-フルテキストクエリの定義には、クエリ名、テキストフィールドの処理に使用される言語辞書、結果の順序付けに使用されるランキングアルゴリズム、および検索に含まれるフィールドが含まれます。各フルテキスト・クエリは複数のフィールドにまたがることができますが、含まれるフィールドはすべて単一のエンティティ・タイプのものでなければなりません。
+A fulltext query definition includes the query name, the language dictionary used to process the text fields, the ranking algorithm used to order the results, and the fields included in the search. Each fulltext query may span multiple fields, but all included fields must be from a single entity type.
 
-フルテキストクエリを追加するには、GraphQL スキーマにフルテキスト指示文を含む`_Schema_`タイプを記述します。
+To add a fulltext query, include a `_Schema_` type with a fulltext directive in the GraphQL schema.
 
 ```graphql
 type _Schema_
@@ -396,7 +397,7 @@ type _Schema_
   )
 
 type Band @entity {
-  id: ID!
+  id: Bytes!
   name: String!
   description: String!
   bio: String
@@ -407,7 +408,7 @@ type Band @entity {
 }
 ```
 
-例の`bandSearch`フィールドは、`name`、`description`、`bio`フィールドのテキスト文書に基づいて`Band`エンティティをフィルタリングするクエリで使用できます。全文検索 API の説明や詳しい使用例については、[GraphQL API - Queries](/developer/graphql-api#queries)を参照してください。
+The example `bandSearch` field can be used in queries to filter `Band` entities based on the text documents in the `name`, `description`, and `bio` fields. Jump to [GraphQL API - Queries](/developer/graphql-api#queries) for a description of the Fulltext search API and for more example usage.
 
 ```graphql
 query {
@@ -424,9 +425,9 @@ query {
 
 ### 対応言語
 
-異なる言語を選択すると、フルテキスト検索 API に決定的な影響を与えますが、場合によっては微妙な影響もあります。フルテキストクエリフィールドでカバーされるフィールドは、選択された言語のコンテキストで検査されるため、分析や検索クエリで生成される語彙は言語ごとに異なります。たとえば、サポートされているトルコ語辞書を使用した場合、"token "は "toke "にステム処理されますが、もちろん英語辞書では "token "にステム処理されます。
+Choosing a different language will have a definitive, though sometimes subtle, effect on the fulltext search API. Fields covered by a fulltext query field are examined in the context of the chosen language, so the lexemes produced by analysis and search queries vary language to language. For example: when using the supported Turkish dictionary "token" is stemmed to "toke" while, of course, the English dictionary will stem it to "token".
 
-サポートされている言語の辞書:
+Supported language dictionaries:
 
 | コード | 辞書      |
 | ------ | --------- |
@@ -449,7 +450,7 @@ query {
 
 ### ランキングアルゴリズム
 
-サポートされている結果の順序付けのアルゴリズム:
+Supported algorithms for ordering results:
 
 | アルゴリズム  | 説明                                                                |
 | ------------- | ------------------------------------------------------------------- |
@@ -458,18 +459,18 @@ query {
 
 ## マッピングの記述
 
-マッピングは、マッピングが調達している Ethereum データを、スキーマで定義されたエンティティに変換します。マッピングは[AssemblyScript](https://github.com/AssemblyScript/assemblyscript/wiki)と呼ばれる [TypeScript](https://www.typescriptlang.org/docs/handbook/typescript-in-5-minutes.html)のサブセットで書かれており、WASM（[WebAssembly](https://webassembly.org/)）にコンパイルすることができます。AssemblyScript は通常の TypeScript よりも厳格ですが、使い慣れた構文を提供します。
+The mappings transform the Ethereum data your mappings are sourcing into entities defined in your schema. Mappings are written in a subset of [TypeScript](https://www.typescriptlang.org/docs/handbook/typescript-in-5-minutes.html) called [AssemblyScript](https://github.com/AssemblyScript/assemblyscript/wiki) which can be compiled to WASM ([WebAssembly](https://webassembly.org/)). AssemblyScript is stricter than normal TypeScript, yet provides a familiar syntax.
 
-`subgraph.yaml`の`mapping.eventHandlers`で定義されている各イベントハンドラに対して、同じ名前のエクスポートされた関数を作成します。各ハンドラーは、処理される`event`の名前に対応するタイプの event という 1 つのパラメータを受け入れる必要があります。
+For each event handler that is defined in `subgraph.yaml` under `mapping.eventHandlers`, create an exported function of the same name. Each handler must accept a single parameter called `event` with a type corresponding to the name of the event which is being handled.
 
-例題のサブグラフでは、`src/mapping.ts`に`NewGravatar`と`UpdatedGravatar` イベントのハンドラが含まれています:
+In the example subgraph, `src/mapping.ts` contains handlers for the `NewGravatar` and `UpdatedGravatar` events:
 
 ```javascript
 import { NewGravatar, UpdatedGravatar } from '../generated/Gravity/Gravity'
 import { Gravatar } from '../generated/schema'
 
 export function handleNewGravatar(event: NewGravatar): void {
-  let gravatar = new Gravatar(event.params.id.toHex())
+  let gravatar = new Gravatar(event.params.id)
   gravatar.owner = event.params.owner
   gravatar.displayName = event.params.displayName
   gravatar.imageUrl = event.params.imageUrl
@@ -477,7 +478,7 @@ export function handleNewGravatar(event: NewGravatar): void {
 }
 
 export function handleUpdatedGravatar(event: UpdatedGravatar): void {
-  let id = event.params.id.toHex()
+  let id = event.params.id
   let gravatar = Gravatar.load(id)
   if (gravatar == null) {
     gravatar = new Gravatar(id)
@@ -489,32 +490,32 @@ export function handleUpdatedGravatar(event: UpdatedGravatar): void {
 }
 ```
 
-最初のハンドラは、`NewGravatar`イベントを受け取り、`new Gravatar(event.params.id.toHex())`で新しい`Gravatar`エンティティを作成し、対応するイベント・パラメータを使ってエンティティ・フィールドを入力します。このエンティティのインスタンスは、`event.params.id.toHex()`の id 値を持つ変数`gravatar`で表されます。
+The first handler takes a `NewGravatar` event and creates a new `Gravatar` entity with `new Gravatar(event.params.id.toHex())`, populating the entity fields using the corresponding event parameters. This entity instance is represented by the variable `gravatar`, with an id value of `event.params.id.toHex()`.
 
-2 番目のハンドラは、既存の`Gravatar`をグラフノードストアから読み込もうとします。もしまだ存在していなければ、オンデマンドで作成されます。エンティティは新しいイベント・パラメータに合わせて更新され、`gravatar.save()`を使ってストアに保存されます。
+The second handler tries to load the existing `Gravatar` from the Graph Node store. If it does not exist yet, it is created on demand. The entity is then updated to match the new event parameters, before it is saved back to the store using `gravatar.save()`.
 
 ### 新規エンティティ作成時の推奨 ID
 
-すべてのエンティティには、同じ種類のエンティティの中で一意となる`id`が必要です。エンティティの id 値は、エンティティの作成時に設定されます。以下に、新しいエンティティを作成する際に考慮すべき、推奨される`id`値を示します。注：`id`の値は`文字列`でなければなりません。
+Every entity has to have an `id` that is unique among all entities of the same type. An entity's `id` value is set when the entity is created. Below are some recommended `id` values to consider when creating new entities. NOTE: The value of `id` must be a `string`.
 
 - `event.params.id.toHex()`
 - `event.transaction.from.toHex()`
 - `event.transaction.hash.toHex() + "-" + event.logIndex.toString()`
 
-[Graph Typescript Library](https://github.com/graphprotocol/graph-ts)は、Graph Node Store とのやりとりや、スマートコントラクトのデータやエンティティを扱うための便利な機能を備えています。`mapping.ts`で`@graphprotocol/graph-ts` をインポートすることで、マッピングでこのライブラリを使用することができます。
+We provide the [Graph Typescript Library](https://github.com/graphprotocol/graph-ts) which contains utilies for interacting with the Graph Node store and conveniences for handling smart contract data and entities. You can use this library in your mappings by importing `@graphprotocol/graph-ts` in `mapping.ts`.
 
 ## コード生成
 
-スマートコントラクト、イベント、エンティティの操作を簡単かつ安全に行うために、Graph CLI はサブグラフの GraphQL スキーマとデータソースに含まれるコントラクト ABI から AssemblyScript タイプを生成することができます。
+In order to make it easy and type-safe to work with smart contracts, events and entities, the Graph CLI can generate AssemblyScript types from the subgraph's GraphQL schema and the contract ABIs included in the data sources.
 
-これを行うには
+This is done with
 
 ```sh
 graph codegen [--output-dir <OUTPUT_DIR>] [<MANIFEST>]
 で行うことができます。
 ```
 
-しかし、ほとんどの場合、`package.json`によってサブグラフがあらかじめ設定されているので、以下のいずれかを実行するだけで同じことが実現できます:
+but in most cases, subgraphs are already preconfigured via `package.json` to allow you to simply run one of the following to achieve the same:
 
 ```sh
 # Yarn
@@ -524,7 +525,7 @@ yarn codegen
 npm run codegen
 ```
 
-これにより、`subgraph.yaml`に記載されている ABI ファイル内のすべてのスマートコントラクトに対して AssemblyScript クラスが生成され、これらのコントラクトをマッピング内の特定のアドレスにバインドしたり、処理中のブロックに対して読み取り専用のコントラクトメソッドを呼び出したりできるようになります。また、コントラクトのイベントごとにクラスが生成され、イベントのパラメータや、イベントの発生源となったブロックやトランザクションに簡単にアクセスできるようになります。これらのタイプはすべて`<OUTPUT_DIR>/<DATA_SOURCE_NAME>/<ABI_NAME>.ts`. In the example subgraph, this would be `generated/Gravity/Gravity.ts`に書き込まれます。例のサブグラフでは、これは`generated/Gravity/Gravity.ts`となり、マッピングはこれらのタイプを以下のようにインポートできます。
+This will generate an AssemblyScript class for every smart contract in the ABI files mentioned in `subgraph.yaml`, allowing you to bind these contracts to specific addresses in the mappings and call read-only contract methods against the block being processed. It will also generate a class for every contract event to provide easy access to event parameters as well as the block and transaction the event originated from. All of these types are written to `<OUTPUT_DIR>/<DATA_SOURCE_NAME>/<ABI_NAME>.ts`. In the example subgraph, this would be `generated/Gravity/Gravity.ts`, allowing mappings to import these types with
 
 ```javascript
 import {
@@ -536,7 +537,7 @@ import {
 } from '../generated/Gravity/Gravity'
 ```
 
-これに加えて、サブグラフの GraphQL スキーマのエンティティタイプごとに 1 つのクラスが生成される。これらのクラスは、タイプセーフなエンティティのロード、エンティティ・フィールドへのリード・ライト・アクセスのほか、エンティティをストアに書き込むための`save()`メソッドを提供する。すべてのエンティティ・クラスは`<OUTPUT_DIR>/schema.ts`に書き込まれ、マッパーは以下のようにしてインポートすることができます。
+In addition to this, one class is generated for each entity type in the subgraph's GraphQL schema. These classes provide type-safe entity loading, read and write access to entity fields as well as a `save()` method to write entities to store. All entity classes are written to `<OUTPUT_DIR>/schema.ts`, allowing mappings to import them with
 
 ```javascript
 import { Gravatar } from '../generated/schema'
@@ -544,15 +545,15 @@ import { Gravatar } from '../generated/schema'
 
 > **注:** GraphQL スキーマやマニフェストに含まれる ABI を変更するたびに、コード生成を再実行する必要があります。また、サブグラフをビルドまたはディプロイする前に、少なくとも一度は実行する必要があります。
 
-コード生成では、`src/mapping.ts`のマッピングコードはチェックされません。サブグラフをグラフ・エクスプローラーに配置する前にチェックしたい場合は、`yarn build`を実行して、TypeScript コンパイラが検出する可能性のある構文エラーを修正することができます。
+Code generation does not check your mapping code in `src/mapping.ts`. If you want to check that before trying to deploy your subgraph to the Graph Explorer, you can run `yarn build` and fix any syntax errors that the TypeScript compiler might find.
 
 ## データソーステンプレート
 
-Ethereum のスマートコントラクトによく見られるパターンは、レジストリコントラクトやファクトリーコントラクトの使用です。1 つのコントラクトが、それぞれが独自の状態やイベントを持つ任意の数の他のコントラクトを作成、管理、参照します。これらのサブコントラクトのアドレスは、前もって知られている場合もあれば、知られていない場合もあり、これらのコントラクトの多くは、時間の経過とともに作成および/または追加される可能性があります。このため、このようなケースでは、単一のデータソースまたは固定数のデータソースを定義することは不可能であり、より動的なアプローチが必要となります: _data source templates_
+A common pattern in Ethereum smart contracts is the use of registry or factory contracts, where one contract creates, manages or references an arbitrary number of other contracts that each have their own state and events. The addresses of these sub-contracts may or may not be known upfront and many of these contracts may be created and/or added over time. This is why, in such cases, defining a single data source or a fixed number of data sources is impossible and a more dynamic approach is needed: _data source templates_.
 
 ### メインコントラクトのデータソース
 
-まず、メインコントラクトの通常のデータソースを定義します。下のスニペットは [Uniswap](https://uniswap.io) exchange factory contract のデータソースの例を簡略化して示しています。`NewExchange(address,address)`イベントハンドラに注目してください。これはファクトリーコントラクトによってチェーン上に新しいエクスチェンジコントラクトが作成された際に発行されます。
+First, you define a regular data source for the main contract. The snippet below shows a simplified example data source for the [Uniswap](https://uniswap.io) exchange factory contract. Note the `NewExchange(address,address)` event handler. This is emitted when a new exchange contract is created on chain by the factory contract.
 
 ```yaml
 dataSources:
@@ -579,7 +580,7 @@ dataSources:
 
 ### 動的に作成されるコントラクトのデータソーステンプレート
 
-次に、*data source templates*をマニフェストに追加します。データソース テンプレートは、`source`の下に定義済みのコントラクト アドレスがないことを除けば、通常のデータソースと同じです。一般的には、親コントラクトが管理または参照するサブコントラクトのタイプごとに 1 つのテンプレートを定義することになります。
+Then, you add _data source templates_ to the manifest. These are identical to regular data sources, except that they lack a predefined contract address under `source`. Typically, you would define one template for each type of sub-contract managed or referenced by the parent contract.
 
 ```yaml
 dataSources:
@@ -615,7 +616,7 @@ templates:
 
 ### データソーステンプレートのインスタンス化
 
-最後のステップでは、メインのコントラクト マッピングを更新して、テンプレートの 1 つからダイナミック データ ソース インスタンスを作成します。この例では、メインのコントラクトマッピングを変更して`Exchange`テンプレートをインポートし、`Exchange.create(address)`メソッドを呼び出して新しい Exchange コントラクトのインデックス作成を開始します。
+In the final step, you update your main contract mapping to create a dynamic data source instance from one of the templates. In this example, you would change the main contract mapping to import the `Exchange` template and call the `Exchange.create(address)` method on it to start indexing the new exchange contract.
 
 ```typescript
 import { Exchange } from '../generated/templates'
@@ -633,7 +634,7 @@ export function handleNewExchange(event: NewExchange): void {
 
 ### データソースコンテクスト
 
-データソースコンテキストは、テンプレートをインスタンス化する際に追加の設定を渡すことができます。この例では、取引所が特定の取引ペアに関連付けられており、それが`NewExchange`イベントに含まれているとします。この情報は、インスタンス化されたデータソースに次のように渡すことができます。
+Data source contexts allow passing extra configuration when instantiating a template. In our example, let's say exchanges are associated with a particular trading pair, which is included in the `NewExchange` event. That information can be passed into the instantiated data source, like so:
 
 ```typescript
 import { Exchange } from '../generated/templates'
@@ -645,7 +646,7 @@ export function handleNewExchange(event: NewExchange): void {
 }
 ```
 
-`Exchange`テンプレートのマッピングの中で、コンテキストにアクセスすることができます:
+Inside a mapping of the `Exchange` template, the context can then be accessed:
 
 ```typescript
 import { dataSource } from '@graphprotocol/graph-ts'
@@ -654,11 +655,11 @@ let context = dataSource.context()
 let tradingPair = context.getString('tradingPair')
 ```
 
-すべての値の型に対して、`setString`や`getString`のようなセッターやゲッターがあります。
+There are setters and getters like `setString` and `getString` for all value types.
 
 ## スタートブロック(start Block)
 
-`startBlock`はオプションの設定で、データソースがチェーンのどのブロックからインデックス作成を開始するかを定義できます。開始ブロックを設定することで、データソースは無関係な何百万ものブロックをスキップすることができます。通常、サブグラフの開発者は`startBlock`をデータソースのスマートコントラクトが作成されたブロックに設定します。
+The `startBlock` is an optional setting that allows you to define from which block in the chain the data source will start indexing. Setting the start block allows the data source to skip potentially millions of blocks that are irrelevant. Typically, a subgraph developer will set `startBlock` to the block in which the smart contract of the data source was created.
 
 ```yaml
 dataSources:
@@ -692,15 +693,15 @@ dataSources:
 
 ## コールハンドラー
 
-イベントはコントラクトの状態に対する関連する変更を収集するための効果的な方法を提供しますが、多くのコントラクトはガスコストを最適化するためにログの生成を避けます。このような場合、サブグラフはデータソース・コントラクトに行われたコールを購読することができます。これは、関数シグネチャを参照するコールハンドラと、この関数へのコールを処理するマッピングハンドラを定義することで実現します。これらのコールを処理するために、マッピングハンドラは、コールへの入力とコールからの出力を型付けした`ethereum.Call`を引数として受け取ります。トランザクションのコールチェーンのどの深さで行われたコールでもマッピングがトリガーされ、プロキシコントラクトを介したデータソースコントラクトとのアクティビティをキャプチャすることができます。
+While events provide an effective way to collect relevant changes to the state of a contract, many contracts avoid generating logs to optimize gas costs. In these cases, a subgraph can subscribe to calls made to the data source contract. This is achieved by defining call handlers referencing the function signature and the mapping handler that will process calls to this function. To process these calls, the mapping handler will receive an `ethereum.Call` as an argument with the typed inputs to and outputs from the call. Calls made at any depth in a transaction's call chain will trigger the mapping, allowing activity with the data source contract through proxy contracts to be captured.
 
-コールハンドラーは、次の 2 つのケースのいずれかでのみトリガされます：指定された関数がコントラクト自身以外のアカウントから呼び出された場合、または Solidity で外部としてマークされ、同じコントラクト内の別の関数の一部として呼び出された場合。
+Call handlers will only trigger in one of two cases: when the function specified is called by an account other than the contract itself or when it is marked as external in Solidity and called as part of another function in the same contract.
 
 > **注: **コールハンドラーは、Rinkeby、Goerli、Ganache ではサポートされていません。コールハンドラーは現在 Parity のトレース API に依存しており、これらのネットワークではサポートされていません。
 
 ### コールハンドラーの定義
 
-マニフェストにコール ハンドラを定義するには、購読したいデータ ソースの下に `callHandlers`配列を追加します。
+To define a call handler in your manifest simply add a `callHandlers` array under the data source you would like to subscribe to.
 
 ```yaml
 dataSources:
@@ -725,18 +726,18 @@ dataSources:
           handler: handleCreateGravatar
 ```
 
-`function`は、コールをフィルタリングするための正規化された関数シグネチャです。`handler`プロパティは、ターゲット関数がデータソースコントラクトで呼び出されたときに実行したい、マッピング内の関数の名前です。
+The `function` is the normalized function signature to filter calls by. The `handler` property is the name of the function in your mapping you would like to execute when the target function is called in the data source contract.
 
 ### マッピング関数
 
-各コールハンドラは、呼び出された関数の名前に対応するタイプを持つ 1 つのパラメータを取ります。上のサブグラフの例では、マッピングは`createGravatar` 関数が呼び出されたときのハンドラを含み、引数として`CreateGravatarCall`パラメータを受け取ります:
+Each call handler takes a single parameter that has a type corresponding to the name of the called function. In the example subgraph above, the mapping contains a handler for when the `createGravatar` function is called and receives a `CreateGravatarCall` parameter as an argument:
 
 ```typescript
 import { CreateGravatarCall } from '../generated/Gravity/Gravity'
 import { Transaction } from '../generated/schema'
 
 export function handleCreateGravatar(call: CreateGravatarCall): void {
-  let id = call.transaction.hash.toHex()
+  let id = call.transaction.hash
   let transaction = new Transaction(id)
   transaction.displayName = call.inputs._displayName
   transaction.imageUrl = call.inputs._imageUrl
@@ -744,11 +745,11 @@ export function handleCreateGravatar(call: CreateGravatarCall): void {
 }
 ```
 
-`handleCreateGravatar`関数は、`@graphprotocol/graph-ts`が提供する`ethereum.Call`のサブクラスである`CreateGravatarCall`を新たに受け取り、コールの型付けされた入出力を含みます。`CreateGravatarCall`のタイプは、`graph codegen`を実行したときに生成されます。
+The `handleCreateGravatar` function takes a new `CreateGravatarCall` which is a subclass of `ethereum.Call`, provided by `@graphprotocol/graph-ts`, that includes the typed inputs and outputs of the call. The `CreateGravatarCall` type is generated for you when you run `graph codegen`.
 
 ## ブロック・ハンドラー
 
-コントラクトイベントやファンクションコールの購読に加えて、サブグラフは、新しいブロックがチェーンに追加されると、そのデータを更新したい場合があります。これを実現するために、サブグラフは各ブロックの後、あるいは事前に定義されたフィルタにマッチしたブロックの後に、関数を実行することができます。
+In addition to subscribing to contract events or function calls, a subgraph may want to update its data as new blocks are appended to the chain. To achieve this a subgraph can run a function after every block or after blocks that match a predefined filter.
 
 ### 対応フィルター
 
@@ -757,9 +758,9 @@ filter:
   kind: call
 ```
 
-_定義されたハンドラーは、ハンドラーが定義されているコントラクト（データソース）への呼び出しを含むすべてのブロックに対して一度だけ呼ばれます。_
+_The defined handler will be called once for every block which contains a call to the contract (data source) the handler is defined under._
 
-ブロックハンドラーにフィルターがない場合、ハンドラーはブロックごとに呼び出されます。1 つのデータソースには、各フィルタータイプに対して 1 つのブロックハンドラーしか含めることができません。
+The absense of a filter for a block handler will ensure that the handler is called every block. A data source can only contain one block handler for each filter type.
 
 ```yaml
 dataSources:
@@ -788,13 +789,13 @@ dataSources:
 
 ### マッピング関数
 
-マッピング関数は、唯一の引数として`ethereum.Block`を受け取ります。イベント用のマッピング関数と同様に、この関数はストア内の既存のサブグラフエンティティにアクセスしたり、スマートコントラクトを呼び出したり、エンティティを作成または更新したりすることができます。
+The mapping function will receive an `ethereum.Block` as its only argument. Like mapping functions for events, this function can access existing subgraph entities in the store, call smart contracts and create or update entities.
 
 ```typescript
 import { ethereum } from '@graphprotocol/graph-ts'
 
 export function handleBlock(block: ethereum.Block): void {
-  let id = block.hash.toHex()
+  let id = block.hash
   let entity = new Block(id)
   entity.save()
 }
@@ -802,7 +803,7 @@ export function handleBlock(block: ethereum.Block): void {
 
 ## 匿名イベント
 
-Solidity で匿名イベントを処理する必要がある場合は、例のようにイベントのトピック 0 を提供することで実現できます:
+If you need to process anonymous events in Solidity, that can be achieved by providing the topic 0 of the event, as in the example:
 
 ```yaml
 eventHandlers:
@@ -811,11 +812,11 @@ eventHandlers:
     handler: handleGive
 ```
 
-シグネチャと topic0 の両方が一致した場合にのみ、イベントが発生します。デフォルトでは、`topic0`はイベントシグネチャのハッシュと同じです。
+An event will only be triggered when both the signature and topic 0 match. By default, `topic0` is equal to the hash of the event signature.
 
 ## 実験的機能
 
-`specVersion` `0.0.4`以降、サブグラフ機能はマニフェストファイルのトップレベルにある`features`セクションで、以下の表のように`camelCase` の名前を使って明示的に宣言する必要があります:
+Starting from `specVersion` `0.0.4`, subgraph features must be explicitly declared in the `features` section at the top level of the manifest file, using their `camelCase` name, as listed in the table below:
 
 | 特徴                                                      | 名前                      |
 | --------------------------------------------------------- | ------------------------- |
@@ -824,7 +825,7 @@ eventHandlers:
 | [Grafting](#grafting-onto-existing-subgraphs)             | `grafting`                |
 | [IPFS on Ethereum Contracts](#ipfs-on-ethereum-contracts) | `ipfsOnEthereumContracts` |
 
-例えば、サブグラフが**Full-Text Search** と**Non-fatal Errors**の機能を使用する場合、マニフェストの`features`フィールドは次のようになります:
+For instance, if a subgraph uses the **Full-Text Search** and the **Non-fatal Errors** features, the `features` field in the manifest should be:
 
 ```yaml
 specVersion: 0.0.4
@@ -835,37 +836,39 @@ features:
 dataSources: ...
 ```
 
-宣言せずに機能を使用すると、サブグラフの展開時に**validation error**が発生しますが、機能を宣言しても使用しなければエラーは発生しないことに注意してください。
+Note that using a feature without declaring it will incur in a **validation error** during subgraph deployment, but no errors will occur if a feature is declared but not used.
 
 ### イーサリアムコントラクト上の IPFS
 
-IPFS と Ethereum を組み合わせる一般的なユースケースは、チェーン上で維持するにはコストがかかりすぎるデータを IPFS 上に保存し、Ethereum コントラクトで IPFS ハッシュを参照することです。
+A common use case for combining IPFS with Ethereum is to store data on IPFS that would be too expensive to maintain on chain, and reference the IPFS hash in Ethereum contracts.
 
-このような IPFS のハッシュが与えられた場合、サブグラフは`ipfs.cat`や`ipfs.map`を使って IPFS から対応するファイルを読み取ることができます。ただし、これを確実に行うためには、サブグラフのインデックスを作成するグラフノードが接続する IPFS ノードに、これらのファイルがピン留めされている必要があります。[hosted service](https://thegraph.com/hosted-service)の場合、これは[https://api.thegraph.com/ipfs/](https://api.thegraph.com/ipfs/)
+Given such IPFS hashes, subgraphs can read the corresponding files from IPFS using `ipfs.cat` and `ipfs.map`. To do this reliably, however, it is required that these files are pinned on the IPFS node that the Graph Node indexing the subgraph connects to. In the case of the [hosted service](https://thegraph.com/hosted-service), this is [https://api.thegraph.com/ipfs/](https://api.thegraph.com/ipfs/).
 
 > **注: **グラフネットワークは、`ipfs.cat`と`ipfs.map`をまだサポートしていないため、これらの機能を使用したサブグラフをスタジオ経由でネットワークに展開することはできません。
 
-グラフチームは、IPFS ノード間のファイル転送を容易にするために、[ipfs-sync](https://github.com/graphprotocol/ipfs-sync)というツールを開発しました。
+In order to make this easy for subgraph developers, The Graph team wrote a tool for transfering files from one IPFS node to another, called [ipfs-sync](https://github.com/graphprotocol/ipfs-sync).
 
 > **[Feature Management](#experimental-features):** `ipfsOnEthereumContracts`は、サブグラフのマニフェストの`features`の下で宣言する必要があります。
 
+When running a local Graph Node, the `GRAPH_ALLOW_NON_DETERMINISTIC_IPFS` environment variable must be set in order to index subgraphs using this experimental functionality.
+
 ### 非致命的なエラー
 
-すでに同期しているサブグラフのインデックスエラーは、デフォルトではサブグラフを失敗させ、同期を停止させます。サブグラフは、エラーが発生したハンドラーによる変更を無視することで、エラーが発生しても同期を継続するように設定することができます。これにより、サブグラフの作成者はサブグラフを修正する時間を得ることができ、一方でクエリは最新のブロックに対して提供され続けますが、エラーの原因となったバグのために結果が一貫していない可能性があります。なお、エラーの中には常に致命的なものもあり、致命的でないものにするためには、そのエラーが決定論的であることがわかっていなければなりません。
+Indexing errors on already synced subgraphs will, by default, cause the subgraph to fail and stop syncing. Subgraphs can alternatively be configured to continue syncing in the presence of errors, by ignoring the changes made by the handler which provoked the error. This gives subgraph authors time to correct their subgraphs while queries continue to be served against the latest block, though the results will possibly be inconsistent due to the bug that caused the error. Note that some errors are still always fatal, to be non-fatal the error must be known to be deterministic.
 
 > 注：グラフネットワークはまだ非致命的なエラーをサポートしていないため、その機能を使ったサブグラフをスタジオ経由でネットワークに展開してはいけません。
 
-非致命的エラーを有効にするには、サブグラフのマニフェストに以下の機能フラグを設定する必要があります:
+Enabling non-fatal errors requires setting the following feature flag on the subgraph manifest:
 
 ```yaml
 specVersion: 0.0.4
 description: Gravatar for Ethereum
 features:
-    - fullTextSearch
+    - nonFatalErrors
     ...
 ```
 
-クエリは、`subgraphError`引数を通じて、潜在的な不整合を持つデータのクエリをオプトインする必要があります。また、例のように、サブグラフがエラーをスキップしたかどうかを確認するために、`_meta`をクエリすることも推奨されます:
+The query must also opt-in to querying data with potential inconsistencies through the `subgraphError` argument. It is also recommended to query `_meta` to check if the subgraph has skipped over errors, as in the example:
 
 ```graphql
 foos(first: 100, subgraphError: allow) {
@@ -877,13 +880,13 @@ _meta {
 }
 ```
 
-サブグラフにエラーが発生した場合、そのクエリはデータと、`"indexing_error"`というメッセージを持つ graphql のエラーの両方を返します（以下のレスポンス例）:
+If the subgraph encounters an error that query will return both the data and a graphql error with the message `"indexing_error"`, as in this example response:
 
 ```graphql
 "data": {
     "foos": [
         {
-          "id": "fooId"
+          "id": "0xdead"
         }
     ],
     "_meta": {
@@ -899,11 +902,11 @@ _meta {
 
 ### 既存のサブグラフへのグラフト
 
-サブグラフが最初にデプロイされると、対応するチェーンの genesis ブロック（または各データソースで定義された`startBlock` ）でイベントのインデックス作成を開始します。状況によっては、既存のサブグラフからデータを再利用し、ずっと後のブロックでインデックス作成を開始することが有益な場合があります。このようなインデックス作成方法を*グラフト化（Grafting）*と呼びます。グラフト化は、例えば、開発中にマッピングの単純なエラーを素早く回避したり、既存のサブグラフが故障した後に一時的に再稼働させたりするのに便利です。
+When a subgraph is first deployed, it starts indexing events at the genesis block of the corresponding chain (or at the `startBlock` defined with each data source) In some circumstances, it is beneficial to reuse the data from an existing subgraph and start indexing at a much later block. This mode of indexing is called _Grafting_. Grafting is, for example, useful during development to get past simple errors in the mappings quickly, or to temporarily get an existing subgraph working again after it has failed.
 
 > **注: ** グラフト化には、インデクサがベースとなるサブグラフにインデックスを作成していることが必要です。現時点ではグラフネットワークでは推奨されておらず、開発者はその機能を使ったサブグラフをスタジオ経由でネットワークに展開してはいけません。
 
-`subgraph.yaml`のサブグラフマニフェストのトップレベルに`graft`ブロックがある場合、サブグラフはベースサブグラフにグラフトされます:
+A subgraph is grafted onto a base subgraph when the subgraph manifest in `subgraph.yaml` contains a `graft` block at the toplevel:
 
 ```yaml
 description: ...
@@ -912,11 +915,11 @@ graft:
   block: 7345624 # Block number
 ```
 
-マニフェストに`graft`ブロックが含まれるサブグラフがデプロイされると、グラフノードは `base` サブグラフのデータを、指定されたブロックまでコピーし、そのブロック以降の新しいサブグラフのインデックスを作成し続ける。ベースサブグラフは、対象となるグラフノードのインスタンス上に存在し、少なくとも与えられた`block`までのインデックスを持っている必要があります。このような制限があるため、グラフト化は開発時や緊急時に、グラフト化されていない同等のサブグラフの生成を早めるためにのみ使用するべきです。
+When a subgraph whose manifest contains a `graft` block is deployed, Graph Node will copy the data of the `base` subgraph up to and including the given `block` and then continue indexing the new subgraph from that block on. The base subgraph must exist on the target Graph Node instance and must have indexed up to at least the given block. Because of this restriction, grafting should only be used during development or during an emergency to speed up producing an equivalent non-grafted subgraph.
 
-グラフトはベースデータのインデックスではなくコピーを行うため、スクラッチからインデックスを作成するよりもサブグラフを目的のブロックに早く到達させることができますが、非常に大きなサブグラフの場合は最初のデータコピーに数時間かかることもあります。グラフトされたサブグラフが初期化されている間、グラフノードは既にコピーされたエンティティタイプに関する情報を記録します。
+Because grafting copies rather than indexes base data it is much quicker in getting the subgraph to the desired block than indexing from scratch, though the initial data copy can still take several hours for very large subgraphs. While the grafted subgraph is being initialized, the Graph Node will log information about the entity types that have already been copied.
 
-グラフト化されたサブグラフは、ベースとなるサブグラフのスキーマと同一ではなく、単に互換性のある GraphQL スキーマを使用することができます。また、それ自体は有効なサブグラフのスキーマでなければならないが、以下の点でベースサブグラフのスキーマから逸脱することができます。
+The grafted subgraph can use a GraphQL schema that is not identical to the one of the base subgraph, but merely compatible with it. It has to be a valid subgraph schema in its own right but may deviate from the base subgraph's schema in the following ways:
 
 - エンティティタイプを追加または削除する
 - エンティティタイプから属性を削除する
