@@ -149,7 +149,14 @@ export const MDXLayout = ({ pagePath, navItems, frontmatter, outline, children }
             flexDirection: 'column',
           }}
         >
-          <div sx={{ display: ['none', null, null, 'block'], ml: '-8px', mr: '24px' }}>
+          <div
+            sx={{
+              display: ['none', null, null, 'block'],
+              mt: 'calc(-1 * var(--gds-header-height) * var(--gds-header-fixed))',
+              ml: '-8px',
+              mr: '24px',
+            }}
+          >
             <MDXLayoutNav />
           </div>
 
@@ -182,7 +189,14 @@ export const MDXLayout = ({ pagePath, navItems, frontmatter, outline, children }
             </div>
           </div>
 
-          <div sx={{ display: ['none', null, null, 'block'], ml: '40px', mr: '-8px' }}>
+          <div
+            sx={{
+              display: ['none', null, null, 'block'],
+              mt: 'calc(-1 * var(--gds-header-height) * var(--gds-header-fixed))',
+              ml: '40px',
+              mr: '-8px',
+            }}
+          >
             <MDXLayoutOutline />
           </div>
         </div>

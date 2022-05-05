@@ -14,7 +14,7 @@ export const MDXLayoutPagination = () => {
       <NewGDSDivider diamonds />
       <Flex.Row justify="space-between" sx={{ mt: Spacing.XL, overflow: 'hidden' }}>
         <div>
-          {previousPage && (
+          {previousPage ? (
             <Link
               href={previousPage.path}
               sx={{
@@ -49,10 +49,10 @@ export const MDXLayoutPagination = () => {
                 </Text>
               </Flex.Column>
             </Link>
-          )}
+          ) : null}
         </div>
         <div>
-          {nextPage && (
+          {nextPage ? (
             <Link
               href={nextPage.path}
               sx={{
@@ -87,7 +87,7 @@ export const MDXLayoutPagination = () => {
                 </Text>
               </Flex.Column>
             </Link>
-          )}
+          ) : null}
         </div>
       </Flex.Row>
     </div>

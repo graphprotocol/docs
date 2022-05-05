@@ -1,2 +1,2 @@
 export * from './types'
-export * from './getNavItems'
+export * from './utils'

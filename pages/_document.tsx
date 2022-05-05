@@ -12,9 +12,14 @@ export default class MyDocument extends Document {
     const { locale } = this.props
 
     return (
-      <Html lang={locale}>
+      <Html lang={locale} data-theme="dark">
         <Head>
           <link rel="icon" type="image/png" href="https://storage.googleapis.com/graph-web/favicon.png" />
+          <link
+            rel="preconnect"
+            href={`https://${process.env.ALGOLIA_APP_ID}-dsn.algolia.net`}
+            crossOrigin="anonymous"
+          />
         </Head>
         <body>
           <Main />

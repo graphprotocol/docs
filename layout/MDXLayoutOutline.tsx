@@ -1,4 +1,4 @@
-import { useContext } from 'react'
+import { useContext, useState, useEffect } from 'react'
 import { Text, Flex, NewGDSDivider, Spacing, buildTransition } from '@edgeandnode/components'
 
 import { DocumentContext } from '@/layout'
@@ -7,7 +7,13 @@ import { useI18n } from '@/i18n'
 
 export const MDXLayoutOutline = () => {
   const { outline, highlightedOutlineItemId } = useContext(DocumentContext)!
+  const [enableTransition, setEnableTransition] = useState(false)
   const { t } = useI18n()
+
+  // Fix issue where the `translateY` is animated on initial load
+  useEffect(() => {
+    setTimeout(() => setEnableTransition(true), 0)
+  }, [])
 
   if (outline.length === 0) {
     return <div />
@@ -18,11 +24,13 @@ export const MDXLayoutOutline = () => {
       sx={{
         zIndex: 1,
         position: 'sticky',
-        top: '-1px',
-        maxHeight: 'calc(100vh + 2px)',
+        top: 0,
+        maxHeight: '100vh',
         px: Spacing.M,
         py: Spacing.XL,
         overflowY: 'auto',
+        transform: 'translateY(calc(var(--gds-header-height-visible) * var(--gds-header-fixed)))',
+        transition: enableTransition ? buildTransition('TRANSFORM', '400ms') : undefined,
       }}
     >
       <Flex.Row>

@@ -1,5 +1,6 @@
 export * from './Blockquote'
 export * from './Code'
+export * from './DocSearch'
 export * from './Difficulty'
 export * from './EditPageLink'
 export * from './Heading'
