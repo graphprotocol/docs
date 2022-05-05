@@ -206,6 +206,7 @@ export function DocSearch(props: DocSearchProps) {
             padding: `${Spacing.M_L} 0`,
           },
           '.DocSearch-Hit-Tree': {
+            width: Spacing.L,
             height: 0,
             opacity: 0,
           },
