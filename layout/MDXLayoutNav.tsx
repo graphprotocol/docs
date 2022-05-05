@@ -5,8 +5,10 @@ import { Text, Flex, Icon, Spacing, BorderRadius, buildTransition } from '@edgea
 import { keyframes } from '@emotion/react'
 
 import { NavContext } from '@/layout'
-import { NavTree, DocSearch } from '@/components'
+import { NavTree, DocSearch, Link } from '@/components'
 import { useI18n } from '@/i18n'
+
+const removeBasePathFromUrl = (url: string) => url.substring((process.env.BASE_PATH ?? '').length)
 
 const animationExpand = keyframes({
   from: { height: 0 },
@@ -138,13 +140,10 @@ export const MDXLayoutNav = ({ mobile = false }: { mobile?: boolean }) => {
               url: item.url.replace('https://thegraph.com/docs', process.env.BASE_PATH ?? ''),
             }))
           }}
-          /* TODO: Set this prop so that clicking on a search result doesn't reload the app.
-          hitComponent={...}
-          */
+          hitComponent={({ hit, children }) => <Link href={removeBasePathFromUrl(hit.url)}>{children}</Link>}
           navigator={{
             navigate({ itemUrl }) {
-              const itemUrlWithoutBasePath = itemUrl.substring((process.env.BASE_PATH ?? '').length)
-              router.push(itemUrlWithoutBasePath)
+              router.push(removeBasePathFromUrl(itemUrl))
             },
             navigateNewTab({ itemUrl }) {
               const windowReference = window.open(itemUrl, '_blank', 'noopener')
