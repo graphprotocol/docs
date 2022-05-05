@@ -143,7 +143,8 @@ export const MDXLayoutNav = ({ mobile = false }: { mobile?: boolean }) => {
           */
           navigator={{
             navigate({ itemUrl }) {
-              router.push(itemUrl)
+              const itemUrlWithoutBasePath = itemUrl.substring((process.env.BASE_PATH ?? '').length)
+              router.push(itemUrlWithoutBasePath)
             },
             navigateNewTab({ itemUrl }) {
               const windowReference = window.open(itemUrl, '_blank', 'noopener')
