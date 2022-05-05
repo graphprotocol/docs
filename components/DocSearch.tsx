@@ -35,9 +35,7 @@ export function DocSearch(props: DocSearchProps) {
 
   const onClose = useCallback(() => {
     setIsOpen(false)
-    setTimeout(() => {
-      dispatch(EventType.SEARCH_CLOSE)
-    }, 0)
+    dispatch(EventType.SEARCH_CLOSE)
   }, [setIsOpen])
 
   const onInput = useCallback(

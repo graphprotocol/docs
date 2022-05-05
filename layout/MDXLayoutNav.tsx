@@ -1,4 +1,5 @@
 import { PropsWithChildren, useState, useEffect, useContext, Fragment } from 'react'
+import { useRouter } from 'next/router'
 import * as Collapsible from '@radix-ui/react-collapsible'
 import { Text, Flex, Icon, Spacing, BorderRadius, buildTransition } from '@edgeandnode/components'
 import { keyframes } from '@emotion/react'
@@ -114,6 +115,7 @@ const MobileWrapper = ({ title, children }: PropsWithChildren<{ title?: string }
 }
 
 export const MDXLayoutNav = ({ mobile = false }: { mobile?: boolean }) => {
+  const router = useRouter()
   const { navItems, currentPage } = useContext(NavContext)!
   const { t, translations, locale } = useI18n()
 
@@ -136,14 +138,23 @@ export const MDXLayoutNav = ({ mobile = false }: { mobile?: boolean }) => {
               url: item.url.replace('https://thegraph.com/docs', process.env.BASE_PATH ?? ''),
             }))
           }}
-          /* TODO: Set those props so that selecting a search result doesn't reload the app.
+          /* TODO: Set this prop so that clicking on a search result doesn't reload the app.
           hitComponent={...}
-          navigator={{
-            navigate(url) {...},
-            navigateNewTab(url) {...},
-            navigateNewWindow(url) {...},
-          }}
           */
+          navigator={{
+            navigate({ itemUrl }) {
+              router.push(itemUrl)
+            },
+            navigateNewTab({ itemUrl }) {
+              const windowReference = window.open(itemUrl, '_blank', 'noopener')
+              if (windowReference) {
+                windowReference.focus()
+              }
+            },
+            navigateNewWindow({ itemUrl }) {
+              window.open(itemUrl, '_blank', 'noopener')
+            },
+          }}
           translations={translations.docsearch}
           placeholder={t('docsearch.button.buttonText')}
         />
