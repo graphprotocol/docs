@@ -94,6 +94,9 @@ export const navigation: (locale: AppLocale) => NavItemDefinition[] = (locale) =
         slug: 'billing',
       },
       {
+        slug: 'managing-api-keys'
+      },
+      {
         slug: 'studio-faq',
       },
       {
