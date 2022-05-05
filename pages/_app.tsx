@@ -1,4 +1,4 @@
-import { useMemo, useCallback, useState, useEffect } from 'react'
+import { useMemo, useCallback, useEffect } from 'react'
 import { AppProps } from 'next/app'
 import { useRouter } from 'next/router'
 import Head from 'next/head'
@@ -18,10 +18,8 @@ import {
 import '@edgeandnode/components/build/components.css'
 import '@docsearch/css'
 import { merge } from 'lodash-es'
-import useBus from 'use-bus'
 
 import { supportedLocales, translations, useI18n } from '@/i18n'
-import { EventType } from '../types'
 
 const DEFAULT_SEO_PROPS: DefaultSeoProps = {
   title: 'The Graph Docs',
@@ -94,16 +92,6 @@ const MyApp = ({ Component, pageProps }: AppProps) => {
     [router]
   )
 
-  // Also disable smooth scrolling when the search is open
-  const [isSearchOpen, setIsSearchOpen] = useState(false)
-  useBus(
-    [EventType.SEARCH_OPEN, EventType.SEARCH_CLOSE],
-    (event) => {
-      setIsSearchOpen(event.type === EventType.SEARCH_OPEN)
-    },
-    [setIsSearchOpen]
-  )
-
   return (
     <>
       <I18nProvider
@@ -114,7 +102,7 @@ const MyApp = ({ Component, pageProps }: AppProps) => {
         pathWithoutLocale={pathWithoutLocale}
       >
         <DefaultSeoWithLocale />
-        <ThemeProvider disableSmoothScrolling={isSearchOpen ? true : disableSmoothScrolling} headComponent={Head}>
+        <ThemeProvider disableSmoothScrolling={disableSmoothScrolling} headComponent={Head}>
           <div
             sx={{
               position: 'absolute',
