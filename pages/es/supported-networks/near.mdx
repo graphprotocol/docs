@@ -8,7 +8,7 @@ This guide is an introduction to building subgraphs indexing smart contracts on 
 
 ## What is NEAR?
 
-[NEAR](https://near.org/) is a smart contract platform for building decentralised applications. Visit the [official documentation](https://docs.near.org/docs/concepts/new-to-near) for more information.
+[NEAR](https://near.org/) is a smart contract platform for building decentralized applications. Visit the [official documentation](https://docs.near.org/docs/concepts/new-to-near) for more information.
 
 ## What are NEAR subgraphs?
 
@@ -25,13 +25,13 @@ Subgraphs are event-based, which means that they listen for and then process on-
 
 ## Building a NEAR Subgraph
 
-`@graphprotocol/graph-cli` is a command line tool for building and deploying subgraphs.
+`@graphprotocol/graph-cli` is a command-line tool for building and deploying subgraphs.
 
 `@graphprotocol/graph-ts` is a library of subgraph-specific types.
 
 NEAR subgraph development requires `graph-cli` above version `0.23.0`, and `graph-ts` above version `0.23.0`.
 
-> Building a NEAR subgraph is very similar to building a subgraph which indexes Ethereum.
+> Building a NEAR subgraph is very similar to building a subgraph that indexes Ethereum.
 
 There are three aspects of subgraph definition:
 
@@ -39,7 +39,7 @@ There are three aspects of subgraph definition:
 
 **schema.graphql:** a schema file that defines what data is stored for your subgraph, and how to query it via GraphQL. The requirements for NEAR subgraphs are covered by [the existing documentation](/developer/create-subgraph-hosted#the-graphql-schema).
 
-**AssemblyScript Mappings:** [AssemblyScript code](/developer/assemblyscript-api) that translates from the event data to the entities defined in your schema. NEAR support introduces NEAR-specific data types, and new JSON parsing functionality.
+**AssemblyScript Mappings:** [AssemblyScript code](/developer/assemblyscript-api) that translates from the event data to the entities defined in your schema. NEAR support introduces NEAR-specific data types and new JSON parsing functionality.
 
 During subgraph development there are two key commands:
 
@@ -74,7 +74,7 @@ dataSources:
 
 - NEAR subgraphs introduce a new `kind` of data source (`near`)
 - The `network` should correspond to a network on the hosting Graph Node. On the Hosted Service, NEAR's mainnet is `near-mainnet`, and NEAR's testnet is `near-testnet`
-- NEAR data sources introduce an optional `source.account` field, which is a human readable ID corresponding to a [NEAR account](https://docs.near.org/docs/concepts/account). This can be an account, or a sub account.
+- NEAR data sources introduce an optional `source.account` field, which is a human-readable ID corresponding to a [NEAR account](https://docs.near.org/docs/concepts/account). This can be an account or a sub-account.
 
 NEAR data sources support two types of handlers:
 
@@ -83,7 +83,7 @@ NEAR data sources support two types of handlers:
 
 ### Schema Definition
 
-Schema definition describes the structure of the resulting subgraph database, and the relationships between entities. This is agnostic of the original data source. There are more details on subgraph schema definition [here](/developer/create-subgraph-hosted#the-graphql-schema).
+Schema definition describes the structure of the resulting subgraph database and the relationships between entities. This is agnostic of the original data source. There are more details on subgraph schema definition [here](/developer/create-subgraph-hosted#the-graphql-schema).
 
 ### AssemblyScript Mappings
 
@@ -156,7 +156,7 @@ These types are passed to block & receipt handlers:
 - Block handlers will receive a `Block`
 - Receipt handlers will receive a `ReceiptWithOutcome`
 
-Otherwise the rest of the [AssemblyScript API](/developer/assemblyscript-api) is available to NEAR subgraph developers during mapping execution.
+Otherwise, the rest of the [AssemblyScript API](/developer/assemblyscript-api) is available to NEAR subgraph developers during mapping execution.
 
 This includes a new JSON parsing function - logs on NEAR are frequently emitted as stringified JSONs. A new `json.fromString(...)` function is available as part of the [JSON API](/developer/assemblyscript-api#json-api) to allow developers to easily process these logs.
 
@@ -180,7 +180,7 @@ $ graph create --node <graph-node-url> subgraph/name # creates a subgraph on a l
 $ graph deploy --node <graph-node-url> --ipfs https://api.thegraph.com/ipfs/ # uploads the build files to a specified IPFS endpoint, and then deploys the subgraph to a specified Graph Node based on the manifest IPFS hash
 ```
 
-The node configuration will depend where the subgraph is being deployed.
+The node configuration will depend on where the subgraph is being deployed.
 
 #### Hosted Service:
 
@@ -234,15 +234,15 @@ NEAR support is in beta, which means that there may be changes to the API as we 
 
 ### Can a subgraph index both NEAR and EVM chains?
 
-No, a subgraph can only support data sources from one chain / network.
+No, a subgraph can only support data sources from one chain/network.
 
 ### Can subgraphs react to more specific triggers?
 
 Currently, only Block and Receipt triggers are supported. We are investigating triggers for function calls to a specified account. We are also interested in supporting event triggers, once NEAR has native event support.
 
-### Will receipt handlers trigger for accounts and their sub accounts?
+### Will receipt handlers trigger for accounts and their sub-accounts?
 
-Receipt handlers will only be triggered for the exact-match of the named account. More flexibility may be added in future.
+Receipt handlers will only be triggered for the exact match of the named account. More flexibility may be added in the future.
 
 ### Can NEAR subgraphs make view calls to NEAR accounts during mappings?
 
@@ -258,7 +258,7 @@ Pending functionality is not yet supported for NEAR subgraphs. In the interim, y
 
 ### My question hasn't been answered, where can I get more help building NEAR subgraphs?
 
-If it is a general question about subgraph development, there is a lot more information in the rest of the [Developer documentation](/developer/quick-start). Otherwise please join [The Graph Protocol Discord](https://discord.gg/vtvv7FP) and ask in the #near channel, or email near@thegraph.com.
+If it is a general question about subgraph development, there is a lot more information in the rest of the [Developer documentation](/developer/quick-start). Otherwise please join [The Graph Protocol Discord](https://discord.gg/vtvv7FP) and ask in the #near channel or email near@thegraph.com.
 
 ## References
 
