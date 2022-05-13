@@ -57,7 +57,7 @@ Graph Protocol で使用される GraphQL Query API について説明します�
 
 クエリは、非常に大きな`skip`値を使用すると、一般的にパフォーマンスが低下するため、避けるべきです。多数のアイテムを検索する場合は、最後の例で示すように、属性に基づいてエンティティをページングする方がはるかに良いでしょう。
 
-#### 例
+#### Example using `first`
 
 最初の 10 個のトークンを検索します:
 
@@ -72,7 +72,7 @@ Graph Protocol で使用される GraphQL Query API について説明します�
 
 コレクションの途中にあるエンティティのグループを検索する場合は、 `skip`パラメータを`first`パラメータと組み合わせて使用し、コレクションの先頭から指定した数のエンティティをスキップすることができます。
 
-#### 例
+#### Example using `first` and `skip`
 
 コレクションの先頭から 10 個ずつオフセットした 10 個の`Token`エンティティをクエリします。
 
@@ -85,7 +85,7 @@ Graph Protocol で使用される GraphQL Query API について説明します�
 }
 ```
 
-#### 例
+#### Example using `first` and `id_ge`
 
 クライアントが多数のエンティティを取得する必要がある場合、属性に基づいてクエリを行い、その属性でフィルタリングする方がはるかにパフォーマンスが高くなります。たとえば、クライアントが大量のトークンを取得するには、次のようなクエリを使用します。
 
@@ -104,7 +104,7 @@ query manyTokens($lastID: String) {
 
 クエリの`where`パラメータを使用して、さまざまなプロパティに対してフィルタリングすることができます。`where`パラメータ内の複数の値でフィルタリングできます。
 
-#### 例
+#### Example using `where`
 
 `失敗`結果を持つクエリの課題:
 
@@ -122,7 +122,7 @@ query manyTokens($lastID: String) {
 
 値の比較には、`_gt`, `_lte`などの接尾語を使用できます:
 
-#### 例
+#### Example for range filtering
 
 ```graphql
 {
@@ -134,9 +134,27 @@ query manyTokens($lastID: String) {
 }
 ```
 
-パラメータのサフィックスの全リスト:
+#### Example for block filtering
+
+You can also filter entities by the `_change_block(number_gte: Int)` - this filters entities which were updated in or after the specified block.
+
+This can be useful if you are looking to fetch only entities which have changed, for example since the last time you polled. Or alternatively it can be useful to investigate or debug how entities are changing in your subgraph (if combined with a block filter, you can isolate only entities that changed in a specific block).
 
 ```graphql
+{
+  applications(where: { _change_block: { number_gte: 100 }}) {
+    id
+    whitelisted
+    deposit
+  }
+}
+```
+
+#### All Filters
+
+Full list of parameter suffixes:
+
+```
 _not
 _gt
 _lt
@@ -145,22 +163,35 @@ _lte
 _in
 _not_in
 _contains
+_contains_nocase
 _not_contains
+_not_contains_nocase
 _starts_with
+_starts_with_nocase
 _ends_with
+_ends_with_nocase
 _not_starts_with
+_not_starts_with_nocase
 _not_ends_with
+_not_ends_with_nocase
 ```
 
-接尾辞の中には、特定のタイプにしか対応していないものがあることにご注意ください。例えば、`Boolean`は`_not`, `_in`, `_not_in`のみサポートしています。
+> Please note that some suffixes are only supported for specific types. For example, `Boolean` only supports `_not`, `_in`, and `_not_in`.
+
+In addition, the following global filters are available as part of `where` argument:
+
+```gr
+_change_block(number_gte: Int)
+```
+
 
 ### タイムトラベルクエリ
 
-エンティティの状態を、デフォルトである最新のブロックだけでなく、任意の過去のブロックに対してもクエリすることができます。クエリを実行するブロックは、ブロック番号またはブロックハッシュで指定できます。
+You can query the state of your entities not just for the latest block, which is the by default, but also for an arbitrary block in the past. The block at which a query should happen can be specified either by its block number or its block hash by including a `block` argument in the toplevel fields of queries.
 
-ただし、Ethereum チェーンの先頭に非常に近いブロックにクエリを実行した場合、そのブロックがメインチェーンにないことが判明したり、チェーンが再編成されたりすると、結果が変わってしまう可能性があります。ブロックが最終的なものとみなされると、クエリ結果は変わりません。
+The result of such a query will not change over time, i.e., querying at a certain past block will return the same result no matter when it is executed, with the exception that if you query at a block very close to the head of the Ethereum chain, the result might change if that block turns out to not be on the main chain and the chain gets reorganized. Once a block can be considered final, the result of the query will not change.
 
-なお、現在の実装には、これらの保証に反する可能性のある制限があります。あるブロックハッシュがメインチェーン上に全く存在しないことや、まだ最終的とは言えないブロックに対するブロックハッシュによるクエリ結果が、クエリと同時に実行されるブロック再編成の影響を受ける可能性があることを、実装では常に見分けることはできません。これらは、ブロックが最終的にメインチェーン上にあることがわかっている場合のブロックハッシュによるクエリの結果には影響しません。ここでは、 [この課題](https://github.com/graphprotocol/graph-node/issues/1405)について詳しく説明します。
+Note that the current implementation is still subject to certain limitations that might violate these gurantees. The implementation can not always tell that a given block hash is not on the main chain at all, or that the result of a query by block hash for a block that can not be considered final yet might be influenced by a block reorganization running concurrently with the query. They do not affect the results of queries by block hash when the block is final and known to be on the main chain. [This issue](https://github.com/graphprotocol/graph-node/issues/1405) explains what these limitations are in detail.
 
 #### 例
 
@@ -176,7 +207,7 @@ _not_ends_with
 }
 ```
 
-このクエリは、ブロック番号 8,000,000 を処理した直後の`Challenge`エンティティと、それに関連する`Application`エンティティを返します。
+This query will return `Challenge` entities, and their associated `Application` entities, as they existed directly after processing block number 8,000,000.
 
 #### 例
 
@@ -192,26 +223,26 @@ _not_ends_with
 }
 ```
 
-このクエリは、`Challenge`エンティティとそれに関連する `Application`エンティティを、指定されたハッシュを持つブロックを処理した直後に存在した状態で返します。
+This query will return `Challenge` entities, and their associated `Application` entities, as they existed directly after processing the block with the given hash.
 
 ### フルテキスト検索クエリ
 
-フルテキスト検索クエリフィールドは、サブグラフスキーマに追加してカスタマイズできる、表現力豊かなテキスト検索 API を提供します。サブグラフにフルテキスト検索を追加するには、「[Defining Fulltext Search Fields](/developer/create-subgraph-hosted#defining-fulltext-search-fields)」を参照してください。
+Fulltext search query fields provide an expressive text search API that can be added to the subgraph schema and customized. Refer to [Defining Fulltext Search Fields](/developer/create-subgraph-hosted#defining-fulltext-search-fields) to add fulltext search to your subgraph.
 
-フルテキスト検索クエリには、検索用語を入力するための`text`という 1 つの必須フィールドがあります。この`text`検索フィールドでは、いくつかの特別なフルテキストオペレーターが使用できます。
+Fulltext search queries have one required field, `text`, for supplying search terms. Several special fulltext operators are available to be used in this `text` search field.
 
-フルテキスト検索オペレーター:
+Fulltext search operators:
 
-| シンボル | オペレーター | 説明 |
-| --- | --- | --- |
-| `&` | `And` | 複数の検索語を組み合わせて、指定したすべての検索語を含むエンティティをフィルタリングします。 |
-| &#x7c; | `Or` | 複数の検索語をオペレーターで区切って検索すると、指定した語のいずれかにマッチするすべてのエンティティが返されます。 |
-| `<->` | `Follow by` | 2 つの単語の間の距離を指定します。 |
-| `:*` | `Prefix` | プレフィックス検索語を使って、プレフィックスが一致する単語を検索します（2 文字必要） |
+| シンボル        | オペレーター      | 説明                                                        |
+| ----------- | ----------- | --------------------------------------------------------- |
+| `&`     | `And`       | 複数の検索語を組み合わせて、指定したすべての検索語を含むエンティティをフィルタリングします。            |
+| &#x7c;      | `Or`        | 複数の検索語をオペレーターで区切って検索すると、指定した語のいずれかにマッチするすべてのエンティティが返されます。 |
+| `<->` | `Follow by` | 2 つの単語の間の距離を指定します。                                        |
+| `:*`        | `Prefix`    | プレフィックス検索語を使って、プレフィックスが一致する単語を検索します（2 文字必要）               |
 
 #### 例
 
-`or` operator を使ったこのクエリは、フルテキスト・フィールドに "anarchism "または "crumpet "のバリエーションを持つブログ・エンティティにフィルタリングします。
+Using the `or` operator, this query will filter to blog entities with variations of either "anarchism" or "crumpet" in their fulltext fields.
 
 ```graphql
 {
@@ -224,7 +255,7 @@ _not_ends_with
 }
 ```
 
-`follow by` operator は、フルテキスト文書の中で特定の距離にある単語を指定します。次のクエリは、"decentralize "の後に "philosophy "が続くバリエーションを持つすべてのブログを返します。
+The `follow by` operator specifies a words a specific distance apart in the fulltext documents. The following query will return all blogs with variations of "decentralize" followed by "philosophy"
 
 ```graphql
 {
@@ -237,7 +268,7 @@ _not_ends_with
 }
 ```
 
-fulltext operators を組み合わせて、より複雑なフィルタを作ることができます。pretext search operator と follow by を組み合わせると、この例のクエリは、「lou」で始まり「music」が続く単語を持つすべてのブログエンティティにマッチします。
+Combine fulltext operators to make more complex filters. With a pretext search operator combined with a follow by this example query will match all blog entities with words that start with "lou" followed by "music".
 
 ```graphql
 {
@@ -252,18 +283,18 @@ fulltext operators を組み合わせて、より複雑なフィルタを作る�
 
 ### エンティティ
 
-データソースのスキーマ（クエリで利用可能なエンティティタイプ、値、リレーションシップ）は、 [GraphQL Interface Definition Langauge (IDL)](https://facebook.github.io/graphql/draft/#sec-Type-System)で定義されます。
+Graph Node implements [specification-based](https://spec.graphql.org/October2021/#sec-Validation) validation of the GraphQL queries it receives using [graphql-tools-rs](https://github.com/dotansimha/graphql-tools-rs#validation-rules), which is based on the [graphql-js reference implementation](https://github.com/graphql/graphql-js/tree/main/src/validation). Queries which fail a validation rule do so with a standard error - visit the [GraphQL spec](https://spec.graphql.org/October2021/#sec-Validation) to learn more.
 
 ## スキーマ
 
-GraphQL スキーマは一般に、`クエリ`、`サブスクリプション`、`ミューテーション`のルートタイプを定義します。Graph は`クエリ`のみをサポートします。サブグラフのルートの`クエリ`タイプは、サブグラフのマニフェストに含まれる GraphQL スキーマから自動生成されます。
+The schema of your data source--that is, the entity types, values, and relationships that are available to query--are defined through the [GraphQL Interface Definition Langauge (IDL)](https://facebook.github.io/graphql/draft/#sec-Type-System).
 
-スキーマに`@entity`ディレクティブが含まれるすべての GraphQL タイプはエンティティとして扱われ、`ID`フィールドが必要です。
+GraphQL schemas generally define root types for `queries`, `subscriptions` and `mutations`. The Graph only supports `queries`. The root `Query` type for your subgraph is automatically generated from the GraphQL schema that's included in your subgraph manifest.
 
-> **注:**開発者は自分のアプリケーションから基礎となるブロックチェーンに対して直接トランザクションを発行することが期待されているため、私たちの API はミューテーションを公開していません。
+> **Note:** Our API does not expose mutations because developers are expected to issue transactions directly against the underlying blockchain from their applications.
 
 ### エンティティ
 
-スキーマに`@entity`ディレクティブが含まれるすべての GraphQL タイプはエンティティとして扱われ、`ID`フィールドが必要です。
+All GraphQL types with `@entity` directives in your schema will be treated as entities and must have an `ID` field.
 
-> **注:**現在、スキーマ内のすべてのタイプに`@entity` ディレクティブが必要です。将来的には、`@entity` ディレクティブを持たないタイプをバリューオブジェクトとして扱う予定ですが、これはまだサポートされていません。
+> **Note:** Currently, all types in your schema must have an `@entity` directive. In the future, we will treat types without an `@entity` directive as value objects, but this is not yet supported.
