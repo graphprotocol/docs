@@ -30,7 +30,7 @@ Additionally, you can use the following optional arguments. If the ABI cannot be
 --abi <FILE> \
 ```
 
-The `<GITHUB_USER>` in this case is your github user or organization name, `<SUBGRAPH_NAME>` is the name for your subgraph, and `<DIRECTORY>` is the optional name of the directory where graph init will put the example subgraph manifest. The `<CONTRACT_ADDRESS>` is the address of your existing contract. `<ETHEREUM_NETWORK>` is the name of the Ethereum network that the contract lives on. `<FILE>` is a local path to a contract ABI file. **Both --network and --abi are optional.**
+The `<GITHUB_USER>` in this case is your GitHub user or organization name, `<SUBGRAPH_NAME>` is the name for your subgraph, and `<DIRECTORY>` is the optional name of the directory where graph init will put the example subgraph manifest. The `<CONTRACT_ADDRESS>` is the address of your existing contract. `<ETHEREUM_NETWORK>` is the name of the Ethereum network that the contract lives on. `<FILE>` is a local path to a contract ABI file. **Both --network and --abi are optional.**
 
 ### From an Example Subgraph
 
@@ -53,13 +53,13 @@ Please note that the following networks are supported on the Hosted Service. Net
 - `goerli`
 - `poa-core`
 - `poa-sokol`
-- `xdai`
+- `xdai` (now known as Gnosis Chain)
 - `near-mainnet`
 - `near-testnet`
-- `matic`
+- `matic` (now known as Polygon)
 - `mumbai`
 - `fantom`
-- `bnb`
+- `bsc` (now known as BNB Chain)
 - `chapel`
 - `clover`
 - `avalanche`
@@ -75,3 +75,4 @@ Please note that the following networks are supported on the Hosted Service. Net
 - `optimism-kovan`
 - `aurora`
 - `aurora-testnet`
+- `boba`
