@@ -57,7 +57,7 @@ Además, el parámetro `skip` puede utilizarse para saltar entidades y paginar. 
 
 Las consultas deben evitar el uso de valores de `skip` muy grandes, ya que suelen tener un rendimiento deficiente. Para recuperar un gran número de elementos, es mucho mejor para paginar recorrer las entidades basándose en un atributo, como se muestra en el último ejemplo.
 
-#### Ejemplo
+#### Example using `first`
 
 Consulta los primeros 10 tokens:
 
@@ -72,7 +72,7 @@ Consulta los primeros 10 tokens:
 
 Para consultar grupos de entidades en medio de una colección, el parámetro `skip` puede utilizarse junto con el parámetro `first` para omitir un número determinado de entidades empezando por el principio de la colección.
 
-#### Ejemplo
+#### Example using `first` and `skip`
 
 Consulta 10 entidades `Token`, desplazadas 10 lugares desde el principio de la colección:
 
@@ -85,7 +85,7 @@ Consulta 10 entidades `Token`, desplazadas 10 lugares desde el principio de la c
 }
 ```
 
-#### Ejemplo
+#### Example using `first` and `id_ge`
 
 Si un cliente necesita recuperar un gran número de entidades, es mucho más eficaz basar las consultas en un atributo y filtrar por ese atributo. Por ejemplo, un cliente podría recuperar un gran número de tokens utilizando esta consulta:
 
@@ -104,7 +104,7 @@ La primera vez, enviaría la consulta con `lastID = ""`, y para las siguientes p
 
 Puedes utilizar el parámetro `where` en tus consultas para filtrar por diferentes propiedades. Puedes filtrar por múltiples valores dentro del parámetro `where`.
 
-#### Ejemplo
+#### Example using `where`
 
 Desafíos de consulta con resultado `failed`:
 
@@ -122,7 +122,7 @@ Desafíos de consulta con resultado `failed`:
 
 Puedes utilizar sufijos como `_gt`, `_lte` para la comparación de valores:
 
-#### Ejemplo
+#### Example for range filtering
 
 ```graphql
 {
@@ -134,9 +134,27 @@ Puedes utilizar sufijos como `_gt`, `_lte` para la comparación de valores:
 }
 ```
 
-Lista completa de sufijos de parámetros:
+#### Example for block filtering
+
+You can also filter entities by the `_change_block(number_gte: Int)` - this filters entities which were updated in or after the specified block.
+
+This can be useful if you are looking to fetch only entities which have changed, for example since the last time you polled. Or alternatively it can be useful to investigate or debug how entities are changing in your subgraph (if combined with a block filter, you can isolate only entities that changed in a specific block).
 
 ```graphql
+{
+  applications(where: { _change_block: { number_gte: 100 }}) {
+    id
+    whitelisted
+    deposit
+  }
+}
+```
+
+#### All Filters
+
+Full list of parameter suffixes:
+
+```
 _not
 _gt
 _lt
@@ -145,22 +163,35 @@ _lte
 _in
 _not_in
 _contains
+_contains_nocase
 _not_contains
+_not_contains_nocase
 _starts_with
+_starts_with_nocase
 _ends_with
+_ends_with_nocase
 _not_starts_with
+_not_starts_with_nocase
 _not_ends_with
+_not_ends_with_nocase
 ```
 
-Ten en cuenta que algunos sufijos sólo son compatibles con determinados tipos. Por ejemplo, `Boolean` solo admite `_not`, `_in`, y `_not_in`.
+> Please note that some suffixes are only supported for specific types. For example, `Boolean` only supports `_not`, `_in`, and `_not_in`.
+
+In addition, the following global filters are available as part of `where` argument:
+
+```gr
+_change_block(number_gte: Int)
+```
+
 
 ### Consultas sobre Time-travel
 
-Puedes consultar el estado de tus entidades no sólo para el último bloque, que es el predeterminado, sino también para un bloque arbitrario en el pasado. El bloque en el que debe producirse una consulta puede especificarse por su número de bloque o su hash de bloque incluyendo un argumento `block` en los campos de nivel superior de las consultas.
+You can query the state of your entities not just for the latest block, which is the by default, but also for an arbitrary block in the past. The block at which a query should happen can be specified either by its block number or its block hash by including a `block` argument in the toplevel fields of queries.
 
-El resultado de una consulta de este tipo no cambiará con el tiempo, es decir, la consulta en un determinado bloque pasado devolverá el mismo resultado sin importar cuándo se ejecute, con la excepción de que si se consulta en un bloque muy cercano al encabezado de la cadena de Ethereum, el resultado podría cambiar si ese bloque resulta no estar en la cadena principal y la cadena se reorganiza. Una vez que un bloque puede considerarse definitivo, el resultado de la consulta no cambiará.
+The result of such a query will not change over time, i.e., querying at a certain past block will return the same result no matter when it is executed, with the exception that if you query at a block very close to the head of the Ethereum chain, the result might change if that block turns out to not be on the main chain and the chain gets reorganized. Once a block can be considered final, the result of the query will not change.
 
-Ten en cuenta que la implementación está sujeta a ciertas limitaciones que podrían violar estas garantías. La implementación no siempre puede decir que un hash de bloque dado no está en la cadena principal en absoluto, o que el resultado de una consulta por hash de bloque para un bloque que no puede considerarse final todavía podría estar influenciado por una reorganización de bloque que se ejecuta simultáneamente con la consulta. No afectan a los resultados de las consultas por el hash del bloque cuando éste es definitivo y se sabe que está en la cadena principal. [ Esta cuestión](https://github.com/graphprotocol/graph-node/issues/1405) explica con detalle cuáles son estas limitaciones.
+Note that the current implementation is still subject to certain limitations that might violate these gurantees. The implementation can not always tell that a given block hash is not on the main chain at all, or that the result of a query by block hash for a block that can not be considered final yet might be influenced by a block reorganization running concurrently with the query. They do not affect the results of queries by block hash when the block is final and known to be on the main chain. [This issue](https://github.com/graphprotocol/graph-node/issues/1405) explains what these limitations are in detail.
 
 #### Ejemplo
 
@@ -176,7 +207,7 @@ Ten en cuenta que la implementación está sujeta a ciertas limitaciones que pod
 }
 ```
 
-Esta consulta devolverá las entidades `Challenge`, y sus entidades asociadas `Application`, tal y como existían directamente después de procesar el bloque número 8.000.000.
+This query will return `Challenge` entities, and their associated `Application` entities, as they existed directly after processing block number 8,000,000.
 
 #### Ejemplo
 
@@ -192,26 +223,26 @@ Esta consulta devolverá las entidades `Challenge`, y sus entidades asociadas `A
 }
 ```
 
-Esta consulta devolverá las entidades `Challenge`, y sus entidades asociadas `Application`, tal y como existían directamente después de procesar el bloque con el hash dado.
+This query will return `Challenge` entities, and their associated `Application` entities, as they existed directly after processing the block with the given hash.
 
 ### Consultas de Búsqueda de Texto Completo
 
-Los campos de consulta de búsqueda de texto completo proporcionan una API de búsqueda de texto expresiva que puede añadirse al esquema de subgrafos y personalizarse. Consulta [Definiendo los campos de búsqueda de texto completo](/developer/create-subgraph-hosted#defining-fulltext-search-fields) para añadir la búsqueda de texto completo a tu subgrafo.
+Fulltext search query fields provide an expressive text search API that can be added to the subgraph schema and customized. Refer to [Defining Fulltext Search Fields](/developer/create-subgraph-hosted#defining-fulltext-search-fields) to add fulltext search to your subgraph.
 
-Las consultas de búsqueda de texto completo tienen un campo obligatorio, `text`, para suministrar los términos de búsqueda. Hay varios operadores especiales de texto completo que se pueden utilizar en este campo de búsqueda de `text`.
+Fulltext search queries have one required field, `text`, for supplying search terms. Several special fulltext operators are available to be used in this `text` search field.
 
-Operadores de búsqueda de texto completo:
+Fulltext search operators:
 
-| Símbolo | Operador | Descripción |
-| --- | --- | --- |
-| `&` | `And` | Para combinar varios términos de búsqueda en un filtro para entidades que incluyen todos los términos proporcionados |
-| &#x7c; | `Or` | Las consultas con varios términos de búsqueda separados por o el operador devolverá todas las entidades que coincidan con cualquiera de los términos proporcionados |
-| `<->` | `Follow by` | Especifica la distancia entre dos palabras. |
-| `:*` | `Prefix` | Utilice el término de búsqueda del prefijo para encontrar palabras cuyo prefijo coincida (se requieren 2 caracteres.) |
+| Símbolo     | Operador    | Descripción                                                                                                                                                         |
+| ----------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `&`     | `And`       | Para combinar varios términos de búsqueda en un filtro para entidades que incluyen todos los términos proporcionados                                                |
+| &#x7c;      | `Or`        | Las consultas con varios términos de búsqueda separados por o el operador devolverá todas las entidades que coincidan con cualquiera de los términos proporcionados |
+| `<->` | `Follow by` | Especifica la distancia entre dos palabras.                                                                                                                         |
+| `:*`        | `Prefix`    | Utilice el término de búsqueda del prefijo para encontrar palabras cuyo prefijo coincida (se requieren 2 caracteres.)                                               |
 
 #### Ejemplos
 
-Utilizando el operador `or`, esta consulta filtrará las entidades del blog que tengan variaciones de "anarchism" o de "crumpet" en sus campos de texto completo.
+Using the `or` operator, this query will filter to blog entities with variations of either "anarchism" or "crumpet" in their fulltext fields.
 
 ```graphql
 {
@@ -224,7 +255,7 @@ Utilizando el operador `or`, esta consulta filtrará las entidades del blog que 
 }
 ```
 
-El operador `follow by` especifica unas palabras a una distancia determinada en los documentos de texto completo. La siguiente consulta devolverá todos los blogs con variaciones de "decentralize" seguidas de "philosophy"
+The `follow by` operator specifies a words a specific distance apart in the fulltext documents. The following query will return all blogs with variations of "decentralize" followed by "philosophy"
 
 ```graphql
 {
@@ -237,7 +268,7 @@ El operador `follow by` especifica unas palabras a una distancia determinada en 
 }
 ```
 
-Combina los operadores de texto completo para crear filtros más complejos. Con un operador de búsqueda de pretexto combinado con un follow by esta consulta de ejemplo coincidirá con todas las entidades del blog con palabras que empiecen por "lou" seguidas de "music".
+Combine fulltext operators to make more complex filters. With a pretext search operator combined with a follow by this example query will match all blog entities with words that start with "lou" followed by "music".
 
 ```graphql
 {
@@ -252,18 +283,18 @@ Combina los operadores de texto completo para crear filtros más complejos. Con 
 
 ### Validación
 
-Graph Node implementa la validación [basada en la especificacion](https://spec.graphql.org/October2021/#sec-Validation) de las consultas GraphQL que recibe utilizando [graphql-tools-rs](https://github.com/dotansimha/graphql-tools-rs#validation-rules), que se basa en la [implementación de referencia graphql-js](https://github.com/graphql/graphql-js/tree/main/src/validation). Las consultas que fallan una regla de validación lo hacen con un error estándar - visita el [GraphQL spec](https://spec.graphql.org/October2021/#sec-Validation)para saber más.
+Graph Node implements [specification-based](https://spec.graphql.org/October2021/#sec-Validation) validation of the GraphQL queries it receives using [graphql-tools-rs](https://github.com/dotansimha/graphql-tools-rs#validation-rules), which is based on the [graphql-js reference implementation](https://github.com/graphql/graphql-js/tree/main/src/validation). Queries which fail a validation rule do so with a standard error - visit the [GraphQL spec](https://spec.graphql.org/October2021/#sec-Validation) to learn more.
 
 ## Esquema
 
-El esquema de tu fuente de datos, es decir, los tipos de entidad, los valores y las relaciones que están disponibles para la consulta, se definen a través del [GraphQL Interface Definition Langauge (IDL)](https://facebook.github.io/graphql/draft/#sec-Type-System).
+The schema of your data source--that is, the entity types, values, and relationships that are available to query--are defined through the [GraphQL Interface Definition Langauge (IDL)](https://facebook.github.io/graphql/draft/#sec-Type-System).
 
-Los esquemas de GraphQL generalmente definen tipos raíz para `queries`, `subscriptions` and `mutations`. The Graph solo admite `queries`. El tipo raíz `Query` de tu subgrafo se genera automáticamente a partir del esquema GraphQL que se incluye en el manifiesto de tu subgrafo.
+GraphQL schemas generally define root types for `queries`, `subscriptions` and `mutations`. The Graph only supports `queries`. The root `Query` type for your subgraph is automatically generated from the GraphQL schema that's included in your subgraph manifest.
 
-> **Nota:** Nuestra API no expone mutaciones porque se espera que los desarrolladores emitan transacciones directamente contra la blockchain subyacente desde sus aplicaciones.
+> **Note:** Our API does not expose mutations because developers are expected to issue transactions directly against the underlying blockchain from their applications.
 
 ### Entities
 
-Todos los tipos GraphQL con directivas `@entity` en tu esquema serán tratados como entidades y deben tener un campo `ID`.
+All GraphQL types with `@entity` directives in your schema will be treated as entities and must have an `ID` field.
 
-> **Nota:** Actualmente, todos los tipos de tu esquema deben tener una directiva `@entity`. En el futuro, trataremos los tipos sin una directiva `@entity` como objetos de valor, pero esto todavía no está admitido.
+> **Note:** Currently, all types in your schema must have an `@entity` directive. In the future, we will treat types without an `@entity` directive as value objects, but this is not yet supported.
