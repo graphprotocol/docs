@@ -40,11 +40,11 @@ There are three main key parts or files when it comes to defining a subgraph:
 
 **schema.graphql**: a GraphQL schema that defines what data is stored for your subgraph, and how to query it via GraphQL.
 
-**AssemblyScript Mappings**: [AssemblyScript](https://github.com/AssemblyScript/assemblyscript) code that translates from the event data to the entities defined in your schema.
+**AssemblyScript Mappings**: [AssemblyScript](https://github.com/AssemblyScript/assemblyscript) code that translates from blockchain data to the entities defined in your schema.
 
 ### Subgraph Manifest Definition
 
-The subgraph manifest (`subgraph.yaml`) identifies the data sources for the subgraph, the triggers of interest, and the functions that should be run in response to those triggers. See below for an example subgraph manifest for a Cosmos Hub subgraph:
+The subgraph manifest (`subgraph.yaml`) identifies the data sources for the subgraph, the triggers of interest, and the functions (`handlers`) that should be run in response to those triggers. See below for an example subgraph manifest for a Cosmos Hub subgraph:
 
 ```yaml
 specVersion: 0.0.5
@@ -53,6 +53,7 @@ schema:
   file: ./schema.graphql # link to the schema file
 dataSources:
   - kind: cosmos
+    name: CosmosHub
     network: cosmoshub-4
     source:
       startBlock: 0 # Required for Cosmos, set this to 0 to start indexing from chain genesis
@@ -69,13 +70,13 @@ dataSources:
       file: ./src/mapping.ts # link to the file with the Assemblyscript mappings
 ```
 
-- Cosmos Hub subgraphs introduce a new `kind` of data source (`cosmos`).
+- Cosmos subgraphs introduce a new `kind` of data source (`cosmos`).
 - The `network` should correspond to a network on the hosting Graph Node. Cosmos Hub mainnet is `cosmoshub-4`. Cosmos Hub current testnet is `theta-testnet-001`. Other Cosmos Hub networks, i.e. `cosmoshub-3`, are halted, therefore no data is provided for them.
 
-Cosmos Hub data sources support three types of handlers:
+Cosmos data sources support three types of handlers:
 
 - `blockHandlers`: run on every new block appended to the chain. The handler will receive a full block and all its data containing, among other things, all the events and transactions.
-- `eventHandlers`: run on every event, except if there is an event type specified in the handler definition, in that case only events of that type are processed. Block data is also passed onto the mapping in order to have context of the event within the chain.
+- `eventHandlers`: run on every event contained in a block that matches the event type specified in the manifest. Block data is also passed onto the mapping in order to have context of the event within the chain.
 - `transactionHandlers`: run for every transaction executed. The mapping is provided with all the relevant data related to the transaction and a block abstraction that can be used to acquire context of the transaction within a block and within the chain.
 
 Event and Transaction handlers are a way to process meaningful data from the chain without the need of processing a whole block. The data processed by them can also be found in the block handlers, since events and transactions are also part of a block, but removes the need of processing unnecessary data.
@@ -92,67 +93,61 @@ Cosmos Hub indexing introduces Cosmos-specific data types to the [AssemblyScrip
 
 ```tsx
 class Block {
-    header: Header
-    evidence: EvidenceList
-    resultBeginBlock: ResponseBeginBlock
-    resultEndBlock: ResponseEndBlock
-    transactions: Array<TxResult>
-    validatorUpdates: Array<Validator>
+  header: Header
+  evidence: EvidenceList
+  resultBeginBlock: ResponseBeginBlock
+  resultEndBlock: ResponseEndBlock
+  transactions: Array<TxResult>
+  validatorUpdates: Array<Validator>
 }
 
 class EventData {
-    event: Event
-    block: HeaderOnlyBlock
+  event: Event
+  block: HeaderOnlyBlock
 }
 
 class TransactionData {
-    tx: TxResult
-    block: HeaderOnlyBlock
+  tx: TxResult
+  block: HeaderOnlyBlock
 }
 
-// HeaderOnlyBlock is a standard [Block] structure where all other fields are
-// removed so that hydrating that object from a [Block] bytes payload will
-// drastically reduce allocated memory required to hold the full block.
-//
-// This can be used to unpack a [Block] when only the [Header] information
-// is required and greatly reduce required memory.
 class HeaderOnlyBlock {
-    header: Header
+  header: Header
 }
 
 class Header {
-    version: Consensus
-    chainId: string
-    height: u64
-    time: Timestamp
-    lastBlockId: BlockID
-    lastCommitHash: Bytes
-    dataHash: Bytes
-    validatorsHash: Bytes
-    nextValidatorsHash: Bytes
-    consensusHash: Bytes
-    appHash: Bytes
-    lastResultsHash: Bytes
-    evidenceHash: Bytes
-    proposerAddress: Bytes
-    hash: Bytes
+  version: Consensus
+  chainId: string
+  height: u64
+  time: Timestamp
+  lastBlockId: BlockID
+  lastCommitHash: Bytes
+  dataHash: Bytes
+  validatorsHash: Bytes
+  nextValidatorsHash: Bytes
+  consensusHash: Bytes
+  appHash: Bytes
+  lastResultsHash: Bytes
+  evidenceHash: Bytes
+  proposerAddress: Bytes
+  hash: Bytes
 }
 
 class TxResult {
-	height: u64
-    index: u32
-    tx: Bytes
-    result: ResponseDeliverTx
-    hash: Bytes
+  height: u64
+  index: u32
+  tx: Bytes
+  result: ResponseDeliverTx
+  hash: Bytes
 }
 
 class Event {
-    eventType: string
-    attributes: Array<EventAttribute>
+  eventType: string
+  attributes: Array<EventAttribute>
 }
 ```
 
-The types above are just the general ones that mappings use. You can find the full list of types for the Cosmos Hub integration [here](https://github.com/graphprotocol/graph-ts/blob/main/chain/cosmos.ts).
+The types above are just the general ones that mappings use. You can find the full list of types for the Cosmos integration [here](https://github.com/graphprotocol/graph-ts/blob/main/chain/cosmos.ts).
 
 Each type of handler will receive a different type based on the relevant data. For both event and transaction handlers, a reference to the block they are contained in is passed as well. These are the exact types that are passed as a parameter to each mapping function:
 
@@ -162,7 +157,7 @@ Each type of handler will receive a different type based on the relevant data. F
 
 `TransactionData` is passed to the transactionHandler.
 
-## Creating and building a Cosmos Hub subgraph
+## Creating and building a Cosmos subgraph
 
 The first step before starting to write the subgraph mappings is to generate the type bindings based on the entities that have been defined in the subgraph schema file (`schema.graphql`). This will allow the mapping functions to create new objects of those types and save them to the store. This is done by using the `codegen` CLI command:
 
@@ -183,13 +178,21 @@ When the subgraph builds successfully, it is time to deploy it to a Graph Node i
 The first thing to do is create the subgraph in the node, this only has to be done once via the `create` CLI command:
 
 ```bash
+Local deployment:
 $ graph create subgraph-name --node <graph-node-url>
+
+Hosted service deployment:
+$ graph create subgraph-name --node https://api.thegraph.com/deploy/
 ```
 
 After the subgraph has been created, it can be deployed by using the graph `deploy` CLI command:
 
 ```bash
+Local deployment:
 $ graph deploy subgraph-name --ipfs <ipfs-url> --node <graph-node-url>
+
+Hosted service deployment:
+$ graph deploy subgraph-name --ipfs https://api.thegraph.com/ipfs/ --node https://api.thegraph.com/deploy/
 ```
 
 Once your subgraph has been deployed, it will be indexed by Graph Node. You can check its progress by querying the subgraph itself at the exposed endpoint.
