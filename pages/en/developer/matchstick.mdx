@@ -42,7 +42,7 @@ From `graph-cli 0.25.2`, the `graph test` command supports running `matchstick` 
 
 ❗ If you have previously ran `graph test` you may encounter the following error during docker build:
 
-```
+```sh
   error from sender: failed to xattr node_modules/binary-install-raw/bin/binary-<platform>: permission denied
 ```
 
@@ -50,11 +50,12 @@ In this case create a `.dockerignore` in the root folder and add `node_modules/b
 
 ### Configuration
 
-Matchstick can be configured to use a custom tests and libs folder via `matchstick.yaml` config file:
+Matchstick can be configured to use a custom tests, libs and manifest path via `matchstick.yaml` config file:
 
 ```yaml
-testsFolder: ./folderName
+testsFolder: path/to/tests
 libsFolder: path/to/libs
+manifestPath: path/to/subgraph.yaml
 ```
 
 ### Demo subgraph
@@ -64,6 +65,350 @@ You can try out and play around with the examples from this guide by cloning the
 ### Video tutorials
 
 Also you can check out the video series on ["How to use Matchstick to write unit tests for your subgraphs"](https://www.youtube.com/playlist?list=PLTqyKgxaGF3SNakGQwczpSGVjS_xvOv3h)
+
+## Tests structure (>=0.5.0)
+
+_**IMPORTANT: Requires matchstick-as >=0.5.0**_
+
+### describe()
+
+`describe(name: String , () => {})` - Defines a test group.
+
+**_Notes:_**
+
+- _Describes are not mandatory. You can still use test() the old way, outside of the describe() blocks_
+
+Example:
+
+```typescript
+import { describe, test } from "matchstick-as/assembly/index"
+import { handleNewGravatar } from "../../src/gravity"
+
+describe("handleNewGravatar()", () => {
+  test("Should create a new Gravatar entity", () => {
+    ...
+  })
+})
+```
+
+Nested `describe()` example:
+
+```typescript
+import { describe, test } from "matchstick-as/assembly/index"
+import { handleUpdatedGravatar } from "../../src/gravity"
+
+describe("handleUpdatedGravatar()", () => {
+  describe("When entity exists", () => {
+    test("updates the entity", () => {
+      ...
+    })
+  })
+
+  describe("When entity does not exists", () => {
+    test("it creates a new entity", () => {
+      ...
+    })
+  })
+})
+```
+__________________________________________________________________
+
+### test()
+
+`test(name: String, () =>, should_fail: bool)` - Defines a test case. You can use test() inside of describe() blocks or independently.
+
+Example:
+
+```typescript
+import { describe, test } from "matchstick-as/assembly/index"
+import { handleNewGravatar } from "../../src/gravity"
+
+describe("handleNewGravatar()", () => {
+  test("Should create a new Entity", () => {
+    ...
+  })
+})
+```
+
+or
+
+```typescript
+test("handleNewGravatar() should create a new entity", () => {
+  ...
+})
+
+
+```
+__________________________________________________________________
+
+### beforeAll()
+
+Runs a code block before any of the tests in the file. If `beforeAll` is declared inside of a `describe` block, it runs at the beginning of that `describe` block.
+
+Examples:
+
+Code inside `beforeAll` will execute once before *all* tests in the file.
+
+```typescript
+import { describe, test, beforeAll } from "matchstick-as/assembly/index"
+import { handleUpdatedGravatar, handleNewGravatar } from "../../src/gravity"
+import { Gravatar } from "../../generated/schema"
+
+beforeAll(() => {
+  let gravatar = new Gravatar("0x0")
+  gravatar.displayName = “First Gravatar”
+  gravatar.save()
+  ...
+})
+
+describe("When the entity does not exist", () => {
+  test("it should create a new Gravatar with id 0x1", () => {
+    ...
+  })
+})
+
+describe("When entity already exists", () => {
+  test("it should update the Gravatar with id 0x0", () => {
+    ...
+  })
+})
+```
+
+Code inside `beforeAll` will execute once before all tests in the first describe block
+
+```typescript
+import { describe, test, beforeAll } from "matchstick-as/assembly/index"
+import { handleUpdatedGravatar, handleNewGravatar } from "../../src/gravity"
+import { Gravatar } from "../../generated/schema"
+
+describe("handleUpdatedGravatar()", () => {
+  beforeAll(() => {
+    let gravatar = new Gravatar("0x0")
+    gravatar.displayName = “First Gravatar”
+    gravatar.save()
+    ...
+  })
+
+  test("updates Gravatar with id 0x0", () => {
+    ...
+  })
+
+  test("creates new Gravatar with id 0x1", () => {
+    ...
+  })
+})
+```
+__________________________________________________________________
+
+### afterAll()
+
+Runs a code block after all of the tests in the file. If `afterAll` is declared inside of a `describe` block, it runs at the end of that `describe` block.
+
+Example:
+
+Code inside `afterAll` will execute once after *all* tests in the file.
+
+```typescript
+import { describe, test, afterAll } from "matchstick-as/assembly/index"
+import { handleUpdatedGravatar, handleNewGravatar } from "../../src/gravity"
+import { store } from "@graphprotocol/graph-ts"
+
+afterAll(() => {
+  store.remove("Gravatar", "0x0")
+  ...
+})
+
+describe("handleNewGravatar, () => {
+  test("creates Gravatar with id 0x0", () => {
+    ...
+  })
+})
+
+describe("handleUpdatedGravatar", () => {
+  test("updates Gravatar with id 0x0", () => {
+    ...
+  })
+})
+```
+
+Code inside `afterAll` will execute once after all tests in the first describe block
+
+```typescript
+import { describe, test, afterAll, clearStore } from "matchstick-as/assembly/index"
+import { handleUpdatedGravatar, handleNewGravatar } from "../../src/gravity"
+
+describe("handleNewGravatar", () => {
+	afterAll(() => {
+    store.remove("Gravatar", "0x1")
+    ...
+	})
+
+  test("It creates a new entity with Id 0x0", () => {
+    ...
+  })
+
+  test("It creates a new entity with Id 0x1", () => {
+    ...
+  })
+})
+
+describe("handleUpdatedGravatar", () => {
+  test("updates Gravatar with id 0x0", () => {
+    ...
+  }) 
+})
+```
+__________________________________________________________________
+
+### beforeEach()
+
+Runs a code block before every test. If `beforeEach` is declared inside of a `describe` block, it runs before each test in that `describe` block.
+
+Examples:
+Code inside `beforeEach` will execute before each tests.
+
+```typescript
+import { describe, test, beforeEach, clearStore } from "matchstick-as/assembly/index"
+import { handleNewGravatars } from "./utils"
+
+beforeEach(() => {
+  clearStore() // <-- clear the store before each test in the file
+})
+
+describe("handleNewGravatars, () => {
+  test("A test that requires a clean store", () => {
+    ...
+  })
+
+  test("Second that requires a clean store", () => {
+    ...
+  })
+})
+
+ ...
+```
+
+Code inside `beforeEach` will execute only before each test in the that describe
+
+```typescript
+import { describe, test, beforeEach } from "matchstick-as/assembly/index"
+import { handleUpdatedGravatar, handleNewGravatar } from "../../src/gravity"
+
+describe("handleUpdatedGravatars", () => {
+  beforeEach(() => {
+    let gravatar = new Gravatar("0x0")
+    gravatar.displayName = "First Gravatar"
+    gravatar.imageUrl = ""
+    gravatar.save()
+  })
+
+  test("Upates the displayName", () => {
+     assert.fieldEqual("Gravatar", "0x0", "displayNamd", "First Gravatar")
+
+    // code that should update the displayName to 1st Gravatar
+
+    assert.fieldEqual("Gravatar", "0x0", "displayName", "1st Gravatar")
+    store.remove("Gravatar", "0x0")
+  })
+
+  test("Updates the imageUrl", () => {
+    assert.fieldEqual("Gravatar", "0x0", "imageUrl", "")
+
+    // code that should changes the imageUrl to https://www.gravatar.com/avatar/0x0
+
+    assert.fieldEqual("Gravatar", "0x0", "imageUrl", "https://www.gravatar.com/avatar/0x0")
+    store.remove("Gravatar", "0x0")
+  })
+})
+
+
+```
+__________________________________________________________________
+
+### afterEach()
+
+Runs a code block after every test. If `afterEach` is declared inside of a `describe` block, it runs after each test in that `describe` block.
+
+Examples:
+
+Code inside `afterEach` will execute after every test.
+
+```typescript
+import { describe, test, beforeEach, afterEach } from "matchstick-as/assembly/index"
+import { handleUpdatedGravatar, handleNewGravatar } from "../../src/gravity"
+
+beforeEach(() => {
+  let gravatar = new Gravatar("0x0")
+  gravatar.displayName = “First Gravatar”
+  gravatar.save()
+})
+
+afterEach(() => {
+  store.remove("Gravatar", "0x0")
+})
+
+describe("handleNewGravatar", () => {
+  ...
+})
+
+describe("handleUpdatedGravatar", () => {
+  test("Upates the displayName", () => {
+     assert.fieldEqual("Gravatar", "0x0", "displayNamd", "First Gravatar")
+
+    // code that should update the displayName to 1st Gravatar
+
+    assert.fieldEqual("Gravatar", "0x0", "displayName", "1st Gravatar")
+  })
+
+  test("Updates the imageUrl", () => {
+    assert.fieldEqual("Gravatar", "0x0", "imageUrl", "")
+
+    // code that should changes the imageUrl to https://www.gravatar.com/avatar/0x0
+
+    assert.fieldEqual("Gravatar", "0x0", "imageUrl", "https://www.gravatar.com/avatar/0x0")
+  })
+})
+```
+
+Code inside `afterEach` will execute after each test in that describe
+
+```typescript
+import { describe, test, beforeEach, afterEach } from "matchstick-as/assembly/index"
+import { handleUpdatedGravatar, handleNewGravatar } from "../../src/gravity"
+
+describe("handleNewGravatar", () => {
+  ...
+})
+
+describe("handleUpdatedGravatar", () => {
+  beforeEach(() => {
+    let gravatar = new Gravatar("0x0")
+    gravatar.displayName = "First Gravatar"
+    gravatar.imageUrl = ""
+    gravatar.save()
+  })
+
+  afterEach(() => {
+    store.remove("Gravatar", "0x0")
+  })
+
+  test("Upates the displayName", () => {
+     assert.fieldEqual("Gravatar", "0x0", "displayNamd", "First Gravatar")
+
+    // code that should update the displayName to 1st Gravatar
+
+    assert.fieldEqual("Gravatar", "0x0", "displayName", "1st Gravatar")
+  })
+
+  test("Updates the imageUrl", () => {
+    assert.fieldEqual("Gravatar", "0x0", "imageUrl", "")
+
+    // code that should changes the imageUrl to https://www.gravatar.com/avatar/0x0
+
+    assert.fieldEqual("Gravatar", "0x0", "imageUrl", "https://www.gravatar.com/avatar/0x0")
+  })
+})
+```
 
 ## Write a Unit Test
 
@@ -476,7 +821,11 @@ test('Derived fields example test', () => {
 
 ### Testing dynamic data sources
 
-Testing dynamic data sources can be be done by mocking the return value of the context(), address() and network() functions of the dataSource namespace. These functions currently return the following: context - returns an empty entity (DataSourceContext), address - returns "0x0000000000000000000000000000000000000000", network - returns "mainnet". The create(...) and createWithContext(...) functions are mocked to do nothing so they don't need to be called in the tests at all. Changes to the return values can be done through the functions of the dataSourceMock namespace in matchstick-as (version 0.3.0+). Example below: First we have the following event handler (which has been intentionally repurposed to showcase datasource mocking):
+Testing dynamic data sources can be be done by mocking the return value of the `context()`, `address()` and `network()` functions of the dataSource namespace. These functions currently return the following: `context()` - returns an empty entity (DataSourceContext), `address()` - returns `0x0000000000000000000000000000000000000000`, `network()` - returns `mainnet`. The `create(...)` and `createWithContext(...)` functions are mocked to do nothing so they don't need to be called in the tests at all. Changes to the return values can be done through the functions of the `dataSourceMock` namespace in `matchstick-as` (version 0.3.0+). 
+
+Example below: 
+
+First we have the following event handler (which has been intentionally repurposed to showcase datasource mocking):
 
 ```typescript
 export function handleApproveTokenDestinations(event: ApproveTokenDestinations): void {
@@ -541,13 +890,13 @@ To run the test coverage functionality provided in **Matchstick**, there are a f
 
 In order for **Matchstick** to check which handlers are being run, those handlers need to be exported from the **test file**. So for instance in our example, in our gravity.test.ts file we have the following handler being imported:
 
-```ts
+```typescript
 import { handleNewGravatar } from '../../src/gravity'
 ```
 
 In order for that function to be visible (for it to be included in the `wat` file **by name**) we need to also export it, like this:
 
-```ts
+```typescript
 export { handleNewGravatar }
 ```
 
@@ -561,7 +910,7 @@ graph test -- -c
 
 You could also add a custom `coverage` command to your `package.json` file, like so:
 
-```ts
+```typescript
  "scripts": {
     /.../
     "coverage": "graph test -- -c"
