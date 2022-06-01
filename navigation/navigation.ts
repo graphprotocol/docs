@@ -135,6 +135,9 @@ export const navigation: (locale: AppLocale) => NavItemDefinition[] = (locale) =
       {
         slug: 'near',
       },
+      {
+        slug: 'arweave',
+      },
     ],
   },
 ]
