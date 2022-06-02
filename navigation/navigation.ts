@@ -138,6 +138,9 @@ export const navigation: (locale: AppLocale) => NavItemDefinition[] = (locale) =
       {
         slug: 'cosmos',
       },
+      {
+        slug: 'arweave',
+      },
     ],
   },
 ]
