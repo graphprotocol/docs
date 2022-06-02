@@ -86,7 +86,9 @@ dataSources:
 Arweave data sources support two types of handlers:
 
 - `blockHandlers` - Run on every new Arweave block. No source.owner is required.
-- `transactionHandlers` - Run on every transaction where the data source's source.owner is the owner. Note that only exact matches are processed, and if you don't add a source.owner, the subgraph will index every transaction.
+- `transactionHandlers` - Run on every transaction where the data source's source.owner is the owner. Note that only exact matches are processed. Currently an owner is required for `transactionHandlers`.
+
+> The source.owner is the owner's Public Key, rather than the owner's address.
 
 > Transactions are the building blocks of the Arweave permaweb and they are objects created by end-users.
 
@@ -141,36 +143,17 @@ class Transaction {
 }
 ```
 
+Block handlers receive a `Block`, while transactions receive a `Transaction`.
+
 Writing the mappings of an Arweave Subgraph is very similar to writing the mappings of an Ethereum Subgraph. For more information, click [here](https://thegraph.com/docs/en/developer/create-subgraph-hosted/#writing-mappings).
 
-## Deploying an Arweave Subgraph
+## Deploying an Arweave Subgraph on the Hosted Service
 
-Once your subgraph has been created, you can deploy your subgraph by using the `graph deploy` CLI command after running the `graph create` CLI command:
+Once your subgraph has been created on the Hosed Service dashboard, you can deploy by using the `graph deploy` CLI command.
 
-**Hosted Service**
-```bash
-graph create subgraph-name --product hosted-service # creates a subgraph on a local Graph Node (on the Hosted Service, this is done via the UI)
-```
 ```bash
 graph deploy --node https://api.thegraph.com/deploy/ --ipfs https://api.thegraph.com/ipfs/ --access-token <your-access-token>
 ```
-
-**Local Graph Node (based on default configuration):**
-```bash
-graph create subgraph-name --node http://localhost:8020
-```
-```bash
-graph deploy --node http://localhost:8020/ --ipfs http://localhost:5001
-```
-
-Once your subgraph has been deployed, it will be indexed by Graph Node. You can check its progress by querying the subgraph itself:
-```
-{
-  _meta {
-    block { number }
-  }
-}
-``` 
 
 ## Querying an Arweave Subgraph
 
@@ -188,5 +171,59 @@ No, a subgraph can only support data sources from one chain/network.
 ### Can I index the stored files on Arweave?
 Currently, The Graph is only indexing Arweave as a blockchain (its blocks and transactions).
 
+### Can I identify Bundlr bundles in my subgraph?
+This is not currently supported.
+
+### How can I filter transactions to a specific account?
+The source.owner is the user's public key, rather than the account address. We are working on adding account filtering support.
+
 ### What is the current encryption format?
-Data is returned in `HEX` format (ex. block and transaction hashes), you have to convert to `base64` then `base64 URL` in your mappings in order to be similar to what explorers like [Arweave Explorer](https://viewblock.io/arweave/) are using which is `base64 URL`.
+Data is generally passed into the mappings as Bytes, which if stored directly is returned in the subgraph in a `hex` format (ex. block and transaction hashes). You may want to convert to a `base64` or `base64 URL`-safe format in your mappings, in order to match what is displayed in block explorers like [Arweave Explorer](https://viewblock.io/arweave/).
+
+The following `bytesToBase64(bytes: Uint8Array, urlSafe: boolean): string` helper function can be used, and will be added to `graph-ts`:
+
+```
+const base64Alphabet = [
+	"A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M",
+	"N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z",
+	"a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m",
+	"n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z",
+	"0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "+", "/"
+];
+
+const base64UrlAlphabet = [
+	"A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M",
+	"N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z",
+	"a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m",
+	"n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z",
+	"0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "-", "_"
+];
+
+function bytesToBase64(bytes: Uint8Array, urlSafe: boolean): string {
+	let alphabet = urlSafe? base64UrlAlphabet : base64Alphabet;
+
+	let result = '', i: i32, l = bytes.length;
+	for (i = 2; i < l; i += 3) {
+		result += alphabet[bytes[i - 2] >> 2];
+		result += alphabet[((bytes[i - 2] & 0x03) << 4) | (bytes[i - 1] >> 4)];
+		result += alphabet[((bytes[i - 1] & 0x0F) << 2) | (bytes[i] >> 6)];
+		result += alphabet[bytes[i] & 0x3F];
+	}
+	if (i === l + 1) { // 1 octet yet to write
+		result += alphabet[bytes[i - 2] >> 2];
+		result += alphabet[(bytes[i - 2] & 0x03) << 4];
+		if (!urlSafe) {
+			result += "==";
+		}
+	}
+	if (!urlSafe && i === l) { // 2 octets yet to write
+		result += alphabet[bytes[i - 2] >> 2];
+		result += alphabet[((bytes[i - 2] & 0x03) << 4) | (bytes[i - 1] >> 4)];
+		result += alphabet[(bytes[i - 1] & 0x0F) << 2];
+		if (!urlSafe) {
+			result += "=";
+		}
+	}
+	return result;
+}
+```
