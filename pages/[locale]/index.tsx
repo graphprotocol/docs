@@ -388,6 +388,11 @@ const Index: NextPage<IndexProps> = ({ navItems }: IndexProps) => {
               href: 'https://boba.network/',
               beta: true,
             },
+            {
+              title: 'CosmosHub',
+              image: '/img/networks/cosmos.svg',
+              href: 'https://hub.cosmos.network/',
+            },
           ].map((network, index) => (
             <Flex.Column as="li" key={index}>
               <Text as="div" size="14px" color="White48" sx={{ textAlign: 'center' }}>
