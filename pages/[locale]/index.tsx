@@ -388,6 +388,12 @@ const Index: NextPage<IndexProps> = ({ navItems }: IndexProps) => {
               href: 'https://boba.network/',
               beta: true,
             },
+            {
+              title: 'Harmony',
+              image: '/img/networks/harmony.svg',
+              href: 'https://harmony.one/',
+              beta: true,
+            },
           ].map((network, index) => (
             <Flex.Column as="li" key={index}>
               <Text as="div" size="14px" color="White48" sx={{ textAlign: 'center' }}>
