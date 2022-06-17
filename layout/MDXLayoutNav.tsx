@@ -166,6 +166,9 @@ export const MDXLayoutNav = ({ mobile = false }: { mobile?: boolean }) => {
               if ('divider' in navItem) {
                 return <NavTree.Divider sx={mobile ? { mx: Spacing.L_XL, my: Spacing.L } : {}} />
               }
+              if ('heading' in navItem) {
+                return <NavTree.Heading>{navItem.heading}</NavTree.Heading>
+              }
               if ('children' in navItem) {
                 return (
                   <NavTree.Group active={currentPage?.path.startsWith(navItem.path)}>

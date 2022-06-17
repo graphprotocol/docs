@@ -43,6 +43,7 @@ export type NavTreeGroupHeadingProps = HTMLAttributes<HTMLElement> & {
 }
 export type NavTreeGroupContentProps = HTMLAttributes<HTMLElement>
 export type NavTreeDividerProps = Omit<HTMLAttributes<HTMLElement>, 'children'>
+export type NavTreeHeadingProps = HTMLAttributes<HTMLElement>
 
 const NavTree = ({ children, textProps, ...props }: NavTreeProps) => {
   return (
@@ -182,10 +183,19 @@ const NavTreeDivider = (props: NavTreeDividerProps) => {
   )
 }
 
+const NavTreeHeading = ({ children, ...props }: NavTreeHeadingProps) => {
+  return (
+    <li sx={{ mt: Spacing.XL, mb: Spacing.M_L, pl: Spacing.L_XL }} {...props}>
+      <Text.C12 color="White48">{children}</Text.C12>
+    </li>
+  )
+}
+
 NavTree.Item = NavTreeItem
 NavTree.Group = NavTreeGroup
 NavTreeGroup.Heading = NavTreeGroupHeading
 NavTreeGroup.Content = NavTreeGroupContent
 NavTree.Divider = NavTreeDivider
+NavTree.Heading = NavTreeHeading
 
 export { NavTree }
