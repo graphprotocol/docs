@@ -1,6 +1,7 @@
 new Crawler({
   appId: 'WQ5FYJCL00',
-  apiKey: '1a3616197a9f4f4927b09aa9c629b54c',
+  apiKey: '[SECRET]',
+  schedule: 'every 1 week',
   rateLimit: 8,
   startUrls: [
     'https://thegraph.com/docs/en/',
