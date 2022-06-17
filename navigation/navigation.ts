@@ -36,58 +36,58 @@ export const navigation: (locale: AppLocale) => NavItemDefinition[] = (locale) =
     divider: true,
   },
   {
-    title: 'Developing subgraphs', // TODO: Translate
+    title: 'Developing Subgraphs', // TODO: Translate
     slug: 'developing',
     children: [
       {
-        slug: 'define-subgraph-hosted',
+        slug: 'defining-a-subgraph',
       },
       {
-        slug: 'create-subgraph-hosted',
+        slug: 'creating-a-subgraph',
       },
       {
         slug: 'assemblyscript-api',
       },
       {
-        slug: 'matchstick',
+        slug: 'unit-testing-framework',
       },
       {
-        slug: 'developer-faq',
+        slug: 'developer-faqs',
       },
     ],
   },
   {
-    title: 'Deploying subgraphs', // TODO: Translate
+    title: 'Deploying Subgraphs', // TODO: Translate
     slug: 'deploying',
     children: [
       {
         slug: 'subgraph-studio',
       },
       {
-        slug: 'deploy-subgraph-studio',
+        slug: 'deploying-a-subgraph-to-studio',
       },
       {
-        slug: 'studio-faq',
+        slug: 'subgraph-studio-faqs',
       },
       {
-        slug: 'what-is-hosted-service',
+        slug: 'hosted-service',
       },
       {
-        slug: 'deploy-subgraph-hosted',
+        slug: 'deploying-a-subgraph-to-hosted',
       },
     ],
   },
   {
-    title: 'Publishing subgraphs', // TODO: Translate
+    title: 'Publishing Subgraphs', // TODO: Translate
     slug: 'publishing',
     children: [
       {
-        slug: 'publish-subgraph',
+        slug: 'publishing-a-subgraph',
       },
     ],
   },
   {
-    title: 'Managing subgraphs', // TODO: Translate
+    title: 'Managing Subgraphs', // TODO: Translate
     slug: 'managing',
     children: [
       {
@@ -99,17 +99,17 @@ export const navigation: (locale: AppLocale) => NavItemDefinition[] = (locale) =
     ],
   },
   {
-    title: 'Querying subgraphs', // TODO: Translate
+    title: 'Querying Subgraphs', // TODO: Translate
     slug: 'querying',
     children: [
       {
-        slug: 'query-the-graph',
+        slug: 'querying-the-graph',
       },
       {
         slug: 'managing-api-keys',
       },
       {
-        slug: 'querying-from-your-app',
+        slug: 'querying-from-an-application',
       },
       {
         slug: 'querying-best-practices',
@@ -121,7 +121,7 @@ export const navigation: (locale: AppLocale) => NavItemDefinition[] = (locale) =
         slug: 'graphql-api',
       },
       {
-        slug: 'query-hosted-service',
+        slug: 'querying-the-hosted-service',
       },
       {
         slug: 'billing',
@@ -139,7 +139,7 @@ export const navigation: (locale: AppLocale) => NavItemDefinition[] = (locale) =
         slug: 'quick-start',
       },
       {
-        slug: 'migrating-subgraph',
+        slug: 'migrating-a-subgraph',
       },
       {
         slug: 'multisig',

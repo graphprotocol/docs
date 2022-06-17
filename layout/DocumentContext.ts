@@ -2,6 +2,7 @@ import { createContext, Context } from 'react'
 
 export type Frontmatter = {
   title?: string
+  navTitle?: string
 }
 
 export type OutlineItem = {
