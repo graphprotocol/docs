@@ -1,7 +1,7 @@
 import { NavItemDefinition } from './types'
 import { AppLocale, translations } from '@/i18n'
 
-export const navigation: (locale: AppLocale) => NavItemDefinition[] = (locale) => [
+export const navigation = (locale: AppLocale): NavItemDefinition[] => [
   {
     slug: '',
   },
@@ -12,7 +12,7 @@ export const navigation: (locale: AppLocale) => NavItemDefinition[] = (locale) =
     slug: 'about',
   },
   {
-    title: 'Network', // TODO: Translate
+    title: translations[locale].global.navigation.network,
     slug: 'network',
     children: [
       {
@@ -36,7 +36,10 @@ export const navigation: (locale: AppLocale) => NavItemDefinition[] = (locale) =
     divider: true,
   },
   {
-    title: 'Developing Subgraphs', // TODO: Translate
+    heading: translations[locale].global.navigation.subgraphs,
+  },
+  {
+    title: translations[locale].global.navigation.developing,
     slug: 'developing',
     children: [
       {
@@ -57,7 +60,7 @@ export const navigation: (locale: AppLocale) => NavItemDefinition[] = (locale) =
     ],
   },
   {
-    title: 'Deploying Subgraphs', // TODO: Translate
+    title: translations[locale].global.navigation.deploying,
     slug: 'deploying',
     children: [
       {
@@ -78,7 +81,7 @@ export const navigation: (locale: AppLocale) => NavItemDefinition[] = (locale) =
     ],
   },
   {
-    title: 'Publishing Subgraphs', // TODO: Translate
+    title: translations[locale].global.navigation.publishing,
     slug: 'publishing',
     children: [
       {
@@ -87,7 +90,7 @@ export const navigation: (locale: AppLocale) => NavItemDefinition[] = (locale) =
     ],
   },
   {
-    title: 'Managing Subgraphs', // TODO: Translate
+    title: translations[locale].global.navigation.managing,
     slug: 'managing',
     children: [
       {
@@ -99,7 +102,7 @@ export const navigation: (locale: AppLocale) => NavItemDefinition[] = (locale) =
     ],
   },
   {
-    title: 'Querying Subgraphs', // TODO: Translate
+    title: translations[locale].global.navigation.querying,
     slug: 'querying',
     children: [
       {
@@ -132,7 +135,7 @@ export const navigation: (locale: AppLocale) => NavItemDefinition[] = (locale) =
     divider: true,
   },
   {
-    title: 'Cookbook', // TODO: Translate
+    title: translations[locale].global.navigation.cookbook,
     slug: 'cookbook',
     children: [
       {
@@ -162,7 +165,7 @@ export const navigation: (locale: AppLocale) => NavItemDefinition[] = (locale) =
     divider: true,
   },
   {
-    title: 'Release Notes & Upgrade Guides', // TODO: Translate
+    title: translations[locale].global.navigation.releaseNotes,
     slug: 'release-notes',
     children: [
       {
