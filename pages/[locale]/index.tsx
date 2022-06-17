@@ -92,22 +92,22 @@ const Index: NextPage<IndexProps> = ({ navItems }: IndexProps) => {
           {
             title: t('index.shortcuts.developerFaqs.title'),
             description: t('index.shortcuts.developerFaqs.description'),
-            href: '/developing/developer-faq',
+            href: '/developing/developer-faqs',
           },
           {
             title: t('index.shortcuts.queryFromAnApplication.title'),
             description: t('index.shortcuts.queryFromAnApplication.description'),
-            href: '/querying/querying-from-your-app',
+            href: '/querying/querying-from-an-application',
           },
           {
             title: t('index.shortcuts.createASubgraph.title'),
             description: t('index.shortcuts.createASubgraph.description'),
-            href: '/developing/create-subgraph-hosted',
+            href: '/developing/creating-a-subgraph',
           },
           {
             title: t('index.shortcuts.migrateFromHostedService.title'),
             description: t('index.shortcuts.migrateFromHostedService.description'),
-            href: '/cookbook/migrating-subgraph',
+            href: '/cookbook/migrating-a-subgraph',
           },
         ].map((card, index) => (
           <li key={index} sx={{ aspectRatio: '258/136' }}>
@@ -159,7 +159,7 @@ const Index: NextPage<IndexProps> = ({ navItems }: IndexProps) => {
             title: t('index.networkRoles.roles.developer.title'),
             description: t('index.networkRoles.roles.developer.description'),
             image: '/img/roles/developer.png',
-            href: '/developing/define-subgraph-hosted',
+            href: '/developing/defining-a-subgraph',
           },
           {
             title: t('index.networkRoles.roles.indexer.title'),
@@ -221,7 +221,7 @@ const Index: NextPage<IndexProps> = ({ navItems }: IndexProps) => {
           {
             title: t('index.products.products.hostedService.title'),
             description: t('index.products.products.hostedService.description'),
-            href: '/deploying/what-is-hosted-service',
+            href: '/deploying/hosted-service',
           },
         ].map((product, index) => (
           <Flex.Column as="li" key={index}>

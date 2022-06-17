@@ -38,11 +38,8 @@ export const getNavItems = async (locale: AppLocale = defaultLocale): Promise<Na
                 const { frontmatter }: { frontmatter?: Frontmatter | ((locale: AppLocale) => Frontmatter) } =
                   await import(`../pages/${fileToTry}`)
                 if (!title && frontmatter) {
-                  if (typeof frontmatter === 'function') {
-                    title = frontmatter(locale).title
-                  } else {
-                    title = frontmatter.title
-                  }
+                  const frontmatterData = typeof frontmatter === 'function' ? frontmatter(locale) : frontmatter
+                  title = frontmatterData.navTitle ?? frontmatterData.title
                 }
                 break
               } catch (error) {
