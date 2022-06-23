@@ -6,7 +6,7 @@ import { Difficulty } from '@/components'
 
 Indexers are node operators in The Graph Network that stake Graph Tokens (GRT) in order to provide indexing and query processing services. Indexers earn query fees and indexing rewards for their services. They also earn from a Rebate Pool that is shared with all network contributors proportional to their work, following the Cobbs-Douglas Rebate Function.
 
-GRT that is staked in the protocol is subject to a thawing period and can be slashed if Indexers are malicious and serve incorrect data to applications or if they index incorrectly. Indexers can also be delegated stake from Delegators, to contribute to the network.
+GRT that is staked in the protocol is subject to a thawing period and can be slashed if Indexers are malicious and serve incorrect data to applications or if they index incorrectly. Indexers also earn rewards for delegated stake from Delegators, to contribute to the network.
 
 Indexers select subgraphs to index based on the subgraph’s curation signal, where Curators stake GRT in order to indicate which subgraphs are high-quality and should be prioritized. Consumers (eg. applications) can also set parameters for which Indexers process queries for their subgraphs and set preferences for query fee pricing.
 
@@ -28,7 +28,7 @@ The minimum stake for an Indexer is currently set to 100K GRT.
 
 Indexing rewards come from protocol inflation which is set to 3% annual issuance. They are distributed across subgraphs based on the proportion of all curation signal on each, then distributed proportionally to Indexers based on their allocated stake on that subgraph. **An allocation must be closed with a valid proof of indexing (POI) that meets the standards set by the arbitration charter in order to be eligible for rewards.**
 
-Numerous tools have been created by the community for calculating rewards; you'll find a collection of them organized in the [Community Guides collection](https://www.notion.so/Community-Guides-abbb10f4dba040d5ba81648ca093e70c). You can also find an up to date list of tools in the #Delegators and #Indexers channels on the [Discord server](https://discord.gg/vtvv7FP).
+Numerous tools have been created by the community for calculating rewards; you'll find a collection of them organized in the [Community Guides collection](https://www.notion.so/Community-Guides-abbb10f4dba040d5ba81648ca093e70c). You can also find an up to date list of tools in the #Delegators and #Indexers channels on the [Discord server](https://discord.gg/vtvv7FP). Here we link a [recommended allocation optimiser](https://github.com/graphprotocol/AllocationOpt.jl) integrated with the indexer software stack.
 
 ### What is a proof of indexing (POI)?
 
@@ -36,7 +36,7 @@ POIs are used in the network to verify that an Indexer is indexing the subgraphs
 
 ### When are indexing rewards distributed?
 
-Allocations are continuously accruing rewards while they're active. Rewards are collected by the Indexers, and distributed whenever their allocations are closed. That happens either manually, whenever the Indexer wants to force close them, or after 28 epochs a Delegator can close the allocation for the Indexer, but this results in no rewards being minted. 28 epochs is the max allocation lifetime (right now, one epoch lasts for ~24h).
+Allocations are continuously accruing rewards while they're active and allocated within 28 epochs. Rewards are collected by the Indexers, and distributed whenever their allocations are closed. That happens either manually, whenever the Indexer wants to force close them, or after 28 epochs a Delegator can close the allocation for the Indexer, but this results in no rewards. 28 epochs is the max allocation lifetime (right now, one epoch lasts for ~24h).
 
 ### Can pending Indexer rewards be monitored?
 
@@ -131,19 +131,17 @@ Indexers may differentiate themselves by applying advanced techniques for making
 
 At the center of an Indexer's infrastructure is the Graph Node which monitors Ethereum, extracts and loads data per a subgraph definition and serves it as a [GraphQL API](/about/introduction#how-the-graph-works). The Graph Node needs to be connected to Ethereum EVM node endpoints, and IPFS node for sourcing data; a PostgreSQL database for its store; and Indexer components which facilitate its interactions with the network.
 
-- **PostgreSQL database** - The main store for the Graph Node, this is where subgraph data is stored. The Indexer service and agent also use the database to store state channel data, cost models, and indexing rules.
+- **PostgreSQL database** - The main store for the Graph Node, this is where subgraph data is stored. The Indexer service and agent also use the database to store state channel data, cost models, indexing rules, and allocation actions.
 
 - **Ethereum endpoint** - An endpoint that exposes an Ethereum JSON-RPC API. This may take the form of a single Ethereum client or it could be a more complex setup that load balances across multiple. It's important to be aware that certain subgraphs will require particular Ethereum client capabilities such as archive mode and the tracing API.
 
-- **IPFS node** - Subgraph deployment metadata is stored on the IPFS network. The Graph Node primarily accesses the IPFS node during subgraph deployment to fetch the subgraph manifest and all linked files. Network indexers do not need to host their own IPFS node, an IPFS node for the network is hosted at https://ipfs.network.thegraph.com.
+- **IPFS node (version less than 5)** - Subgraph deployment metadata is stored on the IPFS network. The Graph Node primarily accesses the IPFS node during subgraph deployment to fetch the subgraph manifest and all linked files. Network Indexers do not need to host their own IPFS node, an IPFS node for the network is hosted at https://ipfs.network.thegraph.com.
 
 - **Indexer service** - Handles all required external communications with the network. Shares cost models and indexing statuses, passes query requests from gateways on to a Graph Node, and manages the query payments via state channels with the gateway.
 
 - **Indexer agent** - Facilitates the Indexers interactions on chain including registering on the network, managing subgraph deployments to its Graph Node/s, and managing allocations.
 
 - **Prometheus metrics server** - The Graph Node and Indexer components log their metrics to the metrics server.
-
-- **Upcoming: Ethereum Firehose** - a Firehose is a gRPC service providing an ordered, yet fork-aware, stream of blocks, developed by The Graph's core developers to better support performant indexing at scale. This is not currently an indexer requirement, but Indexers are encouraged to familiarise themselves with the technology, ahead of full network support. Learn more about the Firehose [here](https://firehose.streamingfast.io/).
 
 Note: To support agile scaling, it is recommended that query and indexing concerns are separated between different sets of nodes: query nodes and index nodes.
 
@@ -373,7 +371,7 @@ To successfully participate in the network requires almost constant monitoring a
 
 - **Indexer service** - The only component that needs to be exposed externally, the service passes on subgraph queries to the graph node, manages state channels for query payments, shares important decision making information to clients like the gateways.
 
-- **Indexer CLI** - The command line interface for managing the Indexer agent. It allows Indexers to manage cost models and indexing rules.
+- **Indexer CLI** - The command line interface for managing the Indexer agent. It allows Indexers to manage cost models, manual allocations, actions queue, and indexing rules.
 
 #### Getting started
 
@@ -488,6 +486,7 @@ graph-indexer-agent start \
   --postgres-username <DB_USERNAME> \
   --postgres-password <DB_PASSWORD> \
   --postgres-database indexer \
+  --allocation-management auto \
   | pino-pretty
 ```
 
@@ -526,9 +525,9 @@ graph indexer connect http://localhost:18000
 graph indexer status
 ```
 
-#### Indexer management using indexer CLI
+#### Indexer management using Indexer CLI
 
-The Indexer agent needs input from an Indexer in order to autonomously interact with the network on the behalf of the Indexer. The mechanism for defining Indexer agent behavior are the **indexing rules**. Using **indexing rules** an Indexer can apply their specific strategy for picking subgraphs to index and serve queries for. Rules are managed via a GraphQL API served by the agent and known as the Indexer Management API. The suggested tool for interacting with the **Indexer Management API** is the **Indexer CLI**, an extension to the **Graph CLI**.
+The suggested tool for interacting with the **Indexer Management API** is the **Indexer CLI**, an extension to the **Graph CLI**. The Indexer agent needs input from an Indexer in order to autonomously interact with the network on the behalf of the Indexer. The mechanism for defining Indexer agent behavior are **allocation management** mode and **indexing rules**. Under auto mode, an Indexer can use **indexing rules** to apply their specific strategy for picking subgraphs to index and serve queries for. Rules are managed via a GraphQL API served by the agent and known as the Indexer Management API. Under manual mode, an Indexer can create allocation actions using **actions queue** and explicitly approve them before they get executed. Under oversight mode, **indexing rules** are used to populate **actions queue** and also require explicit approval for execution.
 
 #### Usage
 
@@ -536,7 +535,7 @@ The **Indexer CLI** connects to the Indexer agent, typically through port-forwar
 
 - `graph indexer connect <url>` - Connect to the Indexer management API. Typically the connection to the server is opened via port forwarding, so the CLI can be easily operated remotely. (Example: `kubectl port-forward pod/<indexer-agent-pod> 8000:8000`)
 
-- `graph indexer rules get [options] <deployment-id< [<key1> ...]` - Get one or more indexing rules using `all` as the `<deployment-id>` to get all rules, or `global` to get the global defaults. An additional argument `--merged` can be used to specify that deployment specific rules are merged with the global rule. This is how they are applied in the Indexer agent.
+- `graph indexer rules get [options] <deployment-id> [<key1> ...]` - Get one or more indexing rules using `all` as the `<deployment-id>` to get all rules, or `global` to get the global defaults. An additional argument `--merged` can be used to specify that deployment specific rules are merged with the global rule. This is how they are applied in the Indexer agent.
 
 - `graph indexer rules set [options] <deployment-id> <key1> <value1> ...` - Set one or more indexing rules.
 
@@ -544,7 +543,21 @@ The **Indexer CLI** connects to the Indexer agent, typically through port-forwar
 
 - `graph indexer rules stop [options] <deployment-id>` - Stop indexing a deployment and set its `decisionBasis` to never, so it will skip this deployment when deciding on deployments to index.
 
-- `graph indexer rules maybe [options] <deployment-id>` — Set `thedecisionBasis` for a deployment to `rules`, so that the Indexer agent will use indexing rules to decide whether to index this deployment.
+- `graph indexer rules maybe [options] <deployment-id>` — Set the `decisionBasis` for a deployment to `rules`, so that the Indexer agent will use indexing rules to decide whether to index this deployment.
+
+- `graph indexer actions get [options] <action-id>` - Fetch one or more actions using `all` or leave `action-id` empty to get all actions. An additonal argument `--status` can be used to print out all actions of a certain status. 
+
+- `graph indexer action queue allocate <deployment-id> <allocation-amount>` - Queue allocation action
+
+- `graph indexer action queue reallocate <deployment-id> <allocation-id> <allocationAmount>` - Queue reallocate action
+
+- `graph indexer action queue unallocate <deployment-id> <allocation-id>` - Queue unallocate action
+
+- `graph indexer actions cancel [<action-id> ...]` - Cancel all action in the queue if id is unspecified, otherwise cancel array of id with space as separator
+
+- `graph indexer actions approve [<action-id> ...]` - Approve multiple actions for execution
+
+- `graph indexer actions execute approve` - Force the worker to execute approved actions immediately 
 
 All commands which display rules in the output can choose between the supported output formats (`table`, `yaml`, and `json`) using the `-output` argument.
 
@@ -558,24 +571,134 @@ Data model:
 
 ```graphql
 type IndexingRule {
-  deployment: string
-  allocationAmount: string | null
-  parallelAllocations: number | null
-  decisionBasis: IndexingDecisionBasis
-  maxAllocationPercentage: number | null
-  minSignal: string | null
-  maxSignal: string | null
-  minStake: string | null
-  minAverageQueryFees: string | null
-  custom: string | null
+    identifier: string
+    identifierType: IdentifierType
+    decisionBasis: IndexingDecisionBasis!
+    allocationAmount: number | null
+    allocationLifetime: number | null
+    autoRenewal: boolean
+    parallelAllocations: number | null
+    maxAllocationPercentage: number | null
+    minSignal: string | null
+    maxSignal: string | null
+    minStake: string | null
+    minAverageQueryFees: string | null
+    custom: string | null
+    requireSupported: boolean | null
+  }
+
+IdentifierType {
+  deployment
+  subgraph
+  group
 }
 
 IndexingDecisionBasis {
   rules
   never
   always
+  offchain
 }
 ```
+
+Example usage of indexing rule:
+```
+graph indexer rules offchain QmZfeJYR86UARzp9HiXbURWunYgC9ywvPvoePNbuaATrEK
+
+graph indexer rules set QmZfeJYR86UARzp9HiXbURWunYgC9ywvPvoePNbuaATrEK decisionBasis always allocationAmount 123321 allocationLifetime 14 autoRenewal false requireSupported false
+
+graph indexer rules stop QmZfeJYR86UARzp9HiXbURWunYgC9ywvPvoePNbuaATrEK
+
+graph indexer rules delete QmZfeJYR86UARzp9HiXbURWunYgC9ywvPvoePNbuaATrEK
+```
+
+#### Actions queue CLI
+
+The indexer-cli provides an `actions` module for manually working with the action queue. It uses the **Graphql API** hosted by the indexer management server to interact with the actions queue.
+
+The action execution worker will only grab items from the queue to execute if they have `ActionStatus = approved`. In the recommended path actions are added to the queue with ActionStatus = queued, so they must then be approved in order to be executed on-chain. The general flow will look like:
+- Action added to the queue by the 3rd party optimizer tool or indexer-cli user
+- Indexer can use the `indexer-cli` to view all queued actions
+- Indexer (or other software) can approve or cancel actions in the queue using the `indexer-cli`.  The approve and cancel commands take an array of action ids as input.
+- The execution worker regularly polls the queue for approved actions. It will grab the `approved` actions from the queue, attempt to execute them, and update the values in the db depending on the status of execution to `success` or `failed`.
+- If an action is successful the worker will ensure that there is an indexing rule present that tells the agent how to manage the allocation moving forward, useful when taking manual actions while the agent is in `auto` or `oversight` mode.  
+- The indexer can monitor the action queue to see a history of action execution and if needed re-approve and update action items if they failed execution. The action queue provides a history of all actions queued and taken.
+
+Data model:
+
+```graphql
+Type ActionInput {
+    status: ActionStatus
+    type: ActionType
+    deploymentID: string | null
+    allocationID: string | null
+    amount: string | null
+    poi: string | null
+    force: boolean | null
+    source: string
+    reason: string | null
+    priority: number | null
+}
+
+ActionStatus {
+  queued
+  approved
+  pending
+  success
+  failed
+  canceled
+}
+
+ActionType {
+  allocate
+  unallocate
+  reallocate
+  collect
+}
+```
+
+Example usage from source:
+
+```bash
+indexer indexer actions get all
+
+indexer indexer actions get --status queued
+
+indexer indexer actions queue allocate QmeqJ6hsdyk9dVbo1tvRgAxWrVS3rkERiEMsxzPShKLco6 5000
+
+indexer indexer actions queue reallocate QmeqJ6hsdyk9dVbo1tvRgAxWrVS3rkERiEMsxzPShKLco6 0x4a58d33e27d3acbaecc92c15101fbc82f47c2ae5 55000
+
+indexer indexer actions queue unallocate QmeqJ6hsdyk9dVbo1tvRgAxWrVS3rkERiEMsxzPShKLco6 0x4a58d33e27d3acbaecc92c15101fbc82f47c2ae
+
+indexer indexer actions cancel
+
+indexer indexer actions approve 1 3 5
+
+indexer indexer actions execute approve 
+```
+
+Note that supported action types for allocation management have different input requirements:
+`Allocate` - allocate stake to a specific subgraph deployment
+- required action params:
+    - deploymentID
+    - amount
+
+`Unallocate` - close allocation, freeing up the stake to reallocate elsewhere
+- required action params:
+    - allocationID
+    - deploymentID
+- optional action params:
+    - poi
+    - force (forces using the provided POI even if it doesn’t match what the graph-node provides)
+
+`Reallocate` - atomically close allocation and open a fresh allocation for the same subgraph deployment
+- required action params:
+    - allocationID
+    - deploymentID
+    - amount
+- optional action params:
+    - poi
+    - force (forces using the provided POI even if it doesn’t match what the graph-node provides)
 
 #### Cost models
 
@@ -672,3 +795,5 @@ After being created by an Indexer a healthy allocation goes through four states.
 - **Finalized** - Once an allocation has been closed there is a dispute period after which the allocation is considered **finalized** and it's query fee rebates are available to be claimed (claim()). The Indexer agent monitors the network to detect **finalized** allocations and claims them if they are above a configurable (and optional) threshold, **—-allocation-claim-threshold**.
 
 - **Claimed** - The final state of an allocation; it has run its course as an active allocation, all eligible rewards have been distributed and its query fee rebates have been claimed.
+
+Indexers are recommended to utilize offchain syncing functionality to sync subgraph deployments to chainhead before creating the allocation on-chain. This feature is especially useful for subgraphs that may take longer than 28 epochs to sync or have some chances of failing undeterministically.
