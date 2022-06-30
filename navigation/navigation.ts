@@ -12,7 +12,7 @@ export const navigation = (locale: AppLocale): NavItemDefinition[] => [
     slug: 'about',
   },
   {
-    title: translations[locale].global.navigation.network,
+    title: translations[locale].global.navigation.theGraphNetwork,
     slug: 'network',
     children: [
       {
