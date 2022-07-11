@@ -31,6 +31,10 @@ export type NavItemDivider = {
   divider: true
 }
 
-export type NavItem = NavItemPage | NavItemGroup | NavItemDivider
-export type NavItemPromise = NavItemPagePromise | NavItemGroupPromise | NavItemDivider
-export type NavItemDefinition = NavItemPageDefinition | NavItemGroupDefinition | NavItemDivider
+export type NavItemHeading = {
+  heading: string
+}
+
+export type NavItem = NavItemPage | NavItemGroup | NavItemDivider | NavItemHeading
+export type NavItemPromise = NavItemPagePromise | NavItemGroupPromise | NavItemDivider | NavItemHeading
+export type NavItemDefinition = NavItemPageDefinition | NavItemGroupDefinition | NavItemDivider | NavItemHeading

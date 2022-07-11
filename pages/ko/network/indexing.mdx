@@ -1,0 +1,672 @@
+---
+title: 인덱싱(indexing)
+---
+
+import { Difficulty } from '@/components'
+
+인덱서는 인덱싱 및 쿼리 프로세싱 서비스를 제공하기 위해 더그래프 네트워크 상에 그래프 토큰(GRT)을 스테이킹하는 노드 운용자들입니다. 인덱서는 그들의 서비스에 대한 쿼리 수수료 및 인덱싱 보상을 얻습니다. 더불어, 그들은 Cobbs-Douglas 리베이트 기능에 따라, 그들의 업무에 비례하여 모든 네트워크 기여자와 함께 공유되는 리베이트 풀로부터 발생하는 수익 또한 얻습니다.
+
+프로토콜에 스테이킹된 GRT는 해빙 기간이 적용되며, 인덱서가 악의적으로 응용 프로그램에 잘못된 데이터를 제공하거나 잘못된 인덱싱을 시행하는 경우 슬래싱(삭감) 패널티를 받을 수 있습니다. 또한, 인덱서들은 네트워크에 기여하기 위해서 위임자(Delegator)들로 부터 지분을 위임받을 수도 있습니다.
+
+인덱서들은 서브그래프의 큐레이션 신호에 따라 인덱싱할 서브그래프를 선택합니다. 여기서 큐레이터는 어느 서브그래프가 고품질인지, 혹은 우선 순위여야 하는지를 표시하기 위해 GRT를 스테이킹합니다. 소비자(예: 애플리케이션)들은 어느 인덱서가 그들의 서브그래프에 대해 쿼리를 처리하게 할 것인지에 대한 매개 변수 및 쿼리 수수료 가격에 대한 선호 내역을 설정할 수도 있습니다.
+
+<Difficulty level="ADVANCED" />
+
+## FAQ
+
+### 네트워크 상의 인덱서가 되기 위해서 필요한 최소 스테이킹 요구사항은 어떻게 되나요?
+
+인덱서가 되기 위한 최소 스테이킹 수량은 현재 10만 GRT로 설정되어 있습니다.
+
+### 인덱서는 어떻게 수익을 창출하나요?
+
+**Query fee rebates** - 네트워크상에 쿼리를 제공함으로써 발생하는 지불입니다. 이러한 지불은 인덱서와 게이트웨이 간의 상태 채널을 통해 중재됩니다. 게이트웨이의 각 쿼리 요청에는 결제 및 쿼리 결과 유효성에 대한 해당 응답이 포함됩니다.
+
+**Indexing rewards** - 연간 3%의 프로토콜 전체 인플레이션을 통해 생성되는 인덱싱 보상은 네트워크에 대한 서브그래프 배포를 인덱싱하는 인덱서에게 배포됩니다.
+
+### 보상은 어떻게 분배되나요?
+
+인덱싱 보상은 연간 발행량의 3%로 설정된 프로토콜 인플레이션에서 비롯됩니다. 이러한 보상들은 각각에 대한 모든 큐레이션 신호의 비율에 따라 서브그래프들에 배포된 다음 해당 서브그래프에 할당된 지분에 기반하여 인덱서들에게 비례적으로 분배됩니다. **An allocation must be closed with a valid proof of indexing (POI) that meets the standards set by the arbitration charter in order to be eligible for rewards.**
+
+보상을 계산하기 위한 수많은 도구들이 커뮤니티에 의해서 생성되었습니다. 여러분들은 [Community Guides collection](https://www.notion.so/Community-Guides-abbb10f4dba040d5ba81648ca093e70c)에서 이러한 도구 컬렉션들을 찾으실 수 있습니다. 또한 여러분들은 [Discord](https://discord.gg/vtvv7FP) 의 #delegators 및 #indexers 채널에서 최신 도구 리스트를 찾으실 수 있습니다.
+
+### 인덱싱 증명(POI)이란 무엇인가요?
+
+POI는 네트워크상에서 인덱서가 그들에게 할당된 서브그래프를 인덱싱 하고 있는지 확인하는 데 사용됩니다. 해당 할당이 적절하게 인덱싱 보상을 받을 수 있도록 하기 위하여, 할당을 마감할 당시 현재 에폭의 첫 번째 블록에 대한 POI가 제출되어야합니다. 블록에 대한 POI는 해당 블록까지의 특정 서브그래프 배포에 대한 모든 엔티티 저장소 트랜잭션에 대한 요약입니다.
+
+### 인덱싱 보상은 언제 분배되나요?
+
+할당은 활성 상태인 동안에 지속적으로 보상을 누적합니다. 보상들은 인덱서들에 의해 수집되며, 그들의 할당들이 마감될 때 마다 분배됩니다. 이는 인덱서가 강제로 종료하길 원할 때마다 수동으로 발생하거나 28 에폭 후에 위임자(Delegator)가 인덱서 할당을 닫을 수 있지만, 이러한 경우에는 결과적으로 보상이 생성되지 않습니다. 28 에폭은 최대 할당 수명입니다. (현재 한 에폭은 최대 24시간 지속됩니다.)
+
+### 보류중인 인덱서 보상은 모니터링 가능한가요?
+
+다양한 커뮤니티에 의해 제작된 대시보드들에는 보류중인 보상 가치를 포함하고 있으며, 이들은 다음과 같은 절차들을 통해 수동으로 손쉽게 확인이 가능합니다.
+
+`getRewards()`:를 호출하기 위해 이더스캔을 사용합니다.
+
+1. 모든 활성화된 활당들에 대한 ID들을 얻기 위해 [mainnet subgraph](https://thegraph.com/hosted-service/subgraph/graphprotocol/graph-network-mainnet)를 쿼리합니다.
+
+```graphql
+query indexerAllocations {
+  indexer(id: "<INDEXER_ADDRESS>") {
+    allocations {
+      activeForIndexer {
+        allocations {
+          id
+        }
+      }
+    }
+  }
+}
+```
+
+`getRewards()`를 호출하기 위해 이더스캔을 사용합니다:
+
+- [Rewards contract](https://etherscan.io/address/0x9Ac758AB77733b4150A901ebd659cbF8cB93ED66#readProxyContract)의 이더스캔 인터페이스를 살펴봅니다.
+
+* `getRewards()`:를 호출하기 위해,
+  - **10번 항목의 getRewards**를 펼칩니다. getRewards dropdown.
+  - 입력란에 **allocationID**를 입력합니다.
+  - **Query** 버튼을 클릭합니다.
+
+### 분쟁이란 무엇이며 어디에서 볼 수 있나요?
+
+분쟁 기간 동안 더그래프 상에서 인덱서의 쿼리와 할당은 이의 제기의 요소가 될 수 있습니다. 분쟁 기간은 분쟁의 종류에 따라 다릅니다. 쿼리/귀속 분야에는 7개의 에폭 분쟁 창이 존재하는 반면 할당에는 56개의 에폭이 존재합니다. 이 기간이 지나면 할당이나 쿼리에 대해 분쟁은 발생할 수 없습니다. 분쟁이 열리면 Fishermen에게 최소 10,000 GRT의 디파짓이 요구되며, 이 보증금은 분쟁이 마무리되고 해결이 이루어질 때까지 락업됩니다. Fishermend은 분쟁을 제기한 모든 네트워크 참여자입니다.
+
+분쟁은 `Disputes` 탭 하부의 인덱서 프로파일 페이지 내의 UI에서 볼 수 있습니다.
+
+- 해당 분쟁이 반려되면, Fishermen이 스테이킹한 GRT가 소각되고 해당 분쟁에서 언급된 인덱서는 슬래싱 삭감을 받지 않습니다.
+- 분쟁이 무승부로 결론이 나면, Fishermen들의 예치금은 반환되고 논란이 되고 있는 인덱서는 슬래싱 삭감을 받지 않을 것입니다.
+- 만약 해당 분쟁이 받아들여지면, Fishermen들이 예치한 GRT가 반환되고 분쟁 중인 인덱서는 슬래싱 삭감을 받으며, Fishermen은 해당 GRT 삭감 수량의 50%를 얻게 됩니다.
+
+분쟁은 `Disputes` 탭 아래의 인덱서 프로필 페이지 UI에서 볼 수 있습니다.
+
+### 쿼리 수수료 리베이트는 무엇이며 언제 배포되나요?
+
+어떠한 할당이 닫히고, Subgraph의 쿼리 수수료 리베이트 풀에 누적될 때마다 게이트웨이에 쿼리 수수료들이 누적됩니다. 리베이트 풀은 인덱서가 그들이 네트워크에 대해 얻는 쿼리 수수료들의 양에 대략적인 비율의 스테이킹 할당을 장려하도록 설계되었습니다. 특정 Indexer에 지급되는 풀의 쿼리 수수료 비율은 Cobbs-Douglas Production Function을 사용하여 계산됩니다; 각 Indexer에게 분배되는 금액은 풀에 대한 그들의 기여도 및 Subgraph에 대한 지분 할당에 관한 함수관계에 있습니다.
+
+할당이 종료되고 분쟁 기간이 지나면 인덱서에 의해 리베이트가 청구될 수 있습니다. 리베이트 청구 시 쿼리 수수료들은 리베이트는 queryFeeCut 및 위임 풀 비율에 기반하여, 인덱서와 해당 위임자(Delegator)들에게 분배됩니다.
+
+### query fee cut 및 indexing reward cut는 무엇인가요?
+
+`queryFeeCut` 및 `indexingRewardCut` 값은 Indexer가 해당 Indexer와 Delegator 간의 GRT 분배를 제어하기 위해 CooldownBlocks와 함께 설정할 수 있는 위임 매개 변수입니다. 위임 매개변수 설정에 대한 지침을 위해 [Staking in the Protocol](/network/indexing#stake-in-the-protocol)의 마지막 단계를 참조하시길 바랍니다.
+
+- **queryFeeCut** - 서브그래프에 축적되어 인덱서에게 분배 될 쿼리 피 리베이트의 비율(%)입니다. 만약 이 값이 95%로 설정된 경우, 해당 인덱서는 어떠한 분배가 청구될 때, 해당 쿼리 수수료 리베이트 풀의 95%를 가져가게 되고, 나머지 5%는 위임자(Delegator)들에게 분배됩니다.
+
+- **indexingRewardCut** - 서브그래프 상에 축적되어 인덱서에게 분배 될 인덱싱 보상의 비율(%)입니다. 이 값이 95%로 설정된 경우, 할당이 닫힐 때 인덱서는 인덱싱 보상 풀의 95%를 받고, 위임자들은 나머지 5%를 분배받습니다.
+
+### 인덱서는 인덱싱할 서브그래프를 어떻게 알 수 있습니까?
+
+인덱서는 서브그래프 인덱싱 결정을 위한 고급 기술을 적용하여 스스로 차별화가 가능하지만, 일반적인 아이디어를 제공하기 위해 네트워크에서 서브그래프를 평가하는 데 사용되는 몇 가지 주요 메트릭스에 대해 설명하겠습니다.
+
+- **큐레이션 신호** - 특정 서브그래프에 적용되는 네트워크 큐레이션 신호의 비율은 특히 쿼리 볼류밍이 증가하는 부트스트랩 단계 동안 해당 서브그래프에 대한 관심을 나타내는 좋은 지표가 됩니다.
+
+- **축적된 쿼리 수수료** - 특정 서브그래프에 대해 수집된 쿼리 수수료 양에 대한 과거 데이터는 미래 수요를 나타내는 좋은 지표입니다.
+
+- **스테이킹 수량** - 다른 인덱서의 동작을 모니터링하거나 특정 서브그래프에 할당된 총 지분 비율을 살펴보면 인덱서가 서브그래프 쿼리에 대한 공급 측을 모니터링하여 네트워크가 신뢰하는 서브그래프 또는 더 많은 공급을 필요로 하는 서브그래프를 식별할 수 있습니다.
+
+- **인덱싱 보상이 없는 서브그래프** - 일부 서브그래프는 IPFS와 같은 지원되지 않는 기능을 사용하거나 메인넷 외부의 다른 네트워크를 쿼리하기 때문에 인덱싱 보상을 생성하지 않습니다. 만약 서브그래프가 인덱싱 보상을 생성하지 않을 경우, 여러분들은 서브그래프 상에서 메세지를 보게 될 것입니다.
+
+### 하드웨어 요구사항은 어떻게되나요?
+
+- **Small** - 몇몇 서브그래프들에 대한 인덱싱을 시작하기에는 충분하지만, 추후에 더 개선해야할 가능성이 존재합니다.
+- **Standard** - 기본 설정이며, 이는 k8s/terraform 배포 매니페스트에서 사용됩니다.
+- **Medium** - 100개의 Subgraph 및 초당 200 - 500개의 요청을 서포트 할 수 있는 프로덕션 인덱서입니다.
+- **Large** - 현재 사용되는 모든 서브그래프들 및 관련 트레픽 요청의 처리에 대한 요건을 충족합니다.
+
+| Setup | Postgres<br />(CPUs) | Postgres<br />(memory in GBs) | Postgres<br />(disk in TBs) | VMs<br />(CPUs) | VMs<br />(memory in GBs) |
+| --- | :-: | :-: | :-: | :-: | :-: |
+| Small | 4 | 8 | 1 | 4 | 16 |
+| Standard | 8 | 30 | 1 | 12 | 48 |
+| Medium | 16 | 64 | 2 | 32 | 64 |
+| Large | 72 | 468 | 3.5 | 48 | 184 |
+
+### 인덱서가 취해야 할 기본적인 보안 예방 조치는 무엇인가요?
+
+- **운영자 지갑** - 운영자 지갑을 설정하면 인덱서가 지분을 제어하는 키와 일상적인 작업을 제어하는 키를 분리할 수 있으므로 중요한 예방 조치가 됩니다. 자세한 내용은 [Stake in Protocol](/network/indexing#stake-in-the-protocol)를 읽어보시기 바랍니다.
+
+- **중요사항**: 포트들이 공공연하게 공개되는 것에 각별한 주의를 기울이시길 바랍니다. - **어드민 포트**는 반드시 잠겨있어야 합니다. 이는 아래에 자세히 설명된 더그래프 노드 JSON-RPC 및 인덱서 관리 엔드포인트가 포함됩니다.
+
+## 인프라
+
+인덱서 인프라의 중심에는 이더리움을 모니터링하고, 서브그래프 정의에 따라 데이터를 추출하고 로드하여 [GraphQL API](/about#how-the-graph-works)로 제공하는 그래프 노드가 있습니다. 더그래프 노드는 Ethereum EVM 노드 엔드포인트들과 IPFS 노드(데이터 소싱)에 연결되어야 합니다. 이는 해당 스토리지의 PostgreSQL 데이터베이스 및 네트워크와의 상호 작용을 용이하게 하는 인덱서 구성 요소들입니다.
+
+- **PostgreSQL database** - 더그래프 노드의 메인 스토어입니다. 이곳에 서브그래프의 데이터가 저장됩니다. 또한 인덱서서비스 및 에이전트는 데이터베이스를 사용하여 상태 채널 데이터, 비용 모델 및 인덱싱 규칙을 저장합니다.
+
+- **이더리움 앤드포인트** - 이더리움JSON-RPC API를 노출하는 앤드포인트입니다. 이는 단일 이더리움 클라이언트의 형태를 취하거나 다중에 걸친 로드 밸런싱이 보다 복잡한 설정이 될 수 있습니다. 특정 서브그래프는 Achive mode 및 API 추적 등 특정 이더리움 클라이언트 기능을 필요로 할 것이라는 점을 유념하는 것이 중요합니다.
+
+- **IPFS 노드(5 미만 버젼)** - 서브그래프 배포 메타데이터는 IPFS네트워크에 보존됩니다. 더그래프 노드는 주로 서브그래프 배포 중에 IPFS 노드에 액세스하여 서브그래프 매니페스트와 연결된 모든 파일을 가져옵니다. 네트워크 인덱서는 자체 IPFS 노드를 호스트할 필요가 없으며 네트워크의 IPFS 노드는 https://ipfs.network.thegraph.com에서 호스팅됩니다.
+
+- **인덱서 서비스** - 네트워크와의 모든 필수 외부 커뮤니케이션을 처리합니다. 비용 모델과 인덱싱 상태를 공유하고, 게이트웨이에서 그래프 노드로 쿼리 요청을 전달하며, 게이트웨이를 사용하여 상태 채널을 통해 쿼리 결제를 관리합니다.
+
+- **인덱서 에이전트** - 네트워크에 등록, 그래프 노드에 대한 서브그래프 배포관리 및 할당 관리를 포함하여 체인에 상에서 인덱서 상호작용을 용이하게 합니다.
+
+- **Prometheus metrics 서버** - 더그래프 노드 및 인덱서 구성요소는 매트릭스 서버에 그들의 매트릭스를 기록합니다.
+
+참고: 신속한 확장성을 지원하기 위해 쿼리 노드와 인덱스 노드 등 서로 다른 노드 세트간에쿼리 및 인덱싱 문제를 구분할 것을 권고합니다.
+
+### 포트 개요
+
+> **Firewall** - 오직 인덱서 서비스만 공개적으로 노출되어야 하며 관리 포트 및 데이터베이스 액세스를 잠그는데 특히 주의해야 합니다. 그래프 노드 JSON-RPC 엔드포인트(기본 포트: 8030), 인덱서 관리 API 엔드포인트(기본 포트: 18000), Postgres 데이터베이스 엔드포인트(기본 포트: 5432)는 노출되지 않아야 합니다.
+
+#### 그래프 노드
+
+| 포트 | 목적 | 경로 | CLI 인수 | 환경 변수 |
+| --- | --- | --- | --- | --- |
+| 8000 | GraphQL HTTP server<br />(서브그래프 쿼리용) | /subgraphs/id/...<br />/subgraphs/name/.../... | --http-port | - |
+| 8001 | GraphQL WS <br /> (서브그래프 구독용) | /subgraphs/id/...<br />/subgraphs/name/.../... | --ws-port | - |
+| 8020 | JSON-RPC <br /> (배포 관리용) | / | --admin-port | - |
+| 8030 | 서브그래프 인덱싱 상태 API | /graphql | --index-node-port | - |
+| 8040 | Prometheus metrics | /metrics | --metrics-port | - |
+
+#### 인덱서 서비스
+
+| 포트 | 목적 | 경로 | CLI 인수 | 환경 변수 |
+| --- | --- | --- | --- | --- |
+| 7600 | GraphQL HTTP server <br /> (유료 서브그래프 쿼리용) | /subgraphs/id/...<br />/status<br />/channel-messages-inbox | --port | `INDEXER_SERVICE_PORT` |
+| 7300 | Prometheus metrics | /metrics | --metrics-port | - |
+
+#### 인덱서 에이전트
+
+| 포트 | 목적            | 경로 | CLI 인수                  | 환경 변수                               |
+| ---- | --------------- | ---- | ------------------------- | --------------------------------------- |
+| 8000 | 인덱서 관리 API | /    | --indexer-management-port | `INDEXER_AGENT_INDEXER_MANAGEMENT_PORT` |
+
+### Google Cloud상의 Terraform을 사용한 서버 인프라 구축
+
+#### 필수 구성요소 설치
+
+- Google Cloud SDK
+- Kubectl command line tool
+- Terraform
+
+#### Google Cloud Project 생성
+
+- Indexer 저장소 복제 혹은 탐색
+
+- ./terraform 디렉토리로 이동. 여기서 모든 명령들이 실행되어야 합니다.
+
+```sh
+cd terraform
+```
+
+- Google Cloud에 인증을 한 후, 새 프로젝트를 생성합니다.
+
+```sh
+gcloud auth login
+project=<PROJECT_NAME>
+gcloud projects create --enable-cloud-apis $project
+```
+
+- 새로운 프로젝트에 대한 결제를 가능하게 하기 위해 Google Cloud Console의 결제 페이지를 사용합니다
+
+- Google Cloud 구성을 생성합니다.
+
+```sh
+proj_id=$(gcloud projects list --format='get(project_id)' --filter="name=$project")
+gcloud config configurations create $project
+gcloud config set project "$proj_id"
+gcloud config set compute/region us-central1
+gcloud config set compute/zone us-central1-a
+```
+
+- 요구되는 Google Cloud API들을 사용 가능하도록 설정합니다.
+
+```sh
+gcloud services enable compute.googleapis.com
+gcloud services enable container.googleapis.com
+gcloud services enable servicenetworking.googleapis.com
+gcloud services enable sqladmin.googleapis.com
+```
+
+- 서비스 계정을 생성합니다.
+
+```sh
+svc_name=<SERVICE_ACCOUNT_NAME>
+gcloud iam service-accounts create $svc_name \
+  --description="Service account for Terraform" \
+  --display-name="$svc_name"
+gcloud iam service-accounts list
+# Get the email of the service account from the list
+svc=$(gcloud iam service-accounts list --format='get(email)'
+--filter="displayName=$svc_name")
+gcloud iam service-accounts keys create .gcloud-credentials.json \
+  --iam-account="$svc"
+gcloud projects add-iam-policy-binding $proj_id \
+  --member serviceAccount:$svc \
+  --role roles/editor
+```
+
+- 다음 단계에서 작성될 데이터베이스와 Kubernetes 클러스터 간 피어링을 사용하도록 설정합니다.
+
+```sh
+gcloud compute addresses create google-managed-services-default \
+  --prefix-length=20 \
+  --purpose=VPC_PEERING \
+  --network default \
+  --global \
+  --description 'IP Range for peer networks.'
+gcloud services vpc-peerings connect \
+  --network=default \
+  --ranges=google-managed-services-default
+```
+
+- 최소 terraform 구성 파일을 생성합니다(필요에 따라 업데이트).
+
+```sh
+indexer=<INDEXER_NAME>
+cat > terraform.tfvars <<EOF
+project = "$proj_id"
+indexer = "$indexer"
+database_password = "<database passowrd>"
+EOF
+```
+
+#### 인프라 생성을 위한 Terraform 사용
+
+어떠한 명령이라도 실행하기 전에 [variables.tf](https://github.com/graphprotocol/indexer/blob/main/terraform/variables.tf) 를 읽고, 이 디렉토리에서 `terraform.tfvars` 을 생성합니다. (혹은 이전 단계에서 우리가 생성한 파일을 수정하여 사용하셔도 됩니다.) 기본값을 재정의하거나 값을 설정해야 하는 각 변수에 대해 `terraform.tfvars`에 설정값을 입력합니다.
+
+- 인프라 구성을 위해 아래의 명령어들을 실행합니다.
+
+```sh
+# Install required plugins
+terraform init
+
+# View plan for resources to be created
+terraform plan
+
+# Create the resources (expect it to take up to 30 minutes)
+terraform apply
+```
+
+`kubectl apply -k $dir`의 모든 리소스들을 배포합니다.
+
+```sh
+gcloud container clusters get-credentials $indexer
+kubectl config use-context $(kubectl config get-contexts --output='name'
+| grep $indexer)
+```
+
+#### 인덱서를 위한 Kubernetes 구성요소 생성
+
+- `k8s/overlays`디렉토리를 새로운 `$dir,` 디렉토리에 복사합니다. 그리고 `bases` 엔트리를`$dir/kustomization.yaml` 로 조정하여 `k8s/base`디렉토리로 지정하게 합니다.
+
+- `$dir`의 모든 파일을 읽고 코멘트에 표시된 대로 값을 조정합니다.
+
+`kubectl apply -k $dir`을 사용하여 모든 리소스들을 배포합니다.
+
+### 그래프 노드
+
+[그래프 노드](https://github.com/graphprotocol/graph-node) 는 이벤트가 Ethereum 블록 체인을 소싱하여 GraphQL 엔드포인트를 통해 쿼리할 수 있는 데이터 저장소를 결정적으로 업데이트하는 오픈 소스 러스트 구현입니다. 개발자는 서브그래프를 사용하여 schema를 정의하고, 블록체인과 그래프 노드에서 소싱된 데이터를 변환하기 위한 매핑 세트를 사용하여 전체 체인을 동기화하고, 새로운 블록들을 모니터링하며, GraphQL 엔드포인트를 통해 이를 제공합니다.
+
+#### 소스에서 시작하기
+
+#### 필수 구성 요소 설치
+
+- **Rust**
+
+- **PostgreSQL**
+
+- **IPFS**
+
+- **Ubuntu 유저들에 대한 추가 요구사항** - Ubuntu 상에서 그래프 노드를 운영하기 위해서는 몇 가지 추가 패키지들이 요구됩니다.
+
+```sh
+sudo apt-get install -y clang libpg-dev libssl-dev pkg-config
+```
+
+#### Setup
+
+1. PostgreSQL 데이터베이스 서버를 시작합니다.
+
+```sh
+initdb -D .postgres
+pg_ctl -D .postgres -l logfile start
+createdb graph-node
+```
+
+2. [그래프 노드](https://github.com/graphprotocol/graph-node) repo를 복사하고 `cargo build` 를 실행하여 소스를 구축합니다.
+
+3. 이제 모든 종속 요소들이 설정되었으므로, Graph노드를 시작합니다.
+
+```sh
+cargo run -p graph-node --release -- \
+  --postgres-url postgresql://[USERNAME]:[PASSWORD]@localhost:5432/graph-node \
+  --ethereum-rpc [NETWORK_NAME]:[URL] \
+  --ipfs https://ipfs.network.thegraph.com
+```
+
+#### 도커를 사용하여 시작하기
+
+#### 필수 구성요소
+
+- **이더리움 노드** - 기본적으로 독커 구성 설정은 여러분들의 호스트 머신에 이더리움을 연결하기 위해 [http://host.docker.internal:8545](http://host.docker.internal:8545) 메인넷을 사용할 것입니다. 여러분들은 `docker-compose.yaml`을 업데이트 함으로써 이 네트워크의 이름 및 url을 변경하실 수 있습니다.
+
+#### 설정
+
+1. 그래프 노드를 복사하고 docker 디렉토리로 이동합니다.
+
+```sh
+git clone http://github.com/graphprotocol/graph-node
+cd graph-node/docker
+```
+
+2. 리눅스 사용자들의 경우에는 `docker-compose.yaml` 내의 `host.docker.internal` 대신 호스트 IP 주소를 사용합니다. 이 때, 아래의 스크립트를 사용합니다.
+
+```sh
+./setup.sh
+```
+
+3. 여러분의 이더리움 엔드포인트에 연결될 로컬 그래프 노드를 시작합니다.
+
+```sh
+docker-compose up
+```
+
+### 인덱서 구성요소
+
+성공적으로 네트워크에 참여하기 위해서는 거의 지속적인 모니터링과 상호작용이 필요하므로, 저희는 인덱서들의 네트워크 참여를 용이하게 하기 위해 Typescript 어플리케이션 제품군을 구축했습니다. 다음과 같은 세 가지 인덱서 구성요소가 존재합니다.
+
+- **인덱서 에이전트** - 에이전트는 네트워크와 인덱서의 자체 인프라를 모니터링하고 인덱싱 및 할당되는 서브그래프 배포와 각각에 할당되는 양을 관리합니다.
+
+- **인덱서 서비스** - 외부에 노출되어야 하는 유일한 구성요소인 이 서비스는 서브그래프 쿼리를 그래프 노드로 전달하고 쿼리 결제를 위한 상태 채널을 관리하며 게이트웨이와 같은 클라이언트에게 중요한 의사 결정 정보를 공유합니다.
+
+- **Indexer CLI** - 인덱서 에이전트를 관리하기 위한 명령줄 인터페이스입니다. 이는 인덱서들이 비용모델 및 인덱싱 규칙들을 관리할 수 있도록 합니다.
+
+#### 시작하기
+
+인덱서 에이전트 및 인덱서 서비스는 그래프 노드 인프라와 함께 배치되어야 합니다. 인덱서 구성 요소를 위한 가상 실행 환경을 설정하는 방법은 여러 가지가 있습니다. 여기서는 NPM 패키지 또는 소스를 사용하여 baremetal 상에서 실행하거나, Google Cloud Kubernetes Engine의 Kubernetes 및 Docker를 통해 실행하는 방법에 대해 설명합니다. 이러한 설정 예제가 여러분들의 인프라로 잘 적용되지 않을 경우, 참조를 위한 커뮤니티 가이드가 있을 것입니다. [디스코드 채널](https://thegraph.com/discord) 에 방문하셔서 안녕! 이라고 말해보시길 바랍니다. 여러분들의 인덱서 구성 요소들을 시작하기 전에 반드시 [프로토콜 내에 스테이킹](/network/indexing#stake-in-the-protocol)을 해야 한다는 것을 기억하시길 바랍니다!
+
+#### NPM 패키지를 사용할 경우
+
+```sh
+npm install -g @graphprotocol/indexer-service
+npm install -g @graphprotocol/indexer-agent
+
+# Indexer CLI is a plugin for Graph CLI, so both need to be installed:
+npm install -g @graphprotocol/graph-cli
+npm install -g @graphprotocol/indexer-cli
+
+# Indexer service
+graph-indexer-service start ...
+
+# Indexer agent
+graph-indexer-agent start ...
+
+# Indexer CLI
+#Forward the port of your agent pod if using Kubernetes
+kubectl port-forward pod/POD_ID 18000:8000
+graph indexer connect http://localhost:18000/
+graph indexer ...
+```
+
+#### 소스를 사용할 경우
+
+```sh
+# From Repo root directory
+yarn
+
+# Indexer Service
+cd packages/indexer-service
+./bin/graph-indexer-service start ...
+
+# Indexer agent
+cd packages/indexer-agent
+./bin/graph-indexer-service start ...
+
+# Indexer CLI
+cd packages/indexer-cli
+./bin/graph-indexer-cli indexer connect http://localhost:18000/
+./bin/graph-indexer-cli indexer ...
+```
+
+#### 도커를 사용할 경우
+
+- 레지스트리에서 이미지 불러오기
+
+```sh
+docker pull ghcr.io/graphprotocol/indexer-service:latest
+docker pull ghcr.io/graphprotocol/indexer-agent:latest
+```
+
+**참고**: 콘테이너들을 시작한 이후에, 인덱서 서비스는 [http://localhost:7600](http://localhost:7600)에 접근할 수 있으며, 해당 인덱서 에이전트는 [http://localhost:18000/](http://localhost:18000/)에 인덱서 관리 API를 노출하여야 합니다.
+
+```sh
+# Indexer service
+docker build \
+  --build-arg NPM_TOKEN=<npm-token> \
+  -f Dockerfile.indexer-service \
+  -t indexer-service:latest \
+# Indexer agent
+docker build \
+  --build-arg NPM_TOKEN=<npm-token> \
+  -f Dockerfile.indexer-agent \
+  -t indexer-agent:latest \
+```
+
+- 구성요소 실행
+
+```sh
+docker run -p 7600:7600 -it indexer-service:latest ...
+docker run -p 18000:8000 -it indexer-agent:latest ...
+```
+
+[Google Cloud상 Terraform 사용하여 서버인프라 구축하기](/network/indexing#setup-server-infrastructure-using-terraform-on-google-cloud) 섹션을 참고하시기 바랍니다.
+
+#### K9s 및 Terraform을 사용할 경우
+
+인덱서 CLI는 `graph indexer`터미널에 접근할 수 있는 [`@graphprotocol/graph-cli`](https://www.npmjs.com/package/@graphprotocol/graph-cli)를 위한 플러그인입니다.
+
+#### 사용
+
+> **참고**: 모든 런타임 구성 변수는 시작시 명령에 매개변수로 적용되거나 `COMPONENT_NAME_VARIABLE_NAME`(예. `INDEXER_AGENT_ETHEREUM`) 형식의 환경 변수를 사용할 수 있습니다.
+
+#### 인덱서 에이전트
+
+```sh
+graph-indexer-agent start \
+  --ethereum <MAINNET_ETH_ENDPOINT> \
+  --ethereum-network mainnet \
+  --mnemonic <MNEMONIC> \
+  --indexer-address <INDEXER_ADDRESS> \
+  --graph-node-query-endpoint http://localhost:8000/ \
+  --graph-node-status-endpoint http://localhost:8030/graphql \
+  --graph-node-admin-endpoint http://localhost:8020/ \
+  --public-indexer-url http://localhost:7600/ \
+  --indexer-geo-coordinates <YOUR_COORDINATES> \
+  --index-node-ids default \
+  --indexer-management-port 18000 \
+  --metrics-port 7040 \
+  --network-subgraph-endpoint https://gateway.network.thegraph.com/network \
+  --default-allocation-amount 100 \
+  --register true \
+  --inject-dai true \
+  --postgres-host localhost \
+  --postgres-port 5432 \
+  --postgres-username <DB_USERNAME> \
+  --postgres-password <DB_PASSWORD> \
+  --postgres-database indexer \
+  | pino-pretty
+```
+
+#### 인덱서 서비스
+
+```sh
+SERVER_HOST=localhost \
+SERVER_PORT=5432 \
+SERVER_DB_NAME=is_staging \
+SERVER_DB_USER=<DB_USERNAME> \
+SERVER_DB_PASSWORD=<DB_PASSWORD> \
+graph-indexer-service start \
+  --ethereum <MAINNET_ETH_ENDPOINT> \
+  --ethereum-network mainnet \
+  --mnemonic <MNEMONIC> \
+  --indexer-address <INDEXER_ADDRESS> \
+  --port 7600 \
+  --metrics-port 7300 \
+  --graph-node-query-endpoint http://localhost:8000/ \
+  --graph-node-status-endpoint http://localhost:8030/graphql \
+  --postgres-host localhost \
+  --postgres-port 5432 \
+  --postgres-username <DB_USERNAME> \
+  --postgres-password <DB_PASSWORD> \
+  --postgres-database is_staging \
+  --network-subgraph-endpoint https://gateway.network.thegraph.com/network \
+  | pino-pretty
+```
+
+#### 인덱서 CLI
+
+Indexer CLI는 `graph indexer`의 터미널에서 액세스할 수 있는 [`@graphprotocol/graph-cli`](https://www.npmjs.com/package/@graphprotocol/graph-cli) 용 플러그인입니다.
+
+```sh
+graph indexer connect http://localhost:18000
+graph indexer status
+```
+
+#### 인덱서 CLI를 사용한 인덱서 관리
+
+인덱서 에이전트는 해당 인덱서를 대신하여 네트워크와 자동으로 상호 작용하기 위해서는 인덱서로부터의 입력이 필요합니다. 인덱서 에이전트 행동을 정의하는 메커니즘은**인덱싱 규칙**입니다. **인덱싱 규칙**을 사용하여, 인덱서는 인덱싱 하거나 쿼리를 제공하기 위해 서브그래프 선택에 대한 그들의 특별한 전략을 적용할 수 있습니다. 규칙은 에이전트에서 제공하는 GraphQL API를 통해 관리되며 이는 인덱서 관리 API로 알려져 있습니다. **인덱서 관리 API**와 상호작용하기 위해 추천되는 도구는 **Graph CLI**로의 확장인 **Indexer CLI**입니다.
+
+#### 사용
+
+**Indexer CLI**는 일반적으로 포트 포워딩을 통해 인덱서 에이전트에 연결되므로 CLI를 동일한 서버 또는 클러스터에서 실행할 필요가 없습니다. 여러분들의 시작에 도움을 드리고, 컨텍스트를 제공하기 위해 CLI에 대해 간략히 설명하도록 하겠습니다.
+
+- `graph indexer connect <url>` - 인덱서 관리 API에 연결합니다. 일반적으로 서버에 대한 연결은 포트 포워딩을 통해 열려, CLI는 원격으로 쉽게 작동될 수 있습니다. (예: `kubectl port-forward pod/<indexer-agent-pod> 8000:8000`)
+
+- `graph indexer rules get [options] <deployment-id< [<key1> ...]` - `all`을 `<deployment-id>`로 사용하여 하나 혹은 그 이상의 인덱싱 규칙들을 가져오거나, `global`로 사용하여 글로벌 기본값을 가져옵니다. 추가적인 독립변수 `--merged` 는 글로벌 규칙과 병합되도록 특별한 규칙들을 배포하기 위해 특별히 사용될 수 있습니다. 인덱서 에이전트에 적용되는 방법은 이와 같습니다.
+
+- `graph indexer rules set [options] <deployment-id> <key1> <value1> ...` - 하나 혹은 그 이상의 인덱싱 규칙들을 설정합니다.
+
+- `graph indexer rules start [options] <deployment-id>` - 사용 가능한 경우, 서브그래프 배포 인덱싱을 시작하며, 해당`decisionBasis`를 `always`로 설정합니다. 이를 통해 인덱서 에이전트는 항상 그것을 인덱싱하도록 선택합니다.
+
+- `graph indexer rules stop [options] <deployment-id>` - 배포에 대한 인덱싱을 정지하며, 해당 `decisionBasis` 를 never로 설정합니다. 이를 통해 인덱싱을 위한 배포들에 관한 결정을 할 때, 이 배포를 건너뜁니다.
+
+- `graph indexer rules maybe [options] <deployment-id>` — `rules`에 배포를 위한 `thedecisionBasis`를 설정합니다. 이를 통해 인덱서 에이전트는 이 배포를 인덱싱할지 여부를 결정하기 위해 인덱싱 규칙들을 사용하게 됩니다.
+
+독립변수 `-output`을 사용하여 Output에 규칙들을 나타내는 모든 명령들은 지원되는 출력 형식 중 하나를 선택할 수 있습니다. (`table`, `yaml`, 및 `json`)
+
+#### 인덱싱 규칙
+
+인덱싱 규칙은 글로벌 기본값으로 적용되거나, ID들을 사용하여 특정 서브그래프 배포들에 적용될 수 있습니다. 다른 필드들은 모두 선택사항인 반면에, `deployment`와 `decisionBasis` 영역은 필수사항입니다. 인덱싱 규칙에 `rules`가 `decisionBasis`로 되어있는 경우, 인덱서 에이전트는 해당 규칙에 대한 비지정 임계값을 해당 배포를 위해 네트워크에서 가져온 값과 비교합니다. 서브그래프 배포 값이 어떠한 임계값들 이상(혹은 이하)이면, 이는 인덱싱을 위해 선택됩니다.
+
+예를 들어, 만약에 해당 글로벌 규칙이 **5** (GRT)의 `minStake`를 포함하면, 5개 이상의 GRT 지분이 할당된 모든 서브그래프들은 인덱싱됩니다. 임계값 규칙들은 `maxAllocationPercentage`, `minSignal`, `maxSignal`, `minStake`, 그리고 `minAverageQueryFees`를 포함합니다.
+
+데이터 모델:
+
+```graphql
+type IndexingRule {
+  deployment: string
+  allocationAmount: string | null
+  parallelAllocations: number | null
+  decisionBasis: IndexingDecisionBasis
+  maxAllocationPercentage: number | null
+  minSignal: string | null
+  maxSignal: string | null
+  minStake: string | null
+  minAverageQueryFees: string | null
+  custom: string | null
+}
+
+IndexingDecisionBasis {
+  rules
+  never
+  always
+}
+```
+
+#### 비용 모델
+
+Cost models provide dynamic pricing for queries based on market and query attributes. 비용모델들은 마켓 및 쿼리 속성을 기반으로 한 쿼리들에 대한 동적 가격 책정을 제공합니다 인덱서 서비스는 쿼리에 응답하려는 각 서브그래프의 게이트웨이와 비용모델을 공유합니다. 결국, 게이트웨이는 쿼리당 인덱서 선택 결정 및 선택된 인덱서와의 지불 협상을 위해 비용 모델을 사용합니다.
+
+#### Agora
+
+Agora 언어는 쿼리들에 대한 비용 모델을 공고하기 위한 유연한 형식을 제공합니다. Agora 가격 모델은 GraphQL 쿼리의 각 최상위 쿼리에 대해 순서대로 실행되는 일련의 성명입니다. 각 최상위 쿼리에 대해 일치하는 첫 번째 성명이 해당 쿼리의 가격을 결정합니다.
+
+성명은 GraphQL 쿼리를 일치시키는 데 사용되는 술어와 평가 시 비용을 소수점 단위의 GRT로 나타내는 비용 식으로 구성됩니다. 쿼리의 명명된 인수 위치에 있는 값은 술어에서 캡처되어 식에 사용될 수 있습니다. 어떠한 표현식에서 플레이스 홀더들을 위해 전체 내용은 설정 및 대체될 수도 있습니다.
+
+위의 모델을 사용하는 쿼리 가격책정 예시:
+
+```
+# This statement captures the skip value,
+# uses a boolean expression in the predicate to match specific queries that use `skip`
+# and a cost expression to calculate the cost based on the `skip` value and the SYSTEM_LOAD global
+query { pairs(skip: $skip) { id } } when $skip > 2000 => 0.0001 * $skip * $SYSTEM_LOAD;
+
+# This default will match any GraphQL expression.
+# It uses a Global substituted into the expression to calculate cost
+default => 0.1 * $SYSTEM_LOAD;
+```
+
+비용 모델 예시:
+
+| 쿼리                                                                         | 가격    |
+| ---------------------------------------------------------------------------- | ------- |
+| &#123; pairs(skip: 5000) &#123; id &#125; &#125;                             | 0.5 GRT |
+| &#123; tokens &#123; symbol &#125; &#125;                                    | 0.1 GRT |
+| &#123; pairs(skip: 5000) &#123; id &#123; tokens &#125; symbol &#125; &#125; | 0.6 GRT |
+
+#### 해당 비용 모델 적용
+
+비용 모델은 데이터베이스에 저장하기 위해 인덱서 에이전트의 인덱서 관리 API로 비용 모델들을 전달하는 인덱서 CLI를 통해 적용됩니다. 그런 다음 이들에 대한 요청이 있을 때 마다, 해당 인덱서 서비스는 이들을 선정하여 게이트웨이들에 해당 비용 모델들을 제공합니다.
+
+```sh
+indexer cost set variables '{ "SYSTEM_LOAD": 1.4 }'
+indexer cost set model my_model.agora
+```
+
+## 네트워크와의 상호작용
+
+### 프로토콜에 스테이킹하기
+
+네트워크에 인덱서로 참여하기 위한 첫 번째 단계는 프로토콜을 승인하고, 자금을 스테이킹하며, 일상적인 프로토콜 상호 작용을 위한 운영자 주소를 설정하는 것(선택적)입니다. \_ **참고**: 본 지침의 목적을 위하여 컨트렉트 상호작용에 리믹스가 사용 되지만,원하시는 툴 사용에 개의치 마시기 바랍니다.([OneClickDapp](https://oneclickdapp.com/), [ABItopic](https://abitopic.io/) 및 [MyCrypto](https://www.mycrypto.com/account)는 알려진 몇 가지 다른 툴입니다.)
+
+인덱서에 의해 생성된 이후, 건강한 할당은 4가지 상태를 거칩니다.
+
+#### 토큰 승인
+
+1. 브라우저에서 [Remix app](https://remix.ethereum.org/)을 엽니다.
+
+2. `File Explorer`에 [token ABI](https://raw.githubusercontent.com/graphprotocol/contracts/mainnet-deploy-build/build/abis/GraphToken.json)와 함께 **GraphToken.abi**로 명명된 파일을 생성합니다.
+
+3. 해당 에디터에서 선택되고 열린 `GraphToken.abi`를 통해 Remix 인터페이스에서 `Deploy` 및 `Run Transactions` 섹션으로 전환합니다.
+
+4. 환경에서 `Injected Web3`를 선택하고, `Account`에서 여러분의 인덱서 주소를 선택합니다.
+
+5. - `At Address`옆에 그래프 토큰 컨트렉트 주소를 붙여 넣습니다.(`0xc944E90C64B2c07662A292be6244BDf05Cda44a7`) 이후 `At address` 버튼을 클릭하여 적용합니다.
+
+6. 스테이킹 컨트렉트를 승인하기 위해 `approve(spender, amount)` 기능을 불러옵니다. `spender`에 스테이킹 컨트렉트 주소 (`0xF55041E37E12cD407ad00CE2910B8269B01263b9`)를 채워넣고, `amount`에 스테이킹 할 토큰과 함께 수량을 입력합니다.
+
+#### 토큰 스테이킹
+
+1. 브라우저에서 [Remix app](https://remix.ethereum.org/)을 엽니다.
+
+2. `File Explorer`에 staking ABI와 함께 **Staking.abi**로 명명된 파일을 생성합니다.
+
+3. 에디터에서 선택되고 열린 `Staking.abi`를 통해, Remix 인터페이스에서 `Deploy` 및 `Run Transactions` 섹션으로 전환합니다.
+
+4. 환경에서 `Injected Web3`를 선택하고, `Account`에서 여러분의 인덱서 주소를 선택합니다.
+
+5. - `At Address` 옆에 스테이킹 컨트렉트 주소(`0xF55041E37E12cD407ad00CE2910B8269B01263b9`) 를 붙여넣고, `At address`버튼을 클릭하여 적용합니다.
+
+6. 프로토콜에 GRT를 스테이킹 하기 위해 `stake()`를 호출합니다.
+
+7. (선택 사항) 인덱서는 자금을 제어하는 키를 서브그래프 할당 및 (유료) 쿼리 제공과 같은 일상적인 작업을 수행하는 키로부터 분리하기 위해 인덱서 인프라의 운영자로 다른 주소를 승인할 수 있습니다. 운영자 설정을 위해 해당 운영자 주소와 함께 `setOperator()`를 호출합니다.
+
+8. (선택사항) Indexer들은 보상의 분배를 제어하고 전략적으로 위임자들을 끌어들이기 위해 그들의 indexingRewardCut(백만 개 당), queryFeecut(백만개 당) 그리고 cooldownBlocks(블록들의 수)를 업데이트 함으로써 그들의 위임 매개 변수를 업데이트 할 수 있습니다. 이를 위해 `setDelegationParameters()`를 호출합니다. 아래의 예제는 쿼리 보상의 95%를 인덱서에게 분배하고, 5%를 위임자들에게 분배하도록 queryFeeCut을 설정하고, 인덱싱 리워드의 60%를 Indexer에게 분배하고, 40%를 위임자들에게 분배하도록 설정하며, `thecooldownBlocks`의 기간을 500블록으로 설정합니다.
+
+```
+setDelegationParameters(950000, 600000, 500)
+```
+
+### 할당의 수명
+
+인덱서에 의해 생성된 후 정상적인 할당은 네 가지 상태를 거칩니다.
+
+- **활성** - 어떠한 할당이 온체인상에 생성되면([allocateFrom()](https://github.com/graphprotocol/contracts/blob/master/contracts/staking/Staking.sol#L873)), 이는 **활성**으로 간주됩니다. 인덱서 자체 및/또는 위임된 지분 일부가 서브그래프 배포에 할당되고, 이는 그들이 인덱싱 보상을 청구하고 해당 서브그래프 배포에 대한 쿼리를 제공할 수 있도록 합니다. 해당 인덱서 에이전트는 인덱서 규칙에 의거하여 할당 생성을 관리합니다.
+
+- **종료** - 인덱서는 1 Epoch가 지나면 할당을 종료할 수 있습니다([closeAllocation()](https://github.com/graphprotocol/contracts/blob/master/contracts/staking/Staking.sol#L873)). 이외에도 해당 인덱서 에이전트는 **maxAllocationEpochs**(현재 28일) 가 지난 후 할당을 자동으로 종료합니다. 유효한 인덱싱 증명(POI)으로 할당이 종료되면 해당 인덱싱 보상이 인덱서 및 해당 위임자들에게 배포됩니다(자세한 내용은 아래의 "보상은 어떻게 분배되나요?"
+
+- **완결** - 할당이 종료되면 분쟁 기간이 존재하며, 이 분쟁기간 이후에 해당 할당이 **완결**된 것으로 간주되며, 쿼리 수수료 리베이트 또한 클레임(claim()) 가능해집니다. 인덱서 에이전트는 네트워크를 모니터링하여 **완결** 상태인 할당들을 탐지하고 구성 가능한(선택 사항) 임계값인 **—-allocation-claim-threshold**을 초과할 경우 이들을 청구합니다.
+
+- **청구 완료** - 할당의 최종 상태입니다. - 활성 할당으로 모든 과정을 실행하고, 모든 적격 보상이 배포되었으며 쿼리 수수료 리베이트들이 청구된 상태입니다.

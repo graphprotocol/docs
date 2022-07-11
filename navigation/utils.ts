@@ -15,7 +15,7 @@ export const getNavItems = async (locale: AppLocale = defaultLocale): Promise<Na
 
     navItemsPromise = (async () => {
       const handleDefinition = (definition: NavItemDefinition, parentPath?: string): NavItemPromise => {
-        if ('divider' in definition) {
+        if ('divider' in definition || 'heading' in definition) {
           return definition
         }
         const path = `${parentPath ?? ''}/${definition.slug}`
@@ -38,11 +38,8 @@ export const getNavItems = async (locale: AppLocale = defaultLocale): Promise<Na
                 const { frontmatter }: { frontmatter?: Frontmatter | ((locale: AppLocale) => Frontmatter) } =
                   await import(`../pages/${fileToTry}`)
                 if (!title && frontmatter) {
-                  if (typeof frontmatter === 'function') {
-                    title = frontmatter(locale).title
-                  } else {
-                    title = frontmatter.title
-                  }
+                  const frontmatterData = typeof frontmatter === 'function' ? frontmatter(locale) : frontmatter
+                  title = frontmatterData.navTitle ?? frontmatterData.title
                 }
                 break
               } catch (error) {
@@ -123,8 +120,8 @@ export const getNavItems = async (locale: AppLocale = defaultLocale): Promise<Na
         filteredItems.shift()
       }
 
-      // If the filtered items end with a divider due to missing pages/groups, remove it
-      if (filteredItems.length > 0 && 'divider' in (filteredItems[filteredItems.length - 1] as NavItem)) {
+      // If the filtered items end with a divider or a heading due to missing pages/groups, remove it
+      if (lastFilteredItem && ('divider' in lastFilteredItem || 'heading' in lastFilteredItem)) {
         filteredItems.pop()
       }
 
