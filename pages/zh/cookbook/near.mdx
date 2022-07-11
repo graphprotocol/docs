@@ -1,0 +1,265 @@
+---
+title: 在 NEAR 上构建子图
+---
+
+> Graph 节点和托管服务中对 NEAR 的支持目前处于测试阶段：任何有关构建 NEAR 子图的任何问题，请联系 near@thegraph.com！
+
+本指南介绍了如何在[NEAR 区块链](https://docs.near.org/)上构建索引智能合约的子图。
+
+## NEAR 是什么？
+
+[NEAR](https://near.org/) 是一个用于构建去中心化应用程序的智能合约平台。 请访问 [官方文档](https://docs.near.org/docs/concepts/new-to-near) 了解更多信息。
+
+## NEAR 子图是什么？
+
+Graph 为开发人员提供了一种被称为子图的工具，利用这个工具，开发人员能够处理区块链事件，并通过 GraphQL API 提供结果数据。 [Graph 节点](https://github.com/graphprotocol/graph-node)现在能够处理 NEAR 事件，这意味着 NEAR 开发人员现在可以构建子图来索引他们的智能合约。
+
+子图是基于事件的，这意味着子图可以侦听并处理链上事件。 NEAR 子图目前支持两种类型的处理程序：
+
+- 区块处理器: 这些处理程序在每个新区块上运行
+- 收据处理器: 每次在指定帐户上一个消息被执行时运行。
+
+[NEAR 文档中](https://docs.near.org/docs/concepts/transaction#receipt):
+
+> Receipt 是系统中唯一可操作的对象。 当我们在 NEAR 平台上谈论“处理交易”时，这最终意味着在某个时候“应用收据”。
+
+## 构建 NEAR 子图
+
+`@graphprotocol/graph-cli`是一个用于构建和部署子图的命令行工具。
+
+`@graphprotocol/graph-ts` 是子图特定类型的库。
+
+NEAR 子图开发需要`0.23.0`以上版本的`graph-cli`，以及 `0.23.0`以上版本的`graph-ts`。
+
+> 构建 NEAR 子图与构建索引以太坊的子图非常相似。
+
+子图定义包括三个方面：
+
+**subgraph.yaml:** 子图清单，定义感兴趣的数据源以及如何处理它们。 NEAR 是一种全新`类型`数据源。
+
+**schema.graphql:** 一个模式文件，它定义为您的子图存储哪些数据，以及如何通过 GraphQL 查询它。 NEAR 子图的要求包含在 [现有文档](/developing/creating-a-subgraph#the-graphql-schema)中。
+
+**AssemblyScript 映射:**将事件数据转换为模式文件中定义的实体的[AssemblyScript 代码](/developing/assemblyscript-api)。 NEAR 支持引入了 NEAR 特定的数据类型和新的 JSON 解析功能。
+
+在子图开发过程中，有两个关键命令：
+
+```bash
+$ graph codegen # 从清单中标识的模式文件生成类型
+$ graph build # 从 AssemblyScript 文件生成 Web Assembly，并在 /build 文件夹中准备所有子图文件
+```
+
+### 子图清单定义
+
+子图清单(`subgraph.yaml`)标识子图的数据源、感兴趣的触发器以及响应这些触发器而运行的函数。 以下是一个 NEAR 的子图清单的例子：
+
+```yaml
+specVersion: 0.0.2
+schema:
+  file: ./src/schema.graphql # link to the schema file
+dataSources:
+  - kind: near
+    network: near-mainnet
+    source:
+      account: app.good-morning.near # This data source will monitor this account
+      startBlock: 10662188 # Required for NEAR
+    mapping:
+      apiVersion: 0.0.5
+      language: wasm/assemblyscript
+      blockHandlers:
+        - handler: handleNewBlock # the function name in the mapping file
+      receiptHandlers:
+        - handler: handleReceipt # the function name in the mapping file
+      file: ./src/mapping.ts # link to the file with the Assemblyscript mappings
+```
+
+- NEAR 子图引入了一种新的 `kind` 数据源（`near`）
+- `network` 应该对应于托管图形节点上的网络。 在 Hosted Service 上，NEAR 的主网是 `near-mainnet`，NEAR 的测试网是 `near-testnet`
+- NEAR 数据源引入了一个可选的 `source.account` 字段，这是一个人类可读的 ID，对应于 [NEAR 帐户](https://docs.near.org/docs/concepts/account)。 这可以是一个帐户，也可以是一个子帐户。
+
+NEAR 数据源支持两种类型的处理程序：
+
+- `blockHandlers`：在每个新的 NEAR 块上运行。 不需要 `source.account`。
+- `receiptHandlers`：在数据源的 `source.account` 为接收者的每张收据上运行。 请注意，仅处理完全匹配（[子帐户](https://docs.near.org/docs/concepts/account#subaccounts)必须作为独立数据源添加）。
+
+### 模式定义
+
+模式定义描述了生成的子图数据库的结构，以及实体之间的关系。 这与原始数据源无关。 [这里](/developing/creating-a-subgraph#the-graphql-schema)有更多关于子图模式定义的细节。
+
+### AssemblyScript 映射
+
+处理事件的处理程序是用 [AssemblyScript](https://www.assemblyscript.org/) 编写的。
+
+NEAR 索引将 NEAR 特定的数据类型引入 [AssemblyScript API](/developing/assemblyscript-api)。
+
+```typescript
+
+class ExecutionOutcome {
+      gasBurnt: u64,
+      blockHash: Bytes,
+      id: Bytes,
+      logs: Array<string>,
+      receiptIds: Array<Bytes>,
+      tokensBurnt: BigInt,
+      executorId: string,
+  }
+
+class ActionReceipt {
+      predecessorId: string,
+      receiverId: string,
+      id: CryptoHash,
+      signerId: string,
+      gasPrice: BigInt,
+      outputDataReceivers: Array<DataReceiver>,
+      inputDataIds: Array<CryptoHash>,
+      actions: Array<ActionValue>,
+  }
+
+class BlockHeader {
+      height: u64,
+      prevHeight: u64,// Always zero when version < V3
+      epochId: Bytes,
+      nextEpochId: Bytes,
+      chunksIncluded: u64,
+      hash: Bytes,
+      prevHash: Bytes,
+      timestampNanosec: u64,
+      randomValue: Bytes,
+      gasPrice: BigInt,
+      totalSupply: BigInt,
+      latestProtocolVersion: u32,
+  }
+
+class ChunkHeader {
+      gasUsed: u64,
+      gasLimit: u64,
+      shardId: u64,
+      chunkHash: Bytes,
+      prevBlockHash: Bytes,
+      balanceBurnt: BigInt,
+  }
+
+class Block {
+      author: string,
+      header: BlockHeader,
+      chunks: Array<ChunkHeader>,
+  }
+
+class ReceiptWithOutcome {
+      outcome: ExecutionOutcome,
+      receipt: ActionReceipt,
+      block: Block,
+  }
+```
+
+这些类型被传递给 block & 收据处理程序：
+
+- 块处理程序将收到一个 `Block`
+- 收据处理程序将收到 `ReceiptWithOutcome`
+
+否则，在映射执行期间 NEAR 子图开发人员可以使用 [AssemblyScript API](/developing/assemblyscript-api) 的其余部分。
+
+这包括一个新的 JSON 解析功能 - NEAR 上的日志经常作为字符串化 JSON 发出。 一个新的 `json.fromString(...)` 函数作为 [JSON API](/developing/assemblyscript-api#json-api) 的一部分提供给开发人员 轻松处理这些日志。
+
+## 部署 NEAR 子图
+
+构建子图后，就可以将其部署到 Graph Node 以进行索引了。 NEAR 子图可以部署到任何图节点 `>=v0.26.x`（此版本尚未标记和发布）。
+
+Graph 的托管服务目前支持索引 NEAR 主网和 beta 测试网，具有以下网络名称：
+
+- `near主网`
+- `near-测试网`
+
+有关在托管服务上创建和部署子图的更多信息，请参见[此处](/deploying/deploying-a-subgraph-to-hosted)。
+
+作为一个快速入门 - 第一步是“创建”你的子图 - 这只需要完成一次。 在托管服务上，这可以通过[您的仪表板](https://thegraph.com/hosted-service/dashboard)：“添加子图”来完成。
+
+创建子图后，您可以使用 `graph deploy` CLI 命令部署子图：
+
+```
+$ graph create --node <graph-node-url> subgraph/name # creates a subgraph on a local Graph Node (on the Hosted Service, this is done via the UI)
+$ graph deploy --node <graph-node-url> --ipfs https://api.thegraph.com/ipfs/ # uploads the build files to a specified IPFS endpoint, and then deploys the subgraph to a specified Graph Node based on the manifest IPFS hash
+```
+
+节点配置将取决于子图的部署位置。
+
+#### 托管服务:
+
+```
+graph deploy --node https://api.thegraph.com/deploy/ --ipfs https://api.thegraph.com/ipfs/ --access-token <your-access-token>
+```
+
+#### 本地 Graph 节点（基于默认配置）：
+
+```
+graph deploy --node http://localhost:8020/ --ipfs http://localhost:5001
+```
+
+部署子图后，它将由 Graph Node 索引。 您可以通过查询子图本身来检查其进度：
+
+```
+{
+  _meta {
+    block { number }
+  }
+}
+```
+
+### 使用本地 Graph 节点索引 NEAR
+
+运行索引 NEAR 的 Graph Node 有以下操作要求：
+
+- 带有 Firehose 工具的 NEAR 索引人框架
+- NEAR Firehose 组件
+- 配置了 Firehose 端点的 Graph 节点
+
+我们将很快提供有关运行上述组件的更多信息。
+
+## 查询 NEAR 子图
+
+NEAR 子图的 GraphQL 端点由架构定义确定，具有现有的 API 接口。 请访问 [GraphQL API 文档](/querying/graphql-api) 了解更多信息。
+
+## 示例子图
+
+以下是一些示例子图供参考：
+
+[NEAR 块](https://github.com/graphprotocol/example-subgraph/tree/near-blocks-example)
+
+[NEAR 收据](https://github.com/graphprotocol/example-subgraph/tree/near-receipts-example)
+
+## 常见问题
+
+### 测试版是如何工作的？
+
+NEAR 支持处于测试阶段，这意味着随着我们继续致力于改进集成，API 可能会发生变化。 请发送电子邮件至 near@thegraph.com，以便我们支持您构建 NEAR 子图，并让您了解最新进展！
+
+### 子图可以同时索引 NEAR 和 EVM 链吗？
+
+不，一个子图只能支持来自一个链/网络的数据源。
+
+### 子图可以对更具体的触发器做出反应吗？
+
+目前，仅支持 Block 和 Receipt 触发器。 我们正在调查对指定帐户的函数调用的触发器。 一旦 NEAR 拥有原生事件支持，我们也对支持事件触发器感兴趣。
+
+### 收据处理程序会触发帐户及其子帐户吗？
+
+收据处理程序只会在与指定帐户完全匹配的情况下触发。 未来可能会增加更多的灵活性。
+
+### NEAR 子图可以在映射期间对 NEAR 帐户进行视图调用吗？
+
+这是不支持的。 我们正在评估索引是否需要此功能。
+
+### 我可以在 NEAR 子图中使用数据源模板吗？
+
+目前不支持此功能。 我们正在评估索引是否需要此功能。
+
+### 以太坊子图支持“待定”和“当前”版本，如何部署 NEAR 子图的“待定”版本？
+
+NEAR 子图尚不支持挂起的功能。 在此期间，您可以将新版本部署到不同的“命名”子图，然后当它与链头同步时，您可以重新部署到您的主“命名”子图，它将使用相同的底层部署 ID，所以 主子图将立即同步。
+
+### 我的问题尚未得到解答，在哪里可以获得更多构建 NEAR 子图的帮助？
+
+如果是关于子图开发的一般性问题，[开发者文档](/cookbook/quick-start)的其余部分提供了更多信息。 否则，请加入 [The Graph Protocol Discord](https://discord.gg/vtvv7FP) 并在#near 频道中提问，或发送电子邮件至 near@thegraph.com。
+
+## 参考
+
+- [NEAR 开发者文档](https://docs.near.org/docs/develop/basics/getting-started)

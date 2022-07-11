@@ -1,0 +1,269 @@
+---
+title: GraphQL API
+---
+
+本指南介绍了用于 Graph 协议的 GraphQL 查询 API。
+
+## 查询
+
+在您的子图模式中，您定义了称为 `Entities` 的类型。 对于每个 `Entity` 类型，将在顶级 `Query` 类型上生成一个 `entity` 和 `entities` 字段。 请注意，使用 The Graph 时，`query` 不需要包含在 `graphql` 查询的顶部。
+
+#### 例子
+
+查询模式中定义的单个 `Token` 实体：
+
+```graphql
+{
+  token(id: "1") {
+    id
+    owner
+  }
+}
+```
+
+**注意：**查询单个实体时，`id`字段为必填项，而且必须为字符串。
+
+查询所有 `Token` 实体：
+
+```graphql
+{
+  tokens {
+    id
+    owner
+  }
+}
+```
+
+### 排序
+
+查询集合时，`orderBy` 参数可用于按特定属性排序。 此外，`orderDirection` 可用于指定排序方向，`asc` 用于升序，而`desc` 用于降序。
+
+#### 例子
+
+```graphql
+{
+  tokens(orderBy: price, orderDirection: asc) {
+    id
+    owner
+  }
+}
+```
+
+### 分页
+
+查询集合时，可以使用 `first` 参数从集合的开头进行分页。 值得注意的是，默认排序顺序是按 ID 以字母数字升序排列，而不是按创建时间排列。
+
+此外，`skip` 参数可用于跳过实体和分页。 例如 `first:100` 显示前 100 个实体，`first:100, skip:100` 显示接下来的 100 个实体。
+
+查询应该避免使用非常大的 `skip` 值，因为它们通常性能表现不佳。 要检索大量项目，最好根据上一个示例中所示的属性对实体进行分页。
+
+#### 例子
+
+查询前 10 个 token：
+
+```graphql
+{
+  tokens(first: 10) {
+    id
+    owner
+  }
+}
+```
+
+要查询集合中间的实体组，`skip` 参数可以与 `first` 参数结合使用，以跳过集合开头的指定数量的实体。
+
+#### 例子
+
+查询从集合开头偏移 10 个位置的 10 个`Token` 实体：
+
+```graphql
+{
+  tokens(first: 10, skip: 10) {
+    id
+    owner
+  }
+}
+```
+
+#### 例子
+
+如果客户端需要检索大量实体，则基于属性进行查询和过滤会明显提高性能。 例如，客户端可以使用以下查询检索大量 token：
+
+```graphql
+query manyTokens($lastID: String) {
+  tokens(first: 1000, where: { id_gt: $lastID }) {
+    id
+    owner
+  }
+}
+```
+
+第一次，它会发送带有 `lastID = ""` 的查询，对于后续请求，会将 `lastID` 设置为上一个请求中的最后一个实体的`id` 属性。 与简单的提高 `skip` 值相比，这种方法的性能要好得多。
+
+### 过滤
+
+您可以在查询中使用 `where` 参数来过滤不同的属性。 您可以在 `where` 参数内过滤多个值。
+
+#### 例子
+
+查询 challenges 的 `failed` 结果:
+
+```graphql
+{
+  challenges(where: { outcome: "failed" }) {
+    challenger
+    outcome
+    application {
+      id
+    }
+  }
+}
+```
+
+您可以使用 `_gt`、`_lte` 等后缀进行值比较：
+
+#### 例子
+
+```graphql
+{
+  applications(where: { deposit_gt: "10000000000" }) {
+    id
+    whitelisted
+    deposit
+  }
+}
+```
+
+参数后缀的完整列表：
+
+```graphql
+_not
+_gt
+_lt
+_gte
+_lte
+_in
+_not_in
+_contains
+_not_contains
+_starts_with
+_ends_with
+_not_starts_with
+_not_ends_with
+```
+
+请注意，某些后缀仅支持特定类型。 例如，`Boolean` 仅支持 `_not`、`_in` 和 `_not_in`。
+
+### 跨时间查询
+
+当您查询实体的状态时，您不仅可以查询默认情况下的最新区块，还可以查询过去的任意区块。 您可以通过在查询的顶级字段中包含 `block` 参数，来通过其区块号或区块哈希来指定应该进行查询的区块。
+
+这种查询的结果不会随着时间的推移而改变，即对过去某个区块的查询，无论何时执行，都将返回相同的结果。唯一的例外是，如果对距离以太坊头部非常近的区块进行查询，如果该区块已经不在主链上并且链已经被重组，结果可能会改变。 一旦一个区块被确认是最终的区块，那么查询的结果就不会改变。
+
+请注意，当前的实现仍然受到某些可能违反这些保证的限制。 当前的实现不能总是确认给定的区块哈希是否在主链上，或者由于受到同时运行的区块重组的影响，通过区块哈希查询区块的结果是否是确定性的。当区块是最终区块并且确认已在主链上时，通过区块哈希查询的结果就不会受到影响。 [这个 issue](https://github.com/graphprotocol/graph-node/issues/1405)详细解释了这些限制。
+
+#### 例子
+
+```graphql
+{
+  challenges(block: { number: 8000000 }) {
+    challenger
+    outcome
+    application {
+      id
+    }
+  }
+}
+```
+
+此查询将返回 `Challenge` 实体及其关联的 `Application` 实体，因为它们在处理第 8,000,000 区块后就存在了。
+
+#### 例子
+
+```graphql
+{
+  challenges(block: { hash: "0x5a0b54d5dc17e0aadc383d2db43b0a0d3e029c4c" }) {
+    challenger
+    outcome
+    application {
+      id
+    }
+  }
+}
+```
+
+此查询将返回 `Challenge` 实体及其关联的 `Application` 实体，因为它们在处理具有给定哈希值的区块后就存在了。
+
+### 全文搜索查询
+
+全文搜索查询字段提供了一个表达性的文本搜索 API，可以添加到子图模式中并进行自定义。 请参阅[定义全文搜索字段](/developing/creating-a-subgraph#defining-fulltext-search-fields)以将全文搜索添加到您的子图中。
+
+全文搜索查询有一个必填字段 `text`，用于提供搜索词。 在这个 `text` 搜索字段中可以使用几个特殊的全文运算符。
+
+全文搜索运算符：
+
+| 符号   | 运算符      | 描述                                                                   |
+| ------ | ----------- | ---------------------------------------------------------------------- |
+| `&`    | `And`       | 用于将多个搜索词组合到包含所有提供词条的实体的过滤器中                 |
+| &#x7c; | `Or`        | 由 or 运算符分隔的多个搜索词的查询，将返回与任何提供的词匹配的所有实体 |
+| `<->`  | `Follow by` | 指定两个单词之间的距离。                                               |
+| `:*`   | `Prefix`    | 使用前缀搜索词查找前缀匹配的单词（需要 2 个字符）                      |
+
+#### 例子
+
+使用 `or` 运算符，此查询将过滤到在其全文字段中具有“anarchism”或“crumpet”变体的 blog 实体。
+
+```graphql
+{
+  blogSearch(text: "anarchism | crumpets") {
+    id
+    title
+    body
+    author
+  }
+}
+```
+
+`follow by` 运算符指定全文文档中相隔特定距离的单词。 以下查询将返回所有“decentralize”后跟着“philosophy”单词的 blog
+
+```graphql
+{
+  blogSearch(text: "decentralized <-> philosophy") {
+    id
+    title
+    body
+    author
+  }
+}
+```
+
+可以将全文运算符进行组合来制作更复杂的过滤器。 在下面的示例中，使用前缀搜索运算符与其他运算符的结合，可以实现匹配所有以“lou”开头后，跟着“music”单词的 blog 实体。
+
+```graphql
+{
+  blogSearch(text: "lou:* <-> music") {
+    id
+    title
+    body
+    author
+  }
+}
+```
+
+### 实体
+
+数据源的模式（即可供查询的实体类型、值和关系）是通过 [GraphQL 接口定义语言 (IDL)](https://facebook.github.io/graphql/draft/#sec-Type-System)定义的。
+
+## 模式
+
+GraphQL 模式通常定义`查询`、`订阅`和`变种`的根类型。 The Graph 目前仅支持`查询`。 子图的根`查询`类型是按照包含在子图清单中的 GraphQL 模式定义自动生成的。
+
+模式定义中所有带有 `@entity` 指示的 GraphQL 类型都将被视为实体，并且必须具有 `ID` 字段。
+
+> **注意：**我们的 API 不提供对变种的支持，因为开发人员会从他们的应用程序中直接针对底层区块链发出交易。
+
+### 实体
+
+模式定义中所有带有 `@entity` 指示的 GraphQL 类型都将被视为实体，并且必须具有 `ID` 字段。
+
+> **注意：** 目前，模式定义中的所有类型都必须具有 `@entity` 指示。 将来，我们会将没有 `@entity` 指示的类型视为值对象，但目前尚不支持。
