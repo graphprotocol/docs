@@ -1,0 +1,519 @@
+---
+title: Guia de Migracion de AssemblyScript
+---
+
+Hasta ahora, los subgrafos han utilizado una de las [first versions of AssemblyScript](https://github.com/AssemblyScript/assemblyscript/tree/v0.6) (v0.6). Finalmente, hemos añadido soporte para la [newest one available](https://github.com/AssemblyScript/assemblyscript/tree/v0.19.10) (v0.19.10)! 🎉! 🎉
+
+Esto permitirá a los desarrolladores de subgrafos utilizar las nuevas características del lenguaje AS y la libreria estándar.
+
+Esta guia es aplicable para cualquiera que use `graph-cli`/`graph-ts` bajo la version `0.22.0`. Si ya estás en una versión superior (o igual) a esa, ya has estado usando la versión `0.19.10` de AssemblyScript 🙂
+
+> Nota: A partir de `0.24.0`, `graph-node` puede soportar ambas versiones, dependiendo del `apiVersion` especificado en el manifiesto del subgrafo.
+
+## Caracteristicas
+
+### Nueva Funcionalidad
+
+- `TypedArray`s ahora puede construirse desde `ArrayBuffer`s usando el [nuevo `wrap` metodo estatico](https://www.assemblyscript.org/stdlib/typedarray.html#static-members) ([v0.8.1](https://github.com/AssemblyScript/assemblyscript/releases/tag/v0.8.1))
+- Nuevas funciones de la biblioteca estándar: `String#toUpperCase`, `String#toLowerCase`, `String#localeCompare`and `TypedArray#set` ([v0.9.0](https://github.com/AssemblyScript/assemblyscript/releases/tag/v0.9.0))
+- Se agrego soporte para x instanceof GenericClass ([v0.9.2](https://github.com/AssemblyScript/assemblyscript/releases/tag/v0.9.2))
+- Se agrego `StaticArray<T>`, una mas eficiente variante de array ([v0.9.3](https://github.com/AssemblyScript/assemblyscript/releases/tag/v0.9.3))
+- Se agrego `Array<T>#flat` ([v0.10.0](https://github.com/AssemblyScript/assemblyscript/releases/tag/v0.10.0))
+- Se implemento el argumento `radix` en `Number#toString` ([v0.10.1](https://github.com/AssemblyScript/assemblyscript/releases/tag/v0.10.1))
+- Se agrego soporte para los separadores en los literales de punto flotante ([v0.13.7](https://github.com/AssemblyScript/assemblyscript/releases/tag/v0.13.7))
+- Se agrego soporte para las funciones de primera clase ([v0.14.0](https://github.com/AssemblyScript/assemblyscript/releases/tag/v0.14.0))
+- Se agregaron builtins: `i32/i64/f32/f64.add/sub/mul` ([v0.14.13](https://github.com/AssemblyScript/assemblyscript/releases/tag/v0.14.13))
+- Se implemento `Array/TypedArray/String#at` ([v0.18.2](https://github.com/AssemblyScript/assemblyscript/releases/tag/v0.18.2))
+- Se agrego soporte para las plantillas de strings literales ([v0.18.17](https://github.com/AssemblyScript/assemblyscript/releases/tag/v0.18.17))
+- Se agrego `encodeURI(Component)` y `decodeURI(Component)` ([v0.18.27](https://github.com/AssemblyScript/assemblyscript/releases/tag/v0.18.27))
+- Se agrego `toString`, `toDateString` and `toTimeString` to `Date` ([v0.18.29](https://github.com/AssemblyScript/assemblyscript/releases/tag/v0.18.29))
+- Se agrego `toUTCString` para `Date` ([v0.18.30](https://github.com/AssemblyScript/assemblyscript/releases/tag/v0.18.30))
+- Se agrego `nonnull/NonNullable` builtin type ([v0.19.2](https://github.com/AssemblyScript/assemblyscript/releases/tag/v0.19.2))
+
+### Optimizaciones
+
+- `Math` funciones como `exp`, `exp2`, `log`, `log2` y `pow` fueron reemplazadas por variantes mas rapidas ([v0.9.0](https://github.com/AssemblyScript/assemblyscript/releases/tag/v0.9.0))
+- Optimizar ligeramente `Math.mod` ([v0.17.1](https://github.com/AssemblyScript/assemblyscript/releases/tag/v0.17.1))
+- Caché de más accesos a campos en std Map y Set ([v0.17.8](https://github.com/AssemblyScript/assemblyscript/releases/tag/v0.17.8))
+- Optimizar para potencias de dos en `ipow32/64` ([v0.18.2](https://github.com/AssemblyScript/assemblyscript/releases/tag/v0.18.2))
+
+### Otros
+
+- El tipo de un literal de array puede ahora inferirse a partir de su contenido ([v0.9.0](https://github.com/AssemblyScript/assemblyscript/releases/tag/v0.9.0))
+- Actualizado stdlib a Unicode 13.0.0 ([v0.10.0](https://github.com/AssemblyScript/assemblyscript/releases/tag/v0.10.0))
+
+## ¿Cómo actualizar?
+
+1. Cambiar tus asignaciones `apiVersion` en `subgraph.yaml` a `0.0.6`:
+
+```yaml
+...
+dataSources:
+  ...
+    mapping:
+      ...
+      apiVersion: 0.0.6
+      ...
+```
+
+2. Actualiza la `graph-cli` que usas a la `última` versión:
+
+```bash
+# si lo tiene instalada de forma global
+npm install --global @graphprotocol/graph-cli@latest
+
+# o desde su subgrafo si lo tiene como dependencia
+npm install --save-dev @graphprotocol/graph-cli@latest
+```
+
+3. Haz lo mismo con `graph-ts`, pero en lugar de instalarlo globalmente, guárdalo en tus dependencias principales:
+
+```bash
+npm install --save @graphprotocol/graph-ts@latest
+```
+
+4. Sigue el resto de la guía para arreglar los cambios que rompen el languaje.
+5. Ejecuta `codegen` y `deploy` nuevamente.
+
+## Rompiendo los esquemas
+
+### Anulabilidad
+
+En la versión anterior de AssemblyScript, podías crear un código como el siguiente:
+
+```typescript
+function load(): Value | null { ... }
+
+let maybeValue = load();
+maybeValue.aMethod();
+```
+
+Sin embargo, en la versión más reciente, debido a que el valor es anulable, es necesario que lo compruebes, así:
+
+```typescript
+let maybeValue = load()
+
+if (maybeValue) {
+  maybeValue.aMethod() // `maybeValue` is not null anymore
+}
+```
+
+O forzarlo asi:
+
+```typescript
+let maybeValue = load()! // rompiendo el runtime si el valor es nulo
+
+maybeValue.aMethod()
+```
+
+Si no estás seguro de cuál elegir, te recomendamos que utilices siempre la versión segura. Si el valor no existe, es posible que quieras hacer una declaración if temprana con un retorno en tu handler de subgrafo.
+
+### Variable Shadowing
+
+Antes podías hacer [variable shadowing](https://en.wikipedia.org/wiki/Variable_shadowing) y un código como este funcionaría:
+
+```typescript
+let a = 10
+let b = 20
+let a = a + b
+```
+
+Sin embargo, ahora esto ya no es posible, y el compilador devuelve este error:
+
+```typescript
+ERROR TS2451: Cannot redeclare block-scoped variable 'a'
+
+ let a = a + b;
+ ~~~~~~~~~~~~~
+in assembly/index.ts(4,3)
+```
+Tendrás que cambiar el nombre de las variables duplicadas si tienes una variable shadowing.
+### Comparaciones Nulas
+Al hacer la actualización en ut subgrafo, a veces pueden aparecer errores como estos:
+
+```typescript
+ERROR TS2322: Type '~lib/@graphprotocol/graph-ts/common/numbers/BigInt | null' is not assignable to type '~lib/@graphprotocol/graph-ts/common/numbers/BigInt'.
+     if (decimals == null) {
+                     ~~~~
+ in src/mappings/file.ts(41,21)
+```
+Para solucionarlo puedes simplemente cambiar la declaracion `if` por algo así:
+
+```typescript
+  if (!decimals) {
+
+  // or
+
+  if (decimals === null) {
+```
+
+Lo mismo ocurre si haces != en lugar de ==.
+
+### Casting
+
+La forma común de hacer el casting antes era simplemente usar la palabra clave `as`, de la siguiente forma:
+
+```typescript
+let byteArray = new ByteArray(10)
+let uint8Array = byteArray as Uint8Array // equivalent to: <Uint8Array>byteArray
+```
+
+Sin embargo, esto sólo funciona en dos casos:
+
+- Casting de primitivas (entre tipos como `u8`, `i32`, `bool`; eg: `let b: isize = 10; b as usize`);
+- Upcasting en la herencia de clases (subclase → superclase)
+
+Ejemplos:
+
+```typescript
+// primitive casting
+let a: usize = 10
+let b: isize = 5
+let c: usize = a + (b as usize)
+```
+
+```typescript
+// upcasting on class inheritance
+class Bytes extends Uint8Array {}
+
+let bytes = new Bytes(2)
+// <Uint8Array>bytes // same as: bytes as Uint8Array
+```
+
+Hay dos escenarios en los que puede querer cast, pero usando `as`/`<T>var` **no es seguro**:
+
+- Downcasting en la herencia de clases (superclase → subclase)
+- Entre dos tipos que comparten una superclase
+
+```typescript
+// downcasting on class inheritance
+class Bytes extends Uint8Array {}
+
+let uint8Array = new Uint8Array(2)
+// <Bytes>uint8Array // breaks in runtime :(
+```
+
+```typescript
+// between two types that share a superclass
+class Bytes extends Uint8Array {}
+class ByteArray extends Uint8Array {}
+
+let bytes = new Bytes(2)
+// <ByteArray>bytes // breaks in runtime :(
+```
+
+Para esos casos, puedes usar la función `changetype<T>`:
+
+```typescript
+// downcasting on class inheritance
+class Bytes extends Uint8Array {}
+
+let uint8Array = new Uint8Array(2)
+changetype<Bytes>(uint8Array) // works :)
+```
+
+```typescript
+// entre dos tipos que comparten un superclass
+class Bytes extends Uint8Array {}
+class ByteArray extends Uint8Array {}
+
+let bytes = new Bytes(2)
+changetype<ByteArray>(bytes) // works :)
+```
+
+Si sólo quieres eliminar la anulabilidad, puedes seguir usando el `as` operador (o `<T>variable`), pero asegúrate de que el valor no puede ser nulo, de lo contrario se romperá.
+
+```typescript
+// eliminar anulabilidad
+let previousBalance = AccountBalance.load(balanceId) // AccountBalance | null
+
+if (previousBalance != null) {
+  return previousBalance as AccountBalance // safe remove null
+}
+
+let newBalance = new AccountBalance(balanceId)
+```
+
+Para el caso de la anulabilidad se recomienda echar un vistazo al [nullability check feature](https://www.assemblyscript.org/basics.html#nullability-checks), hara que tu codigo sea mas limpio 🙂
+
+También hemos añadido algunos métodos estáticos en algunos tipos para facilitar el casting, son:
+
+- Bytes.fromByteArray
+- Bytes.fromUint8Array
+- BigInt.fromByteArray
+- ByteArray.fromBigInt
+
+### Comprobación de anulabilidad con acceso a la propiedad
+
+Para usar el [nullability check feature](https://www.assemblyscript.org/basics.html#nullability-checks) puedes usar la declaracion `if` o el operador ternario (`?` and `:`) asi:
+
+```typescript
+let something: string | null = 'data'
+
+let somethingOrElse = something ? something : 'else'
+
+// o
+
+let somethingOrElse
+
+if (something) {
+  somethingOrElse = something
+} else {
+  somethingOrElse = 'else'
+}
+```
+
+Sin embargo eso sólo funciona cuando estás haciendo el `if` / ternario en una variable, no en un acceso a una propiedad, como este:
+
+```typescript
+class Container {
+  data: string | null
+}
+
+let container = new Container()
+container.data = 'data'
+
+let somethingOrElse: string = container.data ? container.data : 'else' // doesn't compile
+```
+
+Lo que produce este error:
+
+```typescript
+ERROR TS2322: Type '~lib/string/String | null' is not assignable to type '~lib/string/String'.
+
+   let somethingOrElse: string = container.data ? container.data : "else";
+                                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
+Para solucionar este problema, puedes crear una variable para ese acceso a la propiedad de manera que el compilador pueda hacer la magia de la comprobación de nulidad:
+
+```typescript
+class Container {
+  data: string | null
+}
+
+let container = new Container()
+container.data = 'data'
+
+let data = container.data
+
+let somethingOrElse: string = data ? data : 'else' // compiles just fine :)
+```
+
+### Sobrecarga de operadores con acceso a propiedades
+
+Si intentas sumar (por ejemplo) un tipo anulable (desde un acceso a una propiedad) con otro no anulable, el compilador de AssemblyScript en lugar de dar un error en el tiempo de compilación advirtiendo que uno de los valores es anulable, simplemente compila en silencio, dando oportunidad a que el código se rompa en tiempo de ejecución.
+
+```typescript
+class BigInt extends Uint8Array {
+  @operator('+')
+  plus(other: BigInt): BigInt {
+    // ...
+  }
+}
+
+class Wrapper {
+  public constructor(public n: BigInt | null) {}
+}
+
+let x = BigInt.fromI32(2)
+let y: BigInt | null = null
+
+x + y // give compile time error about nullability
+
+let wrapper = new Wrapper(y)
+
+wrapper.n = wrapper.n + x // doesn't give compile time errors as it should
+```
+
+Hemos abierto un tema en el compilador de AssemblyScript para esto, pero por ahora si haces este tipo de operaciones en tus mapeos de subgrafos, deberías cambiarlos para hacer una comprobación de nulos antes de ello.
+
+```typescript
+let wrapper = new Wrapper(y)
+
+if (!wrapper.n) {
+  wrapper.n = BigInt.fromI32(0)
+}
+
+wrapper.n = wrapper.n + x // now `n` is guaranteed to be a BigInt
+```
+
+### Inicialización del valor
+
+Si tienes algún código como este:
+
+```typescript
+var value: Type // null
+value.x = 10
+value.y = 'content'
+```
+
+Compilará pero se romperá en tiempo de ejecución, eso ocurre porque el valor no ha sido inicializado, así que asegúrate de que tu subgrafo ha inicializado sus valores, así:
+
+```typescript
+var value = new Type() // initialized
+value.x = 10
+value.y = 'content'
+```
+
+También si tienes propiedades anulables en una entidad GraphQL, como esta:
+
+```graphql
+type Total @entity {
+  id: Bytes!
+  amount: BigInt
+}
+```
+
+Y tienes un código similar a este:
+
+```typescript
+let total = Total.load('latest')
+
+if (total === null) {
+  total = new Total('latest')
+}
+
+total.amount = total.amount + BigInt.fromI32(1)
+```
+
+Tendrás que asegurarte de inicializar el valor `total.amount`, porque si intentas acceder como en la última línea para la suma, se bloqueará. Así que o bien la inicializas primero:
+
+```typescript
+let total = Total.load('latest')
+
+if (total === null) {
+  total = new Total('latest')
+  total.amount = BigInt.fromI32(0)
+}
+
+total.tokens = total.tokens + BigInt.fromI32(1)
+```
+
+O simplemente puedes cambiar tu esquema GraphQL para no usar un tipo anulable para esta propiedad, entonces la inicializaremos como cero en el paso `codegen` 😉
+
+```graphql
+type Total @entity {
+  id: Bytes!
+  amount: BigInt!
+}
+```
+
+```typescript
+let total = Total.load('latest')
+
+if (total === null) {
+  total = new Total('latest') // justo luego de haber iniciado la propiedad de no-anulable
+}
+
+total.amount = total.amount + BigInt.fromI32(1)
+```
+
+### Inicialización de las propiedades de la clase
+
+Si exportas alguna clase con propiedades que son otras clases (declaradas por ti o por la libreria estándar) así:
+
+```typescript
+class Thing {}
+
+export class Something {
+  value: Thing
+}
+```
+
+El compilador dará un error porque tienes que añadir un inicializador para las propiedades que son clases, o añadir el operador `!`:
+
+```typescript
+export class Something {
+  constructor(public value: Thing) {}
+}
+
+// o
+
+export class Something {
+  value: Thing
+
+  constructor(value: Thing) {
+    this.value = value
+  }
+}
+
+// or
+
+export class Something {
+  value!: Thing
+}
+```
+
+### Inicializacion de Array
+
+La clase `Array` sigue aceptando un número para inicializar la longitud de la lista, sin embargo hay que tener cuidado porque operaciones como `.push` en realidad aumentarán el tamaño en lugar de añadirlo al principio, por ejemplo:
+
+```typescript
+let arr = new Array<string>(5) // ["", "", "", "", ""]
+
+arr.push('something') // ["", "", "", "", "", "something"] // size 6 :(
+```
+
+Dependiendo de los tipos que estés utilizando, por ejemplo los anulables, y de cómo estés accediendo a ellos, podrías encontrarte con un error de ejecución como éste:
+
+```
+ERRO Handler skipped due to execution failure, error: Mapping aborted at ~lib/array.ts, line 110, column 40, with message: Element type must be nullable if array is holey  wasm backtrace:     0: 0x19c4 - <unknown>!~lib/@graphprotocol/graph-ts/index/format         1: 0x1e75 - <unknown>!~lib/@graphprotocol/graph-ts/common/collections/Entity#constructor        2: 0x30b9 - <unknown>!node_modules/@graphprotocol/graph-ts/global/global/id_of_type
+```
+
+Para realmente empujar al principio deberías o bien, inicializar el `Array` con tamaño cero, así:
+
+```typescript
+let arr = new Array<string>(0) // []
+
+arr.push('something') // ["something"]
+```
+
+O debería mutar a través de un índice:
+
+```typescript
+let arr = new Array<string>(5) // ["", "", "", "", ""]
+
+arr[0] = 'something' // ["something", "", "", "", ""]
+```
+
+### Esquema GraphQL
+
+Esto no es un cambio directo de AssemblyScript, pero es posible que tengas que actualizar tu archivo `schema.graphql`.
+
+Ahora ya no puedes definir campos en tus tipos que sean Listas No Anulables. Si tienes un esquema como este:
+
+```graphql
+type Something @entity {
+  id: Bytes!
+}
+
+type MyEntity @entity {
+  id: Bytes!
+  invalidField: [Something]! # no longer valid
+}
+```
+
+Tendrás que añadir un `!` al miembro del tipo Lista, así:
+
+```graphql
+type Something @entity {
+  id: Bytes!
+}
+
+type MyEntity @entity {
+  id: Bytes!
+  invalidField: [Something!]! # valid
+}
+```
+
+Esto cambio debido a las diferencias de nulidad entre las versiones de AssemblyScript, y está relacionado con el archivo `src/generated/schema.ts` (ruta por defecto, puede que lo hayas cambiado).
+
+### Otros
+
+- Alineado `Map#set` y `Set#add` con el spec, devolviendo `this` ([v0.9.2](https://github.com/AssemblyScript/assemblyscript/releases/tag/v0.9.2))
+- Las arrays ya no heredan de ArrayBufferView, sino que son distintas ([v0.10.0](https://github.com/AssemblyScript/assemblyscript/releases/tag/v0.10.0))
+- Las clases inicializadas a partir de literales de objetos ya no pueden definir un constructor ([v0.10.0](https://github.com/AssemblyScript/assemblyscript/releases/tag/v0.10.0))
+- El resultado de una operación binaria `**` es ahora el entero denominador común si ambos operandos son enteros. Anteriormente, el resultado era un flotante como si se llamara a `Math/f.pow` ([v0.11.0](https://github.com/AssemblyScript/assemblyscript/releases/tag/v0.11.0))
+- Coercionar `NaN` a `false` cuando casting a `bool` ([v0.14.9](https://github.com/AssemblyScript/assemblyscript/releases/tag/v0.14.9))
+- Al desplazar un valor entero pequeño de tipo `i8`/`u8` o `i16`/`u16`, sólo los 3 o 4 bits menos significativos del valor RHS afectan al resultado, de forma análoga al resultado de un `i32.shl` que sólo se ve afectado por los 5 bits menos significativos del valor RHS. Ejemplo: `someI8 << 8` previamente producia el valor `0`, pero ahora produce `someI8` debido a enmascarar el RHS como `8 & 7 = 0` (3 bits) ([v0.17.0](https://github.com/AssemblyScript/assemblyscript/releases/tag/v0.17.0))
+- Corrección de errores en las comparaciones de strings relacionales cuando los tamaños difieren ([v0.17.8](https://github.com/AssemblyScript/assemblyscript/releases/tag/v0.17.8))
