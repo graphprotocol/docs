@@ -1,0 +1,932 @@
+---
+title: 서브그래프 생성하기
+---
+
+Graph CLI를 사용하기 전에, 여러분은 [Subgraph Studio](https://thegraph.com/studio)에서 서브그래프를 생성해야 합니다. 그런 다음 여러분들은 여러분의 서브그래프 프로젝트를 설정하고 선택한 플랫폼에 배포할 수 있게 될 것입니다. **Ethereum 메인넷을 인덱싱하지 않는 서브그래프는 The Graph Network에 게시되지 않는다**는 것을 참고하시기 바랍니다.
+
+`graph init` 명령은 퍼블릭 이더리움 네트워크의 기존 컨트랙트나 예제 서브그래프에서 새 서브그래프 프로젝트를 설정하는 데 사용할 수 있습니다. 이 명령은 `graph init --product subgraph-studio`에 전달되어 Subgraph Studio에서 서브그래프를 생성하는 데 사용될 수 있습니다. 이더리움 메인넷이나 테스트넷 중 하나에 이미 스마트 컨트랙트를 배포한 경우 해당 컨트랙트에서 새 서브그래프를 부트스트랩하는 것이 시작하기에 좋은 방법일 수 있습니다. 그러나 먼저 The Graph가 지원하는 네트워크에 대해 조금 알아보도록 하겠습니다.
+
+## 지원 네트워크
+
+그래프 네트워크는 메인넷 이더리움을 인덱싱하는 서브그래프들을 지원합니다:
+
+- `mainnet`
+
+**호스티드 서비스 상에서 베타 형태로 지원되는 추가 네트워크들**:
+
+- `mainnet`
+- `kovan`
+- `rinkeby`
+- `ropsten`
+- `goerli`
+- `poa-core`
+- `poa-sokol`
+- `xdai`
+- `near-mainnet`
+- `near-mainnet`
+- `matic`
+- `mumbai`
+- `fantom`
+- `bnb`
+- `chapel`
+- `clover`
+- `avalanche`
+- `fuji`
+- `celo`
+- `celo-alfajores`
+- `fuse`
+- `moonriver`
+- `mbase`
+- `arbitrum-one`
+- `arbitrum-rinkeby`
+- `optimism`
+- `optimism-kovan`
+- `aurora`
+- `aurora-testnet`
+- `harmony`
+
+The Graph의 호스팅 서비스는 기본 기술, 즉 제공된 JSON RPC 엔드포인트의 안정성과 신뢰성에 의존합니다. 새로운 네트워크는 네트워크가 안정성, 신뢰성 및 확장성 측면에서 자체적으로 입증될 때까지 베타 버전으로 표시됩니다. 이 베타 기간 동안 가동 중지 및 예기치 않은 동작이 발생할 위험이 존재합니다.
+
+비 메인넷 네트워크를 인덱싱하는 서브그래프를 [Subgraph Studio](/deploying/subgraph-studio)의 탈중앙화 그래프 네트워크에 게시**할 수 없음** 을 기억하십시오.
+
+## 기존 컨트렉트로부터
+
+다음 명령은 기존 컨트렉트의 모든 이벤트를 인덱싱하는 서브그래프를 생성합니다. 이는 Etherscan에서 컨트렉트 ABI를 가져오려고 시도하고 로컬 파일 경로를 다시 요청합니다. 만약 어떤 선택적 인수라도 누락된 경우, 이는 대화형 양식을 통해 여러분을 안내합니다.
+
+```sh
+graph init \
+  --product subgraph-studio
+  --from-contract <CONTRACT_ADDRESS> \
+  [--network <ETHEREUM_NETWORK>] \
+  [--abi <FILE>] \
+  <SUBGRAPH_SLUG> [<DIRECTORY>]
+```
+
+`<SUBGRAPH_SLUG>`는 Subgraph Studio의 서브그래프 ID이며 서브그래프 세부 정보 페이지에서 찾을 수 있습니다.
+
+## 예제 서브그래프에서
+
+`graph init`가 지원하는 두 번째 모드는 예제 서브그래프에서 새 프로젝트를 만드는 것입니다. 다음 명령은 이 작업을 수행합니다.
+
+```
+graph init --studio <SUBGRAPH_SLUG>
+```
+
+예제 서브그래프는 사용자 아바타를 관리하고 아바타가 생성되거나 업데이트될 때마다 `NewGravatar` 또는 `UpdateGravatar` 이벤트를 내보내는 Dani Grant의 Gravity 컨트랙트를 기반으로 합니다. 서브그래프는 그래프 노드 저장소에 `Gravatar` 엔터티를 작성하고 이벤트에 따라 업데이트되도록 하여 이러한 이벤트를 처리합니다. 다음 섹션에서는 이 예제의 서브그래프 매니페스트를 구성하는 파일에 대해 설명합니다.
+
+## 서브그래프 매니페스트
+
+서브그래프 매니페스트`subgraph.yaml`은 서브그래프가 인덱스하는 스마트 컨트랙트, 이러한 컨트랙트에서 주의해야 할 이벤트, 그래프 노드가 저장하고 쿼리할 수 있는 엔터티에 이벤트 데이터를 매핑하는 방법을 정의합니다. 서브그래프 매니페스트에 대한 전체 사양은 [여기](https://github.com/graphprotocol/graph-node/blob/master/docs/subgraph-manifest.md).에서 찾을 수 있습니다.
+
+예제 서브그래프에 관한 `subgraph.yaml`는 다음과 같습니다:
+
+```yaml
+specVersion: 0.0.4
+description: Gravatar for Ethereum
+repository: https://github.com/graphprotocol/example-subgraph
+schema:
+  file: ./schema.graphql
+dataSources:
+  - kind: ethereum/contract
+    name: Gravity
+    network: mainnet
+    source:
+      address: '0x2E645469f354BB4F5c8a05B3b30A929361cf77eC'
+      abi: Gravity
+      startBlock: 6175244
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.6
+      language: wasm/assemblyscript
+      entities:
+        - Gravatar
+      abis:
+        - name: Gravity
+          file: ./abis/Gravity.json
+      eventHandlers:
+        - event: NewGravatar(uint256,address,string,string)
+          handler: handleNewGravatar
+        - event: UpdatedGravatar(uint256,address,string,string)
+          handler: handleUpdatedGravatar
+      callHandlers:
+        - function: createGravatar(string,string)
+          handler: handleCreateGravatar
+      blockHandlers:
+        - handler: handleBlock
+        - handler: handleBlockWithCall
+          filter:
+            kind: call
+      file: ./src/mapping.ts
+```
+
+매니페스트에 대해 업데이트해야 할 중요한 항목은 다음과 같습니다.
+
+- `description`: 서브그래프가 무엇인지에 대한 사람이 읽을 수 있는 설명입니다. 이 설명은 서브그래프가 호스팅 서비스에 배포될 때 그래프 탐색기에 의해 표시됩니다.
+
+- `repository`: 서브그래프 매니페스트를 찾을 수 있는 저장소의 URL입니다. 이것은 그래프 탐색기에서도 표시됩니다.
+
+- `features`: 사용된 모든 [feature](#experimental-features) 이름들의 리스트입니다.
+
+- `dataSources.source`: 서브그래프 소스의 스마트 컨트랙트 주소 및 사용할 스마트 컨트랙트의 abi는 선택 사항입니다. 생략하면 모든 컨트랙트에서 일치하는 이벤트를 인덱싱할 수 있습니다.
+
+- `dataSources.source.startBlock`: 데이터 소스가 인덱싱을 시작하는 블록의 선택적 번호입니다. 대부분의 경우 컨트랙트가 생성된 블록을 사용하는 것이 좋습니다.
+
+- `dataSources.mapping.entities`: 데이터 원본이 저장소에 작성하는 엔터티입니다. 각 엔티티의 스키마는 schema.graphql 파일에 정의되어 있습니다.
+
+- `dataSources.mapping.abis`: 소스 컨트랙트에 대한 하나 이상의 명명된 ABI 파일 및 매핑 내에서 상호 작용하는 다른 모든 스마트 컨트랙트.
+
+- `dataSources.mapping.eventHandlers`: 이 서브그래프가 반응하는 스마트 컨트랙트 이벤트와 이러한 이벤트를 저장소의 엔터티로 변환하는 매핑의 핸들러(예제에서는./src/mapping.ts)를 나열합니다.
+
+- `dataSources.mapping.callHandlers`: 이 서브그래프가 반응하는 스마트 컨트랙트 기능들과 입력 및 출력을 함수 호출에 대한 저장소의 엔터티로 변환하는 매핑의 핸들러들을 나열합니다.
+
+- `dataSources.mapping.blockHandlers`: 이 서브그래프가 반응하는 블록과 블록이 체인에 추가될 때 실행할 매핑의 핸들러를 나열합니다. 필터가 없으면 블록 핸들러가 모든 블록에서 실행됩니다. 선택적 필터는 다음과 같은 종류로 제공될 수 있습니다: call`. A`call` 필터는 블록에 데이터 소스 컨트랙트에 대한 호출이 하나 이상 포함된 경우 핸들러를 실행합니다.
+
+단일 서브그래프는 여러 스마트 컨트랙트의 데이터를 인덱싱 할 수 있습니다. `dataSources` 배열에 데이터를 인덱싱해야 하는 각 컨트랙트에 대한 항목을 추가합니다.
+
+블록 내의 데이터 소스에 대한 트리거는 다음 프로세스를 사용하여 정렬됩니다:
+
+1. 이벤트 및 호출 트리거는 먼저 블록 내 트랜잭션 인덱스에 따라 정렬됩니다.
+2. 동일한 트랜잭션에 있는 이벤트 및 호출 트리거는 규칙을 사용하여 정렬됩니다: 이벤트 트리거가 먼저 발생한 다음 트리거들을 호출하고, 각 유형은 매니페스트에 정의된 순서를 따릅니다.
+3. 차단 트리거는 이벤트 및 호출 트리거 이후에 매니페스트에 정의된 순서대로 실행됩니다.
+
+이러한 순서 규칙은 변경될 수 있습니다.
+
+### ABIs 얻기
+
+ABI 파일(들)은 컨트랙트(들과)와 일치해야 합니다. ABI 파일을 얻는 몇 가지 방법이 있습니다:
+
+- 자체 프로젝트를 구축하는 경우 가장 최신 ABI에 액세스할 수 있습니다.
+- 퍼블릭 프로젝트의 서브그래프를 작성하는 경우, 해당 프로젝트를 컴퓨터에 다운로드하고 컴파일을 위해 [`truffle compile`](https://truffleframework.com/docs/truffle/overview) 또는 solc를 사용하여 ABI를 가져올 수 있습니다.
+- [Etherscan](https://etherscan.io/)에서도 ABI를 찾을 수 있지만, 업로드된 ABI가 최신이 아닐 수 있으므로 항상 신뢰할 수 있는 것은 아닙니다. 올바른 ABI를 가지고 있는지 확인해야합니다. 그렇지 않으면 서브그래프를 실행이 실패할 것입니다.
+
+## GraphQL 스키마
+
+서브그래프에 대한 스키마는 `schema.graphql` 파일에 있습니다. GraphQL 스키마는 GraphQL 인터페이스 정의 언어를 사용하여 정의됩니다. GraphQL 스키마를 작성한 적이 없는 경우 GraphQL 유형 시스템에서 이 프라이머를 확인하는 것이 좋습니다. GraphQL 스키마에 대한 참조 문서는 [GraphQL API](/querying/graphql-api) 섹션에서 확인할 수 있습니다.
+
+## 엔티티 정의
+
+엔티티를 정의하기 전에 한 걸음 뒤로 물러서 데이터가 어떻게 구조화되고 연결되는지 생각하는 것이 중요합니다. 모든 쿼리는 서브그래프 스키마에 정의된 데이터 모델과 서브그래프에 의해 인덱싱된 엔티티에 대해 수행됩니다. 그렇기 때문에 디앱의 요구에 맞는 방식으로 서브그래프 스키마를 정의하는 것이 좋습니다. 엔티티를 이벤트나 함수가 아닌 "데이터를 포함하는 객체"로 상상하는 것이 유용할 수 있습니다.
+
+With The Graph, you simply define entity types in `schema.graphql`, and Graph Node will generate top level fields for querying single instances and collections of that entity type. Each type that should be an entity is required to be annotated with an `@entity` directive. By default, entities are mutable, meaning that mappings can load existing entities, modify them and store a new version of that entity. Mutability comes at a price, and for entity types for which it is known that they will never be modified, for example, because they simply contain data extracted verbatim from the chain, it is recommended to mark them as immutable with `@entity(immutable: true)`. Mappings can make changes to immutable entities as long as those changes happen in the same block in which the entity was created. Immutable entities are much faster to write and to query, and should therefore be used whenever possible.
+
+### 좋은 예
+
+아래의 `Gravatar` 엔티티는 Gravatar 오브젝트를 중심으로 구성되어 있으며 어떻게 entity가 정의될 수 있는지에 대한 좋은 예입니다.
+
+```graphql
+type Gravatar @entity(immutable: true) {
+  id: Bytes!
+  owner: Bytes
+  displayName: String
+  imageUrl: String
+  accepted: Boolean
+}
+```
+
+### 나쁜 예
+
+아래의 `GravatarAccepted` 및 `GravatarDeclined` 엔티티 예제는 이벤트들을 기반으로 합니다. 이벤트 또는 함수 호출을 엔티티에 1:1로 매핑하지 않는 것이 좋습니다.
+
+```graphql
+type GravatarAccepted @entity {
+  id: Bytes!
+  owner: Bytes
+  displayName: String
+  imageUrl: String
+}
+
+type GravatarDeclined @entity {
+  id: Bytes!
+  owner: Bytes
+  displayName: String
+  imageUrl: String
+}
+```
+
+### 선택 및 필수 필드
+
+엔티티 필드는 필수 또는 선택 사항으로 정의할 수 있습니다. 필수 필드는 스키마에서 `!`로 표시됩니다. 필수 필드가 매핑에 설정되지 않은 경우 필드를 쿼리할 때 다음 오류가 발생할 것입니다:
+
+```
+Null value resolved for non-null field 'name'
+```
+
+Each entity must have an `id` field, which must be of type `Bytes!` or `String!`. It is generally recommended to use `Bytes!`, unless the `id` contains human-readable text, since entities with `Bytes!` id's will be faster to write and query as those with a `String!` `id`. The `id` field serves as the primary key, and needs to be unique among all entities of the same type. For historical reasons, the type `ID!` is also accepted and is a synonym for `String!`.
+
+For some entity types the `id` is constructed from the id's of two other entities; that is possible using `concat`, e.g., `let id = left.id.concat(right.id)` to form the id from the id's of `left` and `right`. Similarly, to construct an id from the id of an existing entity and a counter `count`, `let id = left.id.concatI32(count)` can be used. The concatenation is guaranteed to produce unique id's as long as the length of `left` is the same for all such entities, for example, because `left.id` is an `Address`.
+
+### 빌트인 스칼라 유형(Built-In Scalar Types)
+
+#### GraphQL 지원 스칼라
+
+We support the following scalars in our GraphQL API:
+
+| 유형 | 설명 |
+| --- | --- |
+| `Bytes` | 16진수 문자열로 표시되는 바이트 배열입니다. 이더리움 해시 및 주소에 일반적으로 사용됩니다. |
+| `String` | Scalar for `string` values. Null characters are not supported and are automatically removed. |
+| `Boolean` | Scalar for `boolean` values. |
+| `Int` | The GraphQL spec defines `Int` to have size of 32 bytes. |
+| `BigInt` | Large integers. Used for Ethereum's `uint32`, `int64`, `uint64`, ..., `uint256` types. Note: Everything below `uint32`, such as `int32`, `uint24` or `int8` is represented as `i32`. |
+| `BigDecimal` | `BigDecimal` High precision decimals represented as a signficand and an exponent. The exponent range is from −6143 to +6144. Rounded to 34 significant digits. |
+
+#### 열거형(Enums)
+
+You can also create enums within a schema. Enums have the following syntax:
+
+```graphql
+enum TokenStatus {
+  OriginalOwner
+  SecondOwner
+  ThirdOwner
+}
+```
+
+Once the enum is defined in the schema, you can use the string representation of the enum value to set an enum field on an entity. For example, you can set the `tokenStatus` to `SecondOwner` by first defining your entity and subsequently setting the field with `entity.tokenStatus = "SecondOwner"`. The example below demonstrates what the Token entity would look like with an enum field:
+
+More detail on writing enums can be found in the [GraphQL documentation](https://graphql.org/learn/schema/).
+
+#### 엔티티 관계(Entity Relationships)
+
+An entity may have a relationship to one or more other entities in your schema. These relationships may be traversed in your queries. Relationships in The Graph are unidirectional. It is possible to simulate bidirectional relationships by defining a unidirectional relationship on either "end" of the relationship.
+
+Relationships are defined on entities just like any other field except that the type specified is that of another entity.
+
+#### 일대일 관계(One-To-One Relationships)
+
+Define a `Transaction` entity type with an optional one-to-one relationship with a `TransactionReceipt` entity type:
+
+```graphql
+type Transaction @entity(immutable: true) {
+  id: Bytes!
+  transactionReceipt: TransactionReceipt
+}
+
+type TransactionReceipt @entity(immutable: true) {
+  id: Bytes!
+  transaction: Transaction
+}
+```
+
+#### 일대다 관계(One-To-Many Relationships)
+
+Define a `TokenBalance` entity type with a required one-to-many relationship with a Token entity type:
+
+```graphql
+type Token @entity(immutable: true) {
+  id: Bytes!
+}
+
+type TokenBalance @entity {
+  id: Bytes!
+  amount: Int!
+  token: Token!
+}
+```
+
+#### Reverse Lookups
+
+Reverse lookups can be defined on an entity through the `@derivedFrom` field. This creates a virtual field on the entity that may be queried but cannot be set manually through the mappings API. Rather, it is derived from the relationship defined on the other entity. For such relationships, it rarely makes sense to store both sides of the relationship, and both indexing and query performance will be better when only one side is stored and the other is derived.
+
+For one-to-many relationships, the relationship should always be stored on the 'one' side, and the 'many' side should always be derived. Storing the relationship this way, rather than storing an array of entities on the 'many' side, will result in dramatically better performance for both indexing and querying the subgraph. In general, storing arrays of entities should be avoided as much as is practical.
+
+#### 예시
+
+We can make the balances for a token accessible from the token by deriving a `tokenBalances` field:
+
+```graphql
+type Token @entity(immutable: true) {
+  id: Bytes!
+  tokenBalances: [TokenBalance!]! @derivedFrom(field: "token")
+}
+
+type TokenBalance @entity {
+  id: Bytes!
+  amount: Int!
+  token: Token!
+}
+```
+
+#### 다대다 관계(Many-To-Many Relationships)
+
+For many-to-many relationships, such as users that each may belong to any number of organizations, the most straightforward, but generally not the most performant, way to model the relationship is as an array in each of the two entities involved. If the relationship is symmetric, only one side of the relationship needs to be stored and the other side can be derived.
+
+#### 예시
+
+Define a reverse lookup from a `User` entity type to an `Organization` entity type. In the example below, this is achieved by looking up the `members` attribute from within the `Organization` entity. In queries, the `organizations` field on `User` will be resolved by finding all `Organization` entities that include the user's ID.
+
+```graphql
+type Organization @entity {
+  id: Bytes!
+  name: String!
+  members: [User!]!
+}
+
+type User @entity {
+  id: Bytes!
+  name: String!
+  organizations: [Organization!]! @derivedFrom(field: "members")
+}
+```
+
+A more performant way to store this relationship is through a mapping table that has one entry for each `User` / `Organization` pair with a schema like
+
+```graphql
+type Organization @entity {
+  id: Bytes!
+  name: String!
+  members: [UserOrganization!]! @derivedFrom(field: "organization")
+}
+
+type User @entity {
+  id: Bytes!
+  name: String!
+  organizations: [UserOrganization!] @derivedFrom(field: "user")
+}
+
+type UserOrganization @entity {
+  id: Bytes! # Set to `user.id.concat(organization.id)`
+  user: User!
+  organization: Organization!
+}
+```
+
+This approach requires that queries descend into one additional level to retrieve, for example, the organizations for users:
+
+```graphql
+query usersWithOrganizations {
+  users {
+    organizations {
+      # this is a UserOrganization entity
+      organization {
+        name
+      }
+    }
+  }
+}
+```
+
+This more elaborate way of storing many-to-many relationships will result in less data stored for the subgraph, and therefore to a subgraph that is often dramatically faster to index and to query.
+
+#### 스키마에 주석 추가
+
+As per GraphQL spec, comments can be added above schema entity attributes using double quotations `""`. This is illustrated in the example below:
+
+```graphql
+type MyFirstEntity @entity {
+  "unique identifier and primary key of the entity"
+  id: Bytes!
+  address: Bytes!
+}
+```
+
+## 전체 텍스트 검색 필드 정의(Defining Fulltext Search Fields)
+
+Fulltext search queries filter and rank entities based on a text search input. Fulltext queries are able to return matches for similar words by processing the query text input into stems before comparing to the indexed text data.
+
+A fulltext query definition includes the query name, the language dictionary used to process the text fields, the ranking algorithm used to order the results, and the fields included in the search. Each fulltext query may span multiple fields, but all included fields must be from a single entity type.
+
+To add a fulltext query, include a `_Schema_` type with a fulltext directive in the GraphQL schema.
+
+```graphql
+type _Schema_
+  @fulltext(
+    name: "bandSearch"
+    language: en
+    algorithm: rank
+    include: [{ entity: "Band", fields: [{ name: "name" }, { name: "description" }, { name: "bio" }] }]
+  )
+
+type Band @entity {
+  id: Bytes!
+  name: String!
+  description: String!
+  bio: String
+  wallet: Address
+  labels: [Label!]!
+  discography: [Album!]!
+  members: [Musician!]!
+}
+```
+
+The example `bandSearch` field can be used in queries to filter `Band` entities based on the text documents in the `name`, `description`, and `bio` fields. Jump to [GraphQL API - Queries](/querying/graphql-api#queries) for a description of the Fulltext search API and for more example usage.
+
+```graphql
+query {
+  bandSearch(text: "breaks & electro & detroit") {
+    id
+    name
+    description
+    wallet
+  }
+}
+```
+
+> **[기능 관리](#experimental-features):** `specVersion` `0.0.4` 이상부터 `fullTextSearch`는 서브그래프 매니페스트의 `features` 섹션 아래에 명시되어야 합니다.
+
+### 지원 언어
+
+Choosing a different language will have a definitive, though sometimes subtle, effect on the fulltext search API. Fields covered by a fulltext query field are examined in the context of the chosen language, so the lexemes produced by analysis and search queries vary language to language. For example: when using the supported Turkish dictionary "token" is stemmed to "toke" while, of course, the English dictionary will stem it to "token".
+
+Supported language dictionaries:
+
+| 코드   | 사전(Dictionary) |
+| ------ | ---------------- |
+| simple | General          |
+| da     | Danish           |
+| nl     | Dutch            |
+| en     | English          |
+| fi     | Finnish          |
+| fr     | French           |
+| de     | German           |
+| hu     | Hungarian        |
+| it     | Italian          |
+| no     | Norwegian        |
+| pt     | Portugese        |
+| ro     | Romanian         |
+| ru     | Russian          |
+| es     | Spanish          |
+| sv     | Swedish          |
+| tr     | Turkish          |
+
+### 순위 알고리즘
+
+Supported algorithms for ordering results:
+
+| 알고리즘      | 설명                                                                |
+| ------------- | ------------------------------------------------------------------- |
+| rank          | 전체 텍스트 쿼리의 match quality(0-1)를 사용하여 결과를 정렬합니다. |
+| proximityRank | 순위와 유사하지만 matches의 근접성도 포함합니다.                    |
+
+## 매핑 작성
+
+The mappings transform the Ethereum data your mappings are sourcing into entities defined in your schema. Mappings are written in a subset of [TypeScript](https://www.typescriptlang.org/docs/handbook/typescript-in-5-minutes.html) called [AssemblyScript](https://github.com/AssemblyScript/assemblyscript/wiki) which can be compiled to WASM ([WebAssembly](https://webassembly.org/)). AssemblyScript is stricter than normal TypeScript, yet provides a familiar syntax.
+
+For each event handler that is defined in `subgraph.yaml` under `mapping.eventHandlers`, create an exported function of the same name. Each handler must accept a single parameter called `event` with a type corresponding to the name of the event which is being handled.
+
+In the example subgraph, `src/mapping.ts` contains handlers for the `NewGravatar` and `UpdatedGravatar` events:
+
+```javascript
+import { NewGravatar, UpdatedGravatar } from '../generated/Gravity/Gravity'
+import { Gravatar } from '../generated/schema'
+
+export function handleNewGravatar(event: NewGravatar): void {
+  let gravatar = new Gravatar(event.params.id)
+  gravatar.owner = event.params.owner
+  gravatar.displayName = event.params.displayName
+  gravatar.imageUrl = event.params.imageUrl
+  gravatar.save()
+}
+
+export function handleUpdatedGravatar(event: UpdatedGravatar): void {
+  let id = event.params.id
+  let gravatar = Gravatar.load(id)
+  if (gravatar == null) {
+    gravatar = new Gravatar(id)
+  }
+  gravatar.owner = event.params.owner
+  gravatar.displayName = event.params.displayName
+  gravatar.imageUrl = event.params.imageUrl
+  gravatar.save()
+}
+```
+
+The first handler takes a `NewGravatar` event and creates a new `Gravatar` entity with `new Gravatar(event.params.id.toHex())`, populating the entity fields using the corresponding event parameters. This entity instance is represented by the variable `gravatar`, with an id value of `event.params.id.toHex()`.
+
+The second handler tries to load the existing `Gravatar` from the Graph Node store. If it does not exist yet, it is created on demand. The entity is then updated to match the new event parameters, before it is saved back to the store using `gravatar.save()`.
+
+### 새 엔티티 생성을 위해 권장되는 ID
+
+Every entity has to have an `id` that is unique among all entities of the same type. An entity's `id` value is set when the entity is created. Below are some recommended `id` values to consider when creating new entities. NOTE: The value of `id` must be a `string`.
+
+- `event.params.id.toHex()`
+- `event.transaction.from.toHex()`
+- `event.transaction.hash.toHex() + "-" + event.logIndex.toString()`
+
+We provide the [Graph Typescript Library](https://github.com/graphprotocol/graph-ts) which contains utilies for interacting with the Graph Node store and conveniences for handling smart contract data and entities. You can use this library in your mappings by importing `@graphprotocol/graph-ts` in `mapping.ts`.
+
+## 코드 생성
+
+In order to make it easy and type-safe to work with smart contracts, events and entities, the Graph CLI can generate AssemblyScript types from the subgraph's GraphQL schema and the contract ABIs included in the data sources.
+
+This is done with
+
+```sh
+graph codegen [--output-dir <OUTPUT_DIR>] [<MANIFEST>]
+```
+
+but in most cases, subgraphs are already preconfigured via `package.json` to allow you to simply run one of the following to achieve the same:
+
+```sh
+# Yarn
+yarn codegen
+
+# NPM
+npm run codegen
+```
+
+This will generate an AssemblyScript class for every smart contract in the ABI files mentioned in `subgraph.yaml`, allowing you to bind these contracts to specific addresses in the mappings and call read-only contract methods against the block being processed. It will also generate a class for every contract event to provide easy access to event parameters as well as the block and transaction the event originated from. All of these types are written to `<OUTPUT_DIR>/<DATA_SOURCE_NAME>/<ABI_NAME>.ts`. In the example subgraph, this would be `generated/Gravity/Gravity.ts`, allowing mappings to import these types with
+
+```javascript
+import {
+  // The contract class:
+  Gravity,
+  // The events classes:
+  NewGravatar,
+  UpdatedGravatar,
+} from '../generated/Gravity/Gravity'
+```
+
+In addition to this, one class is generated for each entity type in the subgraph's GraphQL schema. These classes provide type-safe entity loading, read and write access to entity fields as well as a `save()` method to write entities to store. All entity classes are written to `<OUTPUT_DIR>/schema.ts`, allowing mappings to import them with
+
+```javascript
+import { Gravatar } from '../generated/schema'
+```
+
+> **참고:**: GraphQL 스키마 또는 매니페스트에 포함된 ABI가 변경될 때마다 코드 생성을 다시 수행해야 합니다. 이는 또한 서브그래프를 구축하거나 배포하기 전에 최소한 한 번은 수행해야 합니다.
+
+Code generation does not check your mapping code in `src/mapping.ts`. If you want to check that before trying to deploy your subgraph to the Graph Explorer, you can run `yarn build` and fix any syntax errors that the TypeScript compiler might find.
+
+## 데이터 소스 템플릿
+
+A common pattern in Ethereum smart contracts is the use of registry or factory contracts, where one contract creates, manages or references an arbitrary number of other contracts that each have their own state and events. The addresses of these sub-contracts may or may not be known upfront and many of these contracts may be created and/or added over time. This is why, in such cases, defining a single data source or a fixed number of data sources is impossible and a more dynamic approach is needed: _data source templates_.
+
+### 메인 컨트랙트용 데이터 소스
+
+First, you define a regular data source for the main contract. The snippet below shows a simplified example data source for the [Uniswap](https://uniswap.io) exchange factory contract. Note the `NewExchange(address,address)` event handler. This is emitted when a new exchange contract is created on chain by the factory contract.
+
+```yaml
+dataSources:
+  - kind: ethereum/contract
+    name: Factory
+    network: mainnet
+    source:
+      address: '0xc0a47dFe034B400B47bDaD5FecDa2621de6c4d95'
+      abi: Factory
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.6
+      language: wasm/assemblyscript
+      file: ./src/mappings/factory.ts
+      entities:
+        - Directory
+      abis:
+        - name: Factory
+          file: ./abis/factory.json
+      eventHandlers:
+        - event: NewExchange(address,address)
+          handler: handleNewExchange
+```
+
+### 동적으로 생성된 컨트랙트를 위한 데이터 소스 템플릿
+
+Then, you add _data source templates_ to the manifest. These are identical to regular data sources, except that they lack a predefined contract address under `source`. Typically, you would define one template for each type of sub-contract managed or referenced by the parent contract.
+
+```yaml
+dataSources:
+  - kind: ethereum/contract
+    name: Factory
+    # ... other source fields for the main contract ...
+templates:
+  - name: Exchange
+    kind: ethereum/contract
+    network: mainnet
+    source:
+      abi: Exchange
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.6
+      language: wasm/assemblyscript
+      file: ./src/mappings/exchange.ts
+      entities:
+        - Exchange
+      abis:
+        - name: Exchange
+          file: ./abis/exchange.json
+      eventHandlers:
+        - event: TokenPurchase(address,uint256,uint256)
+          handler: handleTokenPurchase
+        - event: EthPurchase(address,uint256,uint256)
+          handler: handleEthPurchase
+        - event: AddLiquidity(address,uint256,uint256)
+          handler: handleAddLiquidity
+        - event: RemoveLiquidity(address,uint256,uint256)
+          handler: handleRemoveLiquidity
+```
+
+### 데이터 소스 템플릿 인스턴스화(nstantiating a Data Source Template)
+
+In the final step, you update your main contract mapping to create a dynamic data source instance from one of the templates. In this example, you would change the main contract mapping to import the `Exchange` template and call the `Exchange.create(address)` method on it to start indexing the new exchange contract.
+
+```typescript
+import { Exchange } from '../generated/templates'
+
+export function handleNewExchange(event: NewExchange): void {
+  // Start indexing the exchange; `event.params.exchange` is the
+  // address of the new exchange contract
+  Exchange.create(event.params.exchange)
+}
+```
+
+> **참고:**: 새 데이터 소스는 자신이 생성된 블록과 이후의 모든 블록에 대한 호출 및 이벤트만 처리하지만 과거 데이터, 즉 이전 블록에 포함된 데이터는 처리하지 않습니다.
+>
+> 만약 이전 블록에 새 데이터 원본과 관련된 데이터가 포함된 경우 컨트랙트의 현재 상태를 읽고 새 데이터 원본이 생성될 때 해당 상태를 나타내는 엔터티를 만들어 해당 데이터를 인덱싱하는 것이 가장 좋습니다.
+
+### 데이터 소스 컨텍스트
+
+Data source contexts allow passing extra configuration when instantiating a template. In our example, let's say exchanges are associated with a particular trading pair, which is included in the `NewExchange` event. That information can be passed into the instantiated data source, like so:
+
+```typescript
+import { Exchange } from '../generated/templates'
+
+export function handleNewExchange(event: NewExchange): void {
+  let context = new DataSourceContext()
+  context.setString('tradingPair', event.params.tradingPair)
+  Exchange.createWithContext(event.params.exchange, context)
+}
+```
+
+Inside a mapping of the `Exchange` template, the context can then be accessed:
+
+```typescript
+import { dataSource } from '@graphprotocol/graph-ts'
+
+let context = dataSource.context()
+let tradingPair = context.getString('tradingPair')
+```
+
+There are setters and getters like `setString` and `getString` for all value types.
+
+## Start Blocks
+
+The `startBlock` is an optional setting that allows you to define from which block in the chain the data source will start indexing. Setting the start block allows the data source to skip potentially millions of blocks that are irrelevant. Typically, a subgraph developer will set `startBlock` to the block in which the smart contract of the data source was created.
+
+```yaml
+dataSources:
+  - kind: ethereum/contract
+    name: ExampleSource
+    network: mainnet
+    source:
+      address: '0xc0a47dFe034B400B47bDaD5FecDa2621de6c4d95'
+      abi: ExampleContract
+      startBlock: 6627917
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.6
+      language: wasm/assemblyscript
+      file: ./src/mappings/factory.ts
+      entities:
+        - User
+      abis:
+        - name: ExampleContract
+          file: ./abis/ExampleContract.json
+      eventHandlers:
+        - event: NewEvent(address,address)
+          handler: handleNewEvent
+```
+
+> **참고:**: Etherscan에서 컨트랙트 생성 블록을 빠르게 조회할 수 있습니다.
+>
+> 1. 검색 창에 주소를 입력하여 컨트랙트를 검색합니다.
+> 2. `Contract Creator` 섹션에서 creation transaction hash를 클릭합니다.
+> 3. 해당 컨트랙트의 start block을 찾을 거래 세부 정보 페이지를 로드합니다.
+
+## 호출 핸들러(Call Handlers)
+
+While events provide an effective way to collect relevant changes to the state of a contract, many contracts avoid generating logs to optimize gas costs. In these cases, a subgraph can subscribe to calls made to the data source contract. This is achieved by defining call handlers referencing the function signature and the mapping handler that will process calls to this function. To process these calls, the mapping handler will receive an `ethereum.Call` as an argument with the typed inputs to and outputs from the call. Calls made at any depth in a transaction's call chain will trigger the mapping, allowing activity with the data source contract through proxy contracts to be captured.
+
+Call handlers will only trigger in one of two cases: when the function specified is called by an account other than the contract itself or when it is marked as external in Solidity and called as part of another function in the same contract.
+
+> **참고:**: 호출 핸들러는 Rinkeby, Goerli 또는 Ganache에서 지원되지 않습니다. 호출 핸들러는 현재 패리티 추적 API에 의존하며 이러한 네트워크들은 이를 지원하지 않습니다.
+
+### 호출 핸들러 정의
+
+To define a call handler in your manifest simply add a `callHandlers` array under the data source you would like to subscribe to.
+
+```yaml
+dataSources:
+  - kind: ethereum/contract
+    name: Gravity
+    network: mainnet
+    source:
+      address: '0x731a10897d267e19b34503ad902d0a29173ba4b1'
+      abi: Gravity
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.6
+      language: wasm/assemblyscript
+      entities:
+        - Gravatar
+        - Transaction
+      abis:
+        - name: Gravity
+          file: ./abis/Gravity.json
+      callHandlers:
+        - function: createGravatar(string,string)
+          handler: handleCreateGravatar
+```
+
+The `function` is the normalized function signature to filter calls by. The `handler` property is the name of the function in your mapping you would like to execute when the target function is called in the data source contract.
+
+### 맵핑 기능
+
+Each call handler takes a single parameter that has a type corresponding to the name of the called function. In the example subgraph above, the mapping contains a handler for when the `createGravatar` function is called and receives a `CreateGravatarCall` parameter as an argument:
+
+```typescript
+import { CreateGravatarCall } from '../generated/Gravity/Gravity'
+import { Transaction } from '../generated/schema'
+
+export function handleCreateGravatar(call: CreateGravatarCall): void {
+  let id = call.transaction.hash
+  let transaction = new Transaction(id)
+  transaction.displayName = call.inputs._displayName
+  transaction.imageUrl = call.inputs._imageUrl
+  transaction.save()
+}
+```
+
+The `handleCreateGravatar` function takes a new `CreateGravatarCall` which is a subclass of `ethereum.Call`, provided by `@graphprotocol/graph-ts`, that includes the typed inputs and outputs of the call. The `CreateGravatarCall` type is generated for you when you run `graph codegen`.
+
+## 블록 핸들러
+
+In addition to subscribing to contract events or function calls, a subgraph may want to update its data as new blocks are appended to the chain. To achieve this a subgraph can run a function after every block or after blocks that match a predefined filter.
+
+### 지원 필터
+
+```yaml
+filter:
+  kind: call
+```
+
+_The defined handler will be called once for every block which contains a call to the contract (data source) the handler is defined under._
+
+The absense of a filter for a block handler will ensure that the handler is called every block. A data source can only contain one block handler for each filter type.
+
+```yaml
+dataSources:
+  - kind: ethereum/contract
+    name: Gravity
+    network: dev
+    source:
+      address: '0x731a10897d267e19b34503ad902d0a29173ba4b1'
+      abi: Gravity
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.6
+      language: wasm/assemblyscript
+      entities:
+        - Gravatar
+        - Transaction
+      abis:
+        - name: Gravity
+          file: ./abis/Gravity.json
+      blockHandlers:
+        - handler: handleBlock
+        - handler: handleBlockWithCallToContract
+          filter:
+            kind: call
+```
+
+### 맵핑 기능
+
+The mapping function will receive an `ethereum.Block` as its only argument. Like mapping functions for events, this function can access existing subgraph entities in the store, call smart contracts and create or update entities.
+
+```typescript
+import { ethereum } from '@graphprotocol/graph-ts'
+
+export function handleBlock(block: ethereum.Block): void {
+  let id = block.hash
+  let entity = new Block(id)
+  entity.save()
+}
+```
+
+## 익명 이벤트
+
+If you need to process anonymous events in Solidity, that can be achieved by providing the topic 0 of the event, as in the example:
+
+```yaml
+eventHandlers:
+  - event: LogNote(bytes4,address,bytes32,bytes32,uint256,bytes)
+    topic0: '0xbaa8529c00000000000000000000000000000000000000000000000000000000'
+    handler: handleGive
+```
+
+An event will only be triggered when both the signature and topic 0 match. By default, `topic0` is equal to the hash of the event signature.
+
+## 실험 기능
+
+Starting from `specVersion` `0.0.4`, subgraph features must be explicitly declared in the `features` section at the top level of the manifest file, using their `camelCase` name, as listed in the table below:
+
+| 기능                                                      | 이름                      |
+| --------------------------------------------------------- | ------------------------- |
+| [Non-fatal errors](#non-fatal-errors)                     | `nonFatalErrors`          |
+| [Full-text Search](#defining-fulltext-search-fields)      | `fullTextSearch`          |
+| [Grafting](#grafting-onto-existing-subgraphs)             | `grafting`                |
+| [IPFS on Ethereum Contracts](#ipfs-on-ethereum-contracts) | `ipfsOnEthereumContracts` |
+
+For instance, if a subgraph uses the **Full-Text Search** and the **Non-fatal Errors** features, the `features` field in the manifest should be:
+
+```yaml
+specVersion: 0.0.4
+description: Gravatar for Ethereum
+features:
+  - fullTextSearch
+  - nonFatalErrors
+dataSources: ...
+```
+
+Note that using a feature without declaring it will incur in a **validation error** during subgraph deployment, but no errors will occur if a feature is declared but not used.
+
+### IPFS on Ethereum Contracts
+
+A common use case for combining IPFS with Ethereum is to store data on IPFS that would be too expensive to maintain on chain, and reference the IPFS hash in Ethereum contracts.
+
+Given such IPFS hashes, subgraphs can read the corresponding files from IPFS using `ipfs.cat` and `ipfs.map`. To do this reliably, however, it is required that these files are pinned on the IPFS node that the Graph Node indexing the subgraph connects to. In the case of the [hosted service](https://thegraph.com/hosted-service), this is [https://api.thegraph.com/ipfs/](https://api.thegraph.com/ipfs/).
+
+> **참고:** 그래프 네트워크는 아직 `ipfs.cat` 및 `ipfs.map`을 지원하지 않으며 개발자는 해당 기능을 사용하여 Studio를 통해 네트워크에 서브그래프를 배포해서는 안 됩니다.
+
+In order to make this easy for subgraph developers, The Graph team wrote a tool for transfering files from one IPFS node to another, called [ipfs-sync](https://github.com/graphprotocol/ipfs-sync).
+
+> **[기능 관리](#experimental-features):** `ipfsOnEthereumContracts`는 서브그래프 매니페스트의 `features` 아래에 명시되어야 합니다.
+
+When running a local Graph Node, the `GRAPH_ALLOW_NON_DETERMINISTIC_IPFS` environment variable must be set in order to index subgraphs using this experimental functionality.
+
+### Non-fatal errors
+
+Indexing errors on already synced subgraphs will, by default, cause the subgraph to fail and stop syncing. Subgraphs can alternatively be configured to continue syncing in the presence of errors, by ignoring the changes made by the handler which provoked the error. This gives subgraph authors time to correct their subgraphs while queries continue to be served against the latest block, though the results will possibly be inconsistent due to the bug that caused the error. Note that some errors are still always fatal, to be non-fatal the error must be known to be deterministic.
+
+> **참고:** The Graph 네트워크는 아직 치명적이지 않은 오류(non-fatal errors)를 지원하지 않으며, 개발자는 스튜디오를 통해 해당 기능을 사용하는 서브그래프를 네트워크에 배포해서는 안 됩니다.
+
+Enabling non-fatal errors requires setting the following feature flag on the subgraph manifest:
+
+```yaml
+specVersion: 0.0.4
+description: Gravatar for Ethereum
+features:
+    - nonFatalErrors
+    ...
+```
+
+The query must also opt-in to querying data with potential inconsistencies through the `subgraphError` argument. It is also recommended to query `_meta` to check if the subgraph has skipped over errors, as in the example:
+
+```graphql
+foos(first: 100, subgraphError: allow) {
+  id
+}
+
+_meta {
+  hasIndexingErrors
+}
+```
+
+If the subgraph encounters an error that query will return both the data and a graphql error with the message `"indexing_error"`, as in this example response:
+
+```graphql
+"data": {
+    "foos": [
+        {
+          "id": "0xdead"
+        }
+    ],
+    "_meta": {
+        "hasIndexingErrors": true
+    }
+},
+"errors": [
+    {
+        "message": "indexing_error"
+    }
+]
+```
+
+### 기존 서브그래프 상의 접목(Grafting)
+
+When a subgraph is first deployed, it starts indexing events at the genesis block of the corresponding chain (or at the `startBlock` defined with each data source) In some circumstances, it is beneficial to reuse the data from an existing subgraph and start indexing at a much later block. This mode of indexing is called _Grafting_. Grafting is, for example, useful during development to get past simple errors in the mappings quickly, or to temporarily get an existing subgraph working again after it has failed.
+
+> **참고:** 접목은 인덱서의 기본 서브그래프 인덱싱을 필요로 합니다. 이는 현재 그래프 네트워크에서는 권장되지 않으며, 개발자는 해당 기능을 사용하여 Studio를 통해 네트워크에 서브그래프를 배포해서는 안 됩니다.
+
+A subgraph is grafted onto a base subgraph when the subgraph manifest in `subgraph.yaml` contains a `graft` block at the toplevel:
+
+```yaml
+description: ...
+graft:
+  base: Qm... # Subgraph ID of base subgraph
+  block: 7345624 # Block number
+```
+
+When a subgraph whose manifest contains a `graft` block is deployed, Graph Node will copy the data of the `base` subgraph up to and including the given `block` and then continue indexing the new subgraph from that block on. The base subgraph must exist on the target Graph Node instance and must have indexed up to at least the given block. Because of this restriction, grafting should only be used during development or during an emergency to speed up producing an equivalent non-grafted subgraph.
+
+Because grafting copies rather than indexes base data it is much quicker in getting the subgraph to the desired block than indexing from scratch, though the initial data copy can still take several hours for very large subgraphs. While the grafted subgraph is being initialized, the Graph Node will log information about the entity types that have already been copied.
+
+The grafted subgraph can use a GraphQL schema that is not identical to the one of the base subgraph, but merely compatible with it. It has to be a valid subgraph schema in its own right but may deviate from the base subgraph's schema in the following ways:
+
+- 엔티티 유형을 추가하거나 제거합니다.
+- 엔티티 유형에서 속성을 제거합니다.
+- 엔티티 유형에 nullable 속성을 추가합니다.
+- nullable이 아닌 속성을 nullable 속성으로 바꿉니다.
+- enums에 값을 추가합니다.
+- 인터페이스를 추가하거나 제거합니다.
+- 인터페이스가 구현되는 엔터티 유형이 변경됩니다.
+
+> **[기능 관리](#experimental-features):**기능 관리: 서브그래프 매니페스트의 `features` 아래에 `접목(grafting)`을 명시해야 합니다.
