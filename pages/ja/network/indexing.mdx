@@ -1,0 +1,671 @@
+---
+title: インデクシング
+---
+
+import { Difficulty } from '@/components'
+
+インデクサは、グラフネットワークのノードオペレータであり、グラフトークン（GRT）を賭けて、インデックス作成や問い合わせ処理のサービスを提供します。 インデクサーは、そのサービスの対価として、クエリフィーやインデックス作成の報酬を得ることができます。 また、Cobbs-Douglas Rebate Function に基づいて、ネットワーク貢献者全員にその成果に応じて分配される Rebate Pool からも報酬を得ることもできます。
+
+プロトコルにステークされた GRT は解凍期間が設けられており、インデクサーが悪意を持ってアプリケーションに不正なデータを提供したり、不正なインデックスを作成した場合には、スラッシュされる可能性があります。 また、インデクサーはデリゲーターからステークによる委任を受けて、ネットワークに貢献することができます。
+
+インデクサ − は、サブグラフのキュレーション・シグナルに基づいてインデックスを作成するサブグラフを選択し、キュレーターは、どのサブグラフが高品質で優先されるべきかを示すために GRT をステークします。 消費者（アプリケーションなど）は、インデクサーが自分のサブグラフに対するクエリを処理するパラメータを設定したり、クエリフィーの設定を行うこともできます。
+
+<Difficulty level="ADVANCED" />
+
+## よくある質問
+
+### ネットワーク上のインデクサーになるために必要な最低ステーク量はいくらですか？
+
+インデクサーの最低ステーク量は、現在 100K GRT に設定されています。
+
+### インデクサーの収入源は何ですか？
+
+**クエリフィー・リベート** - ネットワーク上でクエリを提供するための手数料です。 この手数料は、インデクサーとゲートウェイ間のステートチャネルを介して支払われます。 ゲートウェイからの各クエリリクエストには手数料が含まれ、対応するレスポンスにはクエリ結果の有効性の証明が含まれます。
+
+**インデキシング報酬** - プロトコル全体のインフレーションにより生成される年率 3%のインデキシング報酬は、ネットワークのサブグラフ・デプロイメントのインデキシングを行うインデクサーに分配されます。
+
+### 報酬の分配方法は？
+
+インデキシング報酬は、年間 3％の発行量に設定されているプロトコル・インフレから得られます。 報酬は、それぞれのサブグラフにおけるすべてのキュレーション・シグナルの割合に基づいてサブグラフに分配され、そのサブグラフに割り当てられたステークに基づいてインデクサーに分配されます。 **特典を受けるためには、仲裁憲章で定められた基準を満たす有効な POI（Proof of Indexing）で割り当てを終了する必要があります。**
+
+コミュニティでは、報酬を計算するための数多くのツールが作成されており、それらは[コミュニティガイドコレクション](https://www.notion.so/Community-Guides-abbb10f4dba040d5ba81648ca093e70c)にまとめられています。 また、[Discord サーバー](https://discord.gg/vtvv7FP)の#delegators チャンネルや#indexers チャンネルでも、最新のツールリストを見ることができます。
+
+### POI（proof of indexing）とは何ですか？
+
+POI は、インデクサーが割り当てられたサブグラフにインデックスを作成していることを確認するためにネットワークで使用されます。 現在のエポックの最初のブロックに対する POI は、割り当てを終了する際に提出しなければ、その割り当てはインデックス報酬の対象となりません。 あるブロックの POI は、そのブロックまでの特定のサブグラフのデプロイに対するすべてのエンティティストアのトランザクションのダイジェストです。
+
+### インデキシングリワードはいつ配布されますか？
+
+割り当ては、それがアクティブである間、継続的に報酬を発生させます。 報酬はインデクサによって集められ、割り当てが終了するたびに分配されます。 これは、インデクサーが強制的に閉じようとしたときに手動で行うか、28 エポックの後にデリゲーターがインデクサーのために割り当てを終了することができますが、この場合は報酬がミントされません。 28 エポックは最大の割り当て期間です（現在、1 エポックは約 24 時間です）
+
+### 保留中のインデクサーの報酬は監視できますか？
+
+コミュニティが作成したダッシュボードの多くは保留中の報酬の値を含んでおり、以下の手順で簡単に手動で確認することができます。
+
+Etherscan を使った`getRewards()`の呼び出し:
+
+1. [メインネット・サブグラフ](https://thegraph.com/hosted-service/subgraph/graphprotocol/graph-network-mainnet)にクエリして、全てのアクティブなアロケーションの ID を取得します。
+
+```graphql
+query indexerAllocations {
+  indexer(id: "<Indexer_ADDRESS>") {
+    allocations {
+      activeForIndexer {
+        allocations {
+          id
+        }
+      }
+    }
+  }
+}
+```
+
+Use Etherscan to call `getRewards()`:
+
+- Etherscan interface to Rewards contract に移動します。
+
+* `getRewards()`を呼び出します
+  - **10 を拡大します。 getRewards**のドロップダウン
+  - 入力欄に**allocationID**を入力
+  - **Query**ボタンをクリック
+
+### 争議（disputes）とは何で、どこで見ることができますか？
+
+インデクサークエリとアロケーションは、期間中に The Graph 上で争議することができます。 争議期間は、争議の種類によって異なります。 クエリ/裁定には 7 エポックスの紛争窓口があり、割り当てには 56 エポックスがあります。 これらの期間が経過した後は、割り当てやクエリのいずれに対しても紛争を起こすことはできません。 紛争が開始されると、Fishermen は最低 10,000GRT のデポジットを要求され、このデポジットは紛争が最終的に解決されるまでロックされます。 フィッシャーマンとは、紛争を開始するネットワーク参加者のことです。
+
+争議は UI のインデクサーのプロフィールページの`Disputes`タブで確認できます。
+
+- 争議が却下された場合、フィッシャーマンが預かった GRT はバーンされ、争議中のインデクサーはスラッシュされません。
+- 争議が引き分けた場合、フィッシャーマンのデポジットは返還され、争議中のインデクサーはスラッシュされることはありません。
+- 争議が受け入れられた場合、フィッシャーマンがデポジットした GRT は返却され、争議中のインデクサーはスラッシュされ、フィッシャーマンはスラッシュされた GRT の 50%を獲得します。
+
+紛争は、UI のインデクサーのプロファイルページの`紛争`タブで確認できます。
+
+### クエリフィーリベートとは何ですか、またいつ配布されますか？
+
+クエリフィーは、割り当てが終了するたびにゲートウェイが徴収し、サブグラフのクエリフィーリベートプールに蓄積されます。 リベートプールは、インデクサーがネットワークのために獲得したクエリフィーの量にほぼ比例してステークを割り当てるように促すためのものです。 プール内のクエリフィーのうち、特定のインデクサーに割り当てられる部分はコブス・ダグラス生産関数を用いて計算されます。 インデクサーごとの分配額は、プールへの貢献度とサブグラフでのステークの割り当ての関数となります。
+
+割り当てが終了し、争議期間が経過すると、リベートをインデクサーが請求できるようになります。 請求されたクエリフィーのリベートは、クエリフィーカットとデリゲーションプールの比率に基づいて、インデクサーとそのデリゲーターに分配されます。
+
+### クエリフィーカットとインデキシングリワードカットとは？
+
+`クエリフィーカット` と`インデキシングリワードカット` の値は、インデクサーが クールダウンブロックと共に設定できるデリゲーションパラメータで、インデクサーとそのデリゲーター間の GRT の分配を制御するためのものです。 デリゲーションパラメータの設定方法については、[Staking in the Protocol](/network/indexing#stake-in-the-protocol)の最後のステップを参照してください。
+
+- **クエリフィーカット** - サブグラフに蓄積されたクエリフィーリベートのうち、インデクサーに分配される割合です。 これが 95%に設定されていると、割り当てが要求されたときに、インデクサはクエリフィー・リベート・プールの 95%を受け取り、残りの 5%はデリゲータに渡されます。
+
+- **インデキシング・リワードカット** - サブグラフに蓄積されたインデキシング・リワードのうち、インデクサーに分配される割合です。 これが 95%に設定されていると、割り当てが終了したときに、インデクサがインデキシング・リワードプールの 95%を受け取り、残りの 5%をデリゲータが分け合うことになります。
+
+### インデクサーはどのサブグラフにインデックスを付けるかをどう見分けるのですか？
+
+インデクサーは、サブグラフのインデキシングの決定に高度な技術を適用することで差別化を図ることができますが、一般的な考え方として、ネットワーク内のサブグラフを評価するために使用されるいくつかの主要な指標について説明します。
+
+- **キュレーションシグナル** - 特定のサブグラフに適用されたネットワークキュレーションシグナルの割合は、そのサブグラフへの関心を示す指標となり、特にクエリのボリュームが増加しているブートストラップ段階では有効となります。
+
+- **コレクティド・クエリフィー** - 特定のサブグラフに対してコレクティド・クエリフィー量の履歴データは、将来的な需要に対する指標となります。
+
+- **ステーク量** - 他のインデクサーの行動を監視したり、特定のサブグラフに割り当てられた総ステーク量の割合を見ることで、インデクサーはサブグラフ・クエリの供給側を監視し、ネットワークが信頼を示しているサブグラフや、より多くの供給を必要としているサブグラフを特定することができます。
+
+- **インデックス報酬のないサブグラフ** - 一部のサブグラフは、主に IPFS などのサポートされていない機能を使用していたり、メインネット外の別のネットワークをクエリしていたりするため、インデックス報酬を生成しません。 インデクシング・リワードを生成していないサブグラフにはメッセージが表示されます。
+
+### 必要なハードウェアは何ですか？
+
+- **Small** - いくつかのサブグラフのインデックス作成を開始するのに十分ですが、おそらく拡張が必要になります
+- **Standard** - デフォルトのセットアップであり、k8s/terraform の展開マニフェストの例で使用されているものです
+- **Medium** - 100 個のサブグラフと 1 秒あたり 200 ～ 500 のリクエストをサポートするプロダクションインデクサー
+- **Large** - 現在使用されているすべてのサブグラフのインデックスを作成し、関連するトラフィックのリクエストに対応します
+
+| Setup | Postgres<br />(CPUs) | Postgres<br />(memory in GBs) | Postgres<br />(disk in TBs) | VMs<br />(CPUs) | VMs<br />(memory in GBs) |
+| --- | :-: | :-: | :-: | :-: | :-: |
+| Small | 4 | 8 | 1 | 4 | 16 |
+| Standard | 8 | 30 | 1 | 12 | 48 |
+| Medium | 16 | 64 | 2 | 32 | 64 |
+| Large | 72 | 468 | 3.5 | 48 | 184 |
+
+### インデクサーが取るべきセキュリティ対策は？
+
+- **Operator wallet** - オペレーター・ウォレットを設定することは、インデクサーがステークを管理するキーと日々のオペレーションを管理するキーを分離することができるため、重要な予防策となります。 設定方法については [Stake in Protocol](/network/indexing#stake-in-the-protocol)をご覧ください。
+
+- **Important**: ポートの公開には注意が必要です。 **管理用ポート**はロックしておくべきです。 これには、以下に示すグラフノードの JSON-RPC とインデクサ管理用のエンドポイントが含まれます。
+
+## インフラストラクチャ
+
+インデクサーのインフラの中心となるのは、イーサリアムを監視し、サブグラフの定義に従ってデータを抽出・ロードし、[GraphQL API](/about#how-the-graph-works)として提供するグラフノードです。 グラフノードには、イーサリアムの EVM ノードのエンドポイントと、データを取得するための IPFS ノード、ストア用の PostgreSQL データベース、ネットワークとのやりとりを促進するインデクサーのコンポーネントが接続されている必要があります。
+
+- **PostgreSQL データベース** - グラフノードのメインストアで、サブグラフのデータが格納されています。 また、インデクササービスとエージェントは、データベースを使用して、ステートチャネルデータ、コストモデル、およびインデクシングルールを保存します。
+
+- **イーサリアムエンドポイント** - Ethereum JSON-RPC API を公開するエンドポイントです。 これは単一のイーサリアムクライアントの形をとっているかもしれませんし、複数のイーサリアムクライアント間でロードバランスをとるような複雑なセットアップになっているかもしれません。 特定のサブグラフには、アーカイブモードやトレース API など、特定のイーサリアムクライアント機能が必要になることを認識しておくことが重要です。
+
+- **IPFS ノード（バージョン 5 未満）** - サブグラフのデプロイメタデータは IPFS ネットワーク上に保存されます。 グラフノードは、サブグラフのデプロイ時に主に IPFS ノードにアクセスし、サブグラフマニフェストと全てのリンクファイルを取得します。 ネットワーク・インデクサーは独自の IPFS ノードをホストする必要はありません。 ネットワーク用の IPFS ノードは、https://ipfs.network.thegraph.com でホストされています。
+
+- **Indexer service** - ネットワークとの必要な外部通信を全て処理します。 コストモデルとインデキシングのステータスを共有し、ゲートウェイからのクエリ要求をグラフノードに渡し、ゲートウェイとのステートチャンネルを介してクエリの支払いを管理します。
+
+- **Indexer agent** - ネットワークへの登録、グラフノードへのサブグラフのデプロイ管理、割り当ての管理など、チェーン上のインデクサーのインタラクションを容易にします。
+
+- **Prometheus metrics server** - Graph Node と Indexer コンポーネントは、自分のメトリクスをメトリクス・サーバーにログします。
+
+コマンドを実行する前に、[variables.tf](https://github.com/graphprotocol/indexer/blob/main/terraform/variables.tf)に目を通し、このディレクトリに`terraform.tfvars` というファイルを作成します（または、前のステップで作成したものを修正します） デフォルトを上書きしたい変数や、値を設定したい変数ごとに、`terraform.tfvars`に設定を入力します。
+
+### ポートの概要
+
+> **ファイアウォール** - インデクサーのサービスのみを公開し、管理ポートとデータベースへのアクセスをロックすることに特に注意を払う必要があります。 グラフノードの JSON-RPC エンドポイント（デフォルトポート：8030）、インデクサー管理 API エンドポイント（デフォルトポート：18000）、Postgres データベースエンドポイント（デフォルトポート：5432）を公開してはいけません。
+
+#### グラフノード
+
+| Port | Purpose | Routes | CLI Argument | Environment Variable |
+| --- | --- | --- | --- | --- |
+| 8000 | GraphQL HTTP server <br /> (for subgraph queries) | /subgraphs/id/... <br /> <br /> /subgraphs/name/.../... | --http-port | - |
+| 8001 | GraphQL WS <br /> (for subgraph subscriptions) | /subgraphs/id/... <br /> <br /> /subgraphs/name/.../... | --ws-port | - |
+| 8020 | JSON-RPC <br /> (for managing deployments) | / | --admin-port | - |
+| 8030 | Subgraph indexing status API | /graphql | --index-node-port | - |
+| 8040 | Prometheus metrics | /metrics | --metrics-port | - |
+
+#### Indexer Service
+
+| Port | Purpose | Routes | CLI Argument | Environment Variable |
+| --- | --- | --- | --- | --- |
+| 7600 | GraphQL HTTP server <br /> (for paid subgraph queries) | /subgraphs/id/... <br /> /status <br /> /channel-messages-inbox | --port | `INDEXER_SERVICE_PORT` |
+| 7300 | Prometheus metrics | /metrics | --metrics-port | - |
+
+#### Indexer Agent
+
+| Port | Purpose                | Routes | CLI Argument              | Environment Variable                    |
+| ---- | ---------------------- | ------ | ------------------------- | --------------------------------------- |
+| 8000 | Indexer management API | /      | --indexer-management-port | `INDEXER_AGENT_INDEXER_MANAGEMENT_PORT` |
+
+### Google Cloud で Terraform を使ってサーバーインフラを構築
+
+#### インストールの前提条件
+
+- Google Cloud SDK
+- Kubectl コマンドラインツール
+- Terraform
+
+#### Google Cloud プロジェクトの作成
+
+- クローンまたはインデクサーリポジトリに移動
+
+- ./terraform ディレクトリに移動し、ここですべてのコマンドを実行
+
+```sh
+cd terraform
+```
+
+- Google Cloud で認証し、新しいプロジェクトを作成
+
+```sh
+gcloud auth login
+project=<PROJECT_NAME>
+gcloud projects create --enable-cloud-apis $project
+```
+
+- Google Cloud Console の\[billing page\](課金ページ) を使用して、新しいプロジェクトの課金を有効にします。
+
+- Google Cloud の設定を作成します。
+
+```sh
+proj_id=$(gcloud projects list --format='get(project_id)' --filter="name=$project")
+gcloud config configurations create $project
+gcloud config set project "$proj_id"
+gcloud config set compute/region us-central1
+gcloud config set compute/zone us-central1-a
+```
+
+- Google Cloud API の設定
+
+```sh
+gcloud services enable compute.googleapis.com
+gcloud services enable container.googleapis.com
+gcloud services enable servicenetworking.googleapis.com
+gcloud services enable sqladmin.googleapis.com
+```
+
+- サービスアカウントを作成
+
+```sh
+svc_name=<SERVICE_ACCOUNT_NAME>
+gcloud iam service-accounts create $svc_name \
+  --description="Service account for Terraform" \
+  --display-name="$svc_name"
+gcloud iam service-accounts list
+# Get the email of the service account from the list
+svc=$(gcloud iam service-accounts list --format='get(email)'
+--filter="displayName=$svc_name")
+gcloud iam service-accounts keys create .gcloud-credentials.json \
+  --iam-account="$svc"
+gcloud projects add-iam-policy-binding $proj_id \
+  --member serviceAccount:$svc \
+  --role roles/editor
+```
+
+- データベースと次のステップで作成する Kubernetes クラスター間のピアリングを有効化
+
+```sh
+gcloud compute addresses create google-managed-services-default \
+  --prefix-length=20 \
+  --purpose=VPC_PEERING \
+  --network default \
+  --global \
+  --description 'IP Range for peer networks.' gcloud services vpc-peerings connect \
+  --network=default \
+  --ranges=google-managed-services-default
+```
+
+- Terraform 設定ファイルを作成（必要に応じて更新してください）
+
+```sh
+indexer=<INDEXER_NAME>
+cat > terraform.tfvars <<EOF
+project = "$proj_id"
+indexer = "$indexer"
+database_password = "<database passowrd>"
+EOF
+```
+
+#### Terraform を使ってインフラを構築
+
+コマンドを実行する前に、[variables.tf](https://github.com/graphprotocol/indexer/blob/main/terraform/variables.tf)に目を通し、このディレクトリに`terraform.tfvars`というファイルを作成します（または、前のステップで作成したものを修正します）。 デフォルトを上書きしたい、あるいは値を設定したい各変数について、`terraform.tfvars`に設定を入力します。
+
+- 以下のコマンドを実行して、インフラを作成します。
+
+```sh
+# 必要なプラグインのインストール
+terraform init
+
+# 作成されるリソースのプランを見る
+terraform plan
+
+# リソースの作成（最大で30分程度かかる見込みです）
+terraform apply
+```
+
+`kubectl apply -k $dir`ですべてのリソースをデプロイします。
+
+```sh
+gcloud container clusters get-credentials $indexer
+kubectl config use-context $(kubectl config get-contexts --output='name'
+| grep $indexer)
+```
+
+#### インデクサー用の Kubernetes コンポーネントの作成
+
+- `k8s/overlays`ディレクトリを新しいディレクトリ`$dir,`にコピーし、`$dir/kustomization.yaml`内の`bases`エントリが`k8s/base`ディレクトリを指すように調整します。
+
+- `$dir` にあるすべてのファイルを読み、コメントに示されている値を調整します。
+
+Deploy all resources with `kubectl apply -k $dir`.
+
+### グラフノード
+
+[グラフノード](https://github.com/graphprotocol/graph-node)はオープンソースの Rust 実装で、Ethereum ブロックチェーンをイベントソースにして、GraphQL エンドポイントでクエリ可能なデータストアを決定論的に更新します。 開発者は、サブグラフを使ってスキーマを定義し、ブロックチェーンから供給されるデータを変換するためのマッピングセットを使用します。 グラフノードは、チェーン全体の同期、新しいブロックの監視、GraphQL エンドポイント経由での提供を処理します。
+
+#### ソースからのスタート
+
+#### インストールの前提条件
+
+- **Rust**
+
+- **PostgreSQL**
+
+- **IPFS**
+
+- **Ubuntu ユーザーのための追加要件** - グラフノードを Ubuntu 上で動作させるためには、いくつかの追加パッケージが必要になります。
+
+```sh
+sudo apt-get install -y clang libpg-dev libssl-dev pkg-config
+```
+
+#### Setup
+
+1. PostgreSQL データベースサーバを起動します。
+
+```sh
+initdb -D .postgres
+pg_ctl -D .postgres -l logfile start
+createdb graph-node
+```
+
+2. [グラフノード Graph Node](https://github.com/graphprotocol/graph-node)のリポジトリをクローンし、cargo build を実行してソースをビルドします。
+
+3. 全ての依存関係の設定が完了したら、グラフノードを起動します:
+
+```sh
+cargo run -p graph-node --release -- \
+  --postgres-url postgresql://[USERNAME]:[PASSWORD]@localhost:5432/graph-node \
+  --ethereum-rpc [NETWORK_NAME]:[URL] \
+  --ipfs https://ipfs.network.thegraph.com
+```
+
+#### Docker の使用
+
+#### 前提条件
+
+- **イーサリアムノード** - デフォルトでは、docker compose setup は mainnet: [http://host.docker.internal:8545](http://host.docker.internal:8545)を使ってホストマシン上のイーサリアムノードに接続します。 このネットワーク名と URL は、`docker-compose.yaml`を更新することで置き換えることができます。
+
+#### セットアップ
+
+1. Graph Node をクローンし、Docker ディレクトリに移動します。
+
+```sh
+git clone http://github.com/graphprotocol/graph-node
+cd graph-node/docker
+```
+
+2. Linux ユーザーのみ - 付属のスクリプトを使って、`docker-compose.yaml`の中で`host.docker.internal`の代わりにホストの IP アドレスを使用します:
+
+```sh
+./setup.sh
+```
+
+3. Ethereum のエンドポイントに接続し、ローカルの Graph Node を起動します:
+
+```sh
+docker-compose up
+```
+
+### インデクサーコンポーネント
+
+ネットワークへの参加を成功させるためには、ほぼ常に監視と対話を行う必要があるため、Indexers のネットワークへの参加を促進するための一連の Typescript アプリケーションを構築しました。 インデクサーには 3 つのコンポーネントがあります:
+
+- **Indexer agent** - ネットワークとインデクサー自身のインフラを監視し、どのサブグラフ・デプロイメントがインデキシングされ、チェーンに割り当てられるか、またそれぞれにどれだけの量が割り当てられるかを管理します。
+
+- **Indexer service** - 外部に公開する必要のある唯一のコンポーネントで、サブグラフのクエリをグラフノードに渡し、クエリの支払いのための状態チャンネルを管理し、重要な意思決定情報をゲートウェイなどのクライアントに共有します。
+
+- **インデクサー CLI** - インデクサーエージェントを管理するためのコマンドラインインターフェースです。 インデクサーがコストモデルやインデクシングルールを管理するためのもの。
+
+#### はじめに
+
+インデクサーエージェントとインデクサーサービスは、グラフノードインフラストラクチャーと同居している必要があります。 ここでは、NPM パッケージやソースを使ってベアメタル上で実行する方法と、Google Cloud Kubernetes Engine 上で kubernetes や docker を使って実行する方法を説明します。 これらの設定例があなたのインフラに適用できない場合は、コミュニティガイドを参照するか、[Discord](https://thegraph.com/discord)でお問い合わせください。 インデクサーコンポーネントを起動する前に、[プロトコルのステーク](/network/indexing#stake-in-the-protocol) を忘れないでください。
+
+#### NPM パッケージから
+
+```sh
+npm install -g @graphprotocol/indexer-service
+npm install -g @graphprotocol/indexer-agent
+
+# Indexer CLI is a plugin for Graph CLI, so both need to be installed:
+npm install -g @graphprotocol/graph-cli
+npm install -g @graphprotocol/indexer-cli
+
+# Indexer service
+graph-indexer-service start ...
+
+# Indexer agent
+graph-indexer-agent start ...
+
+# Indexer CLI
+#Forward the port of your agent pod if using Kubernetes
+kubectl port-forward pod/POD_ID 18000:8000
+graph indexer connect http://localhost:18000/
+graph indexer ...
+```
+
+#### ソース
+
+```sh
+# From Repo root directory
+yarn
+
+# Indexer Service
+cd packages/indexer-service
+./bin/graph-indexer-service start ...
+
+# Indexer agent
+cd packages/indexer-agent
+./bin/graph-indexer-service start ...
+
+# Indexer CLI
+cd packages/indexer-cli
+./bin/graph-indexer-cli indexer connect http://localhost:18000/
+./bin/graph-indexer-cli indexer ...
+```
+
+#### Docker の使用
+
+- レジストリからイメージを引き出す
+
+```sh
+docker pull ghcr.io/graphprotocol/indexer-service:latest
+docker pull ghcr.io/graphprotocol/indexer-agent:latest
+```
+
+**注**: コンテナの起動後、インデクサーサービスは[http://localhost:7600](http://localhost:7600)でアクセスでき、インデクサーエージェントは[http://localhost:18000/](http://localhost:18000/)で インデクサー管理 API を公開しているはずです。
+
+```sh
+# Indexer service
+docker build \
+  --build-arg NPM_TOKEN=<npm-token> \
+  -f Dockerfile.indexer-service \
+  -t indexer-service:latest \
+# Indexer agent
+docker build \
+  --build-arg NPM_TOKEN=<npm-token> \
+  -f Dockerfile.indexer-agent \
+  -t indexer-agent:latest \
+```
+
+- コンポーネントの実行
+
+```sh
+docker run -p 7600:7600 -it indexer-service:latest ...
+docker run -p 18000:8000 -it indexer-agent:latest ...
+```
+
+[Google Cloud で Terraform を使ってサーバーインフラを構築するのセクション](/network/indexing#setup-server-infrastructure-using-terraform-on-google-cloud) を参照してください。
+
+#### K8s と Terraform の使用
+
+Indexer CLI は、[`@graphprotocol/graph-cli`](https://www.npmjs.com/package/@graphprotocol/graph-cli)のプラグインで、ターミナルから`graph indexer`でアクセスできます。
+
+#### 使用方法
+
+> **注**：全てのランタイム設定変数は、起動時にコマンドのパラメーターとして適用するか、`COMPONENT_NAME_VARIABLE_NAME`（例：`INDEXER_AGENT_ETHEREUM`）という形式の環境変数を使用することができます。
+
+#### インデクサーエージェント
+
+```sh
+graph-indexer-agent start \
+  --ethereum <MAINNET_ETH_ENDPOINT> \
+  --ethereum-network mainnet \
+  --mnemonic <MNEMONIC> \
+  --indexer-address <INDEXER_ADDRESS> \
+  --graph-node-query-endpoint http://localhost:8000/ \
+  --graph-node-status-endpoint http://localhost:8030/graphql \
+  --graph-node-admin-endpoint http://localhost:8020/ \
+  --public-indexer-url http://localhost:7600/ \
+  --indexer-geo-coordinates <YOUR_COORDINATES> \
+  --index-node-ids default \
+  --indexer-management-port 18000 \
+  --metrics-port 7040 \
+  --network-subgraph-endpoint https://gateway.network.thegraph.com/network \
+  --default-allocation-amount 100 \
+  --register true \
+  --inject-dai true \
+  --postgres-host localhost \
+  --postgres-port 5432 \
+  --postgres-username <DB_USERNAME> \
+  --postgres-password <DB_PASSWORD> \
+  --postgres-database indexer \
+  | pino-pretty
+```
+
+#### インデクサーサービス
+
+```sh
+SERVER_HOST=localhost \
+SERVER_PORT=5432 \
+SERVER_DB_NAME=is_staging \
+SERVER_DB_USER=<DB_USERNAME> \
+SERVER_DB_PASSWORD=<DB_PASSWORD> \
+graph-indexer-service start \
+  --ethereum <MAINNET_ETH_ENDPOINT> \
+  --ethereum-network mainnet \
+  --mnemonic <MNEMONIC> \
+  --indexer-address <INDEXER_ADDRESS> \
+  --port 7600 \
+  --metrics-port 7300 \
+  --graph-node-query-endpoint http://localhost:8000/ \
+  --graph-node-status-endpoint http://localhost:8030/graphql \
+  --postgres-host localhost \
+  --postgres-port 5432 \
+  --postgres-username <DB_USERNAME> \
+  --postgres-password <DB_PASSWORD> \
+  --postgres-database is_staging \
+  --network-subgraph-endpoint https://gateway.network.thegraph.com/network \
+  | pino-pretty
+```
+
+#### インデクサー CLI
+
+インデクサーがプロトコルに GRT をステークすると、[indexer components](/network/indexing#indexer-components)を起動し、ネットワークとのやりとりを始めることができます。
+
+```sh
+graph indexer connect http://localhost:18000
+graph indexer status
+```
+
+#### Indexer CLI によるインデクサー管理
+
+インデクサエージェントは、インデクサーに代わって自律的にネットワークと対話するために、インデクサーからの入力を必要とします。 インデクサー・エージェントの動作を定義するためのメカニズムが**インデキシングルール**です。 インデクサーは、**インデキシングルール**を使用して、インデックスを作成してクエリを提供するサブグラフを選択するための特定の戦略を適用することができます。 ルールは、エージェントが提供する GraphQL API を介して管理され、Indexer Management API と呼ばれています。 **Indexer Management API**を操作するための推奨ツールは、 **Graph CLI**の拡張である**Indexer CLI**です。
+
+#### 使用方法
+
+**Indexer CLI**は、通常ポート・フォワーディングを介してインデクサー・エージェントに接続するため、CLI が同じサーバやクラスタ上で動作する必要はありません。 ここでは CLI について簡単に説明します。
+
+- `graph indexer connect <url>` - インデクサー管理 API に接続します。 通常、サーバーへの接続はポートフォワーディングによって開かれ、CLI をリモートで簡単に操作できるようになります。 (例：`kubectl port-forward pod/<indexer-agent-pod> 8000:8000`)
+
+- `graph indexer rules get [options] <deployment-id< [<key1> ...]` - 1 つまたは複数のインデキシングルールを取得します。 `<deployment-id>`に `all` を指定すると全てのルールを取得し、`global` を指定するとグローバルなデフォルトを取得します。 追加の引数`--merged` を使用すると、ディプロイメント固有のルールをグローバル ルールにマージするように指定できます。 これがインデクサー・エージェントでの適用方法です。
+
+- `graph indexer rules set [options] <deployment-id> <key1> <value1> ...` - 1 つまたは複数のインデキシング規則を設定します。
+
+- `graph indexer rules start [options] <deployment-id>` - 利用可能な場合はサブグラフ配置のインデックス作成を開始し、`decisionBasis`を`always`に設定するので、インデクサー・エージェントは常にインデキシングを選択します。 グローバル ルールが always に設定されている場合、ネットワーク上のすべての利用可能なサブグラフがインデックス化されます。
+
+- `graph indexer rules stop [options] <deployment-id>` - 配置のインデックス作成を停止し、`decisionBasis`を never に設定することで、インデックスを作成する配置を決定する際にこの配置をスキップします。
+
+- `graph indexer rules maybe [options] <deployment-id>` - 配置の`thedecisionBasis` を`rules`に設定し、インデクサーエージェントがインデキシングルールを使用して、この配置にインデックスを作成するかどうかを決定するようにします。
+
+出力にルールを表示するすべてのコマンドは、`-output`引数を使用して、サポートされている出力形式(`table`, `yaml`, and `json`) の中から選択できます。
+
+#### インデキシングルール
+
+インデキシングルールは、グローバルなデフォルトとして、または ID を使用して特定のサブグラフデプロイメントに適用できます。 `deployment`と`decisionBasis`フィールドは必須で、その他のフィールドはすべてオプションです。 インデキシングルールが`decisionBasis`として`rules` を持つ場合、インデクサー・エージェントは、そのルール上の非 NULL の閾値と、対応する配置のためにネットワークから取得した値を比較します。 サブグラフデプロイメントがいずれかのしきい値以上（または以下）の値を持つ場合、それはインデキシングのために選択されます。
+
+例えば、グローバル ルールの`minStake`が**5**(GRT) の場合、5(GRT) 以上のステークが割り当てられているサブグラフデプロイメントは、インデックスが作成されます。 しきい値ルールには、 `maxAllocationPercentage`, `minSignal`, `maxSignal`, `minStake`, and `minAverageQueryFees`があります。
+
+データモデル
+
+```graphql
+type IndexingRule {
+  deployment: string
+  allocationAmount: string | null
+  parallelAllocations: number | null
+  decisionBasis: IndexingDecisionBasis
+  maxAllocationPercentage: number | null
+  minSignal: string | null
+  maxSignal: string | null
+  minStake: string | null
+  minAverageQueryFees: string | null
+  custom: string | null
+}
+
+IndexingDecisionBasis {
+  rules
+  never
+  always
+}
+```
+
+#### コストモデル
+
+コストモデルは、マーケットやクエリ属性に基づいて、クエリの動的な価格設定を行います。 インデクサーサービスは、クエリに応答する予定の各サブグラフのコストモデルをゲートウェイと共有します。 一方、ゲートウェイはコストモデルを使用して、クエリごとにインデクサーの選択を決定し、選択されたインデクサーと支払いの交渉を行います。
+
+#### Agora
+
+Agora 言語は、クエリのコストモデルを宣言するための柔軟なフォーマットを提供します。 Agora のコストモデルは、GraphQL クエリのトップレベルのクエリごとに順番に実行される一連のステートメントです。 各トップレベルのクエリに対して、それにマッチする最初のステートメントがそのクエリの価格を決定します。
+
+ステートメントは、GraphQL クエリのマッチングに使用される述語と、評価されると decimal GRT でコストを出力するコスト式で構成されます。 クエリの名前付き引数の位置にある値は、述語の中に取り込まれ、式の中で使用されます。 また、グローバルを設定し、式のプレースホルダーとして代用することもできます。
+
+上記モデルを用いたクエリのコスト計算例:
+
+```
+# This statement captures the skip value,
+# uses a boolean expression in the predicate to match specific queries that use `skip`
+# and a cost expression to calculate the cost based on the `skip` value and the SYSTEM_LOAD global
+query { pairs(skip: $skip) { id } } when $skip > 2000 => 0.0001 * $skip * $SYSTEM_LOAD;
+
+# This default will match any GraphQL expression.
+# It uses a Global substituted into the expression to calculate cost
+default => 0.1 * $SYSTEM_LOAD;
+```
+
+コストモデルの例:
+
+| Query                                                                        | Price   |
+| ---------------------------------------------------------------------------- | ------- |
+| &#123; pairs(skip: 5000) &#123; id &#125; &#125;                             | 0.5 GRT |
+| &#123; tokens &#123; symbol &#125; &#125;                                    | 0.1 GRT |
+| &#123; pairs(skip: 5000) &#123; id &#123; tokens &#125; symbol &#125; &#125; | 0.6 GRT |
+
+#### コストモデルの適用
+
+コストモデルは Indexer CLI を通じて適用され、それをインデクサー・エージェントの Indexer Management API に渡してデータベースに格納します。 その後、インデクサーサービスがこれを受け取り、ゲートウェイから要求があるたびにコスト・モデルを提供します。
+
+```sh
+indexer cost set variables '{ "SYSTEM_LOAD": 1.4 }'
+indexer cost set model my_model.agora
+```
+
+## ネットワークとのインタラクション
+
+### プロトコルへのステーク
+
+インデクサーとしてネットワークに参加するための最初のステップは、プロトコルを承認し、資金を拠出し、（オプションで）日常的なプロトコルのやり取りのためにオペレーターアドレスを設定することです。 \_ **注**: 本説明書ではコントラクトのやり取りに Remix を使用しますが、お好みのツールを自由にお使いください（[OneClickDapp](https://oneclickdapp.com/), [ABItopic](https://abitopic.io/), and [MyCrypto](https://www.mycrypto.com/account)などが知られています）
+
+健全なアロケーションは、インデクサーによって作成された後、4 つの状態を経ます。
+
+#### トークンの承認
+
+1. ブラウザで[Remix app](https://remix.ethereum.org/)を開きます。
+
+2. `File Explorer`で**GraphToken.abi**というファイルを作成し、 [token ABI](https://raw.githubusercontent.com/graphprotocol/contracts/mainnet-deploy-build/build/abis/GraphToken.json)を指定します。
+
+3. `GraphToken.abi`を選択してエディタで開いた状態で、Remix のインターフェースの Deploy and `Run Transactions` セクションに切り替えます。
+
+4. 環境から[`Injected Web3`] を選択し、`Account`でインデクサーアドレスを選択します。
+
+5. GraphToken のコントラクトアドレスの設定 - `At Address`の横に GraphToken のコントラクトアドレス(`0xc944E90C64B2c07662A292be6244BDf05Cda44a7`) を貼り付け、`At Address`ボタンをクリックして適用します。
+
+6. `approve(spender, amount)`関数を呼び出し、ステーキング契約を承認します。 `spender`にはステーキングコントラクトアドレス（`0xF55041E37E12cD407ad00CE2910B8269B01263b9`）を、`amount`にはステークするトークン（単位：wei）を記入します。
+
+#### トークンをステークする
+
+1. ブラウザで[Remix app](https://remix.ethereum.org/) を開きます。
+
+2. `File Explorer`で**Staking.abi**という名前のファイルを作成し、Staking ABI を指定します。
+
+3. エディタで`Staking.abi`を選択して開いた状態で、Remix インターフェースの`Deploy` and `Run Transactions`セクションに切り替えます。
+
+4. 環境から[`Injected Web3`] を選択し、`Account`でインデクサーアドレスを選択します。
+
+5. Staking contract address の設定 - `At Address`の横に Staking contract address (`0xF55041E37E12cD407ad00CE2910B8269B01263b9`) を貼り付け、 `At Address`ボタンをクリックして適用します。
+
+6. `stake()`を呼び出して、GRT をプロトコルにステークします。
+
+7. (オプション）インデクサーは、資金を管理する鍵と、サブグラフへの割り当てや（有料の）クエリの提供などの日常的な動作を行う鍵とを分離するために、別のアドレスをインデクサインフラストラクチャのオペレーターとして承認することができます。 オペレーターを設定するには、オペレーターのアドレスを指定して`setOperator()`をコールします。
+
+8. (オプション) 報酬の分配を制御し、デリゲータを戦略的に引き付けるために、 インデクサーは indexingRewardCut (parts per million)、 queryFeeCut (parts per million)、 cooldownBlocks (number of blocks) を更新することで、 デリゲーションパラメータを更新することができます。 これを行うには`setDelegationParameters()`をコールします。 次の例では、クエリフィーカットをクエリリベートの 95%をインデクサーに、5%をデリゲーターに分配するように設定し、インデクサーリワードカットをインデキシング報酬の 60%をインデクサーに、40%をデリゲーターに分配するよう設定し、`thecooldownBlocks` 期間を 500 ブロックに設定しています。
+
+```
+setDelegationParameters(950000, 600000, 500)
+```
+
+### アロケーションの寿命
+
+インデクサーによって作成された後、健全なアロケーションは 4 つの状態を経ます。
+
+- **Active**- オンチェーンでアロケーションが作成されると（allocateFrom()）、それは**active**であるとみなされます。 インデクサー自身やデリゲートされたステークの一部がサブグラフの配置に割り当てられ、これによりインデクシング報酬を請求したり、そのサブグラフの配置のためにクエリを提供したりすることができます。 インデクサエージェントは、インデキシングルールに基づいて割り当ての作成を管理します。
+
+- **Closed** - インデクサーは、1 エポックが経過した時点で自由に割り当てをクローズすることができます（[closeAllocation()](https://github.com/graphprotocol/contracts/blob/master/contracts/staking/Staking.sol#L873)） また、インデクサエージェントは、**maxAllocationEpochs**（現在は 28 日）が経過した時点で自動的に割り当てをクローズします。 割り当てが有効な POI（Proof of Indexing）とともにクローズされると、そのインデクサー報酬がインデクサーとそのデリゲーターに分配されます（詳細は下記の「報酬の分配方法」を参照してください）
+
+- **Finalized** - 割り当てがクローズすると、争議期間が設けられます。 その後、割り当てが**finalized**したとみなされ、クエリフィーのリベートを請求することができます（claim()） インデクサーエージェントは、ネットワークを監視して**finalized** した割り当てを検出し、設定可能な（オプションの）しきい値 **—-allocation-claim-threshold**を超えていれば、それを請求できます。
+
+- **請求** - アロケーションの最終状態で、アクティブなアロケーションとしての期間が終了し、全ての適格な報酬が配布され、クエリ料の払い戻しが請求されます。

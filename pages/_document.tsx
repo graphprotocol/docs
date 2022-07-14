@@ -14,12 +14,12 @@ export default class MyDocument extends Document {
     return (
       <Html lang={locale} data-theme="dark">
         <Head>
-          <link rel="icon" type="image/png" href="https://storage.googleapis.com/graph-web/favicon.png" />
           <link
             rel="preconnect"
             href={`https://${process.env.ALGOLIA_APP_ID}-dsn.algolia.net`}
             crossOrigin="anonymous"
           />
+          <link rel="icon" type="image/png" href="https://storage.googleapis.com/graph-web/favicon.png" />
         </Head>
         <body>
           <Main />

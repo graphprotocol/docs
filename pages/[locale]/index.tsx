@@ -82,32 +82,32 @@ const Index: NextPage<IndexProps> = ({ navItems }: IndexProps) => {
           {
             title: t('index.shortcuts.aboutTheGraph.title'),
             description: t('index.shortcuts.aboutTheGraph.description'),
-            href: '/about/introduction',
+            href: '/about',
           },
           {
             title: t('index.shortcuts.quickStart.title'),
             description: t('index.shortcuts.quickStart.description'),
-            href: '/developer/quick-start',
+            href: '/cookbook/quick-start',
           },
           {
             title: t('index.shortcuts.developerFaqs.title'),
             description: t('index.shortcuts.developerFaqs.description'),
-            href: '/developer/developer-faq',
+            href: '/developing/developer-faqs',
           },
           {
             title: t('index.shortcuts.queryFromAnApplication.title'),
             description: t('index.shortcuts.queryFromAnApplication.description'),
-            href: '/developer/querying-from-your-app',
+            href: '/querying/querying-from-an-application',
           },
           {
             title: t('index.shortcuts.createASubgraph.title'),
             description: t('index.shortcuts.createASubgraph.description'),
-            href: '/developer/create-subgraph-hosted',
+            href: '/developing/creating-a-subgraph',
           },
           {
             title: t('index.shortcuts.migrateFromHostedService.title'),
             description: t('index.shortcuts.migrateFromHostedService.description'),
-            href: '/hosted-service/migrating-subgraph',
+            href: '/cookbook/migrating-a-subgraph',
           },
         ].map((card, index) => (
           <li key={index} sx={{ aspectRatio: '258/136' }}>
@@ -159,25 +159,25 @@ const Index: NextPage<IndexProps> = ({ navItems }: IndexProps) => {
             title: t('index.networkRoles.roles.developer.title'),
             description: t('index.networkRoles.roles.developer.description'),
             image: '/img/roles/developer.png',
-            href: '/developer/quick-start',
+            href: '/developing/defining-a-subgraph',
           },
           {
             title: t('index.networkRoles.roles.indexer.title'),
             description: t('index.networkRoles.roles.indexer.description'),
             image: '/img/roles/indexer.png',
-            href: '/indexing',
+            href: '/network/indexing',
           },
           {
             title: t('index.networkRoles.roles.curator.title'),
             description: t('index.networkRoles.roles.curator.description'),
             image: '/img/roles/curator.png',
-            href: '/curating',
+            href: '/network/curating',
           },
           {
             title: t('index.networkRoles.roles.delegator.title'),
             description: t('index.networkRoles.roles.delegator.description'),
             image: '/img/roles/delegator.png',
-            href: '/delegating',
+            href: '/network/delegating',
           },
         ].map((role, index) => (
           <Flex.Column as="li" key={index}>
@@ -211,17 +211,17 @@ const Index: NextPage<IndexProps> = ({ navItems }: IndexProps) => {
           {
             title: t('index.products.products.subgraphStudio.title'),
             description: t('index.products.products.subgraphStudio.description'),
-            href: '/studio/subgraph-studio',
+            href: '/deploying/subgraph-studio',
           },
           {
             title: t('index.products.products.graphExplorer.title'),
             description: t('index.products.products.graphExplorer.description'),
-            href: '/explorer',
+            href: '/network/explorer',
           },
           {
             title: t('index.products.products.hostedService.title'),
             description: t('index.products.products.hostedService.description'),
-            href: '/hosted-service/what-is-hosted-service',
+            href: '/deploying/hosted-service',
           },
         ].map((product, index) => (
           <Flex.Column as="li" key={index}>
