@@ -1,0 +1,265 @@
+---
+title: NEARでのサブグラフ構築
+---
+
+> グラフノードおよびホステッドサービスにおける NEAR のサポートはベータ版です。NEAR サブグラフの構築に関するご質問は、near@thegraph.com までお問い合わせください。
+
+このガイドは、[NEAR blockchain](https://docs.near.org/)上のスマートコントラクトを索引するサブグラフを構築するための入門書です。
+
+## NEAR とは？
+
+[NEAR](https://near.org/)は、非中央集権的なアプリケーションを構築するためのスマートコントラクトプラットフォームです。詳細は[公式ドキュメント](https://docs.near.org/docs/concepts/new-to-near)をご覧ください。
+
+## NEAR サブグラフとは？
+
+Graph は、ブロックチェーンのイベントを処理し、その結果得られたデータを GraphQL API を介して簡単に利用できるようにするためのツールを開発者に提供するもので、個別にはサブグラフとして知られています。[Graph Node](https://github.com/graphprotocol/graph-node)が NEAR イベントを処理できるようになったということは、NEAR の開発者がスマートコントラクトの指標となるサブグラフを構築できるようになったということです。
+
+サブグラフはイベントベースなので、チェーン上のイベントをリッスンしてから処理します。現在、NEAR サブグラフでサポートされているハンドラーは 2 種類あります:
+
+- ブロックハンドラ：新しいブロックごとに実行されます
+- レシートハンドラ：指定されたアカウントでメッセージが実行されるたびに実行されます
+
+[NEAR のドキュメントより](https://docs.near.org/docs/concepts/transaction#receipt):
+
+> レシートは、システム内で唯一実行可能なオブジェクトです。NEAR プラットフォームで「トランザクションの処理」といえば、最終的にはどこかの時点で「レシートの適用」を意味します。
+
+## NEAR サブグラフの構築
+
+`@graphprotocol/graph-cli`は、サブグラフを構築・展開するためのコマンドラインツールです。
+
+`@graphprotocol/graph-ts`は、サブグラフ固有の型のライブラリです。
+
+NEAR サブグラフの開発には、バージョン`0.23.0`以上の`graph-cli`と、バージョン`0.23.0`以上の`graph-ts`が必要です。
+
+> NEAR サブグラフの構築は、Ethereum のインデックスを作成するサブグラフの構築と非常によく似ています。
+
+サブグラフの定義には 3 つの側面があります:
+
+**subgraph.yaml:**: サブグラフのマニフェストで、対象となるデータソースとその処理方法を定義します。NEAR は新しい`種類`のデータソースです。
+
+**schema.graphql:**: サブグラフのためにどのようなデータが保存されているか、そして GraphQL を介してどのようにクエリを行うかを定義するスキーマファイル。NEAR サブグラフの要件は、[既存のドキュメント](/developing/creating-a-subgraph#the-graphql-schema)でカバーされています。
+
+**AssemblyScript Mappings:**: [AssemblyScript code](/developing/assemblyscript-api)は、イベントデータから、スキーマで定義されたエンティティに変換するコードです。NEAR サポートでは、NEAR 固有のデータタイプと、新しい JSON パース機能が導入されています。
+
+サブグラフの開発には 2 つの重要なコマンドがあります:
+
+```bash
+$ graph codegen #は、マニフェストで指定されたスキーマファイルから型を生成します。
+$ graph build #は、AssemblyScriptファイルからWeb Assemblyを生成し、/buildフォルダにすべてのサブグラフファイルを準備します。
+```
+
+### サブグラフマニフェストの定義
+
+サブグラフ マニフェスト (`subgraph.yaml`) は、サブグラフのデータ ソース、関心のあるトリガー、およびこれらのトリガーに対応して実行されるべき関数を特定します。NEAR サブグラフのサブグラフマニフェストの例を以下に示します:
+
+```yaml
+specVersion: 0.0.2
+schema:
+  file: ./src/schema.graphql # link to the schema file
+dataSources:
+  - kind: near
+    network: near-mainnet
+    source:
+      account: app.good-morning.near # This data source will monitor this account
+      startBlock: 10662188 # Required for NEAR
+    mapping:
+      apiVersion: 0.0.5
+      language: wasm/assemblyscript
+      blockHandlers:
+        - handler: handleNewBlock # the function name in the mapping file
+      receiptHandlers:
+        - handler: handleReceipt # the function name in the mapping file
+      file: ./src/mapping.ts # link to the file with the Assemblyscript mappings
+```
+
+- NEAR サブグラフは、新しい`種類`のデータソース(`near`) を導入する
+- ホスト側のグラフノード上の`ネットワーク`に対応している必要があります。ホスティングサービスでは、NEAR のメインネットは`near-mainnet`,、NEAR のテストネットは`near-testnet`です。
+- NEAR のデータソースには、オプションで`source.account`フィールドが用意されており、これは[NEAR account](https://docs.near.org/docs/concepts/account)に対応する人間が読める ID であり、アカウントまたはサブアカウントである可能性があります。
+
+NEAR データソースは 2 種類のハンドラーをサポートしています:
+
+- `blockHandlers`: 新しい NEAR ブロックごとに実行され、`source.account` は必要ありません。
+- `receiptHandlers`:データソースの`source.account`が受信者であるすべてのレシートで実行されます。完全一致のみ処理されることに注意してください（[subaccounts](https://docs.near.org/docs/concepts/account#subaccounts)は独立したデータソースとして追加する必要があります）。
+
+### Schema Definition
+
+Schema Definition は、結果として得られるサブグラフ・データベースの構造と、エンティティ間の関係を記述します。これは元のデータソースに依存しません。サブグラフのスキーマ定義の詳細は[こちら](/developing/creating-a-subgraph#the-graphql-schema)をご覧ください。
+
+### AssemblyScript Mappings
+
+イベントを処理するためのハンドラは[AssemblyScript](https://www.assemblyscript.org/)で書かれています。
+
+NEAR インデックスは、[AssemblyScript API](/developing/assemblyscript-api)に NEAR 固有のデータタイプを導入します。
+
+```typescript
+
+class ExecutionOutcome {
+      gasBurnt: u64,
+      blockHash: Bytes,
+      id: Bytes,
+      logs: Array<string>,
+      receiptIds: Array<Bytes>,
+      tokensBurnt: BigInt,
+      executorId: string,
+  }
+
+class ActionReceipt {
+      predecessorId: string,
+      receiverId: string,
+      id: CryptoHash,
+      signerId: string,
+      gasPrice: BigInt,
+      outputDataReceivers: Array<DataReceiver>,
+      inputDataIds: Array<CryptoHash>,
+      actions: Array<ActionValue>,
+  }
+
+class BlockHeader {
+      height: u64,
+      prevHeight: u64,// Always zero when version < V3
+      epochId: Bytes,
+      nextEpochId: Bytes,
+      chunksIncluded: u64,
+      hash: Bytes,
+      prevHash: Bytes,
+      timestampNanosec: u64,
+      randomValue: Bytes,
+      gasPrice: BigInt,
+      totalSupply: BigInt,
+      latestProtocolVersion: u32,
+  }
+
+class ChunkHeader {
+      gasUsed: u64,
+      gasLimit: u64,
+      shardId: u64,
+      chunkHash: Bytes,
+      prevBlockHash: Bytes,
+      balanceBurnt: BigInt,
+  }
+
+class Block {
+      author: string,
+      header: BlockHeader,
+      chunks: Array<ChunkHeader>,
+  }
+
+class ReceiptWithOutcome {
+      outcome: ExecutionOutcome,
+      receipt: ActionReceipt,
+      block: Block,
+  }
+```
+
+これらのタイプは、ブロックハンドラとレシートハンドラに渡されます:
+
+- ブロックハンドラーは、`Block`を受け取ります
+- レシートハンドラーは`ReceiptWithOutcome`を受け取ります
+
+その他、マッピング実行中の NEAR サブグラフ開発者は、 [AssemblyScript API](/developing/assemblyscript-api)の残りの部分を利用できます。
+
+これには、新しい JSON parsing function が含まれています。NEAR のログは、頻繁に文字列化された JSON として出力されます。新しい`json.fromString(...)`関数は、開発者がこれらのログを簡単に処理できるように、[JSON API](/developing/assemblyscript-api#json-api)の一部として利用できます。
+
+## NEAR サブグラフの展開
+
+サブグラフを作成したら、インデックス作成のためにグラフノードにデプロイします。NEAR サブグラフは、`>=v0.26.x`以上のグラフノードにデプロイすることができます（このバージョンはまだタグ付けされていないし、リリースもされていません）。
+
+グラフのホステッドサービスは現在、NEAR mainnet と testnet のベータ版のインデックス作成をサポートしており、ネットワーク名は以下の通りです:
+
+- `near-mainnet`
+- `near-testnet`
+
+ホステッドサービスでのサブグラフの作成と展開に関する詳細は[こちら](/deploying/deploying-a-subgraph-to-hosted)をご覧ください。
+
+簡単に説明すると、最初のステップはサブグラフを「作成」することです。ホスティングサービスでは、[ダッシュボード](https://thegraph.com/hosted-service/dashboard)から行います。"Add Subgraph "をクリックします。
+
+サブグラフが作成されたら、CLI コマンドの`graph deploy`を使ってサブグラフをデプロイすることができます。
+
+```
+$ graph create --node <graph-node-url> subgraph/name # ローカルのグラフノードにサブグラフを作成します (Hosted Serviceでは、UI経由で実行)
+$ graph deploy --node <graph-node-url> --ipfs https://api.thegraph.com/ipfs/ # 指定したIPFSエンドポイントにビルドファイルをアップロードし、マニフェストのIPFSハッシュに基づいて指定したグラフノードにサブグラフをデプロイします。
+```
+
+ノードの構成は、サブグラフがどこにディプロイされるかによって異なります。
+
+#### ホステッドサービス:
+
+```
+graph deploy --node https://api.thegraph.com/deploy/ --ipfs https://api.thegraph.com/ipfs/ --access-token <your-access-token>
+```
+
+#### ローカルのグラフノード(デフォルトの設定に基づく):
+
+```
+graph deploy --node http://localhost:8020/ --ipfs http://localhost:5001
+```
+
+デプロイされたサブグラフは、Graph Node によってインデックス化され、その進捗状況は、サブグラフ自体にクエリして確認できます:
+
+```
+{
+  _meta {
+    block { number }
+  }
+}
+```
+
+### ローカルなグラフノードによる NEAR のインデックス作成
+
+NEAR のインデックスを作成するグラフノードの運用には、以下のような運用要件があります:
+
+- NEAR Indexer Framework と Firehose instrumentation
+- NEAR Firehose コンポーネント
+- Firehose エンドポイントが設定されたグラフノード
+
+上記のコンポーネントの運用については、近日中に詳しくご紹介します。
+
+## NEAR サブグラフへのクエリ
+
+NEAR サブグラフの GraphQL エンドポイントは、既存の API インターフェイスを用いて、スキーマ定義によって決定されます。詳細は、[GraphQL API documentation](/querying/graphql-api) をご覧ください。
+
+## サブグラフの例
+
+参考までにサブグラフの例を紹介します:
+
+[NEAR Blocks](https://github.com/graphprotocol/example-subgraph/tree/near-blocks-example)
+
+[NEAR Receipts](https://github.com/graphprotocol/example-subgraph/tree/near-receipts-example)
+
+## よくある質問
+
+### ベータ版はどのように機能しますか？
+
+NEAR サポートはベータ版です。統合の改善を続ける中で、API に変更が加えられる可能性があります。NEAR サブグラフの構築をサポートし、最新の開発状況をお知らせしますので、near@thegraph.comまでメールをお送りください。
+
+### サブグラフは、NEAR と EVM の両チェーンに対してインデックスできますか？
+
+いいえ、サブグラフは 1 つのチェーン/ネットワークのデータソースのみをサポートします。
+
+### サブグラフは、複数のトリガーに反応することができますか？
+
+現在、ブロックとレシートのトリガーのみがサポートされています。指定されたアカウントへのファンクションコールのトリガーを検討しています。また、NEAR がネイティブイベントをサポートするようになれば、イベントトリガーのサポートも検討しています。
+
+### レシートハンドラは、アカウントとそのサブアカウントに対してトリガーされますか？
+
+レシートハンドラは、指定されたアカウントと完全に一致する場合にのみトリガされます。将来的にはさらに柔軟性を持たせることができます。
+
+### NEAR サブグラフは、マッピング中に NEAR アカウントへのビューコールを行うことができますか？
+
+これはサポートされていません。この機能がインデックス作成に必要かどうかを評価しています。
+
+### NEAR サブグラフでデータソーステンプレートを使用できますか？
+
+これは現在サポートされていません。この機能がインデックス作成に必要かどうかを評価しています。
+
+### イーサリアムのサブグラフは「pending」と「current」バージョンをサポートしていますが、NEAR サブグラフの「pending」バージョンをデプロイするにはどうすればよいですか？
+
+「pending」は、NEAR サブグラフではまだサポートされていません。暫定的に、新しいバージョンを別の「named」サブグラフにデプロイし、それがチェーンヘッドと同期したときに、メインの「named」サブグラフに再デプロイすることができます。
+
+### NEAR サブグラフの構築に関する詳しい情報はどこで入手できますか？
+
+サブグラフの開発に関する一般的な質問であれば、[Developer documentation](/cookbook/quick-start)に多くの情報が掲載されています。それ以外の場合は、[The Graph Protocol Discord](https://discord.gg/vtvv7FP)に参加して#near チャンネルで質問するか、 near@thegraph.com にメールしてください。
+
+## 参考文献
+
+- [NEAR developer documentation](https://docs.near.org/docs/develop/basics/getting-started)

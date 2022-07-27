@@ -145,7 +145,7 @@ export const MDXLayout = ({ pagePath, navItems, frontmatter, outline, children }
         <div
           sx={{
             display: ['flex', null, null, 'grid'],
-            gridTemplateColumns: '216px auto 216px',
+            gridTemplateColumns: '244px auto 216px',
             flexDirection: 'column',
           }}
         >

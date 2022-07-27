@@ -1,19 +1,34 @@
 import { NavItemDefinition } from './types'
 import { AppLocale, translations } from '@/i18n'
 
-export const navigation: (locale: AppLocale) => NavItemDefinition[] = (locale) => [
+export const navigation = (locale: AppLocale): NavItemDefinition[] => [
   {
     slug: '',
   },
   {
-    title: translations[locale].global.aboutTheGraph,
+    divider: true,
+  },
+  {
     slug: 'about',
+  },
+  {
+    title: translations[locale].global.navigation.theGraphNetwork,
+    slug: 'network',
     children: [
       {
-        slug: 'introduction',
+        slug: 'overview',
       },
       {
-        slug: 'network',
+        slug: 'indexing',
+      },
+      {
+        slug: 'delegating',
+      },
+      {
+        slug: 'curating',
+      },
+      {
+        slug: 'explorer',
       },
     ],
   },
@@ -21,107 +36,101 @@ export const navigation: (locale: AppLocale) => NavItemDefinition[] = (locale) =
     divider: true,
   },
   {
-    title: translations[locale].global.developer,
-    slug: 'developer',
+    heading: translations[locale].global.navigation.subgraphs,
+  },
+  {
+    title: translations[locale].global.navigation.developing,
+    slug: 'developing',
     children: [
       {
-        slug: 'quick-start',
+        slug: 'supported-networks',
       },
       {
-        slug: 'define-subgraph-hosted',
+        slug: 'defining-a-subgraph',
       },
       {
-        slug: 'create-subgraph-hosted',
-      },
-      {
-        slug: 'publish-subgraph',
-      },
-      {
-        slug: 'query-the-graph',
-      },
-      {
-        slug: 'querying-from-your-app',
-      },
-      {
-        slug: 'distributed-systems',
+        slug: 'creating-a-subgraph',
       },
       {
         slug: 'assemblyscript-api',
       },
       {
-        slug: 'assemblyscript-migration-guide',
+        slug: 'unit-testing-framework',
       },
       {
-        slug: 'graphql-api',
-      },
-      {
-        slug: 'matchstick',
-      },
-      {
-        slug: 'subgraph-debug-forking',
-      },
-      {
-        slug: 'deprecating-a-subgraph',
-      },
-      {
-        slug: 'developer-faq',
+        slug: 'developer-faqs',
       },
     ],
   },
   {
-    slug: 'indexing',
-  },
-  {
-    slug: 'delegating',
-  },
-  {
-    slug: 'curating',
-  },
-  {
-    divider: true,
-  },
-  {
-    title: 'Subgraph Studio',
-    slug: 'studio',
+    title: translations[locale].global.navigation.deploying,
+    slug: 'deploying',
     children: [
       {
         slug: 'subgraph-studio',
       },
       {
-        slug: 'deploy-subgraph-studio',
+        slug: 'deploying-a-subgraph-to-studio',
       },
       {
-        slug: 'billing',
+        slug: 'subgraph-studio-faqs',
+      },
+      {
+        slug: 'hosted-service',
+      },
+      {
+        slug: 'deploying-a-subgraph-to-hosted',
+      },
+    ],
+  },
+  {
+    title: translations[locale].global.navigation.publishing,
+    slug: 'publishing',
+    children: [
+      {
+        slug: 'publishing-a-subgraph',
+      },
+    ],
+  },
+  {
+    title: translations[locale].global.navigation.managing,
+    slug: 'managing',
+    children: [
+      {
+        slug: 'transferring-subgraph-ownership',
+      },
+      {
+        slug: 'deprecating-a-subgraph',
+      },
+    ],
+  },
+  {
+    title: translations[locale].global.navigation.querying,
+    slug: 'querying',
+    children: [
+      {
+        slug: 'querying-the-graph',
       },
       {
         slug: 'managing-api-keys',
       },
       {
-        slug: 'studio-faq',
+        slug: 'querying-from-an-application',
       },
       {
-        slug: 'transferring-subgraph-ownership',
-      },
-    ],
-  },
-  {
-    slug: 'explorer',
-  },
-  {
-    title: 'Hosted Service',
-    slug: 'hosted-service',
-    children: [
-      {
-        slug: 'what-is-hosted-service',
+        slug: 'querying-best-practices',
       },
       {
-        slug: 'deploy-subgraph-hosted',
+        slug: 'distributed-systems',
       },
       {
-        slug: 'query-hosted-service',
+        slug: 'graphql-api',
       },
       {
-        slug: 'migrating-subgraph',
+        slug: 'querying-the-hosted-service',
+      },
+      {
+        slug: 'billing',
       },
     ],
   },
@@ -129,9 +138,21 @@ export const navigation: (locale: AppLocale) => NavItemDefinition[] = (locale) =
     divider: true,
   },
   {
-    title: translations[locale].global.supportedNetworks,
-    slug: 'supported-networks',
+    title: translations[locale].global.navigation.cookbook,
+    slug: 'cookbook',
     children: [
+      {
+        slug: 'quick-start',
+      },
+      {
+        slug: 'migrating-a-subgraph',
+      },
+      {
+        slug: 'multisig',
+      },
+      {
+        slug: 'subgraph-debug-forking',
+      },
       {
         slug: 'near',
       },
@@ -140,6 +161,18 @@ export const navigation: (locale: AppLocale) => NavItemDefinition[] = (locale) =
       },
       {
         slug: 'arweave',
+      },
+    ],
+  },
+  {
+    divider: true,
+  },
+  {
+    title: translations[locale].global.navigation.releaseNotes,
+    slug: 'release-notes',
+    children: [
+      {
+        slug: 'assemblyscript-migration-guide',
       },
     ],
   },

@@ -13,7 +13,7 @@ This project is built on [Next.js](https://nextjs.org/). You can run it on your 
 First, clone the repo:
 
 ```bash
-git clone git@github.com:graphprotocol/docs.git
+git clone https://github.com/graphprotocol/docs.git
 ```
 
 Make sure you are inside the folder:

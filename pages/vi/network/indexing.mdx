@@ -1,0 +1,672 @@
+---
+title: Indexer
+---
+
+import { Difficulty } from '@/components'
+
+Indexer là những người vận hành node (node operator) trong Mạng The Graph có stake Graph Token (GRT) để cung cấp các dịch vụ indexing và xử lý truy vấn. Indexers kiếm được phí truy vấn và phần thưởng indexing cho các dịch vụ của họ. Họ cũng kiếm được tiền từ Rebate Pool (Pool Hoàn phí) được chia sẻ với tất cả những người đóng góp trong mạng tỷ lệ thuận với công việc của họ, tuân theo Chức năng Rebate Cobbs-Douglas.
+
+GRT được stake trong giao thức sẽ phải trải qua một khoảng thời gian chờ "tan băng" (thawing period) và có thể bị cắt nếu Indexer có ác ý và cung cấp dữ liệu không chính xác cho các ứng dụng hoặc nếu họ index không chính xác. Indexer cũng có thể được ủy quyền stake từ Delegator, để đóng góp vào mạng.
+
+Indexer chọn các subgraph để index dựa trên tín hiệu curation của subgraph, trong đó Curator stake GRT để chỉ ra subgraph nào có chất lượng cao và cần được ưu tiên. Bên tiêu dùng (ví dụ: ứng dụng) cũng có thể đặt các tham số (parameter) mà Indexer xử lý các truy vấn cho các subgraph của họ và đặt các tùy chọn cho việc định giá phí truy vấn.
+
+<Difficulty level="ADVANCED" />
+
+## CÂU HỎI THƯỜNG GẶP
+
+### Lượng stake tối thiểu cần thiết để trở thành một indexer trên mạng là bao nhiêu?
+
+Lượng stake tối thiểu cho một indexer hiện được đặt là 100K GRT.
+
+### Các nguồn doanh thu cho indexer là gì?
+
+**Hoàn phí truy vấn** - Thanh toán cho việc phục vụ các truy vấn trên mạng. Các khoản thanh toán này được dàn xếp thông qua các state channel giữa indexer và cổng. Mỗi yêu cầu truy vấn từ một cổng chứa một khoản thanh toán và phản hồi tương ứng là bằng chứng về tính hợp lệ của kết quả truy vấn.
+
+**Phần thưởng Indexing** - Được tạo ra thông qua lạm phát trên toàn giao thức hàng năm 3%, phần thưởng indexing được phân phối cho các indexer đang lập chỉ mục các triển khai subgraph cho mạng lưới.
+
+### Phần thưởng được phân phối như thế nào?
+
+Phần thưởng Indexing đến từ lạm phát giao thức được đặt thành 3% phát hành hàng năm. Chúng được phân phối trên các subgraph dựa trên tỷ lệ của tất cả các tín hiệu curation trên mỗi subgraph, sau đó được phân phối theo tỷ lệ cho các indexers dựa trên số stake được phân bổ của họ trên subgraph đó. **Việc phân bổ phải được kết thúc với bằng chứng lập chỉ mục (proof of indexing - POI) hợp lệ đáp ứng các tiêu chuẩn do điều lệ trọng tài đặt ra để đủ điều kiện nhận phần thưởng**
+
+Nhiều công cụ đã được cộng đồng tạo ra để tính toán phần thưởng; bạn sẽ tìm thấy một bộ sưu tập của chúng được sắp xếp trong [Bộ sưu tập Hướng dẫn cộng đồng](https://www.notion.so/Community-Guides-abbb10f4dba040d5ba81648ca093e70c). Bạn cũng có thể tìm thấy danh sách cập nhật mới nhất các công cụ trong các kênh #delegators và #indexers trên [server Discord](https://discord.gg/vtvv7FP).
+
+### Bằng chứng lập chỉ mục (proof of indexing - POI) là gì?
+
+POI được sử dụng trong mạng để xác minh rằng một indexer đang lập chỉ mục các subgraph mà họ đã phân bổ. POI cho khối đầu tiên của epoch hiện tại phải được gửi khi kết thúc phân bổ cho phân bổ đó để đủ điều kiện nhận phần thưởng indexing. POI cho một khối là một thông báo cho tất cả các giao dịch lưu trữ thực thể để triển khai một subgraph cụ thể lên đến và bao gồm khối đó.
+
+### Khi nào Phần thưởng indexing được phân phối?
+
+Việc phân bổ liên tục tích lũy phần thưởng khi chúng đang hoạt động. Phần thưởng được thu thập bởi các indexer và phân phối bất cứ khi nào việc phân bổ của họ bị đóng lại. Điều đó xảy ra theo cách thủ công, bất cứ khi nào indexer muốn buộc đóng chúng hoặc sau 28 epoch, delegator có thể đóng phân bổ cho indexer, nhưng điều này dẫn đến không có phần thưởng nào được tạo ra. 28 epoch là thời gian tồn tại của phân bổ tối đa (hiện tại, một epoch kéo dài trong ~ 24 giờ).
+
+### Có thể giám sát phần thưởng indexer đang chờ xử lý không?
+
+Hợp đồng RewardsManager có có một chức năng [getRewards](https://github.com/graphprotocol/contracts/blob/master/contracts/rewards/RewardsManager.sol#L317) chỉ đọc có thể được sử dụng để kiểm tra phần thưởng đang chờ để phân bổ cụ thể.
+
+Nhiều trang tổng quan (dashboard) do cộng đồng tạo bao gồm các giá trị phần thưởng đang chờ xử lý và bạn có thể dễ dàng kiểm tra chúng theo cách thủ công bằng cách làm theo các bước sau:
+
+1. Truy vấn [mainnet subgraph](https://thegraph.com/hosted-service/subgraph/graphprotocol/graph-network-mainnet) để nhận ID cho tất cả phần phân bổ đang hoạt động:
+
+```graphql
+query indexerAllocations {
+  indexer(id: "<INDEXER_ADDRESS>") {
+    allocations {
+      activeForIndexer {
+        allocations {
+          id
+        }
+      }
+    }
+  }
+}
+```
+
+Sử dụng Etherscan để gọi `getRewards()`:
+
+- Điều hướng đến [giao diện Etherscan đến hợp đồng Rewards](https://etherscan.io/address/0x9Ac758AB77733b4150A901ebd659cbF8cB93ED66#readProxyContract)
+
+* Để gọi `getRewards()`:
+  - Mở rộng **10. getRewards** thả xuống.
+  - Nhập **allocationID** trong đầu vào.
+  - Nhấn **Nút** Truy vấn.
+
+### Tranh chấp là gì và tôi có thể xem chúng ở đâu?
+
+Các truy vấn và phần phân bổ của Indexer đều có thể bị tranh chấp trên The Graph trong thời gian tranh chấp. Thời hạn tranh chấp khác nhau, tùy thuộc vào loại tranh chấp. Truy vấn / chứng thực có cửa sổ tranh chấp 7 epoch (kỷ nguyên), trong khi phần phân bổ có 56 epoch. Sau khi các giai đoạn này trôi qua, không thể mở các tranh chấp đối với phần phân bổ hoặc truy vấn. Khi một tranh chấp được mở ra, các Fisherman yêu cầu một khoản stake tối thiểu là 10.000 GRT, sẽ bị khóa cho đến khi tranh chấp được hoàn tất và giải pháp đã được đưa ra. Fisherman là bất kỳ người tham gia mạng nào mà đã mở ra tranh chấp.
+
+Tranh chấp có **ba** kết quả có thể xảy ra, phần tiền gửi của Fisherman cũng vậy.
+
+- Nếu tranh chấp bị từ chối, GRT do Fisherman gửi sẽ bị đốt, và Indexer tranh chấp sẽ không bị phạt cắt giảm (slashed).
+- Nếu tranh chấp được giải quyết dưới dạng hòa, tiền gửi của Fisherman sẽ được trả lại, và Indexer bị tranh chấp sẽ không bị phạt cắt giảm (slashed).
+- Nếu tranh chấp được chấp nhận, lượng GRT do Fisherman đã gửi sẽ được trả lại, Indexer bị tranh chấp sẽ bị cắt và Fisherman sẽ kiếm được 50% GRT đã bị phạt cắt giảm (slashed).
+
+Tranh chấp có thể được xem trong giao diện người dùng trong trang hồ sơ của Indexer trong mục `Tranh chấp`.
+
+### Các khoản hoàn phí truy vấn là gì và chúng được phân phối khi nào?
+
+Phí truy vấn được cổng thu thập bất cứ khi nào một phần phân bổ được đóng và được tích lũy trong pool hoàn phí truy vấn của subgraph. Pool hoàn phí được thiết kế để khuyến khích Indexer phân bổ stake theo tỷ lệ thô với số phí truy vấn mà họ kiếm được cho mạng. Phần phí truy vấn trong pool được phân bổ cho một indexer cụ thể được tính bằng cách sử dụng Hàm Sản xuất Cobbs-Douglas; số tiền được phân phối cho mỗi indexer là một chức năng của phần đóng góp của họ cho pool và việc phân bổ stake của họ trên subgraph.
+
+Khi một phần phân bổ đã được đóng và thời gian tranh chấp đã qua, indexer sẽ có thể nhận các khoản hoàn phí. Khi yêu cầu, các khoản hoàn phí truy vấn được phân phối cho indexer và delegator của họ dựa trên mức cắt giảm phí truy vấn và tỷ lệ pool ủy quyền (delegation).
+
+### Cắt giảm phí truy vấn và cắt giảm phần thưởng indexing là gì?
+
+Giá trị `queryFeeCut` và `indexingRewardCut` là các tham số delegation mà Indexer có thể đặt cùng với cooldownBlocks để kiểm soát việc phân phối GRT giữa indexer và delegator của họ. Xem các bước cuối cùng trong [Staking trong Giao thức](/network/indexing#stake-in-the-protocol) để được hướng dẫn về cách thiết lập các tham số delegation.
+
+- **queryFeeCut** - % hoàn phí truy vấn được tích lũy trên một subgraph sẽ được phân phối cho indexer. Nếu thông số này được đặt là 95%, indexer sẽ nhận được 95% của pool hoàn phí truy vấn khi một phần phân bổ được yêu cầu với 5% còn lại sẽ được chuyển cho delegator.
+
+- **indexingRewardCut** - % phần thưởng indexing được tích lũy trên một subgraph sẽ được phân phối cho indexer. Nếu thông số này được đặt là 95%, indexer sẽ nhận được 95% của pool phần thưởng indexing khi một phần phân bổ được đóng và các delegator sẽ chia 5% còn lại.
+
+### Làm thế nào để indexer biết những subgraph nào cần index?
+
+Indexer có thể tự phân biệt bản thân bằng cách áp dụng các kỹ thuật nâng cao để đưa ra quyết định index subgraph nhưng để đưa ra ý tưởng chung, chúng ta sẽ thảo luận một số số liệu chính được sử dụng để đánh giá các subgraph trong mạng:
+
+- **Tín hiệu curation** - Tỷ lệ tín hiệu curation mạng được áp dụng cho một subgraph cụ thể là một chỉ báo tốt về mức độ quan tâm đến subgraph đó, đặc biệt là trong giai đoạn khởi động khi khối lượng truy vấn đang tăng lên.
+
+- **Phí truy vấn đã thu** - Dữ liệu lịch sử về khối lượng phí truy vấn được thu thập cho một subgraph cụ thể là một chỉ báo tốt về nhu cầu trong tương lai.
+
+- **Số tiền được stake** - Việc theo dõi hành vi của những indexer khác hoặc xem xét tỷ lệ tổng stake được phân bổ cho subgraph cụ thể có thể cho phép indexer giám sát phía nguồn cung cho các truy vấn subgraph để xác định các subgraph mà mạng đang thể hiện sự tin cậy hoặc các subgraph có thể cho thấy nhu cầu nguồn cung nhiều hơn.
+
+- **Subgraph không có phần thưởng indexing** - Một số subgraph không tạo ra phần thưởng indexing chủ yếu vì chúng đang sử dụng các tính năng không được hỗ trợ như IPFS hoặc vì chúng đang truy vấn một mạng khác bên ngoài mainnet. Bạn sẽ thấy một thông báo trên một subgraph nếu nó không tạo ra phần thưởng indexing.
+
+### Có các yêu cầu gì về phần cứng (hardware)?
+
+- **Nhỏ** - Đủ để bắt đầu index một số subgraph, có thể sẽ cần được mở rộng.
+- **Tiêu chuẩn** - Thiết lập mặc định, đây là những gì được sử dụng trong bản kê khai (manifest) triển khai mẫu k8s/terraform.
+- **Trung bình** - Công cụ indexing production hỗ trợ 100 đồ subgraph và 200-500 yêu cầu mỗi giây.
+- **Lớn** - Được chuẩn bị để index tất cả các subgraph hiện đang được sử dụng và phục vụ các yêu cầu cho lưu lượng truy cập liên quan.
+
+| Cài đặt | Postgres<br />(CPUs) | Postgres<br />(bộ nhớ tính bằng GB) | Postgres<br />(đĩa tính bằng TB) | VMs<br />(CPUs) | VMs<br />(bộ nhớ tính bằng GB) |
+| --- | :-: | :-: | :-: | :-: | :-: |
+| Nhỏ | 4 | 8 | 1 | 4 | 16 |
+| Tiêu chuẩn | 8 | 30 | 1 | 12 | 48 |
+| Trung bình | 16 | 64 | 2 | 32 | 64 |
+| Lớn | 72 | 468 | 3.5 | 48 | 184 |
+
+### Một số biện pháp phòng ngừa bảo mật cơ bản mà indexer nên thực hiện là gì?
+
+- **Ví Operator** - Thiết lập ví của operator là một biện pháp phòng ngừa quan trọng vì nó cho phép indexer duy trì sự tách biệt giữa các khóa kiểm soát stake của họ và những khóa kiểm soát hoạt động hàng ngày. Xem [Stake trong Giao thức](/network/indexing#stake-in-the-protocol) để được hướng dẫn.
+
+- **Tường lửa** - Chỉ dịch vụ indexer cần được hiển thị công khai và cần đặc biệt chú ý đến việc khóa các cổng quản trị và quyền truy cập cơ sở dữ liệu: điểm cuối The Graph Node JSON-RPC (cổng mặc định: 8030), điểm cuối API quản lý indexer (cổng mặc định: 18000), và điểm cuối cơ sở dữ liệu Postgres (cổng mặc định: 5432) không được để lộ.
+
+## Cơ sở hạ tầng
+
+Tại trung tâm của cơ sở hạ tầng của indexer là Graph Node theo dõi Ethereum, trích xuất và tải dữ liệu theo định nghĩa subgraph và phục vụ nó như một [GraphQL API](/about#how-the-graph-works). Graph Node cần được kết nối với điểm cuối node Ethereum EVM và node IPFS để tìm nguồn cung cấp dữ liệu; một cơ sở dữ liệu PostgreSQL cho kho lưu trữ của nó; và các thành phần indexer tạo điều kiện cho các tương tác của nó với mạng.
+
+- **Cơ sở dữ liệu PostgreSQL** - Kho lưu trữ chính cho Graph Node, đây là nơi lưu trữ dữ liệu subgraph. Dịch vụ indexer và đại lý cũng sử dụng cơ sở dữ liệu để lưu trữ dữ liệu kênh trạng thái (state channel), mô hình chi phí và quy tắc indexing.
+
+- **Điểm cuối Ethereum** - Một điểm cuối cho thấy API Ethereum JSON-RPC. Điều này có thể ở dạng một ứng dụng khách Ethereum duy nhất hoặc nó có thể là một thiết lập phức tạp hơn để tải số dư trên nhiều máy khách. Điều quan trọng cần lưu ý là các subgraph nhất định sẽ yêu cầu các khả năng cụ thể của ứng dụng khách Ethereum như chế độ lưu trữ và API truy tìm.
+
+- **IPFS node (phiên bản nhỏ hơn 5)** - Siêu dữ liệu triển khai subgraph được lưu trữ trên mạng IPFS. Node The Graph chủ yếu truy cập vào node IPFS trong quá trình triển khai subgraph để tìm nạp tệp kê khai (manifest) subgraph và tất cả các tệp được liên kết. Indexers mạng lưới không cần lưu trữ node IPFS của riêng họ, một node IPFS cho mạng lưới được lưu trữ tại https://ipfs.network.thegraph.com.
+
+- **Dịch vụ Indexer** - Xử lý tất cả các giao tiếp bên ngoài được yêu cầu với mạng. Chia sẻ các mô hình chi phí và trạng thái indexing, chuyển các yêu cầu truy vấn từ các cổng đến Node The Graph và quản lý các khoản thanh toán truy vấn qua các kênh trạng thái với cổng.
+
+- **Đại lý Indexer ** - Tạo điều kiện thuận lợi cho các tương tác của Indexer trên blockchain bao gồm những việc như đăng ký trên mạng lưới, quản lý triển khai subgraph đối với Node The Graph của nó và quản lý phân bổ. Máy chủ số liệu Prometheus - Các thành phần Node The Graph và Indexer ghi các số liệu của chúng vào máy chủ số liệu.
+
+- **Máy chủ số liệu Prometheus** - Các thành phần Node The Graph và Indexer ghi các số liệu của chúng vào máy chủ số liệu.
+
+Lưu ý: Để hỗ trợ mở rộng quy mô nhanh, bạn nên tách các mối quan tâm về truy vấn và indexing giữa các nhóm node khác nhau: node truy vấn và node index.
+
+### Tổng quan về các cổng
+
+> **Quan trọng**: Hãy cẩn thận về việc để lộ các cổng 1 cách công khai - **cổng quản lý** nên được giữ kín. Điều này bao gồm JSON-RPC Node The Graph và các điểm cuối quản lý indexer được trình bày chi tiết bên dưới.
+
+#### Graph Node
+
+| Cổng | Mục đích | Tuyến | Đối số CLI | Biến môi trường |
+| --- | --- | --- | --- | --- |
+| 8000 | Máy chủ GraphQL HTTP<br />(cho các truy vấn subgraph) | /subgraphs/id/...<br />/subgraphs/name/.../... | --http-port | - |
+| 8001 | GraphQL WS<br />(cho các đăng ký subgraph) | /subgraphs/id/...<br />/subgraphs/name/.../... | --ws-port | - |
+| 8020 | JSON-RPC<br />(để quản lý triển khai) | / | --admin-port | - |
+| 8030 | API trạng thái lập chỉ mục Subgraph | /graphql | --index-node-port | - |
+| 8040 | Số liệu Prometheus | /metrics | --metrics-port | - |
+
+#### Dịch vụ Indexer
+
+| Cổng | Mục đích | Tuyến | Đối số CLI | Biến môi trường |
+| --- | --- | --- | --- | --- |
+| 7600 | Máy chủ GraphQL HTTP<br />(cho các truy vấn subgraph có trả phí) | /subgraphs/id/...<br />/status<br />/channel-messages-inbox | --port | `INDEXER_SERVICE_PORT` |
+| 7300 | Số liệu Prometheus | /metrics | --metrics-port | - |
+
+#### Đại lý Indexer
+
+| Cổng | Mục đích            | Tuyến | Đối số CLI                | Biến môi trường                         |
+| ---- | ------------------- | ----- | ------------------------- | --------------------------------------- |
+| 8000 | API quản lý Indexer | /     | --indexer-management-port | `INDEXER_AGENT_INDEXER_MANAGEMENT_PORT` |
+
+### Thiết lập cơ sở hạ tầng máy chủ bằng Terraform trên Google Cloud
+
+#### Cài đặt điều kiện tiên quyết
+
+- Google Cloud SDK
+- Công cụ dòng lệnh Kubectl
+- Terraform
+
+#### Tạo một dự án Google Cloud
+
+- Sao chép hoặc điều hướng đến kho lưu trữ (repository) của indexer.
+
+- Điều hướng đến thư mục ./terraform, đây là nơi tất cả các lệnh sẽ được thực thi.
+
+```sh
+cd địa hình
+```
+
+- Xác thực với Google Cloud và tạo một dự án mới.
+
+```sh
+gcloud auth login
+project=<PROJECT_NAME>
+gcloud projects create --enable-cloud-apis $project
+```
+
+- Sử dụng \[billing page\](billing page) của Google Cloud Consolde để cho phép thanh toán cho dự án mới.
+
+- Tạo một cấu hình Google Cloud.
+
+```sh
+proj_id=$(gcloud projects list --format='get(project_id)' --filter="name=$project")
+gcloud config configurations create $project
+gcloud config set project "$proj_id"
+gcloud config set compute/region us-central1
+gcloud config set compute/zone us-central1-a
+```
+
+- Bật các API Google Cloud được yêu cầu.
+
+```sh
+gcloud services enable compute.googleapis.com
+gcloud services enable container.googleapis.com
+gcloud services enable servicenetworking.googleapis.com
+gcloud services enable sqladmin.googleapis.com
+```
+
+- Tạo một tài khoản dịch vụ.
+
+```sh
+svc_name=<SERVICE_ACCOUNT_NAME>
+gcloud iam service-accounts create $svc_name \
+  --description="Service account for Terraform" \
+  --display-name="$svc_name"
+gcloud iam service-accounts list
+# Get the email of the service account from the list
+svc=$(gcloud iam service-accounts list --format='get(email)'
+--filter="displayName=$svc_name")
+gcloud iam service-accounts keys create .gcloud-credentials.json \
+  --iam-account="$svc"
+gcloud projects add-iam-policy-binding $proj_id \
+  --member serviceAccount:$svc \
+  --role roles/editor
+```
+
+- Bật tính năng ngang hàng (peering) giữa cơ sở dữ liệu và cụm Kubernetes sẽ được tạo trong bước tiếp theo.
+
+```sh
+gcloud compute addresses create google-managed-services-default \
+  --prefix-length=20 \
+  --purpose=VPC_PEERING \
+  --network default \
+  --global \
+  --description 'IP Range for peer networks.'
+gcloud services vpc-peerings connect \
+  --network=default \
+  --ranges=google-managed-services-default
+```
+
+- Tạo tệp cấu hình terraform tối thiểu (cập nhật nếu cần).
+
+```sh
+indexer=<INDEXER_NAME>
+cat > terraform.tfvars <<EOF
+project = "$proj_id"
+indexer = "$indexer"
+database_password = "<database passowrd>"
+EOF
+```
+
+#### Sử dụng Terraform để tạo cơ sở hạ tầng
+
+Trước khi chạy bất kỳ lệnh nào, hãy đọc qua [variables.tf](https://github.com/graphprotocol/indexer/blob/main/terraform/variables.tf) và tạo một tệp `terraform.tfvars` trong thư mục này (hoặc sửa đổi thư mục chúng ta đã tạo ở bước vừa rồi). Đối với mỗi biến mà bạn muốn ghi đè mặc định hoặc nơi bạn cần đặt giá trị, hãy nhập cài đặt vào `terraform.tfvars`.
+
+- Chạy các lệnh sau để tạo cơ sở hạ tầng.
+
+```sh
+# Cài đặt các Plugins được yêu cầu
+terraform init
+
+# Xem kế hoạch cho các tài nguyên sẽ được tạo
+terraform plan
+
+# Tạo tài nguyên (dự kiến mất đến 30 phút)
+terraform apply
+```
+
+Tải xuống thông tin đăng nhập cho cụm mới vào `~/.kube/config` và đặt nó làm ngữ cảnh mặc định của bạn.
+
+```sh
+gcloud container clusters get-credentials $indexer
+kubectl config use-context $(kubectl config get-contexts --output='name'
+| grep $indexer)
+```
+
+#### Tạo các thành phần Kubernetes cho indexer
+
+- Sao chép thư mục `k8s/overlays` đến một thư mục mới `$dir,` và điều chỉnh `bases` vào trong `$dir/kustomization.yaml` để nó chỉ đến thư mục `k8s/base`.
+
+- Đọc qua tất cả các tệp trong `$dir` và điều chỉnh bất kỳ giá trị nào như được chỉ ra trong nhận xét.
+
+Triển khai tất cả các tài nguyên với `kubectl apply -k $dir`.
+
+### Graph Node
+
+[Graph Node](https://github.com/graphprotocol/graph-node) là một triển khai Rust mã nguồn mở mà sự kiện tạo nguồn cho blockchain Ethereum để cập nhật một cách xác định kho dữ liệu có thể được truy vấn thông qua điểm cuối GraphQL. Các nhà phát triển sử dụng các subgraph để xác định subgraph của họ và một tập hợp các ánh xạ để chuyển đổi dữ liệu có nguồn gốc từ blockchain và Graph Node xử lý việc đồng bộ hóa toàn bộ chain, giám sát các khối mới và phân phát nó qua một điểm cuối GraphQL.
+
+#### Bắt đầu từ nguồn
+
+#### Cài đặt điều kiện tiên quyết
+
+- **Rust**
+
+- **PostgreSQL**
+
+- **IPFS**
+
+- **Yêu cầu bổ sung cho người dùng Ubuntu** - Để chạy Graph Node trên Ubuntu, có thể cần một số gói bổ sung.
+
+```sh
+sudo apt-get install -y clang libpg-dev libssl-dev pkg-config
+```
+
+#### Cài đặt
+
+1. Khởi động máy chủ cơ sở dữ liệu PostgreSQL
+
+```sh
+initdb -D .postgres
+pg_ctl -D .postgres -l logfile start
+createdb graph-node
+```
+
+2. Nhân bản [Graph Node](https://github.com/graphprotocol/graph-node) repo và xây dựng nguồn bằng cách chạy `cargo build`
+
+3. Bây giờ tất cả các phụ thuộc đã được thiết lập, hãy khởi động Graph Node:
+
+```sh
+cargo run -p graph-node --release -- \
+  --postgres-url postgresql://[USERNAME]:[PASSWORD]@localhost:5432/graph-node \
+  --ethereum-rpc [NETWORK_NAME]:[URL] \
+  --ipfs https://ipfs.network.thegraph.com
+```
+
+#### Bắt đầu sử dụng Docker
+
+#### Điều kiện tiên quyết
+
+- **Ethereum node** - Theo mặc định, thiết lập soạn thư docker sẽ sử dụng mainnet: [http://host.docker.internal:8545](http://host.docker.internal:8545) để kết nối với node Ethereum trên máy chủ của bạn. Bạn có thể thay thế tên và url mạng này bằng cách cập nhật `docker-compose.yaml`.
+
+#### Cài đặt
+
+1. Nhân bản Graph Node và điều hướng đến thư mục Docker:
+
+```sh
+git clone http://github.com/graphprotocol/graph-node
+cd graph-node/docker
+```
+
+2. Chỉ dành cho người dùng linux - Sử dụng địa chỉ IP máy chủ thay vì `host.docker.internal` trong `docker-compose.yaml` bằng cách sử dụng tập lệnh bao gồm:
+
+```sh
+./setup.sh
+```
+
+3. Bắt đầu một Graph Node cục bộ sẽ kết nối với điểm cuối Ethereum của bạn:
+
+```sh
+docker-compose up
+```
+
+### Các thành phần của Indexer
+
+Để tham gia thành công vào mạng này, đòi hỏi sự giám sát và tương tác gần như liên tục, vì vậy chúng tôi đã xây dựng một bộ ứng dụng Typescript để tạo điều kiện cho Indexer tham gia mạng. Có ba thành phần của trình indexer:
+
+- **Đại ly Indexer** - Đại lý giám sát mạng và cơ sở hạ tầng của chính Indexer và quản lý việc triển khai subgraph nào được lập chỉ mục và phân bổ trên chain và số lượng được phân bổ cho mỗi.
+
+- **Dịch vụ Indexer** - Thành phần duy nhất cần được hiển thị bên ngoài, dịch vụ chuyển các truy vấn subgraph đến graph node, quản lý các kênh trạng thái cho các khoản thanh toán truy vấn, chia sẻ thông tin ra quyết định quan trọng cho máy khách như các cổng.
+
+- **Indexer CLI** - Giao diện dòng lệnh để quản lý đại lý indexer. Nó cho phép indexer quản lý các mô hình chi phí và các quy tắc lập chỉ mục.
+
+#### Bắt đầu
+
+Đại lý indexer và dịch vụ indexer nên được đặt cùng vị trí với cơ sở hạ tầng Graph Node của bạn. Có nhiều cách để thiết lập môi trường thực thi ảo cho bạn các thành phần của indexer; ở đây chúng tôi sẽ giải thích cách chạy chúng trên baremetal bằng cách sử dụng gói hoặc nguồn NPM hoặc thông qua kubernetes và docker trên Google Cloud Kubernetes Engine. Nếu các ví dụ thiết lập này không được dịch tốt sang cơ sở hạ tầng của bạn, có thể sẽ có một hướng dẫn cộng đồng để tham khảo, hãy tìm hiểu thêm tại [Discord](https://thegraph.com/discord)! Hãy nhớ [stake trong giao thứcl](/network/indexing#stake-in-the-protocol) trước khi bắt đầu các thành phần indexer của bạn!
+
+#### Từ các gói NPM
+
+```sh
+npm install -g @graphprotocol/indexer-service
+npm install -g @graphprotocol/indexer-agent
+
+# Indexer CLI is a plugin for Graph CLI, so both need to be installed:
+npm install -g @graphprotocol/graph-cli
+npm install -g @graphprotocol/indexer-cli
+
+# Indexer service
+graph-indexer-service start ...
+
+# Indexer agent
+graph-indexer-agent start ...
+
+# Indexer CLI
+#Forward the port of your agent pod if using Kubernetes
+kubectl port-forward pod/POD_ID 18000:8000
+graph indexer connect http://localhost:18000/
+graph indexer ...
+```
+
+#### Từ nguồn
+
+```sh
+# Từ Repo root directory
+yarn
+
+# Dịch vụ Indexer
+cd packages/indexer-service
+./bin/graph-indexer-service start ...
+
+# Đại lý Indexer
+cd packages/indexer-agent
+./bin/graph-indexer-service start ...
+
+# Indexer CLI
+cd packages/indexer-cli
+./bin/graph-indexer-cli indexer connect http://localhost:18000/
+./bin/graph-indexer-cli indexer ...
+```
+
+#### Sử dụng docker
+
+- Kéo hình ảnh từ sổ đăng ký
+
+```sh
+docker pull ghcr.io/graphprotocol/indexer-service:latest
+docker pull ghcr.io/graphprotocol/indexer-agent:latest
+```
+
+Hoặc xây dựng hình ảnh cục bộ từ nguồn
+
+```sh
+# Dịch vụ Indexer
+docker build \
+  --build-arg NPM_TOKEN=<npm-token> \
+  -f Dockerfile.indexer-service \
+  -t indexer-service:latest \
+# Đại lý Indexer
+docker build \
+  --build-arg NPM_TOKEN=<npm-token> \
+  -f Dockerfile.indexer-agent \
+  -t indexer-agent:latest \
+```
+
+- Chạy các thành phần
+
+```sh
+docker run -p 7600:7600 -it indexer-service:latest ...
+docker run -p 18000:8000 -it indexer-agent:latest ...
+```
+
+**LƯU Ý**: Sau khi khởi động vùng chứa, dịch vụ indexer sẽ có thể truy cập được tại [http://localhost:7600](http://localhost:7600) và đại lý indexer sẽ hiển thị API quản lý indexer tại [http://localhost:18000/](http://localhost:18000/).
+
+#### Sử dụng K8s and Terraform
+
+Xem phần [Thiết lập Cơ sở Hạ tầng Máy chủ bằng Terraform trên Google Cloud](/network/indexing#setup-server-infrastructure-using-terraform-on-google-cloud)
+
+#### Sử dụng
+
+> **LƯU Ý**: Tất cả các biến cấu hình thời gian chạy có thể được áp dụng dưới dạng tham số cho lệnh khi khởi động hoặc sử dụng các biến môi trường của định dạng `COMPONENT_NAME_VARIABLE_NAME`(ex. `INDEXER_AGENT_ETHEREUM`).
+
+#### Đại lý Indexer
+
+```sh
+graph-indexer-agent start \
+  --ethereum <MAINNET_ETH_ENDPOINT> \
+  --ethereum-network mainnet \
+  --mnemonic <MNEMONIC> \
+  --indexer-address <INDEXER_ADDRESS> \
+  --graph-node-query-endpoint http://localhost:8000/ \
+  --graph-node-status-endpoint http://localhost:8030/graphql \
+  --graph-node-admin-endpoint http://localhost:8020/ \
+  --public-indexer-url http://localhost:7600/ \
+  --indexer-geo-coordinates <YOUR_COORDINATES> \
+  --index-node-ids default \
+  --indexer-management-port 18000 \
+  --metrics-port 7040 \
+  --network-subgraph-endpoint https://gateway.network.thegraph.com/network \
+  --default-allocation-amount 100 \
+  --register true \
+  --inject-dai true \
+  --postgres-host localhost \
+  --postgres-port 5432 \
+  --postgres-username <DB_USERNAME> \
+  --postgres-password <DB_PASSWORD> \
+  --postgres-database indexer \
+  | pino-pretty
+```
+
+#### Dịch vụ Indexer
+
+```sh
+SERVER_HOST=localhost \
+SERVER_PORT=5432 \
+SERVER_DB_NAME=is_staging \
+SERVER_DB_USER=<DB_USERNAME> \
+SERVER_DB_PASSWORD=<DB_PASSWORD> \
+graph-indexer-service start \
+  --ethereum <MAINNET_ETH_ENDPOINT> \
+  --ethereum-network mainnet \
+  --mnemonic <MNEMONIC> \
+  --indexer-address <INDEXER_ADDRESS> \
+  --port 7600 \
+  --metrics-port 7300 \
+  --graph-node-query-endpoint http://localhost:8000/ \
+  --graph-node-status-endpoint http://localhost:8030/graphql \
+  --postgres-host localhost \
+  --postgres-port 5432 \
+  --postgres-username <DB_USERNAME> \
+  --postgres-password <DB_PASSWORD> \
+  --postgres-database is_staging \
+  --network-subgraph-endpoint https://gateway.network.thegraph.com/network \
+  | pino-pretty
+```
+
+#### Indexer CLI
+
+Indexer CLI là một plugin dành cho [`@graphprotocol/graph-cli`](https://www.npmjs.com/package/@graphprotocol/graph-cli) có thể truy cập trong terminal tại `graph indexer`.
+
+```sh
+graph indexer connect http://localhost:18000
+graph indexer status
+```
+
+#### Quản lý Indexer bằng cách sử dụng indexer CLI
+
+Đại lý indexer cần đầu vào từ một indexer để tự động tương tác với mạng thay mặt cho indexer. Cơ chế để xác định hành vi của đại lý indexer là **các quy tắc indexing**. Sử dụng **các quy tắc indexing** một indexer có thể áp dụng chiến lược cụ thể của họ để chọn các subgraph để lập chỉ mục và phục vụ các truy vấn. Các quy tắc được quản lý thông qua API GraphQL do đại lý phân phối và được gọi là API Quản lý Indexer. Công cụ được đề xuất để tương tác với **API Quản lý Indexer** là **Indexer CLI**, một extension cho **Graph CLI**.
+
+#### Sử dụng
+
+**Indexer CLI** kết nối với đại lý indexer, thường thông qua chuyển tiếp cổng (port-forwarding), vì vậy CLI không cần phải chạy trên cùng một máy chủ hoặc cụm. Để giúp bạn bắt đầu và cung cấp một số ngữ cảnh, CLI sẽ được mô tả ngắn gọn ở đây.
+
+- `graph indexer connect <url>` - Kết nối với API quản lý indexer. Thông thường, kết nối với máy chủ được mở thông qua chuyển tiếp cổng, vì vậy CLI có thể dễ dàng vận hành từ xa. (Ví dụ: `kubectl port-forward pod/<indexer-agent-pod> 8000:8000`)
+
+- `graph indexer rules get [options] <deployment-id< [<key1> ...]` - Lấy một hoặc nhiều quy tắc indexing bằng cách sử dụng `all` như là `<deployment-id>` để lấy tất cả các quy tắc, hoặc `global` để lấy các giá trị mặc định chung. Một đối số bổ sung`--merged` có thể được sử dụng để chỉ định rằng các quy tắc triển khai cụ thể được hợp nhất với quy tắc chung. Đây là cách chúng được áp dụng trong đại lý indexer.
+
+- `graph indexer rules set [options] <deployment-id> <key1> <value1> ...` - Đặt một hoặc nhiều quy tắc indexing.
+
+- `graph indexer rules start [options] <deployment-id>` - Bắt đầu indexing triển khai subgraph nếu có và đặt `decisionBasis` thành `always`, để đại lý indexer sẽ luôn chọn lập chỉ mục nó. Nếu quy tắc chung được đặt thành luôn thì tất cả các subgraph có sẵn trên mạng sẽ được lập chỉ mục.
+
+- `graph indexer rules stop [options] <deployment-id>` - Ngừng indexing triển khai và đặt `decisionBasis` không bao giờ, vì vậy nó sẽ bỏ qua triển khai này khi quyết định triển khai để lập chỉ mục.
+
+- `graph indexer rules maybe [options] <deployment-id>` — Đặt `thedecisionBasis` cho một triển khai thành `rules`, để đại lý indexer sẽ sử dụng các quy tắc indexing để quyết định có index việc triển khai này hay không.
+
+Tất cả các lệnh hiển thị quy tắc trong đầu ra có thể chọn giữa các định dạng đầu ra được hỗ trợ (`table`, `yaml`, and `json`) bằng việc sử dụng đối số `-output`.
+
+#### Các quy tắc indexing
+
+Các quy tắc Indexing có thể được áp dụng làm mặc định chung hoặc cho các triển khai subgraph cụ thể bằng cách sử dụng ID của chúng. Các trường `deployment` và `decisionBasis` là bắt buộc, trong khi tất cả các trường khác là tùy chọn. Khi quy tắc lập chỉ mục có `rules` như là `decisionBasis`, thì đại lý indexer sẽ so sánh các giá trị ngưỡng không null trên quy tắc đó với các giá trị được tìm nạp từ mạng để triển khai tương ứng. Nếu triển khai subgraph có các giá trị trên (hoặc thấp hơn) bất kỳ ngưỡng nào thì nó sẽ được chọn để index.
+
+Ví dụ: nếu quy tắc chung có `minStake` của **5** (GRT), bất kỳ triển khai subgraph nào có hơn 5 (GRT) stake được phân bổ cho nó sẽ được index. Các quy tắc ngưỡng bao gồm `maxAllocationPercentage`, `minSignal`, `maxSignal`, `minStake`, và `minAverageQueryFees`.
+
+Mô hình dữ liệu:
+
+```graphql
+type IndexingRule {
+  deployment: string
+  allocationAmount: string | null
+  parallelAllocations: number | null
+  decisionBasis: IndexingDecisionBasis
+  maxAllocationPercentage: number | null
+  minSignal: string | null
+  maxSignal: string | null
+  minStake: string | null
+  minAverageQueryFees: string | null
+  custom: string | null
+}
+
+IndexingDecisionBasis {
+  rules
+  never
+  always
+}
+```
+
+#### Các mô hình chi phí
+
+Mô hình chi phí cung cấp định giá động cho các truy vấn dựa trên thuộc tính thị trường và truy vấn. Dịch vụ Indexer chia sẻ mô hình chi phí với các cổng cho mỗi subgraph mà chúng dự định phản hồi các truy vấn. Đến lượt mình, các cổng sử dụng mô hình chi phí để đưa ra quyết định lựa chọn indexer cho mỗi truy vấn và để thương lượng thanh toán với những indexer đã chọn.
+
+#### Agora
+
+Ngôn ngữ Agora cung cấp một định dạng linh hoạt để khai báo các mô hình chi phí cho các truy vấn. Mô hình giá Agora là một chuỗi các câu lệnh thực thi theo thứ tự cho mỗi truy vấn cấp cao nhất trong một truy vấn GraphQL. Đối với mỗi truy vấn cấp cao nhất, câu lệnh đầu tiên phù hợp với nó xác định giá cho truy vấn đó.
+
+Một câu lệnh bao gồm một vị từ (predicate), được sử dụng để đối sánh các truy vấn GraphQL và một biểu thức chi phí mà khi được đánh giá sẽ xuất ra chi phí ở dạng GRT thập phân. Các giá trị ở vị trí đối số được đặt tên của một truy vấn có thể được ghi lại trong vị từ và được sử dụng trong biểu thức. Các Globals có thể được đặt và thay thế cho các phần giữ chỗ trong một biểu thức.
+
+Mô hình chi phí mẫu:
+
+```
+# Câu lệnh này ghi lại giá trị bỏ qua (skip),
+# sử dụng biểu thức boolean trong vị từ để khớp với các truy vấn cụ thể sử dụng `skip`
+# và một biểu thức chi phí để tính toán chi phí dựa trên giá trị `skip` và SYSTEM_LOAD global
+query { pairs(skip: $skip) { id } } when $skip > 2000 => 0.0001 * $skip * $SYSTEM_LOAD;
+
+# Mặc định này sẽ khớp với bất kỳ biểu thức GraphQL nào.
+# Nó sử dụng một Global được thay thế vào biểu thức để tính toán chi phí
+default => 0.1 * $SYSTEM_LOAD;
+```
+
+Ví dụ truy vấn chi phí bằng cách sử dụng mô hình trên:
+
+| Truy vấn                                                                     | Giá     |
+| ---------------------------------------------------------------------------- | ------- |
+| &#123; pairs(skip: 5000) &#123; id &#125; &#125;                             | 0.5 GRT |
+| &#123; tokens &#123; symbol &#125; &#125                                     | 0.1 GRT |
+| &#123; pairs(skip: 5000) &#123; id &#123; tokens &#125; symbol &#125; &#125; | 0.6 GRT |
+
+#### Áp dụng mô hình chi phí
+
+Các mô hình chi phí được áp dụng thông qua Indexer CLI, chuyển chúng đến API Quản lý Indexer của đại lý indexer để lưu trữ trong cơ sở dữ liệu. Sau đó, Dịch vụ Indexer sẽ nhận chúng và cung cấp các mô hình chi phí tới các cổng bất cứ khi nào họ yêu cầu.
+
+```sh
+indexer cost set variables '{ "SYSTEM_LOAD": 1.4 }'
+indexer cost set model my_model.agora
+```
+
+## Tương tác với mạng
+
+### Stake trong giao thức
+
+Các bước đầu tiên để tham gia vào mạng với tư cách là Indexer là phê duyệt giao thức, stake tiền và (tùy chọn) thiết lập địa chỉ operator cho các tương tác giao thức hàng ngày. _ **Lưu ý**: Đối với các mục đích của các hướng dẫn này, Remix sẽ được sử dụng để tương tác hợp đồng, nhưng hãy thoải mái sử dụng công cụ bạn chọn ([OneClickDapp](https://oneclickdapp.com/), [ABItopic](https://abitopic.io/), và [MyCrypto](https://www.mycrypto.com/account) là một vài công cụ được biết đến khác)._
+
+Khi một indexer đã stake GRT vào giao thức, [các thành phần indexer](/network/indexing#indexer-components) có thể được khởi động và bắt đầu tương tác của chúng với mạng.
+
+#### Phê duyệt các token
+
+1. Mở [Remix app](https://remix.ethereum.org/) trong một trình duyệt
+
+2. Trong `File Explorer` tạo một tệp tên **GraphToken.abi** với [token ABI](https://raw.githubusercontent.com/graphprotocol/contracts/mainnet-deploy-build/build/abis/GraphToken.json).
+
+3. Với `GraphToken.abi` đã chọn và mở trong trình chỉnh sửa, chuyển sang Deploy (Triển khai) và `Run Transactions` trong giao diện Remix.
+
+4. Trong môi trường (environment) chọn `Injected Web3` và trong `Account` chọn địa chỉ indexer của bạn.
+
+5. Đặt địa chỉ hợp đồng GraphToken - Dán địa chỉ hợp đồng GraphToken(`0xc944E90C64B2c07662A292be6244BDf05Cda44a7`) kế bên `At Address` và nhấp vào nút `At address` để áp dụng.
+
+6. Gọi chức năng `approve(spender, amount)` để phê duyệt hợp đồng Staking. Điền phần `spender` bằng địa chỉ hợp đồng Staking (`0xF55041E37E12cD407ad00CE2910B8269B01263b9`) và điền `amount` bằng số token để stake (tính bằng wei).
+
+#### Stake các token
+
+1. Mở [Remix app](https://remix.ethereum.org/) trong một trình duyệt
+
+2. Trong `File Explorer` tạo một tệp tene **Staking.abi** với Staking ABI.
+
+3. Với `Staking.abi` đã chọn và mở trong trình chỉnh sửa, chuyển sang `Deploy` và `Run Transactions` trong giao diện Remix.
+
+4. Trong môi trường (environment) chọn `Injected Web3` và trong `Account` chọn địa chỉ indexer của bạn.
+
+5. Đặt địa chỉ hợp đồng Staking - Dán địa chỉ hợp đồng Staking (`0xc944E90C64B2c07662A292be6244BDf05Cda44a7`) kế bên `At Address` và nhấp vào nút `At address` để áp dụng.
+
+6. Gọi lệnh `stake()` để stake GRT vào giao thức.
+
+7. (Tùy chọn) Indexer có thể chấp thuận một địa chỉ khác làm operator cho cơ sở hạ tầng indexer của họ để tách các khóa kiểm soát tiền khỏi những khóa đang thực hiện các hành động hàng ngày như phân bổ trên các subgraph và phục vụ các truy vấn (có trả tiền). Để đặt operator, hãy gọi lệnh `setOperator()` với địa chỉ operator.
+
+8. (Tùy chọn) Để kiểm soát việc phân phối phần thưởng và thu hút delegator một cách chiến lược, indexer có thể cập nhật thông số ủy quyền của họ bằng cách cập nhật indexingRewardCut (phần triệu), queryFeeCut (phần triệu) và cooldownBlocks (số khối). Để làm như vậy, hãy gọi `setDelegationParameters()`. Ví dụ sau đặt queryFeeCut phân phối 95% hoàn phí truy vấn cho indexer và 5% cho delegator, đặt indexingRewardCutto phân phối 60% phần thưởng indexing cho indexer và 40% cho delegator và đặt `thecooldownBlocks` chu kỳ đến 500 khối.
+
+```
+setDelegationParameters(950000, 600000, 500)
+```
+
+### Tuổi thọ của một phân bổ
+
+Sau khi được tạo bởi một indexer, một phân bổ lành mạnh sẽ trải qua bốn trạng thái.
+
+- **Đang hoạt động** - Sau khi phân bổ được tạo trên chain ([allocateFrom()](https://github.com/graphprotocol/contracts/blob/master/contracts/staking/Staking.sol#L873)) nó được xem là **đang hoạt động**. Một phần stake của chính indexer và/hoặc stake được ủy quyền được phân bổ cho việc triển khai subgraph, cho phép họ yêu cầu phần thưởng indexing và phục vụ các truy vấn cho việc triển khai subgraph đó. Đại lý indexer quản lý việc tạo phân bổ dựa trên các quy tắc của indexer.
+
+- **Đã đóng** - Một indexer có thể tự do đóng phân bổ sau khi 1 epoch ([closeAllocation()](https://github.com/graphprotocol/contracts/blob/master/contracts/staking/Staking.sol#L873)) hoặc đại lý indexer của họ sẽ tự động đóng phân bổ sau **maxAllocationEpochs** (hiện tại 28 ngày). Khi kết thúc phân bổ với bằng chứng hợp lệ về proof of indexing (POI), phần thưởng indexing của họ sẽ được phân phối cho indexer và những delegator của nó (xem "phần thưởng được phân phối như thế nào?" Bên dưới để tìm hiểu thêm).
+
+- **Hoàn thiện** - Sau khi phân bổ đã bị đóng, sẽ có một khoảng thời gian tranh chấp mà sau đó phân bổ được xem xét là **hoàn thiện** và nó có sẵn các khoản hoàn lại phí truy vấn khả dụng để được yêu cầu (claim()). Đại lý indexer giám sát mạng để phát hiện các phân bổ **hoàn thiện** yêu cầu chúng nếu chúng vượt quá ngưỡng có thể định cấu hình (và tùy chọn), **—-allocation-claim-threshold**.
+
+- **Đã yêu cầu** - Trạng thái cuối cùng của một phân bổ; nó đã chạy quá trình của nó dưới dạng phân bổ đang hoạt động, tất cả các phần thưởng đủ điều kiện đã được phân phối và các khoản bồi hoàn phí truy vấn của nó đã được yêu cầu.
