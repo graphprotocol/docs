@@ -30,6 +30,6 @@ export default class MyDocument extends Document {
   }
 }
 
-export const refreshHtml = (locale) => {
+export const refreshHtml = (locale: string) => {
   document.documentElement.lang = locale
 }
