@@ -29,3 +29,7 @@ export default class MyDocument extends Document {
     )
   }
 }
+
+export const refreshHtml = (locale) => {
+  document.documentElement.lang = locale
+}
