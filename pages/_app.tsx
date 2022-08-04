@@ -22,7 +22,7 @@ import useBus from 'use-bus'
 
 import { supportedLocales, translations, useI18n } from '@/i18n'
 import { EventType } from '../types'
-import { refreshHtml } from './_document'
+import { refreshHtmlAttributes } from './_document'
 
 const DEFAULT_SEO_PROPS: DefaultSeoProps = {
   title: 'The Graph Docs',
@@ -50,9 +50,7 @@ const DefaultSeoWithLocale = () => {
   const { locale } = useI18n()
 
   useEffect(() => {
-    refreshHtml(locale)
-    let dir = locale == Locale.ARABIC ? 'rtl' : 'ltr'
-    document.querySelector('html')!.setAttribute('dir', dir)
+    refreshHtmlAttributes(locale)
   }, [locale])
 
   const seoProps = useMemo(
