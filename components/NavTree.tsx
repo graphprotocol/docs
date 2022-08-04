@@ -9,6 +9,7 @@ import {
   IconProps,
   Spacing,
   buildTransition,
+  Locale,
 } from '@edgeandnode/components'
 import { keyframes } from '@emotion/react'
 import { SxProp } from 'theme-ui'
@@ -139,6 +140,7 @@ const NavTreeGroupHeading = ({ children, buttonProps = {}, ...props }: NavTreeGr
         }}
         {...buttonOtherProps}
       >
+        {/** TODO: Find a way to make them left in arabic without breaking the other site */}
         <Flex.Row as="span" justify="space-between" align="center" gap={Spacing.L}>
           <span>{children}</span>
           <Flex.Column
