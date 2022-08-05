@@ -26,7 +26,6 @@ import {
   ListUnordered,
   Paragraph,
   Table,
-  Video,
 } from '@/components'
 import { useI18n } from '@/i18n'
 import { NavItemGroup } from '@/navigation'
@@ -48,7 +47,6 @@ const mdxComponents = {
   ul: ListUnordered,
   p: Paragraph,
   table: Table,
-  video: Video,
 }
 
 const mdxStyles = {
