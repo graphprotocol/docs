@@ -26,6 +26,7 @@ import {
   ListUnordered,
   Paragraph,
   Table,
+  Video,
 } from '@/components'
 import { useI18n } from '@/i18n'
 import { NavItemGroup } from '@/navigation'
@@ -47,6 +48,7 @@ const mdxComponents = {
   ul: ListUnordered,
   p: Paragraph,
   table: Table,
+  video: Video,
 }
 
 const mdxStyles = {
@@ -55,16 +57,6 @@ const mdxStyles = {
     mt: Spacing.L,
     display: 'block',
     textAlign: 'center',
-  },
-  '.video-container': {
-    paddingBottom: `${100 / (16 / 9)}%`,
-  },
-  '.video-iframe': {
-    position: 'absolute',
-    left: 0,
-    top: 0,
-    width: '100%',
-    height: '100%',
   },
 } as ThemeUIStyleObject
 
