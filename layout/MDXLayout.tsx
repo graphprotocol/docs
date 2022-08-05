@@ -153,7 +153,7 @@ export const MDXLayout = ({ pagePath, navItems, frontmatter, outline, children }
             sx={{
               display: ['none', null, null, 'block'],
               mt: 'calc(-1 * var(--gds-header-height) * var(--gds-header-fixed))',
-              ml: '-8px',
+              marginInlineStart: '-8px',
               marginInlineEnd: '24px',
             }}
           >
@@ -194,7 +194,7 @@ export const MDXLayout = ({ pagePath, navItems, frontmatter, outline, children }
               display: ['none', null, null, 'block'],
               mt: 'calc(-1 * var(--gds-header-height) * var(--gds-header-fixed))',
               marginInlineStart: '40px',
-              mr: '-8px',
+              marginInlineEnd: '-8px',
             }}
           >
             <MDXLayoutOutline />

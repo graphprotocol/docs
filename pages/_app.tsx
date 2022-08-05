@@ -123,12 +123,10 @@ const MyApp = ({ Component, pageProps }: AppProps) => {
               right: 0,
               top: 0,
               minHeight: '768px',
+              aspectRatio: '1',
               backgroundImage: `url('${process.env.BASE_PATH}/img/page-background.png')`,
               backgroundSize: 'cover',
               backgroundPosition: 'center top',
-              '@media (min-width: 1440px)': {
-                aspectRatio: '1440/768',
-              },
             }}
           />
           <Layout
