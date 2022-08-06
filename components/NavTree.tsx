@@ -186,7 +186,7 @@ const NavTreeDivider = (props: NavTreeDividerProps) => {
 
 const NavTreeHeading = ({ children, ...props }: NavTreeHeadingProps) => {
   return (
-    <li sx={{ mt: Spacing.XL, mb: Spacing.M_L, pl: Spacing.L_XL }} {...props}>
+    <li sx={{ mt: Spacing.XL, mb: Spacing.M_L, paddingInlineStart: Spacing.L_XL }} {...props}>
       <Text.C12 color="White48">{children}</Text.C12>
     </li>
   )
