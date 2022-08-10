@@ -116,18 +116,18 @@ const MyApp = ({ Component, pageProps }: AppProps) => {
       >
         <DefaultSeoWithLocale />
         <ThemeProvider disableSmoothScrolling={isSearchOpen ? true : disableSmoothScrolling} headComponent={Head}>
-          <div sx={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, overflow: 'hidden' }}>
+          <div sx={{ position: 'absolute', inset: 0, overflow: 'hidden' }}>
             <div
               sx={{
                 position: 'absolute',
-                left: 0,
-                right: 0,
-                top: 0,
+                inset: 0,
                 minHeight: '768px',
-                aspectRatio: '1440/768',
                 backgroundImage: `url('${process.env.BASE_PATH}/img/page-background.png')`,
                 backgroundSize: 'cover',
                 backgroundPosition: 'center top',
+                '@media (min-width: 1440px)': {
+                  aspectRatio: '1440/768',
+                },
               }}
             />
           </div>
