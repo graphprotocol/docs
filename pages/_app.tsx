@@ -120,7 +120,8 @@ const MyApp = ({ Component, pageProps }: AppProps) => {
             <div
               sx={{
                 position: 'absolute',
-                inset: 0,
+                top: 0,
+                insetInline: 0,
                 minHeight: '768px',
                 backgroundImage: `url('${process.env.BASE_PATH}/img/page-background.png')`,
                 backgroundSize: 'cover',

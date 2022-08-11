@@ -74,7 +74,8 @@ const NavTreeItem = ({
         target={target}
         sx={{
           display: 'block',
-          px: Spacing.L_XL,
+          paddingInlineStart: Spacing.L_XL,
+          paddingInlineEnd: '0px',
           py: Spacing.M_L,
           color: active ? 'White88' : 'White64',
           '&:hover': { color: 'White' },
@@ -94,6 +95,9 @@ const NavTreeItem = ({
               bottom: 0,
               my: 'auto',
               ...diamondSx,
+              '[dir="rtl"] &': {
+                right: `-${Spacing.L}`,
+              },
             }}
             {...diamondOtherProps}
           />
@@ -131,7 +135,7 @@ const NavTreeGroupHeading = ({ children, buttonProps = {}, ...props }: NavTreeGr
       <Collapsible.Trigger
         sx={{
           width: '100%',
-          px: Spacing.L_XL,
+          paddingInline: Spacing.L_XL,
           py: Spacing.M_L,
           color: context.open || context.active ? 'White88' : 'White64',
           '&:hover': { color: 'White' },
