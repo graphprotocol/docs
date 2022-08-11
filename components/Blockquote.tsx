@@ -10,7 +10,7 @@ export const Blockquote = ({ children, ...props }: BlockquoteProps) => {
       sx={{
         my: Spacing.XL,
         p: Spacing.L_XL,
-        borderLeft: buildBorder('Purple', '4px'),
+        borderInlineStart: buildBorder('Purple', '4px'),
         bg: 'Purple8',
       }}
       {...props}

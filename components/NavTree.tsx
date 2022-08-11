@@ -9,6 +9,7 @@ import {
   IconProps,
   Spacing,
   buildTransition,
+  Locale,
 } from '@edgeandnode/components'
 import { keyframes } from '@emotion/react'
 import { SxProp } from 'theme-ui'
@@ -88,7 +89,7 @@ const NavTreeItem = ({
             size="12px"
             sx={{
               position: 'absolute',
-              left: Spacing.S,
+              insetInlineStart: Spacing.S,
               top: 0,
               bottom: 0,
               my: 'auto',
@@ -130,7 +131,7 @@ const NavTreeGroupHeading = ({ children, buttonProps = {}, ...props }: NavTreeGr
       <Collapsible.Trigger
         sx={{
           width: '100%',
-          px: Spacing.L_XL,
+          paddingInline: Spacing.L_XL,
           py: Spacing.M_L,
           color: context.open || context.active ? 'White88' : 'White64',
           '&:hover': { color: 'White' },
@@ -170,7 +171,7 @@ const NavTreeGroupContent = ({ children, ...props }: NavTreeGroupContentProps) =
       }}
       {...props}
     >
-      <ul sx={{ pl: Spacing.L }}>{children}</ul>
+      <ul sx={{ paddingInlineStart: Spacing.L }}>{children}</ul>
     </Collapsible.Content>
   )
 }
@@ -185,7 +186,7 @@ const NavTreeDivider = (props: NavTreeDividerProps) => {
 
 const NavTreeHeading = ({ children, ...props }: NavTreeHeadingProps) => {
   return (
-    <li sx={{ mt: Spacing.XL, mb: Spacing.M_L, pl: Spacing.L_XL }} {...props}>
+    <li sx={{ mt: Spacing.XL, mb: Spacing.M_L, paddingInlineStart: Spacing.L_XL }} {...props}>
       <Text.C12 color="White48">{children}</Text.C12>
     </li>
   )

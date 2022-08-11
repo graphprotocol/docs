@@ -22,6 +22,7 @@ import useBus from 'use-bus'
 
 import { supportedLocales, translations, useI18n } from '@/i18n'
 import { EventType } from '../types'
+import { refreshHtmlAttributes } from './_document'
 
 const DEFAULT_SEO_PROPS: DefaultSeoProps = {
   title: 'The Graph Docs',
@@ -49,7 +50,7 @@ const DefaultSeoWithLocale = () => {
   const { locale } = useI18n()
 
   useEffect(() => {
-    document.documentElement.lang = locale
+    refreshHtmlAttributes(locale)
   }, [locale])
 
   const seoProps = useMemo(
@@ -115,25 +116,28 @@ const MyApp = ({ Component, pageProps }: AppProps) => {
       >
         <DefaultSeoWithLocale />
         <ThemeProvider disableSmoothScrolling={isSearchOpen ? true : disableSmoothScrolling} headComponent={Head}>
-          <div
-            sx={{
-              position: 'absolute',
-              left: 0,
-              right: 0,
-              top: 0,
-              minHeight: '768px',
-              backgroundImage: `url('${process.env.BASE_PATH}/img/page-background.png')`,
-              backgroundSize: 'cover',
-              backgroundPosition: 'center top',
-              '@media (min-width: 1440px)': {
-                aspectRatio: '1440/768',
-              },
-            }}
-          />
+          <div sx={{ position: 'absolute', inset: 0, overflow: 'hidden' }}>
+            <div
+              sx={{
+                position: 'absolute',
+                top: 0,
+                insetInline: 0,
+                minHeight: '768px',
+                backgroundImage: `url('${process.env.BASE_PATH}/img/page-background.png')`,
+                backgroundSize: 'cover',
+                backgroundPosition: 'center top',
+                '@media (min-width: 1440px)': {
+                  aspectRatio: '1440/768',
+                },
+              }}
+            />
+          </div>
           <Layout
             headerSticky
             headerContent={
-              <NavigationMarketing activeRoute="/docs" NextLink={NextLink} rightAlignItems={[localeSwitcher]} />
+              <div dir="ltr">
+                <NavigationMarketing activeRoute="/docs" NextLink={NextLink} rightAlignItems={[localeSwitcher]} />
+              </div>
             }
             mainContainer
             footerContent={<Footer localeSwitcher={localeSwitcher} />}
