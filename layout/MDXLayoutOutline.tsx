@@ -37,7 +37,7 @@ export const MDXLayoutOutline = () => {
         <EditPageLink />
       </Flex.Row>
       <NewGDSDivider sx={{ my: Spacing.XL }} />
-      <nav sx={{ pr: '16px' }}>
+      <nav sx={{ paddingInlineEnd: '16px' }}>
         <Text.C10 as="header" color="White64" sx={{ mb: Spacing.M_L }}>
           {t('global.pageSections')}
         </Text.C10>
@@ -52,7 +52,7 @@ export const MDXLayoutOutline = () => {
                   href={`#${outlineItem.id}`}
                   sx={{
                     display: 'block',
-                    pl: `${8 * Math.max(0, outlineItem.level - 2)}px`,
+                    paddingInlineStart: `${8 * Math.max(0, outlineItem.level - 2)}px`,
                     py: '6px',
                     color: outlineItem.id === highlightedOutlineItemId ? 'White88' : undefined,
                     '&:hover': { color: 'White' },

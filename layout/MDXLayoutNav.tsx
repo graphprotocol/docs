@@ -35,7 +35,7 @@ const DesktopWrapper = ({ children }: PropsWithChildren<{}>) => {
         position: 'sticky',
         top: 0,
         maxHeight: '100vh',
-        pr: Spacing.L_XL,
+        paddingInlineEnd: Spacing.L_XL,
         pt: Spacing.XL,
         pb: Spacing.L,
         overflowY: 'auto',
@@ -172,7 +172,10 @@ export const MDXLayoutNav = ({ mobile = false }: { mobile?: boolean }) => {
               if ('children' in navItem) {
                 return (
                   <NavTree.Group active={currentPage?.path.startsWith(navItem.path)}>
-                    <NavTree.Group.Heading sx={mobile ? { py: 0 } : {}} buttonProps={{ sx: mobile ? {} : { pr: 0 } }}>
+                    <NavTree.Group.Heading
+                      sx={mobile ? { py: 0 } : {}}
+                      buttonProps={{ sx: mobile ? {} : { paddingInlineEnd: 0 } }}
+                    >
                       {navItem.title}
                     </NavTree.Group.Heading>
                     <NavTree.Group.Content>
@@ -182,7 +185,7 @@ export const MDXLayoutNav = ({ mobile = false }: { mobile?: boolean }) => {
                           href={childNavItem.path}
                           active={currentPage?.path === childNavItem.path}
                           sx={mobile ? { py: 0 } : {}}
-                          linkProps={{ sx: mobile ? {} : { pr: 0 } }}
+                          linkProps={{ sx: mobile ? {} : { paddingInlineEnd: 0 } }}
                         >
                           {childNavItem.title}
                         </NavTree.Item>
@@ -196,8 +199,8 @@ export const MDXLayoutNav = ({ mobile = false }: { mobile?: boolean }) => {
                   href={navItem.path}
                   active={currentPage?.path === navItem.path}
                   sx={mobile ? { py: 0 } : {}}
-                  linkProps={{ sx: mobile ? {} : { pr: 0 } }}
-                  diamondProps={{ sx: mobile ? { left: '6px' } : {} }}
+                  linkProps={{ sx: mobile ? {} : { paddingInlineEnd: 0 } }}
+                  diamondProps={{ sx: mobile ? { insetInlineStart: '6px' } : {} }}
                 >
                   {navItem.title}
                 </NavTree.Item>

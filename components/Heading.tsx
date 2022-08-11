@@ -46,7 +46,7 @@ const BaseHeading = ({ level, id, className, children, ...props }: HeadingProps)
       {id ? (
         <span
           sx={{
-            ml: '0.35em',
+            marginInlineStart: '0.35em',
             opacity: Opacity['0%'],
             [`.${rootClass}:hover &, &:focus-within`]: { opacity: Opacity['100%'] },
             transition: buildTransition('OPACITY'),

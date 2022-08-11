@@ -76,11 +76,16 @@ export function DocSearch(props: DocSearchProps) {
           <Icon.Search size="14px" title="" sx={{ flexShrink: 0 }} />
           <Text.P14 size="14px">{props?.translations?.button?.buttonText ?? 'Search'}</Text.P14>
           {/* TODO: Remove `fontFamily: 'inherit'` when it's included in `@edgeandnode/components`'s global styles */}
-          <Text.P14 as="kbd" size="14px" color="White48" sx={{ ml: 'auto', px: Spacing.M, fontFamily: 'inherit' }}>
+          <Text.P14
+            as="kbd"
+            size="14px"
+            color="White48"
+            sx={{ marginInlineStart: 'auto', px: Spacing.M, fontFamily: 'inherit' }}
+          >
             <abbr title="Command" sx={{ textDecoration: 'none' }}>
               ⌘
             </abbr>
-            <span sx={{ ml: Spacing.S }}>K</span>
+            <span sx={{ marginInlineStart: Spacing.S }}>K</span>
           </Text.P14>
         </Flex.Row>
       </button>
@@ -128,8 +133,7 @@ export function DocSearch(props: DocSearchProps) {
               content: `''`,
               zIndex: 100,
               position: 'absolute',
-              left: Spacing.L_XL,
-              right: Spacing.L_XL,
+              insetInline: Spacing.L_XL,
               bottom: '-1px',
               borderBottom: buildBorder('White16')(theme),
               backgroundColor: 'var(--docsearch-modal-background)',
@@ -159,8 +163,8 @@ export function DocSearch(props: DocSearchProps) {
             },
           },
           '.DocSearch-Cancel': {
-            marginLeft: Spacing.L,
-            marginRight: Spacing.S,
+            marginInlineStart: Spacing.L,
+            marginInlineEnd: Spacing.S,
             color: 'inherit',
           },
           '.DocSearch-Dropdown': {
@@ -236,7 +240,7 @@ export function DocSearch(props: DocSearchProps) {
             textOverflow: 'ellipsis',
           },
           '.DocSearch-Hit-action': {
-            marginLeft: Spacing.L,
+            marginInlineStart: Spacing.L,
           },
           '.DocSearch-HitsFooter': {
             display: 'none',
@@ -244,18 +248,14 @@ export function DocSearch(props: DocSearchProps) {
           '.DocSearch-Footer': {
             position: 'fixed',
             bottom: 0,
-            left: 0,
-            right: 0,
+            insetInline: 0,
             padding: Spacing.L,
             backgroundColor: 'transparent',
             boxShadow: 'none',
             '&::before': {
               content: `''`,
               position: 'absolute',
-              left: 0,
-              right: 0,
-              top: 0,
-              bottom: 0,
+              inset: 0,
               backgroundColor: 'var(--docsearch-modal-background)',
               opacity: Opacity['88%'],
               [`@media (min-width: ${BREAKPOINT})`]: {

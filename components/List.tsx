@@ -18,7 +18,7 @@ export const List = ({ as, children, ...props }: ListProps) => {
       sx={{
         mt: Spacing.L,
         mb: Spacing.L_XL,
-        pl: Spacing.XL,
+        paddingInlineStat: Spacing.XL,
         listStyleType: as === 'ol' ? 'decimal' : 'disc',
         '& > li': {
           display: 'list-item',

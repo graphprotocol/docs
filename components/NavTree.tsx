@@ -74,8 +74,7 @@ const NavTreeItem = ({
         target={target}
         sx={{
           display: 'block',
-          paddingInlineStart: Spacing.L_XL,
-          paddingInlineEnd: '0px',
+          px: Spacing.L_XL,
           py: Spacing.M_L,
           color: active ? 'White88' : 'White64',
           '&:hover': { color: 'White' },
@@ -90,14 +89,11 @@ const NavTreeItem = ({
             size="12px"
             sx={{
               position: 'absolute',
-              left: Spacing.S,
+              insetInlineStart: Spacing.S,
               top: 0,
               bottom: 0,
               my: 'auto',
               ...diamondSx,
-              '[dir="rtl"] &': {
-                right: `-${Spacing.L}`,
-              },
             }}
             {...diamondOtherProps}
           />
@@ -175,7 +171,7 @@ const NavTreeGroupContent = ({ children, ...props }: NavTreeGroupContentProps) =
       }}
       {...props}
     >
-      <ul sx={{ pl: Spacing.L }}>{children}</ul>
+      <ul sx={{ paddingInlineStart: Spacing.L }}>{children}</ul>
     </Collapsible.Content>
   )
 }

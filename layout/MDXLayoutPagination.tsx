@@ -20,14 +20,14 @@ export const MDXLayoutPagination = () => {
               sx={{
                 display: 'block',
                 py: Spacing.L_XL,
-                pl: [0, null, Spacing.L_XL],
-                pr: Spacing.M_L,
+                paddingInlineStart: [0, null, Spacing.L_XL],
+                paddingInlineEnd: Spacing.M_L,
                 color: 'White64',
                 '&:hover': { color: 'White', textShadow: buildShadow('M') },
                 transition: buildTransition(),
               }}
             >
-              <Flex.Column align="start" gap={Spacing.S} sx={{ textAlign: 'left' }}>
+              <Flex.Column align="start" gap={Spacing.S} sx={{ textAlign: 'start' }}>
                 <Flex.Row align="center" gap={Spacing.S}>
                   <Icon.ArrowLeft title="" size="12px" />
                   <Text.C10>{t('global.previous')}</Text.C10>
@@ -58,14 +58,14 @@ export const MDXLayoutPagination = () => {
               sx={{
                 display: 'block',
                 py: Spacing.L_XL,
-                pl: Spacing.M_L,
-                pr: [0, null, Spacing.L_XL],
+                paddingInlineStart: Spacing.M_L,
+                paddingInlineEnd: [0, null, Spacing.L_XL],
                 color: 'White64',
                 '&:hover': { color: 'White', textShadow: buildShadow('M') },
                 transition: buildTransition(),
               }}
             >
-              <Flex.Column align="end" gap={Spacing.S} sx={{ textAlign: 'right' }}>
+              <Flex.Column align="end" gap={Spacing.S} sx={{ textAlign: 'end' }}>
                 <Flex.Row align="center" gap={Spacing.S}>
                   <Text.C10>{t('global.next')}</Text.C10>
                   <Icon.ArrowRight title="" size="12px" />
