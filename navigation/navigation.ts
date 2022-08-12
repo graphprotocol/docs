@@ -115,10 +115,10 @@ export const navigation = (locale: AppLocale): NavItemDefinition[] => [
         slug: 'managing-api-keys',
       },
       {
-        slug: 'querying-from-an-application',
+        slug: 'querying-best-practices',
       },
       {
-        slug: 'querying-best-practices',
+        slug: 'querying-from-an-application',
       },
       {
         slug: 'distributed-systems',
