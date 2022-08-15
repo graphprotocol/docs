@@ -71,9 +71,21 @@ For a complete list of rules with code examples, please look at our GraphQL Vali
 
 GraphQL is a language and set of conventions that transport over HTTP.
 
-It means that you can query a GraphQL API using standard `fetch` (natively or via `cross-undici-fetch` or `isomorphic-fetch`) as follows:
+It means that you can query a GraphQL API using standard `fetch` (natively or via `@whatwg-node/fetch` or `isomorphic-fetch`).
+
+However, as stated in ["Querying from an Application"](/querying/querying-from-an-application), we recommend you to use our `graph-client` that supports unique features such as:
+- Cross-chain Subgraph Handling: Querying from multiple subgraphs in a single query
+- [Automatic Block Tracking](https://github.com/graphprotocol/graph-client/blob/main/packages/block-tracking/README.md)
+- [Automatic Pagination](https://github.com/graphprotocol/graph-client/blob/main/packages/auto-pagination/README.md)
+- Fully typed result
+
+<br />
+
+Here's how to query The Graph with `graph-client`:
 
 ```tsx
+import { execute } from '../.graphclient'
+
 const query = `
 query GetToken($id: ID!) {
   token(id: $id) {
@@ -84,55 +96,16 @@ query GetToken($id: ID!) {
 `
 const variables = { id: '1' }
 
-const fetchResult = await fetch('http://example.com/graphql', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({ query, variables }),
-})
-const result = await fetchResult.json()
+async function main() {
+  const result = await execute(query, variables)
+  // `result` is fully typed!
+  console.log(result)
+}
+
+main()
 ```
 
-Another lightweight alternative, best for back-end use-cases, is the famous [`graphql-request` library](https://github.com/prisma-labs/graphql-request).
-
-This lightweight GraphQL client comes with the essential features to query a GraphQL API:
-
-- Mutations validation
-- Support for file upload
-- Batching
-- Promise-based API
-- TypeScript support
-
-<br />
-
-A complete GraphQL client is [URQL](https://formidable.com/open-source/urql/) which is available within Node.js, React/Preact, Vue, Svelte environments, with more advanced features:
-
-- Flexible cache system
-- Extensible design (easing adding new capabilities on top of it)
-- Lightweight bundle (~5x lighter than Apollo Client)
-- Support for file uploads and offline mode
-
-<br />
-
-In the React ecosystem, [React Query](https://react-query.tanstack.com/graphql) brings a lightweight and agnostic solution for GraphQL.
-
-React Query is a great candidate if you are looking for an easy-to-use and lightweight multipurpose client (GraphQL-capable) that provides essential features such as:
-
-- Powerful cache (background refresh, window-focus refreshing)
-- Advanced querying pattern (parallel queries, dependent queries, prefetching)
-- UX patterns: optimistic updates, scroll restoration
-- Great dev tools
-
-<br />
-
-Finally, Apollo Client is the ubiquitous GraphQL client on the front-end ecosystem.
-
-Available for React, Angular, Vue, Ember, iOS, and Android, Apollo Client, although the heaviest clients, brings many features to build advanced UI on-top of GraphQL:
-
-- advanced error handling
-- pagination
-- data prefetching
-- optimistic UI
-- local state management
+More GraphQL client alternatives are covered in ["Querying from an Application"](/querying/querying-from-an-application).
 
 <br />
 
@@ -503,69 +476,3 @@ The [JS GraphQL plugin](https://plugins.jetbrains.com/plugin/8097-graphql/) will
 - snippets
 
 More information on this [WebStorm article](https://blog.jetbrains.com/webstorm/2019/04/featured-plugin-js-graphql/) that showcases all the plugin's main features.
-
-<br />
-
-### TypeScript types generation
-
-Finally, the best GraphQL experience is reached when the TypeScript data types are generated from the defined GraphQL queries, as follows:
-
-```tsx
-import { execute } from 'your-favorite-graphql-client'
-import { GetTokenQuery } from './generated.'
-
-const id = params.id
-const query = `
-query GetToken($id: ID!) {
-  token(id: $id) {
-    id
-    owner
-  }
-}
-`
-
-const result: GetTokenQuery = await execute(query, {
-  variables: {
-    id,
-  },
-})
-
-// `result` is typed!
-```
-
-Such a setup can be easily achieved by installing and configuring [GraphQL Code Generator](https://www.graphql-code-generator.com/docs/getting-started) as follows:
-
-```bash
-yarn add graphql @graphql-codegen/cli @graphql-codegen/typescript @graphql-codegen/typescript-operations
-```
-
-Then update your `package.json` (or similar script configuration setup) as follows:
-
-```tsx
-{
-  // ...
-  "scripts": {
-    // ...
-    "generate": "graphql-codegen",
-    // ...
-  }
-  // ...
-}
-```
-
-Add the following configuration file to your project:
-
-```tsx
-schema: "<SUBGRAPH_URL>"
-documents: './src/**/*.ts'
-generates:
-  ./generated.ts:
-    plugins:
-      - typescript
-      - typescript-operations
-```
-
-Finally, by simply running the configured script (`yarn generate`), GraphQL Code Generator will generate the proper TypeScript types in the `generated.ts` file:
-
-- Each query will get a corresponding `[QueryName]Query` type (ex: `GetToken` → `GetTokenQuery` type
-- Each fragment will get a corresponding `[FragmentName]Fragment` type (ex: `DelegateItem` → `DelegateItemFragment` type
