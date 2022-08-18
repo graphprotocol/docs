@@ -68,7 +68,7 @@ const NavTreeItem = ({
   const { sx: linkSx, ...linkOtherProps } = linkProps
   const { sx: diamondSx, ...diamondOtherProps } = diamondProps
   return (
-    <li sx={{ py: Spacing.M }} {...props}>
+    <li {...props}>
       <Link
         href={href}
         target={target}
@@ -127,7 +127,7 @@ const NavTreeGroupHeading = ({ children, buttonProps = {}, ...props }: NavTreeGr
   const { t } = useI18n()
 
   return (
-    <div sx={{ py: Spacing.M }} {...props}>
+    <div {...props}>
       <Collapsible.Trigger
         sx={{
           width: '100%',
@@ -186,7 +186,7 @@ const NavTreeDivider = (props: NavTreeDividerProps) => {
 
 const NavTreeHeading = ({ children, ...props }: NavTreeHeadingProps) => {
   return (
-    <li sx={{ mt: Spacing.XL, mb: Spacing.M_L, paddingInlineStart: Spacing.L_XL }} {...props}>
+    <li sx={{ mt: Spacing.L_XL, mb: Spacing.M_L, paddingInlineStart: Spacing.L_XL }} {...props}>
       <Text.C12 color="White48">{children}</Text.C12>
     </li>
   )
