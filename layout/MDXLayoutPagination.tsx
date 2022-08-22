@@ -12,28 +12,28 @@ export const MDXLayoutPagination = () => {
   return (
     <div>
       <NewGDSDivider diamonds />
-      <Flex.Row justify="space-between" sx={{ mt: Spacing.XL, overflow: 'hidden' }}>
+      <Flex.Row justify="space-between" sx={{ mt: Spacing['32px'], overflow: 'hidden' }}>
         <div>
           {previousPage ? (
             <Link
               href={previousPage.path}
               sx={{
                 display: 'block',
-                py: Spacing.L_XL,
-                paddingInlineStart: [0, null, Spacing.L_XL],
-                paddingInlineEnd: Spacing.M_L,
+                py: Spacing['24px'],
+                paddingInlineStart: [0, null, Spacing['24px']],
+                paddingInlineEnd: Spacing['12px'],
                 color: 'White64',
                 '&:hover': { color: 'White', textShadow: buildShadow('M') },
                 transition: buildTransition(),
               }}
             >
-              <Flex.Column align="start" gap={Spacing.S} sx={{ textAlign: 'start' }}>
-                <Flex.Row align="center" gap={Spacing.S}>
+              <Flex.Column align="start" gap={Spacing['4px']} sx={{ textAlign: 'start' }}>
+                <Flex.Row align="center" gap={Spacing['4px']}>
                   <Icon.ArrowLeft title="" size="12px" />
                   <Text.C10>{t('global.previous')}</Text.C10>
                 </Flex.Row>
                 <Text
-                  weight="Semibold"
+                  weight="SEMIBOLD"
                   size="16px"
                   color="White88"
                   truncate
@@ -57,21 +57,21 @@ export const MDXLayoutPagination = () => {
               href={nextPage.path}
               sx={{
                 display: 'block',
-                py: Spacing.L_XL,
-                paddingInlineStart: Spacing.M_L,
-                paddingInlineEnd: [0, null, Spacing.L_XL],
+                py: Spacing['24px'],
+                paddingInlineStart: Spacing['12px'],
+                paddingInlineEnd: [0, null, Spacing['24px']],
                 color: 'White64',
                 '&:hover': { color: 'White', textShadow: buildShadow('M') },
                 transition: buildTransition(),
               }}
             >
-              <Flex.Column align="end" gap={Spacing.S} sx={{ textAlign: 'end' }}>
-                <Flex.Row align="center" gap={Spacing.S}>
+              <Flex.Column align="end" gap={Spacing['4px']} sx={{ textAlign: 'end' }}>
+                <Flex.Row align="center" gap={Spacing['4px']}>
                   <Text.C10>{t('global.next')}</Text.C10>
                   <Icon.ArrowRight title="" size="12px" />
                 </Flex.Row>
                 <Text
-                  weight="Semibold"
+                  weight="SEMIBOLD"
                   size="16px"
                   color="White88"
                   truncate

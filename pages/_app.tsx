@@ -1,4 +1,4 @@
-import { useMemo, useCallback, useState, useEffect } from 'react'
+import { useMemo, useCallback, useState } from 'react'
 import { AppProps } from 'next/app'
 import { useRouter } from 'next/router'
 import Head from 'next/head'
@@ -22,7 +22,6 @@ import useBus from 'use-bus'
 
 import { supportedLocales, translations, useI18n } from '@/i18n'
 import { EventType } from '../types'
-import { refreshHtmlAttributes } from './_document'
 
 const DEFAULT_SEO_PROPS: DefaultSeoProps = {
   title: 'The Graph Docs',
@@ -48,10 +47,6 @@ const DEFAULT_SEO_PROPS: DefaultSeoProps = {
 
 const DefaultSeoWithLocale = () => {
   const { locale } = useI18n()
-
-  useEffect(() => {
-    refreshHtmlAttributes(locale)
-  }, [locale])
 
   const seoProps = useMemo(
     () =>

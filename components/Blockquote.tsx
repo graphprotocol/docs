@@ -8,8 +8,8 @@ export const Blockquote = ({ children, ...props }: BlockquoteProps) => {
     <Text
       as="blockquote"
       sx={{
-        my: Spacing.XL,
-        p: Spacing.L_XL,
+        my: Spacing['32px'],
+        p: Spacing['24px'],
         borderInlineStart: buildBorder('Purple', '4px'),
         bg: 'Purple8',
       }}

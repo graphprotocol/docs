@@ -1,6 +1,6 @@
 import { HTMLAttributes } from 'react'
 import Highlight, { defaultProps, Language, PrismTheme } from 'prism-react-renderer'
-import { Spacing, BorderRadius } from '@edgeandnode/components'
+import { Spacing, BorderRadius, FontFamily } from '@edgeandnode/components'
 
 export type CodeBlockProps = HTMLAttributes<HTMLPreElement>
 export type CodeInlineProps = HTMLAttributes<HTMLElement>
@@ -120,17 +120,18 @@ export const CodeBlock = ({ children, ...props }: CodeBlockProps) => {
   }
 
   return (
-    <div sx={{ my: Spacing.L_XL }}>
+    <div sx={{ my: Spacing['24px'] }}>
       <Highlight {...defaultProps} code={code} language={language as Language} theme={theme}>
         {({ className, tokens, getLineProps, getTokenProps }) => (
           <pre
             className={className}
             sx={{
               overflowX: 'auto',
-              p: Spacing.L,
+              p: Spacing['16px'],
               borderRadius: BorderRadius.M,
               border: 'White4',
               bg: 'White4',
+              fontFamily: FontFamily.MONOSPACE,
               fontSize: '16px',
               lineHeight: '24px',
             }}
@@ -156,11 +157,12 @@ export const CodeInline = ({ children, ...props }: CodeInlineProps) => {
   return (
     <code
       sx={{
-        px: '6px',
-        py: Spacing.S,
+        px: Spacing['4px'],
+        py: Spacing['2px'],
         borderRadius: BorderRadius.S,
         border: 'White4',
         bg: 'White4',
+        fontFamily: FontFamily.MONOSPACE,
         fontSize: '0.75em',
       }}
       {...props}

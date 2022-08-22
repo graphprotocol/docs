@@ -32,7 +32,7 @@ const NotFoundPage: NextPage<{}> = () => {
   const { t } = useI18n()
 
   return (
-    <div sx={{ pb: Spacing.XXL }}>
+    <div sx={{ pb: Spacing['64px'] }}>
       <NotFound
         title={t('global.notFoundTitle')}
         subtitle={t('global.notFoundSubtitle')}

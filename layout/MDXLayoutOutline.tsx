@@ -26,8 +26,8 @@ export const MDXLayoutOutline = () => {
         position: 'sticky',
         top: 0,
         maxHeight: '100vh',
-        px: Spacing.M,
-        py: Spacing.XL,
+        px: Spacing['8px'],
+        py: Spacing['32px'],
         overflowY: 'auto',
         transform: 'translateY(calc(var(--gds-header-height-visible) * var(--gds-header-fixed)))',
         transition: enableTransition ? buildTransition('TRANSFORM', '400ms') : undefined,
@@ -36,9 +36,9 @@ export const MDXLayoutOutline = () => {
       <Flex.Row>
         <EditPageLink />
       </Flex.Row>
-      <NewGDSDivider sx={{ my: Spacing.XL }} />
+      <NewGDSDivider sx={{ my: Spacing['32px'] }} />
       <nav sx={{ paddingInlineEnd: '16px' }}>
-        <Text.C10 as="header" color="White64" sx={{ mb: Spacing.M_L }}>
+        <Text.C10 as="header" color="White64" sx={{ mb: Spacing['12px'] }}>
           {t('global.pageSections')}
         </Text.C10>
         <Text as="ul" size="14px" color="White48">

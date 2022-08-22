@@ -16,13 +16,13 @@ export const List = ({ as, children, ...props }: ListProps) => {
       as={as}
       size="18px"
       sx={{
-        mt: Spacing.L,
-        mb: Spacing.L_XL,
-        paddingInlineStat: Spacing.XL,
+        mt: Spacing['16px'],
+        mb: Spacing['24px'],
+        paddingInlineStart: Spacing['32px'],
         listStyleType: as === 'ol' ? 'decimal' : 'disc',
         '& > li': {
           display: 'list-item',
-          my: Spacing.L,
+          my: Spacing['16px'],
         },
       }}
       {...props}

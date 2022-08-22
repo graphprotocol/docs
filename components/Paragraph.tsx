@@ -7,8 +7,8 @@ export const Paragraph = ({ children, ...props }: ParagraphProps) => {
   return (
     <Text.P18
       sx={{
-        mt: Spacing.L,
-        mb: Spacing.L_XL,
+        mt: Spacing['16px'],
+        mb: Spacing['24px'],
         '&:first-child': { mt: 0 },
         '&:last-child': { mb: 0 },
       }}
