@@ -129,7 +129,7 @@ export const MDXLayoutNav = ({ mobile = false }: { mobile?: boolean }) => {
         <DocSearch
           apiKey={process.env.ALGOLIA_API_KEY ?? ''}
           appId={process.env.ALGOLIA_APP_ID ?? ''}
-          indexName="thegraph"
+          indexName="thegraph-docs"
           searchParameters={{
             facetFilters: [`language:${locale}`],
           }}
