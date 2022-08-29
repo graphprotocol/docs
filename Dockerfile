@@ -9,7 +9,7 @@ COPY ./package.json /app/package.json
 COPY ./yarn.lock /app/yarn.lock
 
 # install the packages
-RUN yarn install
+RUN yarn install --frozen-lockfile --ignore-scripts
 
 # copy the rest
 COPY . .
