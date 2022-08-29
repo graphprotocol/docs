@@ -1,5 +1,6 @@
 import { HTMLAttributes } from 'react'
-import { Text, TextProps, Spacing } from '@edgeandnode/components'
+
+import { Spacing, Text, TextProps } from '@edgeandnode/components'
 
 export type ParagraphProps = Omit<TextProps & HTMLAttributes<HTMLParagraphElement>, 'color'>
 
@@ -7,8 +8,8 @@ export const Paragraph = ({ children, ...props }: ParagraphProps) => {
   return (
     <Text.P18
       sx={{
-        mt: Spacing.L,
-        mb: Spacing.L_XL,
+        mt: Spacing['16px'],
+        mb: Spacing['24px'],
         '&:first-child': { mt: 0 },
         '&:last-child': { mb: 0 },
       }}

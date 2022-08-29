@@ -1,9 +1,10 @@
 import { defaultLocale } from '@edgeandnode/components'
 
-import { NavItem, NavItemDefinition, NavItemPromise, NavItemPage } from './types'
-import { navigation } from './navigation'
-import { Frontmatter } from '@/layout'
 import { AppLocale } from '@/i18n'
+import { Frontmatter } from '@/layout'
+
+import { navigation } from './navigation'
+import { NavItem, NavItemDefinition, NavItemPage, NavItemPromise } from './types'
 
 const navItemsPromiseByLocale: { [key in AppLocale]?: Promise<NavItem[]> } = {}
 
@@ -116,7 +117,7 @@ export const getNavItems = async (locale: AppLocale = defaultLocale): Promise<Na
       }) as NavItem[]
 
       // If the filtered items start with a divider due to missing pages/groups, remove it
-      if (filteredItems.length > 0 && 'divider' in (filteredItems[0] as NavItem)) {
+      if (filteredItems.length > 0 && 'divider' in filteredItems[0]) {
         filteredItems.shift()
       }
 

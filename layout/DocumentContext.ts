@@ -1,4 +1,4 @@
-import { createContext, Context } from 'react'
+import { Context, createContext } from 'react'
 
 export type Frontmatter = {
   title?: string

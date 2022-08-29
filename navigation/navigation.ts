@@ -1,5 +1,6 @@
-import { NavItemDefinition } from './types'
 import { AppLocale, translations } from '@/i18n'
+
+import { NavItemDefinition } from './types'
 
 export const navigation = (locale: AppLocale): NavItemDefinition[] => [
   {

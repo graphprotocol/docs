@@ -1,12 +1,13 @@
-import { PropsWithChildren, useState, useEffect, useContext, Fragment } from 'react'
-import { useRouter } from 'next/router'
-import * as Collapsible from '@radix-ui/react-collapsible'
-import { Text, Flex, Icon, Spacing, BorderRadius, buildTransition } from '@edgeandnode/components'
 import { keyframes } from '@emotion/react'
+import * as Collapsible from '@radix-ui/react-collapsible'
+import { useRouter } from 'next/router'
+import { Fragment, PropsWithChildren, useContext, useEffect, useState } from 'react'
 
-import { NavContext } from '@/layout'
-import { NavTree, DocSearch, Link } from '@/components'
+import { BorderRadius, buildTransition, Flex, Icon, Spacing, Text } from '@edgeandnode/components'
+
+import { DocSearch, Link, NavTree } from '@/components'
 import { useI18n } from '@/i18n'
+import { NavContext } from '@/layout'
 
 const removeBasePathFromUrl = (url: string) => url.substring((process.env.BASE_PATH ?? '').length)
 
@@ -35,9 +36,9 @@ const DesktopWrapper = ({ children }: PropsWithChildren<{}>) => {
         position: 'sticky',
         top: 0,
         maxHeight: '100vh',
-        paddingInlineEnd: Spacing.L_XL,
-        pt: Spacing.XL,
-        pb: Spacing.L,
+        paddingInlineEnd: Spacing['24px'],
+        pt: Spacing['32px'],
+        pb: Spacing['16px'],
         overflowY: 'auto',
         transform: 'translateY(calc(var(--gds-header-height-visible) * var(--gds-header-fixed)))',
         transition: enableTransition ? buildTransition('TRANSFORM', '400ms') : undefined,
@@ -78,10 +79,10 @@ const MobileWrapper = ({ title, children }: PropsWithChildren<{ title?: string }
           as="span"
           justify="space-between"
           align="center"
-          gap={Spacing.L}
-          sx={{ px: Spacing.L_XL, py: '20px' }}
+          gap={Spacing['16px']}
+          sx={{ px: Spacing['24px'], py: '20px' }}
         >
-          <Flex.Column as="span" gap={Spacing.S}>
+          <Flex.Column as="span" gap={Spacing['4px']}>
             <Text.C10 color="White64">Docs</Text.C10>
             <Text size="16px">{title}</Text>
           </Flex.Column>
@@ -106,7 +107,7 @@ const MobileWrapper = ({ title, children }: PropsWithChildren<{ title?: string }
       >
         <div
           sx={{
-            py: Spacing.L,
+            py: Spacing['16px'],
           }}
         >
           {children}
@@ -125,11 +126,11 @@ export const MDXLayoutNav = ({ mobile = false }: { mobile?: boolean }) => {
 
   return (
     <Wrapper {...(mobile ? { title: currentPage?.title } : {})}>
-      <div sx={{ mb: Spacing.L }}>
+      <div sx={{ mb: Spacing['16px'] }}>
         <DocSearch
           apiKey={process.env.ALGOLIA_API_KEY ?? ''}
           appId={process.env.ALGOLIA_APP_ID ?? ''}
-          indexName="thegraph"
+          indexName="thegraph-docs"
           searchParameters={{
             facetFilters: [`language:${locale}`],
           }}
@@ -143,7 +144,7 @@ export const MDXLayoutNav = ({ mobile = false }: { mobile?: boolean }) => {
           hitComponent={({ hit, children }) => <Link href={removeBasePathFromUrl(hit.url)}>{children}</Link>}
           navigator={{
             navigate({ itemUrl }) {
-              router.push(removeBasePathFromUrl(itemUrl))
+              void router.push(removeBasePathFromUrl(itemUrl))
             },
             navigateNewTab({ itemUrl }) {
               const windowReference = window.open(itemUrl, '_blank', 'noopener')
@@ -159,12 +160,12 @@ export const MDXLayoutNav = ({ mobile = false }: { mobile?: boolean }) => {
           placeholder={t('docsearch.button.buttonText')}
         />
       </div>
-      <NavTree textProps={mobile ? { weight: 'Normal', size: '16px' } : undefined}>
+      <NavTree textProps={mobile ? { weight: 'REGULAR', size: '16px' } : undefined}>
         {navItems.map((navItem, navItemIndex) => (
           <Fragment key={navItemIndex}>
             {(() => {
               if ('divider' in navItem) {
-                return <NavTree.Divider sx={mobile ? { mx: Spacing.L_XL, my: Spacing.L } : {}} />
+                return <NavTree.Divider sx={mobile ? { mx: Spacing['24px'], my: Spacing['16px'] } : {}} />
               }
               if ('heading' in navItem) {
                 return <NavTree.Heading>{navItem.heading}</NavTree.Heading>

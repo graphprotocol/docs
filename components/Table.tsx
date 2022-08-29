@@ -1,22 +1,23 @@
 import { HTMLAttributes } from 'react'
-import { Text, Spacing, FontWeight, buildBorder, buildColor } from '@edgeandnode/components'
+
+import { buildBorder, buildColor, FontWeight, Spacing, Text } from '@edgeandnode/components'
 
 export type TableProps = Omit<HTMLAttributes<HTMLTableElement>, 'color'>
 
 export const Table = ({ children, ...props }: TableProps) => {
   return (
-    <Text as="div" size="16px" sx={{ mt: Spacing.L_XL, mb: Spacing.XL, overflowX: 'auto' }}>
+    <Text as="div" size="16px" sx={{ mt: Spacing['24px'], mb: Spacing['32px'], overflowX: 'auto' }}>
       <table
         sx={{
           width: 'auto',
           '&, & th, & td': {
-            p: Spacing.L,
+            p: Spacing['16px'],
             // Border color has to be opaque because collapsed borders overlap
-            border: buildBorder(buildColor('White16', { opaque: true })),
+            border: buildBorder(buildColor(['Background', 'White16'])),
           },
           '& th': {
             bg: 'White4',
-            fontWeight: FontWeight.Semibold,
+            fontWeight: FontWeight.SEMIBOLD,
             textAlign: 'center',
           },
         }}

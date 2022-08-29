@@ -1,5 +1,6 @@
 import { HTMLAttributes } from 'react'
-import { Text, TextProps, Spacing } from '@edgeandnode/components'
+
+import { Spacing, Text, TextProps } from '@edgeandnode/components'
 
 export type ListProps = Omit<
   Omit<TextProps, 'as'> & {
@@ -16,13 +17,13 @@ export const List = ({ as, children, ...props }: ListProps) => {
       as={as}
       size="18px"
       sx={{
-        mt: Spacing.L,
-        mb: Spacing.L_XL,
-        paddingInlineStat: Spacing.XL,
+        mt: Spacing['16px'],
+        mb: Spacing['24px'],
+        paddingInlineStart: Spacing['32px'],
         listStyleType: as === 'ol' ? 'decimal' : 'disc',
         '& > li': {
           display: 'list-item',
-          my: Spacing.L,
+          my: Spacing['16px'],
         },
       }}
       {...props}
