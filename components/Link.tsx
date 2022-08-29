@@ -1,6 +1,7 @@
-import { AnchorHTMLAttributes } from 'react'
 import NextLink, { LinkProps as NextLinkProps } from 'next/link'
-import { useTheme, buildShadow, buildTransition } from '@edgeandnode/components'
+import { AnchorHTMLAttributes } from 'react'
+
+import { buildShadow, buildTransition, useTheme } from '@edgeandnode/components'
 
 import { AppLocale, useI18n } from '@/i18n'
 

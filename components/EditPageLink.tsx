@@ -1,9 +1,10 @@
 import { HTMLAttributes, useContext } from 'react'
-import { Text, Flex, Icon, Spacing, BorderRadius, Opacity, buildShadow, buildTransition } from '@edgeandnode/components'
 
-import { NavContext } from '@/layout/NavContext'
+import { BorderRadius, buildShadow, buildTransition, Flex, Icon, Opacity, Spacing, Text } from '@edgeandnode/components'
+
 import { Link } from '@/components'
 import { useI18n } from '@/i18n'
+import { NavContext } from '@/layout/NavContext'
 
 export type EditPageLinkProps = {
   mobile?: boolean

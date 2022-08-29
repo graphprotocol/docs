@@ -1,23 +1,16 @@
-import { PropsWithChildren, useMemo, useCallback } from 'react'
-import { NextSeo } from 'next-seo'
 import { MDXProvider } from '@mdx-js/react'
-import { ThemeUIStyleObject } from 'theme-ui'
-import { NewGDSDivider, NewGDSDividerProps, Spacing, Flex } from '@edgeandnode/components'
+import { NextSeo } from 'next-seo'
+import { PropsWithChildren, useCallback, useMemo } from 'react'
 import { useSet } from 'react-use'
+import { ThemeUIStyleObject } from 'theme-ui'
 
-import {
-  NavContext,
-  NavContextProps,
-  DocumentContext,
-  DocumentContextProps,
-  MDXLayoutNav,
-  MDXLayoutPagination,
-  MDXLayoutOutline,
-} from '@/layout'
+import { Flex, NewGDSDivider, NewGDSDividerProps, Spacing } from '@edgeandnode/components'
+
 import {
   Blockquote,
   CodeBlock,
   CodeInline,
+  Difficulty,
   EditPageLink,
   Heading,
   Image,
@@ -27,9 +20,17 @@ import {
   Paragraph,
   Table,
   VideoEmbed,
-  Difficulty,
 } from '@/components'
 import { useI18n } from '@/i18n'
+import {
+  DocumentContext,
+  DocumentContextProps,
+  MDXLayoutNav,
+  MDXLayoutOutline,
+  MDXLayoutPagination,
+  NavContext,
+  NavContextProps,
+} from '@/layout'
 import { NavItemGroup } from '@/navigation'
 
 const mdxComponents = {
@@ -83,6 +84,8 @@ export const MDXLayout = ({ pagePath, navItems, frontmatter, outline, children }
               currentGroup = navItem
             }
             return true
+          } else {
+            return false
           }
         })
       }

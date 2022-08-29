@@ -1,12 +1,13 @@
-import { HTMLAttributes, useContext } from 'react'
-import { Text, TextProps, Spacing, Opacity, buildShadow, buildTransition } from '@edgeandnode/components'
 import * as VisuallyHidden from '@radix-ui/react-visually-hidden'
+import { HTMLAttributes, useContext } from 'react'
 import { useInView } from 'react-intersection-observer'
 import { useDebounce } from 'react-use'
 
-import { DocumentContext } from '@/layout/DocumentContext'
+import { buildShadow, buildTransition, Opacity, Spacing, Text, TextProps } from '@edgeandnode/components'
+
 import { LinkInline } from '@/components'
 import { useI18n } from '@/i18n'
+import { DocumentContext } from '@/layout/DocumentContext'
 
 export type HeadingProps = TextProps & {
   level: 1 | 2 | 3 | 4 | 5 | 6

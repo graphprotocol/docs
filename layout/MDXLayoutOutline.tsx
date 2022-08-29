@@ -1,9 +1,10 @@
-import { useContext, useState, useEffect } from 'react'
-import { Text, Flex, NewGDSDivider, Spacing, buildTransition } from '@edgeandnode/components'
+import { useContext, useEffect, useState } from 'react'
 
-import { DocumentContext } from '@/layout'
-import { Link, EditPageLink } from '@/components'
+import { buildTransition, Flex, NewGDSDivider, Spacing, Text } from '@edgeandnode/components'
+
+import { EditPageLink, Link } from '@/components'
 import { useI18n } from '@/i18n'
+import { DocumentContext } from '@/layout'
 
 export const MDXLayoutOutline = () => {
   const { outline, highlightedOutlineItemId } = useContext(DocumentContext)!

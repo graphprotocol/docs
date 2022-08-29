@@ -1,21 +1,22 @@
-import { useRef, useState, useCallback } from 'react'
-import { createPortal } from 'react-dom'
-import { Global } from '@emotion/react'
 import { DocSearchModal, DocSearchProps, useDocSearchKeyboardEvents } from '@docsearch/react'
-import {
-  Text,
-  Flex,
-  Icon,
-  Spacing,
-  BorderRadius,
-  Opacity,
-  FontWeight,
-  FontSize,
-  buildTransition,
-  buildBorder,
-  GlobalTheme,
-} from '@edgeandnode/components'
+import { Global } from '@emotion/react'
+import { useCallback, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { dispatch } from 'use-bus'
+
+import {
+  BorderRadius,
+  buildBorder,
+  buildTransition,
+  Flex,
+  FontSize,
+  FontWeight,
+  GlobalTheme,
+  Icon,
+  Opacity,
+  Spacing,
+  Text,
+} from '@edgeandnode/components'
 
 import { useI18n } from '../i18n'
 import { EventType } from '../types'
@@ -26,7 +27,6 @@ export function DocSearch(props: DocSearchProps) {
   const searchButtonRef = useRef<HTMLButtonElement>(null)
   const [isOpen, setIsOpen] = useState(false)
   const [initialQuery, setInitialQuery] = useState<string | undefined>(props?.initialQuery || undefined)
-  const { t } = useI18n()
 
   const onOpen = useCallback(() => {
     setIsOpen(true)

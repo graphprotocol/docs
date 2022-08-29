@@ -1,12 +1,13 @@
-import { PropsWithChildren, useState, useEffect, useContext, Fragment } from 'react'
-import { useRouter } from 'next/router'
-import * as Collapsible from '@radix-ui/react-collapsible'
-import { Text, Flex, Icon, Spacing, BorderRadius, buildTransition } from '@edgeandnode/components'
 import { keyframes } from '@emotion/react'
+import * as Collapsible from '@radix-ui/react-collapsible'
+import { useRouter } from 'next/router'
+import { Fragment, PropsWithChildren, useContext, useEffect, useState } from 'react'
 
-import { NavContext } from '@/layout'
-import { NavTree, DocSearch, Link } from '@/components'
+import { BorderRadius, buildTransition, Flex, Icon, Spacing, Text } from '@edgeandnode/components'
+
+import { DocSearch, Link, NavTree } from '@/components'
 import { useI18n } from '@/i18n'
+import { NavContext } from '@/layout'
 
 const removeBasePathFromUrl = (url: string) => url.substring((process.env.BASE_PATH ?? '').length)
 
@@ -143,7 +144,7 @@ export const MDXLayoutNav = ({ mobile = false }: { mobile?: boolean }) => {
           hitComponent={({ hit, children }) => <Link href={removeBasePathFromUrl(hit.url)}>{children}</Link>}
           navigator={{
             navigate({ itemUrl }) {
-              router.push(removeBasePathFromUrl(itemUrl))
+              void router.push(removeBasePathFromUrl(itemUrl))
             },
             navigateNewTab({ itemUrl }) {
               const windowReference = window.open(itemUrl, '_blank', 'noopener')

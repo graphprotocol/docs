@@ -1,5 +1,6 @@
 import { HTMLAttributes } from 'react'
-import { Text, TextProps, Spacing } from '@edgeandnode/components'
+
+import { Spacing, Text, TextProps } from '@edgeandnode/components'
 
 export type ParagraphProps = Omit<TextProps & HTMLAttributes<HTMLParagraphElement>, 'color'>
 

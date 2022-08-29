@@ -1,10 +1,11 @@
-import { useMemo } from 'react'
 import { GetStaticPaths, GetStaticProps, NextPage } from 'next'
-import { Text, Flex, Spacing, BorderRadius, buildBorder, buildShadow, buildTransition } from '@edgeandnode/components'
+import { useMemo } from 'react'
 
-import { MDXLayout, Frontmatter, OutlineItem } from '@/layout'
+import { BorderRadius, buildBorder, buildShadow, buildTransition, Flex, Spacing, Text } from '@edgeandnode/components'
+
 import { Heading, Image, Link, LinkInline, Paragraph } from '@/components'
 import { AppLocale, supportedLocales, translations, useI18n } from '@/i18n'
+import { Frontmatter, MDXLayout, OutlineItem } from '@/layout'
 import { getNavItems, NavItem } from '@/navigation'
 
 export const frontmatter = (locale: AppLocale): Frontmatter => ({

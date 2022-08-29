@@ -1,27 +1,30 @@
-import { useMemo, useCallback, useState } from 'react'
+import { merge } from 'lodash-es'
 import { AppProps } from 'next/app'
-import { useRouter } from 'next/router'
 import Head from 'next/head'
 import NextLink from 'next/link'
+import { useRouter } from 'next/router'
 import { DefaultSeo, DefaultSeoProps } from 'next-seo'
-import {
-  I18nProvider,
-  ThemeProvider,
-  Layout,
-  NavigationMarketing,
-  Footer,
-  Locale,
-  LocaleSwitcher,
-  defaultLocale,
-  extractLocaleFromPath,
-} from '@edgeandnode/components'
-import '@edgeandnode/components/build/components.css'
-import '@docsearch/css'
-import { merge } from 'lodash-es'
+import { useCallback, useMemo, useState } from 'react'
 import useBus from 'use-bus'
 
+import {
+  defaultLocale,
+  extractLocaleFromPath,
+  Footer,
+  I18nProvider,
+  Layout,
+  Locale,
+  LocaleSwitcher,
+  NavigationMarketing,
+  ThemeProvider,
+} from '@edgeandnode/components'
+
 import { supportedLocales, translations, useI18n } from '@/i18n'
+
 import { EventType } from '../types'
+
+import '@edgeandnode/components/build/components.css'
+import '@docsearch/css'
 
 const DEFAULT_SEO_PROPS: DefaultSeoProps = {
   title: 'The Graph Docs',
@@ -65,7 +68,7 @@ const MyApp = ({ Component, pageProps }: AppProps) => {
   const router = useRouter()
 
   const { locale, pathWithoutLocale } = useMemo(() => {
-    let { locale, pathWithoutLocale } = extractLocaleFromPath(router.asPath.split(/[?#]/)[0])
+    const { locale, pathWithoutLocale } = extractLocaleFromPath(router.asPath.split(/[?#]/)[0])
     return {
       locale,
       pathWithoutLocale,
@@ -74,7 +77,7 @@ const MyApp = ({ Component, pageProps }: AppProps) => {
 
   const setLocale = useCallback(
     (locale: Locale) => {
-      router.push(`/${locale}${pathWithoutLocale}`)
+      void router.push(`/${locale}${pathWithoutLocale}`)
     },
     [router, pathWithoutLocale]
   )

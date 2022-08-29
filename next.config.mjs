@@ -1,6 +1,6 @@
 import mdx from '@next/mdx'
-import remarkGfm from 'remark-gfm'
 import remarkFrontmatter from 'remark-frontmatter'
+import remarkGfm from 'remark-gfm'
 import remarkMdxFrontmatter from 'remark-mdx-frontmatter'
 
 import { remarkMdxLayout } from './lib/remarkMdxLayout.mjs'

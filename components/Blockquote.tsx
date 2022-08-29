@@ -1,5 +1,6 @@
 import { HTMLAttributes } from 'react'
-import { Text, TextProps, Spacing, buildBorder } from '@edgeandnode/components'
+
+import { buildBorder, Spacing, Text, TextProps } from '@edgeandnode/components'
 
 export type BlockquoteProps = Omit<TextProps & HTMLAttributes<HTMLQuoteElement>, 'color'>
 

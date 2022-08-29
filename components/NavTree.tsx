@@ -1,18 +1,19 @@
-import { HTMLAttributes, createContext, Context, useState, useContext } from 'react'
+import { keyframes } from '@emotion/react'
 import * as Collapsible from '@radix-ui/react-collapsible'
+import { Context, createContext, HTMLAttributes, useContext, useState } from 'react'
+import { SxProp } from 'theme-ui'
+
 import {
-  NewGDSDivider,
-  Text,
-  TextProps,
+  buildTransition,
   Flex,
   Icon,
   IconProps,
-  Spacing,
-  buildTransition,
   Locale,
+  NewGDSDivider,
+  Spacing,
+  Text,
+  TextProps,
 } from '@edgeandnode/components'
-import { keyframes } from '@emotion/react'
-import { SxProp } from 'theme-ui'
 
 import { Link, LinkProps } from '@/components'
 import { useI18n } from '@/i18n'

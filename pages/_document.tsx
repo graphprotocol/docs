@@ -1,5 +1,6 @@
-import Document, { DocumentContext, DocumentInitialProps, Html, Head, Main, NextScript } from 'next/document'
-import { extractLocaleFromPath, Locale, getHtmlAttributesForLocale, defaultLocale } from '@edgeandnode/components'
+import Document, { DocumentContext, DocumentInitialProps, Head, Html, Main, NextScript } from 'next/document'
+
+import { defaultLocale, extractLocaleFromPath, getHtmlAttributesForLocale, Locale } from '@edgeandnode/components'
 
 type MyDocumentProps = DocumentInitialProps & {
   locale: Locale

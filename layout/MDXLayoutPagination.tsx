@@ -1,9 +1,10 @@
 import { useContext } from 'react'
-import { Text, Flex, NewGDSDivider, Icon, Spacing, buildShadow, buildTransition } from '@edgeandnode/components'
 
-import { NavContext } from '@/layout'
+import { buildShadow, buildTransition, Flex, Icon, NewGDSDivider, Spacing, Text } from '@edgeandnode/components'
+
 import { Link } from '@/components'
 import { useI18n } from '@/i18n'
+import { NavContext } from '@/layout'
 
 export const MDXLayoutPagination = () => {
   const { previousPage, nextPage } = useContext(NavContext)!
