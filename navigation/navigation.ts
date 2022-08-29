@@ -28,6 +28,9 @@ export const navigation = (locale: AppLocale): NavItemDefinition[] => [
         slug: 'curating',
       },
       {
+        slug: 'developing',
+      },
+      {
         slug: 'explorer',
       },
     ],
@@ -81,6 +84,9 @@ export const navigation = (locale: AppLocale): NavItemDefinition[] => [
       {
         slug: 'deploying-a-subgraph-to-hosted',
       },
+      {
+        slug: 'graph-hosted-service-sunsetting-faqs',
+      },
     ],
   },
   {
@@ -90,6 +96,9 @@ export const navigation = (locale: AppLocale): NavItemDefinition[] => [
       {
         slug: 'publishing-a-subgraph',
       },
+      {
+        slug: 'subgraph-migration-graph-network-faqs',
+      }
     ],
   },
   {
@@ -115,10 +124,10 @@ export const navigation = (locale: AppLocale): NavItemDefinition[] => [
         slug: 'managing-api-keys',
       },
       {
-        slug: 'querying-best-practices',
+        slug: 'querying-from-an-application',
       },
       {
-        slug: 'querying-from-an-application',
+        slug: 'querying-best-practices',
       },
       {
         slug: 'distributed-systems',
