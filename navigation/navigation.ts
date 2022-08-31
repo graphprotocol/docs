@@ -136,6 +136,21 @@ export const navigation = (locale: AppLocale): NavItemDefinition[] => [
     ],
   },
   {
+    title: translations[locale].global.navigation.indexing,
+    slug: 'indexing',
+    children: [
+      {
+        slug: 'infrastructure',
+      },
+      {
+        slug: 'interacting-with-the-network',
+      },
+      {
+        slug: 'faq',
+      },
+    ],
+  },
+  {
     divider: true,
   },
   {

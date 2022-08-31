@@ -1,0 +1,116 @@
+---
+title: FAQ
+---
+
+### What is the minimum stake required to be an Indexer on the network?
+
+The minimum stake for an Indexer is currently set to 100K GRT.
+
+### What are the revenue streams for an Indexer?
+
+**Query fee rebates** - Payments for serving queries on the network. These payments are mediated via state channels between an Indexer and a gateway. Each query request from a gateway contains a payment and the corresponding response a proof of query result validity.
+
+**Indexing rewards** - Generated via a 3% annual protocol wide inflation, the indexing rewards are distributed to Indexers who are indexing subgraph deployments for the network.
+
+### How are rewards distributed?
+
+Indexing rewards come from protocol inflation which is set to 3% annual issuance. They are distributed across subgraphs based on the proportion of all curation signal on each, then distributed proportionally to Indexers based on their allocated stake on that subgraph. **An allocation must be closed with a valid proof of indexing (POI) that meets the standards set by the arbitration charter in order to be eligible for rewards.**
+
+Numerous tools have been created by the community for calculating rewards; you'll find a collection of them organized in the [Community Guides collection](https://www.notion.so/Community-Guides-abbb10f4dba040d5ba81648ca093e70c). You can also find an up to date list of tools in the #Delegators and #Indexers channels on the [Discord server](https://discord.gg/vtvv7FP).
+
+### What is a proof of indexing (POI)?
+
+POIs are used in the network to verify that an Indexer is indexing the subgraphs they have allocated on. A POI for the first block of the current epoch must be submitted when closing an allocation for that allocation to be eligible for indexing rewards. A POI for a block is a digest for all entity store transactions for a specific subgraph deployment up to and including that block.
+
+### When are indexing rewards distributed?
+
+Allocations are continuously accruing rewards while they're active. Rewards are collected by the Indexers, and distributed whenever their allocations are closed. That happens either manually, whenever the Indexer wants to force close them, or after 28 epochs a Delegator can close the allocation for the Indexer, but this results in no rewards being minted. 28 epochs is the max allocation lifetime (right now, one epoch lasts for ~24h).
+
+### Can pending Indexer rewards be monitored?
+
+The RewardsManager contract has a read-only [getRewards](https://github.com/graphprotocol/contracts/blob/master/contracts/rewards/RewardsManager.sol#L317) function that can be used to check the pending rewards for a specific allocation.
+
+Many of the community-made dashboards include pending rewards values and they can be easily checked manually by following these steps:
+
+1. Query the [mainnet subgraph](https://thegraph.com/hosted-service/subgraph/graphprotocol/graph-network-mainnet) to get the IDs for all active allocations:
+
+```graphql
+query indexerAllocations {
+  indexer(id: "<INDEXER_ADDRESS>") {
+    allocations {
+      activeForIndexer {
+        allocations {
+          id
+        }
+      }
+    }
+  }
+}
+```
+
+Use Etherscan to call `getRewards()`:
+
+- Navigate to [Etherscan interface to Rewards contract](https://etherscan.io/address/0x9Ac758AB77733b4150A901ebd659cbF8cB93ED66#readProxyContract)
+
+* To call `getRewards()`:
+  - Expand the **10. getRewards** dropdown.
+  - Enter the **allocationID** in the input.
+  - Click the **Query** button.
+
+### What are disputes and where can I view them?
+
+Indexer's queries and allocations can both be disputed on The Graph during the dispute period. The dispute period varies, depending on the type of dispute. Queries/attestations have 7 epochs dispute window, whereas allocations have 56 epochs. After these periods pass, disputes cannot be opened against either of allocations or queries. When a dispute is opened, a deposit of a minimum of 10,000 GRT is required by the Fishermen, which will be locked until the dispute is finalized and a resolution has been given. Fisherman are any network participants that open disputes.
+
+Disputes have **three** possible outcomes, so does the deposit of the Fishermen.
+
+- If the dispute is rejected, the GRT deposited by the Fishermen will be burned, and the disputed Indexer will not be slashed.
+- If the dispute is settled as a draw, the Fishermen's deposit will be returned, and the disputed Indexer will not be slashed.
+- If the dispute is accepted, the GRT deposited by the Fishermen will be returned, the disputed Indexer will be slashed and the Fishermen will earn 50% of the slashed GRT.
+
+Disputes can be viewed in the UI in an Indexer's profile page under the `Disputes` tab.
+
+### What are query fee rebates and when are they distributed?
+
+Query fees are collected by the gateway whenever an allocation is closed and accumulated in the subgraph's query fee rebate pool. The rebate pool is designed to encourage Indexers to allocate stake in rough proportion to the amount of query fees they earn for the network. The portion of query fees in the pool that are allocated to a particular Indexer is calculated using the Cobbs-Douglas Production Function; the distributed amount per Indexer is a function of their contributions to the pool and their allocation of stake on the subgraph.
+
+Once an allocation has been closed and the dispute period has passed the rebates are available to be claimed by the Indexer. Upon claiming, the query fee rebates are distributed to the Indexer and their Delegators based on the query fee cut and the delegation pool proportions.
+
+### What is query fee cut and indexing reward cut?
+
+The `queryFeeCut` and `indexingRewardCut` values are delegation parameters that the Indexer may set along with cooldownBlocks to control the distribution of GRT between the Indexer and their Delegators. See the last steps in [Staking in the Protocol](/network/indexing#stake-in-the-protocol) for instructions on setting the delegation parameters.
+
+- **queryFeeCut** - the % of query fee rebates accumulated on a subgraph that will be distributed to the Indexer. If this is set to 95%, the Indexer will receive 95% of the query fee rebate pool when an allocation is claimed with the other 5% going to the Delegators.
+
+- **indexingRewardCut** - the % of indexing rewards accumulated on a subgraph that will be distributed to the Indexer. If this is set to 95%, the Indexer will receive 95% of the indexing rewards pool when an allocation is closed and the Delegators will split the other 5%.
+
+### How do Indexers know which subgraphs to index?
+
+Indexers may differentiate themselves by applying advanced techniques for making subgraph indexing decisions but to give a general idea we'll discuss several key metrics used to evaluate subgraphs in the network:
+
+- **Curation signal** - The proportion of network curation signal applied to a particular subgraph is a good indicator of the interest in that subgraph, especially during the bootstrap phase when query voluming is ramping up.
+
+- **Query fees collected** - The historical data for volume of query fees collected for a specific subgraph is a good indicator of future demand.
+
+- **Amount staked** - Monitoring the behavior of other Indexers or looking at proportions of total stake allocated towards specific subgraphs can allow an Indexer to monitor the supply side for subgraph queries to identify subgraphs that the network is showing confidence in or subgraphs that may show a need for more supply.
+
+- **Subgraphs with no indexing rewards** - Some subgraphs do not generate indexing rewards mainly because they are using unsupported features like IPFS or because they are querying another network outside of mainnet. You will see a message on a subgraph if it is not generating indexing rewards.
+
+### What are the hardware requirements?
+
+- **Small** - Enough to get started indexing several subgraphs, will likely need to be expanded.
+- **Standard** - Default setup, this is what is used in the example k8s/terraform deployment manifests.
+- **Medium** - Production Indexer supporting 100 subgraphs and 200-500 requests per second.
+- **Large** - Prepared to index all currently used subgraphs and serve requests for the related traffic.
+
+| Setup | Postgres<br />(CPUs) | Postgres<br />(memory in GBs) | Postgres<br />(disk in TBs) | VMs<br />(CPUs) | VMs<br />(memory in GBs) |
+| --- | :-: | :-: | :-: | :-: | :-: |
+| Small | 4 | 8 | 1 | 4 | 16 |
+| Standard | 8 | 30 | 1 | 12 | 48 |
+| Medium | 16 | 64 | 2 | 32 | 64 |
+| Large | 72 | 468 | 3.5 | 48 | 184 |
+
+### What are some basic security precautions an Indexer should take?
+
+- **Operator wallet** - Setting up an operator wallet is an important precaution because it allows an Indexer to maintain separation between their keys that control stake and those that are in control of day-to-day operations. See [Stake in Protocol](/network/indexing#stake-in-the-protocol) for instructions.
+
+- **Firewall** - Only the Indexer service needs to be exposed publicly and particular attention should be paid to locking down admin ports and database access: the Graph Node JSON-RPC endpoint (default port: 8030), the Indexer management API endpoint (default port: 18000), and the Postgres database endpoint (default port: 5432) should not be exposed.
