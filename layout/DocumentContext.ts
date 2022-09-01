@@ -1,8 +1,10 @@
+import { NextSeoProps } from 'next-seo'
 import { Context, createContext } from 'react'
 
 export type Frontmatter = {
   title?: string
   navTitle?: string
+  seo?: NextSeoProps
 }
 
 export type OutlineItem = {
