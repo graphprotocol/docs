@@ -20,6 +20,9 @@ export const navigation = (locale: AppLocale): NavItemDefinition[] => [
         slug: 'overview',
       },
       {
+        slug: 'benefits',
+      },
+      {
         slug: 'indexing',
       },
       {
