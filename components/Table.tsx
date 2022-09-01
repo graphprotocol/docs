@@ -9,7 +9,6 @@ export const Table = ({ children, ...props }: TableProps) => {
     <Text as="div" size="16px" sx={{ mt: Spacing['24px'], mb: Spacing['32px'], overflowX: 'auto' }}>
       <table
         sx={{
-          width: 'auto',
           '&, & th, & td': {
             p: Spacing['16px'],
             // Border color has to be opaque because collapsed borders overlap
@@ -19,6 +18,9 @@ export const Table = ({ children, ...props }: TableProps) => {
             bg: 'White4',
             fontWeight: FontWeight.SEMIBOLD,
             textAlign: 'center',
+          },
+          '& tr:has(.highlight-row) td, & td:has(.highlight-cell)': {
+            bg: 'Purple8',
           },
         }}
         {...props}
