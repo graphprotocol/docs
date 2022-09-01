@@ -134,10 +134,14 @@ export const MDXLayout = ({ pagePath, navItems, frontmatter, outline, children }
     return _highlightedOutlineItemId
   }, [outline, outlineItemIsInOrAboveView])
 
+  const seo = { ...(frontmatter?.seo ?? {}) }
+  seo.title = seo.title ?? frontmatter?.title
+  seo.title = `${seo.title ? `${seo.title} - ` : ''}The Graph Docs`
+
   return (
     <NavContext.Provider value={{ pagePath, navItems, previousPage, currentPage, nextPage, currentGroup }}>
       <DocumentContext.Provider value={{ frontmatter, outline, markOutlineItem, highlightedOutlineItemId }}>
-        <NextSeo title={`${frontmatter?.title ? `${frontmatter.title} - ` : ''} The Graph Docs`} />
+        <NextSeo {...seo} />
 
         <div
           sx={{
