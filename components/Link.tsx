@@ -38,7 +38,7 @@ export const Link = ({
     (typeof href === 'string' && href.startsWith('/')) ||
     (typeof href === 'object' && !href.host && href.pathname?.startsWith('/'))
 
-  // If the URL is internal, automatically prepend the locale
+  // If the link is internal, automatically prepend the locale
   let finalHref = href
   if (isInternal) {
     const path = typeof finalHref === 'object' ? finalHref.pathname ?? '' : finalHref
@@ -51,7 +51,7 @@ export const Link = ({
     }
   }
 
-  // If the URL is external, default the target to `_blank`
+  // If the link is external, default the target to `_blank`
   const finalTarget = target ?? (!isInternal ? '_blank' : undefined)
 
   const nextLinkProps = {
