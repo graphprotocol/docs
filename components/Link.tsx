@@ -23,20 +23,22 @@ export const Link = ({
   ...props
 }: LinkProps) => {
   const { locale: currentLocale, extractLocaleFromPath } = useI18n()
-  const rel = target === '_blank' ? 'noopener' : undefined
 
-  // If `href` is undefined or links to an anchor on the same page, bypass `NextLink`
-  if (href === undefined || (typeof href === 'string' && href.startsWith('#'))) {
+  // Determine whether the link is internal, as well as the final `target` and `rel` attributes to use
+  const isInternal =
+    (typeof href === 'string' && (href.startsWith('/') || href.startsWith('#'))) ||
+    (typeof href === 'object' && !href.host && (href.pathname?.startsWith('/') || href.pathname?.startsWith('#')))
+  const finalTarget = target ?? (!isInternal ? '_blank' : undefined)
+  const rel = finalTarget === '_blank' ? 'noopener' : undefined
+
+  // If `href` is undefined, or is a string and either it links to an anchor on the same page or target is `_blank`, bypass `NextLink`
+  if (href === undefined || (typeof href === 'string' && (href.startsWith('#') || finalTarget === '_blank'))) {
     return (
-      <a href={href} target={target} rel={rel} {...props}>
+      <a href={href} target={finalTarget} rel={rel} {...props}>
         {children}
       </a>
     )
   }
-
-  const isInternal =
-    (typeof href === 'string' && href.startsWith('/')) ||
-    (typeof href === 'object' && !href.host && href.pathname?.startsWith('/'))
 
   // If the URL is internal, automatically prepend the locale
   if (isInternal) {
@@ -59,7 +61,7 @@ export const Link = ({
   }
   return (
     <NextLink {...nextLinkProps} passHref>
-      <a target={target} rel={rel} {...props}>
+      <a target={finalTarget} rel={rel} {...props}>
         {children}
       </a>
     </NextLink>
