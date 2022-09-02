@@ -31,8 +31,8 @@ export const Link = ({
   const finalTarget = target ?? (!isInternal ? '_blank' : undefined)
   const rel = finalTarget === '_blank' ? 'noopener' : undefined
 
-  // If `href` is undefined, or is a string and either it links to an anchor on the same page or target is `_blank`, bypass `NextLink`
-  if (href === undefined || (typeof href === 'string' && (href.startsWith('#') || finalTarget === '_blank'))) {
+  // If `href` is undefined, or is a string that links to an anchor on the same page, bypass `NextLink`
+  if (href === undefined || (typeof href === 'string' && href.startsWith('#'))) {
     return (
       <a href={href} target={finalTarget} rel={rel} {...props}>
         {children}
@@ -41,19 +41,20 @@ export const Link = ({
   }
 
   // If the URL is internal, automatically prepend the locale
+  let finalHref = href
   if (isInternal) {
-    const path = typeof href === 'object' ? href.pathname ?? '' : href
+    const path = typeof finalHref === 'object' ? finalHref.pathname ?? '' : finalHref
     const { locale: pathLocale, pathWithoutLocale } = extractLocaleFromPath(path)
     const pathWithLocale = `/${linkLocale ?? pathLocale ?? currentLocale}${pathWithoutLocale}`
-    if (typeof href === 'object') {
-      href.pathname = pathWithLocale
+    if (typeof finalHref === 'object') {
+      finalHref.pathname = pathWithLocale
     } else {
-      href = pathWithLocale
+      finalHref = pathWithLocale
     }
   }
 
   const nextLinkProps = {
-    href,
+    href: finalHref,
     replace,
     scroll,
     shallow,
