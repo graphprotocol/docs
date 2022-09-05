@@ -1,19 +1,10 @@
 import { HTMLAttributes, useContext } from 'react'
-import {
-  Text,
-  Flex,
-  Icon,
-  Spacing,
-  BorderRadius,
-  Opacity,
-  buildShadow,
-  buildTransition,
-  useUniqueId,
-} from '@edgeandnode/components'
 
-import { NavContext } from '@/layout/NavContext'
+import { BorderRadius, buildShadow, buildTransition, Flex, Icon, Opacity, Spacing, Text } from '@edgeandnode/components'
+
 import { Link } from '@/components'
 import { useI18n } from '@/i18n'
+import { NavContext } from '@/layout/NavContext'
 
 export type EditPageLinkProps = {
   mobile?: boolean
@@ -22,31 +13,29 @@ export type EditPageLinkProps = {
 export const EditPageLink = ({ mobile = false, ...props }: EditPageLinkProps) => {
   const { pagePath } = useContext(NavContext)!
   const { t } = useI18n()
-  const linkClass = useUniqueId('class')
 
   return (
     <Link
-      className={linkClass}
       href={`https://github.com/graphprotocol/docs/blob/main/pages/${pagePath}`}
       target="_blank"
       sx={{
         display: 'block',
-        py: Spacing.S,
+        py: Spacing['4px'],
         borderRadius: BorderRadius.S,
         '&:hover': { color: 'White', textShadow: buildShadow('M') },
         transition: buildTransition(),
       }}
       {...props}
     >
-      <Flex.Row as="span" align="center" gap={Spacing.M}>
+      <Flex.Row as="span" align="center" gap={Spacing['8px']}>
         <Icon.LogoGitHub title="" />
-        <Text weight="Semibold" size={mobile ? '16px' : '14px'}>
+        <Text weight="SEMIBOLD" size={mobile ? '16px' : '14px'}>
           {t('global.editPage')}
         </Text>
         <Icon.ExternalLink
           sx={{
             opacity: Opacity['0%'],
-            [`.${linkClass}:hover &`]: { opacity: Opacity['32%'] },
+            'a:hover &': { opacity: Opacity['32%'] },
             transition: buildTransition('OPACITY'),
           }}
         />

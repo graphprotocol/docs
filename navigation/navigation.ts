@@ -1,5 +1,6 @@
-import { NavItemDefinition } from './types'
 import { AppLocale, translations } from '@/i18n'
+
+import { NavItemDefinition } from './types'
 
 export const navigation = (locale: AppLocale): NavItemDefinition[] => [
   {
@@ -17,6 +18,9 @@ export const navigation = (locale: AppLocale): NavItemDefinition[] => [
     children: [
       {
         slug: 'overview',
+      },
+      {
+        slug: 'benefits',
       },
       {
         slug: 'indexing',

@@ -1,23 +1,16 @@
-import { PropsWithChildren, useMemo, useCallback } from 'react'
-import { NextSeo } from 'next-seo'
 import { MDXProvider } from '@mdx-js/react'
-import { ThemeUIStyleObject } from 'theme-ui'
-import { NewGDSDivider, NewGDSDividerProps, Spacing, Flex } from '@edgeandnode/components'
+import { NextSeo } from 'next-seo'
+import { PropsWithChildren, useCallback, useMemo } from 'react'
 import { useSet } from 'react-use'
+import { ThemeUIStyleObject } from 'theme-ui'
 
-import {
-  NavContext,
-  NavContextProps,
-  DocumentContext,
-  DocumentContextProps,
-  MDXLayoutNav,
-  MDXLayoutPagination,
-  MDXLayoutOutline,
-} from '@/layout'
+import { Flex, NewGDSDivider, NewGDSDividerProps, Spacing } from '@edgeandnode/components'
+
 import {
   Blockquote,
   CodeBlock,
   CodeInline,
+  Difficulty,
   EditPageLink,
   Heading,
   Image,
@@ -27,16 +20,24 @@ import {
   Paragraph,
   Table,
   VideoEmbed,
-  Difficulty,
 } from '@/components'
 import { useI18n } from '@/i18n'
+import {
+  DocumentContext,
+  DocumentContextProps,
+  MDXLayoutNav,
+  MDXLayoutOutline,
+  MDXLayoutPagination,
+  NavContext,
+  NavContextProps,
+} from '@/layout'
 import { NavItemGroup } from '@/navigation'
 
 const mdxComponents = {
   blockquote: Blockquote,
   pre: CodeBlock,
   code: CodeInline,
-  hr: (props: NewGDSDividerProps) => <NewGDSDivider sx={{ my: Spacing.XL }} {...props} />,
+  hr: (props: NewGDSDividerProps) => <NewGDSDivider sx={{ my: Spacing['32px'] }} {...props} />,
   h1: Heading.H1,
   h2: Heading.H2,
   h3: Heading.H3,
@@ -56,7 +57,7 @@ const mdxComponents = {
 const mdxStyles = {
   overflowWrap: 'break-word',
   'img + em': {
-    mt: Spacing.L,
+    mt: Spacing['16px'],
     display: 'block',
     textAlign: 'center',
   },
@@ -83,6 +84,8 @@ export const MDXLayout = ({ pagePath, navItems, frontmatter, outline, children }
               currentGroup = navItem
             }
             return true
+          } else {
+            return false
           }
         })
       }
@@ -131,10 +134,14 @@ export const MDXLayout = ({ pagePath, navItems, frontmatter, outline, children }
     return _highlightedOutlineItemId
   }, [outline, outlineItemIsInOrAboveView])
 
+  const seo = { ...(frontmatter?.seo ?? {}) }
+  seo.title = seo.title ?? frontmatter?.title
+  seo.title = `${seo.title ? `${seo.title} - ` : ''}The Graph Docs`
+
   return (
     <NavContext.Provider value={{ pagePath, navItems, previousPage, currentPage, nextPage, currentGroup }}>
       <DocumentContext.Provider value={{ frontmatter, outline, markOutlineItem, highlightedOutlineItemId }}>
-        <NextSeo title={`${frontmatter?.title ? `${frontmatter.title} - ` : ''} The Graph Docs`} />
+        <NextSeo {...seo} />
 
         <div
           sx={{
@@ -156,11 +163,11 @@ export const MDXLayout = ({ pagePath, navItems, frontmatter, outline, children }
 
           <div
             sx={{
-              pt: [null, null, null, Spacing.XL],
-              pb: Spacing.XXL,
+              pt: [null, null, null, Spacing['32px']],
+              pb: Spacing['64px'],
             }}
           >
-            <div sx={{ display: [null, null, null, 'none'], mb: Spacing.XL }}>
+            <div sx={{ display: [null, null, null, 'none'], mb: Spacing['32px'] }}>
               <MDXLayoutNav mobile />
             </div>
 
@@ -174,11 +181,11 @@ export const MDXLayout = ({ pagePath, navItems, frontmatter, outline, children }
               <MDXProvider components={mdxComponents}>{children}</MDXProvider>
             </article>
 
-            <Flex.Row sx={{ display: [null, null, null, 'none'], mt: Spacing.XL_XXL }}>
+            <Flex.Row sx={{ display: [null, null, null, 'none'], mt: Spacing['48px'] }}>
               <EditPageLink mobile />
             </Flex.Row>
 
-            <div sx={{ mt: Spacing.XXL }}>
+            <div sx={{ mt: Spacing['64px'] }}>
               <MDXLayoutPagination />
             </div>
           </div>

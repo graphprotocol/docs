@@ -1,7 +1,7 @@
-import { Locale, Translations, NestedStrings, useI18n as _useI18n } from '@edgeandnode/components'
+import { Locale, NestedStrings, Translations, useI18n as _useI18n } from '@edgeandnode/components'
 
-import en from '@/pages/en/translations'
 import ar from '@/pages/ar/translations'
+import en from '@/pages/en/translations'
 import es from '@/pages/es/translations'
 import ja from '@/pages/ja/translations'
 import ko from '@/pages/ko/translations'

@@ -1,5 +1,6 @@
-import Document, { DocumentContext, DocumentInitialProps, Html, Head, Main, NextScript } from 'next/document'
-import { extractLocaleFromPath, Locale, objectEntries } from '@edgeandnode/components'
+import Document, { DocumentContext, DocumentInitialProps, Head, Html, Main, NextScript } from 'next/document'
+
+import { defaultLocale, extractLocaleFromPath, getHtmlAttributesForLocale, Locale } from '@edgeandnode/components'
 
 type MyDocumentProps = DocumentInitialProps & {
   locale: Locale
@@ -20,7 +21,7 @@ export default class MyDocument extends Document {
     const { locale } = this.props as MyDocumentProps
 
     return (
-      <Html {...getHtmlAttributes(locale)} data-theme="dark">
+      <Html {...getHtmlAttributesForLocale(locale ?? defaultLocale)} data-theme="dark">
         <Head>
           <link
             rel="preconnect"
@@ -36,15 +37,4 @@ export default class MyDocument extends Document {
       </Html>
     )
   }
-}
-
-const getHtmlAttributes = (locale: Locale) => ({
-  lang: locale,
-  dir: locale == Locale.ARABIC ? 'rtl' : 'ltr',
-})
-
-export const refreshHtmlAttributes = (locale: Locale) => {
-  objectEntries(getHtmlAttributes(locale)).forEach(([attribute, value]) => {
-    document.documentElement[attribute] = value
-  })
 }

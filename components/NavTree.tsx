@@ -1,18 +1,19 @@
-import { HTMLAttributes, createContext, Context, useState, useContext } from 'react'
+import { keyframes } from '@emotion/react'
 import * as Collapsible from '@radix-ui/react-collapsible'
+import { Context, createContext, HTMLAttributes, useContext, useState } from 'react'
+import { SxProp } from 'theme-ui'
+
 import {
-  NewGDSDivider,
-  Text,
-  TextProps,
+  buildTransition,
   Flex,
   Icon,
   IconProps,
-  Spacing,
-  buildTransition,
   Locale,
+  NewGDSDivider,
+  Spacing,
+  Text,
+  TextProps,
 } from '@edgeandnode/components'
-import { keyframes } from '@emotion/react'
-import { SxProp } from 'theme-ui'
 
 import { Link, LinkProps } from '@/components'
 import { useI18n } from '@/i18n'
@@ -49,7 +50,7 @@ export type NavTreeHeadingProps = HTMLAttributes<HTMLElement>
 const NavTree = ({ children, textProps, ...props }: NavTreeProps) => {
   return (
     <Flex.Column as="nav" {...props}>
-      <Text weight="Semibold" size="14px" as="ul" {...textProps}>
+      <Text weight="SEMIBOLD" size="14px" as="ul" {...textProps}>
         {children}
       </Text>
     </Flex.Column>
@@ -74,8 +75,8 @@ const NavTreeItem = ({
         target={target}
         sx={{
           display: 'block',
-          px: Spacing.L_XL,
-          py: Spacing.M_L,
+          px: Spacing['24px'],
+          py: Spacing['12px'],
           color: active ? 'White88' : 'White64',
           '&:hover': { color: 'White' },
           transition: buildTransition('COLORS'),
@@ -89,7 +90,7 @@ const NavTreeItem = ({
             size="12px"
             sx={{
               position: 'absolute',
-              insetInlineStart: Spacing.S,
+              insetInlineStart: Spacing['4px'],
               top: 0,
               bottom: 0,
               my: 'auto',
@@ -131,8 +132,8 @@ const NavTreeGroupHeading = ({ children, buttonProps = {}, ...props }: NavTreeGr
       <Collapsible.Trigger
         sx={{
           width: '100%',
-          paddingInline: Spacing.L_XL,
-          py: Spacing.M_L,
+          paddingInline: Spacing['24px'],
+          py: Spacing['12px'],
           color: context.open || context.active ? 'White88' : 'White64',
           '&:hover': { color: 'White' },
           transition: buildTransition('COLORS'),
@@ -140,7 +141,7 @@ const NavTreeGroupHeading = ({ children, buttonProps = {}, ...props }: NavTreeGr
         }}
         {...buttonOtherProps}
       >
-        <Flex.Row as="span" justify="space-between" align="center" gap={Spacing.L}>
+        <Flex.Row as="span" justify="space-between" align="center" gap={Spacing['16px']}>
           <span>{children}</span>
           <Flex.Column
             as="span"
@@ -171,14 +172,14 @@ const NavTreeGroupContent = ({ children, ...props }: NavTreeGroupContentProps) =
       }}
       {...props}
     >
-      <ul sx={{ paddingInlineStart: Spacing.L }}>{children}</ul>
+      <ul sx={{ paddingInlineStart: Spacing['16px'] }}>{children}</ul>
     </Collapsible.Content>
   )
 }
 
 const NavTreeDivider = (props: NavTreeDividerProps) => {
   return (
-    <li aria-hidden="true" sx={{ my: Spacing.M }} {...props}>
+    <li aria-hidden="true" sx={{ my: Spacing['8px'] }} {...props}>
       <NewGDSDivider />
     </li>
   )
@@ -186,7 +187,7 @@ const NavTreeDivider = (props: NavTreeDividerProps) => {
 
 const NavTreeHeading = ({ children, ...props }: NavTreeHeadingProps) => {
   return (
-    <li sx={{ mt: Spacing.L_XL, mb: Spacing.M_L, paddingInlineStart: Spacing.L_XL }} {...props}>
+    <li sx={{ mt: Spacing['24px'], mb: Spacing['12px'], paddingInlineStart: Spacing['24px'] }} {...props}>
       <Text.C12 color="White48">{children}</Text.C12>
     </li>
   )
