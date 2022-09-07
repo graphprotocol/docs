@@ -34,6 +34,9 @@ export const navigation = (locale: AppLocale): NavItemDefinition[] => [
     ],
   },
   {
+    slug: 'billing',
+  },
+  {
     divider: true,
   },
   {
@@ -129,9 +132,6 @@ export const navigation = (locale: AppLocale): NavItemDefinition[] => [
       },
       {
         slug: 'querying-the-hosted-service',
-      },
-      {
-        slug: 'billing',
       },
     ],
   },
