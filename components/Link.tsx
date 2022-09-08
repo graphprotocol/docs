@@ -24,9 +24,9 @@ export const Link = ({
 }: LinkProps) => {
   const { locale: currentLocale, extractLocaleFromPath } = useI18n()
 
-  let finalHref = typeof href === 'object' ? href.href ?? '' : href
+  let finalHref = typeof href === 'object' ? href.href ?? undefined : href
 
-  // If no `href` was passed or if it points to an anchor on the same page, bypass `NextLink`
+  // If `finalHref` is `undefined`, or if it points to an anchor on the same page, bypass `NextLink`
   if (finalHref === undefined || finalHref.startsWith('#')) {
     return (
       <a href={finalHref} target={target} {...props}>
