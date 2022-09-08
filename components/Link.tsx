@@ -24,31 +24,23 @@ export const Link = ({
 }: LinkProps) => {
   const { locale: currentLocale, extractLocaleFromPath } = useI18n()
 
-  // If `href` is undefined, or is a string that links to an anchor on the same page, bypass `NextLink`
-  if (href === undefined || (typeof href === 'string' && href.startsWith('#'))) {
+  let finalHref = typeof href === 'object' ? href.href ?? '' : href
+
+  // If no `href` was passed or if it points to an anchor on the same page, bypass `NextLink`
+  if (finalHref === undefined || finalHref.startsWith('#')) {
     return (
-      <a href={href} target={target} {...props}>
+      <a href={finalHref} target={target} {...props}>
         {children}
       </a>
     )
   }
 
-  // Determine whether the link is internal
-  const isInternal =
-    (typeof href === 'string' && href.startsWith('/')) ||
-    (typeof href === 'object' && !href.host && href.pathname?.startsWith('/'))
+  const isInternal = finalHref.startsWith('/')
 
-  // If the link is internal, automatically prepend the locale
-  let finalHref = href
+  // If the link is internal, automatically prepend the locale to it
   if (isInternal) {
-    const path = typeof finalHref === 'object' ? finalHref.pathname ?? '' : finalHref
-    const { locale: pathLocale, pathWithoutLocale } = extractLocaleFromPath(path)
-    const pathWithLocale = `/${linkLocale ?? pathLocale ?? currentLocale}${pathWithoutLocale}`
-    if (typeof finalHref === 'object') {
-      finalHref.pathname = pathWithLocale
-    } else {
-      finalHref = pathWithLocale
-    }
+    const { locale: pathLocale, pathWithoutLocale } = extractLocaleFromPath(finalHref)
+    finalHref = `/${linkLocale ?? pathLocale ?? currentLocale}${pathWithoutLocale}`
   }
 
   // If the link is external, default the target to `_blank`
