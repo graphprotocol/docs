@@ -152,9 +152,6 @@ export const navigation = (locale: AppLocale): NavItemDefinition[] => [
         slug: 'migrating-a-subgraph',
       },
       {
-        slug: 'multisig',
-      },
-      {
         slug: 'subgraph-debug-forking',
       },
       {
