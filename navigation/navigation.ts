@@ -32,6 +32,9 @@ export const navigation = (locale: AppLocale): NavItemDefinition[] => [
         slug: 'curating',
       },
       {
+        slug: 'developing',
+      },
+      {
         slug: 'explorer',
       },
     ],
