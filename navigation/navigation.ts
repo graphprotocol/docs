@@ -140,7 +140,10 @@ export const navigation = (locale: AppLocale): NavItemDefinition[] => [
     slug: 'indexing',
     children: [
       {
-        slug: 'infrastructure',
+        slug: 'operating-graph-node'
+      },
+      {
+        slug: 'indexer-components',
       },
       {
         slug: 'interacting-with-the-network',

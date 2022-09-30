@@ -1,38 +1,16 @@
 ---
-title: Infrastructure
+title: Indexer components
 ---
 
-At the center of an Indexer's infrastructure is the Graph Node which monitors Ethereum, extracts and loads data per a subgraph definition and serves it as a [GraphQL API](/about#how-the-graph-works). The Graph Node needs to be connected to Ethereum EVM node endpoints, and IPFS node for sourcing data; a PostgreSQL database for its store; and Indexer components which facilitate its interactions with the network.
-
-- **PostgreSQL database** - The main store for the Graph Node, this is where subgraph data is stored. The Indexer service and agent also use the database to store state channel data, cost models, and indexing rules.
-
-- **Ethereum endpoint** - An endpoint that exposes an Ethereum JSON-RPC API. This may take the form of a single Ethereum client or it could be a more complex setup that load balances across multiple. It's important to be aware that certain subgraphs will require particular Ethereum client capabilities such as archive mode and the tracing API.
-
-- **IPFS node** - Subgraph deployment metadata is stored on the IPFS network. The Graph Node primarily accesses the IPFS node during subgraph deployment to fetch the subgraph manifest and all linked files. Network indexers do not need to host their own IPFS node, an IPFS node for the network is hosted at https://ipfs.network.thegraph.com.
+As well as operating Graph Node, Indexers are required to run indexer components, which facilitate indexer interactions with the network and consumers.
 
 - **Indexer service** - Handles all required external communications with the network. Shares cost models and indexing statuses, passes query requests from gateways on to a Graph Node, and manages the query payments via state channels with the gateway.
 
 - **Indexer agent** - Facilitates the Indexers interactions on chain including registering on the network, managing subgraph deployments to its Graph Node/s, and managing allocations.
 
-- **Prometheus metrics server** - The Graph Node and Indexer components log their metrics to the metrics server.
-
-- **Upcoming: Ethereum Firehose** - a Firehose is a gRPC service providing an ordered, yet fork-aware, stream of blocks, developed by The Graph's core developers to better support performant indexing at scale. This is not currently an indexer requirement, but Indexers are encouraged to familiarise themselves with the technology, ahead of full network support. Learn more about the Firehose [here](https://firehose.streamingfast.io/).
-
-Note: To support agile scaling, it is recommended that query and indexing concerns are separated between different sets of nodes: query nodes and index nodes.
-
 ### Ports overview
 
-> **Important**: Be careful about exposing ports publicly - **administration ports** should be kept locked down. This includes the the Graph Node JSON-RPC and the Indexer management endpoints detailed below.
-
-#### Graph Node
-
-| Port | Purpose | Routes | CLI Argument | Environment Variable |
-| --- | --- | --- | --- | --- |
-| 8000 | GraphQL HTTP server<br />(for subgraph queries) | /subgraphs/id/...<br />/subgraphs/name/.../... | --http-port | - |
-| 8001 | GraphQL WS<br />(for subgraph subscriptions) | /subgraphs/id/...<br />/subgraphs/name/.../... | --ws-port | - |
-| 8020 | JSON-RPC<br />(for managing deployments) | / | --admin-port | - |
-| 8030 | Subgraph indexing status API | /graphql | --index-node-port | - |
-| 8040 | Prometheus metrics | /metrics | --metrics-port | - |
+> **Important**: Be careful about exposing ports publicly - **administration ports** should be kept locked down. This includes the Indexer management endpoints detailed below.
 
 #### Indexer Service
 
@@ -170,74 +148,6 @@ kubectl config use-context $(kubectl config get-contexts --output='name'
 
 Deploy all resources with `kubectl apply -k $dir`.
 
-### Graph Node
-
-[Graph Node](https://github.com/graphprotocol/graph-node) is an open source Rust implementation that event sources the Ethereum blockchain to deterministically update a data store that can be queried via the GraphQL endpoint. Developers use subgraphs to define their schema, and a set of mappings for transforming the data sourced from the block chain and the Graph Node handles syncing the entire chain, monitoring for new blocks, and serving it via a GraphQL endpoint.
-
-#### Getting started from source
-
-#### Install prerequisites
-
-- **Rust**
-
-- **PostgreSQL**
-
-- **IPFS**
-
-- **Additional Requirements for Ubuntu users** - To run a Graph Node on Ubuntu a few additional packages may be needed.
-
-```sh
-sudo apt-get install -y clang libpg-dev libssl-dev pkg-config
-```
-
-#### Setup
-
-1. Start a PostgreSQL database server
-
-```sh
-initdb -D .postgres
-pg_ctl -D .postgres -l logfile start
-createdb graph-node
-```
-
-2. Clone [Graph Node](https://github.com/graphprotocol/graph-node) repo and build the source by running `cargo build`
-
-3. Now that all the dependencies are setup, start the Graph Node:
-
-```sh
-cargo run -p graph-node --release -- \
-  --postgres-url postgresql://[USERNAME]:[PASSWORD]@localhost:5432/graph-node \
-  --ethereum-rpc [NETWORK_NAME]:[URL] \
-  --ipfs https://ipfs.network.thegraph.com
-```
-
-#### Getting started using Docker
-
-#### Prerequisites
-
-- **Ethereum node** - By default, the docker compose setup will use mainnet: [http://host.docker.internal:8545](http://host.docker.internal:8545) to connect to the Ethereum node on your host machine. You can replace this network name and url by updating `docker-compose.yaml`.
-
-#### Setup
-
-1. Clone Graph Node and navigate to the Docker directory:
-
-```sh
-git clone http://github.com/graphprotocol/graph-node
-cd graph-node/docker
-```
-
-2. For linux users only - Use the host IP address instead of `host.docker.internal` in the `docker-compose.yaml `using the included script:
-
-```sh
-./setup.sh
-```
-
-3. Start a local Graph Node that will connect to your Ethereum endpoint:
-
-```sh
-docker-compose up
-```
-
 ### Indexer components
 
 To successfully participate in the network requires almost constant monitoring and interaction, so we've built a suite of Typescript applications for facilitating an Indexers network participation. There are three Indexer components:
@@ -327,10 +237,6 @@ docker run -p 18000:8000 -it indexer-agent:latest ...
 ```
 
 **NOTE**: After starting the containers, the Indexer service should be accessible at [http://localhost:7600](http://localhost:7600) and the Indexer agent should be exposing the Indexer management API at [http://localhost:18000/](http://localhost:18000/).
-
-#### Using K8s and Terraform
-
-See the [Setup Server Infrastructure Using Terraform on Google Cloud](/network/indexing#setup-server-infrastructure-using-terraform-on-google-cloud) section
 
 #### Usage
 
