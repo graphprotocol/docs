@@ -43,6 +43,9 @@ export const navigation = (locale: AppLocale): NavItemDefinition[] => [
     slug: 'billing',
   },
   {
+    slug: 'network-transition-faq',
+  },
+  {
     divider: true,
   },
   {
