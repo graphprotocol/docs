@@ -8,17 +8,22 @@ This guide is an introduction on building subgraphs indexing [Cosmos](https://do
 
 The Graph allows developers to process blockchain events and make the resulting data easily available via an open GraphQL API, known as a subgraph. [Graph Node](https://github.com/graphprotocol/graph-node) is now able to process Cosmos events, which means Cosmos developers can now build subgraphs to easily index on-chain events.
 
-There are currently three types of handlers supported for the Cosmos subgraphs:
+There are four types of handlers supported in Cosmos subgraphs:
 
-- Block handlers: run whenever a new block is appended to the chain.
-- [Event](https://docs.cosmos.network/master/core/events.html) handlers: run when a specific event is emitted.
-- [Transaction](https://docs.cosmos.network/master/core/transactions.html) handlers: run when a transaction occurs.
+- **Block handlers** run whenever a new block is appended to the chain.
+- **Event handlers** run when a specific event is emitted.
+- **Transaction handlers** run when a transaction occurs.
+- **Message handlers** run when a specific message occurs.
 
 Based on the [official Cosmos documentation](https://docs.cosmos.network/):
 
-> Events are objects that contain information about the execution of the application. They are mainly used by service providers like block explorers and wallets to track the execution of various messages and index transactions.
+> [Events](https://docs.cosmos.network/main/core/events) are objects that contain information about the execution of the application. They are mainly used by service providers like block explorers and wallets to track the execution of various messages and index transactions.
 
-> Transactions are objects created by end-users to trigger state changes in the application.
+> [Transactions](https://docs.cosmos.network/main/core/transactions) are objects created by end-users to trigger state changes in the application.
+
+> [Messages](https://docs.cosmos.network/main/core/transactions#messages) are module-specific objects that trigger state transitions within the scope of the module they belong to.
+
+Even though all data can be accessed with a block handler, other handlers enable subgraph developers to process data in a much more granular way.
 
 ## Building a Cosmos subgraph
 
@@ -30,7 +35,7 @@ Based on the [official Cosmos documentation](https://docs.cosmos.network/):
 
 ### Subgraph Main Components
 
-There are three main key parts or files when it comes to defining a subgraph:
+There are three key parts when it comes to defining a subgraph:
 
 **subgraph.yaml**: a YAML file containing the subgraph manifest, which identifies which events to track and how to process them.
 
@@ -50,7 +55,7 @@ schema:
 dataSources:
   - kind: cosmos
     name: CosmosHub
-    network: cosmoshub-4 # This will change for each cosmos-based blockchain. In this case, the example uses the CosmosHub mainnet.
+    network: cosmoshub-4 # This will change for each cosmos-based blockchain. In this case, the example uses the Cosmos Hub mainnet.
     source:
       startBlock: 0 # Required for Cosmos, set this to 0 to start indexing from chain genesis
     mapping:
@@ -63,19 +68,14 @@ dataSources:
           handler: handleReward # the function name in the mapping file
       transactionHandlers:
         - handler: handleTransaction # the function name in the mapping file
+      messageHandlers:
+        - message: /cosmos.staking.v1beta1.MsgDelegate # the type of a message
+          handler: handleMsgDelegate # the function name in the mapping file
       file: ./src/mapping.ts # link to the file with the Assemblyscript mappings
 ```
 
 - Cosmos subgraphs introduce a new `kind` of data source (`cosmos`).
-- The `network` should correspond to a network on the hosting Graph Node. In the example, the CosmosHub mainnet is used.
-
-Cosmos data sources support three types of handlers:
-
-- `blockHandlers`: run on every new block appended to the chain. The handler will receive a full block and all its data containing, among other things, all the events and transactions.
-- `eventHandlers`: run on every event contained in a block that matches the event type specified in the manifest. Block data is also passed onto the mapping in order to have the context of the event within the chain.
-- `transactionHandlers`: run for every transaction executed. The mapping is provided with all the relevant data related to the transaction and a block abstraction that can be used to acquire the context of the transaction within a block and within the chain.
-
-Event and Transaction handlers are a way to process meaningful data from the chain without the need of processing a whole block. The data processed by them can also be found in the block handlers, since events and transactions are also part of a block, but removes the need of processing unnecessary data.
+- The `network` should correspond to a chain in the Cosmos ecosystem. In the example, the Cosmos Hub mainnet is used.
 
 ### Schema Definition
 
@@ -100,11 +100,26 @@ class Block {
 class EventData {
   event: Event
   block: HeaderOnlyBlock
+  tx: TransactionContext
 }
 
 class TransactionData {
   tx: TxResult
   block: HeaderOnlyBlock
+}
+
+class MessageData {
+  message: Any
+  block: HeaderOnlyBlock
+  tx: TransactionContext
+}
+
+class TransactionContext {
+  hash: Bytes
+  index: u32
+  code: u32
+  gasWanted: i64
+  gasUsed: i64
 }
 
 class HeaderOnlyBlock {
@@ -141,17 +156,32 @@ class Event {
   eventType: string
   attributes: Array<EventAttribute>
 }
+
+class Any {
+  typeUrl: string
+  value: Bytes
+}
 ```
 
-The types above are just the general ones that mappings use. You can find the full list of types for the Cosmos integration [here](https://github.com/graphprotocol/graph-ts/blob/4c064a8118dff43b110de22c7756e5d47fcbc8df/chain/cosmos.ts).
+Each handler type comes with its own data structure that is passed as an argument to a mapping function.
 
-Each type of handler will receive a different type based on the relevant data. For both event and transaction handlers, a reference to the block they are contained in is passed as well. These are the exact types that are passed as a parameter to each mapping function:
+- Block handlers receive a `Block` type.
+- Event handlers receive an `EventData` type.
+- Transaction handlers receive a `TransactionData` type.
+- Message handlers receive a `MessageData` type.
 
-`Block` is passed to the blockHandler.
+As a part of `MessageData` the message handler receives a transaction context, which contains the most important information about a transaction that encompasses a message.
+The transaction context is also available in the `EventData` type, but only when the corresponding event is associated with a transaction.
+Additionally, all handlers receive a reference to a block (`HeaderOnlyBlock`).
 
-`EventData` is passed to the eventHandler.
+You can find the full list of types for the Cosmos integration [here](https://github.com/graphprotocol/graph-ts/blob/4c064a8118dff43b110de22c7756e5d47fcbc8df/chain/cosmos.ts).
 
-`TransactionData` is passed to the transactionHandler. Transactions will need to be decoded in the subgraph, [here](https://github.com/graphprotocol/example-subgraphs/blob/main/cosmos/validator-delegations/src/decoding.ts) is an example on how it can be done.
+### Message decoding
+
+It's important to note that Cosmos messages are chain-specific and they are passed to a subgraph in the form of a serialized [Protocol Buffers](https://developers.google.com/protocol-buffers/) payload.
+As a result, the message data needs to be decoded in a mapping function before it can be processed.
+
+An example of how to decode message data in a subgraph can be found [here](https://github.com/graphprotocol/example-subgraphs/blob/main/cosmos/validator-delegations/src/decoding.ts).
 
 ## Creating and building a Cosmos subgraph
 
@@ -188,7 +218,7 @@ graph create subgraph-name --node http://localhost:8020
 ```
 
 ```bash
-graph deploy --node http://localhost:8020/ --ipfs http://localhost:5001
+graph deploy subgraph-name --node http://localhost:8020/ --ipfs http://localhost:5001
 ```
 
 ## Querying a Cosmos subgraph
