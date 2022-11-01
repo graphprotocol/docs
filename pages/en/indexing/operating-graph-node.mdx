@@ -98,7 +98,7 @@ docker-compose up
 
 ### Getting started with Kubernetes
 
-> TODO link to example -> do we need a new Kubernetes example?
+A complete Kubernetes example configuration can be found in the [indexer repository](https://github.com/graphprotocol/indexer/tree/main/k8s).
 
 ### Ports
 
@@ -114,13 +114,9 @@ When it is running Graph Node exposes the following ports:
 
 > **Important**: Be careful about exposing ports publicly - **administration ports** should be kept locked down. This includes the the Graph Node JSON-RPC endpoint.
 
-
-
 # Advanced Graph Node configuration
 
 At its simplest, Graph Node can be operated with a single instance of Graph Node, a single PostgreSQL database, an IPFS node, and the network clients as required by the subgraphs to be indexed.
-
-> TODO: pointers on basic and "scaled" specs
 
 This setup can be scaled horizontally, by adding multiple Graph Nodes, and multiple databases to support those Graph Nodes. Advanced users may want to take advantage of some of the horizontal scaling capabilities of Graph Node, as well as some of the more advanced configuration options, via the `config.toml` file and Graph Node's environment variables.
 
@@ -148,8 +144,6 @@ Full documentation of `config.toml` can be found in the [Graph Node docs](https:
 Graph Node indexing can scale horizontally, running multiple instances of Graph Node to split indexing and querying across different nodes. This can be done simply by running Graph Nodes configured with a different `node_id` on startup (e.g. in the Docker Compose file), which can then be used in the `config.toml` file to specify [dedicated query nodes](#dedicated-query-nodes), [block ingestors](#dedicated-block-ingestor), and splitting subgraphs across nodes with [deployment rules](#deployment-rules).
 
 > Note that multiple Graph Nodes can all be configured to use the same database, which itself can be horizontally scaled via sharding.
-
-> TODO: recommendations on a basic setup, and then when / how to scale
 
 ### Deployment rules
 
@@ -201,9 +195,11 @@ For most use cases, a single Postgres database is sufficient to support a graph-
 
 Shards can be used to split subgraph deployments across multiple databases, and can also be used to use replicas to spread query load across databases. This includes configuring the number of available database connections each `graph-node` should keep in its connection pool for each database, which becomes increasingly important as more subgraphs are being indexed.
 
-> TODO: more guidance on when sharding might be useful, any pitfalls, recommendations
+Sharding becomes useful when your existing database can't keep up with the load that Graph Node puts on it, and when it's not possible to increase the database size anymore.
 
-> TODO: guidance on database connections?
+> It is generally better make a single database as big as possible, before starting with shards. One exception is where query traffic is split very unevenly between subgraphs; in those situations it can help dramatically if the high-volume subgraphs are kept in one shard and everything else in another because that setup makes it more likely that the data for the high-volume subgraphs stays in the db-internal cache and doesn't get replaced by data that's not needed as much from low-volume subgraphs.
+
+In terms of configuring connections, start with max_connections in postgresql.conf set to 400 (or maybe even 200) and look at the store_connection_wait_time_ms and store_connection_checkout_count Prometheus metrics. Noticeable wait times (anything above 5ms) is an indication that there are too few connections available; high wait times there will also be caused by the database being very busy (like high CPU load). However if the database seems otherwise stable, high wait times indicate a need to increase the number of connections. In the configuration, how many connections each graph-node instance can use is an upper limit, and Graph Node will not keep connections open if it doesn't need them.
 
 Read more about store configuration [here](https://github.com/graphprotocol/graph-node/blob/master/docs/config.md#configuring-multiple-databases).
 
@@ -249,9 +245,8 @@ Graph Node supports a range of environment variables which can enable features, 
 
 Users who are operating a scaled indexing setup with advanced configuration may benefit from managing their Graph Nodes with Kubernetes.
 
-> TODO: link to example of Kubernetes setup
-
-> TODO: guidance on monitoring and managing Kubernetes deployments
+- The indexer repository has an [example Kubernetes reference](https://github.com/graphprotocol/indexer/tree/main/k8s)
+- [Launchpad](https://docs.graphops.xyz/launchpad/intro) is a toolkit for running a Graph Protocol Indexer on Kubernetes maintained by GraphOps. It provides a set of Helm charts and a CLI to manage a Graph Node deployment.
 
 ## Managing Graph Node
 
@@ -261,19 +256,13 @@ Given a running Graph Node (or Graph Nodes!), the challenge is then to manage de
 
 Graph Node's logs can provide useful information for debugging and optimisation of Graph Node and specific subgraphs. Graph Node supports different log levels via the `GRAPH_LOG` environment variable, with the following levels: debug, error, info, warn, or trace.
 
-> TODO: more detail on logging configuration?
+In addition setting `GRAPH_LOG_QUERY_TIMING` to `gql` provides more details about how GraphQL queries are running (though this will generate a large volume of logs).
 
 ### Monitoring & alerting
 
-Graph Node provides the metrics via Prometheus endpoint on 8040 port by default. 
+Graph Node provides the metrics via Prometheus endpoint on 8040 port by default. Grafana can then be used to visualise these metrics.
 
-> TODO: information on running Prometheus
-
-Grafana can then be used to visualise these metrics.
-
-> TODO: information on running Grafana, and example dashboard configuration
-
-> TODO: guidance on setting up alerting?
+The indexer repository provides an [example Grafana configuration](https://github.com/graphprotocol/indexer/blob/main/k8s/base/grafana.yaml).
 
 ### `graphman`
 
@@ -290,8 +279,6 @@ The graphman command is included in the official containers, and you can docker 
 Available on port 8030/graphql by default, the indexing status API exposes a range of methods for checking indexing status for different subgraphs, checking proofs of indexing, inspecting subgraph features and more.
 
 The full schema is available [here](https://github.com/graphprotocol/graph-node/blob/master/server/index-node/src/schema.graphql).
-
-> TODO: examples of useful queries
 
 ### Indexing performance
 
@@ -314,8 +301,6 @@ Common causes of indexing slowness:
 
 Subgraph indexing metrics can help diagnose the root cause of indexing slowness. In some cases, the problem lies with the subgraph itself, but in others, improved network providers, reduced database contention and other configuration improvements can markedly improve indexing performance.
 
-> TODO: link to example Grafana with a breakdown of indexing time
-
 ### Failed subgraphs
 
 During indexing subgraphs might fail, if they encounter data that is unexpected, some component not working as expected, or if there is some bug in the event handlers or configuration. There are two general types of failure:
@@ -326,8 +311,6 @@ During indexing subgraphs might fail, if they encounter data that is unexpected,
 In some cases a failure might be resolvable by the indexer (for example if the error is a result of not having the right kind of provider, adding the required provider will allow indexing to continue). However in others, a change in the subgraph code is required.
 
 > Deterministic failures are considered "final", with a Proof of Indexing generated for the failing block, while non-determinstic failures are not, as the subgraph may manage to "unfail" and continue indexing. In some cases, the non-deterministic label is incorrect, and the subgraph will never overcome the error; such failures should be reported as issues on the Graph Node repository.
-
-> TODO: details on specific recoverable issues (database unavailable? poisoned by previous?)
 
 ### Block and call cache
 
@@ -360,11 +343,7 @@ Problematic queries most often surface in one of two ways. In some cases, users 
 
 In other cases, the trigger might be high memory usage on a query node, in which case the challenge is first to identify the query causing the issue.
 
-> TODO: how to monitor memory usage / query node saturation?
-
-> TODO: details on using `qlogs`, and identifying slow queries
-
-`GRAPH_LOG_QUERY_TIMING` can also be enabled to help identify and debug slow queries.
+Indexers can use [qlog](https://github.com/graphprotocol/qlog/) to process and summarize Graph Node's query logs. `GRAPH_LOG_QUERY_TIMING` can also be enabled to help identify and debug slow queries.
 
 Given a slow query, indexers have a few options. Of course they can alter their cost model, to significantly increase the cost of sending the problematic query. This may result in a reduction in the frequency of that query. However this often doesn't resolve the root cause of the issue.
 
@@ -382,16 +361,8 @@ Once a table has been determined to be account-like, running `graphman stats acc
 
 For Uniswap-like subgraphs, the `pair` and `token` tables are prime candidates for this optimization, and can have a dramatic effect on database load.
 
-#### Creating new indices
-
-> TODO: specific examples on index changes which can help with slow queries
-
-#### Subgraph pruning (experimental!)
-
-> TODO: document pruning
-
 ### Removing subgraphs
 
-At some point an indexer might want to remove a given subgraph.
+> This is new functionality, which will be available in Graph Node 0.29.x
 
-> TODO: document subgraph removal (new `graphman` command?)
+At some point an indexer might want to remove a given subgraph. This can be easily done via `graphman drop`, which deletes a deployment and all it's indexed data. The deployment can be specified as either a subgraph name, an IPFS hash `Qm..`, or the database namespace `sgdNNN`. Further documentation is available [here](https://github.com/graphprotocol/graph-node/blob/master/docs/graphman.md#-drop).
