@@ -125,6 +125,9 @@ export const navigation = (locale: AppLocale): NavItemDefinition[] => [
         slug: 'querying-the-graph',
       },
       {
+        slug: 'get-grt',
+      },
+      {
         slug: 'managing-api-keys',
       },
       {
