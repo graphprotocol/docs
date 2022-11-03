@@ -169,6 +169,9 @@ export const navigation = (locale: AppLocale): NavItemDefinition[] => [
       {
         slug: 'arweave',
       },
+      {
+        slug: 'grafting',
+      },
     ],
   },
   {
