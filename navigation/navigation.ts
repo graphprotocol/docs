@@ -186,4 +186,13 @@ export const navigation = (locale: AppLocale): NavItemDefinition[] => [
       },
     ],
   },
+  {
+    divider: true,
+  },
+  {
+    slug: 'substreams',
+  },
+  {
+    slug: 'firehose',
+  },
 ]
