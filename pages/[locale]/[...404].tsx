@@ -29,7 +29,7 @@ export const getStaticProps: GetStaticProps = async (context) => {
   }
 }
 
-const NotFoundPage: NextPage<{}> = () => {
+const NotFoundPage: NextPage = () => {
   const { t } = useI18n()
 
   return (
