@@ -20,6 +20,9 @@ export const navigation = (locale: AppLocale): NavItemDefinition[] => [
         slug: 'overview',
       },
       {
+        slug: 'benefits',
+      },
+      {
         slug: 'indexing',
       },
       {
@@ -29,9 +32,18 @@ export const navigation = (locale: AppLocale): NavItemDefinition[] => [
         slug: 'curating',
       },
       {
+        slug: 'developing',
+      },
+      {
         slug: 'explorer',
       },
     ],
+  },
+  {
+    slug: 'billing',
+  },
+  {
+    slug: 'network-transition-faq',
   },
   {
     divider: true,
@@ -130,9 +142,6 @@ export const navigation = (locale: AppLocale): NavItemDefinition[] => [
       {
         slug: 'querying-the-hosted-service',
       },
-      {
-        slug: 'billing',
-      },
     ],
   },
   {
@@ -158,9 +167,6 @@ export const navigation = (locale: AppLocale): NavItemDefinition[] => [
         slug: 'migrating-a-subgraph',
       },
       {
-        slug: 'multisig',
-      },
-      {
         slug: 'subgraph-debug-forking',
       },
       {
@@ -171,6 +177,9 @@ export const navigation = (locale: AppLocale): NavItemDefinition[] => [
       },
       {
         slug: 'arweave',
+      },
+      {
+        slug: 'grafting',
       },
     ],
   },
@@ -185,5 +194,14 @@ export const navigation = (locale: AppLocale): NavItemDefinition[] => [
         slug: 'assemblyscript-migration-guide',
       },
     ],
+  },
+  {
+    divider: true,
+  },
+  {
+    slug: 'substreams',
+  },
+  {
+    slug: 'firehose',
   },
 ]

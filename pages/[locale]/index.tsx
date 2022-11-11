@@ -301,9 +301,9 @@ const Index: NextPage<IndexProps> = ({ navItems }: IndexProps) => {
         >
           {[
             {
-              title: 'XDAI',
-              image: '/img/networks/xdai.svg',
-              href: 'https://www.xdaichain.com/',
+              title: 'Gnosis Chain',
+              image: '/img/networks/gnosis.svg',
+              href: 'https://docs.gnosischain.com/',
             },
             {
               title: 'Near',
