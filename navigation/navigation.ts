@@ -141,16 +141,7 @@ export const navigation = (locale: AppLocale): NavItemDefinition[] => [
     children: [
       {
         slug: 'operating-graph-node'
-      },
-      {
-        slug: 'indexer-components',
-      },
-      {
-        slug: 'interacting-with-the-network',
-      },
-      {
-        slug: 'faq',
-      },
+      }
     ],
   },
   {
