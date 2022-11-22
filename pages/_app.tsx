@@ -3,6 +3,7 @@ import { AppProps } from 'next/app'
 import Head from 'next/head'
 import NextLink from 'next/link'
 import { useRouter } from 'next/router'
+import Script from 'next/script'
 import { DefaultSeo, DefaultSeoProps } from 'next-seo'
 import { useCallback, useMemo, useState } from 'react'
 import useBus from 'use-bus'
@@ -105,6 +106,19 @@ const MyApp = ({ Component, pageProps }: AppProps) => {
 
   return (
     <>
+      <Script id="tracking">{`
+        var _paq = window._paq = window._paq || [];
+        /* tracker methods like "setCustomDimension" should be called before "trackPageView" */
+        _paq.push(['trackPageView']);
+        _paq.push(['enableLinkTracking']);
+        (function() {
+          var u="https://thegraph.matomo.cloud/";
+          _paq.push(['setTrackerUrl', u+'matomo.php']);
+          _paq.push(['setSiteId', '1']);
+          var d=document, g=d.createElement('script'), s=d.getElementsByTagName('script')[0];
+          g.async=true; g.src='//cdn.matomo.cloud/thegraph.matomo.cloud/matomo.js'; s.parentNode.insertBefore(g,s);
+        })();
+      `}</Script>
       <I18nProvider
         supportedLocales={supportedLocales}
         translations={translations}
