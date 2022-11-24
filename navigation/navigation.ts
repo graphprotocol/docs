@@ -145,6 +145,15 @@ export const navigation = (locale: AppLocale): NavItemDefinition[] => [
     ],
   },
   {
+    title: translations[locale].global.navigation.indexing,
+    slug: 'indexing',
+    children: [
+      {
+        slug: 'operating-graph-node'
+      }
+    ],
+  },
+  {
     divider: true,
   },
   {
