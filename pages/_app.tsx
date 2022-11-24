@@ -106,15 +106,13 @@ const MyApp = ({ Component, pageProps }: AppProps) => {
 
   return (
     <>
-      <Script id="tracking">{`
-        var _paq = window._paq = window._paq || [];
+      <Script id="tracking" type="module">{`
+        const _paq = window._paq = window._paq || [];
         _paq.push(['trackPageView'], ['enableLinkTracking'], ['setTrackerUrl', 'https://thegraph.matomo.cloud/matomo.php'], ['setSiteId', '1']);
-        (function() {
-          var g = document.createElement('script');
-          g.async = true;
-          g.src = '//cdn.matomo.cloud/thegraph.matomo.cloud/matomo.js';
-          document.body.append(g);
-        })();
+        const g = document.createElement('script');
+        g.async = true;
+        g.src = '//cdn.matomo.cloud/thegraph.matomo.cloud/matomo.js';
+        document.body.append(g);
       `}</Script>
       <I18nProvider
         supportedLocales={supportedLocales}
