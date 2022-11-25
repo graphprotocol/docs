@@ -45,6 +45,12 @@ const DesktopWrapper = ({ children }: PropsWithChildren<{}>) => {
       }}
     >
       {children}
+      <div
+        sx={{
+          height: 'var(--gds-header-height-visible)',
+          transition: enableTransition ? buildTransition('height' as any, '400ms') : undefined,
+        }}
+      />
     </div>
   )
 }
