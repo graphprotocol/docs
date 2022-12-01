@@ -1,4 +1,4 @@
-import { merge } from 'lodash-es'
+import merge from 'lodash/merge'
 import { AppProps } from 'next/app'
 import Head from 'next/head'
 import NextLink from 'next/link'

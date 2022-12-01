@@ -123,6 +123,10 @@ const MobileWrapper = ({ title, children }: PropsWithChildren<{ title?: string }
   )
 }
 
+const DocSearchHit = ({ hit, children }: PropsWithChildren<{ hit: { url: string } }>) => (
+  <Link href={removeBasePathFromUrl(hit.url)}>{children}</Link>
+)
+
 export const MDXLayoutNav = ({ mobile = false }: { mobile?: boolean }) => {
   const router = useRouter()
   const { navItems, currentPage } = useContext(NavContext)!
@@ -147,7 +151,7 @@ export const MDXLayoutNav = ({ mobile = false }: { mobile?: boolean }) => {
               url: item.url.replace('https://thegraph.com/docs', process.env.BASE_PATH ?? ''),
             }))
           }}
-          hitComponent={({ hit, children }) => <Link href={removeBasePathFromUrl(hit.url)}>{children}</Link>}
+          hitComponent={DocSearchHit}
           navigator={{
             navigate({ itemUrl }) {
               void router.push(removeBasePathFromUrl(itemUrl))
@@ -178,7 +182,7 @@ export const MDXLayoutNav = ({ mobile = false }: { mobile?: boolean }) => {
               }
               if ('children' in navItem) {
                 return (
-                  <NavTree.Group active={currentPage?.path.startsWith(navItem.path)}>
+                  <NavTree.Group active={currentPage?.path.startsWith(`${navItem.path}/`)}>
                     <NavTree.Group.Heading
                       sx={mobile ? { py: 0 } : {}}
                       buttonProps={{ sx: mobile ? {} : { paddingInlineEnd: 0 } }}
