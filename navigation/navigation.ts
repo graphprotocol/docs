@@ -204,4 +204,7 @@ export const navigation = (locale: AppLocale): NavItemDefinition[] => [
   {
     slug: 'firehose',
   },
+  {
+    slug: 'glossary',
+  },
 ]
