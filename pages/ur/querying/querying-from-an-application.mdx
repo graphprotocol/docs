@@ -1,0 +1,281 @@
+---
+title: ایپلی کیشن سے کیوری
+---
+
+ایک بار سب گراف کو سب گراف اسٹوڈیو یا گراف ایکسپلورر میں تعینات کیا جاتا ہے، آپ کو اپنے GraphQL API کے لیے اینڈ پوائنٹ دیا جائے گا جو کچھ اس طرح نظر آنا چاہیے:
+
+**سب گراف اسٹوڈیو (ٹیسٹنگ اینڈ پوائنٹ)**
+
+```sh
+کیوریز (HTTP)
+https://api.studio.thegraph.com/query/<ID>/<SUBGRAPH_NAME>/<VERSION>
+```
+
+**گراف ایکسپلورر**
+
+```sh
+کیوریز (HTTP)
+https://gateway.thegraph.com/api/<API_KEY>/subgraphs/id/<SUBGRAPH_ID>
+```
+
+GraphQL اینڈ پوائنٹ کا استعمال کرتے ہوئے، آپ سب گراف سے کیوری کرنے کے لیے مختلف GraphQL کلائنٹ لائبریریوں کا استعمال کر سکتے ہیں اور اپنی ایپ کو سب گراف کے ذریعے ترتیب کردہ ڈیٹا کے ساتھ آباد کر سکتے ہیں.
+
+یہاں ماحولیاتی نظام میں کچھ زیادہ مقبول گراف کیو ایل کلائنٹس ہیں اور ان کا استعمال کیسے کریں:
+
+## GraphQL کلائنٹ
+
+### گراف کلائنٹ
+
+گراف اپنا GraphQL کلائنٹ فراہم کر رہا ہے، `graph-client` جو منفرد خصوصیات کو سپورٹ کرتا ہے جیسے:
+
+- کراس چین سب گراف ہینڈلنگ: ایک سوال میں متعدد سب گرافس سے استفسار کرنا
+- [خودکار بلاک ٹریکنگ](https://github.com/graphprotocol/graph-client/blob/main/packages/block-tracking/README.md)
+- [خودکار صفحہ بندی](https://github.com/graphprotocol/graph-client/blob/main/packages/auto-pagination/README.md)
+- مکمل طور پر ٹائپ شدہ نتیجہ
+
+<br />
+
+نیز مقبول GraphQL کلائنٹس جیسے کہ اپولو اور URQL کے ساتھ مربوط اور تمام ماحول کے ساتھ مطابقت رکھتا ہے (ری ایکٹ، اینگولر، نوڈ جے ایس، ری ایکٹ نیٹیو)، `graph-client` کا استعمال آپ کو گراف کے ساتھ بات چیت کرنے کا بہترین تجربہ فراہم کرے گا.
+
+<br />
+
+آئیے دیکھتے ہیں کہ `graphql-client` کے ساتھ سب گراف سے ڈیٹا کیسے حاصل کیا جائے.
+
+شروع کرنے کے لیے، اپنے پروجیکٹ میں گراف کلائنٹ CLI کو میں انسٹال کرنا یقینی بنائیں:
+
+```sh
+yarn add -D @graphprotocol/client-cli
+# or, with NPM:
+npm install --save-dev @graphprotocol/client-cli
+```
+
+اپنے کیوری کی وضاحت `.graphql` فائل میں کریں (یا آپ کی `.js` یا `.ts` فائل میں ان لائن شدہ):
+
+```graphql
+query ExampleQuery {
+  # this one is coming from compound-v2
+  markets(first: 7) {
+    borrowRate
+    cash
+    collateralFactor
+  }
+  # this one is coming from uniswap-v2
+  pair(id: "0x00004ee988665cdda9a1080d5792cecd16dc1220") {
+    id
+    token0 {
+      id
+      symbol
+      name
+    }
+    token1 {
+      id
+      symbol
+      name
+    }
+  }
+}
+```
+
+پھر، ایک کنفیگریشن فائل بنائیں (جسے `.graphclientrc.yml` کہا جاتا ہے) اور گراف کی طرف سے فراہم کردہ اپنے GraphQL اینڈ پوائنٹس کی طرف اشارہ کریں، مثال کے طور پر:
+
+```yaml
+# .graphclientrc.yml
+sources:
+  - name: uniswapv2
+    handler:
+      graphql:
+        endpoint: https://api.thegraph.com/subgraphs/name/uniswap/uniswap-v2
+  - name: compoundv2
+    handler:
+      graphql:
+        endpoint: https://api.thegraph.com/subgraphs/name/graphprotocol/compound-v2
+
+documents:
+  - ./src/example-query.graphql
+```
+
+درج ذیل گراف کلائنٹ CLI کمانڈ کو چلانے سے ٹائپ شدہ اور جاوا اسکرپٹ کوڈ استعمال کرنے کے لیے تیار ہو جائے گا:
+
+```sh
+گراف کلائنٹ کی تعمیر
+```
+
+آخر میں، اپنی `.ts` فائل کو اپ ڈیٹ کریں تاکہ تیار کردہ ٹائپ شدہ GraphQL دستاویزات استعمال کریں:
+
+```tsx
+import React, { useEffect } from 'react'
+// ...
+// we import types and typed-graphql document from the generated code (`..graphclient/`)
+import { ExampleQueryDocument, ExampleQueryQuery, execute } from '../.graphclient'
+
+function App() {
+  const [data, setData] = React.useState<ExampleQueryQuery>()
+
+  useEffect(() => {
+    execute(ExampleQueryDocument, {}).then((result) => {
+      setData(result?.data)
+    })
+  }, [setData])
+  return (
+    <div className="App">
+      <header className="App-header">
+        <img src={logo} className="App-logo" alt="logo" />
+        <p>Graph Client Example</p>
+        <fieldset>
+          {data && (
+            <form>
+              <label>Data</label>
+              <br />
+              <textarea value={JSON.stringify(data, null, 2)} readOnly rows={25} />
+            </form>
+          )}
+        </fieldset>
+      </header>
+    </div>
+  )
+}
+
+export default App
+```
+
+<br />
+
+**⚠️ اہم اطلاع**
+
+`graph-client` بالکل دوسرے GraphQL کلائنٹس جیسے Apollo کلائنٹ، URQL، یا React Query کے ساتھ مربوط ہے۔ آپ کو [آفیشل ریپوزٹری میں مثالیں ملیں گی](https://github.com/graphprotocol/graph-client/tree/main/examples).
+
+تاہم، اگر آپ کسی دوسرے کلائنٹ کے ساتھ جانے کا انتخاب کرتے ہیں، ذہن میں رکھیں کہ **آپ کراس چین سب گراف ہینڈلنگ یا خودکار صفحہ بندی استعمال کرنے کے قابل نہیں ہوں گے، جو گراف سے کیوری کرنے کی بنیادی خصوصیات ہیں**.
+
+<br />
+
+### اپولو کلائنٹ
+
+[Apollo کلائنٹ](https://www.apollographql.com/docs/) فرنٹ اینڈ ایکو سسٹم پر ہر جگہ موجود GraphQL کلائنٹ ہے.
+
+React، Angular، Vue، Ember، iOS، اور Android کے لیے دستیاب، اپالو کلائنٹ، اگرچہ سب سے بھاری کلائنٹ ہے، GraphQL کے اوپری حصے میں جدید UI بنانے کے لیے بہت سی خصوصیات لاتا ہے:
+
+- ایڈوانس ایرر ہینڈلنگ
+- صفحہ بندی
+- ڈیٹا پری فیچنگ
+- پر امید UI
+- مقامی ریاستی انتظام
+
+<br />
+
+آئیے دیکھتے ہیں کہ ویب پروجیکٹ میں اپولو کلائنٹ کے ساتھ سب گراف سے ڈیٹا کیسے حاصل کیا جائے.
+
+پہلے، `@apollo/client` اور `graphql` انسٹال کریں:
+
+```sh
+npm install @apollo/client graphql
+```
+
+پھر آپ درج ذیل کوڈ کے ساتھ API سے کیوری کرسکتے ہیں:
+
+```javascript
+import { ApolloClient, InMemoryCache, gql } from '@apollo/client'
+
+const APIURL = 'https://api.studio.thegraph.com/query//<SUBGRAPH_NAME>/'
+
+const tokensQuery = `
+  query {
+    tokens {
+      id
+      tokenID
+      contentURI
+      metadataURI
+    }
+  }
+`
+
+const client = new ApolloClient({
+  uri: APIURL,
+  cache: new InMemoryCache(),
+})
+
+client
+  .query({
+    query: gql(tokensQuery),
+  })
+  .then((data) => console.log('Subgraph data: ', data))
+  .catch((err) => {
+    console.log('Error fetching data: ', err)
+  })
+```
+
+متغیرات کو استعمال کرنے کے لیے، آپ پر کیوری `variables` دلیل دے سکتے ہیں:
+
+```javascript
+const tokensQuery = `
+  query($first: Int, $orderBy: BigInt, $orderDirection: String) {
+    tokens(
+      first: $first, orderBy: $orderBy, orderDirection: $orderDirection
+    ) {
+      id
+      tokenID
+      contentURI
+      metadataURI
+    }
+  }
+`
+
+client
+  .query({
+    query: gql(tokensQuery),
+    variables: {
+      first: 10,
+      orderBy: 'createdAtTimestamp',
+      orderDirection: 'desc',
+    },
+  })
+  .then((data) => console.log('Subgraph data: ', data))
+  .catch((err) => {
+    console.log('Error fetching data: ', err)
+  })
+```
+
+<br />
+
+### URQL
+
+ایک اور آپشن [URQL](https://formidable.com/open-source/urql/) ہے جو Node.js، React/Preact، Vue، اور Svelte ماحول میں دستیاب ہے، جس میں زیادہ جدید ہے۔ خصوصیات:
+
+- لچکدار کیش سسٹم
+- قابل توسیع ڈیزائن (اس کے اوپر نئی صلاحیتوں کو شامل کرنے میں آسانی)
+- ہلکا پھلکا بنڈل (اپولو کلائنٹ سے ~5x ہلکا)
+- فائل اپ لوڈز اور آف لائن موڈ کے لیے سپورٹ
+
+<br />
+
+آئیے دیکھتے ہیں کہ ویب پروجیکٹ میں URQL کے ساتھ سب گراف سے ڈیٹا کیسے حاصل کیا جائے.
+
+پہلے، `urql` اور `graphql` انسٹال کریں:
+
+```sh
+npm install urql graphql
+```
+
+پھر آپ درج ذیل کوڈ کے ساتھ API سے کیوری کرسکتے ہیں:
+
+```javascript
+import { createClient } from 'urql'
+
+const APIURL = 'https://api.thegraph.com/subgraphs/name/username/subgraphname'
+
+const tokensQuery = `
+  query {
+    tokens {
+      id
+      tokenID
+      contentURI
+      metadataURI
+    }
+  }
+`
+
+const client = createClient({
+  url: APIURL,
+})
+
+const data = await client.query(tokensQuery).toPromise()
+```
