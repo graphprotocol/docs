@@ -91,7 +91,7 @@ const MyApp = ({ Component, pageProps }: AppProps) => {
       router.events.on('routeChangeStart', disableFn)
       return () => router.events.off('routeChangeStart', disableFn)
     },
-    [router]
+    [router.events]
   )
 
   // Also disable smooth scrolling when the search is open

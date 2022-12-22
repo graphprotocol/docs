@@ -4,6 +4,8 @@ import { Context, createContext } from 'react'
 export type Frontmatter = {
   title?: string
   navTitle?: string
+  description?: string
+  socialImage?: string
   seo?: NextSeoProps
 }
 
