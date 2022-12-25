@@ -1,0 +1,958 @@
+---
+title: سب گراف بنانا
+---
+
+ایک سب گراف بلاکچین سے ڈیٹا نکالتا ہے, اس پر کارروائی کرتا ہے اور اسے ذخیرہ کرتا ہے تاکہ GraphQL کے ذریعے آسانی سے کیوری کیا جا سکے.
+
+![سب گراف کی تعریف](/img/defining-a-subgraph.png)
+
+سب گراف کی تعریف چند فائلوں پر مشتمل ہے:
+
+- `subgraph.yaml`: سب گراف مینی فیسٹ پر مشتمل ایک YAML فائل ہے
+
+- `schema.graphql`: ایک GraphQL اسکیما جو اس بات کی وضاحت کرتا ہے کہ آپ کے سب گراف کے لیے کون سا ڈیٹا محفوظ ہے، اور GraphQL کے ذریعے اسے کیوری کیسے کیا جائے
+
+- `AssemblyScript Mappings`: [اسمبلی اسکرپٹ](https://github.com/AssemblyScript/assemblyscript) کوڈ جو ایونٹ کے ڈیٹا سے آپ کے اسکیما کی اینٹیٹیز میں تبدیل کرتا ہے (جیسے `mapping.ts` اس ٹیوٹوریل میں)
+
+اس سے پہلے کہ آپ مینی فیسٹ فائل کے مواد کے بارے میں تفصیل میں جائیں, آپ کو [Graph CLI](https://github.com/graphprotocol/graph-cli) انسٹال کرنے کی ضرورت ہے جس کی ضرورت آپ کو سب گراف بنانے اور تعین کرنے میں ہوگی.
+
+## Graph CLI انسٹال کریں
+
+Graph CLI کو Javascript میں لکھا کیا ہے, اور آپ کو اسے استعمال کرنے کے لیے یا تو `yarn` یا `npm` انسٹال کرنے کی ضرورت ہوگی; یہ فرض کیا جاتا ہے کہ آپ کے پاس مندرجہ ذیل میں سے yarn ہے.
+
+ایک بار جب آپ کے پاس `yarn` آجائے تو، یہ چلا کر Graph CLI انسٹال کریں
+
+**yarn کے ساتھ انسٹال کریں:**
+
+```bash
+yarn global add @graphprotocol/graph-cli
+```
+
+**npm کے ساتھ انسٹال کریں:**
+
+```bash
+npm install -g @graphprotocol/graph-cli
+```
+
+انسٹال ہونے کے بعد, `graph init` کمانڈ کو ایک نیا سب گراف پروجیکٹ ترتیب دینے کے لیے استعمال کیا جا سکتا ہے, یا تو کسی بھی عوامی ایتھریم نیٹ ورکس پر موجودہ کنٹریکٹ سے یا ایک مثال کے سب گراف سے. اس کمانڈ کو `graph init --product subgraph-studio` میں بھیج کر Subgraph Studio پر سب گراف بنانے کے لیے استعمال کیا جا سکتا ہے. اگر آپ کے پاس پہلے سے ہی ایک سمارٹ کنٹریکٹ ہے جو Ethereum mainnet یا testnets میں سے ایک پر تعینات ہے, اس کنٹریکٹ سے ایک نئے سب گراف کو سہارا دینا شروع کرنے کا ایک اچھا طریقہ ہو سکتا ہے.
+
+## ایک موجودہ کنٹریکٹ سے
+
+مندرجہ ذیل کمانڈ ایک سب گراف بناتا ہے جو موجودہ کنٹریکٹ کے تمام ایوینٹس کو انڈیکس کرتا ہے. یہ Etherscan سے contract ABI حاصل کرنے کی کوشش کرتا ہے اور مقامی فائل پاتھ کی درخواست کرنے پر واپس آتا ہے. اگر اختیاری انتخابات میں سے کوئی غائب ہے، تو یہ آپ کو ایک انٹرایکٹو فارم پر لے جاتا ہے.
+
+```sh
+graph init \
+  --product subgraph-studio
+  --from-contract <CONTRACT_ADDRESS> \
+  [--network <ETHEREUM_NETWORK>] \
+  [--abi <FILE>] \
+  <SUBGRAPH_SLUG> [<DIRECTORY>]
+```
+
+`<SUBGRAPH_SLUG>` سب گراف سٹوڈیو میں آپ کے سب گراف کی ID ہے, یہ آپ کے سب گراف کی تفصیلات کے صفحہ پر پائی جا سکتی ہے.
+
+## ایک مثال کے سب گراف سے
+
+دوسرا موڈ `graph init` سپورٹ کرتا ہے مثال کے سب گراف سے ایک نیا پروجیکٹ بنا رہا ہے. درج ذیل کمانڈ یہ کرتی ہے:
+
+```sh
+graph init --studio <SUBGRAPH_SLUG>
+```
+
+مثال کا سب گراف Dani Grant کے کشش ثقل کے معاہدے پر مبنی ہے جو صارف کے اوتاروں کا انتظام کرتا ہے اور جب بھی اوتار بنائے جاتے ہیں یا اپ ڈیٹ ہوتے ہیں تو `NewGravatar` یا `UpdateGravatar` ایونٹس کو خارج کرتا ہے. سب گراف ان واقعات کو گراف نوڈ اسٹور پر `Gravatar` اداروں کو لکھ کر اور اس بات کو یقینی بناتا ہے کہ یہ ایونٹس کے مطابق اپ ڈیٹ ہوں. مندرجہ ذیل حصے ان فائلوں پر جائیں گے جو اس مثال کے لیے سب گراف مینی فیسٹ کو بناتے ہیں.
+
+## موجودہ سب گراف میں نئے ڈیٹا سورسز شامل کریں
+
+`v0.31.0` سے اب تک `graph add`, `graph-cli` کمانڈ کے ذریعے موجودہ سب گراف میں نئے ڈیٹا سورسز کو شامل کرنے کی حمایت کرتا ہے.
+
+```sh
+graph add <address> [<subgraph-manifest default: "./subgraph.yaml">]
+
+Options:
+
+      --abi <path>              Path to the contract ABI (default: download from Etherscan)
+      --contract-name           Name of the contract (default: Contract)
+      --merge-entities          Whether to merge entities with the same name (default: false)
+      --network-file <path>     Networks config file path (default: "./networks.json")
+```
+
+`add` کمانڈ Etherscan سے ABI لے آئے گی (جب تک کہ `--abi` آپشن کے ساتھ ABI کا پاتھ متعین نہ کیا جائے)، اور ایک نیا `dataSource` بنائے گا۔ اسی طرح جس طرح `graph init` کمانڈ ایک `dataSource` `--from-contract` سے تخلیق کرتی ہے، اس کے مطابق اسکیما اور میپنگس کو اپ ڈیٹ کرتی ہے.
+
+`--merge-entities` کا اپشن اس بات کی نشاندہی کرتا ہے کہ ڈیولپر کس طرح `entity` اور `event` نام کے تنازعات سے نمٹنا چاہے گا:
+
+- اگر `true`: نئے `ڈیٹا سورس` کو موجودہ `eventHandlers` اور `entities` کا استعمال کرنا چاہیے.
+- اگر `false`: ایک نئی entity & event handler کو `${dataSourceName}{EventName}` کے ساتھ بنایا جانا چاہیے.
+
+کنٹریکٹ `address` متعلقہ نیٹ ورک کے لیے `networks.json` پر لکھا جائے گا.
+
+> **نوٹ:** interactive cli کا استعمال کرتے وقت، `graph init` کو کامیابی سے چلانے کے بعد، آپ کو ایک نیا `dataSource` شامل کرنے کا کہا جائے گا.
+
+## سب گراف مینی فیسٹ
+
+سب گراف مینی فیسٹ `subgraph.yaml` آپ کے سب گراف کے انڈیکس کردہ سمارٹ کنٹریکٹ کی وضاحت کرتا ہے, ان کنٹریکٹس میں سے کن ایوینٹس پر توجہ دی جائے, اور ایونٹ کے ڈیٹا کو ان entities کے ساتھ میپ کرنے کا طریقہ جو گراف نوڈ ذخیرہ کرتا ہے اور کیوری کرنے کی اجازت دیتا ہےاور ایونٹ کے ڈیٹا کو ان اینٹیٹیز کے ساتھ میپ کرنے کا طریقہ جو گراف نوڈ ذخیرہ کرتا ہے اور کیوری کرنے کی اجازت دیتا ہے. سب گراف مینی فیسٹ کے لیے مکمل تفصیلات [یہاں](https://github.com/graphprotocol/graph-node/blob/master/docs/subgraph-manifest.md) مل سکتی ہیں.
+
+مثال کے سب گراف کے لیے، `subgraph.yaml` یہ ہے:
+
+```yaml
+specVersion: 0.0.4
+description: Gravatar for Ethereum
+repository: https://github.com/graphprotocol/example-subgraphs
+schema:
+  file: ./schema.graphql
+dataSources:
+  - kind: ethereum/contract
+    name: Gravity
+    network: mainnet
+    source:
+      address: '0x2E645469f354BB4F5c8a05B3b30A929361cf77eC'
+      abi: Gravity
+      startBlock: 6175244
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.6
+      language: wasm/assemblyscript
+      entities:
+        - Gravatar
+      abis:
+        - name: Gravity
+          file: ./abis/Gravity.json
+      eventHandlers:
+        - event: NewGravatar(uint256,address,string,string)
+          handler: handleNewGravatar
+        - event: UpdatedGravatar(uint256,address,string,string)
+          handler: handleUpdatedGravatar
+      callHandlers:
+        - function: createGravatar(string,string)
+          handler: handleCreateGravatar
+      blockHandlers:
+        - handler: handleBlock
+        - handler: handleBlockWithCall
+          filter:
+            kind: call
+      file: ./src/mapping.ts
+```
+
+مینی فیسٹ کے لیے اپ ڈیٹ کرنے کے لیے اہم اندراجات یہ ہیں:
+
+- `description`: سب گراف کی پڑھنے کے قابل ایک وضاحت. یہ تفصیل گراف ایکسپلورر کے ذریعہ اس وقت ظاہر ہوتی ہے جب سب گراف کو ہوسٹڈ سروس پر تعینات کیا جاتا ہے.
+
+- `repository`: ریپوزٹری کا URL جہاں سب گراف مینی فیسٹ پایا جا سکتا ہے. یہ گراف ایکسپلورر کے ذریعہ بھی ظاہر ہوتا ہے.
+
+- `features`: تمام استعمال شدہ [نمایاں](#experimental-features) ناموں کی فہرست.
+
+- `dataSources.source`: سمارٹ کنٹریکٹ کا ایڈریس جو سب گراف کا ذریعہ ہے, اور استعمال کرنے کے لیے سمارٹ کنٹریکٹ کا ABI. ایڈریس اختیاری ہے; اسے چھوڑنا تمام کنٹریکٹس سے مماثل ایونٹس کو انڈیکس کرنے کی اجازت دیتا ہے.
+
+- `dataSources.source.startBlock`: بلاک کا اختیاری نمبر جس سے ڈیٹا سورس انڈیکس کرنا شروع کرتا ہے. زیادہ تر معاملات میں، ہم اس بلاک کو استعمال کرنے کا مشورہ دیتے ہیں جس میں کنٹریکٹ بنایا گیا تھا.
+
+- `dataSources.mapping.entities`: وہ entities جنہیں ڈیٹا سورس اسٹور کو لکھتا ہے۔ schema.graphql فائل میں ہر اینٹیٹی کے لیے اسکیما کی وضاحت کی گئی ہے.
+
+- `dataSources.mapping.abis`: سورس کنٹریکٹ کے لیے ایک یا زیادہ ABI فائلیں اور ساتھ ہی کسی دوسرے سمارٹ کنٹریکٹ کے لیے جن کے ساتھ آپ میپنگ کے اندر سے تعامل کرتے ہیں.
+
+- `dataSources.mapping.eventHandlers`: ان سمارٹ کنٹریکٹ ایونٹس کی فہرست دیتا ہے جن پر یہ سب گراف رد عمل ظاہر کرتا ہے اور میپنگ میں ہینڈلرز— مثال میں./src/mapping.ts — جو ان واقعات کو اسٹور میں موجود entities میں تبدیل کرتے ہیں.
+
+- `dataSources.mapping.callHandlers`: ان سمارٹ کنٹریکٹ فنکشنز کی فہرست بناتا ہے جن پر یہ سب گراف رد عمل ظاہر کرتا ہے اور میپنگ میں ہینڈلرز جو ان پٹس اور آوٹ پٹس کو فنکشن کالز کو اسٹور میں موجود اینٹیٹیز میں تبدیل کرتے ہیں.
+
+- `dataSources.mapping.blockHandlers`: ان بلاکس کی فہرست بناتا ہے جن پر یہ سب گراف رد عمل ظاہر کرتا ہے اور میپنگ میں ہینڈلرز کو چلانے کے لیے جب ایک بلاک کو چین میں شامل کیا جاتا ہے. فلٹر کے بغیر، بلاک ہینڈلر ہر بلاک کو چلایا جائے گا. ایک اختیاری کال فلٹر ہینڈلر کو `kind: call` کے ساتھ ایک `filter` فیلڈ شامل کرکے فراہم کیا جاسکتا ہے. یہ صرف ہینڈلر کو چلائے گا اگر بلاک میں ڈیٹا سورس کنٹریکٹ پر کم از کم ایک کال ہو.
+
+ایک واحد سب گراف متعدد سمارٹ کنٹریکٹ سے ڈیٹا کو انڈیکس کر سکتا ہے. ہر کنٹریکٹ کے لیے ایک اندراج شامل کریں جس سے ڈیٹا کو `dataSources` array میں انڈیکس کرنے کی ضرورت ہے.
+
+بلاک کے اندر ڈیٹا سورس کے لیے محرکات درج ذیل عمل کا استعمال کرتے ہوئے ترتیب دیے گئے ہیں:
+
+1. ایونٹ اور کال ٹریگرز کو پہلے بلاک کے اندر ٹرانزیکشن انڈیکس سے ترتیب دیا جاتا ہے.
+2. ایک ہی ٹرانزیکشن کے اندر ایونٹ اور کال ٹرگرز کو روایت کا استعمال کرتے ہوئے ترتیب دیا جاتا ہے: پہلے ایونٹ ٹرگرز پھر کال ٹرگرز، ہر قسم اس ترتیب کا احترام کرتی ہے جس کی وضاحت مینی فیسٹ میں کی گئی ہے.
+3. بلاک ٹریگرز ایونٹ اور کال ٹریگرز کے بعد چلائے جاتے ہیں، اس ترتیب میں جس کی وضاحت مینی فیسٹ میں کی گئی ہے.
+
+ترتیب دینے کے یہ اصول تبدیل کیے جا سکتے ہیں.
+
+### ABIs حاصل کرنا
+
+ABI فائل (فائلیں) آپ کے کنٹریکٹ (کنٹریکٹس) سے مماثل ہونی چاہئیں. ABI کی فائلیں حاصل کرنے کے چند طریقے ہیں:
+
+- اگر آپ اپنا پراجیکٹ خود بنا رہے ہیں، تو ممکنہ طور پر آپ کو اپنے حالیہ ABIs تک رسائی حاصل ہوگی.
+- اگر آپ کسی عوامی پروجیکٹ کے لیے سب گراف بنا رہے ہیں، تو آپ اس پروجیکٹ کو اپنے کمپیوٹر پر ڈاؤن لوڈ کر سکتے ہیں اور [`truffle compile`](https://truffleframework.com/docs/truffle/overview) کا استعمال کر کے ABI حاصل کر سکتے ہیں یا کمپائل کرنے کے لیے solc کا استعمال کریں.
+- آپ ABI کو [Etherscan](https://etherscan.io/) پر بھی تلاش کر سکتے ہیں، لیکن یہ ہمیشہ قابل بھروسہ نہیں ہوتا، کیونکہ وہاں اپ لوڈ کیا گیا ABI پرانا ہو سکتا ہے. یقینی بنائیں کہ آپ کے پاس صحیح ABI ہے، بصورت دیگر آپ کا سب گراف چلانا ناکام ہو جائے گا.
+
+## GraphQL سکیما
+
+آپ کے سب گراف کا اسکیما فائل `schema.graphql` میں ہے. GraphQL اسکیموں کی تعریف GraphQL انٹرفیس ڈیفینیشن لینگویج کا استعمال کرتے ہوئے کی جاتی ہے. اگر آپ نے کبھی بھی GraphQL سکیما نہیں لکھا ہے، تو یہ تجویز کی جاتی ہے کہ آپ GraphQL ٹائپ سسٹم پر اس پرائمر کو چیک کریں. GraphQL اسکیموں کے لیے حوالہ دستاویزات [GraphQL API](/querying/graphql-api) سیکشن میں مل سکتے ہیں.
+
+## اینٹیٹیز کی تعریف کرنا
+
+اینٹیٹیز کی وضاحت کرنے سے پہلے، ایک قدم پیچھے ہٹنا اور اس بارے میں سوچنا ضروری ہے کہ آپ کا ڈیٹا کس طرح تشکیل اور لنک کیا جاتا ہے. تمام کیوریز سب گراف اسکیما میں بیان کردہ ڈیٹا ماڈل اور سب گراف کے ذریعہ ترتیب کردہ اینٹیٹیز کے متضاد بنائی جائیں گے. اس کی وجہ سے، یہ اچھا ہے کہ سب گراف اسکیما کو اس طرح سے بیان کیا جائے جو آپ کے ڈیپ کی ضروریات کے مطابق ہو. اینٹیٹیز کو ایوینٹس یا فنکشنز کے بجائے "ڈیٹا پر مشتمل اشیاء" کے طور پر تصور کرنا مفید ہو سکتا ہے.
+
+گراف کے ساتھ، آپ `schema.graphql` میں اینٹیٹی کی اقسام کی وضاحت کرتے ہیں، اور گراف نوڈ اس اینٹیٹی کی قسم کے واحد مثالوں اور مجموعوں کے بارے میں کیوری کرنے کے لیے اعلیٰ معیار کی فیلڈز تیار کرے گا. ہر ایک قسم جو ایک اینٹیٹی ہونی چاہیے اسے `@entity` ہدایت کے ساتھ بیان کرنا ضروری ہے. پہلے سے طے شدہ طور پر، اینٹیٹیز متغیر ہوتے ہیں، یعنی میپنگ موجودہ اداروں کو لوڈ کر سکتے ہیں، ان میں ترمیم کر سکتے ہیں اور اس اینٹیٹی کا نیا ورژن محفوظ کر سکتے ہیں. تغیر پذیری ایک قیمت پر آتی ہے، اور اینٹیٹی کی اقسام کے لیے جن کے لیے یہ معلوم ہے کہ ان میں کبھی بھی ترمیم نہیں کی جائے گی، مثال کے طور پر، کیونکہ ان میں صرف چین سے نکالا گیا ڈیٹا ہوتا ہے، ان کو `@entity(immutable: true)` کے ساتھ ناقابل تغیر کے طور پر نشان زد کرنے کی تجویز کی جاتی ہے. میپنگز غیر تبدیل شدہ اینٹیٹیز میں تبدیلیاں کر سکتی ہیں جب تک کہ یہ تبدیلیاں اسی بلاک میں ہوتی ہیں جس میں اینٹیٹی بنائی گئی تھی. ناقابل تغیر اینٹیٹیز لکھنے اور کیوری کرنے میں بہت تیز ہوتی ہیں، اور اس لیے جب بھی ممکن ہو استعمال کی جانی چاہیے.
+
+### اچھی مثال
+
+نیچے دی گئی `Gravatar` اینٹیٹی کو Gravatar آبجیکٹ کے ارد گرد بنایا گیا ہے اور یہ اس بات کی ایک اچھی مثال ہے کہ کسی اینٹیٹی کی تعریف کیسے کی جا سکتی ہے.
+
+```graphql
+type Gravatar @entity(immutable: true) {
+  id: Bytes!
+  owner: Bytes
+  displayName: String
+  imageUrl: String
+  accepted: Boolean
+}
+```
+
+### بری مثال
+
+ذیل میں دی گئی مثالی اندراجات `GravatarAccepted` اور `GravatarDeclined` ایونٹس کی بنیاد پر ہے. ایونٹس یا فنکشن کالز کو اینٹیٹیز سے 1:1 کے تناسب سے نقشہ کرنے کی تجویز نہیں کی جاتی ہے.
+
+```graphql
+type GravatarAccepted @entity {
+  id: Bytes!
+  owner: Bytes
+  displayName: String
+  imageUrl: String
+}
+
+type GravatarDeclined @entity {
+  id: Bytes!
+  owner: Bytes
+  displayName: String
+  imageUrl: String
+}
+```
+
+### اختیاری اور مطلوبہ فیلڈز
+
+اینٹٹی کی فیلڈز کو مطلوبہ یا اختیاری کے طور پر بیان کیا جا سکتا ہے. مطلوبہ فیلڈز کی نشاندہی سکیما میں `!` سے ہوتی ہے. اگر میپنگ میں مطلوبہ فیلڈ سیٹ نہیں کی گئی ہے, تو فیلڈ کو کیوری کرتے وقت آپ کو یہ رکاوٹ ملے گی:
+
+```
+غیر صفر فیلڈ 'name' کے لیے خالی ویلیو حل ہو گئی
+```
+
+ہر اینٹیٹی کے پاس ایک `id` فیلڈ ہونا ضروری ہے، جو کہ `Bytes!` یا `String!` کی قسم کا ہونا چاہیے. عام طور پر `Bytes!` استعمال کرنے کی کی تجویز جاتی ہے، جب تک کہ `id` میں انسانی پڑھنے کے قابل متن شامل نہ ہو، کیونکہ `Bytes!` id کے ساتھ اینٹیٹیز کا لکھنا تیز تر ہوگا اور `String!` `id` کے ساتھ کیوری کرنا. `id` فیلڈ پرائمری کلید کے طور پر کام کرتی ہے، اور ایک ہی قسم کے تمام اینٹیٹیز میں منفرد ہونا ضروری ہے۔ تاریخی وجوہات کی بنا پر، قسم `ID!` کو بھی قبول کیا جاتا ہے اور یہ `String!` کا مترادف ہے.
+
+کچھ اینٹیٹی کی اقسام کے لیے `id` کو دو دیگر اینٹیٹیز کی id سے بنایا جاتا ہے. جو کہ `concat` کا استعمال کرتے ہوئے ممکن ہے، مثال کے طور پر، `let id = left.id.concat(right.id)` تاکہ `left` اور `right` کی id سے id بنے. اسی طرح، کسی موجودہ اینٹیٹی اور کاؤنٹر کی id سے ایک id بنانے کے لیے `count`، `let id = left.id.concatI32(count)` استعمال کیا جا سکتا ہے. concatenation منفرد id's تیار کرنے کی ضمانت دیتا ہے جب تک کہ `left` کی لمبائی ایسی تمام اینٹیٹیز کے لیے یکساں ہو، مثال کے طور پر، کیونکہ `left.id` ایک `Address ہے`.
+
+### بلٹ ان اسکیلر اقسام
+
+#### GraphQL حمایت یافتہ اسکیلرز
+
+ہم اپنے GraphQL API میں درج ذیل اسکیلرز کی حمایت کرتے ہیں:
+
+| قسم          | تفصیل                                                                                                                                                                                                    |
+| ------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Bytes`      | Byte array، ایک ہیکساڈیسیمل سٹرنگ کے طور پر پیش کیا جاتا ہے. عام طور پر Ethereum hashes اور ایڈریسیس کے لیے استعمال ہوتا ہے.                                                                             |
+| `String`     | `string` ویلیوز کے لیے اسکیلر. خالی حروف تعاون یافتہ نہیں ہیں اور خود بخود ہٹا دیے جاتے ہیں.                                                                                                             |
+| `Boolean`    | `Boolean` ویلیوز کے لیے اسکیلر.                                                                                                                                                                          |
+| `Int`        | GraphQL spec `Int` کی وضاحت کرتا ہے جس کا سائز 32 bytes ہے.                                                                                                                                              |
+| `BigInt`     | بڑے integers۔ Ethereum کی `uint32`، `int64`، `uint64`، ..., `uint256` اقسام کے لیے استعمال کیا جاتا ہے. نوٹ: `uint32` کے نیچے ہر چیز، جیسے `int32`، `uint24` یا `int8` کو `i32` کے طور پر دکھایا گیا ہے. |
+| `BigDecimal` | `BigDecimal` اعلی درستگی والے اعشاریہ ایک significand اور ایک exponent کے طور پر پیش کیا جاتے ہہیں. Exponent رینج −6143 سے +6144 تک ہے۔ 34 سگنیفیکینڈ ہندسوں پر rounded کیا گیا۔.                        |
+
+#### Enums
+
+آپ اسکیما کے اندر enums بھی بنا سکتے ہیں. Enums میں درج ذیل نحو ہے:
+
+```graphql
+enum TokenStatus {
+  OriginalOwner
+  SecondOwner
+  ThirdOwner
+}
+```
+
+ایک بار اسکیما میں enum کی وضاحت ہوجانے کے بعد، آپ enum ویلیو کی سٹرنگ نمائندگی کو کسی اینٹیٹی پر enum فیلڈ سیٹ کرنے کے لیے استعمال کرسکتے ہیں۔ مثال کے طور پر، آپ پہلے اپنی اینٹیٹی کی وضاحت کرکے اور بعد میں `entity.tokenStatus = "SecondOwner"` کے ساتھ فیلڈ کو ترتیب دے کر `tokenStatus` کو `SecondOwner` پر سیٹ کر سکتے ہیں۔ ذیل کی مثال یہ ظاہر کرتی ہے کہ ٹوکن اینٹیٹی enum فیلڈ کے ساتھ کیسی نظر آئے گی:
+
+Enums لکھنے کے بارے میں مزید تفصیل [GraphQL دستاویزات](https://graphql.org/learn/schema/) میں مل سکتی ہے.
+
+#### اینٹیٹی کے تعلقات
+
+آپ کے اسکیما میں ایک اینٹیٹی کا ایک یا زیادہ دیگر اینٹیٹیز سے تعلق ہو سکتا ہے. یہ تعلقات آپ کے کیوریز میں شامل ہو سکتے ہیں۔ گراف میں relationships یک طرفہ ہوتے ہیں۔ relationship کے کسی بھی "اختتام" پر یک طرفہ relationship کی وضاحت کرکے دو طرفہ relationships کی تقلید کرنا ممکن ہے.
+
+Relationships کی تعریف کسی دوسری فیلڈ کی طرح اینٹیٹیز پر کی جاتی ہے سوائے اس کے کہ مخصوص کردہ قسم کسی اور اینٹیٹی کی ہو.
+
+#### One-To-One Relationships
+
+`TransactionReceipt` اینٹیٹی کی قسم کے ساتھ اختیاری one-to-one relationship کے ساتھ `Transaction` اینٹیٹی کی قسم کی وضاحت کریں:
+
+```graphql
+type Transaction @entity(immutable: true) {
+  id: Bytes!
+  transactionReceipt: TransactionReceipt
+}
+
+type TransactionReceipt @entity(immutable: true) {
+  id: Bytes!
+  transaction: Transaction
+}
+```
+
+#### One-To-Many Relationships
+
+ایک `TokenBalance` اینٹیٹی کی قسم کی وضاحت کریں جس میں ایک ٹوکن اینٹیٹی کی قسم کے ساتھ مطلوبہ one-to-many relationship ہے:
+
+```graphql
+type Token @entity(immutable: true) {
+  id: Bytes!
+}
+
+type TokenBalance @entity {
+  id: Bytes!
+  amount: Int!
+  token: Token!
+}
+```
+
+#### ریورس لک اپس
+
+ریورس لک اپس کی تعریف `@derivedFrom` فیلڈ کے ذریعے کسی اینٹیٹی پر کی جا سکتی ہے۔ یہ اینٹیٹی پر ایک ورچوئل فیلڈ بناتا ہے جس سے کیوری کیا جا سکتا ہے لیکن میپنگ API کے ذریعے دستی طور پر سیٹ نہیں کیا جا سکتا. بلکہ، یہ دوسری اینٹیٹی پر بیان کردہ تعلق سے اخذ کیا گیا ہے۔ ایسے ریلیشن شپس کے لیے، ریلیشن شپس کے دونوں اطراف کو ذخیرہ کرنا شاذ و نادر ہی سمجھ میں آتا ہے، اور انڈیکسنگ اور کیوری دونوں کی کارکردگی اس وقت بہتر ہوگی جب صرف ایک طرف ذخیرہ کیا جائے اور دوسرا اخذ کیا جائے.
+
+One-to-many ریلیشن شپس کے لیے، ریلیشن شپ کو ہمیشہ 'one' سائیڈ پر رکھنا چاہیے، اور 'many' سائیڈ کو ہمیشہ اخذ کیا جانا چاہیے۔ 'many' سائیڈ پر اینٹیٹیز کی ایک ایرے کو ذخیرہ کرنے کے بجائے اس طرح سے تعلق کو ذخیرہ کرنے کے نتیجے میں سب گراف کی انڈیکسنگ اور کیوریز دونوں کے لیے نمایاں طور پر بہتر کارکردگی ہوگی۔ عام طور پر، اینٹیٹیز کی ایریز کو ذخیرہ کرنے سے اتنا ہی گریز کیا جانا چاہیے جتنا کہ عملی ہو.
+
+#### مثال
+
+ہم ایک `tokenBalances` فیلڈ حاصل کرکے ٹوکن سے قابل رسائی ٹوکن کے لیے بیلنس بنا سکتے ہیں:
+
+```graphql
+type Token @entity(immutable: true) {
+  id: Bytes!
+  tokenBalances: [TokenBalance!]! @derivedFrom(field: "token")
+}
+
+type TokenBalance @entity {
+  id: Bytes!
+  amount: Int!
+  token: Token!
+}
+```
+
+#### Many-To-Many ریلیشن شپس
+
+Many-to-many ریلیشن شپس کے لیے، جیسے کہ صارفین جن میں سے ہر ایک کا تعلق کسی بھی تعداد میں تنظیموں سے ہو سکتا ہے، سب سے سیدھا، لیکن عام طور پر سب سے زیادہ پرفارمنس نہیں، ریلیشن شپ کو ماڈل کرنے کا طریقہ شامل دونوں اینٹیٹیز میں سے ہر ایک میں ایک ایرے کے طور پر ہے۔ اگر ریلیشن شپ ہم آہنگ ہے تو، رشتے کے صرف ایک رخ کو ذخیرہ کرنے کی ضرورت ہے اور دوسری طرف اخذ کیا جا سکتا ہے.
+
+#### مثال
+
+ایک `User` اینٹیٹی کی قسم سے `Organization` اینٹیٹی کی قسم تک ریورس لک اپ کی وضاحت کریں۔ ذیل کی مثال میں، یہ `Organization` اینٹیٹی کے اندر سے `members` انتساب کو تلاش کرکے حاصل کیا جاتا ہے۔ کیوریز میں، `User` پر موجود `organizations` فیلڈ کو ان تمام `Organization` اینٹیٹیز کو تلاش کرکے حل کیا جائے گا جن میں صارف کی ID شامل ہے.
+
+```graphql
+type Organization @entity {
+  id: Bytes!
+  name: String!
+  members: [User!]!
+}
+
+type User @entity {
+  id: Bytes!
+  name: String!
+  organizations: [Organization!]! @derivedFrom(field: "members")
+}
+```
+
+اس relationship کو ذخیرہ کرنے کا ایک زیادہ پرفارمنس والا طریقہ mapping table کے ذریعے ہے جس میں ہر ایک `User` / `Organization` کے جوڑے کے لیے ایک اندراج ہے جیسے اسکیما کے ساتھ
+
+```graphql
+type Organization @entity {
+  id: Bytes!
+  name: String!
+  members: [UserOrganization!]! @derivedFrom(field: "organization")
+}
+
+type User @entity {
+  id: Bytes!
+  name: String!
+  organizations: [UserOrganization!] @derivedFrom(field: "user")
+}
+
+type UserOrganization @entity {
+  id: Bytes! # Set to `user.id.concat(organization.id)`
+  user: User!
+  organization: Organization!
+}
+```
+
+اس نقطہ نظر کا تقاضا ہے کہ کیوریز کو بازیافت کرنے کے لیے ایک اضافی سطح پر اتریں، مثال کے طور پر، صارفین کے لیے تنظیمیں:
+
+```graphql
+query usersWithOrganizations {
+  users {
+    organizations {
+      # this is a UserOrganization entity
+      organization {
+        name
+      }
+    }
+  }
+}
+```
+
+Many-to-many relationships کو ذخیرہ کرنے کے اس زیادہ وسیع طریقے کے نتیجے میں سب گراف کے لیے کم ڈیٹا ذخیرہ کیا جائے گا، اور اس لیے ایک سب گراف میں جو اکثر نمایاں طور پر انڈیکس اور کیوری کے لیے تیز تر ہوتا ہے.
+
+#### اسکیما میں کامینٹس شامل کرنا
+
+GraphQL spec کے مطابق، ڈبل کوٹیشن `""` کا استعمال کرتے ہوئے اسکیما اینٹیٹی کے اوصاف کے اوپر کامینٹس شامل کیے جا سکتے ہیں۔ ذیل کی مثال میں اس کی وضاحت کی گئی ہے:
+
+```graphql
+type MyFirstEntity @entity {
+  "unique identifier and primary key of the entity"
+  id: Bytes!
+  address: Bytes!
+}
+```
+
+## Fulltext Search فیلڈز کی وضاحت کرنا
+
+ٹیکسٹ سرچ ان پٹ کی بنیاد پر Fulltext سرچ کیوریز اینٹیٹیز کو فلٹر اور رینک کرتی ہیں. Fulltext کیوریز انڈیکس شدہ ٹیکسٹ ڈیٹا سے موازنہ کرنے سے پہلے کیوری کے متن کے ان پٹ کو stems میں پروسیس کرکے ملتے جلتے الفاظ کے میچز واپس کرنے کے قابل ہیں.
+
+فل ٹیکسٹ کیوری کی تعریف میں کیوری کا نام، ٹیکسٹ فیلڈز پر کارروائی کرنے کے لیے استعمال ہونے والی language dictionary، نتائج کو ترتیب دینے کے لیے استعمال ہونے والا ranking algorithm، اور تلاش میں شامل فیلڈز شامل ہیں. ہر fulltext کیوری ایک سے زیادہ فیلڈز پر محیط ہو سکتا ہے، لیکن تمام شامل فیلڈز ایک ہی اینٹیٹی کی قسم سے ہونے چاہئیں.
+
+Fulltext کیوری شامل کرنے کے لیے، GraphQL اسکیما میں fulltext directive کے ساتھ `_Schema_` ٹائپ شامل کریں.
+
+```graphql
+type _Schema_
+  @fulltext(
+    name: "bandSearch"
+    language: en
+    algorithm: rank
+    include: [{ entity: "Band", fields: [{ name: "name" }, { name: "description" }, { name: "bio" }] }]
+  )
+
+type Band @entity {
+  id: Bytes!
+  name: String!
+  description: String!
+  bio: String
+  wallet: Address
+  labels: [Label!]!
+  discography: [Album!]!
+  members: [Musician!]!
+}
+```
+
+مثال کی `bandSearch` فیلڈ کو `name`، `description` اور `bio` فیلڈز میں ٹیکسٹ دستاویزات کی بنیاد پر `Band` اینٹیٹیز کو فلٹر کرنے کے لیے کیوریز میں استعمال کیا جا سکتا ہے. fulltext سرچ API کی تفصیل اور مزید مثال کے استعمال کے لیے [GraphQL API - Queries](/querying/graphql-api#queries) پر جائیں.
+
+```graphql
+query {
+  bandSearch(text: "breaks & electro & detroit") {
+    id
+    name
+    description
+    wallet
+  }
+}
+```
+
+> **[فیچر مینجمنٹ](#experimental-features):** `specVersion` `0.0.4` سے اور اس کے بعد، `FullTextSearch` کا اعلان سب گراف مینی فیسٹ میں `خصوصیات` سیکشن کے تحت ہونا چاہیے.
+
+### تعاون یافتہ languages ہیں
+
+ایک مختلف زبان کا انتخاب fulltext کی تلاش کی API پر حتمی، اگرچہ بعض اوقات لطیف، اثر رکھتا ہے۔ fulltext کیوری والے فیلڈز کا احاطہ منتخب کردہ زبان کے تناظر میں کیا جاتا ہے، اس لیے تجزیہ اور تلاش کی کیوریز کے ذریعہ تیار کردہ lexemes زبان سے دوسری زبان میں مختلف ہوتے ہیں۔ مثال کے طور پر: جب تعاون یافتہ ترکی لغت کا استعمال کرتے ہوئے "token" کو "toke" کے لیے سٹیم کیا جاتا ہے، جب کہ، یقیناً، انگریزی لغت اسے "token" پر سٹیم کرے گی.
+
+معاون language dictionaries:
+
+| Code   | Dictionary |
+| ------ | ---------- |
+| simple | General    |
+| da     | Danish     |
+| nl     | Dutch      |
+| en     | English    |
+| fi     | Finnish    |
+| fr     | French     |
+| de     | German     |
+| hu     | Hungarian  |
+| it     | Italian    |
+| no     | Norwegian  |
+| pt     | Portuguese |
+| ro     | Romanian   |
+| ru     | Russian    |
+| es     | Spanish    |
+| sv     | Swedish    |
+| tr     | Turkish    |
+
+### درجہ بندی الگورتھم
+
+نتائج ترتیب دینے کے لیے معاون الگورتھم:
+
+| الگورتھم      | تفصیل                                                                       |
+| ------------- | --------------------------------------------------------------------------- |
+| درجہ          | نتائج ترتیب دینے کے لیے fulltext کیوری کے میچ کوالٹی (1-0) کا استعمال کریں. |
+| proximityRank | درجہ بندی کی طرح لیکن اس میں میچوں کی قربت بھی شامل ہے.                     |
+
+## میپنگ لکھنا
+
+میپنگز Ethereum ڈیٹا کو تبدیل کرتی ہیں جو آپ کی میپنگ آپ کے سکیما میں بیان کردہ اداروں میں سورس کر رہے ہیں۔ میپنگز کو [TypeScript](https://www.typescriptlang.org/docs/handbook/typescript-in-5-minutes.html) کے ذیلی سیٹ میں لکھا جاتا ہے جسے [AssemblyScript](https://github.com/AssemblyScript/assemblyscript/wiki) کہا جاتا ہے جسے WASM ([WebAssembly](https://webassembly.org/)) میں کمپائل کیا جاسکتا ہے۔ AssemblyScript عام TypeScript سے زیادہ سخت ہے، پھر بھی ایک مانوس نحو فراہم کرتا ہے.
+
+ہر ایونٹ ہینڈلر کے لیے جس کی وضاحت `subgraph.yaml` میں `mapping.eventHandlers` کے نیچے کی گئی ہے، اسی نام کا ایک برآمد شدہ فنکشن بنائیں. ہر ہینڈلر کو `event` نامی ایک پیرامیٹر کو قبول کرنا چاہیے جو اس ایونٹ کے نام سے مطابقت رکھتا ہو جس کو ہینڈل کیا جا رہا ہے.
+
+مثال کے سب گراف میں، `src/mapping.ts` میں `NewGravatar` اور `UpdatedGravatar` ایونٹس کے ہینڈلرز شامل ہیں:
+
+```javascript
+import { NewGravatar, UpdatedGravatar } from '../generated/Gravity/Gravity'
+import { Gravatar } from '../generated/schema'
+
+export function handleNewGravatar(event: NewGravatar): void {
+  let gravatar = new Gravatar(event.params.id)
+  gravatar.owner = event.params.owner
+  gravatar.displayName = event.params.displayName
+  gravatar.imageUrl = event.params.imageUrl
+  gravatar.save()
+}
+
+export function handleUpdatedGravatar(event: UpdatedGravatar): void {
+  let id = event.params.id
+  let gravatar = Gravatar.load(id)
+  if (gravatar == null) {
+    gravatar = new Gravatar(id)
+  }
+  gravatar.owner = event.params.owner
+  gravatar.displayName = event.params.displayName
+  gravatar.imageUrl = event.params.imageUrl
+  gravatar.save()
+}
+```
+
+پہلا ہینڈلر `NewGravatar` ایونٹ لیتا ہے اور `new Gravatar(event.params.id.toHex())` کے ساتھ ایک نئ `Gravatar` اینٹیٹی تخلیق کرتا ہے، متعلقہ ایونٹ کے پیرامیٹرز کا استعمال کرتے ہوئے اینٹیٹی کی فیلڈز کو پر کرتے ہیں. اس اینٹیٹی کی مثال کو متغیر `gravatar` کے ذریعے دکھایا گیا ہے، جس کی id قدر `event.params.id.toHex()` ہے.
+
+دوسرا ہینڈلر موجودہ `Gravatar` کو گراف نوڈ اسٹور سے لوڈ کرنے کی کوشش کرتا ہے. اگر یہ ابھی تک موجود نہیں ہے، تو اسے on-demand بنایا جاتا ہے۔ اس کے بعد اینٹیٹی کو `gravatar.save()` کا استعمال کرتے ہوئے اسٹور میں واپس محفوظ کرنے سے پہلے نئے ایونٹ کے پیرامیٹرز سے مماثل ہونے کے لیے اپ ڈیٹ کیا جاتا ہے.
+
+### نئ اینٹیٹیز بنانے کے لیے تجویز کردہ IDs
+
+ہر اینٹیٹی کے پاس ایک `id` ہونا ضروری ہے جو ایک ہی قسم کے تمام اینٹیٹیز میں منفرد ہو. ایک اینٹیٹی کی `id` قدر سیٹ کی جاتی ہے جب اینٹیٹی بنائی جاتی ہے. ذیل میں کچھ تجویز کردہ `id` قدریں دی گئی ہیں جن پر نئ اینٹیٹی بناتے وقت غور کرنا چاہیے۔ نوٹ: `id` کی قدر ایک `string` ہونی چاہیے.
+
+- `event.params.id.toHex()`
+- `event.transaction.from.toHex()`
+- `event.transaction.hash.toHex() + "-" + event.logIndex.toString()`
+
+ہم [Graph Typescript Library](https://github.com/graphprotocol/graph-ts) فراہم کرتے ہیں جس میں گراف نوڈ اسٹور کے ساتھ تعامل کے لیے یوٹیلیز اور سمارٹ کنٹریکٹ ڈیٹا اور اینٹیٹیز کو سنبھالنے کے لیے سہولتیں شامل ہیں. آپ `mapping.ts` میں `@graphprotocol/graph-ts` درآمد کرکے اس لائبریری کو اپنی میپنگ میں استعمال کرسکتے ہیں.
+
+## Code تخلیق کرنا
+
+سمارٹ کنٹریکٹس، ایوینٹس اور اینٹیٹیز کے ساتھ کام کرنا آسان اور ٹائپ محفوظ بنانے کے لیے، گراف CLI ڈیٹا کے ذرائع میں شامل سب گراف کے GraphQL اسکیما اور کنٹریکٹ ABIs سے AssemblyScript کی قسمیں تیار کر سکتا ہے.
+
+اس کے ساتھ کیا جاتا ہے
+
+```sh
+graph codegen [--output-dir <OUTPUT_DIR>] [<MANIFEST>]
+```
+
+لیکن زیادہ تر معاملات میں، سب گراف پہلے سے ہی `package.json` کے ذریعے پہلے سے تشکیل شدہ ہوتے ہیں تاکہ آپ اسے حاصل کرنے کے لیے درج ذیل میں سے ایک کو آسانی سے چلا سکیں:
+
+```sh
+# Yarn
+yarn codegen
+
+# NPM
+npm run codegen
+```
+
+یہ `subgraph.yaml` میں مذکور ABI فائلوں میں ہر سمارٹ کنٹریکٹ کے لیے ایک AssemblyScript کلاس تیار کرے گا، جس سے آپ ان کنٹریکٹس کو میپنگ میں مخصوص ایڈریسز سے منسلک کر سکتے ہیں اور کاروائی والے بلاک کے خلاف صرف پڑھنے کے معاہدے کے طریقوں کو کال کر سکتے ہیں. یہ ہر کنٹریکٹ ایونٹ کے لیے ایک کلاس بھی تیار کرے گا تاکہ ایونٹ کے پیرامیٹرز تک آسانی سے رسائی فراہم کی جا سکے، نیز اس بلاک اور ٹرانزیکشن کو جس سے ایونٹ شروع ہوا ہے۔ یہ تمام قسمیں `<OUTPUT_DIR>/<DATA_SOURCE_NAME>/<ABI_NAME>.ts` پر لکھی گئی ہیں۔ مثال کے سب گراف میں، یہ `generated/Gravity/Gravity.ts` ہوگا، جس سے میپنگ کو ان اقسام کو درآمد کرنے کی اجازت ملتی ہے.
+
+```javascript
+import {
+  // The contract class:
+  Gravity,
+  // The events classes:
+  NewGravatar,
+  UpdatedGravatar,
+} from '../generated/Gravity/Gravity'
+```
+
+اس کے علاوہ، سب گراف کے GraphQL اسکیما میں ہر ایک قسم کے لیے ایک کلاس تیار کی جاتی ہے۔ یہ کلاسیں type-safe اینٹیٹی کی لوڈنگ، اینٹیٹی کے فیلڈز تک پڑھنے اور لکھنے تک رسائی فراہم کرتی ہیں اور ساتھ ہی ایک `save()` طریقہ فراہم کرتی ہیں تاکہ اینٹیٹیز کو اسٹور کرنے کے لیے لکھیں۔ تمام اینٹیٹی کلاسز کو `<OUTPUT_DIR>/schema.ts` پر لکھا گیا ہے، جس سے میپنگ کو ان کے ساتھ درآمد کرنے کی اجازت ملتی ہے
+
+```javascript
+import { Gravatar } from '../generated/schema'
+```
+
+> **نوٹ:** GraphQL اسکیما یا مینی فیسٹ میں شامل ABIs میں ہر تبدیلی کے بعد کوڈ جنریشن کو دوبارہ انجام دیا جانا چاہیے۔ سب گراف کی تعمیر یا تعیناتی سے پہلے اسے کم از کم ایک بار انجام دینا بھی ضروری ہے.
+
+کوڈ جنریشن آپ کے میپنگ کوڈ کو `src/mapping.ts` میں چیک نہیں کرتی ہے. اگر آپ اپنے سب گراف کو گراف ایکسپلورر پر تعینات کرنے کی کوشش کرنے سے پہلے یہ چیک کرنا چاہتے ہیں، تو آپ `yarn build` چلا سکتے ہیں اور کسی بھی نحوی خامیوں کو ٹھیک کر سکتے ہیں جو TypeScript کمپائلر کو مل سکتی ہیں.
+
+## ڈیٹا سورس ٹیمپلیٹس
+
+ایتھریم سمارٹ کنٹریکٹس میں ایک عام نمونہ رجسٹری یا فیکٹری کنٹریکٹس کا استعمال ہے، جہاں ایک کنٹریکٹ دوسرے کنٹریکٹس کی صوابدیدی تعداد کو تخلیق کرتا ہے، ان کا انتظام کرتا ہے یا حوالہ دیتا ہے جن میں سے ہر ایک کی اپنی سٹیٹ اور ایوینٹس ہوتے ہیں. ان ذیلی کنٹریکٹس کے ایڈریس پہلے سے معلوم ہو بھی سکتے ہیں یا نہیں بھی اور ان میں سے بہت سے کنٹریکٹ وقت کے ساتھ بنائے اور/یا شامل کیے جا سکتے ہیں۔ یہی وجہ ہے کہ، ایسی صورتوں میں، ایک واحد ڈیٹا سورس یا ڈیٹا کے ذرائع کی ایک مقررہ تعداد کی وضاحت کرنا ناممکن ہے اور مزید متحرک نقطہ نظر کی ضرورت ہے: _data source templates_.
+
+### مرکزی کنٹریکٹ کے لیے ڈیٹا سورس
+
+سب سے پہلے، آپ مرکزی کنٹریکٹ کے لیے باقاعدہ ڈیٹا سورس کی وضاحت کرتے ہیں۔ ذیل کا ٹکڑا [Uniswap](https://uniswap.org) ایکسچینج فیکٹری کنٹریکٹ کے لیے ایک آسان مثال ڈیٹا سورس دکھاتا ہے. `NewExchange(address,address)` ایونٹ ہینڈلر کو نوٹ کریں. یہ اس وقت خارج ہوتا ہے جب فیکٹری کنٹریکٹ کے ذریعے ایک نیا ایکسچینج کنٹریکٹ بنایا جاتا ہے.
+
+```yaml
+dataSources:
+  - kind: ethereum/contract
+    name: Factory
+    network: mainnet
+    source:
+      address: '0xc0a47dFe034B400B47bDaD5FecDa2621de6c4d95'
+      abi: Factory
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.6
+      language: wasm/assemblyscript
+      file: ./src/mappings/factory.ts
+      entities:
+        - Directory
+      abis:
+        - name: Factory
+          file: ./abis/factory.json
+      eventHandlers:
+        - event: NewExchange(address,address)
+          handler: handleNewExchange
+```
+
+### متحرک طور پر بنائے گئے کنٹریکٹس کے لیے ڈیٹا سورس ٹیمپلیٹس
+
+پھر، آپ مینی فیسٹ میں _ڈیٹا سورس ٹیمپلیٹس_ شامل کرتے ہیں. یہ ڈیٹا کے باقاعدہ ذرائع سے مماثل ہیں، سوائے اس کے کہ ان میں `source` کے تحت پہلے سے طے شدہ کنٹریکٹ ایڈریس نہیں ہے. عام طور پر، آپ پیرنٹ کنٹریکٹ کے زیر انتظام یا حوالہ کردہ ہر قسم کے ذیلی کنٹریکٹ کے لیے ایک ٹیمپلیٹ کی وضاحت کریں گے.
+
+```yaml
+dataSources:
+  - kind: ethereum/contract
+    name: Factory
+    # ... other source fields for the main contract ...
+templates:
+  - name: Exchange
+    kind: ethereum/contract
+    network: mainnet
+    source:
+      abi: Exchange
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.6
+      language: wasm/assemblyscript
+      file: ./src/mappings/exchange.ts
+      entities:
+        - Exchange
+      abis:
+        - name: Exchange
+          file: ./abis/exchange.json
+      eventHandlers:
+        - event: TokenPurchase(address,uint256,uint256)
+          handler: handleTokenPurchase
+        - event: EthPurchase(address,uint256,uint256)
+          handler: handleEthPurchase
+        - event: AddLiquidity(address,uint256,uint256)
+          handler: handleAddLiquidity
+        - event: RemoveLiquidity(address,uint256,uint256)
+          handler: handleRemoveLiquidity
+```
+
+### ڈیٹا سورس ٹیمپلیٹ کو شروع کرنا
+
+آخری مرحلے میں، آپ ٹیمپلیٹس میں سے کسی ایک سے ڈائنامک ڈیٹا سورس مثال بنانے کے لیے اپنے مرکزی کنٹریکٹس کی میپنگ کو اپ ڈیٹ کرتے ہیں. اس مثال میں، آپ `Exchange` ٹیمپلیٹ کو درآمد کرنے کے لیے مین کنٹریکٹ میپنگ کو تبدیل کریں گے اور اس پر `Exchange.create(address)` طریقہ کو کال کریں گے تاکہ نئے ایکسچینج کنٹریکٹ کو انڈیکس کرنا شروع کریں.
+
+```typescript
+import { Exchange } from '../generated/templates'
+
+export function handleNewExchange(event: NewExchange): void {
+  // Start indexing the exchange; `event.params.exchange` is the
+  // address of the new exchange contract
+  Exchange.create(event.params.exchange)
+}
+```
+
+> **نوٹ:** ایک نیا ڈیٹا سورس صرف اس بلاک کے لیے کالز اور ایونٹس پر کارروائی کرے گا جس میں اسے بنایا گیا تھا اور تمام مندرجہ ذیل بلاکس، لیکن تاریخی ڈیٹا، یعنی ڈیٹا پر کارروائی نہیں کرے گا جو پہلے سے بلاکس میں موجود ہے.
+> 
+> اگر پہلے والے بلاکس میں نئے ڈیٹا سورس سے متعلقہ ڈیٹا ہوتا ہے، تو یہ بہترین ہے کہ کنٹریکٹ کی موجودہ حالت کو پڑھ کر اور ڈیٹا کا نیا سورس بننے کے وقت اس سٹیٹ کی نمائندگی کرنے والی اینٹیٹیز بنا کر اس ڈیٹا کو انڈیکس کریں.
+
+### ڈیٹا سورس سیاق و سباق
+
+ڈیٹا سورس سیاق و سباق ایک ٹیمپلیٹ کا انسٹینس بناتے وقت اضافی کنفیگریشن پاس کرنے کی اجازت دیتے ہیں. ہماری مثال میں، ہم کہتے ہیں کہ ایکسچینج ایک خاص تجارتی جوڑے سے وابستہ ہیں، جو کہ `NewExchange` ایونٹ میں شامل ہے. اس معلومات کو فوری ڈیٹا سورس میں منتقل کیا جا سکتا ہے، جیسے:
+
+```typescript
+import { Exchange } from '../generated/templates'
+
+export function handleNewExchange(event: NewExchange): void {
+  let context = new DataSourceContext()
+  context.setString('tradingPair', event.params.tradingPair)
+  Exchange.createWithContext(event.params.exchange, context)
+}
+```
+
+`Exchange` ٹیمپلیٹ کی میپنگ کے اندر، اس کے بعد سیاق و سباق تک رسائی حاصل کی جا سکتی ہے:
+
+```typescript
+import { dataSource } from '@graphprotocol/graph-ts'
+
+let context = dataSource.context()
+let tradingPair = context.getString('tradingPair')
+```
+
+تمام ویلیو کی اقسام کے لیے setters اور getters ہوتے ہیں جیسے `setString` اور `getString`.
+
+## بلاکس شروع کریں
+
+`startBlock` ایک اختیاری سیٹنگ ہے جو آپ کو اس بات کی وضاحت کرنے کی اجازت دیتی ہے کہ چین میں کس بلاک سے ڈیٹا سورس انڈیکس کرنا شروع ہوگا۔ سٹارٹ بلاک سیٹ کرنا ڈیٹا سورس کو ممکنہ طور پر لاکھوں بلاکس کو چھوڑنے کی اجازت دیتا ہے جو غیر متعلقہ ہیں۔ عام طور پر، ایک سب گراف ڈیولپر `startBlock` کو اس بلاک پر سیٹ کرے گا جس میں ڈیٹا سورس کا سمارٹ کنٹریکٹ بنایا گیا تھا.
+
+```yaml
+dataSources:
+  - kind: ethereum/contract
+    name: ExampleSource
+    network: mainnet
+    source:
+      address: '0xc0a47dFe034B400B47bDaD5FecDa2621de6c4d95'
+      abi: ExampleContract
+      startBlock: 6627917
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.6
+      language: wasm/assemblyscript
+      file: ./src/mappings/factory.ts
+      entities:
+        - User
+      abis:
+        - name: ExampleContract
+          file: ./abis/ExampleContract.json
+      eventHandlers:
+        - event: NewEvent(address,address)
+          handler: handleNewEvent
+```
+
+> **نوٹ:** کنٹریکٹ تخلیق والے بلاک کو Etherscan پر تیزی سے دیکھا جا سکتا ہے:
+> 
+> 1. سرچ بار میں اس کا ایڈریس درج کرکے کنٹریکٹ کو تلاش کریں.
+> 2. `Contract Creator` سیکشن میں creation transaction hash پر کلک کریں.
+> 3. ٹرانزیکشن کی تفصیلات کا صفحہ لوڈ کریں جہاں آپ کو اس کنٹریکٹ کے لیے اسٹارٹ بلاک ملے گا.
+
+## کال ہینڈلرز
+
+جب کہ ایوینٹس کنٹریکٹ کی سٹیٹ میں متعلقہ تبدیلیاں جمع کرنے کا ایک مؤثر طریقہ فراہم کرتے ہیں، بہت سے کنٹریکٹ گیس کے اخراجات کو بہتر بنانے کے لیے لاگ بنانے سے گریز کرتے ہیں. ان صورتوں میں، ایک سب گراف ڈیٹا سورس کنٹریکٹ پر کی گئی کالوں کو سبسکرائب کر سکتا ہے. یہ فنکشن کے سگنیچر اور میپنگ ہینڈلر کا حوالہ دینے والے کال ہینڈلرز کو بیان کرکے حاصل کیا جاتا ہے جو اس فنکشن میں کالوں پر کارروائی کرے گا. ان کالوں پر کارروائی کرنے کے لیے، میپنگ ہینڈلر کو کال کے ٹائپ کردہ ان پٹس اور آؤٹ پٹس کے ساتھ آرگومینٹ کے طور پر `ethereum.Call` موصول ہوگا. ٹرانزیکشن کی کال چین میں کسی بھی گہرائی میں کی گئی کالز میپنگ کو متحرک کریں گی، جس سے پراکسی کنٹریکٹ کے ذریعے ڈیٹا سورس کنٹریکٹ کے ساتھ سرگرمی کیپچر کی جا سکے گی.
+
+کال ہینڈلرز صرف دو صورتوں میں سے ایک میں ٹرگر کریں گے: جب مخصوص کردہ فنکشن کو کنٹریکٹ کے علاوہ کسی دوسرے اکاؤنٹ سے کال جاتا ہے یا جب اسے Solidity میں external کے طور پر نشان زد کیا جاتا ہے اور اسی کنٹریکٹ میں کسی دوسرے فنکشن کے حصے کے طور پر کال کیا جاتا ہے.
+
+> **نوٹ:** کال ہینڈلرز فی الحال Parity tracing API پر منحصر ہیں. کچھ نیٹ ورکس، جیسے BNB چین اور Arbitrum، اس API کو سپورٹ نہیں کرتے ہیں۔ اگر ان نیٹ ورکس میں سے کسی ایک کو انڈیکس کرنے والے سب گراف میں ایک یا زیادہ کال ہینڈلرز ہوتے ہیں، تو یہ مطابقت پذیری شروع نہیں کرے گا. سب گراف ڈویلپرز کو اس کے بجائے ایونٹ ہینڈلرز کا استعمال کرنا چاہیے. یہ کال ہینڈلرز سے پرفارمنس میں کہیں زیادہ ہیں، اور ہر evm نیٹ ورک پر تعاون یافتہ ہیں.
+
+### کال ہینڈلر کی تعریف
+
+اپنے مینی فیسٹ میں کال ہینڈلر کی وضاحت کرنے کے لیے، ڈیٹا سورس کے نیچے صرف ایک `callHandlers` array شامل کریں جسے آپ سبسکرائب کرنا چاہتے ہیں.
+
+```yaml
+dataSources:
+  - kind: ethereum/contract
+    name: Gravity
+    network: mainnet
+    source:
+      address: '0x731a10897d267e19b34503ad902d0a29173ba4b1'
+      abi: Gravity
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.6
+      language: wasm/assemblyscript
+      entities:
+        - Gravatar
+        - Transaction
+      abis:
+        - name: Gravity
+          file: ./abis/Gravity.json
+      callHandlers:
+        - function: createGravatar(string,string)
+          handler: handleCreateGravatar
+```
+
+`function` کالز کو فلٹر کرنے کے لیے نارملائزڈ فنکشن سگنیچر ہے. `handler` پراپرٹی آپ کی میپنگ میں اس فنکشن کا نام ہے جسے آپ ڈیٹا سورس کنٹریکٹ میں ٹارگٹ فنکشن کو کال کرنے پر چلانا چاہیں گے.
+
+### میپنگ فنکشن
+
+ہر کال ہینڈلر ایک واحد پیرامیٹر لیتا ہے جس کی ایک قسم کال ہونے والے فنکشن کے نام سے ملتی ہے۔ مندرجہ بالا مثال کے سب گراف میں، میپنگ میں ایک ہینڈلر ہوتا ہے جب `createGravatar` فنکشن کو کال کیا جاتا ہے اور ایک `CreateGravatarCall` پیرامیٹر بطور آرگومینٹ حاصل کرتا ہے:
+
+```typescript
+import { CreateGravatarCall } from '../generated/Gravity/Gravity'
+import { Transaction } from '../generated/schema'
+
+export function handleCreateGravatar(call: CreateGravatarCall): void {
+  let id = call.transaction.hash
+  let transaction = new Transaction(id)
+  transaction.displayName = call.inputs._displayName
+  transaction.imageUrl = call.inputs._imageUrl
+  transaction.save()
+}
+```
+
+`handleCreateGravatar` فنکشن ایک نیا `CreateGravatarCall` لیتا ہے جو `ethereum.Call` کا ذیلی کلاس ہے، جو `@graphprotocol/graph-ts` کے ذریعہ فراہم کیا گیا ہے، جس میں کال کے ٹائپ کردہ ان پٹس اور آؤٹ پٹس شامل ہیں۔ جب آپ `graph codegen` چلاتے ہیں تو `CreateGravatarCall` ٹائپ آپ کے لیے تیار کی جاتی ہے.
+
+## بلاک ہینڈلرز
+
+کنٹریکٹ ایونٹس یا فنکشن کالز کو سبسکرائب کرنے کے علاوہ، ایک سب گراف اپنے ڈیٹا کو اپ ڈیٹ کرنا چاہتا ہے جیسے جیسے چین میں نئے بلاکس شامل ہوتے ہیں. اس کو حاصل کرنے کے لیے ایک سب گراف ہر بلاک کے بعد یا پہلے سے طے شدہ فلٹر سے مماثل بلاکس کے بعد ایک فنکشن چلا سکتا ہے.
+
+### معاون فلٹرز
+
+```yaml
+filter:
+  kind: call
+```
+
+_متعین ہینڈلر کو ہر بلاک کے لیے ایک بار بلایا جائے گا جس میں کنٹریکٹ (ڈیٹا سورس) کی کال ہو گی جس کے تحت ہینڈلر کی تعریف کی گئی ہے._
+
+> **نوٹ:** `call` فلٹر فی الحال Parity tracing API پر منحصر ہے. کچھ نیٹ ورکس، جیسے BNB چین اور Arbitrum، اس API کو سپورٹ نہیں کرتے ہیں۔ اگر ان نیٹ ورکس میں سے کسی ایک کو انڈیکس کرنے والے سب گراف میں `call` فلٹر کے ساتھ ایک یا زیادہ بلاک ہینڈلرز ہوتے ہیں، تو یہ مطابقت پذیری شروع نہیں کرے گا.
+
+بلاک ہینڈلر کے لیے فلٹر کی عدم موجودگی اس بات کو یقینی بنائے گی کہ ہینڈلر کو ہر بلاک کے لیے کال کیا جاتا ہے. ڈیٹا سورس میں ہر فلٹر کی قسم کے لیے صرف ایک بلاک ہینڈلر ہو سکتا ہے.
+
+```yaml
+dataSources:
+  - kind: ethereum/contract
+    name: Gravity
+    network: dev
+    source:
+      address: '0x731a10897d267e19b34503ad902d0a29173ba4b1'
+      abi: Gravity
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.6
+      language: wasm/assemblyscript
+      entities:
+        - Gravatar
+        - Transaction
+      abis:
+        - name: Gravity
+          file: ./abis/Gravity.json
+      blockHandlers:
+        - handler: handleBlock
+        - handler: handleBlockWithCallToContract
+          filter:
+            kind: call
+```
+
+### میپنگ فنکشن
+
+میپنگ فنکشن کو اس کی واحد آرگومینٹ کے طور پر ایک `ethereum.Block` ملے گا۔ ایونٹس کے لیے میپنگ کے فنکشنز کی طرح، یہ فنکشن اسٹور میں موجود سب گراف اینٹیٹیز تک رسائی حاصل کر سکتا ہے، سمارٹ کنٹریکٹس کو کال کر سکتا ہے اور اینٹیٹیز کو تخلیق یا اپ ڈیٹ کر سکتا ہے.
+
+```typescript
+import { ethereum } from '@graphprotocol/graph-ts'
+
+export function handleBlock(block: ethereum.Block): void {
+  let id = block.hash
+  let entity = new Block(id)
+  entity.save()
+}
+```
+
+## گمنام ایونٹس
+
+اگر آپ کو Solidity میں گمنام ایوینٹس پر کارروائی کرنے کی ضرورت ہے، تو یہ ایونٹ کا عنوان 0 فراہم کرکے حاصل کیا جاسکتا ہے، جیسا کہ مثال میں:
+
+```yaml
+eventHandlers:
+  - event: LogNote(bytes4,address,bytes32,bytes32,uint256,bytes)
+    topic0: '0x644843f351d3fba4abcd60109eaff9f54bac8fb8ccf0bab941009c21df21cf31'
+    handler: handleGive
+```
+
+ایک ایونٹ صرف اس وقت شروع کیا جائے گا جب سگنیچر اور topic 0 دونوں مماثل ہوں۔ بطور ڈیفالٹ، `topic0` ایونٹ کے سگنیچر کے ہیش کے برابر ہے.
+
+## ایونٹ ہینڈلرز میں ٹرانزیکشن کی رسیدیں
+
+`specVersion` `0.0.5` اور `apiVersion` `0.0.7` سے شروع کرتے ہوئے، ایونٹ ہینڈلرز کو اس کی ٹرانزیکشن کی رسید تک رسائی حاصل ہوسکتی ہے جس نے ان کا اخراج کیا.
+
+ایسا کرنے کے لیے، ایونٹ ہینڈلرز کو سب گراف مینی فیسٹ میں نئی ​​`receipt: true` کلید کے ساتھ اقرار کیا جانا چاہیے، جو کہ اختیاری ہے اور ڈیفالٹ میں غلط ہے.
+
+```yaml
+eventHandlers:
+  - event: NewGravatar(uint256,address,string,string)
+    handler: handleNewGravatar
+    receipt: true
+```
+
+ہینڈلر فنکشن کے اندر، `Event.receipt` فیلڈ میں رسید تک رسائی حاصل کی جا سکتی ہے. جب `receipt` کلید کو `false` پر سیٹ کیا جاتا ہے یا مینی فیسٹ میں چھوڑ دیا جاتا ہے، تو اس کی بجائے ایک `null` قدر لوٹائی جائے گی.
+
+## تجرباتی خصوصیات
+
+`specVersion` `0.0.4` سے شروع کرتے ہوئے، سب گراف کی خصوصیات کا واضح طور پر مینی فیسٹ فائل کے اوپری سطح پر `features` سیکشن میں ان کا استعمال کرتے ہوئے واضح طور پر اعلان کیا جانا چاہیے۔ `camelCase` نام، جیسا کہ نیچے دیے گئے ٹیبل میں درج ہے:
+
+| خصوصیت                                                  | نام                                                 |
+| ------------------------------------------------------- | --------------------------------------------------- |
+| [غیر مہلک غلطیاں](#non-fatal-errors)                    | `nonFatalErrors`                                    |
+| [Full-text سرچ](#defining-fulltext-search-fields)       | `fullTextSearch`                                    |
+| [گرافٹنگ](#grafting-onto-existing-subgraphs)            | `grafting`                                          |
+| [ایتھریم کنٹریکٹس پر IPFS](#ipfs-on-ethereum-contracts) | `ipfsOnEthereumContracts` یا `nonDeterministicIpfs` |
+
+مثال کے طور پر، اگر کوئی سب گراف **Full-Text Search** اور **Non-fatal Errors** خصوصیات کا استعمال کرتا ہے، تو مینی فیسٹ میں `features` فیلڈ ہونا چاہئے:
+
+```yaml
+specVersion: 0.0.4
+description: Gravatar for Ethereum
+features:
+  - fullTextSearch
+  - nonFatalErrors
+dataSources: ...
+```
+
+نوٹ کریں کہ کسی خصوصیت کا اعلان کیے بغیر استعمال کرنے سے سب گراف کی تعیناتی کے دوران **validation error** پیش آئے گی، لیکن اگر کسی خصوصیت کا اعلان کیا جائے لیکن استعمال نہ کیا جائے تو کوئی خرابی نہیں ہوگی.
+
+### ایتھریم کنٹریکٹس پر IPFS
+
+IPFS کو Ethereum کے ساتھ ملانے کے لیے ایک عام استعمال کا معاملہ IPFS پر ڈیٹا ذخیرہ کرنا ہے جو آن چین کو برقرار رکھنے کے لیے بہت مہنگا ہو گا، اور Ethereum کنٹریکٹس میں IPFS ہیش کا حوالہ دیتے ہیں.
+
+اس طرح کے IPFS ہیشز کو دیکھتے ہوئے، سب گرافس `ipfs.cat` اور `ipfs.map` کا استعمال کرتے ہوئے IPFS سے متعلقہ فائلوں کو پڑھ سکتے ہیں. اسے قابل اعتماد طریقے سے کرنے کے لیے، یہ ضروری ہے کہ ان فائلوں کو زیادہ دستیابی کے ساتھ ایک IPFS نوڈ پر پن کیا جائے، تاکہ [hosted service](https://thegraph.com/hosted-service) IPFS نوڈ انڈیکسنگ کے دوران انہیں تلاش کر سکے.
+
+> **نوٹ:** گراف نیٹ ورک ابھی تک `ipfs.cat` اور `ipfs.map` کو سپورٹ نہیں کرتا ہے، اور ڈویلپرز کو نیٹ ورک پر اس فعالیت کو استعمال کرتے ہوئے سٹوڈیو کے ذریعے سب گراف کو تعینات نہیں کرنا چاہیے.
+
+> **[فیچر مینجمنٹ](#experimental-features):** `ipfsOnEthereumContracts` کا اعلان سب گراف مینی فیسٹ میں `features` کے تحت ہونا چاہیے. غیر EVM چینز کے لیے، `nonDeterministicIpfs` alias بھی اسی مقصد کے لیے استعمال کیا جا سکتا ہے.
+
+مقامی گراف نوڈ چلاتے وقت، اس تجرباتی فعالیت کا استعمال کرتے ہوئے سب گرافوں کو انڈیکس کرنے کے لیے `GRAPH_ALLOW_NON_DETERMINISTIC_IPFS` environment variable کا ہونا ضروری ہے.
+
+### غیر مہلک غلطیاں
+
+پہلے سے مطابقت پذیر سب گرافس پر انڈیکسنگ کی غلطیاں، بذریعہ ڈیفالٹ، سب گراف کے ناکام ہونے اور مطابقت پذیری کو روکنے کا سبب بنیں گی. سب گراف کو متبادل طور پر غلطیوں کی موجودگی میں مطابقت پذیری جاری رکھنے کے لیے ترتیب دیا جا سکتا ہے، ہینڈلر کی طرف سے کی گئی تبدیلیوں کو نظر انداز کر کے جس سے خرابی پیدا ہوئی. اس سے سب گراف مصنفین کو اپنے سب گراف کو درست کرنے کا وقت ملتا ہے جب کہ تازہ ترین بلاک کے خلاف کیوریز پیش کی جاتی رہتی ہیں، حالانکہ اس خرابی کی وجہ سے نتائج متضاد ہو سکتے ہیں. نوٹ کریں کہ کچھ غلطیاں اب بھی ہمیشہ مہلک ہوتی ہیں. غیر مہلک ہونے کے لیے، خرابی کو تعییناتی معلوم ہونا چاہیے.
+
+> **نوٹ:** گراف نیٹ ورک ابھی تک غیر مہلک غلطیوں کو سپورٹ نہیں کرتا ہے، اور ڈویلپرز کو سٹوڈیو کے ذریعے نیٹ ورک پر اس فعالیت کا استعمال کرتے ہوئے سب گراف تعینات نہیں کرنا چاہیے.
+
+غیر مہلک غلطیوں کو فعال کرنے کے لیے سب گراف مینی فیسٹ پر درج ذیل خصوصیت کا flag ترتیب دینے کی ضرورت ہے:
+
+```yaml
+specVersion: 0.0.4
+description: Gravatar for Ethereum
+features:
+    - nonFatalErrors
+    ...
+```
+
+کیوری کو `subgraphError` آرگومینٹ کے ذریعے ممکنہ تضادات کے ساتھ کیوری کرنے والے ڈیٹا کے لیے بھی آپٹ ان کرنا چاہیے. `_meta` سے کیوری کرنے کی بھی تجویز کی جاتی ہے تاکہ یہ چیک کیا جا سکے کہ آیا سب گراف نے غلطیوں کو نظر انداز کر دیا ہے، جیسا کہ مثال میں:
+
+```graphql
+foos(first: 100, subgraphError: allow) {
+  id
+}
+
+_meta {
+  hasIndexingErrors
+}
+```
+
+اگر سب گراف میں کسی غلطی کا سامنا ہوتا ہے، تو وہ کیوری ڈیٹا اور graphql کی غلطی دونوں کو پیغام `"indexing_error"` کے ساتھ لوٹائے گا، جیسا کہ اس مثال کے جواب میں:
+
+```graphql
+"data": {
+    "foos": [
+        {
+          "id": "0xdead"
+        }
+    ],
+    "_meta": {
+        "hasIndexingErrors": true
+    }
+},
+"errors": [
+    {
+        "message": "indexing_error"
+    }
+]
+```
+
+### موجودہ سب گرافس پر گرافٹنگ
+
+جب سب گراف کو پہلی بار تعینات کیا جاتا ہے، تو یہ متعلقہ چین کے genesis بلاک (یا ہر ڈیٹا سورس کے ساتھ بیان کردہ `startBlock` پر) ایوینٹس کو انڈیکس کرنا شروع کرتا ہے. کچھ حالات میں; موجودہ سب گراف سے ڈیٹا کو دوبارہ استعمال کرنا اور بعد کے بلاک میں انڈیکس کرنا شروع کرنا فائدہ مند ہے۔ انڈیکسنگ کے اس موڈ کو _Grafting_ کہا جاتا ہے. گرافٹنگ, مثال کے طور پر، ڈیویلاپمنٹ کے دوران میپنگ میں ماضی کی سادہ غلطیوں کو تیزی سے حاصل کرنے کے لیے یا موجودہ سب گراف کے ناکام ہونے کے بعد اسے عارضی طور پر دوبارہ کام کرنے کے لیے مفید ہے.
+
+سب گراف کو بیس سب گراف پر اس وقت گرافٹ کیا جاتا ہے جب `subgraph.yaml` میں سب گراف مینی فیسٹ میں اوپر کی سطح پر `graft` بلاک ہوتا ہے:
+
+```yaml
+description: ...
+graft:
+  base: Qm... # Subgraph ID of base subgraph
+  block: 7345624 # Block number
+```
+
+جب ایک سب گراف جس کے مینی فیسٹ میں `graft` بلاک تعینات کیا جاتا ہے، تو گراف نوڈ `base` سب گراف کے ڈیٹا کو کاپی کرے گا اور اس میں دیئے گئے `block` تک یا اس کو بھی شامل کرے گا۔ اور پھر اس بلاک سے نئے سب گراف کو انڈیکس کرنا جاری رکھے گا۔ بنیادی سب گراف ٹارگٹ گراف نوڈ انسٹینس پر موجود ہونا چاہیے اور کم از کم دیئے گئے بلاک تک انڈیکس ہونا چاہیے۔ اس پابندی کی وجہ سے، گرافٹنگ کا استعمال صرف ڈیویلاپمنٹ کے دوران یا کسی ہنگامی صورت حال کے دوران کیا جانا چاہیے تاکہ مساوی غیر grafted شدہ سب گراف کی پیداوار کو تیز کیا جا سکے.
+
+چونکہ گرافٹنگ بیس ڈیٹا کو انڈیکس کرنے کے بجائے کاپی کرتا ہے، شروع سے انڈیکس کرنے کے مقابلے میں مطلوبہ بلاک میں سب گراف حاصل کرنا بہت تیز ہے، حالانکہ ابتدائی ڈیٹا کاپی بہت بڑے سب گراف کے لیے کئی گھنٹے لگ سکتی ہے۔ جب گرافٹ شدہ سب گراف کو شروع کیا جا رہا ہے، گراف نوڈ ان اینٹیٹی کی اقسام کے بارے میں معلومات کو لاگ کرے گا جو پہلے ہی کاپی ہو چکی ہیں.
+
+گرافٹڈ سب گراف ایک GraphQL اسکیما استعمال کرسکتا ہے جو بیس سبگراف میں سے ایک سے مماثل نہیں ہے، لیکن اس کے ساتھ محض مطابقت رکھتا ہے۔ یہ اپنے طور پر ایک درست سب گراف سکیما ہونا ضروری ہے، لیکن مندرجہ ذیل طریقوں سے بنیادی سب گراف کے سکیما سے انحراف کر سکتا ہے:
+
+- یہ اینٹیٹی کی اقسام کو ڈالتا یا ہٹاتا ہے
+- یہ اینٹیٹی کی اقسام سے صفات کو ہٹاتا ہے
+- یہ اینٹیٹی کی اقسام میں nullable صفات کا اضافہ کرتا ہے
+- یہ non-nullable صفات کو nullable صفات میں بدل دیتا ہے
+- یہ enums میں اقدار کا اضافہ کرتا ہے
+- یہ انٹرفیس میں اضافہ کرتا یا ہٹاتا ہے
+- یہ ان اینٹیٹی کی اقسام کے لیے تبدیل ہوتا ہے جن کے لیے ایک انٹرفیس لاگو کیا جاتا ہے
+
+> **[فیچر مینجمنٹ](#experimental-features):** `grafting` کو سب گراف مینی فیسٹ میں `features` کے تحت واضح کیا جانا چاہیے.
