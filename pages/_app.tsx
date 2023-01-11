@@ -3,7 +3,6 @@ import { AppProps } from 'next/app'
 import Head from 'next/head'
 import NextLink from 'next/link'
 import { useRouter } from 'next/router'
-import Script from 'next/script'
 import { DefaultSeo, DefaultSeoProps } from 'next-seo'
 import { useCallback, useMemo, useState } from 'react'
 import useBus from 'use-bus'
@@ -105,55 +104,45 @@ const MyApp = ({ Component, pageProps }: AppProps) => {
   )
 
   return (
-    <>
-      <Script id="tracking" type="module">{`
-        const _paq = window._paq = window._paq || [];
-        _paq.push(['trackPageView'], ['enableLinkTracking'], ['setTrackerUrl', 'https://thegraph.matomo.cloud/matomo.php'], ['setSiteId', '1']);
-        const g = document.createElement('script');
-        g.async = true;
-        g.src = '//cdn.matomo.cloud/thegraph.matomo.cloud/matomo.js';
-        document.body.append(g);
-      `}</Script>
-      <I18nProvider
-        supportedLocales={supportedLocales}
-        translations={translations}
-        locale={locale}
-        setLocale={setLocale}
-        pathWithoutLocale={pathWithoutLocale}
-      >
-        <DefaultSeoWithLocale />
-        <ThemeProvider disableSmoothScrolling={isSearchOpen ? true : disableSmoothScrolling} headComponent={Head}>
-          <div sx={{ position: 'absolute', inset: 0, overflow: 'hidden' }}>
-            <div
-              sx={{
-                position: 'absolute',
-                top: 0,
-                insetInline: 0,
-                minHeight: '768px',
-                backgroundImage: `url('${process.env.BASE_PATH}/img/page-background.png')`,
-                backgroundSize: 'cover',
-                backgroundPosition: 'center top',
-                '@media (min-width: 1440px)': {
-                  aspectRatio: '1440/768',
-                },
-              }}
-            />
-          </div>
-          <Layout
-            headerSticky
-            headerContent={
-              <div dir="ltr">
-                <NavigationMarketing activeRoute="/docs" NextLink={NextLink} rightAlignItems={[localeSwitcher]} />
-              </div>
-            }
-            mainContainer
-            footerContent={<Footer localeSwitcher={localeSwitcher} />}
-          >
-            <Component {...pageProps} />
-          </Layout>
-        </ThemeProvider>
-      </I18nProvider>
-    </>
+    <I18nProvider
+      supportedLocales={supportedLocales}
+      translations={translations}
+      locale={locale}
+      setLocale={setLocale}
+      pathWithoutLocale={pathWithoutLocale}
+    >
+      <DefaultSeoWithLocale />
+      <ThemeProvider disableSmoothScrolling={isSearchOpen ? true : disableSmoothScrolling} headComponent={Head}>
+        <div sx={{ position: 'absolute', inset: 0, overflow: 'hidden' }}>
+          <div
+            sx={{
+              position: 'absolute',
+              top: 0,
+              insetInline: 0,
+              minHeight: '768px',
+              backgroundImage: `url('${process.env.BASE_PATH}/img/page-background.png')`,
+              backgroundSize: 'cover',
+              backgroundPosition: 'center top',
+              '@media (min-width: 1440px)': {
+                aspectRatio: '1440/768',
+              },
+            }}
+          />
+        </div>
+        <Layout
+          headerSticky
+          headerContent={
+            <div dir="ltr">
+              <NavigationMarketing activeRoute="/docs" NextLink={NextLink} rightAlignItems={[localeSwitcher]} />
+            </div>
+          }
+          mainContainer
+          footerContent={<Footer localeSwitcher={localeSwitcher} />}
+        >
+          <Component {...pageProps} />
+        </Layout>
+      </ThemeProvider>
+    </I18nProvider>
   )
 }
 
