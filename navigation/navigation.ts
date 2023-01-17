@@ -46,6 +46,9 @@ export const navigation = (locale: AppLocale): NavItemDefinition[] => [
     slug: 'network-transition-faq',
   },
   {
+    slug: 'glossary',
+  },
+  {
     divider: true,
   },
   {
@@ -203,8 +206,5 @@ export const navigation = (locale: AppLocale): NavItemDefinition[] => [
   },
   {
     slug: 'firehose',
-  },
-  {
-    slug: 'glossary',
   },
 ]
