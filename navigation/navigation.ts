@@ -49,6 +49,9 @@ export const navigation = (locale: AppLocale): NavItemDefinition[] => [
     slug: 'glossary',
   },
   {
+  slug: 'tokenomics',
+  },
+  {
     divider: true,
   },
   {
@@ -148,18 +151,6 @@ export const navigation = (locale: AppLocale): NavItemDefinition[] => [
     ],
   },
   {
-    title: translations[locale].global.navigation.indexing,
-    slug: 'indexing',
-    children: [
-      {
-        slug: 'operating-graph-node',
-      },
-    ],
-  },
-  {
-    divider: true,
-  },
-  {
     title: translations[locale].global.navigation.cookbook,
     slug: 'cookbook',
     children: [
@@ -190,6 +181,21 @@ export const navigation = (locale: AppLocale): NavItemDefinition[] => [
     divider: true,
   },
   {
+    heading: translations[locale].global.navigation.indexing,
+  },
+  {
+    slug: 'operating-graph-node',
+  },
+  {
+    slug: 'substreams',
+  },
+  {
+    slug: 'firehose',
+  },
+  {
+    divider: true,
+  },
+  {
     title: translations[locale].global.navigation.releaseNotes,
     slug: 'release-notes',
     children: [
@@ -197,14 +203,5 @@ export const navigation = (locale: AppLocale): NavItemDefinition[] => [
         slug: 'assemblyscript-migration-guide',
       },
     ],
-  },
-  {
-    divider: true,
-  },
-  {
-    slug: 'substreams',
-  },
-  {
-    slug: 'firehose',
   },
 ]

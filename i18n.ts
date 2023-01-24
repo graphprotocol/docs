@@ -18,7 +18,7 @@ const appLocales = [
   Locale.CHINESE,
 ] as const
 
-export type AppLocale = typeof appLocales[number]
+export type AppLocale = (typeof appLocales)[number]
 
 export type AppTranslations = Translations & {
   [key in AppLocale]: {

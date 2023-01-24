@@ -1,5 +1,6 @@
 import { MDXProvider } from '@mdx-js/react'
-import { NextSeo } from 'next-seo'
+import merge from 'lodash/merge'
+import { NextSeo, NextSeoProps } from 'next-seo'
 import { PropsWithChildren, useCallback, useMemo } from 'react'
 import { useSet } from 'react-use'
 import { ThemeUIStyleObject } from 'theme-ui'
@@ -134,9 +135,24 @@ export const MDXLayout = ({ pagePath, navItems, frontmatter, outline, children }
     return _highlightedOutlineItemId
   }, [outline, outlineItemIsInOrAboveView])
 
-  const seo = { ...(frontmatter?.seo ?? {}) }
-  seo.title = seo.title ?? frontmatter?.title
-  seo.title = `${seo.title ? `${seo.title} - ` : ''}The Graph Docs`
+  let seo: NextSeoProps = {
+    title: `${frontmatter?.title ? `${frontmatter.title} - ` : ''}The Graph Docs`,
+  }
+  if (frontmatter?.description) {
+    seo.description = frontmatter.description
+  }
+  if (frontmatter?.socialImage) {
+    seo.openGraph = {
+      images: [
+        {
+          url: frontmatter.socialImage,
+        },
+      ],
+    }
+  }
+  if (frontmatter?.seo) {
+    seo = merge(seo, frontmatter.seo)
+  }
 
   return (
     <NavContext.Provider value={{ pagePath, navItems, previousPage, currentPage, nextPage, currentGroup }}>
