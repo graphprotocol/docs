@@ -956,3 +956,220 @@ The grafted subgraph can use a GraphQL schema that is not identical to the one o
 - It changes for which entity types an interface is implemented
 
 > **[Feature Management](#experimental-features):** `grafting` must be declared under `features` in the subgraph manifest.
+
+## File Data Sources
+
+File data sources are a new subgraph functionality for accessing off-chain data during indexing in a robust, extendable way, starting with IPFS.
+
+> This also lays the groundwork for deterministic indexing of off-chain data, as well as the potential introduction of arbitrary HTTP-sourced data.
+
+### Overview
+
+Rather than fetching files "in line" during handler exectuion, this introduces templates which can be spawned as new data sources for a given file identifier. These new data sources fetch the files, retrying if they are unsuccessful, running a dedicated handler when the file is found.
+
+This is similar to the [existing data source templates](https://thegraph.com/docs/en/developing/creating-a-subgraph/#data-source-templates), which are used to dynamically create new chain-based data sources.
+
+> This replaces the existing `ipfs.cat` API
+
+### Migration guide
+
+#### Update `graph-ts` and `graph-cli`
+
+File data sources requires graph-ts >=0.29.0 and graph-cli >=0.33.1
+
+#### Add a new entity type which will be updated when files are found
+
+File data sources cannot access or update chain-based entities, but must update file specific entities.
+
+This may mean splitting out fields from existing entities into separate entities, linked together.
+
+Original combined entity:
+
+```graphql
+type Token @entity {
+  id: ID!
+  tokenID: BigInt!
+  tokenURI: String!
+  externalURL: String!
+  ipfsURI: String!
+  image: String!
+  name: String!
+  description: String!
+  type: String!
+  updatedAtTimestamp: BigInt
+  owner: User!
+}
+```
+
+New, split entity:
+
+```graphql
+type Token @entity {
+  id: ID!
+  tokenID: BigInt!
+  tokenURI: String!
+  ipfsURI: TokenMetadata
+  updatedAtTimestamp: BigInt
+  owner: User!
+}
+
+type TokenMetadata @entity {
+  id: ID!
+  image: String!
+  externalURL: String!
+  name: String!
+  description: String!
+  type: String!
+}
+```
+
+If the relationship is 1:1 between the parent entity and the resulting file data source entity, the simplest pattern is to link the parent entity to a resulting file entity by using the IPFS CID as the lookup. Get in touch on Discord if you are having difficulty modelling your new file-based entities!
+
+> You can use [nested filters](https://thegraph.com/docs/en/querying/graphql-api/#example-for-nested-entity-filtering) to filter parent entities on the basis of these nested entities.
+
+#### Add a new templated data source with `kind: file/ipfs`
+
+This is the data source which will be spawned when a file of interest is identified.
+
+```yaml
+templates:
+  - name: TokenMetadata
+    kind: file/ipfs
+    mapping:
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      file: ./src/mapping.ts
+      handler: handleMetadata
+      entities:
+        - TokenMetadata
+      abis:
+        - name: Token
+          file: ./abis/Token.json
+```
+
+> Currently `abis` are required, though it is not possible to call contracts from within file data sources
+
+The file data source must specifically mention all the entity types which it will interact with under `entities`. See [limitations](#Limitations) for more details.
+
+#### Create a new handler to process files
+
+This handler should accept one `Bytes` parameter, which will be the contents of the file, when it is found, which can then be processed. This will often be a JSON file, which can be processed with `graph-ts` helpers ([documentation](https://thegraph.com/docs/en/developing/assemblyscript-api/#json-api)).
+
+The CID of the file as a readable string can be accessed via the `dataSource` as follows:
+
+```typescript
+const cid = dataSource.stringParam()
+```
+
+Example handler:
+
+```typescript
+import { json, Bytes, dataSource } from '@graphprotocol/graph-ts'
+
+export function handleMetadata(content: Bytes): void {
+  let tokenMetadata = new TokenMetadata(String.UTF8.decode(dataSource.address().buffer))
+  const value = json.fromBytes(content).toObject()
+  if (value) {
+    const image = value.get('image')
+    const name = value.get('name')
+    const description = value.get('description')
+    const externalURL = value.get('external_url')
+
+    if (name && image && description && externalURL) {
+      tokenMetadata.name = name.toString()
+      tokenMetadata.image = image.toString()
+      tokenMetadata.externalURL = externalURL.toString()
+      tokenMetadata.description = description.toString()
+    }
+
+    tokenMetadata.save()
+  }
+}
+```
+
+#### Spawn file data sources when required
+
+You can now create file data sources during execution of chain-based handlers:
+
+- Import the template from the auto-generated `templates`
+- call `TemplateName.create(cid: string)` from within a mapping, where the cid is a valid IPFS content identifier
+
+> Currently Graph Node supports [v0 and v1 content identifiers](https://docs.ipfs.tech/concepts/content-addressing/), and content identifers with directories (e.g. `bafyreighykzv2we26wfrbzkcdw37sbrby4upq7ae3aqobbq7i4er3tnxci/metadata.json`)
+
+Example:
+
+```typescript
+import { TokenMetadata as TokenMetadataTemplate } from '../generated/templates'
+
+export function handleTransfer(event: TransferEvent): void {
+  let token = Token.load(event.params.tokenId.toString())
+  if (!token) {
+    token = new Token(event.params.tokenId.toString())
+    token.tokenID = event.params.tokenId
+
+    token.tokenURI = '/' + event.params.tokenId.toString() + '.json'
+    const tokenIpfsHash = ipfshash + token.tokenURI
+    token.ipfsURI = tokenIpfsHash
+
+    TokenMetadataTemplate.create(tokenIpfsHash)
+  }
+
+  token.updatedAtTimestamp = event.block.timestamp
+  token.owner = event.params.to.toHexString()
+  token.save()
+
+  let user = User.load(event.params.to.toHexString())
+  if (!user) {
+    user = new User(event.params.to.toHexString())
+    user.save()
+  }
+}
+```
+
+This will create a new file data source, which will poll Graph Node's configured IPFS endpoint, retrying if it is not found. When the file is found, the file data source handler will be executed.
+
+This example is using the CID as the lookup between the parent `Token` entity and the resulting `TokenMetadata` entity.
+
+> Previously, this is the point at which a subgraph developer would have called `ipfs.cat(CID)` to fetch the file
+
+Congratulations, you are using file data sources!
+
+#### Deploying your subgraphs
+
+You can now `build` and `deploy` your subgraph to any Graph Node >=0.X.X.
+
+#### Limitations
+
+File data source handlers and entities are isolated from other subgraph entities, ensuring that they are deterministic when executed, and ensuring no contamination of chain-based data sources. To be specific:
+
+- Entities created by File Data Sources are immutable, and cannot be updated
+- File Data Source handlers cannot access entities from other file data sources
+- Entities associated with File Data Sources cannot be accessed by chain-based handlers
+
+> While this constraint should not be problematic for most use-cases, it may introduce complexity for some. Please get in touch via Discord if you are having issues modelling your file-based data in a subgraph!
+
+Additionally, it is not possible to create data sources from a file data source, be it an onchain data source or another file data source. This restriction may be lifted in the future.
+
+#### Best practices
+
+If you are linking NFT metadata to corresponding tokens, use the metadata's IPFS hash to reference a Metadata entity from the Token entity. Save the Metadata entity using the IPFS hash as an ID.
+
+You can use [DataSource context](https://thegraph.com/docs/en/developing/assemblyscript-api/#entity-and-data-source-context) when creating File Data Sources to pass extra information which will be available to the File Data Source handler.
+
+If you have entities which are refreshed multiple times, create unique file-based entities using the IPFS hash & the entity ID, and reference them using a derived field in the chain-based entity.
+
+> We are working to improve the above recommendation, so queries only return the "most recent" version
+
+### Known issues
+
+File data sources currently require ABIs, even though ABIs are not used ([issue](https://github.com/graphprotocol/graph-cli/issues/961)). Workaround is to add any ABI.
+
+Handlers for File Data Sources cannot be in files which import `eth_call` contract bindings, failing with "unknown import: `ethereum::ethereum.call` has not been defined" ([issue](https://github.com/graphprotocol/graph-cli/issues/4309)). Workaround is to create file data source handlers in a dedicated file.
+
+### Examples
+
+[Crypto Coven Subgraph migration](https://github.com/azf20/cryptocoven-api/tree/file-data-sources-refactor)
+
+## References
+
+[GIP](https://forum.thegraph.com/t/gip-file-data-sources/2721)
