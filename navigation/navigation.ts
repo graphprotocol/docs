@@ -46,7 +46,10 @@ export const navigation = (locale: AppLocale): NavItemDefinition[] => [
     slug: 'network-transition-faq',
   },
   {
-    slug: 'tokenomics',
+    slug: 'glossary',
+  },
+  {
+  slug: 'tokenomics',
   },
   {
     divider: true,
