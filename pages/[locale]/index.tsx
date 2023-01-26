@@ -260,6 +260,12 @@ const Index: NextPage<IndexProps> = ({ navItems }: IndexProps) => {
               image: '/img/networks/ethereum.svg',
               href: 'https://ethereum.org/en/',
             },
+            {
+              title: 'Gnosis Chain*',
+              image: '/img/networks/gnosis.svg',
+              href: 'https://docs.gnosischain.com/',
+              beta: true,
+            },
           ].map((network, index) => (
             <Flex.Column as="li" key={index}>
               <Text as="div" size="14px" color="White48" sx={{ textAlign: 'center' }}>
@@ -300,11 +306,6 @@ const Index: NextPage<IndexProps> = ({ navItems }: IndexProps) => {
           }}
         >
           {[
-            {
-              title: 'Gnosis Chain',
-              image: '/img/networks/gnosis.svg',
-              href: 'https://docs.gnosischain.com/',
-            },
             {
               title: 'Near',
               image: '/img/networks/near.svg',
