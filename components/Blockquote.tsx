@@ -1,5 +1,6 @@
 import { HTMLAttributes } from 'react'
-import { Text, TextProps, Spacing, buildBorder } from '@edgeandnode/components'
+
+import { buildBorder, Spacing, Text, TextProps } from '@edgeandnode/components'
 
 export type BlockquoteProps = Omit<TextProps & HTMLAttributes<HTMLQuoteElement>, 'color'>
 
@@ -8,9 +9,9 @@ export const Blockquote = ({ children, ...props }: BlockquoteProps) => {
     <Text
       as="blockquote"
       sx={{
-        my: Spacing.XL,
-        p: Spacing.L_XL,
-        borderLeft: buildBorder('Purple', '4px'),
+        my: Spacing['32px'],
+        p: Spacing['24px'],
+        borderInlineStart: buildBorder('Purple', '4px'),
         bg: 'Purple8',
       }}
       {...props}

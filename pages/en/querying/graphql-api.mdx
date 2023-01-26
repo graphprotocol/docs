@@ -150,11 +150,30 @@ This can be useful if you are looking to fetch only entities which have changed,
 }
 ```
 
+#### Example for nested entity filtering
+
+Filtering on the basis of nested entities is possible in the fields with the `_` suffix.
+
+This can be useful if you are looking to fetch only entities whose child-level entities meet the provided conditions.
+
+```graphql
+{
+  challenges(where: { application_: { id: 1 } }) {
+    challenger
+    outcome
+    application {
+      id
+    }
+  }
+}
+```
+
 #### All Filters
 
 Full list of parameter suffixes:
 
 ```
+_
 _not
 _gt
 _lt
@@ -176,7 +195,7 @@ _not_ends_with
 _not_ends_with_nocase
 ```
 
-> Please note that some suffixes are only supported for specific types. For example, `Boolean` only supports `_not`, `_in`, and `_not_in`.
+> Please note that some suffixes are only supported for specific types. For example, `Boolean` only supports `_not`, `_in`, and `_not_in`, but `_` is available only for object and interface types.
 
 In addition, the following global filters are available as part of `where` argument:
 
@@ -186,7 +205,7 @@ _change_block(number_gte: Int)
 
 ### Time-travel queries
 
-You can query the state of your entities not just for the latest block, which is the by default, but also for an arbitrary block in the past. The block at which a query should happen can be specified either by its block number or its block hash by including a `block` argument in the toplevel fields of queries.
+You can query the state of your entities not just for the latest block, which is the default, but also for an arbitrary block in the past. The block at which a query should happen can be specified either by its block number or its block hash by including a `block` argument in the toplevel fields of queries.
 
 The result of such a query will not change over time, i.e., querying at a certain past block will return the same result no matter when it is executed, with the exception that if you query at a block very close to the head of the Ethereum chain, the result might change if that block turns out to not be on the main chain and the chain gets reorganized. Once a block can be considered final, the result of the query will not change.
 
@@ -297,3 +316,33 @@ GraphQL schemas generally define root types for `queries`, `subscriptions` and `
 All GraphQL types with `@entity` directives in your schema will be treated as entities and must have an `ID` field.
 
 > **Note:** Currently, all types in your schema must have an `@entity` directive. In the future, we will treat types without an `@entity` directive as value objects, but this is not yet supported.
+
+### Subgraph Metadata
+
+All subgraphs have an auto-generated `_Meta_` object, which provides access to subgraph metadata. This can be queried as follows:
+
+```graphQL
+{
+  _meta(block: { number: 123987 }) {
+    block {
+      number
+      hash
+      timestamp
+    }
+    deployment
+    hasIndexingErrors
+  }
+}
+```
+
+If a block is provided, the metadata is as of that block, if not the latest indexed block is used. If provided, the block must be after the subgraph's start block, and less than or equal to the most recently indexed block.
+
+`deployment` is a unique ID, corresponding to the IPFS CID of the `subgraph.yaml` file.
+
+`block` provides information about the latest block (taking into account any block constraints passed to \_meta):
+
+- hash: the hash of the block
+- number: the block number
+- timestamp: the timestamp of the block, if available (this is currently only available for subgraphs indexing EVM networks)
+
+`hasIndexingErrors` is a boolean identifying whether the subgraph encountered indexing errors at some past block

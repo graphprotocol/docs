@@ -1,4 +1,5 @@
 import { GetStaticPaths, GetStaticProps, NextPage } from 'next'
+
 import { NotFound, Spacing } from '@edgeandnode/components'
 
 import { LinkInline } from '@/components'
@@ -28,11 +29,11 @@ export const getStaticProps: GetStaticProps = async (context) => {
   }
 }
 
-const NotFoundPage: NextPage<{}> = () => {
+const NotFoundPage: NextPage = () => {
   const { t } = useI18n()
 
   return (
-    <div sx={{ pb: Spacing.XXL }}>
+    <div sx={{ pb: Spacing['64px'] }}>
       <NotFound
         title={t('global.notFoundTitle')}
         subtitle={t('global.notFoundSubtitle')}

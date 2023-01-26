@@ -1,7 +1,8 @@
 new Crawler({
   appId: 'WQ5FYJCL00',
   apiKey: '[SECRET]',
-  schedule: 'every 1 week',
+  schedule: 'every 7 days',
+  indexPrefix: '',
   rateLimit: 8,
   startUrls: [
     'https://thegraph.com/docs/en/',
@@ -12,10 +13,10 @@ new Crawler({
     'https://thegraph.com/docs/vi/',
     'https://thegraph.com/docs/zh/',
   ],
-  ignoreQueryParams: ['utm_medium', 'utm_source', 'utm_campaign', 'utm_term'],
+  ignoreQueryParams: ['source', 'utm_*'],
   actions: [
     {
-      indexName: 'thegraph',
+      indexName: 'thegraph-docs',
       pathsToMatch: ['https://thegraph.com/docs/**'],
       recordExtractor: ({ helpers }) => {
         return helpers.docsearch({
@@ -37,7 +38,7 @@ new Crawler({
     },
   ],
   initialIndexSettings: {
-    thegraph: {
+    'thegraph-docs': {
       attributesForFaceting: ['type', 'language'],
       attributesToRetrieve: ['hierarchy', 'content', 'anchor', 'url', 'url_without_anchor'],
       attributesToHighlight: ['hierarchy', 'hierarchy_camel', 'content'],

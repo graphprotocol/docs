@@ -1,21 +1,22 @@
-import { useRef, useState, useCallback } from 'react'
-import { createPortal } from 'react-dom'
-import { Global } from '@emotion/react'
 import { DocSearchModal, DocSearchProps, useDocSearchKeyboardEvents } from '@docsearch/react'
-import {
-  Text,
-  Flex,
-  Icon,
-  Spacing,
-  BorderRadius,
-  Opacity,
-  FontWeight,
-  FontSize,
-  buildTransition,
-  buildBorder,
-  GlobalTheme,
-} from '@edgeandnode/components'
+import { Global } from '@emotion/react'
+import { useCallback, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { dispatch } from 'use-bus'
+
+import {
+  BorderRadius,
+  buildBorder,
+  buildTransition,
+  Flex,
+  FontSize,
+  FontWeight,
+  GlobalTheme,
+  Icon,
+  Opacity,
+  Spacing,
+  Text,
+} from '@edgeandnode/components'
 
 import { useI18n } from '../i18n'
 import { EventType } from '../types'
@@ -26,7 +27,6 @@ export function DocSearch(props: DocSearchProps) {
   const searchButtonRef = useRef<HTMLButtonElement>(null)
   const [isOpen, setIsOpen] = useState(false)
   const [initialQuery, setInitialQuery] = useState<string | undefined>(props?.initialQuery || undefined)
-  const { t } = useI18n()
 
   const onOpen = useCallback(() => {
     setIsOpen(true)
@@ -55,15 +55,15 @@ export function DocSearch(props: DocSearchProps) {
   })
 
   return (
-    <div sx={{ px: [Spacing.L, null, null, 0] }}>
+    <div sx={{ px: [Spacing['16px'], null, null, 0] }}>
       {/* TODO: Replace by `Chip` component when it's ready in the new GDS */}
       <button type="button" ref={searchButtonRef} onClick={onOpen} sx={{ width: '100%' }}>
         <Flex.Row
           align="center"
-          gap={Spacing.M}
+          gap={Spacing['8px']}
           sx={{
             height: '32px',
-            px: Spacing.M,
+            px: Spacing['8px'],
             borderRadius: BorderRadius.FULL,
             border: 'White4',
             bg: 'White4',
@@ -76,11 +76,16 @@ export function DocSearch(props: DocSearchProps) {
           <Icon.Search size="14px" title="" sx={{ flexShrink: 0 }} />
           <Text.P14 size="14px">{props?.translations?.button?.buttonText ?? 'Search'}</Text.P14>
           {/* TODO: Remove `fontFamily: 'inherit'` when it's included in `@edgeandnode/components`'s global styles */}
-          <Text.P14 as="kbd" size="14px" color="White48" sx={{ ml: 'auto', px: Spacing.M, fontFamily: 'inherit' }}>
+          <Text.P14
+            as="kbd"
+            size="14px"
+            color="White48"
+            sx={{ marginInlineStart: 'auto', px: Spacing['8px'], fontFamily: 'inherit' }}
+          >
             <abbr title="Command" sx={{ textDecoration: 'none' }}>
               ⌘
             </abbr>
-            <span sx={{ ml: Spacing.S }}>K</span>
+            <span sx={{ marginInlineStart: Spacing['4px'] }}>K</span>
           </Text.P14>
         </Flex.Row>
       </button>
@@ -123,13 +128,12 @@ export function DocSearch(props: DocSearchProps) {
             },
           },
           '.DocSearch-SearchBar': {
-            padding: `0 ${Spacing.L_XL}`,
+            padding: `0 ${Spacing['24px']}`,
             '&::after': {
               content: `''`,
               zIndex: 100,
               position: 'absolute',
-              left: Spacing.L_XL,
-              right: Spacing.L_XL,
+              insetInline: Spacing['24px'],
               bottom: '-1px',
               borderBottom: buildBorder('White16')(theme),
               backgroundColor: 'var(--docsearch-modal-background)',
@@ -146,7 +150,7 @@ export function DocSearch(props: DocSearchProps) {
             },
           },
           '.DocSearch-Input': {
-            padding: `${Spacing.XL} ${Spacing.L}`,
+            padding: `${Spacing['32px']} ${Spacing['16px']}`,
             outline: 'none',
             fontSize: FontSize['18px'],
           },
@@ -159,8 +163,8 @@ export function DocSearch(props: DocSearchProps) {
             },
           },
           '.DocSearch-Cancel': {
-            marginLeft: Spacing.L,
-            marginRight: Spacing.S,
+            marginInlineStart: Spacing['16px'],
+            marginInlineEnd: Spacing['4px'],
             color: 'inherit',
           },
           '.DocSearch-Dropdown': {
@@ -171,16 +175,16 @@ export function DocSearch(props: DocSearchProps) {
             scrollPaddingTop: '32px',
           },
           '.DocSearch-Dropdown-Container': {
-            padding: `${Spacing.L_XL} ${Spacing.L}`,
-            paddingBottom: Spacing.XXL,
+            padding: `${Spacing['24px']} ${Spacing['16px']}`,
+            paddingBottom: Spacing['64px'],
             [`@media (min-width: ${BREAKPOINT})`]: {
-              padding: `${Spacing.L_XL} ${Spacing.XL}`,
+              padding: `${Spacing['24px']} ${Spacing['32px']}`,
             },
           },
           '.DocSearch-Hits': {
             width: 'auto',
             '& + .DocSearch-Hits': {
-              marginTop: Spacing.L,
+              marginTop: Spacing['16px'],
             },
             mark: {
               color: 'inherit',
@@ -189,9 +193,9 @@ export function DocSearch(props: DocSearchProps) {
           },
           '.DocSearch-Hit-source': {
             margin: 0,
-            marginBottom: Spacing.XS,
-            padding: `0 ${Spacing.L}`,
-            fontWeight: FontWeight.Medium,
+            marginBottom: Spacing['2px'],
+            padding: `0 ${Spacing['16px']}`,
+            fontWeight: FontWeight.MEDIUM,
             fontSize: FontSize['12px'],
             textTransform: 'uppercase',
             letterSpacing: '0.15em',
@@ -200,7 +204,7 @@ export function DocSearch(props: DocSearchProps) {
           '.DocSearch-Hit': {
             padding: 0,
             a: {
-              padding: `0 ${Spacing.L}`,
+              padding: `0 ${Spacing['16px']}`,
               borderRadius: BorderRadius.S,
             },
             '&[aria-selected=true] a': {
@@ -209,10 +213,10 @@ export function DocSearch(props: DocSearchProps) {
           },
           '.DocSearch-Hit-Container': {
             height: 'auto',
-            padding: `${Spacing.M_L} 0`,
+            padding: `${Spacing['12px']} 0`,
           },
           '.DocSearch-Hit-Tree': {
-            width: Spacing.L,
+            width: Spacing['16px'],
             height: 0,
             opacity: 0,
           },
@@ -224,19 +228,19 @@ export function DocSearch(props: DocSearchProps) {
           },
           '.DocSearch-Hit-title': {
             fontSize: FontSize['16px'],
-            fontWeight: FontWeight.Semibold,
+            fontWeight: FontWeight.SEMIBOLD,
             overflow: 'hidden',
             textOverflow: 'ellipsis',
           },
           '.DocSearch-Hit-path': {
-            marginTop: Spacing.S,
+            marginTop: Spacing['4px'],
             fontSize: FontSize['16px'],
-            fontWeight: FontWeight.Normal,
+            fontWeight: FontWeight.REGULAR,
             overflow: 'hidden',
             textOverflow: 'ellipsis',
           },
           '.DocSearch-Hit-action': {
-            marginLeft: Spacing.L,
+            marginInlineStart: Spacing['16px'],
           },
           '.DocSearch-HitsFooter': {
             display: 'none',
@@ -244,18 +248,14 @@ export function DocSearch(props: DocSearchProps) {
           '.DocSearch-Footer': {
             position: 'fixed',
             bottom: 0,
-            left: 0,
-            right: 0,
-            padding: Spacing.L,
+            insetInline: 0,
+            padding: Spacing['16px'],
             backgroundColor: 'transparent',
             boxShadow: 'none',
             '&::before': {
               content: `''`,
               position: 'absolute',
-              left: 0,
-              right: 0,
-              top: 0,
-              bottom: 0,
+              inset: 0,
               backgroundColor: 'var(--docsearch-modal-background)',
               opacity: Opacity['88%'],
               [`@media (min-width: ${BREAKPOINT})`]: {
@@ -278,16 +278,16 @@ export function DocSearch(props: DocSearchProps) {
           },
           '.DocSearch-Screen-Icon': {
             padding: 0,
-            marginBottom: Spacing.L,
+            marginBottom: Spacing['16px'],
             display: 'flex',
             justifyContent: 'center',
           },
           '.DocSearch-NoResults': {
-            padding: `${Spacing.XXL} 0`,
+            padding: `${Spacing['64px']} 0`,
           },
           '.DocSearch-NoResults-Prefill-List': {
             padding: 0,
-            marginTop: Spacing.XL,
+            marginTop: Spacing['32px'],
             textAlign: 'center',
           },
         })}

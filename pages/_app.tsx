@@ -1,27 +1,30 @@
-import { useMemo, useCallback, useState, useEffect } from 'react'
+import merge from 'lodash/merge'
 import { AppProps } from 'next/app'
-import { useRouter } from 'next/router'
 import Head from 'next/head'
 import NextLink from 'next/link'
+import { useRouter } from 'next/router'
 import { DefaultSeo, DefaultSeoProps } from 'next-seo'
-import {
-  I18nProvider,
-  ThemeProvider,
-  Layout,
-  NavigationMarketing,
-  Footer,
-  Locale,
-  LocaleSwitcher,
-  defaultLocale,
-  extractLocaleFromPath,
-} from '@edgeandnode/components'
-import '@edgeandnode/components/build/components.css'
-import '@docsearch/css'
-import { merge } from 'lodash-es'
+import { useCallback, useMemo, useState } from 'react'
 import useBus from 'use-bus'
 
+import {
+  defaultLocale,
+  extractLocaleFromPath,
+  Footer,
+  I18nProvider,
+  Layout,
+  Locale,
+  LocaleSwitcher,
+  NavigationMarketing,
+  ThemeProvider,
+} from '@edgeandnode/components'
+
 import { supportedLocales, translations, useI18n } from '@/i18n'
+
 import { EventType } from '../types'
+
+import '@edgeandnode/components/build/components.css'
+import '@docsearch/css'
 
 const DEFAULT_SEO_PROPS: DefaultSeoProps = {
   title: 'The Graph Docs',
@@ -48,10 +51,6 @@ const DEFAULT_SEO_PROPS: DefaultSeoProps = {
 const DefaultSeoWithLocale = () => {
   const { locale } = useI18n()
 
-  useEffect(() => {
-    document.documentElement.lang = locale
-  }, [locale])
-
   const seoProps = useMemo(
     () =>
       merge(DEFAULT_SEO_PROPS, {
@@ -69,7 +68,7 @@ const MyApp = ({ Component, pageProps }: AppProps) => {
   const router = useRouter()
 
   const { locale, pathWithoutLocale } = useMemo(() => {
-    let { locale, pathWithoutLocale } = extractLocaleFromPath(router.asPath.split(/[?#]/)[0])
+    const { locale, pathWithoutLocale } = extractLocaleFromPath(router.asPath.split(/[?#]/)[0])
     return {
       locale,
       pathWithoutLocale,
@@ -78,7 +77,7 @@ const MyApp = ({ Component, pageProps }: AppProps) => {
 
   const setLocale = useCallback(
     (locale: Locale) => {
-      router.push(`/${locale}${pathWithoutLocale}`)
+      void router.push(`/${locale}${pathWithoutLocale}`)
     },
     [router, pathWithoutLocale]
   )
@@ -91,7 +90,7 @@ const MyApp = ({ Component, pageProps }: AppProps) => {
       router.events.on('routeChangeStart', disableFn)
       return () => router.events.off('routeChangeStart', disableFn)
     },
-    [router]
+    [router.events]
   )
 
   // Also disable smooth scrolling when the search is open
@@ -105,22 +104,21 @@ const MyApp = ({ Component, pageProps }: AppProps) => {
   )
 
   return (
-    <>
-      <I18nProvider
-        supportedLocales={supportedLocales}
-        translations={translations}
-        locale={locale}
-        setLocale={setLocale}
-        pathWithoutLocale={pathWithoutLocale}
-      >
-        <DefaultSeoWithLocale />
-        <ThemeProvider disableSmoothScrolling={isSearchOpen ? true : disableSmoothScrolling} headComponent={Head}>
+    <I18nProvider
+      supportedLocales={supportedLocales}
+      translations={translations}
+      locale={locale}
+      setLocale={setLocale}
+      pathWithoutLocale={pathWithoutLocale}
+    >
+      <DefaultSeoWithLocale />
+      <ThemeProvider disableSmoothScrolling={isSearchOpen ? true : disableSmoothScrolling} headComponent={Head}>
+        <div sx={{ position: 'absolute', inset: 0, overflow: 'hidden' }}>
           <div
             sx={{
               position: 'absolute',
-              left: 0,
-              right: 0,
               top: 0,
+              insetInline: 0,
               minHeight: '768px',
               backgroundImage: `url('${process.env.BASE_PATH}/img/page-background.png')`,
               backgroundSize: 'cover',
@@ -130,19 +128,21 @@ const MyApp = ({ Component, pageProps }: AppProps) => {
               },
             }}
           />
-          <Layout
-            headerSticky
-            headerContent={
+        </div>
+        <Layout
+          headerSticky
+          headerContent={
+            <div dir="ltr">
               <NavigationMarketing activeRoute="/docs" NextLink={NextLink} rightAlignItems={[localeSwitcher]} />
-            }
-            mainContainer
-            footerContent={<Footer localeSwitcher={localeSwitcher} />}
-          >
-            <Component {...pageProps} />
-          </Layout>
-        </ThemeProvider>
-      </I18nProvider>
-    </>
+            </div>
+          }
+          mainContainer
+          footerContent={<Footer localeSwitcher={localeSwitcher} />}
+        >
+          <Component {...pageProps} />
+        </Layout>
+      </ThemeProvider>
+    </I18nProvider>
   )
 }
 

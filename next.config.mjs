@@ -1,7 +1,7 @@
 import mdx from '@next/mdx'
-import remarkGfm from 'remark-gfm'
 import remarkFrontmatter from 'remark-frontmatter'
-import { remarkMdxFrontmatter } from 'remark-mdx-frontmatter'
+import remarkGfm from 'remark-gfm'
+import remarkMdxFrontmatter from 'remark-mdx-frontmatter'
 
 import { remarkMdxLayout } from './lib/remarkMdxLayout.mjs'
 
@@ -22,10 +22,10 @@ const withMDX = mdx({
 
 export default withMDX({
   env,
-  basePath: env.BASE_PATH,
   pageExtensions: ['tsx', 'mdx'],
-  trailingSlash: true,
   reactStrictMode: true,
+  basePath: env.BASE_PATH,
+  trailingSlash: true,
 
   async redirects() {
     return [

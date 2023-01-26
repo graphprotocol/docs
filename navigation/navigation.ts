@@ -1,5 +1,6 @@
-import { NavItemDefinition } from './types'
 import { AppLocale, translations } from '@/i18n'
+
+import { NavItemDefinition } from './types'
 
 export const navigation = (locale: AppLocale): NavItemDefinition[] => [
   {
@@ -19,6 +20,9 @@ export const navigation = (locale: AppLocale): NavItemDefinition[] => [
         slug: 'overview',
       },
       {
+        slug: 'benefits',
+      },
+      {
         slug: 'indexing',
       },
       {
@@ -28,9 +32,24 @@ export const navigation = (locale: AppLocale): NavItemDefinition[] => [
         slug: 'curating',
       },
       {
+        slug: 'developing',
+      },
+      {
         slug: 'explorer',
       },
     ],
+  },
+  {
+    slug: 'billing',
+  },
+  {
+    slug: 'network-transition-faq',
+  },
+  {
+    slug: 'glossary',
+  },
+  {
+  slug: 'tokenomics',
   },
   {
     divider: true,
@@ -115,10 +134,10 @@ export const navigation = (locale: AppLocale): NavItemDefinition[] => [
         slug: 'managing-api-keys',
       },
       {
-        slug: 'querying-from-an-application',
+        slug: 'querying-best-practices',
       },
       {
-        slug: 'querying-best-practices',
+        slug: 'querying-from-an-application',
       },
       {
         slug: 'distributed-systems',
@@ -129,13 +148,7 @@ export const navigation = (locale: AppLocale): NavItemDefinition[] => [
       {
         slug: 'querying-the-hosted-service',
       },
-      {
-        slug: 'billing',
-      },
     ],
-  },
-  {
-    divider: true,
   },
   {
     title: translations[locale].global.navigation.cookbook,
@@ -146,9 +159,6 @@ export const navigation = (locale: AppLocale): NavItemDefinition[] => [
       },
       {
         slug: 'migrating-a-subgraph',
-      },
-      {
-        slug: 'multisig',
       },
       {
         slug: 'subgraph-debug-forking',
@@ -162,7 +172,25 @@ export const navigation = (locale: AppLocale): NavItemDefinition[] => [
       {
         slug: 'arweave',
       },
+      {
+        slug: 'grafting',
+      },
     ],
+  },
+  {
+    divider: true,
+  },
+  {
+    heading: translations[locale].global.navigation.indexing,
+  },
+  {
+    slug: 'operating-graph-node',
+  },
+  {
+    slug: 'substreams',
+  },
+  {
+    slug: 'firehose',
   },
   {
     divider: true,

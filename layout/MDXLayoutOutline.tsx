@@ -1,9 +1,10 @@
-import { useContext, useState, useEffect } from 'react'
-import { Text, Flex, NewGDSDivider, Spacing, buildTransition } from '@edgeandnode/components'
+import { useContext, useEffect, useState } from 'react'
 
-import { DocumentContext } from '@/layout'
-import { Link, EditPageLink } from '@/components'
+import { buildTransition, Flex, NewGDSDivider, Spacing, Text } from '@edgeandnode/components'
+
+import { EditPageLink, Link } from '@/components'
 import { useI18n } from '@/i18n'
+import { DocumentContext } from '@/layout'
 
 export const MDXLayoutOutline = () => {
   const { outline, highlightedOutlineItemId } = useContext(DocumentContext)!
@@ -26,8 +27,8 @@ export const MDXLayoutOutline = () => {
         position: 'sticky',
         top: 0,
         maxHeight: '100vh',
-        px: Spacing.M,
-        py: Spacing.XL,
+        px: Spacing['8px'],
+        py: Spacing['32px'],
         overflowY: 'auto',
         transform: 'translateY(calc(var(--gds-header-height-visible) * var(--gds-header-fixed)))',
         transition: enableTransition ? buildTransition('TRANSFORM', '400ms') : undefined,
@@ -36,9 +37,9 @@ export const MDXLayoutOutline = () => {
       <Flex.Row>
         <EditPageLink />
       </Flex.Row>
-      <NewGDSDivider sx={{ my: Spacing.XL }} />
-      <nav sx={{ pr: '16px' }}>
-        <Text.C10 as="header" color="White64" sx={{ mb: Spacing.M_L }}>
+      <NewGDSDivider sx={{ my: Spacing['32px'] }} />
+      <nav sx={{ paddingInlineEnd: '16px' }}>
+        <Text.C10 as="header" color="White64" sx={{ mb: Spacing['12px'] }}>
           {t('global.pageSections')}
         </Text.C10>
         <Text as="ul" size="14px" color="White48">
@@ -52,7 +53,7 @@ export const MDXLayoutOutline = () => {
                   href={`#${outlineItem.id}`}
                   sx={{
                     display: 'block',
-                    pl: `${8 * Math.max(0, outlineItem.level - 2)}px`,
+                    paddingInlineStart: `${8 * Math.max(0, outlineItem.level - 2)}px`,
                     py: '6px',
                     color: outlineItem.id === highlightedOutlineItemId ? 'White88' : undefined,
                     '&:hover': { color: 'White' },
@@ -66,6 +67,12 @@ export const MDXLayoutOutline = () => {
           })}
         </Text>
       </nav>
+      <div
+        sx={{
+          height: 'var(--gds-header-height-visible)',
+          transition: enableTransition ? buildTransition('height' as any, '400ms') : undefined,
+        }}
+      />
     </div>
   )
 }

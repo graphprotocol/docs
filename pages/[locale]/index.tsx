@@ -1,10 +1,11 @@
-import { useMemo } from 'react'
 import { GetStaticPaths, GetStaticProps, NextPage } from 'next'
-import { Text, Flex, Spacing, BorderRadius, buildBorder, buildShadow, buildTransition } from '@edgeandnode/components'
+import { useMemo } from 'react'
 
-import { MDXLayout, Frontmatter, OutlineItem } from '@/layout'
+import { BorderRadius, buildBorder, buildShadow, buildTransition, Flex, Spacing, Text } from '@edgeandnode/components'
+
 import { Heading, Image, Link, LinkInline, Paragraph } from '@/components'
 import { AppLocale, supportedLocales, translations, useI18n } from '@/i18n'
+import { Frontmatter, MDXLayout, OutlineItem } from '@/layout'
 import { getNavItems, NavItem } from '@/navigation'
 
 export const frontmatter = (locale: AppLocale): Frontmatter => ({
@@ -75,7 +76,7 @@ const Index: NextPage<IndexProps> = ({ navItems }: IndexProps) => {
           gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))',
           justifyItems: 'stretch',
           alignItems: 'stretch',
-          gap: Spacing.XL,
+          gap: Spacing['32px'],
         }}
       >
         {[
@@ -119,7 +120,7 @@ const Index: NextPage<IndexProps> = ({ navItems }: IndexProps) => {
                 justifyContent: 'center',
                 alignItems: 'center',
                 minHeight: '100%',
-                p: Spacing.L,
+                p: Spacing['16px'],
                 borderRadius: BorderRadius.S,
                 border: buildBorder('White4'),
                 bg: 'White4',
@@ -132,7 +133,7 @@ const Index: NextPage<IndexProps> = ({ navItems }: IndexProps) => {
                 textAlign: 'center',
               }}
             >
-              <Text as="h3" weight="Semibold" size="16px">
+              <Text as="h3" weight="SEMIBOLD" size="16px">
                 {card.title}
               </Text>
               <Text as="small" size="16px" color="White64">
@@ -147,11 +148,11 @@ const Index: NextPage<IndexProps> = ({ navItems }: IndexProps) => {
       <Paragraph>{t('index.networkRoles.description')}</Paragraph>
       <ul
         sx={{
-          mt: Spacing.XL,
+          mt: Spacing['32px'],
           mb: '128px',
           display: 'grid',
           gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
-          gap: Spacing.XL,
+          gap: Spacing['32px'],
         }}
       >
         {[
@@ -181,16 +182,16 @@ const Index: NextPage<IndexProps> = ({ navItems }: IndexProps) => {
           },
         ].map((role, index) => (
           <Flex.Column as="li" key={index}>
-            <div sx={{ mb: Spacing.L }}>
-              <Image src={role.image} alt="" sx={{ mb: Spacing.L, width: '96px', height: '96px' }} />
-              <Text as="h3" weight="Semibold" size="20px" sx={{ textShadow: buildShadow('S') }}>
+            <div sx={{ mb: Spacing['16px'] }}>
+              <Image src={role.image} alt="" sx={{ mb: Spacing['16px'], width: '96px', height: '96px' }} />
+              <Text as="h3" weight="SEMIBOLD" size="20px" sx={{ textShadow: buildShadow('S') }}>
                 {role.title}
               </Text>
-              <Text as="p" size="16px" color="White64" sx={{ mt: Spacing.L }}>
+              <Text as="p" size="16px" color="White64" sx={{ mt: Spacing['16px'] }}>
                 {role.description}
               </Text>
             </div>
-            <Text as="div" weight="Semibold" size="16px" sx={{ mt: 'auto' }}>
+            <Text as="div" weight="SEMIBOLD" size="16px" sx={{ mt: 'auto' }}>
               <LinkInline href={role.href}>{t('index.readMore')}</LinkInline>
             </Text>
           </Flex.Column>
@@ -200,11 +201,11 @@ const Index: NextPage<IndexProps> = ({ navItems }: IndexProps) => {
       <Heading.H2 id="products">{t('index.products.title')}</Heading.H2>
       <ul
         sx={{
-          mt: Spacing.XL,
+          mt: Spacing['32px'],
           mb: '128px',
           display: 'grid',
           gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
-          gap: Spacing.XL,
+          gap: Spacing['32px'],
         }}
       >
         {[
@@ -225,15 +226,15 @@ const Index: NextPage<IndexProps> = ({ navItems }: IndexProps) => {
           },
         ].map((product, index) => (
           <Flex.Column as="li" key={index}>
-            <div sx={{ mb: Spacing.L }}>
-              <Text as="h3" weight="Semibold" size="20px" sx={{ textShadow: buildShadow('S') }}>
+            <div sx={{ mb: Spacing['16px'] }}>
+              <Text as="h3" weight="SEMIBOLD" size="20px" sx={{ textShadow: buildShadow('S') }}>
                 {product.title}
               </Text>
-              <Text as="p" size="16px" color="White64" sx={{ mt: Spacing.L }}>
+              <Text as="p" size="16px" color="White64" sx={{ mt: Spacing['16px'] }}>
                 {product.description}
               </Text>
             </div>
-            <Text as="div" weight="Semibold" size="16px" sx={{ mt: 'auto' }}>
+            <Text as="div" weight="SEMIBOLD" size="16px" sx={{ mt: 'auto' }}>
               <LinkInline href={product.href}>{t('index.readMore')}</LinkInline>
             </Text>
           </Flex.Column>
@@ -242,15 +243,15 @@ const Index: NextPage<IndexProps> = ({ navItems }: IndexProps) => {
 
       <Heading.H2 id="supported-networks">{t('index.supportedNetworks.title')}</Heading.H2>
       <Paragraph>{t('index.supportedNetworks.description')}</Paragraph>
-      <div sx={{ mt: Spacing.XXL }}>
+      <div sx={{ mt: Spacing['64px'] }}>
         <Heading.H4>{t('index.supportedNetworks.graphNetworkAndHostedService')}</Heading.H4>
         <ul
           sx={{
-            mt: Spacing.L_XL,
+            mt: Spacing['24px'],
             display: 'grid',
             gridTemplateColumns: 'repeat(auto-fill, minmax(92px, 1fr))',
-            columnGap: Spacing.L_XL,
-            rowGap: Spacing.XL,
+            columnGap: Spacing['24px'],
+            rowGap: Spacing['32px'],
           }}
         >
           {[
@@ -277,7 +278,7 @@ const Index: NextPage<IndexProps> = ({ navItems }: IndexProps) => {
                   <Image
                     src={network.image}
                     alt=""
-                    sx={{ mb: Spacing.M, width: '40px', height: '40px', transition: buildTransition('TRANSFORM') }}
+                    sx={{ mb: Spacing['8px'], width: '40px', height: '40px', transition: buildTransition('TRANSFORM') }}
                   />
                   {network.title}
                 </Link>
@@ -286,23 +287,23 @@ const Index: NextPage<IndexProps> = ({ navItems }: IndexProps) => {
           ))}
         </ul>
       </div>
-      <div sx={{ mt: Spacing.XXL }}>
+      <div sx={{ mt: Spacing['64px'] }}>
         <Heading.H4>{t('index.supportedNetworks.hostedService')}</Heading.H4>
 
         <ul
           sx={{
-            mt: Spacing.XL,
+            mt: Spacing['32px'],
             display: 'grid',
             gridTemplateColumns: 'repeat(auto-fill, minmax(92px, 1fr))',
-            columnGap: Spacing.L_XL,
-            rowGap: Spacing.XL,
+            columnGap: Spacing['24px'],
+            rowGap: Spacing['32px'],
           }}
         >
           {[
             {
-              title: 'XDAI',
-              image: '/img/networks/xdai.svg',
-              href: 'https://www.xdaichain.com/',
+              title: 'Gnosis Chain',
+              image: '/img/networks/gnosis.svg',
+              href: 'https://docs.gnosischain.com/',
             },
             {
               title: 'Near',
@@ -424,7 +425,7 @@ const Index: NextPage<IndexProps> = ({ navItems }: IndexProps) => {
                   <Image
                     src={network.image}
                     alt=""
-                    sx={{ mb: Spacing.M, width: '40px', height: '40px', transition: buildTransition('TRANSFORM') }}
+                    sx={{ mb: Spacing['8px'], width: '40px', height: '40px', transition: buildTransition('TRANSFORM') }}
                   />
                   {network.title}
                   {network.beta ? '*' : ''}
