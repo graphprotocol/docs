@@ -19,6 +19,7 @@ import {
   ThemeProvider,
 } from '@edgeandnode/components'
 
+import { SSGContext } from '@/components/SSG'
 import { supportedLocales, translations, useI18n } from '@/i18n'
 
 import { EventType } from '../types'
@@ -139,7 +140,9 @@ const MyApp = ({ Component, pageProps }: AppProps) => {
           mainContainer
           footerContent={<Footer localeSwitcher={localeSwitcher} />}
         >
-          <Component {...pageProps} />
+          <SSGContext.Provider value={pageProps}>
+            <Component {...pageProps} />
+          </SSGContext.Provider>
         </Layout>
       </ThemeProvider>
     </I18nProvider>
