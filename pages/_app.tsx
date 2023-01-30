@@ -30,7 +30,7 @@ const DEFAULT_SEO_PROPS: DefaultSeoProps = {
   title: 'The Graph Docs',
   description: 'Browse the latest developer documentation including API reference, articles, and sample code',
   openGraph: {
-    site_name: 'The Graph Docs',
+    siteName: 'The Graph Docs',
     type: 'website',
     url: 'https://thegraph.com/docs/',
     locale: defaultLocale,
