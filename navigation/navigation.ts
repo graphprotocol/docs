@@ -49,7 +49,7 @@ export const navigation = (locale: AppLocale): NavItemDefinition[] => [
     slug: 'glossary',
   },
   {
-  slug: 'tokenomics',
+    slug: 'tokenomics',
   },
   {
     divider: true,
@@ -62,7 +62,7 @@ export const navigation = (locale: AppLocale): NavItemDefinition[] => [
     slug: 'developing',
     children: [
       {
-        slug: 'supported-networks',
+        slug: 'supported-chains',
       },
       {
         slug: 'defining-a-subgraph',
