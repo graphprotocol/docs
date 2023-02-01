@@ -1,6 +1,6 @@
 import { useContext, useEffect, useState } from 'react'
 
-import { buildTransition, Flex, NewGDSDivider, Spacing, Text } from '@edgeandnode/components'
+import { buildTransition, Divider, Flex, Spacing, Text } from '@edgeandnode/components'
 
 import { EditPageLink, Link } from '@/components'
 import { useI18n } from '@/i18n'
@@ -37,7 +37,7 @@ export const MDXLayoutOutline = () => {
       <Flex.Row>
         <EditPageLink />
       </Flex.Row>
-      <NewGDSDivider sx={{ my: Spacing['32px'] }} />
+      <Divider sx={{ my: Spacing['32px'] }} />
       <nav sx={{ paddingInlineEnd: '16px' }}>
         <Text.C10 as="header" color="White64" sx={{ mb: Spacing['12px'] }}>
           {t('global.pageSections')}

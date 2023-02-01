@@ -2,6 +2,7 @@ import { DocSearchModal, DocSearchProps, useDocSearchKeyboardEvents } from '@doc
 import { Global } from '@emotion/react'
 import { useCallback, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
+import { Theme } from 'theme-ui'
 import { dispatch } from 'use-bus'
 
 import {
@@ -11,7 +12,6 @@ import {
   Flex,
   FontSize,
   FontWeight,
-  GlobalTheme,
   Icon,
   Opacity,
   Spacing,
@@ -26,7 +26,7 @@ const BREAKPOINT = '751px'
 export function DocSearch(props: DocSearchProps) {
   const searchButtonRef = useRef<HTMLButtonElement>(null)
   const [isOpen, setIsOpen] = useState(false)
-  const [initialQuery, setInitialQuery] = useState<string | undefined>(props?.initialQuery || undefined)
+  const [initialQuery, setInitialQuery] = useState<string | undefined>(props.initialQuery || undefined)
 
   const onOpen = useCallback(() => {
     setIsOpen(true)
@@ -74,7 +74,7 @@ export function DocSearch(props: DocSearchProps) {
           }}
         >
           <Icon.Search size="14px" title="" sx={{ flexShrink: 0 }} />
-          <Text.P14 size="14px">{props?.translations?.button?.buttonText ?? 'Search'}</Text.P14>
+          <Text.P14 size="14px">{props.translations?.button?.buttonText ?? 'Search'}</Text.P14>
           {/* TODO: Remove `fontFamily: 'inherit'` when it's included in `@edgeandnode/components`'s global styles */}
           <Text.P14
             as="kbd"
@@ -96,7 +96,7 @@ export function DocSearch(props: DocSearchProps) {
               {...props}
               initialScrollY={window.scrollY}
               initialQuery={initialQuery}
-              translations={props?.translations?.modal}
+              translations={props.translations?.modal}
               onClose={onClose}
             />,
             document.body
@@ -104,7 +104,7 @@ export function DocSearch(props: DocSearchProps) {
         : null}
 
       <Global
-        styles={(theme: GlobalTheme) => ({
+        styles={(theme: Theme) => ({
           html: {
             '--docsearch-spacing': '0 !important',
             '--docsearch-container-background': `${theme.colors!.Midnight88} !important`,

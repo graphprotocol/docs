@@ -33,6 +33,7 @@ export const getNavItems = async (locale: AppLocale = defaultLocale): Promise<Na
             const filePath = `${path}${path.endsWith('/') ? 'index' : ''}`
             const filesToTry = [`${locale}${filePath}.mdx`, `${locale}${filePath}.tsx`, `[locale]${filePath}.tsx`]
             let currentTry = 0
+            // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
             while (true) {
               try {
                 const fileToTry = filesToTry[currentTry]
@@ -98,7 +99,7 @@ export const getNavItems = async (locale: AppLocale = defaultLocale): Promise<Na
         items.push(await handlePromise(promise))
       }
 
-      let lastFilteredItem: NavItem | null = null
+      let lastFilteredItem = null as NavItem | null
       const filteredItems: NavItem[] = items.filter((item) => {
         // Item is a page that doesn't exist in that locale
         if (item === null) {

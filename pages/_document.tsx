@@ -4,7 +4,7 @@ import Script from 'next/script'
 import { defaultLocale, extractLocaleFromPath, getHtmlAttributesForLocale, Locale } from '@edgeandnode/components'
 
 type MyDocumentProps = DocumentInitialProps & {
-  locale: Locale
+  locale: Locale | null
 }
 
 export default class MyDocument extends Document {
