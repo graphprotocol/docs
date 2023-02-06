@@ -49,7 +49,7 @@ export const navigation = (locale: AppLocale): NavItemDefinition[] => [
     slug: 'glossary',
   },
   {
-  slug: 'tokenomics',
+    slug: 'tokenomics',
   },
   {
     divider: true,

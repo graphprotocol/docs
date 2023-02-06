@@ -1,6 +1,6 @@
 import { useContext } from 'react'
 
-import { buildShadow, buildTransition, Flex, Icon, NewGDSDivider, Spacing, Text } from '@edgeandnode/components'
+import { buildShadow, buildTransition, Divider, Flex, Icon, Spacing, Text } from '@edgeandnode/components'
 
 import { Link } from '@/components'
 import { useI18n } from '@/i18n'
@@ -12,7 +12,7 @@ export const MDXLayoutPagination = () => {
 
   return (
     <div>
-      <NewGDSDivider diamonds />
+      <Divider diamonds />
       <Flex.Row justify="space-between" sx={{ mt: Spacing['32px'], overflow: 'hidden' }}>
         <div>
           {previousPage ? (

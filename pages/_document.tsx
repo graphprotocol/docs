@@ -4,7 +4,7 @@ import Script from 'next/script'
 import { defaultLocale, extractLocaleFromPath, getHtmlAttributesForLocale, Locale } from '@edgeandnode/components'
 
 type MyDocumentProps = DocumentInitialProps & {
-  locale: Locale
+  locale: Locale | null
 }
 
 export default class MyDocument extends Document {
@@ -34,14 +34,6 @@ export default class MyDocument extends Document {
         <body>
           <Main />
           <NextScript />
-          <Script id="matomo" type="module" strategy="afterInteractive">{`
-            const _paq = window._paq = window._paq || [];
-            _paq.push(['trackPageView'], ['enableLinkTracking'], ['setTrackerUrl', 'https://thegraph.matomo.cloud/matomo.php'], ['setSiteId', '1']);
-            const g = document.createElement('script');
-            g.async = true;
-            g.src = '//cdn.matomo.cloud/thegraph.matomo.cloud/matomo.js';
-            document.body.append(g);
-          `}</Script>
           <Script id="pendo" type="module" strategy="afterInteractive">{`
             (function(p,e,n,d,o){
               var v,w,x,y,z;o=p[d]=p[d]||{};o._q=o._q||[];
