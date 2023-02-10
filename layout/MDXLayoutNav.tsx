@@ -3,7 +3,7 @@ import * as Collapsible from '@radix-ui/react-collapsible'
 import { useRouter } from 'next/router'
 import { Fragment, PropsWithChildren, useContext, useEffect, useState } from 'react'
 
-import { BorderRadius, buildTransition, Flex, Icon, Spacing, Text } from '@edgeandnode/components'
+import { BorderRadius, buildTransition, Flex, Icon, NestedStrings, Spacing, Text } from '@edgeandnode/components'
 
 import { DocSearch, Link, NavTree } from '@/components'
 import { useI18n } from '@/i18n'
@@ -166,7 +166,7 @@ export const MDXLayoutNav = ({ mobile = false }: { mobile?: boolean }) => {
               window.open(itemUrl, '_blank', 'noopener')
             },
           }}
-          translations={translations.docsearch}
+          translations={translations.docsearch as NestedStrings}
           placeholder={t('docsearch.button.buttonText')}
         />
       </div>

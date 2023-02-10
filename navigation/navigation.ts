@@ -1,3 +1,5 @@
+import { translate } from '@edgeandnode/components'
+
 import { AppLocale, translations } from '@/i18n'
 
 import { NavItemDefinition } from './types'
@@ -13,7 +15,7 @@ export const navigation = (locale: AppLocale): NavItemDefinition[] => [
     slug: 'about',
   },
   {
-    title: translations[locale].global.navigation.theGraphNetwork,
+    title: translate(translations, locale, 'global.navigation.theGraphNetwork'),
     slug: 'network',
     children: [
       {
@@ -55,10 +57,10 @@ export const navigation = (locale: AppLocale): NavItemDefinition[] => [
     divider: true,
   },
   {
-    heading: translations[locale].global.navigation.subgraphs,
+    heading: translate(translations, locale, 'global.navigation.subgraphs'),
   },
   {
-    title: translations[locale].global.navigation.developing,
+    title: translate(translations, locale, 'global.navigation.developing'),
     slug: 'developing',
     children: [
       {
@@ -82,7 +84,7 @@ export const navigation = (locale: AppLocale): NavItemDefinition[] => [
     ],
   },
   {
-    title: translations[locale].global.navigation.deploying,
+    title: translate(translations, locale, 'global.navigation.deploying'),
     slug: 'deploying',
     children: [
       {
@@ -103,7 +105,7 @@ export const navigation = (locale: AppLocale): NavItemDefinition[] => [
     ],
   },
   {
-    title: translations[locale].global.navigation.publishing,
+    title: translate(translations, locale, 'global.navigation.publishing'),
     slug: 'publishing',
     children: [
       {
@@ -112,7 +114,7 @@ export const navigation = (locale: AppLocale): NavItemDefinition[] => [
     ],
   },
   {
-    title: translations[locale].global.navigation.managing,
+    title: translate(translations, locale, 'global.navigation.managing'),
     slug: 'managing',
     children: [
       {
@@ -124,7 +126,7 @@ export const navigation = (locale: AppLocale): NavItemDefinition[] => [
     ],
   },
   {
-    title: translations[locale].global.navigation.querying,
+    title: translate(translations, locale, 'global.navigation.querying'),
     slug: 'querying',
     children: [
       {
@@ -151,7 +153,7 @@ export const navigation = (locale: AppLocale): NavItemDefinition[] => [
     ],
   },
   {
-    title: translations[locale].global.navigation.cookbook,
+    title: translate(translations, locale, 'global.navigation.cookbook'),
     slug: 'cookbook',
     children: [
       {
@@ -181,7 +183,7 @@ export const navigation = (locale: AppLocale): NavItemDefinition[] => [
     divider: true,
   },
   {
-    heading: translations[locale].global.navigation.indexing,
+    heading: translate(translations, locale, 'global.navigation.indexing'),
   },
   {
     slug: 'operating-graph-node',
@@ -196,7 +198,7 @@ export const navigation = (locale: AppLocale): NavItemDefinition[] => [
     divider: true,
   },
   {
-    title: translations[locale].global.navigation.releaseNotes,
+    title: translate(translations, locale, 'global.navigation.releaseNotes'),
     slug: 'release-notes',
     children: [
       {
