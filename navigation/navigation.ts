@@ -49,6 +49,9 @@ export const navigation = (locale: AppLocale): NavItemDefinition[] => [
     slug: 'glossary',
   },
   {
+    slug: 'arbitrum-faq',
+  },
+  {
     slug: 'tokenomics',
   },
   {
