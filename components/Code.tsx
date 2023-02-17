@@ -109,7 +109,7 @@ export const CodeBlock = ({ children, ...props }: CodeBlockProps) => {
     children as {
       props: {
         children: string
-        className: string
+        className?: string
       }
     }
   ).props

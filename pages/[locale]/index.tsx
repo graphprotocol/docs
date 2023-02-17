@@ -1,7 +1,16 @@
 import { GetStaticPaths, GetStaticProps, NextPage } from 'next'
 import { useMemo } from 'react'
 
-import { BorderRadius, buildBorder, buildShadow, buildTransition, Flex, Spacing, Text } from '@edgeandnode/components'
+import {
+  BorderRadius,
+  buildBorder,
+  buildShadow,
+  buildTransition,
+  Flex,
+  Spacing,
+  Text,
+  translate,
+} from '@edgeandnode/components'
 
 import { Heading, Image, Link, LinkInline, Paragraph } from '@/components'
 import { AppLocale, supportedLocales, translations, useI18n } from '@/i18n'
@@ -9,7 +18,7 @@ import { Frontmatter, MDXLayout, OutlineItem } from '@/layout'
 import { getNavItems, NavItem } from '@/navigation'
 
 export const frontmatter = (locale: AppLocale): Frontmatter => ({
-  title: translations[locale].index.title,
+  title: translate(translations, locale, 'index.title'),
 })
 
 // TODO: Make DRY
@@ -260,6 +269,12 @@ const Index: NextPage<IndexProps> = ({ navItems }: IndexProps) => {
               image: '/img/networks/ethereum.svg',
               href: 'https://ethereum.org/en/',
             },
+            {
+              title: 'Gnosis Chain*',
+              image: '/img/networks/gnosis.svg',
+              href: 'https://docs.gnosischain.com/',
+              beta: true,
+            },
           ].map((network, index) => (
             <Flex.Column as="li" key={index}>
               <Text as="div" size="14px" color="White48" sx={{ textAlign: 'center' }}>
@@ -300,11 +315,6 @@ const Index: NextPage<IndexProps> = ({ navItems }: IndexProps) => {
           }}
         >
           {[
-            {
-              title: 'Gnosis Chain',
-              image: '/img/networks/gnosis.svg',
-              href: 'https://docs.gnosischain.com/',
-            },
             {
               title: 'Near',
               image: '/img/networks/near.svg',

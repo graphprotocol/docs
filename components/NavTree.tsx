@@ -1,15 +1,15 @@
 import { keyframes } from '@emotion/react'
 import * as Collapsible from '@radix-ui/react-collapsible'
-import { Context, createContext, HTMLAttributes, useContext, useState } from 'react'
+import { createContext, HTMLAttributes, useContext, useState } from 'react'
 import { SxProp } from 'theme-ui'
 
 import {
   buildTransition,
+  Divider,
   Flex,
   Icon,
   IconProps,
   Locale,
-  NewGDSDivider,
   Spacing,
   Text,
   TextProps,
@@ -180,7 +180,7 @@ const NavTreeGroupContent = ({ children, ...props }: NavTreeGroupContentProps) =
 const NavTreeDivider = (props: NavTreeDividerProps) => {
   return (
     <li aria-hidden="true" sx={{ my: Spacing['8px'] }} {...props}>
-      <NewGDSDivider />
+      <Divider />
     </li>
   )
 }
