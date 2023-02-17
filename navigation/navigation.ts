@@ -62,7 +62,7 @@ export const navigation = (locale: AppLocale): NavItemDefinition[] => [
     slug: 'developing',
     children: [
       {
-        slug: 'supported-chains',
+        slug: 'supported-networks',
       },
       {
         slug: 'defining-a-subgraph',
