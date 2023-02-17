@@ -181,6 +181,9 @@ export const navigation = (locale: AppLocale): NavItemDefinition[] => [
       {
         slug: 'grafting',
       },
+      {
+        slug: 'subgraph-uncrashable',
+      },
     ],
   },
   {
