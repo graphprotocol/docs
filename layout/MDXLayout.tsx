@@ -5,7 +5,7 @@ import { PropsWithChildren, useCallback, useMemo } from 'react'
 import { useSet } from 'react-use'
 import { ThemeUIStyleObject } from 'theme-ui'
 
-import { Flex, NewGDSDivider, NewGDSDividerProps, Spacing } from '@edgeandnode/components'
+import { Divider, DividerProps, Flex, Spacing } from '@edgeandnode/components'
 
 import {
   Blockquote,
@@ -38,7 +38,7 @@ const mdxComponents = {
   blockquote: Blockquote,
   pre: CodeBlock,
   code: CodeInline,
-  hr: (props: NewGDSDividerProps) => <NewGDSDivider sx={{ my: Spacing['32px'] }} {...props} />,
+  hr: (props: DividerProps) => <Divider sx={{ my: Spacing['32px'] }} {...props} />,
   h1: Heading.H1,
   h2: Heading.H2,
   h3: Heading.H3,

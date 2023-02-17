@@ -1,7 +1,16 @@
 import { GetStaticPaths, GetStaticProps, NextPage } from 'next'
 import { useMemo } from 'react'
 
-import { BorderRadius, buildBorder, buildShadow, buildTransition, Flex, Spacing, Text } from '@edgeandnode/components'
+import {
+  BorderRadius,
+  buildBorder,
+  buildShadow,
+  buildTransition,
+  Flex,
+  Spacing,
+  Text,
+  translate,
+} from '@edgeandnode/components'
 
 import { Heading, Image, Link, LinkInline, Paragraph } from '@/components'
 import { AppLocale, supportedLocales, translations, useI18n } from '@/i18n'
@@ -9,7 +18,7 @@ import { Frontmatter, MDXLayout, OutlineItem } from '@/layout'
 import { getNavItems, NavItem } from '@/navigation'
 
 export const frontmatter = (locale: AppLocale): Frontmatter => ({
-  title: translations[locale].index.title,
+  title: translate(translations, locale, 'index.title'),
 })
 
 // TODO: Make DRY

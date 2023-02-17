@@ -9,8 +9,8 @@ import vi from '@/pages/vi/translations'
 import zh from '@/pages/zh/translations'
 
 const appLocales = [
-  Locale.ENGLISH,
   Locale.ARABIC,
+  Locale.ENGLISH,
   Locale.SPANISH,
   Locale.JAPANESE,
   Locale.KOREAN,
@@ -18,7 +18,13 @@ const appLocales = [
   Locale.CHINESE,
 ] as const
 
-export type AppLocale = (typeof appLocales)[number]
+type Mutable<T> = {
+  -readonly [P in keyof T]: T[P]
+}
+
+export const supportedLocales = appLocales as Mutable<typeof appLocales>
+
+export type AppLocale = (typeof supportedLocales)[number]
 
 export type AppTranslations = Translations & {
   [key in AppLocale]: {
@@ -27,11 +33,9 @@ export type AppTranslations = Translations & {
   }
 }
 
-export const supportedLocales = appLocales as unknown as Locale[]
-
 export const translations = {
-  en,
   ar,
+  en,
   es,
   ja,
   ko,

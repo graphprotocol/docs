@@ -10,7 +10,7 @@ export const Paragraph = ({ children, ...props }: ParagraphProps) => {
       sx={{
         mt: Spacing['16px'],
         mb: Spacing['24px'],
-        '&:first-child': { mt: 0 },
+        '&:first-of-type': { mt: 0 },
         '&:last-child': { mb: 0 },
       }}
       {...props}
