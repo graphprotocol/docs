@@ -163,6 +163,9 @@ export const navigation = (locale: AppLocale): NavItemDefinition[] => [
         slug: 'quick-start',
       },
       {
+        slug: 'base',
+      },
+      {
         slug: 'migrating-a-subgraph',
       },
       {
