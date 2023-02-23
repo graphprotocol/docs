@@ -17,7 +17,7 @@ async function main() {
 
   const d = parser.parse(fs.readFileSync(sitemapPath, 'utf-8'))
 
-  const routes = d.urlset.url.map((url) => url.loc.replace(process.env.SITE_URL || `https://thegraph.com/docs/`, ``))
+  const routes = d.urlset.url.map((url) => url.loc.replace(process.env.SITE_URL || `https://thegraph.com/docs`, ``))
 
   const redirectsPointingToNonExistingStuff = []
 
