@@ -31,7 +31,7 @@ export default withMDX({
     return [
       {
         source: '/',
-        destination: '/en/',
+        destination: 'en/',
         permanent: false,
       },
     ]
