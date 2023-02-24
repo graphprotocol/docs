@@ -270,9 +270,27 @@ const Index: NextPage<IndexProps> = ({ navItems }: IndexProps) => {
               href: 'https://ethereum.org/en/',
             },
             {
-              title: 'Gnosis Chain*',
+              title: 'Gnosis Chain',
               image: '/img/networks/gnosis.svg',
               href: 'https://docs.gnosischain.com/',
+              beta: true,
+            },
+            {
+              title: 'Celo',
+              image: '/img/networks/celo.svg',
+              href: 'https://celo.org/',
+              beta: true,
+            },
+            {
+              title: 'Avalanche',
+              image: '/img/networks/avalanche.svg',
+              href: 'https://www.avax.network/',
+              beta: true,
+            },
+            {
+              title: 'Arbitrum One',
+              image: '/img/networks/arbitrum.svg',
+              href: 'https://arbitrum.io/',
               beta: true,
             },
           ].map((network, index) => (
@@ -296,6 +314,7 @@ const Index: NextPage<IndexProps> = ({ navItems }: IndexProps) => {
                     sx={{ mb: Spacing['8px'], width: '40px', height: '40px', transition: buildTransition('TRANSFORM') }}
                   />
                   {network.title}
+                  {network.beta ? '*' : ''}
                 </Link>
               </Text>
             </Flex.Column>
@@ -334,27 +353,9 @@ const Index: NextPage<IndexProps> = ({ navItems }: IndexProps) => {
               beta: true,
             },
             {
-              title: 'Celo',
-              image: '/img/networks/celo.svg',
-              href: 'https://celo.org/',
-              beta: true,
-            },
-            {
-              title: 'Avalanche',
-              image: '/img/networks/avalanche.svg',
-              href: 'https://www.avax.network/',
-              beta: true,
-            },
-            {
               title: 'POA',
               image: '/img/networks/poa.svg',
               href: 'https://www.poa.network/',
-              beta: true,
-            },
-            {
-              title: 'Arbitrum',
-              image: '/img/networks/arbitrum.svg',
-              href: 'https://arbitrum.io/',
               beta: true,
             },
             {
