@@ -417,6 +417,12 @@ const Index: NextPage<IndexProps> = ({ navItems }: IndexProps) => {
               href: 'https://cosmos.network/',
               beta: true,
             },
+            {
+              title: 'Base',
+              image: '/img/networks/base.svg',
+              href: 'https://base.org/',
+              beta: true,
+            },
           ].map((network, index) => (
             <Flex.Column as="li" key={index}>
               <Text as="div" size="14px" color="White48" sx={{ textAlign: 'center' }}>
