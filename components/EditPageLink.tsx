@@ -11,8 +11,13 @@ export type EditPageLinkProps = {
 } & Omit<HTMLAttributes<HTMLElement>, 'children'>
 
 export const EditPageLink = ({ mobile = false, ...props }: EditPageLinkProps) => {
-  const { pagePath } = useContext(NavContext)!
   const { t } = useI18n()
+
+  // If the current page is in a language other than English, link to the English version, as translations are handled by Crowdin
+  const { pagePath: _pagePath } = useContext(NavContext)!
+  const pagePathSegments = _pagePath.split('/')
+  pagePathSegments[0] = ['en', '[locale]'].includes(pagePathSegments[0]) ? pagePathSegments[0] : 'en'
+  const pagePath = pagePathSegments.join('/')
 
   return (
     <Link
