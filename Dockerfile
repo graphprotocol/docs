@@ -1,6 +1,7 @@
 FROM node:16.13.1-alpine3.14 as builder
 
 RUN apk add --no-cache git
+RUN npm install -g pnpm
 
 WORKDIR /app
 
