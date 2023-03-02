@@ -71,8 +71,12 @@ const Index: NextPage<IndexProps> = ({ navItems }: IndexProps) => {
   )
 
   return (
-    // @ts-expect-error TODO need to fix type here
-    <MDXLayout pagePath={`[locale]/index.tsx`} navItems={navItems} frontmatter={frontmatter(locale)} outline={outline}>
+    <MDXLayout
+      pagePath={`[locale]/index.tsx`}
+      navItems={navItems}
+      frontmatter={frontmatter(locale as AppLocale)}
+      outline={outline}
+    >
       <Paragraph>{t('index.intro')}</Paragraph>
       <ul
         sx={{
