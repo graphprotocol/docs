@@ -3,7 +3,6 @@ import { Global } from '@emotion/react'
 import { useCallback, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { Theme } from 'theme-ui'
-import { dispatch } from 'use-bus'
 
 import {
   BorderRadius,
@@ -18,9 +17,6 @@ import {
   Text,
 } from '@edgeandnode/components'
 
-import { useI18n } from '../i18n'
-import { EventType } from '../types'
-
 const BREAKPOINT = '751px'
 
 export function DocSearch(props: DocSearchProps) {
@@ -30,12 +26,10 @@ export function DocSearch(props: DocSearchProps) {
 
   const onOpen = useCallback(() => {
     setIsOpen(true)
-    dispatch(EventType.SEARCH_OPEN)
   }, [setIsOpen])
 
   const onClose = useCallback(() => {
     setIsOpen(false)
-    dispatch(EventType.SEARCH_CLOSE)
   }, [setIsOpen])
 
   const onInput = useCallback(

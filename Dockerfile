@@ -1,4 +1,4 @@
-FROM node:16.13.1-alpine3.14 as builder
+FROM node:18-alpine as builder
 
 RUN apk add --no-cache git
 RUN npm install -g pnpm
