@@ -9,6 +9,8 @@ const env = {
   BASE_PATH: process.env.NODE_ENV === 'production' ? '/docs' : '',
   ALGOLIA_API_KEY: process.env.ALGOLIA_API_KEY,
   ALGOLIA_APP_ID: process.env.ALGOLIA_APP_ID,
+  MIXPANEL_TOKEN:
+    process.env.ENVIRONMENT === 'production' ? 'cfeac8baf33c9b4d255f28d57f3c9148' : 'e57a9892339b2acfd02943c86b746d32',
 }
 
 const withMDX = mdx({
@@ -21,6 +23,11 @@ const withMDX = mdx({
 })
 
 export default withMDX({
+  experimental: {
+    // Fix scroll restoration (see https://github.com/vercel/next.js/issues/37893#issuecomment-1221335543)
+    scrollRestoration: true,
+  },
+
   env,
   pageExtensions: ['tsx', 'mdx'],
   reactStrictMode: true,
