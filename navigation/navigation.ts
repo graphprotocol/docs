@@ -204,6 +204,9 @@ export const navigation = (locale: AppLocale): NavItemDefinition[] => [
     slug: 'firehose',
   },
   {
+    slug: 'mips-faqs',
+  },
+  {
     divider: true,
   },
   {
