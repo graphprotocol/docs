@@ -6,19 +6,18 @@ type MyDocumentProps = DocumentInitialProps & {
   locale: Locale | null
 }
 
-export default class MyDocument extends Document {
+export default class MyDocument extends Document<MyDocumentProps> {
   static async getInitialProps(context: DocumentContext) {
     const { locale } = extractLocaleFromPath(context.asPath ?? context.pathname)
     const initialProps = await Document.getInitialProps(context)
-    const documentProps: MyDocumentProps = {
+    return {
       ...initialProps,
       locale,
     }
-    return documentProps
   }
 
   render() {
-    const { locale } = this.props as MyDocumentProps
+    const { locale } = this.props
 
     return (
       <Html {...getHtmlAttributesForLocale(locale ?? defaultLocale)} data-theme="dark">

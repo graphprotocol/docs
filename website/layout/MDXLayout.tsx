@@ -1,6 +1,6 @@
-import { MDXProvider } from '@mdx-js/react'
 import merge from 'lodash/merge'
 import { NextSeo, NextSeoProps } from 'next-seo'
+import { MDXProvider } from 'nextra/mdx'
 import { PropsWithChildren, useCallback, useMemo } from 'react'
 import { useSet } from 'react-use'
 import { ThemeUIStyleObject } from 'theme-ui'
