@@ -1,19 +1,16 @@
 FROM node:18-alpine as builder
 
+ENV PNPM_HOME="/usr/bin"
+
 RUN apk add --no-cache git
 RUN npm install -g pnpm
 
 WORKDIR /app
 
-# copy package and lock files first for better caching
-COPY ./package.json /app/package.json
-COPY ./pnpm-lock.yaml /app/pnpm-lock.yaml
+COPY . .
 
 # install the packages
 RUN pnpm install --frozen-lockfile --ignore-scripts
-
-# copy the rest
-COPY . .
 
 RUN pnpm build
 RUN pnpm export
