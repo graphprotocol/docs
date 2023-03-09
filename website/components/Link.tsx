@@ -46,18 +46,18 @@ export const Link = ({
   // If the link is external, default the target to `_blank`
   const finalTarget = target ?? (!isInternal ? '_blank' : undefined)
 
-  const nextLinkProps = {
-    href: finalHref,
-    replace,
-    scroll,
-    shallow,
-    prefetch,
-  }
   return (
-    <NextLink {...nextLinkProps} passHref>
-      <a target={finalTarget} rel={finalTarget === '_blank' ? 'noopener' : undefined} {...props}>
-        {children}
-      </a>
+    <NextLink
+      href={finalHref}
+      target={finalTarget}
+      rel={finalTarget === '_blank' ? 'noopener' : undefined}
+      replace={replace}
+      scroll={scroll}
+      shallow={shallow}
+      prefetch={prefetch}
+      {...props}
+    >
+      {children}
     </NextLink>
   )
 }
