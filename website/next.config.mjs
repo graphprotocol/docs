@@ -14,6 +14,12 @@ const withNextra = nextra({
   staticImage: true,
   codeHighlight: false,
   // defaultShowCopyCode: true,
+  transformPageOpts(pageOpts) {
+    return {
+      ...pageOpts,
+      pageMap: [],
+    }
+  },
   transform(content, { route }) {
     if (route) {
       return `
