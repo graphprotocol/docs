@@ -12,7 +12,8 @@ const withNextra = nextra({
   theme: './components/ThemeLayout.tsx',
   flexsearch: false,
   staticImage: true,
-  defaultShowCopyCode: true,
+  codeHighlight: false,
+  // defaultShowCopyCode: true,
   transform(content, { route }) {
     if (route) {
       return `
