@@ -12,7 +12,7 @@ export default class MyDocument extends Document<MyDocumentProps> {
     const initialProps = await Document.getInitialProps(context)
     return {
       ...initialProps,
-      locale,
+      locale: locale ?? defaultLocale,
     }
   }
 
@@ -20,7 +20,7 @@ export default class MyDocument extends Document<MyDocumentProps> {
     const { locale } = this.props
 
     return (
-      <Html {...getHtmlAttributesForLocale(locale ?? defaultLocale)} data-theme="dark">
+      <Html {...getHtmlAttributesForLocale(locale)} data-theme="dark">
         <Head>
           <link
             rel="preconnect"
