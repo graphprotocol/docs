@@ -56,4 +56,7 @@ export default withNextra({
     })
     return config
   },
+  images: {
+    unoptimized: true,
+  },
 })
