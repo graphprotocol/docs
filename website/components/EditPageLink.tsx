@@ -21,7 +21,7 @@ export const EditPageLink = ({ mobile = false, ...props }: EditPageLinkProps) =>
 
   return (
     <Link
-      href={`https://github.com/graphprotocol/docs/blob/main/pages/${pagePath}`}
+      href={`https://github.com/graphprotocol/docs/blob/main/website/pages/${pagePath}`}
       target="_blank"
       sx={{
         display: 'block',
