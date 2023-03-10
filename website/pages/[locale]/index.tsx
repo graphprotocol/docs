@@ -1,4 +1,5 @@
 import { GetStaticPaths, GetStaticProps, NextPage } from 'next'
+import { Heading as NextraHeading } from 'nextra'
 import { useMemo } from 'react'
 
 import {
@@ -14,7 +15,7 @@ import {
 
 import { Heading, Image, Link, LinkInline, Paragraph } from '@/components'
 import { AppLocale, supportedLocales, translations, useI18n } from '@/i18n'
-import { Frontmatter, MDXLayout, OutlineItem } from '@/layout'
+import MDXLayout, { Frontmatter } from '@/layout'
 import { getNavItems, NavItem } from '@/navigation'
 
 export const frontmatter = (locale: AppLocale): Frontmatter => ({
@@ -49,22 +50,22 @@ type IndexProps = { navItems: NavItem[] }
 const Index: NextPage<IndexProps> = ({ navItems }: IndexProps) => {
   const { t, locale } = useI18n()
 
-  const outline: OutlineItem[] = useMemo(
+  const headings: NextraHeading[] = useMemo(
     () => [
       {
         id: 'network-roles',
-        title: t('index.networkRoles.title'),
-        level: 2,
+        value: t('index.networkRoles.title'),
+        depth: 2,
       },
       {
         id: 'products',
-        title: t('index.products.title'),
-        level: 2,
+        value: t('index.products.title'),
+        depth: 2,
       },
       {
         id: 'supported-networks',
-        title: t('index.supportedNetworks.title'),
-        level: 2,
+        value: t('index.supportedNetworks.title'),
+        depth: 2,
       },
     ],
     [t]
@@ -72,10 +73,13 @@ const Index: NextPage<IndexProps> = ({ navItems }: IndexProps) => {
 
   return (
     <MDXLayout
-      pagePath={`[locale]/index.tsx`}
-      navItems={navItems}
-      frontmatter={frontmatter(locale as AppLocale)}
-      outline={outline}
+      // @ts-expect-error: we don't need another properties
+      pageOpts={{
+        filePath: `[locale]/index.tsx`,
+        frontMatter: frontmatter(locale as AppLocale),
+        headings,
+      }}
+      pageProps={{ navItems }}
     >
       <Paragraph>{t('index.intro')}</Paragraph>
       <ul
