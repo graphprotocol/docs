@@ -1,14 +1,8 @@
-import { Context, createContext } from 'react'
+import { normalizePages } from 'nextra/normalize-pages'
+import { createContext } from 'react'
 
-import { NavItem, NavItemGroup, NavItemPage } from '@/navigation'
+type NavContextProps = {
+  filePath: string
+} & ReturnType<typeof normalizePages>
 
-export type NavContextProps = {
-  pagePath: string
-  navItems: NavItem[]
-  previousPage: NavItemPage | null
-  currentPage: NavItemPage | null
-  nextPage: NavItemPage | null
-  currentGroup: NavItemGroup | null
-}
-
-export const NavContext = createContext(null) as Context<NavContextProps | null>
+export const NavContext = createContext<NavContextProps>({} as any)

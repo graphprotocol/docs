@@ -1,25 +1,19 @@
 import { NextSeoProps } from 'next-seo'
-import { Context, createContext } from 'react'
+import { Heading } from 'nextra'
+import { createContext } from 'react'
 
 export type Frontmatter = {
   title?: string
-  navTitle?: string
   description?: string
   socialImage?: string
   seo?: NextSeoProps
 }
 
-export type OutlineItem = {
-  id: string
-  title: string
-  level: 1 | 2 | 3 | 4 | 5 | 6
-}
-
 export type DocumentContextProps = {
-  frontmatter?: Frontmatter
-  outline: OutlineItem[]
+  frontMatter: Frontmatter
+  headings: Heading[]
   markOutlineItem: (id: string, inOrAboveView: boolean) => void
   highlightedOutlineItemId: string | null
 }
 
-export const DocumentContext = createContext(null) as Context<DocumentContextProps | null>
+export const DocumentContext = createContext<DocumentContextProps | null>(null)

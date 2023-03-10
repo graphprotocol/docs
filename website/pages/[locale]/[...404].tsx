@@ -3,11 +3,9 @@ import { GetStaticPaths, GetStaticProps, NextPage } from 'next'
 import { NotFound, Spacing } from '@edgeandnode/components'
 
 import { LinkInline } from '@/components'
-import { AppLocale, supportedLocales, useI18n } from '@/i18n'
-import { getNavItems } from '@/navigation'
+import { supportedLocales, useI18n } from '@/i18n'
 
-// TODO: Make DRY
-export const getStaticPaths: GetStaticPaths = async () => {
+export const getStaticPaths: GetStaticPaths = () => {
   return {
     paths: supportedLocales.map((locale) => ({
       params: { locale, '404': ['404'] },
@@ -16,17 +14,8 @@ export const getStaticPaths: GetStaticPaths = async () => {
   }
 }
 
-// TODO: Make DRY
-export const getStaticProps: GetStaticProps = async (context) => {
-  const locale = context.params!.locale as AppLocale
-  const navItems = await getNavItems(locale)
-
-  return {
-    props: {
-      locale,
-      navItems,
-    },
-  }
+export const getStaticProps: GetStaticProps = () => {
+  return { props: {} }
 }
 
 const NotFoundPage: NextPage = () => {
