@@ -15,10 +15,8 @@ const withNextra = nextra({
   codeHighlight: false,
   // defaultShowCopyCode: true,
   transformPageOpts(pageOpts) {
-    return {
-      ...pageOpts,
-      pageMap: [],
-    }
+    delete pageOpts.pageMap
+    return pageOpts
   },
   transform(content, { route }) {
     if (route) {
