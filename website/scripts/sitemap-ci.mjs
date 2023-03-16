@@ -15,7 +15,8 @@ async function main() {
 
   const d = parser.parse(await fs.readFile(sitemapPath, 'utf8'))
 
-  const routes = d.urlset.url.map((url) => url.loc.replace(process.env.SITE_URL || `https://thegraph.com/docs`, ``))
+  // TODO: `process.env.SITE_URL` never seems to be set here, so it always falls back to the default value
+  const routes = d.urlset.url.map((url) => url.loc.replace(process.env.SITE_URL || 'https://thegraph.com/docs', ''))
 
   const redirectsPointingToNonExistingStuff = []
 
