@@ -212,7 +212,7 @@ export const MDXLayoutNav = ({ mobile = false }: { mobile?: boolean }) => {
                   active={currentPage?.path === navItem.path}
                   sx={mobile ? { py: 0 } : {}}
                   linkProps={{ sx: mobile ? {} : { paddingInlineEnd: 0 } }}
-                  diamondProps={{ sx: mobile ? { insetInlineStart: '6px' } : {} }}
+                  diamondProps={{ sx: mobile ? { left: '6px', insetInlineStart: '6px', insetInlineEnd: 'auto' } : {} }}
                 >
                   {navItem.title}
                 </NavTree.Item>

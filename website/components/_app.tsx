@@ -76,12 +76,13 @@ const MyApp = ({ Component, pageProps }: AppProps) => {
             token: process.env.MIXPANEL_TOKEN ?? null,
           }}
         >
-          <div sx={{ position: 'absolute', inset: 0, overflow: 'hidden' }}>
+          <div sx={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, overflow: 'hidden' }}>
             <div
               sx={{
                 position: 'absolute',
                 top: 0,
-                insetInline: 0,
+                left: 0,
+                right: 0,
                 minHeight: '768px',
                 backgroundImage: `url('${process.env.BASE_PATH}/img/page-background.png')`,
                 backgroundSize: 'cover',
