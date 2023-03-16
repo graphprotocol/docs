@@ -5,9 +5,10 @@ import { Fragment, PropsWithChildren, useContext, useEffect, useState } from 're
 
 import { BorderRadius, buildTransition, Flex, Icon, NestedStrings, Spacing, Text } from '@edgeandnode/components'
 
-import { DocSearch, Link, NavTree } from '@/components'
-import { useI18n } from '@/i18n'
-import { NavContext } from '@/layout'
+import { DocSearch, Link, NavTree } from '../components'
+import { useI18n } from '../i18n'
+
+import { NavContext } from './NavContext'
 
 const removeBasePathFromUrl = (url: string) => url.substring((process.env.BASE_PATH ?? '').length)
 

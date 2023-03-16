@@ -1,6 +1,6 @@
 import { translate } from '@edgeandnode/components'
 
-import { AppLocale, translations } from '@/i18n'
+import { AppLocale, translations } from '../i18n'
 
 import { NavItemDefinition } from './types'
 

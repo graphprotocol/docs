@@ -13,10 +13,10 @@ import {
   translate,
 } from '@edgeandnode/components'
 
-import { Heading, Image, Link, LinkInline, Paragraph } from '@/components'
-import { AppLocale, supportedLocales, translations, useI18n } from '@/i18n'
-import MDXLayout, { Frontmatter } from '@/layout'
-import { getNavItems, NavItem } from '@/navigation'
+import { Heading, Image, Link, LinkInline, Paragraph } from '../../components'
+import { AppLocale, supportedLocales, translations, useI18n } from '../../i18n'
+import MDXLayout, { Frontmatter } from '../../layout'
+import { getNavItems, NavItem } from '../../navigation'
 
 export const frontmatter = (locale: AppLocale): Frontmatter => ({
   title: translate(translations, locale, 'index.title'),

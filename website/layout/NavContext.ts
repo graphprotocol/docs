@@ -1,6 +1,6 @@
 import { Context, createContext } from 'react'
 
-import { NavItem, NavItemGroup, NavItemPage } from '@/navigation'
+import { NavItem, NavItemGroup, NavItemPage } from '../navigation'
 
 export type NavContextProps = {
   pagePath: string

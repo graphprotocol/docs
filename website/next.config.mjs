@@ -20,13 +20,14 @@ const withNextra = nextra({
   },
   transform(content, { route }) {
     if (route) {
+      const routeSegments = route.split('/')
       return `
-import { getNavItems } from '@/navigation'
+import { getNavItems } from '${'../'.repeat(routeSegments.length - 1)}navigation'
 
 ${content}
 
 export const getStaticProps = async () => {
-  const navItems = await getNavItems('${route.split('/')[1]}')
+  const navItems = await getNavItems('${routeSegments[1]}')
   return {
     props: { navItems }
   }
