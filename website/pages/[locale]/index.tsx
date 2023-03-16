@@ -75,7 +75,7 @@ const Index: NextPage<IndexProps> = ({ navItems }: IndexProps) => {
     <MDXLayout
       // @ts-expect-error: we don't need another properties
       pageOpts={{
-        filePath: `[locale]/index.tsx`,
+        filePath: `pages/[locale]/index.tsx`,
         frontMatter: frontmatter(locale as AppLocale),
         headings,
       }}

@@ -17,12 +17,12 @@ export const EditPageLink = ({ mobile = false, ...props }: EditPageLinkProps) =>
   // If the current page is in a language other than English, link to the English version, as translations are handled by Crowdin
   const { pagePath: _pagePath } = useContext(NavContext)!
   const pagePathSegments = _pagePath.split('/')
-  pagePathSegments[0] = ['en', '[locale]'].includes(pagePathSegments[0]) ? pagePathSegments[0] : 'en'
+  pagePathSegments[1] = ['en', '[locale]'].includes(pagePathSegments[1]) ? pagePathSegments[1] : 'en'
   const pagePath = pagePathSegments.join('/')
 
   return (
     <Link
-      href={`https://github.com/graphprotocol/docs/blob/main/pages/${pagePath}`}
+      href={`https://github.com/graphprotocol/docs/blob/main/website/${pagePath}`}
       target="_blank"
       sx={{
         display: 'block',
