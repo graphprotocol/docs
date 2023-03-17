@@ -90,7 +90,9 @@ const NavTreeItem = ({
             size="12px"
             sx={{
               position: 'absolute',
+              left: Spacing['4px'],
               insetInlineStart: Spacing['4px'],
+              insetInlineEnd: 'auto',
               top: 0,
               bottom: 0,
               my: 'auto',
