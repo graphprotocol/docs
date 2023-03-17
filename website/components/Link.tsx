@@ -3,7 +3,7 @@ import { AnchorHTMLAttributes } from 'react'
 
 import { buildShadow, buildTransition, useTheme } from '@edgeandnode/components'
 
-import { AppLocale, useI18n } from '../i18n'
+import { AppLocale, useI18n } from '@/i18n'
 
 export type LinkProps = Pick<NextLinkProps, 'replace' | 'scroll' | 'shallow' | 'prefetch'> &
   Omit<AnchorHTMLAttributes<HTMLAnchorElement>, 'href'> & {

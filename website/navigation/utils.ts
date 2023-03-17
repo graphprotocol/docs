@@ -4,8 +4,8 @@ import { join } from 'node:path'
 
 import { defaultLocale } from '@edgeandnode/components'
 
-import { AppLocale } from '../i18n'
-import { Frontmatter } from '../layout'
+import { AppLocale } from '@/i18n'
+import { Frontmatter } from '@/layout'
 
 import { navigation } from './navigation'
 import { NavItem, NavItemDefinition, NavItemPage, NavItemPromise } from './types'
@@ -49,7 +49,7 @@ export const getNavItems = async (locale: AppLocale = defaultLocale): Promise<Na
                   const mod = await import(`../pages/${fileToTry}`)
                   frontmatter = mod.frontmatter
                 }
-                if (!title) {
+                if (!title && frontmatter) {
                   const frontmatterData = typeof frontmatter === 'function' ? frontmatter(locale) : frontmatter
                   title = frontmatterData.navTitle ?? frontmatterData.title
                 }

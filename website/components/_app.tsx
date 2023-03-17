@@ -17,7 +17,7 @@ import {
   NavigationMarketing,
 } from '@edgeandnode/components'
 
-import { supportedLocales, translations, useI18n } from '../i18n'
+import { supportedLocales, translations, useI18n } from '@/i18n'
 
 import '@edgeandnode/components/build/components.css'
 import '@docsearch/css'

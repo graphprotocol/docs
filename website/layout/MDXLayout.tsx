@@ -22,15 +22,10 @@ import {
   Paragraph,
   Table,
   VideoEmbed,
-} from '../components'
-import { useI18n } from '../i18n'
-import { NavItem, NavItemGroup } from '../navigation'
-
-import { DocumentContext } from './DocumentContext'
-import { MDXLayoutNav } from './MDXLayoutNav'
-import { MDXLayoutOutline } from './MDXLayoutOutline'
-import { MDXLayoutPagination } from './MDXLayoutPagination'
-import { NavContext } from './NavContext'
+} from '@/components'
+import { useI18n } from '@/i18n'
+import { DocumentContext, MDXLayoutNav, MDXLayoutOutline, MDXLayoutPagination, NavContext } from '@/layout'
+import { NavItem, NavItemGroup } from '@/navigation'
 
 const mdxComponents = {
   blockquote: Blockquote,

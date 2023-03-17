@@ -1,12 +1,12 @@
 import { Locale, NestedStrings, Translations, useI18n as _useI18n } from '@edgeandnode/components'
 
-import ar from './pages/ar/translations'
-import en from './pages/en/translations'
-import es from './pages/es/translations'
-import ja from './pages/ja/translations'
-import ko from './pages/ko/translations'
-import vi from './pages/vi/translations'
-import zh from './pages/zh/translations'
+import ar from '@/pages/ar/translations'
+import en from '@/pages/en/translations'
+import es from '@/pages/es/translations'
+import ja from '@/pages/ja/translations'
+import ko from '@/pages/ko/translations'
+import vi from '@/pages/vi/translations'
+import zh from '@/pages/zh/translations'
 
 const appLocales = [
   Locale.ARABIC,

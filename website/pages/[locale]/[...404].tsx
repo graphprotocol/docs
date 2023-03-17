@@ -2,9 +2,9 @@ import { GetStaticPaths, GetStaticProps, NextPage } from 'next'
 
 import { NotFound, Spacing } from '@edgeandnode/components'
 
-import { LinkInline } from '../../components'
-import { AppLocale, supportedLocales, useI18n } from '../../i18n'
-import { getNavItems } from '../../navigation'
+import { LinkInline } from '@/components'
+import { AppLocale, supportedLocales, useI18n } from '@/i18n'
+import { getNavItems } from '@/navigation'
 
 // TODO: Make DRY
 export const getStaticPaths: GetStaticPaths = async () => {

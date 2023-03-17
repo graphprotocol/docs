@@ -15,9 +15,8 @@ import {
   TextProps,
 } from '@edgeandnode/components'
 
-import { useI18n } from '../i18n'
-
-import { Link, LinkProps } from './Link'
+import { Link, LinkProps } from '@/components'
+import { useI18n } from '@/i18n'
 
 const animationExpand = keyframes({
   from: { height: 0 },
