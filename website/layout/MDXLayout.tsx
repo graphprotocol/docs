@@ -25,7 +25,7 @@ import {
 } from '@/components'
 import { useI18n } from '@/i18n'
 import { DocumentContext, MDXLayoutNav, MDXLayoutOutline, MDXLayoutPagination, NavContext } from '@/layout'
-import { NavItem, NavItemGroup } from '@/navigation'
+import { NavItem, NavItemGroup, NavItemPage } from '@/navigation'
 
 const mdxComponents = {
   blockquote: Blockquote,
@@ -75,7 +75,7 @@ export function MDXLayout({ children, pageOpts, pageProps }: NextraThemeLayoutPr
     let currentPage = null
     let nextPage = null
     let currentGroup = null
-    const pageNavItems = navItems.flatMap((navItem) => {
+    const pageNavItems = navItems.flatMap((navItem): NavItemPage[] => {
       if ('children' in navItem) {
         return navItem.children.filter((childNavItem) => {
           if ('path' in childNavItem) {
@@ -83,12 +83,12 @@ export function MDXLayout({ children, pageOpts, pageProps }: NextraThemeLayoutPr
               currentGroup = navItem
             }
             return true
-          } else {
-            return false
           }
+          return false
         })
       }
       if ('path' in navItem) {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-return -- Don't know how to fix warning
         return [navItem]
       }
       return []
@@ -102,7 +102,12 @@ export function MDXLayout({ children, pageOpts, pageProps }: NextraThemeLayoutPr
       }
       pageNavItemIndex++
     }
-    return { previousPage, currentPage, nextPage, currentGroup: currentGroup as NavItemGroup | null }
+    return {
+      previousPage,
+      currentPage,
+      nextPage,
+      currentGroup: currentGroup as NavItemGroup | null,
+    }
   }, [navItems, pathWithoutLocale])
 
   // Provide `markOutlineItem` to the `DocumentContext` so child `Heading` components can mark outline items as "in or above view" or not
