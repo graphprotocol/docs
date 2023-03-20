@@ -1,0 +1,102 @@
+---
+title: تصحيح أخطاء الـ subgraph بسرعة وسهولة باستخدام التفرعات (forks)
+---
+
+كما هو الحال مع العديد من الأنظمة التي تعالج كميات كبيرة من البيانات ، قد يستغرق مفهرسو The Graph أو (Graph nodes) بعض الوقت لمزامنة الـ subgraph الخاص بك مع blockchain المستهدف. التناقض بين التغييرات السريعة بغرض تصحيح الأخطاء وأوقات الانتظار الطويلة اللازمة للفهرسة يؤدي إلى نتائج عكسية للغاية ونحن ندرك ذلك جيدًا. ولهذا السبب نقدم **subgraph forking ** ، الذي تم تطويره بواسطة [ LimeChain ](https://limechain.tech/) ، وفي هذه المقالة سنوضح لكم كيف يمكن استخدام هذه الميزة لتسريع تصحيح أخطاء الـ subgraph بشكل كبير!
+
+## حسنا، ما هو؟
+
+**Subgraph forking** هي عملية جلب الكيانات بشكل lazily من مخزن subgraph _آخر_ (عادةً ما يكون بعيدًا).
+
+يسمح لك **subgraph forking** بتصحيح أخطاء الـ subgraph الفاشل في الكتلة(block) _ X _ دون الحاجة للانتظار للمزامنة للكتلة _ X _.
+
+## ماذا؟! كيف؟
+
+عندما تنشر subgraph إلى Graph node بعيدة للقيام بالفهرسة ويفشل عند الكتلة _ X _ ، فإن الخبر الجيد هو أن Graph node ستظل تقدم استعلامات GraphQL باستخدام مخزنها(store)، والذي تمت مزامنته للكتلة(block) _ X _. هذا عظيم! هذا يعني أنه يمكننا الاستفادة من هذا المخزن "المحدث" لإصلاح الأخطاء التي تظهر عند فهرسة الكتلة _ X _.
+
+باختصار ، سنقوم _ بتفريع (fork) الـ subgraph الفاشل _ من Graph node بعيدة والتي تضمن فهرسة الـ subgraph للكتلة _ X _ وذلك من أجل توفير الـ subgraph المنشور محليًا والذي يتم تصحيحه عندالكتلة*X* مع عرض محدث لحالة الفهرسة.
+
+## من فضلك ، أرني بعض الأكواد!
+
+للاستمرار في التركيز على تصحيح أخطاء الـ subgraph ، دعنا نجعل الأمور بسيطة ونعمل مع [example-subgraph](https://github.com/graphprotocol/example-subgraph) الذي يفهرس عقد Ethereum Gravity الذكي.
+
+فيما يلي المعالجات (handlers) المعرفة لفهرسة `Gravatar` ، بدون أخطاء على الإطلاق:
+
+```tsx
+export function handleNewGravatar(event: NewGravatar): void {
+  let gravatar = new Gravatar(event.params.id.toHex().toString())
+  gravatar.owner = event.params.owner
+  gravatar.displayName = event.params.displayName
+  gravatar.imageUrl = event.params.imageUrl
+  gravatar.save()
+}
+
+export function handleUpdatedGravatar(event: UpdatedGravatar): void {
+  let gravatar = Gravatar.load(event.params.id.toI32().toString())
+  if (gravatar == null) {
+    log.critical('Gravatar not found!', [])
+    return
+  }
+  gravatar.owner = event.params.owner
+  gravatar.displayName = event.params.displayName
+  gravatar.imageUrl = event.params.imageUrl
+  gravatar.save()
+}
+```
+
+للأسف ، يفشل نشر هذا الـ subgraph ذو المظهر المثالي على [ HostedService ](https://thegraph.com/hosted-service/)مع ظهور الخطأ _"Gravatar not found!"_.
+
+الطريقة المعتادة لمحاولة الإصلاح هي:
+
+1. إجراء تغيير في مصدر الـ mappings ، والذي تعتقد أنه سيحل المشكلة (وأنا أعلم أنه لن يحلها).
+2. إعادة نشر الـ subgraph على [ HostedService ](https://thegraph.com/hosted-service/) (أو Graph node أخرى بعيدة).
+3. الانتظار حتى تتم المزامنة.
+4. إذا حدثت المشكلة مرة أخرى ، فارجع إلى 1!
+
+كما ترى ، فهده الطريقة تشبه عملية تصحيح الأخطاء العادية ، ولكن هناك خطوة واحدة تؤدي إلى إبطاء العملية بشكل رهيب: _ 3. الانتظار حتى تتم المزامنة. _
+
+باستخدام **subgraph forking** يمكننا التخلص من تلك الخطوة. إليك كيف يبدو:
+
+0. قم بتجهيز Graph node محلية بمجموعة **_fork-base_** مناسبة.
+1. قم بإجراء تغيير في مصدر الـ mappings ، والذي تعتقد أنه سيحل المشكلة.
+2. قم بالنشر إلى Graph node محلية ، **_وقم بتفريع الـ subgraph الفاشل_**و**_ البدء من الكتلة التي بها المشكلة_**.
+3. إذا حدثت المشكلة مرة أخرى ، فارجع إلى 1!
+
+الآن ، قد يكون لديك سؤالان:
+
+1. ماهو fork-base؟؟؟
+2. ما الذي نقوم بتفريعه (Forking)؟!
+
+وأنا أجيب:
+
+1. `fork-base` هو عنوان URL "الأساسي" ،فمثلا عند إلحاق _subgraph id_ ، يكون عنوان URL الناتج (`<fork-base>/<subgraph-id>`) هو GraphQL endpoint صالح لمخزن الـ subgraph.
+2. الـتفريع سهل ، فلا داعي للقلق:
+
+```bash
+$ graph deploy <subgraph-name> --debug-fork <subgraph-id> --ipfs http://localhost:5001 --node http://localhost:8020
+```
+
+أيضًا ، لا تنس تعيين حقل `dataSources.source.startBlock` في subgraph manifest لرقم الكتلة(block) التي بها المشكلة، حتى تتمكن من تخطي فهرسة الكتل الغير ضرورية والاستفادة من التفريع!
+
+لذلك ، هذا ما أفعله:
+
+0. أقوم بتجهيز Graph Node محلية ([هنا كيف تقوم به](https://github.com/graphprotocol/graph-node#running-a-local-graph-node)) مع تعيين خيار `fork-base` إلى `https://api.thegraph.com/subgraphs/id/` ، نظرا لأنني سأقوم بتفريع(fork) الـ subgraph الذي به أخطاء والذي نشرته سابقا من الـ [HostedService](https://thegraph.com/hosted-service/).
+
+```
+$ cargo run -p graph-node --release -- \
+    --postgres-url postgresql://USERNAME[:PASSWORD]@localhost:5432/graph-node \
+    --ethereum-rpc NETWORK_NAME:[CAPABILITIES]:URL \
+    --ipfs 127.0.0.1:5001
+    --fork-base https://api.thegraph.com/subgraphs/id/
+```
+
+1. بعد فحص دقيق ، لاحظت أن هناك عدم تطابق في تمثيلات الـ `id` المستخدمة عند فهرسة `Gravatar` في المعالجين الخاصين بي. بينما `handleNewGravatar` يحول (`event.params.id.toHex()`) إلى سداسي ، `handleUpdatedGravatar` يستخدم int32 (`event.params.id.toI32()`) مما يجعل `handleUpdatedGravatar` قلقا من "Gravatar not found!". أنا أجعلهم كلاهما يحولان `id` إلى سداسي.
+2. بعد إجراء التغييرات ، قمت بنشر الـ subgraph الخاص بي على Graph node المحلية **_وتفريع الـsubgraph الفاشل_** وضبط `dataSources.source.startBlock` إلى `6190343` في `subgraph.yaml`:
+
+```bash
+$ graph deploy gravity --debug-fork QmNp169tKvomnH3cPXTfGg4ZEhAHA6kEq5oy1XDqAxqHmW --ipfs http://localhost:5001 --node http://localhost:8020
+```
+
+3. لقد قمت بفحص السجلات التي تنتجها Graph node المحلية ، ويبدو أن كل شيء يعمل بشكل جيد.
+4. أقوم بنشر الـ subgraph الخاص بي الخالي من الأخطاء لـ Graph node بعيدة وأعيش في سعادة دائمة
+5. النهاية...

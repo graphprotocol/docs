@@ -1,21 +1,19 @@
-FROM node:16.13.1-alpine3.14 as builder
+FROM node:18-alpine as builder
+
+ENV PNPM_HOME="/usr/bin"
 
 RUN apk add --no-cache git
+RUN npm install -g pnpm
 
 WORKDIR /app
 
-# copy package and lock files first for better caching
-COPY ./package.json /app/package.json
-COPY ./yarn.lock /app/yarn.lock
-
-# install the packages
-RUN yarn install --frozen-lockfile --ignore-scripts
-
-# copy the rest
 COPY . .
 
-RUN yarn build
-RUN yarn export
+# install the packages
+RUN pnpm install --frozen-lockfile --ignore-scripts
+
+RUN pnpm build
+RUN pnpm export
 
 ## production environment
 FROM nginx:1.16.0-alpine
