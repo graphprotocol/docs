@@ -207,6 +207,9 @@ export const navigation = (locale: AppLocale): NavItemDefinition[] => [
     slug: 'mips-faqs',
   },
   {
+    slug: 'graphcast',
+  },
+  {
     divider: true,
   },
   {
