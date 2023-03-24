@@ -1,0 +1,186 @@
+---
+title: グラフティングでコントラクトを取り替え、履歴を残す
+---
+
+このガイドでは、既存のサブグラフをグラフティングして新しいサブグラフを構築し、配備する方法を学びます。
+
+## グラフティングとは？
+
+グラフティングは、既存のサブグラフからデータを再利用し、後のブロックからインデックスを作成します。これは、開発中にマッピングの単純なエラーを素早く乗り越えるため、または、既存のサブグラフが失敗した後に一時的に再び動作させるために有用です。また、ゼロからインデックスを作成するのに時間がかかる機能をサブグラフに追加する場合にも使用できます。
+
+グラフト化されたサブグラフは、ベースとなるサブグラフのスキーマと同一ではなく、単に互換性のある GraphQL スキーマを使用することができます。また、それ自体は有効なサブグラフのスキーマでなければなりませんが、以下の方法でベースサブグラフのスキーマから逸脱することができます。
+
+- エンティティタイプを追加または削除する
+- エンティティタイプから属性を削除する
+- 属性を追エンティティタイプに nullable 加する
+- null 化できない属性を null 化できる属性に変更する
+- enums に値を追加する
+- インターフェースの追加または削除
+- インターフェースがどのエンティティタイプに実装されるかを変更する
+
+詳しくは、こちらでご確認ください。
+
+- [Grafting](https://thegraph.com/docs/en/developing/creating-a-subgraph#grafting-onto-existing-subgraphs)
+
+このチュートリアルでは、基本的なユースケースについて説明します。既存の契約を同一の契約に置き換えます（新しい住所ですが、コードは同じです）。次に、新しいコントラクトを追跡する「ベース」サブグラフに既存のサブグラフを移植します
+
+## 既存のサブグラフの構築
+
+サブグラフの構築は、The Graph の重要な部分であり、[こちら](http://localhost:3000/en/cookbook/quick-start/)でより詳しく説明されています。このチュートリアルで使用する既存のサブグラフをビルドしてデプロイできるようにするために、以下のレポを提供します。
+
+- [サブグラフ例文レポ](https://github.com/t-proctor/grafting-tutorial)
+
+> 注：サブグラフで使用されているコントラクトは、以下の[Hackathon Starterkit](https://github.com/schmidsi/hackathon-starterkit)から取得したものです。
+
+## サブグラフマニフェストの定義
+
+サブグラフ マニフェスト `subgraph.yaml` は、サブグラフのデータ ソース、関心のあるトリガー、およびこれらのトリガーに応答して実行される関数を識別します。使用するサブグラフ マニフェストの例については、以下を参照してください。
+
+```yaml
+specVersion: 0.0.4
+schema:
+  file: ./schema.graphql
+dataSources:
+  - kind: ethereum
+    name: Lock
+    network: goerli
+    source:
+      address: '0x4Ed995e775D3629b0566D2279f058729Ae6EA493'
+      abi: Lock
+      startBlock: 7674603
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.6
+      language: wasm/assemblyscript
+      entities:
+        - Withdrawal
+      abis:
+        - name: Lock
+          file: ./abis/Lock.json
+      eventHandlers:
+        - event: Withdrawal(uint256,uint256)
+          handler: handleWithdrawal
+      file: ./src/lock.ts
+```
+
+- `Lock`データソースは、コンパイルとデプロイ時に取得するアビとコントラクトのアドレスです。
+- ネットワークは、クエリされるインデックス付きネットワークに対応する必要があります。Goerli testnet で実行しているので、ネットワークは `goerli` となります。
+- `mapping`セクションでは、関心のあるトリガーと、それらのトリガーに応答して実行されるべき関数を定義しています。この場合、`Withdrawal`イベントをリスニングし、それが発信されたときに`handleWithdrawal`関数を呼び出すことにしています。
+
+## グラフティングマニフェストの定義
+
+グラフティングは、元のサブグラフ・マニフェストに新しい 2 つの項目を追加する必要があります。
+
+```yaml
+---
+特徴：
+  - グラフト # 機能名
+移植:
+  base: Qm... # ベース部分グラフの部分グラフID
+  block: 1502122 # ブロック番号
+```
+
+- `features`: 使用されるすべての[feature](developing/creating-a-subgraph/#experimental-features)名のリストです。
+- `graft:`は`base`サブグラフとグラフティングをするブロックのマップです。`block`はインデックスを開始するブロック番号です。Graph は、指定されたブロックまでのベースサブグラフのデータをコピーし、そのブロックから新しいサブグラフのインデックスを作成し続けます。
+
+`base`と`block`の値は、2 つのサブグラフを展開することで求めることができます：一つはベースインデックス用、もう一つはグラフティング用です
+
+## ベースサブグラフの起動
+
+1. [Graph Studio UI](https://thegraph.com/studio/)にアクセスし、Guerli testnet 上に`graft-example`というサブグラフを作成します。
+2. レポの `graft-example` フォルダ内のサブグラフのページにある `AUTH & DEPLOY` セクションの指示にしたがってください。
+3. 終了後、サブグラフが正しくインデックスされていることを確認します。The Graph Playground で以下のコマンドを実行すると、サブグラフが正常にインデックスされます。
+
+```graphql
+{
+  withdrawals(first: 5) {
+    id
+    amount
+    when
+  }
+}
+```
+
+このようなものが返ってきます：
+
+```
+{
+  "data": {
+    "withdrawals": [
+      {
+        "id": "0x13098b538a61837e9f29b32fb40527bbbe63c9120c250242b02b69bb42c287e5-5",
+        "amount": "0",
+        "when": "1664367528"
+      },
+      {
+        "id": "0x800c92fcc0edbd26f74e19ad058c62008a47c7789f2064023b987028343dd498-3",
+        "amount": "0",
+        "when": "1664367648"
+      }
+    ]
+  }
+}
+```
+
+サブグラフが正しくインデックスされていることを確認したら、グラフティングで素早くサブグラフを更新することができます。
+
+## グラフティングサブグラフの展開
+
+グラフト置換された subgraph.yaml は、新しいコントラクトのアドレスを持つことになります。これは、ダンプを更新したり、コントラクトを再デプロイしたりしたときに起こりうることです。
+
+1. [Graph Studio UI](https://thegraph.com/studio/)にアクセスし、Goerli testnet 上に`graft-replacement`というサブグラフを作成します。
+2. 新しいマニフェストを作成します。`graph-replacement` の `subgraph.yaml` には、異なるコントラクト アドレスと、どのようにグラフティングするかについての新しい情報が含まれています。これらは、古いコントラクトで発生する[最後のイベント](https://goerli.etherscan.io/tx/0x800c92fcc0edbd26f74e19ad058c62008a47c7789f2064023b987028343dd498)の`block`と古いサブグラフの`base`です。`base`サブグラフ ID は、元の`graph-example`サブグラフの`Deployment ID`となります。これは、The Graph Studio UI で確認できます。
+3. レポの `graft-replacement` フォルダ内のサブグラフのページにある `AUTH & DEPLOY` セクションの指示にしたがってください。
+4. 終了後、サブグラフが正しくインデックスされていることを確認します。The Graph Playground で以下のコマンドを実行すると、サブグラフが正常にインデックスされます。
+
+```graphql
+{
+  withdrawals(first: 5) {
+    id
+    amount
+    when
+  }
+}
+```
+
+以下のように返ってくるはずです：
+
+```
+{
+  "data": {
+    "withdrawals": [
+      {
+        "id": "0x13098b538a61837e9f29b32fb40527bbbe63c9120c250242b02b69bb42c287e5-5",
+        "amount": "0",
+        "when": "1664367528"
+      },
+      {
+        "id": "0x800c92fcc0edbd26f74e19ad058c62008a47c7789f2064023b987028343dd498-3",
+        "amount": "0",
+        "when": "1664367648"
+      },
+      {
+        "id": "0xb4010e4c76f86762beb997a13cf020231778eaf7c64fa3b7794971a5e6b343d3-22",
+        "amount": "0",
+        "when": "1664371512"
+      }
+    ]
+  }
+}
+```
+
+`graft-replacement`サブグラフは、古い`graph-example`データと新しいコントラクトアドレスからの新しいデータからインデックスを作成していることがわかります。元のコントラクトは、[Event 1](https://goerli.etherscan.io/tx/0x800c92fcc0edbd26f74e19ad058c62008a47c7789f2064023b987028343dd498)と[Event 2](https://goerli.etherscan.io/address/0x4ed995e775d3629b0566d2279f058729ae6ea493)という 2 つの`Withdrawal`イベントを発行しています。新しいコントラクトは、[イベント 3](https://goerli.etherscan.io/tx/0xb4010e4c76f86762beb997a13cf020231778eaf7c64fa3b7794971a5e6b343d3)の後に、1 つの`Withdrawal`を発行しました。2 つの以前インデックスされたトランザクション（イベント 1、2）と新しいトランザクション（イベント 3）は`graft-replacement`サブグラフで一緒に結合されます。
+
+おめでとうございます。あなたは、サブグラフを別のサブグラフにグラフティングすることに成功しました。
+
+## その他のリソース
+
+もっとグラフティングを体験したい方に、人気のあるコントラクトの例をご紹介します：
+
+- [曲線](https://github.com/messari/subgraphs/blob/master/subgraphs/curve-finance/protocols/curve-finance/templates/curve.template.yaml)
+- [ERC-721](https://github.com/messari/subgraphs/blob/master/subgraphs/erc721-metadata/subgraph.yaml)
+- [Uniswap](https://github.com/messari/subgraphs/blob/master/subgraphs/uniswap-v3/protocols/uniswap-v3/config/templates/uniswap.v3.template.yaml),
+
+グラフの専門家になるには、基礎となるデータソースの変更を処理する他の方法について学ぶことを検討してください。[Data Source Templates](developing/creating-a-subgraph/#data-source-templates) のような代替手段で、同様の結果を得ることができます。
+
+> 注：この記事の多くの資料は、以前公開された[アルウィーブの記事](/cookbook/arweave/)から引用したものです。
