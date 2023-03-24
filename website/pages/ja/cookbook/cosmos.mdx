@@ -1,1 +1,259 @@
-../../en/cookbook/cosmos.mdx
+---
+title: Cosmosでのサブグラフ構築
+---
+
+このガイドは、[Cosmos](https://docs.cosmos.network/)ベースのブロックチェーンをインデックスするサブグラフの構築について紹介するものです。
+
+## Cosmosのサブグラフとは何ですか？
+
+Graph は、ブロックチェーンのイベントを処理し、その結果得られたデータを GraphQL API を介して簡単に利用できるようにするためのツールを開発者に提供するもので、個別にはサブグラフとして知られています。[Graph Node](https://github.com/graphprotocol/graph-node)が Cosmosイベントを処理できるようになったということは、Cosmosの開発者がスマートコントラクトの指標となるサブグラフを構築できるようになったということです。
+
+Cosmosのサブグラフでサポートされているハンドラーは4種類あります。
+
+- **ブロックハンドラー**は、新しいブロックがチェーンに追加されるたびに実行されます。
+- **イベントハンドラー**は、特定のイベントが発生したときに実行されます。
+- **トランザクションハンドラー**は、トランザクションが発生したときに実行されます。
+- **メッセージハンドラー**は、特定のメッセージが発生したときに実行されます。
+
+[Cosmosの公式ドキュメント](https://docs.cosmos.network/)に基づきます。
+
+> [イベント](https://docs.cosmos.network/main/core/events)は、アプリケーションの実行に関する情報を含むオブジェクトです。これらは主にブロックエクスプローラやウォレットなどのサービスプロバイダが、様々なメッセージやインデックストランザクションの実行を追跡するために使用されます。
+
+> [トランザクション](https://docs.cosmos.network/main/core/transactions)は、アプリケーションの状態変化を引き起こすためにエンドユーザーが作成するオブジェクトです。
+
+> [メッセージ](https://docs.cosmos.network/main/core/transactions#messages)はモジュール固有のオブジェクトで、属するモジュールのスコープ内で状態遷移を引き起こします。
+
+ブロックハンドラーでは全てのデータにアクセスできますが、その他のハンドラーでは、サブグラフの開発者がよりきめ細かくデータを処理することができます。
+
+## Cosmosサブグラフの構築
+
+### サブグラフの依存関係
+
+[graph-cli](https://github.com/graphprotocol/graph-cli)は、サブグラフの構築とデプロイのためのCLIツールです。Cosmosサブグラフを扱うには、バージョン`>=0.30.0`が必要です。
+
+[graph-ts](https://github.com/graphprotocol/graph-ts)はサブグラフに特化した型のライブラリで、Cosmosのサブグラフを扱うにはバージョン`>=0.27.0`が必要です。
+
+### サブグラフの主な構成要素
+
+サブグラフの定義には、3つの重要な部分があります。
+
+**subgraph.yaml**: サブグラフのマニフェストを含むYAMLファイルで、追跡するイベントとその処理方法を特定します。
+
+**schema.graphql**: サブグラフにどのようなデータが保存されているか、また GraphQL を使ってどのようにクエリを行うかを定義します。
+
+**AssemblyScript Mappings**です。[AssemblyScript](https://github.com/AssemblyScript/assemblyscript) ブロックチェーンデータからスキーマで定義されたエンティティに変換するコードです。
+
+### サブグラフマニフェストの定義
+
+サブグラフ マニフェスト (`subgraph.yaml`) は、サブグラフのデータ ソース、関心のあるトリガー、およびこれらのトリガーに応答して実行される関数 (`handlers`) を特定します。Cosmos サブグラフのサブグラフ マニフェストの例については、以下を参照してください。
+
+```yaml
+specVersion: 0.0.5
+description: Cosmos Subgraph Example
+schema:
+  file: ./schema.graphql # link to the schema file
+dataSources:
+  - kind: cosmos
+    name: CosmosHub
+    network: cosmoshub-4 # This will change for each cosmos-based blockchain. In this case, the example uses the Cosmos Hub mainnet.
+    source:
+      startBlock: 0 # Required for Cosmos, set this to 0 to start indexing from chain genesis
+    mapping:
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      blockHandlers:
+        - handler: handleNewBlock # the function name in the mapping file
+      eventHandlers:
+        - event: rewards # the type of the event that will be handled
+          handler: handleReward # the function name in the mapping file
+      transactionHandlers:
+        - handler: handleTransaction # the function name in the mapping file
+      messageHandlers:
+        - message: /cosmos.staking.v1beta1.MsgDelegate # the type of a message
+          handler: handleMsgDelegate # the function name in the mapping file
+      file: ./src/mapping.ts # link to the file with the Assemblyscript mappings
+```
+
+- Cosmos subgraphs introduce a new `kind` of data source (`cosmos`).
+- `ネットワーク`は、Cosmosエコシステム内のチェーンに対応する必要があります。この例では、Cosmos Hub mainnetが使用されています。
+
+### スキーマ定義
+
+スキーマの定義は、結果として得られるサブグラフ・データベースの構造と、エンティティ間の関係を記述する。これは、元のデータソースに依存しません。スキーマ定義の詳細は、[ こちら](/developing/creating-a-subgraph/#the-graph-ql-schema)にあります。
+
+### AssemblyScript マッピング
+
+イベントを処理するためのハンドラは[AssemblyScript](https://www.assemblyscript.org/)で書かれています。
+
+Cosmosインデックスでは、Cosmos特有のデータ型を[AssemblyScript API](/developing/assemblyscript-api/)に導入しています。
+
+```tsx
+class Block {
+  header: Header
+  evidence: EvidenceList
+  resultBeginBlock: ResponseBeginBlock
+  resultEndBlock: ResponseEndBlock
+  transactions: Array<TxResult>
+  validatorUpdates: Array<Validator>
+}
+
+class EventData {
+  event: Event
+  block: HeaderOnlyBlock
+  tx: TransactionContext
+}
+
+class TransactionData {
+  tx: TxResult
+  block: HeaderOnlyBlock
+}
+
+class MessageData {
+  message: Any
+  block: HeaderOnlyBlock
+  tx: TransactionContext
+}
+
+class TransactionContext {
+  hash: Bytes
+  index: u32
+  code: u32
+  gasWanted: i64
+  gasUsed: i64
+}
+
+class HeaderOnlyBlock {
+  header: Header
+}
+
+class Header {
+  version: Consensus
+  chainId: string
+  height: u64
+  time: Timestamp
+  lastBlockId: BlockID
+  lastCommitHash: Bytes
+  dataHash: Bytes
+  validatorsHash: Bytes
+  nextValidatorsHash: Bytes
+  consensusHash: Bytes
+  appHash: Bytes
+  lastResultsHash: Bytes
+  evidenceHash: Bytes
+  proposerAddress: Bytes
+  hash: Bytes
+}
+
+class TxResult {
+  height: u64
+  index: u32
+  tx: Tx
+  result: ResponseDeliverTx
+  hash: Bytes
+}
+
+class Event {
+  eventType: string
+  attributes: Array<EventAttribute>
+}
+
+class Any {
+  typeUrl: string
+  value: Bytes
+}
+```
+
+各ハンドラタイプは独自のデータ構造を持ち、マッピング関数の引数として渡されます。
+
+- ブロックハンドラーは、`Block`を受け取ります.
+- イベントハンドラーは、`EventData`を受け取ります.
+- トランザクションハンドラーは、`TransactionData`を受け取ります.
+- メッセージハンドラーは、`MassageData`を受け取ります.
+
+`MessageData` の一部として、メッセージハンドラは、メッセージを包含するトランザクションに関する最も重要な情報を含む、トランザクションコンテキストを受け取ります。トランザクションコンテキストは`EventData`型でも利用できますが、対 応するイベントがトランザクションと関連付けられている場合に限ります。さらに、すべてのハンドラはブロック(`HeaderOnlyBlock`) への参照を受け取ります。
+
+Cosmos統合の全種類一覧は[こちら](https://github.com/graphprotocol/graph-ts/blob/4c064a8118dff43b110de22c7756e5d47fcbc8df/chain/cosmos.ts)で確認できます。
+
+### メッセージ・デコーディング
+
+Cosmosのメッセージはチェーンに固有であり、シリアル化された[Protocol Buffers](https://developers.google.com/protocol-buffers/)ペイロードの形でサブグラフに渡されることに注意することが重要です。その結果、メッセージデータは処理される前にマッピング関数でデコードされる必要があります。
+
+サブグラフのメッセージデータをデコードする例は、[こちら](https://github.com/graphprotocol/example-subgraphs/blob/main/cosmos/validator-delegations/src/decoding.ts)で見ることができます。
+
+## Cosmosサブグラフの作成と構築
+
+サブグラフ マッピングの記述を開始する前の最初のステップは、サブグラフ スキーマ ファイル (`schema.graphql`) で定義されたエンティティに基づいて型バインディングを生成することです。これにより、マッピング関数がそれらのタイプの新しいオブジェクトを作成し、ストアに保存できるようになります。これは、`codegen` CLI コマンドを使用して行います。
+
+```bash
+$ graph codegen
+```
+
+マッピングの準備ができたら、サブグラフをビルドする必要があります。このステップでは、マニフェストまたはマッピングにある可能性のあるエラーがハイライトされます。グラフノードにデプロイするためには、サブグラフを正常にビルドする必要があります。これは `build` CLI コマンドを使用して行うことができます。
+
+```bash
+$ graph build
+```
+
+## Cosmosサブグラフの展開
+
+サブグラフを作成したら、`graph create` CLIコマンドを実行した後、`graph deploy` CLIコマンドを使用してサブグラフをデプロイすることができます。
+
+**ホストされたサービス**
+
+```bash
+グラフ作成アカウント/サブグラフ名 -製品ホスティングサービス
+```
+
+```bash
+グラフ展開アカウント/サブグラフ名 -製品ホスティングサービス
+```
+
+**ローカルのグラフノード(デフォルトの設定に基づく):**
+
+```bash
+グラフ作成サブグラフ名 --ノード http://localhost:8020
+```
+
+```bash
+グラフ展開サブグラフ名 --ノード http://localhost:8020/ --ipfs http://localhost:5001
+```
+
+## Cosmosサブグラフのクエリ
+
+CosmosサブグラフのGraphQLエンドポイントは、スキーマ定義によって決定され、既存のAPIインタフェースが使用されます。詳細は[GraphQL API documentation](/querying/graphql-api/)を参照してください。
+
+## Cosmosブロックチェーンに対応
+
+### コスモスハブ
+
+#### コスモスハブとは？
+
+[Cosmos Hubブロックチェーン](https://hub.cosmos.network/)は、[Cosmos](https://cosmos.network/)エコシステムの中で最初のブロックチェーンとなります。詳しくは[公式ドキュメント](https://docs.cosmos.network/)をご覧ください。
+
+#### ネットワーク
+
+Cosmos Hubのメインネットは`cosmoshub-4`です。コスモスハブの現在のテストネットは`theta-testnet-001`です。<br/>その他のCosmos Hubネットワーク、すなわち`cosmoshub-3`は停止しているため、データは提供されていません。
+
+### Osmosis
+
+> グラフノードとホスティングサービスにおけるOsmosisのサポートはベータ版です。Osmosisサブグラフの構築に関するご質問は、The Graphチームまでお問い合わせください。
+
+#### Osmosisとは?
+
+[Osmosis](https://osmosis.zone/) は、Cosmos SDK の上に構築された分散型のクロスチェーン自動マーケット メーカー (AMM) プロトコルです。 IBC対応のトークンを取引します。詳細については、[公式ドキュメント](https://docs.osmosis.zone/)をご覧ください。
+
+#### ネットワーク
+
+Osmosisメインネットは`osmosis-1`です。現在のテストネットは `osmo-test-4` です。
+
+## サブグラフの例
+
+参考までにサブグラフの例を紹介します:
+
+[ブロックフィルタリング例](https://github.com/graphprotocol/example-subgraphs/tree/main/cosmos/block-filtering)
+
+[バリデータ報酬の例](https://github.com/graphprotocol/example-subgraphs/tree/main/cosmos/validator-rewards)
+
+[バリデータ・デリゲーションの例](https://github.com/graphprotocol/example-subgraphs/tree/main/cosmos/validator-delegations)
+
+[Osmosisトークンスワップの例](https://github.com/graphprotocol/example-subgraphs/tree/main/cosmos/osmosis-token-swaps)
