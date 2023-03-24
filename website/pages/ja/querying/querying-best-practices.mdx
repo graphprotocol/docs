@@ -1,22 +1,22 @@
 ---
-title: Querying Best Practices
+title: クエリのベストプラクティス
 ---
 
-The Graph provides a decentralized way to query data from blockchains.
+The Graphは、ブロックチェーンのデータをクエリするための分散化された方法を提供します。
 
-The Graph network's data is exposed through a GraphQL API, making it easier to query data with the GraphQL language.
+The GraphのネットワークのデータはGraphQL APIで公開され、GraphQL言語によるデータクエリーが容易になります。
 
-This page will guide you through the essential GraphQL language rules and GraphQL queries best practices.
+このページでは、GraphQLの言語ルールとGraphQLクエリのベストプラクティスに必要不可欠な情報をご案内しています。
 
 ---
 
-## Querying a GraphQL API
+## GraphQL APIのクエリ
 
-### The anatomy of a GraphQL query
+### GraphQLクエリの構造
 
-Unlike REST API, a GraphQL API is built upon a Schema that defines which queries can be performed.
+REST APIとは異なり、GraphQL APIは実行可能なクエリを定義するSchemaをベースに構築されています。
 
-For example, a query to get a token using the `token` query will look as follows:
+例えば、`token`クエリを使ってトークンを取得するクエリは次のようになります。
 
 ```graphql
 query GetToken($id: ID!) {
@@ -27,7 +27,7 @@ query GetToken($id: ID!) {
 }
 ```
 
-which will return the following predictable JSON response (_when passing the proper `$id` variable value_):
+以下のような予測可能なJSONレスポンスが返ってきます（_適切な`$id`変数値を渡す場合_）。
 
 ```json
 {
@@ -38,9 +38,9 @@ which will return the following predictable JSON response (_when passing the pro
 }
 ```
 
-GraphQL queries use the GraphQL language, which is defined upon [a specification](https://spec.graphql.org/).
+GraphQLクエリは、[仕様](https://spec.graphql.org/)で定義されているGraphQL言語を使用します。
 
-The above `GetToken` query is composed of multiple language parts (replaced below with `[...]` placeholders):
+上記の `GetToken` クエリは、複数の言語部分で構成されています (以下では `[...]` プレースホルダーに置き換えられています)。
 
 ```graphql
 query [operationName]([variableName]: [variableType]) {
@@ -52,28 +52,41 @@ query [operationName]([variableName]: [variableType]) {
 }
 ```
 
-While the list of syntactic do's and don'ts is long, here are the essential rules to keep in mind when it comes to writing GraphQL queries:
+構文の「やるべきこと」「やってはいけないこと」を挙げればきりがありませんが、ここではGraphQLクエリを書く際に覚えておきたい基本的なルールを紹介します：
 
-- Each `queryName` must only be used once per operation.
-- Each `field` must be used only once in a selection (we cannot query `id` twice under `token`)
-- Some `field`s or queries (like `tokens`) return complex types that require a selection of sub-field. Not providing a selection when expected (or providing one when not expected - for example, on `id`) will raise an error. To know a field type, please refer to [The Graph Explorer](/network/explorer).
-- Any variable assigned to an argument must match its type.
-- In a given list of variables, each of them must be unique.
-- All defined variables must be used.
+- 各`queryName`は、1回の操作で1回だけ使用しなければなりません。
+- 各`フィールド`は、選択の中で一度だけ使用しなければなりません(`トークン`の下に`id`を二度照会することはできません)。
+- いくつかの `field` やクエリ (`tokens` など) は、サブフィールドの選択を必要とする複雑な型を返します。期待されたときに選択を提供しない（あるいは期待されていないときに提供する-たとえば`id`の場合）ことは、エラーを発生させます。フィールドタイプを知るには、[The Graph Explorer](/network/explorer)を参照してください。
+- 引数に代入される変数は、その型と一致しなければなりません。
+- 与えられた変数のリストにおいて、各変数は一意でなければなりません。
+- 定義された変数はすべて使用する必要があります。
 
-Failing to follow the above rules will end with an error from the Graph API.
+上記のルールに従わない場合、Graph APIからエラーが発生します。
 
-For a complete list of rules with code examples, please look at our GraphQL Validations guide.
+ルールの完全なリストとコード例については、GraphQL Validationsガイドをご覧ください。
 
 <br />
 
-### Sending a query to a GraphQL API
+### GraphQL APIへのクエリの送信
 
-GraphQL is a language and set of conventions that transport over HTTP.
+GraphQLは、HTTPで転送する言語と規約のセットです。
 
-It means that you can query a GraphQL API using standard `fetch` (natively or via `cross-undici-fetch` or `isomorphic-fetch`) as follows:
+標準の `fetch` (ネイティブまたは `@whatwg-node/fetch` や `isomorphic-fetch`) を使って GraphQL API にクエリできることを意味します。
+
+ただし、[「アプリケーションからの問い合わせ」](/querying/querying-from-an-application)にあるように、独自の機能をサポートする`graph-client`を使用することをお勧めします。
+
+- クロスチェーンのサブグラフ処理：1回のクエリで複数のサブグラフからクエリを実行可能
+- [自動ブロック追跡](https://github.com/graphprotocol/graph-client/blob/main/packages/block-tracking/README.md)
+- [自動ページング](https://github.com/graphprotocol/graph-client/blob/main/packages/auto-pagination/README.md)
+- 完全なタイプ付け結果
+
+<br />
+
+ここでは、`graph-client`を使用して、The Graphに問い合わせる方法を説明します。
 
 ```tsx
+import { execute } from '../.graphclient'
+
 const query = `
 query GetToken($id: ID!) {
   token(id: $id) {
@@ -84,67 +97,28 @@ query GetToken($id: ID!) {
 `
 const variables = { id: '1' }
 
-const fetchResult = await fetch('http://example.com/graphql', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({ query, variables }),
-})
-const result = await fetchResult.json()
+async function main() {
+  const result = await execute(query, variables)
+  // `result` is fully typed!
+  console.log(result)
+}
+
+main()
 ```
 
-Another lightweight alternative, best for back-end use-cases, is the famous [`graphql-request` library](https://github.com/prisma-labs/graphql-request).
-
-This lightweight GraphQL client comes with the essential features to query a GraphQL API:
-
-- Mutations validation
-- Support for file upload
-- Batching
-- Promise-based API
-- TypeScript support
+GraphQL クライアントの他の選択肢については、["Querying from an Application"](/querying/querying-from-an-application) で説明しています。
 
 <br />
 
-A complete GraphQL client is [URQL](https://formidable.com/open-source/urql/) which is available within Node.js, React/Preact, Vue, Svelte environments, with more advanced features:
-
-- Flexible cache system
-- Extensible design (easing adding new capabilities on top of it)
-- Lightweight bundle (~5x lighter than Apollo Client)
-- Support for file uploads and offline mode
-
-<br />
-
-In the React ecosystem, [React Query](https://react-query.tanstack.com/graphql) brings a lightweight and agnostic solution for GraphQL.
-
-React Query is a great candidate if you are looking for an easy-to-use and lightweight multipurpose client (GraphQL-capable) that provides essential features such as:
-
-- Powerful cache (background refresh, window-focus refreshing)
-- Advanced querying pattern (parallel queries, dependent queries, prefetching)
-- UX patterns: optimistic updates, scroll restoration
-- Great dev tools
-
-<br />
-
-Finally, Apollo Client is the ubiquitous GraphQL client on the front-end ecosystem.
-
-Available for React, Angular, Vue, Ember, iOS, and Android, Apollo Client, although the heaviest clients, brings many features to build advanced UI on-top of GraphQL:
-
-- advanced error handling
-- pagination
-- data prefetching
-- optimistic UI
-- local state management
-
-<br />
-
-Now that we covered the basic rules of GraphQL queries syntax, let's now look at the best practices of GraphQL query writing.
+GraphQLクエリの構文に関する基本的なルールを説明したところで、次はGraphQLクエリの書き方に関するベストプラクティスを見ていきましょう。
 
 ---
 
-## Writing GraphQL queries
+## GraphQLクエリの作成
 
-### Always write static queries
+### 常に静的なクエリを記述
 
-A common (bad) practice is to dynamically build query strings as follows:
+一般的な（悪い）習慣として、以下のように動的にクエリ文字列を構築することがあります。
 
 ```tsx
 const id = params.id
@@ -160,14 +134,14 @@ query GetToken {
 // Execute query...
 ```
 
-While the above snippet produces a valid GraphQL query, **it has many drawbacks**:
+上記のスニペットは有効な GraphQL クエリを生成しますが、** これには多くの欠点**があります：
 
-- it makes it **harder to understand** the query as a whole
-- developers are **responsible for safely sanitizing the string interpolation**
-- not sending the values of the variables as part of the request parameters **prevent possible caching on server-side**
-- it **prevents tools from statically analyzing the query** (ex: Linter, or type generations tools)
+- クエリ全体を**理解するのが難しくなります**。
+- 開発者は、**文字列補間を安全にサニタイズする責任がある**ということです。
+- リクエストパラメータの一部として変数の値を送信しないでください。**サーバー側でのキャッシュの可能性を防止**
+- それは ** ツールがクエリを静的に分析するのを防ぐ** (例: Linter、またはタイプ生成ツール) です。
 
-For this reason, it is recommended to always write queries as static strings:
+このため、クエリは常に静的な文字列として記述することが推奨されます：
 
 ```tsx
 import { execute } from 'your-favorite-graphql-client'
@@ -189,18 +163,18 @@ const result = await execute(query, {
 })
 ```
 
-Doing so brings **many advantages**:
+そうすることで、**多くの利点**を得ることができます。
 
-- **Easy to read and maintain** queries
-- The GraphQL **server handles variables sanitization**
-- **Variables can be cached** at server-level
-- **Queries can be statically analyzed by tools** (more on this in the following sections)
+- **読みやすく、メンテナンスしやすい**クエリ
+- GraphQLの**サーバーは、変数のサニタイズを処理します**
+- サーバーレベルで**変数がキャッシュできます**。
+- **ツールでクエリを静的に分析できる**（これについては、次のセクションで詳しく説明します。）
 
-**Note: How to include fields conditionally in static queries**
+**参考：静的クエリに条件付きでフィールドを含める方法**
 
-We might want to include the `owner` field only on a particular condition.
+特定の条件下でのみ`owner`フィールドを含めたいと思うかもしれません。
 
-For this, we can leverage the `@include(if:...)` directive as follows:
+そのためには、次のように`@include(if:...)`指令を活用します。
 
 ```tsx
 import { execute } from 'your-favorite-graphql-client'
@@ -223,23 +197,23 @@ const result = await execute(query, {
 })
 ```
 
-Note: The opposite directive is `@skip(if: ...)`.
+注：反対の指示は `@skip(if: ...)` です。
 
 <br />
 
-### Performance tips
+### パフォーマンスに関するヒント
 
 **"Ask for what you want"**
 
-GraphQL became famous for its "Ask for what you want" tagline.
+GraphQLは「Ask for what you want」というキャッチフレーズで有名になりました。
 
-For this reason, there is no way, in GraphQL, to get all available fields without having to list them individually.
+このため、GraphQLでは、利用可能なすべてのフィールドを個別にリストアップすることなく取得する方法はありません。
 
-When querying GraphQL APIs, always think of querying only the fields that will be actually used.
+GraphQL APIにクエリを行う際は、常に実際に使用されるフィールドのみをクエリするように考えてください。
 
-A common cause of over-fetching is collections of entities. By default, queries will fetch 100 entities in a collection, which is usually much more than what will actually be used, e.g., for display to the user. Queries should therefore almost always set first explicitly, and make sure they only fetch as many entities as they actually need. This applies not just to top-level collections in a query, but even more so to nested collections of entities.
+過剰フェッチの一般的な原因は、エンティティのコレクションです。デフォルトでは、クエリはコレクション内の 100 個のエンティティをフェッチしますが、これは通常、ユーザへの表示など、実際に使用される数よりもはるかに多い数です。このため、クエリはほとんどの場合、最初に明示的に設定し、実際に必要な数だけのエンティティをフェッチするようにしなければなりません。これは、クエリのトップレベル・コレクションだけでなく、エンティティのネストされたコレクションにも当てはまります。
 
-For example, in the following query:
+例えば、以下のようなクエリの場合：
 
 ```graphql
 query listTokens {
@@ -254,13 +228,13 @@ query listTokens {
 }
 ```
 
-The response could contain 100 transactions for each of the 100 tokens.
+レスポンスには、100個のトークンごとに100個のトランザクションが含まれる可能性があります。
 
-If the application only needs 10 transactions, the query should explicitly set `first: 10` on the transactions field.
+アプリケーションが10トランザクションしか必要としない場合、クエリはtransactionsフィールドに`first: 10`を明示的に設定する必要があります。
 
-**Combining multiple queries**
+**複数のクエリを組み合わせる**
 
-Your application might require querying multiple types of data as follows:
+アプリケーションでは、次のように複数の種類のデータをクエリする必要があるかもしれません：
 
 ```graphql
 import { execute } from "your-favorite-graphql-client"
@@ -290,9 +264,9 @@ const [tokens, counters] = Promise.all(
 )
 ```
 
-While this implementation is totally valid, it will require two round trips with the GraphQL API.
+この実装は全く有効ですが、GraphQL APIと2往復する必要があります。
 
-Fortunately, it is also valid to send multiple queries in the same GraphQL request as follows:
+幸いなことに、以下のように同じGraphQLリクエストで複数のクエリを送信することも有効です：
 
 ```graphql
 import { execute } from "your-favorite-graphql-client"
@@ -309,19 +283,17 @@ query GetTokensandCounters {
   }
 }
 `
-
-const  { result: { tokens, counters } } = execute(query)
 ```
 
-This approach will **improve the overall performance** by reducing the time spent on the network (saves you a round trip to the API) and will provide a **more concise implementation**.
+このアプローチは、ネットワークに費やす時間を減らすことで**全体のパフォーマンスを向上させ**、**より簡潔な実装**を提供します：
 
 <br />
 
-### Leverage GraphQL Fragments
+### GraphQLフラグメントの活用
 
-A helpful feature to write GraphQL queries is GraphQL Fragment.
+GraphQLのクエリを書くのに便利な機能として、GraphQL Fragmentがあります。
 
-Looking at the following query, you will notice that some fields are repeated across multiple Selection-Sets (`{ ... }`):
+以下のクエリを見ると、いくつかのフィールドが複数のSelection-Setsにまたがって繰り返されていることに気づきます（`{ ... }`）。
 
 ```graphql
 query {
@@ -341,12 +313,12 @@ query {
 }
 ```
 
-Such repeated fields (`id`, `active`, `status`) bring many issues:
+このように繰り返されるフィールド（`id`, `active`, `status`）は多くの問題を引き起こします。
 
-- harder to read for more extensive queries
-- when using tools that generate TypeScript types based on queries (_more on that in the last section_), `newDelegate` and `oldDelegate` will result in two distinct inline interfaces.
+- より広範囲なクエリに対応するために読みにくくなります
+- クエリに基づいて TypeScript 型を生成するツールを使用する場合 (_前のセクションで詳しく説明します_)、`newDelegate` および `oldDelegate` は、2 つの異なるインライン インターフェイスになります。
 
-A refactored version of the query would be the following:
+クエリをリファクタリングすると、次のようになります：
 
 ```graphql
 query {
@@ -370,17 +342,17 @@ fragment DelegateItem on Transcoder {
 }
 ```
 
-Using GraphQL `fragment` will improve readability (especially at scale) but also will result in better TypeScript types generation.
+GraphQLの`fragment`を使用すると、可読性が向上しますが（特に大規模な場合）、TypeScriptの型の生成もうまくいくようになります。
 
-When using the types generation tool, the above query will generate a proper `DelegateItemFragment` type (_see last "Tools" section_).
+ジェネレーションツールを使うと、上記のクエリは適切な`DelegateItemFragment`タイプを生成します (_see last "Tools" section_).
 
 <br />
 
-### GraphQL Fragment do's and don'ts
+### GraphQLフラグメントの注意点
 
-**Fragment base must be a type**
+**フラグメントのベースは、以下のタイプでなければなりません。**
 
-A Fragment cannot be based on a non-applicable type, in short, **on type not having fields**:
+フラグメントは適用不可能なタイプ、つまり**フィールドを持たないタイプ**に基づくことはできません。
 
 ```graphql
 fragment MyFragment on BigInt {
@@ -388,13 +360,13 @@ fragment MyFragment on BigInt {
 }
 ```
 
-`BigInt` is a **scalar** (native "plain" type) that cannot be used as a fragment's base.
+`BigInt` は **scalar** (ネイティブの "plain" 型) で、フラグメントのベースとして使用することはできません。
 
-**How to spread a Fragment**
+**フラグメントの拡散方法**
 
-Fragments are defined on specific types and should be used accordingly in queries.
+フラグメントは特定の型に定義されており、クエリではそれに応じて使用する必要があります。
 
-Example:
+例：
 
 ```graphql
 query {
@@ -415,20 +387,20 @@ fragment VoteItem on Vote {
 }
 ```
 
-`newDelegate` and `oldDelegate` are of type `Transcoder`.
+`newDelegate` と `oldDelegate` は `Transcoder` 型です。
 
-It is not possible to spread a fragment of type `Vote` here.
+ここで`Vote`型のフラグメントを広げることはできません。
 
-**Define Fragment as an atomic business unit of data**
+**フラグメントをデータの原子的なビジネスユニットとして定義する**
 
-GraphQL Fragment must be defined based on their usage.
+GraphQL Fragmentは、その用途に応じて定義する必要があります。
 
-For most use-case, defining one fragment per type (in the case of repeated fields usage or type generation) is sufficient.
+ほとんどのユースケースでは、1つの型につき1つのフラグメントを定義すれば十分です（フィールドの使用や型の生成が繰り返される場合）。
 
-Here is a rule of thumb for using Fragment:
+Fragmentの使い方の目安を紹介します。
 
-- when fields of the same type are repeated in a query, group them in a Fragment
-- when similar but not the same fields are repeated, create multiple fragments, ex:
+- 同じ型のフィールドがクエリ内で繰り返される場合、それらをFragmentでグループ化します。
+- 同じフィールドが繰り返される場合、複数のフラグメントを作成します。
 
 ```graphql
 # base fragment (mostly used in listing)
@@ -451,121 +423,55 @@ fragment VoteWithPoll on Vote {
 
 ---
 
-## The essential tools
+## 必須ツール
 
-### GraphQL web-based explorers
+### GraphQL ウェブベースのエクスプローラ
 
-Iterating over queries by running them in your application can be cumbersome. For this reason, don't hesitate to use [The Graph Explorer](https://thegraph.com/explorer) to test your queries before adding them to your application. The Graph Explorer will provide you a preconfigured GraphQL playground to test your queries.
+アプリケーションでクエリを実行して繰り返し実行することは、面倒なことです。このため、アプリケーションにクエリを追加する前に、[The Graph Explorer](https://thegraph.com/explorer) を使用してクエリをテストすることをためらわないでください。Graph Explorer は、クエリをテストするためにあらかじめ設定された GraphQL プレイグラウンドを提供します。
 
-If you are looking for a more flexible way to debug/test your queries, other similar web-based tools are available such as [Altair](https://altair.sirmuel.design/) and [GraphiQL](https://graphiql-online.com/graphiql).
+クエリのデバッグやテストをもっと柔軟に行いたい場合は、[Altair](https://altair.sirmuel.design/) や [GraphiQL](https://graphiql-online.com/graphiql) など、同様のウェブベースツールが利用できます。
 
 <br />
 
 ### GraphQL Linting
 
-In order to keep up with the mentioned above best practices and syntactic rules, it is highly recommended to use the following workflow and IDE tools.
+上記のベストプラクティスと構文ルールを維持するために、以下のワークフローとIDEツールを使用することを強く推奨します。
 
 **GraphQL ESLint**
 
-[GraphQL ESLint](https://github.com/dotansimha/graphql-eslint) will help you stay on top of GraphQL best practices with zero effort.
+[GraphQL ESLint](https://github.com/dotansimha/graphql-eslint) は、労力をかけずに GraphQL のベストプラクティスを把握できるようにします。
 
-[Setup the "operations-recommended"](https://github.com/dotansimha/graphql-eslint#available-configs) config will enforce essential rules such as:
+[「operations-recommended」](https://github.com/dotansimha/graphql-eslint#available-configs)の設定により、以下のような本質的なルールが実施されます:
 
-- `@graphql-eslint/fields-on-correct-type`: is a field used on a proper type?
-- `@graphql-eslint/no-unused variables`: should a given variable stay unused?
-- and more!
+- `@graphql-eslint/fields-on-correct-type`: フィールドは適切なタイプで使用されているか？
+- `@graphql-eslint/no-unused variables`: 与えられた変数は未使用のままであるべきか？
+- ともっと
 
-This will allow you to **catch errors without even testing queries** on the playground or running them in production!
+これにより、プレイグラウンドで**クエリをテストしたり、本番環境で実行したりすることなく、エラーをキャッチ**できます!
 
 <br />
 
 ### IDE plugins
 
-**VSCode and GraphQL**
+**VSCodeとGraphQL**
 
-The [GraphQL VSCode extension](https://marketplace.visualstudio.com/items?itemName=GraphQL.vscode-graphql) is an excellent addition to your development workflow to get:
+[GraphQL VSCode 拡張機能](https://marketplace.visualstudio.com/items?itemName=GraphQL.vscode-graphql)は、開発ワークフローに次の機能を追加する優れた機能です。
 
-- syntax highlighting
-- autocomplete suggestions
-- validation against schema
+- 構文の強調表示
+- オートコンプリートの提案
+- スキーマに対する検証
 - snippets
-- go to definition for fragments and input types
+- フラグメントと入力タイプの定義に移動
 
-If you are using `graphql-eslint`, the [ESLint VSCode extension](https://marketplace.visualstudio.com/items?itemName=dbaeumer.vscode-eslint) is a must-have to visualize errors and warnings inlined in your code correctly.
+`graphql-eslint`を使用している場合、[ESLint VSCode extension](https://marketplace.visualstudio.com/items?itemName=dbaeumer.vscode-eslint)は、コードにインライン化されたエラーや警告を正しく視覚化するための必需品です。
 
-**WebStorm/Intellij and GraphQL**
+**WebStorm/IntellijとGraphQL**
 
-The [JS GraphQL plugin](https://plugins.jetbrains.com/plugin/8097-graphql/) will significantly improve your experience while working with GraphQL by providing:
+[JS GraphQL plugin](https://plugins.jetbrains.com/plugin/8097-graphql/) は、GraphQL を使用する際の体験を大幅に向上させるものです：
 
-- syntax highlighting
-- autocomplete suggestions
-- validation against schema
+- 構文の強調表示
+- オートコンプリートの提案
+- スキーマに対する検証
 - snippets
 
-More information on this [WebStorm article](https://blog.jetbrains.com/webstorm/2019/04/featured-plugin-js-graphql/) that showcases all the plugin's main features.
-
-<br />
-
-### TypeScript types generation
-
-Finally, the best GraphQL experience is reached when the TypeScript data types are generated from the defined GraphQL queries, as follows:
-
-```tsx
-import { execute } from 'your-favorite-graphql-client'
-import { GetTokenQuery } from './generated.'
-
-const id = params.id
-const query = `
-query GetToken($id: ID!) {
-  token(id: $id) {
-    id
-    owner
-  }
-}
-`
-
-const result: GetTokenQuery = await execute(query, {
-  variables: {
-    id,
-  },
-})
-
-// `result` is typed!
-```
-
-Such a setup can be easily achieved by installing and configuring [GraphQL Code Generator](https://www.graphql-code-generator.com/docs/getting-started) as follows:
-
-```bash
-yarn add graphql @graphql-codegen/cli @graphql-codegen/typescript @graphql-codegen/typescript-operations
-```
-
-Then update your `package.json` (or similar script configuration setup) as follows:
-
-```tsx
-{
-  // ...
-  "scripts": {
-    // ...
-    "generate": "graphql-codegen",
-    // ...
-  }
-  // ...
-}
-```
-
-Add the following configuration file to your project:
-
-```tsx
-schema: "<SUBGRAPH_URL>"
-documents: './src/**/*.ts'
-generates:
-  ./generated.ts:
-    plugins:
-      - typescript
-      - typescript-operations
-```
-
-Finally, by simply running the configured script (`yarn generate`), GraphQL Code Generator will generate the proper TypeScript types in the `generated.ts` file:
-
-- Each query will get a corresponding `[QueryName]Query` type (ex: `GetToken` → `GetTokenQuery` type
-- Each fragment will get a corresponding `[FragmentName]Fragment` type (ex: `DelegateItem` → `DelegateItemFragment` type
+詳細は、この[WebStorm の記事](https://blog.jetbrains.com/webstorm/2019/04/featured-plugin-js-graphql/)で、プラグインの主な機能をすべて紹介しています。
