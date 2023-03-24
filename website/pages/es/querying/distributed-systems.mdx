@@ -13,21 +13,21 @@ Considera este ejemplo de lo que puede ocurrir si un cliente pregunta a un Index
 3. El indexador ingiere el bloque 9
 4. El indexador ingiere el bloque 10A
 5. Solicitud servida al cliente para el bloque 10A
-6. El indexador detecta la reorganización a 10B y retrocede a 10A
+6. El indexador detecta la reorganización a 10B y revierte 10A
 7. Solicitud servida al cliente para el bloque 9
 8. El indexador ingiere el bloque 10B
 9. El indexador ingiere el bloque 11
 10. Solicitud servida al cliente para el bloque 11
 
-Desde el punto de vista del indexador, las cosas avanzan lógicamente. El tiempo avanza, aunque tuvimos que hacer retroceder un uncle bloque y jugar el bloque bajo el consenso hacia adelante en la parte superior. En el camino, el Indexador sirve las peticiones utilizando el último estado que conoce en ese momento.
+Desde el punto de vista del indexador, las cosas avanzan lógicamente. El tiempo avanza, aunque tuvimos que revertir un bloque uncle y jugar el bloque bajo consenso hacia adelante encima de él. En el camino, el Indexador sirve las peticiones utilizando el último estado que conoce en ese momento.
 
 Sin embargo, desde el punto de vista del cliente, las cosas parecen caóticas. El cliente observa que las respuestas fueron para los bloques 8, 10, 9 y 11 en ese orden. Lo llamamos el problema del "block wobble" (bamboleo del bloque). Cuando un cliente experimenta un bamboleo de bloques, los datos pueden parecer contradecirse a lo largo del tiempo. La situación se agrava si tenemos en cuenta que no todos los indexadores ingieren los últimos bloques de forma simultánea, y tus peticiones pueden ser dirigidas a varios indexadores.
 
-Es responsabilidad del cliente y del servidor trabajar juntos para proporcionar datos coherentes al usuario. Hay que utilizar diferentes enfoques en función de la coherencia deseada, ya que no existe un programa adecuado para todos los problemas.
+Es responsabilidad del cliente y del servidor trabajar juntos para proporcionar datos coherentes al usuario. Hay que utilizar diferentes enfoques en función de la consistencia deseada, ya que no existe un programa adecuado para todos los problemas.
 
-Razonar las implicancias de los sistemas distribuidos es difícil, pero la solución puede no serlo! Hemos establecido APIs y patrones para ayudarte a navegar por algunos casos de uso comunes. Los siguientes ejemplos ilustran estos patrones pero eluden los detalles requeridos por el código de producción (como el manejo de errores y la cancelación) para no ofuscar las ideas principales.
+Razonar las implicaciones de los sistemas distribuidos es difícil, pero la solución puede no serlo! Hemos establecido APIs y patrones para ayudarte a navegar por algunos casos de uso comunes. Los siguientes ejemplos ilustran estos patrones pero eluden los detalles requeridos por el código de producción (como el manejo de errores y la cancelación) para no ofuscar las ideas principales.
 
-## Sondeo para obtener datos actualizados
+## Sondeo de datos actualizados
 
 The Graph proporciona la API `block: { number_gte: $minBlock }`, que asegura que la respuesta es para un solo bloque igual o superior a `$minBlock`. Si la petición se realiza a una instancia de `graph-node` y el bloque mínimo no está aún sincronizado, `graph-node` devolverá un error. Si `graph-node` ha sincronizado el bloque mínimo, ejecutará la respuesta para el último bloque. Si la solicitud se hace a un Edge & Node Gateway, el Gateway filtrará los Indexadores que aún no hayan sincronizado el bloque mínimo y hará la solicitud para el último bloque que el Indexador haya sincronizado.
 
@@ -76,7 +76,7 @@ async function updateProtocolPaused() {
 
 ## Obtención de un conjunto de elementos relacionados
 
-Otro caso de uso es la recuperación de un conjunto grande o, más generalmente, la recuperación de elementos relacionados a través de múltiples solicitudes. A diferencia del caso del sondeo (en el que la coherencia deseada era avanzar en el tiempo), la coherencia deseada es para un único punto en el tiempo.
+Otro caso de uso es la recuperación de un conjunto grande o, más generalmente, la recuperación de elementos relacionados a través de múltiples solicitudes. A diferencia del caso del sondeo (en el que la consistencia deseada era avanzar en el tiempo), la consistencia deseada es para un único punto en el tiempo.
 
 Aquí utilizaremos el argumento `block: { hash: $blockHash }` para anclar todos nuestros resultados al mismo bloque.
 
@@ -131,4 +131,4 @@ async function getDomainNames() {
 }
 ```
 
-Ten en cuenta que en caso de reorganización, el cliente tendrá que reintentar desde la primera solicitud para actualizar el hash del bloque a un non-uncle bloque.
+Ten en cuenta que en caso de reorganización, el cliente tendrá que reintentar desde la primera solicitud para actualizar el hash del bloque a un bloque no-uncle.
