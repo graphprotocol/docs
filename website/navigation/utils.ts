@@ -1,3 +1,7 @@
+import grayMatter from 'gray-matter'
+import { readFile } from 'node:fs/promises'
+import { join } from 'node:path'
+
 import { defaultLocale } from '@edgeandnode/components'
 
 import { AppLocale } from '@/i18n'
@@ -37,8 +41,14 @@ export const getNavItems = async (locale: AppLocale = defaultLocale): Promise<Na
             while (true) {
               try {
                 const fileToTry = filesToTry[currentTry]
-                const { frontmatter }: { frontmatter?: Frontmatter | ((locale: AppLocale) => Frontmatter) } =
-                  await import(`../pages/${fileToTry}`)
+                let frontmatter: Frontmatter | ((locale: AppLocale) => Frontmatter)
+                if (fileToTry.endsWith('.mdx')) {
+                  const { data } = grayMatter(await readFile(join(process.cwd(), 'pages', fileToTry), 'utf8'))
+                  frontmatter = data
+                } else {
+                  const mod = await import(`../pages/${fileToTry}`)
+                  frontmatter = mod.frontmatter
+                }
                 if (!title && frontmatter) {
                   const frontmatterData = typeof frontmatter === 'function' ? frontmatter(locale) : frontmatter
                   title = frontmatterData.navTitle ?? frontmatterData.title

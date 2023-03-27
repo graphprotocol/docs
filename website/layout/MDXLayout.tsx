@@ -1,7 +1,8 @@
-import { MDXProvider } from '@mdx-js/react'
 import merge from 'lodash/merge'
 import { NextSeo, NextSeoProps } from 'next-seo'
-import { PropsWithChildren, useCallback, useMemo } from 'react'
+import { NextraThemeLayoutProps } from 'nextra'
+import { MDXProvider } from 'nextra/mdx'
+import { useCallback, useMemo } from 'react'
 import { useSet } from 'react-use'
 import { ThemeUIStyleObject } from 'theme-ui'
 
@@ -23,16 +24,8 @@ import {
   VideoEmbed,
 } from '@/components'
 import { useI18n } from '@/i18n'
-import {
-  DocumentContext,
-  DocumentContextProps,
-  MDXLayoutNav,
-  MDXLayoutOutline,
-  MDXLayoutPagination,
-  NavContext,
-  NavContextProps,
-} from '@/layout'
-import { NavItemGroup } from '@/navigation'
+import { DocumentContext, MDXLayoutNav, MDXLayoutOutline, MDXLayoutPagination, NavContext } from '@/layout'
+import { NavItem, NavItemGroup, NavItemPage } from '@/navigation'
 
 const mdxComponents = {
   blockquote: Blockquote,
@@ -64,11 +57,16 @@ const mdxStyles = {
   },
 } as ThemeUIStyleObject
 
-export type MDXLayoutProps = PropsWithChildren<
-  Pick<NavContextProps, 'pagePath' | 'navItems'> & Pick<DocumentContextProps, 'frontmatter' | 'outline'>
->
+export function MDXLayout({ children, pageOpts, pageProps }: NextraThemeLayoutProps) {
+  const pagePath = pageOpts.filePath
+  const navItems: NavItem[] = pageProps.navItems
+  const frontmatter = pageOpts.frontMatter
+  const outline = pageOpts.headings.map(({ depth, value, id }) => ({
+    id,
+    level: depth,
+    title: value,
+  }))
 
-export const MDXLayout = ({ pagePath, navItems, frontmatter, outline, children }: MDXLayoutProps) => {
   const { pathWithoutLocale } = useI18n()
 
   // Compute some values for the `NavContext`
@@ -77,7 +75,7 @@ export const MDXLayout = ({ pagePath, navItems, frontmatter, outline, children }
     let currentPage = null
     let nextPage = null
     let currentGroup = null
-    const pageNavItems = navItems.flatMap((navItem) => {
+    const pageNavItems = navItems.flatMap((navItem): NavItemPage[] => {
       if ('children' in navItem) {
         return navItem.children.filter((childNavItem) => {
           if ('path' in childNavItem) {
@@ -85,12 +83,12 @@ export const MDXLayout = ({ pagePath, navItems, frontmatter, outline, children }
               currentGroup = navItem
             }
             return true
-          } else {
-            return false
           }
+          return false
         })
       }
       if ('path' in navItem) {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-return -- Don't know how to fix warning
         return [navItem]
       }
       return []
@@ -104,7 +102,12 @@ export const MDXLayout = ({ pagePath, navItems, frontmatter, outline, children }
       }
       pageNavItemIndex++
     }
-    return { previousPage, currentPage, nextPage, currentGroup: currentGroup as NavItemGroup | null }
+    return {
+      previousPage,
+      currentPage,
+      nextPage,
+      currentGroup: currentGroup as NavItemGroup | null,
+    }
   }, [navItems, pathWithoutLocale])
 
   // Provide `markOutlineItem` to the `DocumentContext` so child `Heading` components can mark outline items as "in or above view" or not
@@ -136,12 +139,12 @@ export const MDXLayout = ({ pagePath, navItems, frontmatter, outline, children }
   }, [outline, outlineItemIsInOrAboveView])
 
   let seo: NextSeoProps = {
-    title: `${frontmatter?.title ? `${frontmatter.title} - ` : ''}The Graph Docs`,
+    title: `${frontmatter.title ? `${frontmatter.title} - ` : ''}The Graph Docs`,
   }
-  if (frontmatter?.description) {
+  if (frontmatter.description) {
     seo.description = frontmatter.description
   }
-  if (frontmatter?.socialImage) {
+  if (frontmatter.socialImage) {
     seo.openGraph = {
       images: [
         {
@@ -150,7 +153,7 @@ export const MDXLayout = ({ pagePath, navItems, frontmatter, outline, children }
       ],
     }
   }
-  if (frontmatter?.seo) {
+  if (frontmatter.seo) {
     seo = merge(seo, frontmatter.seo)
   }
 
@@ -193,7 +196,7 @@ export const MDXLayout = ({ pagePath, navItems, frontmatter, outline, children }
                   {currentGroup.title}
                 </div>
               ) : null}
-              {frontmatter?.title ? <Heading.H1>{frontmatter.title}</Heading.H1> : null}
+              {frontmatter.title ? <Heading.H1>{frontmatter.title}</Heading.H1> : null}
               <MDXProvider components={mdxComponents}>{children}</MDXProvider>
             </article>
 
