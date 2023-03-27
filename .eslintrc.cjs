@@ -14,7 +14,7 @@ module.exports = {
       },
     },
     {
-      // We lint only english pages because other languages is translated from english
+      // We lint only english pages because other languages will be translated from english
       files: ['website/pages/en/**/*.{md,mdx}'],
       parser: 'eslint-mdx',
       processor: 'mdx/remark',
