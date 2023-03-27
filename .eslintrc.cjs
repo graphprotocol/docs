@@ -1,26 +1,26 @@
 module.exports = {
   overrides: [
     {
-      files: ['*.ts', '*.tsx', '*.js', '*.jsx', '*.mjs', '*.cjs'],
+      files: ['*.{ts,tsx,js,jsx,mjs,cjs}'],
       extends: ['@edgeandnode/eslint-config', '@edgeandnode/eslint-config/next'],
-    },
-    {
-      files: ['*.ts', '*.tsx'],
-      parserOptions: {
-        project: require.resolve('./tsconfig.json'),
+      settings: {
+        next: { rootDir: 'website' },
       },
     },
     {
+      files: ['*.{ts,tsx}'],
+      parserOptions: {
+        project: 'tsconfig.json',
+      },
+    },
+    {
+      // We lint only english pages because other languages is translated from english
       files: ['website/pages/en/**/*.{md,mdx}'],
       parser: 'eslint-mdx',
       processor: 'mdx/remark',
       plugins: ['mdx'],
       rules: {
         'mdx/remark': 'error',
-      },
-      parserOptions: {
-        ecmaVersion: 13,
-        sourceType: 'module',
       },
     },
   ],
