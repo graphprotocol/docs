@@ -7,7 +7,7 @@ import { useI18n } from '@/i18n'
 import { DocumentContext } from '@/layout'
 
 export const MDXLayoutOutline = () => {
-  const { outline, highlightedOutlineItemId } = useContext(DocumentContext)!
+  const { headings, highlightedOutlineItemId } = useContext(DocumentContext)!
   const [enableTransition, setEnableTransition] = useState(false)
   const { t } = useI18n()
 
@@ -16,7 +16,7 @@ export const MDXLayoutOutline = () => {
     setTimeout(() => setEnableTransition(true), 0)
   }, [])
 
-  if (outline.length === 0) {
+  if (headings.length === 0) {
     return <div />
   }
 
@@ -43,24 +43,24 @@ export const MDXLayoutOutline = () => {
           {t('global.pageSections')}
         </Text.C10>
         <Text as="ul" size="14px" color="White48">
-          {outline.map((outlineItem, outlineItemIndex) => {
-            if (outlineItem.level > 3) {
+          {headings.map((heading, outlineItemIndex) => {
+            if (heading.depth > 3) {
               return null
             }
             return (
               <li key={outlineItemIndex}>
                 <Link
-                  href={`#${outlineItem.id}`}
+                  href={`#${heading.id}`}
                   sx={{
                     display: 'block',
-                    paddingInlineStart: `${8 * Math.max(0, outlineItem.level - 2)}px`,
+                    paddingInlineStart: `${8 * Math.max(0, heading.depth - 2)}px`,
                     py: '6px',
-                    color: outlineItem.id === highlightedOutlineItemId ? 'White88' : undefined,
+                    color: heading.id === highlightedOutlineItemId ? 'White88' : undefined,
                     '&:hover': { color: 'White' },
                     transition: buildTransition('COLORS'),
                   }}
                 >
-                  {outlineItem.title}
+                  {heading.value}
                 </Link>
               </li>
             )

@@ -10,29 +10,27 @@ const env = {
 
 const withNextra = nextra({
   theme: './layout/index.ts',
-  flexsearch: false,
   staticImage: true,
+  flexsearch: false,
   codeHighlight: false,
-  // defaultShowCopyCode: true,
+  defaultShowCopyCode: false,
   transformPageOpts(pageOpts) {
-    pageOpts.pageMap = []
-    return pageOpts
-  },
-  transform(content, { route }) {
-    if (route) {
-      return `
-import { getNavItems } from '@/navigation'
-
-${content}
-
-export const getStaticProps = async () => {
-  const navItems = await getNavItems('${route.split('/')[1]}')
-  return {
-    props: { navItems }
-  }
-}`
+    if (pageOpts.filePath === 'pages/_app.mdx') {
+      pageOpts.pageMap = pageOpts.pageMap
+        // remove redundant dynamic page folder
+        .filter((pageItem) => pageItem.name !== '[locale]')
+        .map((pageItem) => {
+          if (pageItem.kind === 'Folder' && pageItem.name.length === 2) {
+            // add missing dynamic index page
+            return {
+              ...pageItem,
+              children: [{ kind: 'MdxPage', name: 'index', route: pageItem.route }, ...pageItem.children],
+            }
+          }
+          return pageItem
+        })
     }
-    return content
+    return pageOpts
   },
 })
 

@@ -1,7 +1,9 @@
 import merge from 'lodash/merge'
 import { NextSeo, NextSeoProps } from 'next-seo'
-import { NextraThemeLayoutProps } from 'nextra'
+import { Folder, Heading as NextraHeading, MetaJsonFile, NextraThemeLayoutProps } from 'nextra'
+import { useFSRoute } from 'nextra/hooks'
 import { MDXProvider } from 'nextra/mdx'
+import { Item, normalizePages } from 'nextra/normalize-pages'
 import { useCallback, useMemo } from 'react'
 import { useSet } from 'react-use'
 import { ThemeUIStyleObject } from 'theme-ui'
@@ -25,7 +27,6 @@ import {
 } from '@/components'
 import { useI18n } from '@/i18n'
 import { DocumentContext, MDXLayoutNav, MDXLayoutOutline, MDXLayoutPagination, NavContext } from '@/layout'
-import { NavItem, NavItemGroup, NavItemPage } from '@/navigation'
 
 const mdxComponents = {
   blockquote: Blockquote,
@@ -48,73 +49,86 @@ const mdxComponents = {
   Difficulty,
 }
 
-const mdxStyles = {
+const mdxStyles: ThemeUIStyleObject = {
   overflowWrap: 'break-word',
   'img + em': {
     mt: Spacing['16px'],
     display: 'block',
     textAlign: 'center',
   },
-} as ThemeUIStyleObject
+}
 
-export function MDXLayout({ children, pageOpts, pageProps }: NextraThemeLayoutProps) {
-  const pagePath = pageOpts.filePath
-  const navItems: NavItem[] = pageProps.navItems
-  const frontmatter = pageOpts.frontMatter
-  const outline = pageOpts.headings.map(({ depth, value, id }) => ({
-    id,
-    level: depth,
-    title: value,
-  }))
+export function MDXLayout({ children, pageOpts }: NextraThemeLayoutProps) {
+  const { frontMatter, filePath, pageMap } = pageOpts
+  const { locale, defaultLocale } = useI18n()
+  const fsPath = useFSRoute()
+  const { t } = useI18n()
 
-  const { pathWithoutLocale } = useI18n()
+  const headings: NextraHeading[] = useMemo(
+    () =>
+      filePath === 'pages/[locale]/index.mdx'
+        ? [
+            {
+              id: 'network-roles',
+              value: t('index.networkRoles.title'),
+              depth: 2,
+            },
+            {
+              id: 'products',
+              value: t('index.products.title'),
+              depth: 2,
+            },
+            {
+              id: 'supported-networks',
+              value: t('index.supportedNetworks.title'),
+              depth: 2,
+            },
+          ]
+        : pageOpts.headings,
+    [pageOpts.headings, filePath, t]
+  )
 
-  // Compute some values for the `NavContext`
-  const { previousPage, currentPage, nextPage, currentGroup } = useMemo(() => {
-    let previousPage = null
-    let currentPage = null
-    let nextPage = null
-    let currentGroup = null
-    const pageNavItems = navItems.flatMap((navItem): NavItemPage[] => {
-      if ('children' in navItem) {
-        return navItem.children.filter((childNavItem) => {
-          if ('path' in childNavItem) {
-            if (childNavItem.path === pathWithoutLocale) {
-              currentGroup = navItem
-            }
-            return true
-          }
-          return false
-        })
-      }
-      if ('path' in navItem) {
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-return -- Don't know how to fix warning
-        return [navItem]
-      }
-      return []
+  const args = useMemo(() => {
+    const filteredPageMap = pageMap.find(
+      (pageItem): pageItem is Folder => pageItem.kind === 'Folder' && pageItem.name === locale
+    )!.children
+    filteredPageMap.find((pageItem): pageItem is MetaJsonFile => pageItem.kind === 'Meta')!.data.index =
+      t('index.title')
+
+    const result = normalizePages({
+      list: filteredPageMap,
+      locale,
+      defaultLocale: defaultLocale,
+      route: fsPath,
     })
-    let pageNavItemIndex = 0
-    for (const pageNavItem of pageNavItems) {
-      if (pageNavItem.path === pathWithoutLocale) {
-        previousPage = pageNavItems[pageNavItemIndex - 1] ?? null
-        currentPage = pageNavItems[pageNavItemIndex] ?? null
-        nextPage = pageNavItems[pageNavItemIndex + 1] ?? null
-      }
-      pageNavItemIndex++
+
+    function removeNonExistedRoutes(items: Item[]): Item[] {
+      return items.reduce<Item[]>((acc, curr) => {
+        if (curr.route || curr.type === 'heading' || curr.type === 'separator') {
+          if (curr.children) {
+            curr.children = removeNonExistedRoutes(curr.children)
+          }
+          acc.push(curr)
+        }
+        return acc
+      }, [])
     }
+
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-return -- i don't know why it's complain
     return {
-      previousPage,
-      currentPage,
-      nextPage,
-      currentGroup: currentGroup as NavItemGroup | null,
+      ...result,
+      directories: removeNonExistedRoutes(result.directories),
+      flatDirectories: result.flatDirectories.filter(
+        (item) => item.type !== 'separator' && item.type !== 'heading' && item.route !== ''
+      ),
     }
-  }, [navItems, pathWithoutLocale])
+  }, [defaultLocale, fsPath, locale, pageMap, t])
 
   // Provide `markOutlineItem` to the `DocumentContext` so child `Heading` components can mark outline items as "in or above view" or not
   const [
     ,
     { add: markOutlineItemAsInOrAboveView, remove: markOutlineItemAsNotInOrAboveView, has: outlineItemIsInOrAboveView },
-  ] = useSet(new Set([]) as Set<string>)
+  ] = useSet(new Set<string>([]))
 
   const markOutlineItem = useCallback(
     (id: string, inOrAboveView: boolean) => {
@@ -126,40 +140,35 @@ export function MDXLayout({ children, pageOpts, pageProps }: NextraThemeLayoutPr
     },
     [markOutlineItemAsInOrAboveView, markOutlineItemAsNotInOrAboveView]
   )
-
   // Compute `highlightedOutlineItemId` for the `DocumentContext` based on outline items that have been marked as "in or above view"
   const highlightedOutlineItemId = useMemo(() => {
     let _highlightedOutlineItemId = null
-    for (const outlineItem of outline) {
-      if (outlineItem.level <= 3 && outlineItemIsInOrAboveView(outlineItem.id)) {
-        _highlightedOutlineItemId = outlineItem.id
+    for (const heading of headings) {
+      if (heading.depth <= 3 && outlineItemIsInOrAboveView(heading.id)) {
+        _highlightedOutlineItemId = heading.id
       }
     }
     return _highlightedOutlineItemId
-  }, [outline, outlineItemIsInOrAboveView])
+  }, [headings, outlineItemIsInOrAboveView])
 
   let seo: NextSeoProps = {
-    title: `${frontmatter.title ? `${frontmatter.title} - ` : ''}The Graph Docs`,
+    title: `${frontMatter.title ? `${frontMatter.title} - ` : ''}The Graph Docs`,
   }
-  if (frontmatter.description) {
-    seo.description = frontmatter.description
+  if (frontMatter.description) {
+    seo.description = frontMatter.description
   }
-  if (frontmatter.socialImage) {
+  if (frontMatter.socialImage) {
     seo.openGraph = {
-      images: [
-        {
-          url: frontmatter.socialImage,
-        },
-      ],
+      images: [{ url: frontMatter.socialImage }],
     }
   }
-  if (frontmatter.seo) {
-    seo = merge(seo, frontmatter.seo)
+  if (frontMatter.seo) {
+    seo = merge(seo, frontMatter.seo)
   }
 
   return (
-    <NavContext.Provider value={{ pagePath, navItems, previousPage, currentPage, nextPage, currentGroup }}>
-      <DocumentContext.Provider value={{ frontmatter, outline, markOutlineItem, highlightedOutlineItemId }}>
+    <NavContext.Provider value={{ filePath, ...args }}>
+      <DocumentContext.Provider value={{ frontMatter, headings, markOutlineItem, highlightedOutlineItemId }}>
         <NextSeo {...seo} />
 
         <div
@@ -191,12 +200,13 @@ export function MDXLayout({ children, pageOpts, pageProps }: NextraThemeLayoutPr
             </div>
 
             <article className="graph-docs-content" sx={mdxStyles}>
-              {currentGroup ? (
+              {args.activePath.length > 1 ? (
                 <div className="graph-docs-current-group" sx={{ display: 'none' }}>
-                  {currentGroup.title}
+                  {/* eslint-disable-next-line @typescript-eslint/no-unsafe-return -- i don't know why it's complain */}
+                  {args.activePath.map((item) => item.title).join(' > ')}
                 </div>
               ) : null}
-              {frontmatter.title ? <Heading.H1>{frontmatter.title}</Heading.H1> : null}
+              {frontMatter.title ? <Heading.H1>{frontMatter.title}</Heading.H1> : null}
               <MDXProvider components={mdxComponents}>{children}</MDXProvider>
             </article>
 

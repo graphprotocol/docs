@@ -7,17 +7,22 @@ import { useI18n } from '@/i18n'
 import { NavContext } from '@/layout'
 
 export const MDXLayoutPagination = () => {
-  const { previousPage, nextPage } = useContext(NavContext)!
+  const { flatDirectories, activeIndex } = useContext(NavContext)
   const { t } = useI18n()
+
+  const prev = flatDirectories[activeIndex - 1]
+  const next = flatDirectories[activeIndex + 1]
+
+  if (!prev && !next) return null
 
   return (
     <div>
       <Divider diamonds />
       <Flex.Row justify="space-between" sx={{ mt: Spacing['32px'], overflow: 'hidden' }}>
         <div>
-          {previousPage ? (
+          {prev ? (
             <Link
-              href={previousPage.path}
+              href={prev.route}
               sx={{
                 display: 'block',
                 py: Spacing['24px'],
@@ -46,16 +51,16 @@ export const MDXLayoutPagination = () => {
                     transition: buildTransition('COLORS'),
                   }}
                 >
-                  {previousPage.title}
+                  {prev.title}
                 </Text>
               </Flex.Column>
             </Link>
           ) : null}
         </div>
         <div>
-          {nextPage ? (
+          {next ? (
             <Link
-              href={nextPage.path}
+              href={next.route}
               sx={{
                 display: 'block',
                 py: Spacing['24px'],
@@ -84,7 +89,7 @@ export const MDXLayoutPagination = () => {
                     transition: buildTransition('COLORS'),
                   }}
                 >
-                  {nextPage.title}
+                  {next.title}
                 </Text>
               </Flex.Column>
             </Link>

@@ -130,13 +130,15 @@ const DocSearchHit = ({ hit, children }: PropsWithChildren<{ hit: { url: string 
 
 export const MDXLayoutNav = ({ mobile = false }: { mobile?: boolean }) => {
   const router = useRouter()
-  const { navItems, currentPage } = useContext(NavContext)!
+  const { activePath, directories } = useContext(NavContext)!
   const { t, translations, locale } = useI18n()
 
   const Wrapper = mobile ? MobileWrapper : DesktopWrapper
 
+  const activePage = activePath.at(-1) || { route: '', title: '' }
+
   return (
-    <Wrapper {...(mobile ? { title: currentPage?.title } : {})}>
+    <Wrapper {...(mobile ? { title: activePage.title } : {})}>
       <div sx={{ mb: Spacing['16px'] }}>
         <DocSearch
           apiKey={process.env.ALGOLIA_API_KEY ?? ''}
@@ -172,34 +174,34 @@ export const MDXLayoutNav = ({ mobile = false }: { mobile?: boolean }) => {
         />
       </div>
       <NavTree textProps={mobile ? { weight: 'REGULAR', size: '16px' } : undefined}>
-        {navItems.map((navItem, navItemIndex) => (
-          <Fragment key={navItemIndex}>
+        {directories.map((pageItem, pageItemIndex) => (
+          <Fragment key={pageItemIndex}>
             {(() => {
-              if ('divider' in navItem) {
+              if (pageItem.type === 'separator') {
                 return <NavTree.Divider sx={mobile ? { mx: Spacing['24px'], my: Spacing['16px'] } : {}} />
               }
-              if ('heading' in navItem) {
-                return <NavTree.Heading>{navItem.heading}</NavTree.Heading>
+              if (pageItem.type === 'heading') {
+                return <NavTree.Heading>{pageItem.title}</NavTree.Heading>
               }
-              if ('children' in navItem) {
+              if ('children' in pageItem && pageItem.children) {
                 return (
-                  <NavTree.Group active={currentPage?.path.startsWith(`${navItem.path}/`)}>
+                  <NavTree.Group active={activePage.route.startsWith(`${pageItem.route}/`)}>
                     <NavTree.Group.Heading
                       sx={mobile ? { py: 0 } : {}}
                       buttonProps={{ sx: mobile ? {} : { paddingInlineEnd: 0 } }}
                     >
-                      {navItem.title}
+                      {pageItem.title}
                     </NavTree.Group.Heading>
                     <NavTree.Group.Content>
-                      {navItem.children.map((childNavItem, childNavItemIndex) => (
+                      {pageItem.children.map((childItem, childItemIndex) => (
                         <NavTree.Item
-                          key={childNavItemIndex}
-                          href={childNavItem.path}
-                          active={currentPage?.path === childNavItem.path}
+                          key={childItemIndex}
+                          href={childItem.route}
+                          active={activePage.route === childItem.route}
                           sx={mobile ? { py: 0 } : {}}
                           linkProps={{ sx: mobile ? {} : { paddingInlineEnd: 0 } }}
                         >
-                          {childNavItem.title}
+                          {childItem.title}
                         </NavTree.Item>
                       ))}
                     </NavTree.Group.Content>
@@ -208,8 +210,8 @@ export const MDXLayoutNav = ({ mobile = false }: { mobile?: boolean }) => {
               }
               return (
                 <NavTree.Item
-                  href={navItem.path}
-                  active={currentPage?.path === navItem.path}
+                  href={pageItem.route}
+                  active={activePage.route === pageItem.route}
                   sx={mobile ? { py: 0 } : {}}
                   linkProps={{ sx: mobile ? {} : { paddingInlineEnd: 0 } }}
                   diamondProps={{
@@ -222,7 +224,7 @@ export const MDXLayoutNav = ({ mobile = false }: { mobile?: boolean }) => {
                       : {},
                   }}
                 >
-                  {navItem.title}
+                  {pageItem.title}
                 </NavTree.Item>
               )
             })()}

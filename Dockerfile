@@ -3,7 +3,7 @@ FROM node:18-alpine as builder
 ENV PNPM_HOME="/usr/bin"
 
 RUN apk add --no-cache git
-RUN npm install -g pnpm
+RUN npm install -g pnpm@7
 
 WORKDIR /app
 

@@ -2,7 +2,6 @@ import merge from 'lodash/merge'
 import mixpanel from 'mixpanel-browser'
 import { AppProps } from 'next/app'
 import NextLink from 'next/link'
-import { useRouter } from 'next/router'
 import { DefaultSeo, DefaultSeoProps } from 'next-seo'
 import { useMemo } from 'react'
 
@@ -60,8 +59,7 @@ const DefaultSeoWithLocale = () => {
   return <DefaultSeo {...seoProps} />
 }
 
-const MyApp = ({ Component, pageProps }: AppProps) => {
-  const router = useRouter()
+const MyApp = ({ Component, pageProps, router }: AppProps) => {
   const localeSwitcher = useMemo(() => <LocaleSwitcher key="localeSwitcher" />, [])
 
   return (
