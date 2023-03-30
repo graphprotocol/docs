@@ -1,0 +1,239 @@
+---
+title: आरवीव पर सब-ग्राफ्र्स बनाना
+---
+
+> ग्राफ नोड और होस्टेड सेवाओं पर आरवीव अभी बीटा डेवलपमेंट फेज में है | आरवीव सब ग्राफ बनाते वक़्त किसी भी प्रकार की सहायता हेतु [ डिस्कॉर्ड ](https://discord.gg/rC8rBuRtbH) पर संपर्क करें |
+
+इस गाइड में आप आरवीव ब्लॉकचेन पर सब ग्राफ्स बनाना और डेप्लॉय करना सीखेंगे!
+
+## आरवीव क्या है?
+
+आरवीव प्रोटोकॉल डेवेलपर्स को स्थायी तौर पर डाटा स्टोर करने की क्षमता देता है जो कि IPFS और आरवीव के बीच का मुख्या अंतर भी है, जहाँ IPFS में इस क्षमता की कमी है, वहीँ आरवीवे पर फाइल्स डिलीट या बदली नहीं जा सकती |
+
+अरवीव द्वारा पहले से ही कई लाइब्रेरी विभिन्न प्रोग्रामिंग भाषाओं में विकशित की गई हैं| अधिक जानकारी के लिए आप इनका रुख कर सकते हैं:
+
+- [अरविकी](https://arwiki.wiki/#/en/main)
+- [आरवीवे रिसोर्सेज](https://www.arweave.org/build)
+
+## आरवीवे सब ग्राफ्स क्या हैं?
+
+द ग्राफ की सहायता से आप कस्टम APIs बना सकते हैं जिन्हे सब ग्राफ्स कहा जाता है| सब ग्राफ्स का इस्तेमाल इंडेक्सर्स (सर्वर ऑपेरटर) को यह बताने के लिए इस्तेमाल होता है की ब्लॉकचेन पर कौन सा डाटा इंडेक्स करके अपने सर्वर पर सेव करना है जिससे आप [ GraphQL ](https://graphql.org/) का इस्तेमाल करके कभी भी डाटा क्वेरी कर सकें|
+
+ग्राफ नोड अब आरवीव प्रोटोकॉल पर डाटा इंडेक्स करने में सक्षम है| फिलाहल इंडेक्सिंग केवल आरवीवे को ब्लॉकचेन (ब्लॉक एवं ट्रांसैक्शन) के तौर पर हो रही है, फिलहाल यह फाइल्स को इंडेक्स नहीं कर रहा|
+
+## एक आरवीव सब ग्राफ बनाना
+
+आरवीवे पर सब ग्राफ बनाने के लिए हमे दो पैकेजेस की जरूरत है:
+
+1. `@graphprotocol/graph-cli` वर्जन 0.30.2 या ऊपर - यह एक कमांड-लाइन टूल है जिसका इस्तेमाल सब ग्राफ्स बनाने एवं डेप्लॉय करने के लिए होता है| `npm` से डाउनलोड करने के लिए [यहां क्लिक करें|](https://www.npmjs.com/package/@graphprotocol/graph-cli)
+2. `@graphprotocol/graph-ts` वर्जन 0.27.0 से ऊपर - यह विशिष्ट सब ग्राफ्स के लिए लाइब्रेरी है| `npm` से डाउनलोड करने के लिए [यहां क्लिक करें](https://www.npmjs.com/package/@graphprotocol/graph-ts) |
+
+## सब ग्राफ के कॉम्पोनेन्ट
+
+सब ग्राफ के तीन कॉम्पोनेन्ट होते हैं:
+
+### 1. मैनिफेस्ट - `subgraph.yaml`
+
+डाटा का स्रोत्र और उनको प्रोसेस करने के बारे में बताता है| आरवीव एक नए प्रकार का डाटा सोर्स है|
+
+### 2. स्कीमा - `schema.graphql`
+
+यहाँ आप बताते हैं की आप कौन सा डाटा इंडेक्सिंग के बाद क्वेरी करना चाहते हैं| दरसअल यह एक API के मॉडल जैसा है, जहाँ मॉडल द्वारा रिक्वेस्ट बॉडी का स्ट्रक्चर परिभाषित किया जाता है|
+
+आरवीव सब ग्राफ्स के लिए अनिवार्य चीज़ें इस [डॉक्यूमेंटेशन](/developing/creating-a-subgraph/#the-graphql-schema) में है |
+
+### 3. असेंबली स्क्रिप्ट मप्पिंग्स - `mapping.ts`
+
+यह किसी के द्वारा इस्तेमाल किये जा रहे डाटा सोर्स से डाटा को पुनः प्राप्त करने और स्टोर करने के लॉजिक को बताता है| डाटा अनुवादित होकर आपके द्वारा सूचीबद्ध स्कीमा के अनुसार स्टोर हो जाता है|
+
+सब ग्राफ को बनाते वक़्त दो मुख्य कमांड हैं:
+
+```
+$ graph codegen # generates types from the schema file identified in the manifest
+$ graph build # generates Web Assembly from the AssemblyScript files, and prepares all the subgraph files in a /build folder
+```
+
+## सब ग्राफ मैनिफेस्ट की परिभाषा
+
+सब ग्राफ मैनिफेस्ट `subgraph.yaml` द्वारा सब-ग्राफ के डाटा सोर्स, ट्रिगर ऑफ़ इंटरेस्ट, और इन ट्रिगर के जवाब में सिस्टेमाल होने वाले फंक्शन्स की पहचान करता है| आरवीव सब-ग्राफ के लिए सब-ग्राफ मैनिफेस्ट का उदाहरण नीचे देखें:
+
+```yaml
+specVersion: 0.0.5
+description: Arweave Blocks Indexing
+schema:
+  file: ./schema.graphql # link to the schema file
+dataSources:
+  - kind: arweave
+    name: arweave-blocks
+    network: arweave-mainnet # The Graph only supports Arweave Mainnet
+    source:
+      owner: 'ID-OF-AN-OWNER' # The public key of an Arweave wallet
+      startBlock: 0 # set this to 0 to start indexing from chain genesis
+    mapping:
+      apiVersion: 0.0.5
+      language: wasm/assemblyscript
+      file: ./src/blocks.ts # link to the file with the Assemblyscript mappings
+      entities:
+        - Block
+        - Transaction
+      blockHandlers:
+        - handler: handleBlock # the function name in the mapping file
+      transactionHandlers:
+        - handler: handleTx # the function name in the mapping file
+```
+
+- आरवीव सब-ग्राफ्स के नए प्रकार का डाटा सोर्स लाते हैं (`आरवीव`)
+- नेटवर्क को ग्राफ नोड होस्ट करने वाले नेटवर्क के अनुरूप होना चाहिए| होस्टेड सर्विस पर आरवीव का मेन नेट `arweave-mainnet` है
+- अरवीव डाटा सोर्स द्वारा एक वैकल्पिक source.owner फील्ड लाया गया, जो की एक आरवीव वॉलेट का मपब्लिक key है|
+
+आरवीव डाटा सोर्स द्वारा दो प्रकार के हैंडलर्स उपयोग किये जा सकते हैं:
+
+- `blockHandlers` - यह हर नए आरवीव ब्लॉक पर चलता है| किसी नए source.owner की जरूरत नहीं है|
+- `transactionHandlers` - हर ट्रांसक्शन पर चलता है जहाँ डाटा सोर्स का मालिक `source.owner` हो| फिलहाल `transactionHandlers` के लिए एक ओनर की जरूरत होती है, यदि उपयोगकर्ताओं को सभी ट्रांसक्शन्स प्रोसेस करना है तो उन्हें "" `source.owner` की तरह देना(पास करना) होगा|
+
+> यहां source.owner ओनर का एड्रेस या उनका पब्लिक की हो सकता है|
+
+> ट्रांसक्शन आरवीव परमावेब के लिए निर्माण खंड (बिल्डिंग ब्लॉक्स) की तरह होते हैं और एन्ड-यूजर के द्वारा बनाये गए ऑब्जेक्ट होते हैं|
+
+> नोट: [Bundlr](https://bundlr.network/) ट्रांसक्शन अभी सपोर्ट नहीं किये जाते हैं|
+
+## स्कीमा की परिभाषा
+
+स्कीमा डेफिनिशन के द्वारा बनने वाले सब-ग्राफ डेटाबेस और उनकी इकाइयों के बीच के रिश्ते के स्ट्रक्चर को बताता है| यह मूल डाटा सोर्स से अज्ञेय है| सब-ग्राफ स्कीमा परिभाषा पर अधिक जानकारी [यहाँ](/developing/creating-a-subgraph/#the-graphql-schema) हैं|
+
+## असेंबली स्क्रिप्ट मैप्पिंग्स
+
+इवेंट्स को प्रोसेस करने के लिए हैंडलर्स [असेंबली स्क्रिप्ट](https://www.assemblyscript.org/) में लिखे गए हैं|
+
+आरवीव इंडेक्सिंग आरवीव-विशेष डाटा टाइप्स को [AssemblyScript API](/developing/assemblyscript-api/) में लाती है|
+
+```tsx
+class Block {
+  timestamp: u64
+  lastRetarget: u64
+  height: u64
+  indepHash: Bytes
+  nonce: Bytes
+  previousBlock: Bytes
+  diff: Bytes
+  hash: Bytes
+  txRoot: Bytes
+  txs: Bytes[]
+  walletList: Bytes
+  rewardAddr: Bytes
+  tags: Tag[]
+  rewardPool: Bytes
+  weaveSize: Bytes
+  blockSize: Bytes
+  cumulativeDiff: Bytes
+  hashListMerkle: Bytes
+  poa: ProofOfAccess
+}
+
+class Transaction {
+  format: u32
+  id: Bytes
+  lastTx: Bytes
+  owner: Bytes
+  tags: Tag[]
+  target: Bytes
+  quantity: Bytes
+  data: Bytes
+  dataSize: Bytes
+  dataRoot: Bytes
+  signature: Bytes
+  reward: Bytes
+}
+```
+
+ब्लॉक हैंडलर्स एक `ब्लॉक` प्राप्त करते हाँ, वहीँ ट्रांसक्शन्स `ट्रांसक्शन` हैं|
+
+आरवीवे सब-ग्राफ की मैपिंग लिखना एथेरेयम के लिए सब-ग्राफ लिखने जैसा ही है| अधिक जानकारी [यहां](/developing/creating-a-subgraph/#writing-mappings) क्लिक करें|
+
+## Deploying an Arweave Subgraph on the Hosted Service
+
+एक बार होस्टेड सर्विस डैशबोर्ड पर सब-ग्राफ बन जाने के बाद उसको `graph deploy` CLI कमांड से डेप्लॉय किया जा सकता है|
+
+```bash
+graph deploy --node https://api.thegraph.com/deploy/ --ipfs https://api.thegraph.com/ipfs/ --access-token <your-access-token>
+```
+
+## आरवीव सब-ग्राफ क्वेरी करना
+
+आरवीव सब-ग्राफ्स के लिए GraphQL एन्ड पॉइंट्स स्कीमा की परिभाषा के अनुरूप, API इंटरफ़ेस के अनुसार बनाये जाते हैं| अधिक जानकारी के लिए [GraphQL API documentation](/querying/graphql-api/) पर जाएं|
+
+## सब-ग्राफ के उदाहरण
+
+सहायता के एक सब-ग्राफ का उदाहरण
+
+- [आरवीव के लिए उदाहरण सब-ग्राफ](https://github.com/graphprotocol/example-subgraphs/tree/main/arweave/blocks-transactions)
+
+## सामान्य प्रश्न
+
+### क्या एक सब-ग्राफ आरवीव और बाकी चेन्स को इंडेक्स कर सकता है?
+
+नहीं, एक सब-ग्राफ केवल एक चेन/नेटवर्क से डाटा सोर्स को सपोर्ट कर सकता है
+
+### क्या मैं आरवीव पर स्टोर की फाइल्स को इंडेक्स कर सकता हूँ?
+
+वर्तमान में द ग्राफ आरवीव को केवल एक ब्लॉकचेन की तरह इंडेक्स करता है (उसके ब्लॉक्स और ट्रांसक्शन्स)|
+
+### क्या मैं अपने सब-ग्राफ में Bundlr बंडल्स को पहचान सकता हूँ?
+
+यह वर्तमान में सपोर्टेड नहीं है|
+
+### क्या मैं किसी विशिष्ट अकाउंट से ट्रांसक्शन्स छाँट सकता हूँ?
+
+एक यूजर का पब्लिक की या अकाउंट एड्रेस source.owner हो सकता है
+
+### वर्तमान एन्क्रिप्शन फॉर्मेट क्या है?
+
+आमतौर पर डाटा को मैप्पिंग्स में बाइट्स की तरह पास किया जाता है, जो की यदि सब-ग्राफ में सीधे स्टोर किया जाये तो सब-ग्राफ में `hex` फॉर्मेट में वापस हो जाते हैं (उदाहरण: ब्लॉक और ट्रांसक्शन हाशेस). आप `base64` या `base64 URL` सेफ फॉर्मेट में कन्वर्ट करना चाह सकते हैं, ताकि ब्लॉक एक्सप्लोरर्स जैसे की [Arweave Explorer](https://viewblock.io/arweave/) में दिखाए जाने वाली जानकारी से मेल खा सकें|
+
+निम्न `bytesToBase64(bytes: Uint8Array, urlSafe: boolean): string` हेल्पर फंक्शन का उपयोग किया जा सकता है और यह `graph-ts` में जोड़ा जायेगा|
+
+```
+const base64Alphabet = [
+    "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M",
+    "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z",
+    "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m",
+    "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z",
+    "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "+", "/"
+];
+
+const base64UrlAlphabet = [
+    "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M",
+    "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z",
+    "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m",
+    "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z",
+    "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "-", "_"
+];
+
+function bytesToBase64(bytes: Uint8Array, urlSafe: boolean): string {
+    let alphabet = urlSafe? base64UrlAlphabet : base64Alphabet;
+
+    let result = '', i: i32, l = bytes.length;
+    for (i = 2; i < l; i += 3) {
+        result += alphabet[bytes[i - 2] >> 2];
+        result += alphabet[((bytes[i - 2] & 0x03) << 4) | (bytes[i - 1] >> 4)];
+        result += alphabet[((bytes[i - 1] & 0x0F) << 2) | (bytes[i] >> 6)];
+        result += alphabet[bytes[i] & 0x3F];
+    }
+    if (i === l + 1) { // 1 octet yet to write
+        result += alphabet[bytes[i - 2] >> 2];
+        result += alphabet[(bytes[i - 2] & 0x03) << 4];
+        if (!urlSafe) {
+            result += "==";
+        }
+    }
+    if (!urlSafe && i === l) { // 2 octets yet to write
+        result += alphabet[bytes[i - 2] >> 2];
+        result += alphabet[((bytes[i - 2] & 0x03) << 4) | (bytes[i - 1] >> 4)];
+        result += alphabet[(bytes[i - 1] & 0x0F) << 2];
+        if (!urlSafe) {
+            result += "=";
+        }
+    }
+    return result;
+}
+```
