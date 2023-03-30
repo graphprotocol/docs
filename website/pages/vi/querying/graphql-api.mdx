@@ -2,15 +2,15 @@
 title: GraphQL API
 ---
 
-Hướng dẫn này giải thích API truy vấn GraphQL được sử dụng cho Giao thức The Graph.
+This guide explains the GraphQL Query API that is used for the Graph Protocol.
 
-## Các truy vấn
+## Queries
 
-Trong lược đồ subgraph của bạn, bạn xác định các loại được gọi là `Entities`. Với mỗi loại `Entity`, một trường `entity` và `entities` sẽ được tạo ở loại `Query` cấp cao nhất. Lưu ý là `query` không cần phải được bao gồm ở đầu truy vấn `graphql` khi sử dụng The Graph.
+In your subgraph schema you define types called `Entities`. For each `Entity` type, an `entity` and `entities` field will be generated on the top-level `Query` type. Note that `query` does not need to be included at the top of the `graphql` query when using The Graph.
 
-#### Các ví dụ
+#### Examples
 
-Truy vấn cho một thực thể `Token` được xác định trong lược đồ của bạn:
+Query for a single `Token` entity defined in your schema:
 
 ```graphql
 {
@@ -21,9 +21,9 @@ Truy vấn cho một thực thể `Token` được xác định trong lược đ
 }
 ```
 
-**Lưu ý:** Khi truy vấn một thực thể, trường `id` là bắt buộc và nó phải là một chuỗi (string).
+**Note:** When querying for a single entity, the `id` field is required and it must be a string.
 
-Truy vấn tất cả các thực thể `Token`:
+Query all `Token` entities:
 
 ```graphql
 {
@@ -34,11 +34,11 @@ Truy vấn tất cả các thực thể `Token`:
 }
 ```
 
-### Sắp xếp
+### Sorting
 
-Khi truy vấn một tập hợp, tham số `orderBy` có thể được sử dụng để sắp xếp theo một thuộc tính cụ thể. Ngoài ra, `orderDirection` có thể được sử dụng để chỉ định hướng sắp xếp, `asc` tăng dần hoặc `desc` giảm dần.
+When querying a collection, the `orderBy` parameter may be used to sort by a specific attribute. Additionally, the `orderDirection` can be used to specify the sort direction, `asc` for ascending or `desc` for descending.
 
-#### Ví dụ
+#### Example
 
 ```graphql
 {
@@ -49,17 +49,36 @@ Khi truy vấn một tập hợp, tham số `orderBy` có thể được sử d�
 }
 ```
 
-### Phân trang
+#### Example for nested entity sorting
 
-Khi truy vấn một tập hợp, tham số `first` có thể được sử dụng để phân trang từ đầu tập hợp. Cần lưu ý rằng thứ tự sắp xếp mặc định là theo ID theo thứ tự chữ và số tăng dần, không phải theo thời gian tạo.
+As of Graph Node [`v0.30.0`](https://github.com/graphprotocol/graph-node/releases/tag/v0.30.0) entities can be sorted on the basis of nested entities.
 
-Hơn nữa, tham số `skip` có thể được sử dụng để bỏ qua các thực thể và phân trang. ví dụ. `first:100` hiển thị 100 thực thể đầu tiên và `first:100, skip: 100` hiển thị 100 thực thể tiếp theo.
+In the following example, we sort the tokens by the name of their owner:
 
-Các truy vấn nên tránh sử dụng các giá trị `skip` rất lớn vì chúng thường hoạt động kém. Để truy xuất một số lượng lớn các mục, tốt hơn nhiều nên trang qua các thực thể dựa trên một thuộc tính như được hiển thị trong ví dụ vừa rồi.
+```graphql
+{
+  tokens(orderBy: owner__name, orderDirection: asc) {
+    id
+    owner {
+      name
+    }
+  }
+}
+```
 
-#### Ví dụ
+> Currently you can sort by one-level deep `String` or `ID` types on `@entity` and `@derivedFrom` fields. Unfortunately, [sorting by interfaces on one level-deep entities](https://github.com/graphprotocol/graph-node/pull/4058), sorting by fields which are arrays and nested entities is not yet supported.
 
-Truy vấn 10 token đầu tiên:
+### Pagination
+
+When querying a collection, the `first` parameter can be used to paginate from the beginning of the collection. It is worth noting that the default sort order is by ID in ascending alphanumeric order, not by creation time.
+
+Further, the `skip` parameter can be used to skip entities and paginate. e.g. `first:100` shows the first 100 entities and `first:100, skip:100` shows the next 100 entities.
+
+Queries should avoid using very large `skip` values since they generally perform poorly. For retrieving a large number of items, it is much better to page through entities based on an attribute as shown in the last example.
+
+#### Example using `first`
+
+Query the first 10 tokens:
 
 ```graphql
 {
@@ -70,11 +89,11 @@ Truy vấn 10 token đầu tiên:
 }
 ```
 
-Để truy vấn các nhóm thực thể ở giữa một tập hợp, tham số `skip` có thể được sử dụng cùng với tham số `first` để bỏ qua một số thực thể được chỉ định bắt đầu từ đầu của bộ sưu tập.
+To query for groups of entities in the middle of a collection, the `skip` parameter may be used in conjunction with the `first` parameter to skip a specified number of entities starting at the beginning of the collection.
 
-#### Ví dụ
+#### Example using `first` and `skip`
 
-Truy vấn 10 thực thể `Token`, bù 10 vị trí từ đầu bộ sưu tập:
+Query 10 `Token` entities, offset by 10 places from the beginning of the collection:
 
 ```graphql
 {
@@ -85,9 +104,9 @@ Truy vấn 10 thực thể `Token`, bù 10 vị trí từ đầu bộ sưu tập
 }
 ```
 
-#### Ví dụ
+#### Example using `first` and `id_ge`
 
-Nếu một máy khách cần truy xuất một số lượng lớn các thực thể, thì việc truy vấn cơ sở trên một thuộc tính và lọc theo thuộc tính đó sẽ hiệu quả hơn nhiều. Ví dụ: một máy khách sẽ truy xuất một số lượng lớn các token bằng cách sử dụng truy vấn này:
+If a client needs to retrieve a large number of entities, it is much more performant to base queries on an attribute and filter by that attribute. For example, a client would retrieve a large number of tokens using this query:
 
 ```graphql
 query manyTokens($lastID: String) {
@@ -98,15 +117,15 @@ query manyTokens($lastID: String) {
 }
 ```
 
-Lần đầu tiên, nó sẽ gửi truy vấn với `lastID = ""`, và đối với các yêu cầu tiếp theo sẽ được thiết lập `lastID` đến thuộc tính `id` của thực thể cuối cùng trong yêu cầu trước đó. Cách tiếp cận này sẽ hoạt động tốt hơn đáng kể so với việc sử dụng giá trị `skip` ngày càng tăng.
+The first time, it would send the query with `lastID = ""`, and for subsequent requests would set `lastID` to the `id` attribute of the last entity in the previous request. This approach will perform significantly better than using increasing `skip` values.
 
-### Lọc
+### Filtering
 
-Bạn có thể sử dụng tham số `where` trong các truy vấn của mình để lọc các thuộc tính khác nhau. Bạn có thể lọc theo nhiều giá trị trong tham số `where`.
+You can use the `where` parameter in your queries to filter for different properties. You can filter on mulltiple values within the `where` parameter.
 
-#### Ví dụ
+#### Example using `where`
 
-Các thử thách truy vấn với kết quả `failed`:
+Query challenges with `failed` outcome:
 
 ```graphql
 {
@@ -120,9 +139,9 @@ Các thử thách truy vấn với kết quả `failed`:
 }
 ```
 
-Bạn có thể sử dụng các hậu tố như `_gt`, `_lte` để so sánh giá trị:
+You can use suffixes like `_gt`, `_lte` for value comparison:
 
-#### Ví dụ
+#### Example for range filtering
 
 ```graphql
 {
@@ -134,9 +153,98 @@ Bạn có thể sử dụng các hậu tố như `_gt`, `_lte` để so sánh gi
 }
 ```
 
-Danh sách đầy đủ các hậu tố tham số:
+#### Example for block filtering
+
+You can also filter entities by the `_change_block(number_gte: Int)` - this filters entities which were updated in or after the specified block.
+
+This can be useful if you are looking to fetch only entities which have changed, for example since the last time you polled. Or alternatively it can be useful to investigate or debug how entities are changing in your subgraph (if combined with a block filter, you can isolate only entities that changed in a specific block).
 
 ```graphql
+{
+  applications(where: { _change_block: { number_gte: 100 } }) {
+    id
+    whitelisted
+    deposit
+  }
+}
+```
+
+#### Example for nested entity filtering
+
+Filtering on the basis of nested entities is possible in the fields with the `_` suffix.
+
+This can be useful if you are looking to fetch only entities whose child-level entities meet the provided conditions.
+
+```graphql
+{
+  challenges(where: { application_: { id: 1 } }) {
+    challenger
+    outcome
+    application {
+      id
+    }
+  }
+}
+```
+
+#### Logical operators
+
+As of Graph Node [`v0.30.0`](https://github.com/graphprotocol/graph-node/releases/tag/v0.30.0) you can group multiple parameters in the same `where` argument using the `and` or the `or` operators to filter results based on more than one criteria.
+
+##### `AND` Operator
+
+In the following example, we are filtering for challenges with `outcome` `succeeded` and `number` greater than or equal to `100`.
+
+```graphql
+{
+  challenges(where: { and: [{ number_gte: 100 }, { outcome: "succeeded" }] }) {
+    challenger
+    outcome
+    application {
+      id
+    }
+  }
+}
+```
+
+> **Syntactic sugar:** You can simplify the above query by removing the `and` operator by passing a sub-expression separated by commas.
+> 
+> ```graphql
+> {
+>   challenges(where: { number_gte: 100, outcome: "succeeded" }) {
+>     challenger
+>     outcome
+>     application {
+>       id
+>     }
+>   }
+> }
+> ```
+
+##### `OR` Operator
+
+In the following example, we are filtering for challenges with `outcome` `succeeded` or `number` greater than or equal to `100`.
+
+```graphql
+{
+  challenges(where: { or: [{ number_gte: 100 }, { outcome: "succeeded" }] }) {
+    challenger
+    outcome
+    application {
+      id
+    }
+  }
+}
+```
+
+> **Note**: When constructing queries, it is important to consider the performance impact of using the `or` operator. While `or` can be a useful tool for broadening search results, it can also have significant costs. One of the main issues with `or` is that it can cause queries to slow down. This is because `or` requires the database to scan through multiple indexes, which can be a time-consuming process. To avoid these issues, it is recommended that developers use and operators instead of or whenever possible. This allows for more precise filtering and can lead to faster, more accurate queries.
+
+#### All Filters
+
+Full list of parameter suffixes:
+
+```
+_
 _not
 _gt
 _lt
@@ -145,24 +253,36 @@ _lte
 _in
 _not_in
 _contains
+_contains_nocase
 _not_contains
+_not_contains_nocase
 _starts_with
+_starts_with_nocase
 _ends_with
+_ends_with_nocase
 _not_starts_with
+_not_starts_with_nocase
 _not_ends_with
+_not_ends_with_nocase
 ```
 
-Xin lưu ý rằng một số hậu tố chỉ được hỗ trợ cho các loại cụ thể. Ví dụ, `Boolean` chỉ hỗ trợ `_not`, `_in`, và `_not_in`.
+> Please note that some suffixes are only supported for specific types. For example, `Boolean` only supports `_not`, `_in`, and `_not_in`, but `_` is available only for object and interface types.
 
-### Các truy vấn du hành thời gian
+In addition, the following global filters are available as part of `where` argument:
 
-Bạn có thể truy vấn trạng thái của các thực thể không chỉ cho khối mới nhất, theo mặc định, mà còn cho một khối tùy ý trong quá khứ. Khối mà tại đó truy vấn sẽ xảy ra có thể được chỉ định bằng số khối của nó hoặc hàm băm khối của nó bằng cách bao gồm đối số `block` trong các trường cấp cao nhất của truy vấn.
+```gr
+_change_block(number_gte: Int)
+```
 
-Kết quả của một truy vấn như vậy sẽ không thay đổi theo thời gian, tức là, truy vấn tại một khối trước đây nhất định sẽ trả về cùng một kết quả bất kể nó được thực thi khi nào, ngoại trừ trường hợp bạn truy vấn tại một khối rất gần với phần đầu của Ethereum chuỗi, kết quả có thể thay đổi nếu khối đó hóa ra không nằm trên chuỗi chính và chuỗi được tổ chức lại. Khi một khối có thể được coi là cuối cùng, kết quả của truy vấn sẽ không thay đổi.
+### Time-travel queries
 
-Lưu ý rằng việc triển khai hiện tại vẫn phải chịu một số hạn chế nhất định có thể vi phạm những người được bảo đảm này. Việc triển khai không phải lúc nào cũng có thể cho biết rằng một hàm băm khối nhất định hoàn toàn không nằm trên chuỗi chính hoặc kết quả của một truy vấn theo hàm băm khối cho một khối chưa thể được coi là cuối cùng có thể bị ảnh hưởng bởi việc tổ chức lại khối chạy đồng thời với truy vấn. Chúng không ảnh hưởng đến kết quả của các truy vấn theo hàm băm khối khi khối là cuối cùng và được biết là nằm trên chuỗi chính. [Vấn đề này](https://github.com/graphprotocol/graph-node/issues/1405) giải thích chi tiết những hạn chế này là gì.
+You can query the state of your entities not just for the latest block, which is the default, but also for an arbitrary block in the past. The block at which a query should happen can be specified either by its block number or its block hash by including a `block` argument in the toplevel fields of queries.
 
-#### Ví dụ
+The result of such a query will not change over time, i.e., querying at a certain past block will return the same result no matter when it is executed, with the exception that if you query at a block very close to the head of the chain, the result might change if that block turns out to not be on the main chain and the chain gets reorganized. Once a block can be considered final, the result of the query will not change.
+
+Note that the current implementation is still subject to certain limitations that might violate these gurantees. The implementation can not always tell that a given block hash is not on the main chain at all, or that the result of a query by block hash for a block that can not be considered final yet might be influenced by a block reorganization running concurrently with the query. They do not affect the results of queries by block hash when the block is final and known to be on the main chain. [This issue](https://github.com/graphprotocol/graph-node/issues/1405) explains what these limitations are in detail.
+
+#### Example
 
 ```graphql
 {
@@ -176,9 +296,9 @@ Lưu ý rằng việc triển khai hiện tại vẫn phải chịu một số h
 }
 ```
 
-Truy vấn này sẽ trả về các thực thể `Challenge` và các thực thể `Application` được liên kết của chúng, vì chúng đã tồn tại trực tiếp sau khi xử lý khối số 8,000,000.
+This query will return `Challenge` entities, and their associated `Application` entities, as they existed directly after processing block number 8,000,000.
 
-#### Ví dụ
+#### Example
 
 ```graphql
 {
@@ -192,26 +312,26 @@ Truy vấn này sẽ trả về các thực thể `Challenge` và các thực th
 }
 ```
 
-Truy vấn này sẽ trả về các thực thể `Challenge` và các thực thể `Application` được liên kết của chúng, vì chúng tồn tại trực tiếp sau khi xử lý khối với hàm băm đã cho.
+This query will return `Challenge` entities, and their associated `Application` entities, as they existed directly after processing the block with the given hash.
 
-### Truy vấn Tìm kiếm Toàn văn bản
+### Fulltext Search Queries
 
-Các trường truy vấn tìm kiếm toàn văn bản cung cấp một API tìm kiếm văn bản biểu đạt có thể được thêm vào subgraph và tùy chỉnh. Tham khảo [Xác định các Trường Tìm kiếm Toàn văn bản](/developing/creating-a-subgraph#defining-fulltext-search-fields) để thêm tìm kiếm toàn văn bản vào subgraph của bạn.
+Fulltext search query fields provide an expressive text search API that can be added to the subgraph schema and customized. Refer to [Defining Fulltext Search Fields](/developing/creating-a-subgraph#defining-fulltext-search-fields) to add fulltext search to your subgraph.
 
-Các truy vấn tìm kiếm toàn văn bản có một trường bắt buộc, `text`, để cung cấp các cụm từ tìm kiếm. Một số toán tử toàn văn bản đặc biệt có sẵn để được sử dụng trong trường tìm kiếm `text` này.
+Fulltext search queries have one required field, `text`, for supplying search terms. Several special fulltext operators are available to be used in this `text` search field.
 
-Toán tử tìm kiếm toàn văn bản:
+Fulltext search operators:
 
-| Biểu tượng | Toán tử | Miêu tả |
-| --- | --- | --- |
-| `&` | `And` | Để kết hợp nhiều cụm từ tìm kiếm thành một bộ lọc cho các thực thể bao gồm tất cả các cụm từ được cung cấp |
-| &#x7c; | `Or` | Các truy vấn có nhiều cụm từ tìm kiếm được phân tách bằng toán tử hoặc sẽ trả về tất cả các thực thể có kết quả khớp với bất kỳ cụm từ nào được cung cấp |
-| `<->` | `Follow by` | Chỉ định khoảng cách giữa hai từ. |
-| `:*` | `Prefix` | Sử dụng cụm từ tìm kiếm tiền tố để tìm các từ có tiền tố khớp với nhau (yêu cầu 2 ký tự.) |
+| Symbol      | Operator    | Description                                                                                                                          |
+| ----------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `&`     | `And`       | For combining multiple search terms into a filter for entities that include all of the provided terms                                |
+| &#x7c;      | `Or`        | Queries with multiple search terms separated by the or operator will return all entities with a match from any of the provided terms |
+| `<->` | `Follow by` | Specify the distance between two words.                                                                                              |
+| `:*`        | `Prefix`    | Use the prefix search term to find words whose prefix match (2 characters required.)                                                 |
 
-#### Các ví dụ
+#### Examples
 
-Sử dụng toán tử `or`, truy vấn này sẽ lọc tới các thực thể blog có các biến thể của "anarchism" hoặc "crumpet" trong trường đầy đủ của chúng.
+Using the `or` operator, this query will filter to blog entities with variations of either "anarchism" or "crumpet" in their fulltext fields.
 
 ```graphql
 {
@@ -224,7 +344,7 @@ Sử dụng toán tử `or`, truy vấn này sẽ lọc tới các thực thể 
 }
 ```
 
-Toán tử `follow by` chỉ định các từ cách nhau một khoảng cụ thể trong tài liệu toàn văn. Truy vấn sau sẽ trả về tất cả các blog có các biến thể của "decentralize" theo sau là "philosophy"
+The `follow by` operator specifies a words a specific distance apart in the fulltext documents. The following query will return all blogs with variations of "decentralize" followed by "philosophy"
 
 ```graphql
 {
@@ -237,7 +357,7 @@ Toán tử `follow by` chỉ định các từ cách nhau một khoảng cụ th
 }
 ```
 
-Kết hợp các toán tử toàn văn bản để tạo các bộ lọc phức tạp hơn. Với toán tử tìm kiếm lý do kết hợp với truy vấn theo sau bởi ví dụ này sẽ đối sánh tất cả các thực thể blog có các từ bắt đầu bằng "lou", theo sau là "music".
+Combine fulltext operators to make more complex filters. With a pretext search operator combined with a follow by this example query will match all blog entities with words that start with "lou" followed by "music".
 
 ```graphql
 {
@@ -250,20 +370,50 @@ Kết hợp các toán tử toàn văn bản để tạo các bộ lọc phức 
 }
 ```
 
-### Các thực thể
+### Validation
 
-Lược đồ nguồn dữ liệu của bạn-nghĩa là các loại thực thể, giá trị và mối quan hệ có sẵn để truy vấn-được xác định thông qua [Ngôn ngữ định nghĩa giao diện GraphQL (IDL)](https://facebook.github.io/graphql/draft/#sec-Type-System).
+Graph Node implements [specification-based](https://spec.graphql.org/October2021/#sec-Validation) validation of the GraphQL queries it receives using [graphql-tools-rs](https://github.com/dotansimha/graphql-tools-rs#validation-rules), which is based on the [graphql-js reference implementation](https://github.com/graphql/graphql-js/tree/main/src/validation). Queries which fail a validation rule do so with a standard error - visit the [GraphQL spec](https://spec.graphql.org/October2021/#sec-Validation) to learn more.
 
-## Lược đồ
+## Schema
 
-Các lược đồ GraphQL thường xác định các kiểu gốc cho`queries`, `subscriptions` và `mutations`. The Graph chỉ hỗ trợ `queries`. Loại `Query` gốc cho subgraph của bạn được tạo tự động từ lược đồ GraphQL có trong tệp kê khai subgraph của bạn.
+The schema of your data source--that is, the entity types, values, and relationships that are available to query--are defined through the [GraphQL Interface Definition Langauge (IDL)](https://facebook.github.io/graphql/draft/#sec-Type-System).
 
-Tất cả các loại GraphQL có chỉ thị `@entity` trong lược đồ của bạn sẽ được coi là các thực thể và phải có trường `ID`.
+GraphQL schemas generally define root types for `queries`, `subscriptions` and `mutations`. The Graph only supports `queries`. The root `Query` type for your subgraph is automatically generated from the GraphQL schema that's included in your subgraph manifest.
 
-> **Lưu ý:** API của chúng tôi không để lộ các đột biến vì các nhà phát triển dự kiến sẽ phát hành các giao dịch trực tiếp chống lại chuỗi khối cơ bản từ các ứng dụng của họ.
+> **Note:** Our API does not expose mutations because developers are expected to issue transactions directly against the underlying blockchain from their applications.
 
-### Các thực thể
+### Entities
 
-Tất cả các loại GraphQL có chỉ thị `@entity` trong lược đồ của bạn sẽ được coi là các thực thể và phải có trường `ID`.
+All GraphQL types with `@entity` directives in your schema will be treated as entities and must have an `ID` field.
 
-> **Lưu ý:** Hiện tại, tất cả các loại trong lược đồ của bạn phải có chỉ thị `@entity`. Trong tương lai, chúng tôi sẽ coi các loại không có chỉ thị `@entity` là đối tượng giá trị, nhưng điều này chưa được hỗ trợ.
+> **Note:** Currently, all types in your schema must have an `@entity` directive. In the future, we will treat types without an `@entity` directive as value objects, but this is not yet supported.
+
+### Subgraph Metadata
+
+All subgraphs have an auto-generated `_Meta_` object, which provides access to subgraph metadata. This can be queried as follows:
+
+```graphQL
+{
+  _meta(block: { number: 123987 }) {
+    block {
+      number
+      hash
+      timestamp
+    }
+    deployment
+    hasIndexingErrors
+  }
+}
+```
+
+If a block is provided, the metadata is as of that block, if not the latest indexed block is used. If provided, the block must be after the subgraph's start block, and less than or equal to the most recently indexed block.
+
+`deployment` is a unique ID, corresponding to the IPFS CID of the `subgraph.yaml` file.
+
+`block` provides information about the latest block (taking into account any block constraints passed to \_meta):
+
+- hash: the hash of the block
+- number: the block number
+- timestamp: the timestamp of the block, if available (this is currently only available for subgraphs indexing EVM networks)
+
+`hasIndexingErrors` is a boolean identifying whether the subgraph encountered indexing errors at some past block
