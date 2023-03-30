@@ -1,37 +1,37 @@
 ---
-title: 분산 시스템
+title: Distributed Systems
 ---
 
-The Graph는 분산 시스템으로 구현된 프로토콜입니다.
+The Graph is a protocol implemented as a distributed system.
 
-연결이 실패합니다. 요청이 제대로 도착하지 않습니다. 클럭 및 상태가 동기화되지 않은 여러 컴퓨터는 관련 요청을 처리합니다. 서버가 재시작됩니다. 요청 간에 재구성이 발생합니다. 이러한 문제는 모든 분산 시스템에 내재되어 있지만 글로벌 규모로 운영되는 시스템에서 악화됩니다.
+Connections fail. Requests arrive out of order. Different computers with out-of-sync clocks and states process related requests. Servers restart. Re-orgs happen between requests. These problems are inherent to all distributed systems but are exacerbated in systems operating at a global scale.
 
-클라이언트가 재구성 중에 최신 데이터에 대해 인덱서를 폴링하는 경우 발생할 수 있는 이 다음의 예시를 고려하시기 바랍니다.
+Consider this example of what may occur if a client polls an Indexer for the latest data during a re-org.
 
-1. 인덱서는 블록 8을 수집합니다.
-2. 블록 8에 대한 요청이 클라이언트에 제공됩니다.
-3. 인덱서는 블록 9를 수집합니다.
-4. 인덱서는 블록 10A를 수집합니다.
-5. 블록 10A에 대한 요청이 클라이언트에 제공됩니다.
-6. 인덱서는 10B로 재구성을 감지하고 10A로 롤백합니다.
-7. 블록 9에 대한 요청이 클라이언트에 제공됩니다.
-8. 인덱서는 블록 10B를 수집합니다.
-9. 인덱서는 블록 11을 수집합니다.
-10. 블록 11에 대한 요청이 클라이언트에 제공됩니다.
+1. Indexer ingests block 8
+2. Request served to the client for block 8
+3. Indexer ingests block 9
+4. Indexer ingests block 10A
+5. Request served to the client for block 10A
+6. Indexer detects reorg to 10B and rolls back 10A
+7. Request served to the client for block 9
+8. Indexer ingests block 10B
+9. Indexer ingests block 11
+10. Request served to the client for block 11
 
-인덱서의 관점에서 일이 논리적으로 진행되고 있습니다. 우리는 언클 블록을 롤백하고 그 위에서 합의하에 블록을 플레이해야 했지만, 시간은 앞으로 흘러가고 있습니다. 그 과정에서 인덱서는 해당 시점에 알고 있는 최신 상태를 사용하여 요청들을 처리합니다.
+From the point of view of the Indexer, things are progressing forward logically. Time is moving forward, though we did have to roll back an uncle block and play the block under consensus forward on top of it. Along the way, the Indexer serves requests using the latest state it knows about at that time.
 
-그러나, 클라이언트의 관점에서는 상황이 혼란스러워 보입니다. 클라이언트는 응답이 순서대로 블록 8, 10, 9, 그리고11에 대한 것임을 관찰합니다. 우리는 이것을 "block wobble" 문제라고 부릅니다. 클라이언트가 block wobble을 경험하면 데이터가 시간이 지남에 따라 모순되는 것처럼 보일 수 있습니다. 인덱서가 모두 최신 블록을 동시에 수집하지 않고 요청이 여러 인덱서로 라우팅될 수 있다는 점을 고려할 때 상황이 악화됩니다.
+From the point of view of the client, however, things appear chaotic. The client observes that the responses were for blocks 8, 10, 9, and 11 in that order. We call this the "block wobble" problem. When a client experiences block wobble, data may appear to contradict itself over time. The situation worsens when we consider that Indexers do not all ingest the latest blocks simultaneously, and your requests may be routed to multiple Indexers.
 
-사용자에게 일관된 데이터를 제공하기 위해 협력하는 것은 클라이언트와 서버의 책임입니다. 모든 문제에 맞는 하나의 프로그램이 없기 때문에 원하는 일관성에 따라 다른 접근 방식을 사용해야 합니다.
+It is the responsibility of the client and server to work together to provide consistent data to the user. Different approaches must be used depending on the desired consistency as there is no one right program for every problem.
 
-분산 시스템의 의미를 추론하는 것은 어렵지만 수정은 그렇지 않을 수도 있습니다! 저희는 몇 가지 일반적인 사용 사례를 탐색하는 데 도움이 되도록 API와 패턴을 수립했습니다. 다음 예제는 이러한 패턴을 보여주지만 주요 아이디어를 난독화하지 않기 위해 프로덕션 코드(예: 오류 처리 및 취소)에 필요한 세부 정보는 생략합니다.
+Reasoning through the implications of distributed systems is hard, but the fix may not be! We've established APIs and patterns to help you navigate some common use-cases. The following examples illustrate those patterns but still elide details required by production code (like error handling and cancellation) to not obfuscate the main ideas.
 
-## 업데이트된 데이터에 대한 폴링
+## Polling for updated data
 
-The Graph는 `block: { number_gte: $minBlock }` API를 제공하여 `$minBlock` 이상인 단일 블록에 대한 응답을 보장합니다. `graph-node` 인스턴스에 대한 요청이 있고 최소 블록이 아직 동기화되지 않은 경우 `graph-node`는 오류를 반환합니다. `graph-node`가 최소 블록을 동기화한 경우 최신 블록에 대한 응답을 실행합니다. Edge & Node Gateway에 대한 요청이 있는 경우 게이트웨이는 아직 동기화되지 않은 인덱서를 필터링하고 인덱서가 동기화한 최신 블록을 요청합니다.
+The Graph provides the `block: { number_gte: $minBlock }` API, which ensures that the response is for a single block equal or higher to `$minBlock`. If the request is made to a `graph-node` instance and the min block is not yet synced, `graph-node` will return an error. If `graph-node` has synced min block, it will run the response for the latest block. If the request is made to an Edge & Node Gateway, the Gateway will filter out any Indexers that have not yet synced min block and make the request for the latest block the Indexer has synced.
 
-`number_gte`를 사용하여 루프에서 데이터를 폴링할 때 시간이 뒤로 이동하지 않도록 할 수 있습니다. 여기에 예시가 있습니다:
+We can use `number_gte` to ensure that time never travels backward when polling for data in a loop. Here is an example:
 
 ```javascript
 /// Updates the protocol.paused variable to the latest
@@ -74,11 +74,11 @@ async function updateProtocolPaused() {
 }
 ```
 
-## 관련 항목 세트 가져오기
+## Fetching a set of related items
 
-또 다른 사용 사례는 큰 세트를 검색하거나 더 일반적으로 여러 요청에서 관련 항목을 검색하는 것입니다. 폴링 사례(원하는 일관성이 앞으로 이동한)와 달리, 원하는 일관성은 단일 시점에 대한 것입니다.
+Another use-case is retrieving a large set or, more generally, retrieving related items across multiple requests. Unlike the polling case (where the desired consistency was to move forward in time), the desired consistency is for a single point in time.
 
-여기서 우리는 `block: { hash: $blockHash }` 인수를 사용하여 같은 블록에 저희의 모든 결과들을 고정할 것입니다.
+Here we will use the `block: { hash: $blockHash }` argument to pin all of our results to the same block.
 
 ```javascript
 /// Gets a list of domain names from a single block using pagination
@@ -131,4 +131,4 @@ async function getDomainNames() {
 }
 ```
 
-재구성의 경우, 클라이언트가 블록 해시를 언클 블록이 아닌 블록으로 업데이트하기 위해 첫 번째 요청부터 다시 시도해야 합니다.
+Note that in case of a re-org, the client will need to retry from the first request to update the block hash to a non-uncle block.
