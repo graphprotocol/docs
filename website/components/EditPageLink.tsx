@@ -14,8 +14,8 @@ export const EditPageLink = ({ mobile = false, ...props }: EditPageLinkProps) =>
   const { t } = useI18n()
 
   // If the current page is in a language other than English, link to the English version, as translations are handled by Crowdin
-  const { pagePath: _pagePath } = useContext(NavContext)!
-  const pagePathSegments = _pagePath.split('/')
+  const { filePath } = useContext(NavContext)!
+  const pagePathSegments = filePath.split('/')
   pagePathSegments[1] = ['en', '[locale]'].includes(pagePathSegments[1]) ? pagePathSegments[1] : 'en'
   const pagePath = pagePathSegments.join('/')
 

@@ -3,7 +3,7 @@ import fs from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-import config from '../next.config.mjs'
+import config from '../next.config.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 

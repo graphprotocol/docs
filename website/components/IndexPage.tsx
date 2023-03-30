@@ -1,29 +1,11 @@
-import { GetStaticPaths, GetStaticProps, NextPage } from 'next'
-import { Heading as NextraHeading } from 'nextra'
-import { useMemo } from 'react'
+import { GetStaticPaths, GetStaticProps } from 'next'
 
-import {
-  BorderRadius,
-  buildBorder,
-  buildShadow,
-  buildTransition,
-  Flex,
-  Spacing,
-  Text,
-  translate,
-} from '@edgeandnode/components'
+import { BorderRadius, buildBorder, buildShadow, buildTransition, Flex, Spacing, Text } from '@edgeandnode/components'
 
 import { Heading, Image, Link, LinkInline, Paragraph } from '@/components'
-import { AppLocale, supportedLocales, translations, useI18n } from '@/i18n'
-import MDXLayout, { Frontmatter } from '@/layout'
-import { getNavItems, NavItem } from '@/navigation'
+import { supportedLocales, useI18n } from '@/i18n'
 
-export const frontmatter = (locale: AppLocale): Frontmatter => ({
-  title: translate(translations, locale, 'index.title'),
-})
-
-// TODO: Make DRY
-export const getStaticPaths: GetStaticPaths = async () => {
+export const getStaticPaths: GetStaticPaths = () => {
   return {
     paths: supportedLocales.map((locale) => ({
       params: { locale },
@@ -32,55 +14,16 @@ export const getStaticPaths: GetStaticPaths = async () => {
   }
 }
 
-// TODO: Make DRY
-export const getStaticProps: GetStaticProps = async (context) => {
-  const locale = context.params!.locale as AppLocale
-  const navItems = await getNavItems(locale)
-
-  return {
-    props: {
-      locale,
-      navItems,
-    },
-  }
+export const getStaticProps: GetStaticProps = () => {
+  return { props: {} }
 }
 
-type IndexProps = { navItems: NavItem[] }
-
-const Index: NextPage<IndexProps> = ({ navItems }: IndexProps) => {
-  const { t, locale } = useI18n()
-
-  const headings: NextraHeading[] = useMemo(
-    () => [
-      {
-        id: 'network-roles',
-        value: t('index.networkRoles.title'),
-        depth: 2,
-      },
-      {
-        id: 'products',
-        value: t('index.products.title'),
-        depth: 2,
-      },
-      {
-        id: 'supported-networks',
-        value: t('index.supportedNetworks.title'),
-        depth: 2,
-      },
-    ],
-    [t]
-  )
+export default function IndexPage() {
+  const { t } = useI18n()
 
   return (
-    <MDXLayout
-      // @ts-expect-error: we don't need another properties
-      pageOpts={{
-        filePath: `pages/[locale]/index.tsx`,
-        frontMatter: frontmatter(locale as AppLocale),
-        headings,
-      }}
-      pageProps={{ navItems }}
-    >
+    <>
+      <Heading.H1>{t('index.title')}</Heading.H1>
       <Paragraph>{t('index.intro')}</Paragraph>
       <ul
         sx={{
@@ -123,8 +66,8 @@ const Index: NextPage<IndexProps> = ({ navItems }: IndexProps) => {
             description: t('index.shortcuts.migrateFromHostedService.description'),
             href: '/cookbook/migrating-a-subgraph',
           },
-        ].map((card, index) => (
-          <li key={index} sx={{ aspectRatio: '258/136' }}>
+        ].map((card) => (
+          <li key={card.href} sx={{ aspectRatio: '258/136' }}>
             <Link
               href={card.href}
               sx={{
@@ -237,8 +180,8 @@ const Index: NextPage<IndexProps> = ({ navItems }: IndexProps) => {
             description: t('index.products.products.hostedService.description'),
             href: '/deploying/hosted-service',
           },
-        ].map((product, index) => (
-          <Flex.Column as="li" key={index}>
+        ].map((product) => (
+          <Flex.Column as="li" key={product.href}>
             <div sx={{ mb: Spacing['16px'] }}>
               <Text as="h3" weight="SEMIBOLD" size="20px" sx={{ textShadow: buildShadow('S') }}>
                 {product.title}
@@ -315,7 +258,12 @@ const Index: NextPage<IndexProps> = ({ navItems }: IndexProps) => {
                   <Image
                     src={network.image}
                     alt=""
-                    sx={{ mb: Spacing['8px'], width: '40px', height: '40px', transition: buildTransition('TRANSFORM') }}
+                    sx={{
+                      mb: Spacing['8px'],
+                      width: '40px',
+                      height: '40px',
+                      transition: buildTransition('TRANSFORM'),
+                    }}
                   />
                   {network.title}
                   {network.beta ? '*' : ''}
@@ -428,8 +376,8 @@ const Index: NextPage<IndexProps> = ({ navItems }: IndexProps) => {
               href: 'https://base.org/',
               beta: true,
             },
-          ].map((network, index) => (
-            <Flex.Column as="li" key={index}>
+          ].map((network) => (
+            <Flex.Column as="li" key={network.href}>
               <Text as="div" size="14px" color="White48" sx={{ textAlign: 'center' }}>
                 <Link
                   href={network.href}
@@ -446,7 +394,12 @@ const Index: NextPage<IndexProps> = ({ navItems }: IndexProps) => {
                   <Image
                     src={network.image}
                     alt=""
-                    sx={{ mb: Spacing['8px'], width: '40px', height: '40px', transition: buildTransition('TRANSFORM') }}
+                    sx={{
+                      mb: Spacing['8px'],
+                      width: '40px',
+                      height: '40px',
+                      transition: buildTransition('TRANSFORM'),
+                    }}
                   />
                   {network.title}
                   {network.beta ? '*' : ''}
@@ -459,8 +412,6 @@ const Index: NextPage<IndexProps> = ({ navItems }: IndexProps) => {
           *{t('index.supportedNetworks.betaWarning')}
         </Text.P14>
       </div>
-    </MDXLayout>
+    </>
   )
 }
-
-export default Index
