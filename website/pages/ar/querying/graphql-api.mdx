@@ -49,6 +49,25 @@ title: GraphQL API
 }
 ```
 
+#### Example for nested entity sorting
+
+As of Graph Node [`v0.30.0`](https://github.com/graphprotocol/graph-node/releases/tag/v0.30.0) entities can be sorted on the basis of nested entities.
+
+In the following example, we sort the tokens by the name of their owner:
+
+```graphql
+{
+  tokens(orderBy: owner__name, orderDirection: asc) {
+    id
+    owner {
+      name
+    }
+  }
+}
+```
+
+> Currently you can sort by one-level deep `String` or `ID` types on `@entity` and `@derivedFrom` fields. Unfortunately, [sorting by interfaces on one level-deep entities](https://github.com/graphprotocol/graph-node/pull/4058), sorting by fields which are arrays and nested entities is not yet supported.
+
 ### ترقيم الصفحات
 
 عند الاستعلام عن مجموعة ، يمكن استخدام البارامتر `first` لترقيم الصفحات من بداية المجموعة. من الجدير بالذكر أن ترتيب الفرز الافتراضي يكون حسب الـ ID بترتيب رقمي تصاعدي ، وليس حسب وقت الإنشاء.
@@ -57,7 +76,7 @@ title: GraphQL API
 
 الاستعلامات يجب أن تتجنب استخدام قيم `skip` كبيرة جدا نظرا لأنها تؤدي بشكل عام أداء ضعيفا. لجلب عدد كبير من العناصر ، من الأفضل تصفح الكيانات بناء على صفة كما هو موضح في المثال الأخير.
 
-#### مثال
+#### Example using `first`
 
 استعلم عن أول 10 توكن:
 
@@ -72,7 +91,7 @@ title: GraphQL API
 
 للاستعلام عن مجموعات الكيانات في منتصف المجموعة ، يمكن استخدام البارامتر `skip` بالاصافة لبارامتر `first` لتخطي عدد محدد من الكيانات بدءا من بداية المجموعة.
 
-#### مثال
+#### Example using `first` and `skip`
 
 الاستعلام عن 10 كيانات `Token` ،بإزاحة 10 أماكن من بداية المجموعة:
 
@@ -85,7 +104,7 @@ title: GraphQL API
 }
 ```
 
-#### مثال
+#### Example using `first` and `id_ge`
 
 إذا احتاج العميل إلى جلب عدد كبير من الكيانات ، فمن الأفضل أن تستند الاستعلامات إلى إحدى الصفات والفلترة حسب تلك الصفة. على سبيل المثال ، قد يجلب العميل عددا كبيرا من التوكن باستخدام هذا الاستعلام:
 
@@ -104,7 +123,7 @@ query manyTokens($lastID: String) {
 
 يمكنك استخدام البارامتر `where` في الاستعلام لتصفية الخصائص المختلفة. يمكنك الفلترة على قيم متعددة ضمن البارامتر `where`.
 
-#### مثال
+#### Example using `where`
 
 تحديات الاستعلام مع نتيجة `failed`:
 
@@ -122,7 +141,7 @@ query manyTokens($lastID: String) {
 
 يمكنك استخدام لواحق مثل `gt` ، `_lte_` لمقارنة القيم:
 
-#### مثال
+#### Example for range filtering
 
 ```graphql
 {
@@ -134,33 +153,134 @@ query manyTokens($lastID: String) {
 }
 ```
 
-القائمة الكاملة للواحق البارامترات:
+#### Example for block filtering
+
+You can also filter entities by the `_change_block(number_gte: Int)` - this filters entities which were updated in or after the specified block.
+
+This can be useful if you are looking to fetch only entities which have changed, for example since the last time you polled. Or alternatively it can be useful to investigate or debug how entities are changing in your subgraph (if combined with a block filter, you can isolate only entities that changed in a specific block).
 
 ```graphql
-not_
-gt_
-lt_
-gte_
-lte_
-in_
-not_in_
-contains_
-not_contains_
-starts_with_
-ends_with_
-not_starts_with_
-not_ends_with_
+{
+  applications(where: { _change_block: { number_gte: 100 } }) {
+    id
+    whitelisted
+    deposit
+  }
+}
 ```
 
-يرجى ملاحظة أن بعض اللواحق مدعومة فقط لأنواع معينة. على سبيل المثال ، `Boolean` يدعم فقط `not_` و `_in` و `not_in_`.
+#### Example for nested entity filtering
+
+Filtering on the basis of nested entities is possible in the fields with the `_` suffix.
+
+This can be useful if you are looking to fetch only entities whose child-level entities meet the provided conditions.
+
+```graphql
+{
+  challenges(where: { application_: { id: 1 } }) {
+    challenger
+    outcome
+    application {
+      id
+    }
+  }
+}
+```
+
+#### Logical operators
+
+As of Graph Node [`v0.30.0`](https://github.com/graphprotocol/graph-node/releases/tag/v0.30.0) you can group multiple parameters in the same `where` argument using the `and` or the `or` operators to filter results based on more than one criteria.
+
+##### `AND` Operator
+
+In the following example, we are filtering for challenges with `outcome` `succeeded` and `number` greater than or equal to `100`.
+
+```graphql
+{
+  challenges(where: { and: [{ number_gte: 100 }, { outcome: "succeeded" }] }) {
+    challenger
+    outcome
+    application {
+      id
+    }
+  }
+}
+```
+
+> **Syntactic sugar:** You can simplify the above query by removing the `and` operator by passing a sub-expression separated by commas.
+> 
+> ```graphql
+> {
+>   challenges(where: { number_gte: 100, outcome: "succeeded" }) {
+>     challenger
+>     outcome
+>     application {
+>       id
+>     }
+>   }
+> }
+> ```
+
+##### `OR` Operator
+
+In the following example, we are filtering for challenges with `outcome` `succeeded` or `number` greater than or equal to `100`.
+
+```graphql
+{
+  challenges(where: { or: [{ number_gte: 100 }, { outcome: "succeeded" }] }) {
+    challenger
+    outcome
+    application {
+      id
+    }
+  }
+}
+```
+
+> **Note**: When constructing queries, it is important to consider the performance impact of using the `or` operator. While `or` can be a useful tool for broadening search results, it can also have significant costs. One of the main issues with `or` is that it can cause queries to slow down. This is because `or` requires the database to scan through multiple indexes, which can be a time-consuming process. To avoid these issues, it is recommended that developers use and operators instead of or whenever possible. This allows for more precise filtering and can lead to faster, more accurate queries.
+
+#### All Filters
+
+Full list of parameter suffixes:
+
+```
+_
+_not
+_gt
+_lt
+_gte
+_lte
+_in
+_not_in
+_contains
+_contains_nocase
+_not_contains
+_not_contains_nocase
+_starts_with
+_starts_with_nocase
+_ends_with
+_ends_with_nocase
+_not_starts_with
+_not_starts_with_nocase
+_not_ends_with
+_not_ends_with_nocase
+```
+
+> Please note that some suffixes are only supported for specific types. For example, `Boolean` only supports `_not`, `_in`, and `_not_in`, but `_` is available only for object and interface types.
+
+In addition, the following global filters are available as part of `where` argument:
+
+```gr
+_change_block(number_gte: Int)
+```
 
 ### الاستعلامات المنتقلة زمنيا
 
-يمكنك الاستعلام عن حالة الكيانات الخاصة بك ليس فقط للكتلة الأخيرة ، والتي هي افتراضيا ، ولكن أيضا لكتلة في الماضي. يمكن تحديد الكتلة التي يجب أن يحدث فيها الاستعلام إما عن طريق رقم الكتلة أو hash الكتلة الخاص بها عن طريق تضمين وسيطة `block` في حقول المستوى الأعلى للاستعلامات.
+You can query the state of your entities not just for the latest block, which is the default, but also for an arbitrary block in the past. The block at which a query should happen can be specified either by its block number or its block hash by including a `block` argument in the toplevel fields of queries.
 
-لن تتغير نتيجة مثل هذا الاستعلام بمرور الوقت ، أي أن الاستعلام في كتلة سابقة معينة سيعيد نفس النتيجة بغض النظر عن وقت تنفيذها ، باستثناء أنه إذا قمت بالاستعلام في كتلة قريبة جدا من رأس سلسلة Ethereum ، قد تتغير النتيجة إذا تبين أن هذه الكتلة ليست في السلسلة الرئيسية وتمت إعادة تنظيم السلسلة. بمجرد اعتبار الكتلة نهائية ، لن تتغير نتيجة الاستعلام.
+The result of such a query will not change over time, i.e., querying at a certain past block will return the same result no matter when it is executed, with the exception that if you query at a block very close to the head of the chain, the result might change if that block turns out to not be on the main chain and the chain gets reorganized. Once a block can be considered final, the result of the query will not change.
 
-لاحظ أن التنفيذ الحالي لا يزال يخضع لقيود معينة قد تنتهك هذه الضمانات. لا يمكن للتنفيذ دائما أن يخبرنا أن hash كتلة معينة ليست في السلسلة الرئيسية ، أو أن نتيجة استعلام لكتلة عن طريق hash الكتلة لا يمكن اعتبارها نهائية ومع ذلك قد تتأثر بإعادة تنظيم الكتلة التي تعمل بشكل متزامن مع الاستعلام. لا تؤثر نتائج الاستعلامات عن طريق hash الكتلة عندما تكون الكتلة نهائية ومعروفة بأنها موجودة في السلسلة الرئيسية. [ تشرح هذه المشكلة ](https://github.com/graphprotocol/graph-node/issues/1405) ماهية هذه القيود بالتفصيل.
+Note that the current implementation is still subject to certain limitations that might violate these gurantees. The implementation can not always tell that a given block hash is not on the main chain at all, or that the result of a query by block hash for a block that can not be considered final yet might be influenced by a block reorganization running concurrently with the query. They do not affect the results of queries by block hash when the block is final and known to be on the main chain. [This issue](https://github.com/graphprotocol/graph-node/issues/1405) explains what these limitations are in detail.
 
 #### مثال
 
@@ -176,7 +296,7 @@ not_ends_with_
 }
 ```
 
-سيعود هذا الاستعلام بكيانات `Challenge` وكيانات `Application` المرتبطة بها ، كما كانت موجودة مباشرة بعد معالجة رقم الكتلة 8،000،000.
+This query will return `Challenge` entities, and their associated `Application` entities, as they existed directly after processing block number 8,000,000.
 
 #### مثال
 
@@ -192,26 +312,26 @@ not_ends_with_
 }
 ```
 
-سيعود هذا الاستعلام بكيانات `Challenge` وكيانات `Application` المرتبطة بها ، كما كانت موجودة مباشرة بعد معالجة الكتلة باستخدام hash المحددة.
+This query will return `Challenge` entities, and their associated `Application` entities, as they existed directly after processing the block with the given hash.
 
-### استعلامات بحث النص الكامل(Fulltext Search)
+### استعلامات بحث النص الكامل
 
-حقول استعلام البحث عن نص كامل توفر API للبحث عن نص تعبيري يمكن إضافتها إلى مخطط الـ subgraph وتخصيصها. راجع [ تعريف حقول بحث النص الكامل ](/developing/creating-a-subgraph#defining-fulltext-search-fields) لإضافة بحث نص كامل إلى الـ subgraph الخاص بك.
+Fulltext search query fields provide an expressive text search API that can be added to the subgraph schema and customized. Refer to [Defining Fulltext Search Fields](/developing/creating-a-subgraph#defining-fulltext-search-fields) to add fulltext search to your subgraph.
 
-استعلامات البحث عن النص الكامل لها حقل واحد مطلوب ، وهو `text` ، لتوفير عبارة البحث. تتوفر العديد من عوامل النص الكامل الخاصة لاستخدامها في حقل البحث `text`.
+Fulltext search queries have one required field, `text`, for supplying search terms. Several special fulltext operators are available to be used in this `text` search field.
 
-عوامل تشغيل البحث عن النص الكامل:
+Fulltext search operators:
 
-| رمز | عامل التشغيل | الوصف |
-| --- | --- | --- |
-| `&` | `And` | لدمج عبارات بحث متعددة في فلتر للكيانات التي تتضمن جميع العبارات المتوفرة |
-| &#x7c; | `Or` | الاستعلامات التي تحتوي على عبارات بحث متعددة مفصولة بواسطة عامل التشغيل or ستعيد جميع الكيانات المتطابقة من أي عبارة متوفرة |
-| `<->` | `Follow by` | يحدد المسافة بين كلمتين. |
-| `*:` | `Prefix` | يستخدم عبارة البحث prefix للعثور على الكلمات التي تتطابق بادئتها (مطلوب حرفان.) |
+| رمز         | عامل التشغيل | الوصف                                                                                                                       |
+| ----------- | ------------ | --------------------------------------------------------------------------------------------------------------------------- |
+| `&`     | `And`        | لدمج عبارات بحث متعددة في فلتر للكيانات التي تتضمن جميع العبارات المتوفرة                                                   |
+| &#x7c;      | `أو`         | الاستعلامات التي تحتوي على عبارات بحث متعددة مفصولة بواسطة عامل التشغيل or ستعيد جميع الكيانات المتطابقة من أي عبارة متوفرة |
+| `<->` | `Follow by`  | يحدد المسافة بين كلمتين.                                                                                                    |
+| `:*`        | `Prefix`     | يستخدم عبارة البحث prefix للعثور على الكلمات التي تتطابق بادئتها (مطلوب حرفان.)                                             |
 
 #### أمثلة
 
-باستخدام العامل `or` ، سيقوم الاستعلام هذا بتصفية blog الكيانات التي تحتوي على أشكال مختلفة من "anarchism" أو "crumpet" في حقول النص الكامل الخاصة بها.
+Using the `or` operator, this query will filter to blog entities with variations of either "anarchism" or "crumpet" in their fulltext fields.
 
 ```graphql
 {
@@ -224,7 +344,7 @@ not_ends_with_
 }
 ```
 
-العامل `follow by` يحدد الكلمات بمسافة محددة عن بعضها في مستندات النص-الكامل. الاستعلام التالي سيعيد جميع الـ blogs التي تحتوي على أشكال مختلفة من "decentralize" متبوعة بكلمة "philosophy"
+The `follow by` operator specifies a words a specific distance apart in the fulltext documents. The following query will return all blogs with variations of "decentralize" followed by "philosophy"
 
 ```graphql
 {
@@ -237,7 +357,7 @@ not_ends_with_
 }
 ```
 
-اجمع بين عوامل تشغيل النص-الكامل لعمل فلترة أكثر تعقيدا. فمثلا باستخدام عامل تشغيل البحث pretext مع follow by ،سيتم مطابقة هذا الاستعلام بجميع كيانات الـ blog بالكلمات التي تبدأ بـ "lou" متبوعة بـ "music".
+Combine fulltext operators to make more complex filters. With a pretext search operator combined with a follow by this example query will match all blog entities with words that start with "lou" followed by "music".
 
 ```graphql
 {
@@ -252,18 +372,48 @@ not_ends_with_
 
 ### الكيانات
 
-يتم تعريف مخطط مصدر البيانات الخاص بك - كأنواع الكيانات والقيم والعلاقات المتاحة للاستعلام - من خلال [GraphQL Interface Definition Langauge (IDL)](https://facebook.github.io/graphql/draft/#sec-Type-System).
+Graph Node implements [specification-based](https://spec.graphql.org/October2021/#sec-Validation) validation of the GraphQL queries it receives using [graphql-tools-rs](https://github.com/dotansimha/graphql-tools-rs#validation-rules), which is based on the [graphql-js reference implementation](https://github.com/graphql/graphql-js/tree/main/src/validation). Queries which fail a validation rule do so with a standard error - visit the [GraphQL spec](https://spec.graphql.org/October2021/#sec-Validation) to learn more.
 
 ## المخطط
 
-مخططات GraphQL تحدد عموما أنواع الجذر(root) لـ `queries`, و `subscriptions` و`mutations`. يدعم The Graph فقط الـ `queries`. يتم إنشاء نوع الجذر `Query` لـ subgraph تلقائيا من مخطط GraphQL المضمن في subgraph manifest الخاص بك.
+The schema of your data source--that is, the entity types, values, and relationships that are available to query--are defined through the [GraphQL Interface Definition Langauge (IDL)](https://facebook.github.io/graphql/draft/#sec-Type-System).
 
-سيتم التعامل مع جميع أنواع GraphQL التي تحتوي على توجيهات `entity@` في مخططك على أنها كيانات ويجب أن تحتوي على حقل `ID`.
+GraphQL schemas generally define root types for `queries`, `subscriptions` and `mutations`. The Graph only supports `queries`. The root `Query` type for your subgraph is automatically generated from the GraphQL schema that's included in your subgraph manifest.
 
-> ** ملاحظة: ** الـ API الخاصة بنا لا تعرض الـ mutations لأنه يُتوقع من المطورين إصدار إجراءات مباشرة لـblockchain الأساسي من تطبيقاتهم.
+> **Note:** Our API does not expose mutations because developers are expected to issue transactions directly against the underlying blockchain from their applications.
 
 ### الكيانات (Entities)
 
-سيتم التعامل مع جميع أنواع GraphQL التي تحتوي على توجيهات `entity@` في مخططك على أنها كيانات ويجب أن تحتوي على حقل `ID`.
+All GraphQL types with `@entity` directives in your schema will be treated as entities and must have an `ID` field.
 
-> ** ملاحظة: ** في الوقت الحالي ، يجب أن تحتوي جميع الأنواع في مخططك على توجيه `entity@`. في المستقبل ، سنتعامل مع الأنواع التي لا تحتوي على التوجيه `entity@` ككائنات، لكن هذا غير مدعوم حتى الآن.
+> **Note:** Currently, all types in your schema must have an `@entity` directive. In the future, we will treat types without an `@entity` directive as value objects, but this is not yet supported.
+
+### Subgraph Metadata
+
+All subgraphs have an auto-generated `_Meta_` object, which provides access to subgraph metadata. This can be queried as follows:
+
+```graphQL
+{
+  _meta(block: { number: 123987 }) {
+    block {
+      number
+      hash
+      timestamp
+    }
+    deployment
+    hasIndexingErrors
+  }
+}
+```
+
+If a block is provided, the metadata is as of that block, if not the latest indexed block is used. If provided, the block must be after the subgraph's start block, and less than or equal to the most recently indexed block.
+
+`deployment` is a unique ID, corresponding to the IPFS CID of the `subgraph.yaml` file.
+
+`block` provides information about the latest block (taking into account any block constraints passed to \_meta):
+
+- hash: the hash of the block
+- number: the block number
+- timestamp: the timestamp of the block, if available (this is currently only available for subgraphs indexing EVM networks)
+
+`hasIndexingErrors` is a boolean identifying whether the subgraph encountered indexing errors at some past block
