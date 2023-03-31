@@ -18,13 +18,13 @@ import {
   EditPageLink,
   Heading,
   Image,
+  Link,
   LinkInline,
   ListOrdered,
   ListUnordered,
   Paragraph,
   Table,
   VideoEmbed,
-  Link
 } from '@/components'
 import { DocumentContext, MDXLayoutNav, MDXLayoutOutline, MDXLayoutPagination, NavContext } from '@/layout'
 
