@@ -10,7 +10,7 @@ export type EditPageLinkProps = {
 } & Omit<HTMLAttributes<HTMLElement>, 'children'>
 
 export const EditPageLink = ({ mobile = false, ...props }: EditPageLinkProps) => {
-  const { t } = useI18n()
+  const { t } = useI18n<any>()
 
   // If the current page is in a language other than English, link to the English version, as translations are handled by Crowdin
   const { filePath } = useContext(NavContext)!

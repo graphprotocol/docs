@@ -2,7 +2,7 @@ import { useI18n } from '@edgeandnode/components'
 
 // TODO: Refactor this component
 export const Difficulty = ({ level }: { level: string }) => {
-  const { t } = useI18n()
+  const { t } = useI18n<any>()
 
   return (
     <div

@@ -28,7 +28,7 @@ const BaseHeading = ({ level, id, children, ...props }: HeadingProps) => {
     100,
     [id, inOrAboveView, markOutlineItem]
   )
-  const { t } = useI18n()
+  const { t } = useI18n<any>()
 
   return (
     <Text ref={ref} as={`h${level}`} id={id} weight="SEMIBOLD" color="White" sx={{ whiteSpace: 'nowrap' }} {...props}>

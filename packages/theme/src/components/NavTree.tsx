@@ -116,7 +116,7 @@ const NavTreeGroup = ({ active = false, children, ...props }: NavTreeGroupProps)
 const NavTreeGroupHeading = ({ children, buttonProps = {}, ...props }: NavTreeGroupHeadingProps) => {
   const { sx: buttonSx, ...buttonOtherProps } = buttonProps
   const context = useContext(NavTreeGroupContext)
-  const { t } = useI18n()
+  const { t } = useI18n<any>()
 
   return (
     <div {...props}>

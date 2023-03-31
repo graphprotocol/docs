@@ -19,7 +19,7 @@ export type VideoProps = (
 } & HTMLAttributes<HTMLElement>
 
 export const VideoEmbed = ({ src, youtube, title, ...props }: VideoProps) => {
-  const { t } = useI18n()
+  const { t } = useI18n<any>()
 
   return (
     <figure sx={{ paddingBottom: `${100 / (16 / 9)}%` }} {...props}>
