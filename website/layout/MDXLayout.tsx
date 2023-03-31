@@ -8,7 +8,7 @@ import { useCallback, useMemo } from 'react'
 import { useSet } from 'react-use'
 import { ThemeUIStyleObject } from 'theme-ui'
 
-import { Divider, DividerProps, Flex, Spacing } from '@edgeandnode/components'
+import { Divider, DividerProps, Flex, Spacing, useI18n } from '@edgeandnode/components'
 
 import {
   Blockquote,
@@ -25,7 +25,6 @@ import {
   Table,
   VideoEmbed,
 } from '@/components'
-import { useI18n } from '@/i18n'
 import { DocumentContext, MDXLayoutNav, MDXLayoutOutline, MDXLayoutPagination, NavContext } from '@/layout'
 
 const mdxComponents = {
