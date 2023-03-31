@@ -66,33 +66,37 @@ const MyApp = ({ Component, pageProps, router }: AppProps) => {
   const localeSwitcher = useMemo(() => <LocaleSwitcher key="localeSwitcher" />, [])
   // @ts-expect-error todo: fix type error
   const __nextra_internal__ = (globalThis as NextraInternalGlobal)[NEXTRA_INTERNAL]
-  const { pageOpts } = __nextra_internal__.context[router.route]
+
+  const internal = __nextra_internal__.context?.[router.route]
+  const hasMDXPage = !!internal
+  const { pageOpts = {} } = internal || {}
   const locale = router.asPath.split('/')[1] as Locale
-  pageOpts.headings = useMemo(
-    () =>
-      pageOpts.filePath === 'pages/[locale]/index.mdx'
-        ? [
-            {
-              id: 'network-roles',
-              value: translate(translations, locale, 'index.networkRoles.title'),
-              depth: 2,
-            },
-            {
-              id: 'products',
-              value: translate(translations, locale, 'index.products.title'),
-              depth: 2,
-            },
-            {
-              id: 'supported-networks',
-              value: translate(translations, locale, 'index.supportedNetworks.title'),
-              depth: 2,
-            },
-          ]
-        : pageOpts.headings,
-    [pageOpts.filePath, pageOpts.headings, locale]
-  )
+
+  pageOpts.headings = useMemo(() => {
+    if (!hasMDXPage) return []
+    return pageOpts.filePath === 'pages/[locale]/index.mdx'
+      ? [
+          {
+            id: 'network-roles',
+            value: translate(translations, locale, 'index.networkRoles.title'),
+            depth: 2,
+          },
+          {
+            id: 'products',
+            value: translate(translations, locale, 'index.products.title'),
+            depth: 2,
+          },
+          {
+            id: 'supported-networks',
+            value: translate(translations, locale, 'index.supportedNetworks.title'),
+            depth: 2,
+          },
+        ]
+      : pageOpts.headings
+  }, [hasMDXPage, pageOpts.filePath, pageOpts.headings, locale])
 
   pageOpts.pageMap = useMemo(() => {
+    if (!hasMDXPage) return []
     const pageMap = (__nextra_internal__.pageMap as PageMapItem[]).find(
       (pageItem): pageItem is Folder => pageItem.kind === 'Folder' && pageItem.name === locale
     )!.children
@@ -102,7 +106,7 @@ const MyApp = ({ Component, pageProps, router }: AppProps) => {
       'index.title'
     )
     return pageMap
-  }, [__nextra_internal__.pageMap, locale])
+  }, [__nextra_internal__.pageMap, hasMDXPage, locale])
 
   return (
     <I18nProvider supportedLocales={supportedLocales} translations={translations} clientRouter={router}>
