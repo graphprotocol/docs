@@ -1,8 +1,8 @@
+import { LinkInline } from '@graphprotocol/theme'
 import { GetStaticPaths, GetStaticProps, NextPage } from 'next'
 
 import { NotFound, Spacing } from '@edgeandnode/components'
 
-import { LinkInline } from '@/components'
 import { supportedLocales, useI18n } from '@/i18n'
 
 export const getStaticPaths: GetStaticPaths = () => {

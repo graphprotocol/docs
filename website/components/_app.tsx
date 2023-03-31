@@ -3,7 +3,8 @@ import mixpanel from 'mixpanel-browser'
 import { AppProps } from 'next/app'
 import NextLink from 'next/link'
 import { DefaultSeo, DefaultSeoProps } from 'next-seo'
-import { Folder, MetaJsonFile, NextraInternalGlobal } from 'nextra'
+import { Folder, MetaJsonFile, NextraInternalGlobal, PageMapItem } from 'nextra'
+// @ts-expect-error todo: fix type error
 import { NEXTRA_INTERNAL } from 'nextra/constants'
 import { useMemo } from 'react'
 
@@ -14,6 +15,7 @@ import {
   GDSProvider,
   I18nProvider,
   Layout,
+  Locale,
   LocaleSwitcher,
   NavigationMarketing,
   translate,
@@ -62,9 +64,10 @@ const DefaultSeoWithLocale = () => {
 
 const MyApp = ({ Component, pageProps, router }: AppProps) => {
   const localeSwitcher = useMemo(() => <LocaleSwitcher key="localeSwitcher" />, [])
+  // @ts-expect-error todo: fix type error
   const __nextra_internal__ = (globalThis as NextraInternalGlobal)[NEXTRA_INTERNAL]
   const { pageOpts } = __nextra_internal__.context[router.route]
-  const locale = router.asPath.split('/')[1]
+  const locale = router.asPath.split('/')[1] as Locale
   pageOpts.headings = useMemo(
     () =>
       pageOpts.filePath === 'pages/[locale]/index.mdx'
@@ -90,7 +93,7 @@ const MyApp = ({ Component, pageProps, router }: AppProps) => {
   )
 
   pageOpts.pageMap = useMemo(() => {
-    const pageMap = __nextra_internal__.pageMap.find(
+    const pageMap = (__nextra_internal__.pageMap as PageMapItem[]).find(
       (pageItem): pageItem is Folder => pageItem.kind === 'Folder' && pageItem.name === locale
     )!.children
     pageMap.find((pageItem): pageItem is MetaJsonFile => pageItem.kind === 'Meta')!.data.index = translate(

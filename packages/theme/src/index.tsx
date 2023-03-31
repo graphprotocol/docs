@@ -60,7 +60,7 @@ const mdxStyles: ThemeUIStyleObject = {
 
 export { Heading, Image, Link, LinkInline, Paragraph }
 
-export function NextraLayout({ children, pageOpts }: NextraThemeLayoutProps): ReactElement {
+export default function NextraLayout({ children, pageOpts }: NextraThemeLayoutProps): ReactElement {
   const { frontMatter, filePath, pageMap, headings } = pageOpts
   const { locale, defaultLocale } = useI18n()
   const fsPath = useFSRoute()
