@@ -74,6 +74,7 @@ const MyApp = ({ Component, pageProps, router }: AppProps) => {
 
   pageOpts.headings = useMemo(() => {
     if (!hasMDXPage) return []
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
     return pageOpts.filePath === 'pages/[locale]/index.mdx'
       ? [
           {

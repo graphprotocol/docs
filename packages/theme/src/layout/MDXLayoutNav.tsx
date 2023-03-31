@@ -5,7 +5,16 @@ import { useRouter } from 'next/router'
 import { Item } from 'nextra/normalize-pages'
 import { PropsWithChildren, useContext, useEffect, useState } from 'react'
 
-import { BorderRadius, buildTransition, Flex, Icon, NestedStrings, Spacing, Text, useI18n } from '@edgeandnode/components'
+import {
+  BorderRadius,
+  buildTransition,
+  Flex,
+  Icon,
+  NestedStrings,
+  Spacing,
+  Text,
+  useI18n,
+} from '@edgeandnode/components'
 
 import { DocSearch, Link, NavTree } from '@/components'
 import { NavContext } from '@/layout'
@@ -193,9 +202,7 @@ export const MDXLayoutNav = ({ mobile = false }: { mobile?: boolean }) => {
                   >
                     {pageItem.title}
                   </NavTree.Group.Heading>
-                  <NavTree.Group.Content>
-                    {pageItem.children.map(renderSidebar)}
-                  </NavTree.Group.Content>
+                  <NavTree.Group.Content>{pageItem.children.map(renderSidebar)}</NavTree.Group.Content>
                 </NavTree.Group>
               )
             }
