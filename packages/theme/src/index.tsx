@@ -4,7 +4,7 @@ import { NextraThemeLayoutProps } from 'nextra'
 import { useFSRoute } from 'nextra/hooks'
 import { MDXProvider } from 'nextra/mdx'
 import { Item, normalizePages } from 'nextra/normalize-pages'
-import { useCallback, useMemo } from 'react'
+import { ReactElement, useCallback, useMemo } from 'react'
 import { useSet } from 'react-use'
 import { ThemeUIStyleObject } from 'theme-ui'
 
@@ -57,7 +57,7 @@ const mdxStyles: ThemeUIStyleObject = {
   },
 }
 
-export function MDXLayout({ children, pageOpts }: NextraThemeLayoutProps) {
+export function NextraLayout({ children, pageOpts }: NextraThemeLayoutProps): ReactElement {
   const { frontMatter, filePath, pageMap, headings } = pageOpts
   const { locale, defaultLocale } = useI18n()
   const fsPath = useFSRoute()
