@@ -5,10 +5,9 @@ import { useRouter } from 'next/router'
 import { Item } from 'nextra/normalize-pages'
 import { PropsWithChildren, useContext, useEffect, useState } from 'react'
 
-import { BorderRadius, buildTransition, Flex, Icon, NestedStrings, Spacing, Text } from '@edgeandnode/components'
+import { BorderRadius, buildTransition, Flex, Icon, NestedStrings, Spacing, Text, useI18n } from '@edgeandnode/components'
 
 import { DocSearch, Link, NavTree } from '@/components'
-import { useI18n } from '@/i18n'
 import { NavContext } from '@/layout'
 
 const removeBasePathFromUrl = (url: string) => url.substring((process.env.BASE_PATH ?? '').length)
