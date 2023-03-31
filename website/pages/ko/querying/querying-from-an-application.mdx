@@ -1,40 +1,176 @@
 ---
-title: 애플리케이션부터 쿼리하기
+title: Querying from an Application
 ---
 
-서브그래프가 Subgraph Studio 또는 Graph Explorer에 배포되면 다음과 같은 GraphQL API용 엔드포인트가 제공됩니다.
+Once a subgraph is deployed to the Subgraph Studio or to The Graph Explorer, you will be given the endpoint for your GraphQL API that should look something like this:
 
-**Subgraph Studio (테스팅 엔드포인트)**
+**Subgraph Studio (testing endpoint)**
 
 ```sh
 Queries (HTTP)
 https://api.studio.thegraph.com/query/<ID>/<SUBGRAPH_NAME>/<VERSION>
 ```
 
-**그래프 탐색기**
+**Graph Explorer**
 
 ```sh
 Queries (HTTP)
 https://gateway.thegraph.com/api/<API_KEY>/subgraphs/id/<SUBGRAPH_ID>
 ```
 
-GraphQL 엔드포인트를 사용하면 다양한 GraphQL 클라이언트 라이브러리를 사용하여 서브그래프를 쿼리하고 서브그래프에 의해 인덱싱된 데이터로 앱을 채울 수 있습니다.
+Using the GraphQL endpoint, you can use various GraphQL Client libraries to query the subgraph and populate your app with the data indexed by the subgraph.
 
-다음은 생태계에서 더 인기 있는 몇몇 GraphQL 클라이언트 및 사용 방법입니다:
+Here are a couple of the more popular GraphQL clients in the ecosystem and how to use them:
 
-### 아폴로 클라이언트(Apollo client)
+## GraphQL clients
 
-[Apollo client](https://www.apollographql.com/docs/) 는 iOS, Android 및 React Native와 같은 모바일 클라이언트는 물론 React 및 Vue와 같은 프레임워크를 포함한 웹 프로젝트를 지원합니다.
+### Graph client
 
-웹 프로젝트에서 Apollo 클라이언트를 사용하여 서브그래프에서 데이터를 가져오는 방법을 살펴보겠습니다.
+The Graph is providing it own GraphQL client, `graph-client` that supports unique features such as:
 
-우선, `@apollo/client` 및 `graphql`을 설치합니다:
+- Cross-chain Subgraph Handling: Querying from multiple subgraphs in a single query
+- [Automatic Block Tracking](https://github.com/graphprotocol/graph-client/blob/main/packages/block-tracking/README.md)
+- [Automatic Pagination](https://github.com/graphprotocol/graph-client/blob/main/packages/auto-pagination/README.md)
+- Fully typed result
+
+<br />
+
+Also integrated with popular GraphQL clients such as Apollo and URQL and compatible with all environments (React, Angular, Node.js, React Native), using `graph-client` will give you the best experience for interacting with The Graph.
+
+<br />
+
+Let's look at how to fetch data from a subgraph with `graphql-client`.
+
+To get started, make sure to install The Graph Client CLI in your project:
+
+```sh
+yarn add -D @graphprotocol/client-cli
+# or, with NPM:
+npm install --save-dev @graphprotocol/client-cli
+```
+
+Define your query in a `.graphql` file (or inlined in your `.js` or `.ts` file):
+
+```graphql
+query ExampleQuery {
+  # this one is coming from compound-v2
+  markets(first: 7) {
+    borrowRate
+    cash
+    collateralFactor
+  }
+  # this one is coming from uniswap-v2
+  pair(id: "0x00004ee988665cdda9a1080d5792cecd16dc1220") {
+    id
+    token0 {
+      id
+      symbol
+      name
+    }
+    token1 {
+      id
+      symbol
+      name
+    }
+  }
+}
+```
+
+Then, create a configuration file (called `.graphclientrc.yml`) and point to your GraphQL endpoints provided by The Graph, for example:
+
+```yaml
+# .graphclientrc.yml
+sources:
+  - name: uniswapv2
+    handler:
+      graphql:
+        endpoint: https://api.thegraph.com/subgraphs/name/uniswap/uniswap-v2
+  - name: compoundv2
+    handler:
+      graphql:
+        endpoint: https://api.thegraph.com/subgraphs/name/graphprotocol/compound-v2
+
+documents:
+  - ./src/example-query.graphql
+```
+
+Running the following The Graph Client CLI command will generate typed and ready to use JavaScript code:
+
+```sh
+graphclient build
+```
+
+Finally, update your `.ts` file to use the generated typed GraphQL documents:
+
+```tsx
+import React, { useEffect } from 'react'
+// ...
+// we import types and typed-graphql document from the generated code (`..graphclient/`)
+import { ExampleQueryDocument, ExampleQueryQuery, execute } from '../.graphclient'
+
+function App() {
+  const [data, setData] = React.useState<ExampleQueryQuery>()
+
+  useEffect(() => {
+    execute(ExampleQueryDocument, {}).then((result) => {
+      setData(result?.data)
+    })
+  }, [setData])
+  return (
+    <div className="App">
+      <header className="App-header">
+        <img src={logo} className="App-logo" alt="logo" />
+        <p>Graph Client Example</p>
+        <fieldset>
+          {data && (
+            <form>
+              <label>Data</label>
+              <br />
+              <textarea value={JSON.stringify(data, null, 2)} readOnly rows={25} />
+            </form>
+          )}
+        </fieldset>
+      </header>
+    </div>
+  )
+}
+
+export default App
+```
+
+<br />
+
+**⚠️ Important notice**
+
+`graph-client` is perfectly integrated with other GraphQL clients such as Apollo client, URQL, or React Query; you will [find examples in the official repository](https://github.com/graphprotocol/graph-client/tree/main/examples).
+
+However, if you choose to go with another client, keep in mind that **you won't be able to get to use Cross-chain Subgraph Handling or Automatic Pagination, which are core features for querying The Graph**.
+
+<br />
+
+### Apollo client
+
+[Apollo client](https://www.apollographql.com/docs/) is the ubiquitous GraphQL client on the front-end ecosystem.
+
+Available for React, Angular, Vue, Ember, iOS, and Android, Apollo Client, although the heaviest client, brings many features to build advanced UI on top of GraphQL:
+
+- advanced error handling
+- pagination
+- data prefetching
+- optimistic UI
+- local state management
+
+<br />
+
+Let's look at how to fetch data from a subgraph with Apollo client in a web project.
+
+First, install `@apollo/client` and `graphql`:
 
 ```sh
 npm install @apollo/client graphql
 ```
 
-그러면 여러분들은 다음의 코드로 API를 쿼리할 수 있습니다:
+Then you can query the API with the following code:
 
 ```javascript
 import { ApolloClient, InMemoryCache, gql } from '@apollo/client'
@@ -67,7 +203,7 @@ client
   })
 ```
 
-변수를 사용하기 위해서, 쿼리에 `variables` 인수를 전달할 수 있습니다.
+To use variables, you can pass in a `variables` argument to the query:
 
 ```javascript
 const tokensQuery = `
@@ -98,19 +234,28 @@ client
   })
 ```
 
+<br />
+
 ### URQL
 
-또 다른 옵션은 약간 더 가벼운 GraphQL 클라이언트 라이브러리인 [URQL](https://formidable.com/open-source/urql/)입니다.
+Another option is [URQL](https://formidable.com/open-source/urql/) which is available within Node.js, React/Preact, Vue, and Svelte environments, with more advanced features:
 
-웹 프로젝트에서 URQL을 사용하여 서브그래프에서 데이터를 가져오는 방법을 살펴보겠습니다.
+- Flexible cache system
+- Extensible design (easing adding new capabilities on top of it)
+- Lightweight bundle (~5x lighter than Apollo Client)
+- Support for file uploads and offline mode
 
-우선, `urql` 및 `graphql`을 설치합니다:
+<br />
+
+Let's look at how to fetch data from a subgraph with URQL in a web project.
+
+First, install `urql` and `graphql`:
 
 ```sh
 npm install urql graphql
 ```
 
-그러면 여러분들은 다음의 코드로 API를 쿼리할 수 있습니다:
+Then you can query the API with the following code:
 
 ```javascript
 import { createClient } from 'urql'
