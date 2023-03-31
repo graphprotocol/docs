@@ -2,7 +2,8 @@ import { DocSearchHit } from '@docsearch/react/dist/esm/types'
 import { keyframes } from '@emotion/react'
 import * as Collapsible from '@radix-ui/react-collapsible'
 import { useRouter } from 'next/router'
-import { Fragment, PropsWithChildren, useContext, useEffect, useState } from 'react'
+import { Item } from 'nextra/normalize-pages'
+import { PropsWithChildren, useContext, useEffect, useState } from 'react'
 
 import { BorderRadius, buildTransition, Flex, Icon, NestedStrings, Spacing, Text } from '@edgeandnode/components'
 
@@ -174,62 +175,53 @@ export const MDXLayoutNav = ({ mobile = false }: { mobile?: boolean }) => {
         />
       </div>
       <NavTree textProps={mobile ? { weight: 'REGULAR', size: '16px' } : undefined}>
-        {directories.map((pageItem, pageItemIndex) => (
-          <Fragment key={pageItemIndex}>
-            {(() => {
-              if (pageItem.type === 'separator') {
-                return <NavTree.Divider sx={mobile ? { mx: Spacing['24px'], my: Spacing['16px'] } : {}} />
-              }
-              if (pageItem.type === 'heading') {
-                return <NavTree.Heading>{pageItem.title}</NavTree.Heading>
-              }
-              if ('children' in pageItem && pageItem.children) {
-                return (
-                  <NavTree.Group active={activePage.route.startsWith(`${pageItem.route}/`)}>
-                    <NavTree.Group.Heading
-                      sx={mobile ? { py: 0 } : {}}
-                      buttonProps={{ sx: mobile ? {} : { paddingInlineEnd: 0 } }}
-                    >
-                      {pageItem.title}
-                    </NavTree.Group.Heading>
-                    <NavTree.Group.Content>
-                      {pageItem.children.map((childItem, childItemIndex) => (
-                        <NavTree.Item
-                          key={childItemIndex}
-                          href={childItem.route}
-                          active={activePage.route === childItem.route}
-                          sx={mobile ? { py: 0 } : {}}
-                          linkProps={{ sx: mobile ? {} : { paddingInlineEnd: 0 } }}
-                        >
-                          {childItem.title}
-                        </NavTree.Item>
-                      ))}
-                    </NavTree.Group.Content>
-                  </NavTree.Group>
-                )
-              }
+        {directories.map((pageItem) =>
+          (function renderSidebar(pageItem: Item) {
+            if (pageItem.type === 'separator') {
               return (
-                <NavTree.Item
-                  href={pageItem.route}
-                  active={activePage.route === pageItem.route}
-                  sx={mobile ? { py: 0 } : {}}
-                  linkProps={{ sx: mobile ? {} : { paddingInlineEnd: 0 } }}
-                  diamondProps={{
-                    sx: mobile
-                      ? {
-                          left: '6px',
-                          insetInlineStart: '6px',
-                          insetInlineEnd: 'auto',
-                        }
-                      : {},
-                  }}
-                >
-                  {pageItem.title}
-                </NavTree.Item>
+                <NavTree.Divider key={pageItem.name} sx={mobile ? { mx: Spacing['24px'], my: Spacing['16px'] } : {}} />
               )
-            })()}
-          </Fragment>
-        ))}
+            }
+            if (pageItem.type === 'heading') {
+              return <NavTree.Heading key={pageItem.name}>{pageItem.title}</NavTree.Heading>
+            }
+            if ('children' in pageItem && pageItem.children) {
+              return (
+                <NavTree.Group key={pageItem.name} active={activePage.route.startsWith(`${pageItem.route}/`)}>
+                  <NavTree.Group.Heading
+                    sx={mobile ? { py: 0 } : {}}
+                    buttonProps={{ sx: mobile ? {} : { paddingInlineEnd: 0 } }}
+                  >
+                    {pageItem.title}
+                  </NavTree.Group.Heading>
+                  <NavTree.Group.Content>
+                    {pageItem.children.map(renderSidebar)}
+                  </NavTree.Group.Content>
+                </NavTree.Group>
+              )
+            }
+            return (
+              <NavTree.Item
+                key={pageItem.name}
+                href={pageItem.route}
+                active={activePage.route === pageItem.route}
+                sx={mobile ? { py: 0 } : {}}
+                linkProps={{ sx: mobile ? {} : { paddingInlineEnd: 0 } }}
+                diamondProps={{
+                  sx: mobile
+                    ? {
+                        left: '6px',
+                        insetInlineStart: '6px',
+                        insetInlineEnd: 'auto',
+                      }
+                    : {},
+                }}
+              >
+                {pageItem.title}
+              </NavTree.Item>
+            )
+          })(pageItem)
+        )}
       </NavTree>
     </Wrapper>
   )

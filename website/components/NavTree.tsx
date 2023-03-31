@@ -3,17 +3,7 @@ import * as Collapsible from '@radix-ui/react-collapsible'
 import { createContext, HTMLAttributes, useContext, useState } from 'react'
 import { SxProp } from 'theme-ui'
 
-import {
-  buildTransition,
-  Divider,
-  Flex,
-  Icon,
-  IconProps,
-  Locale,
-  Spacing,
-  Text,
-  TextProps,
-} from '@edgeandnode/components'
+import { buildTransition, Divider, Flex, Icon, IconProps, Spacing, Text, TextProps } from '@edgeandnode/components'
 
 import { Link, LinkProps } from '@/components'
 import { useI18n } from '@/i18n'
@@ -189,7 +179,14 @@ const NavTreeDivider = (props: NavTreeDividerProps) => {
 
 const NavTreeHeading = ({ children, ...props }: NavTreeHeadingProps) => {
   return (
-    <li sx={{ mt: Spacing['24px'], mb: Spacing['12px'], paddingInlineStart: Spacing['24px'] }} {...props}>
+    <li
+      sx={{
+        mt: Spacing['24px'],
+        mb: Spacing['12px'],
+        paddingInlineStart: Spacing['24px'],
+      }}
+      {...props}
+    >
       <Text.C12 color="White48">{children}</Text.C12>
     </li>
   )

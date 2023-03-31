@@ -1,6 +1,6 @@
 import merge from 'lodash/merge'
 import { NextSeo, NextSeoProps } from 'next-seo'
-import { Folder, Heading as NextraHeading, MetaJsonFile, NextraThemeLayoutProps } from 'nextra'
+import { NextraThemeLayoutProps } from 'nextra'
 import { useFSRoute } from 'nextra/hooks'
 import { MDXProvider } from 'nextra/mdx'
 import { Item, normalizePages } from 'nextra/normalize-pages'
@@ -59,44 +59,13 @@ const mdxStyles: ThemeUIStyleObject = {
 }
 
 export function MDXLayout({ children, pageOpts }: NextraThemeLayoutProps) {
-  const { frontMatter, filePath, pageMap } = pageOpts
+  const { frontMatter, filePath, pageMap, headings } = pageOpts
   const { locale, defaultLocale } = useI18n()
   const fsPath = useFSRoute()
-  const { t } = useI18n()
-
-  const headings: NextraHeading[] = useMemo(
-    () =>
-      filePath === 'pages/[locale]/index.mdx'
-        ? [
-            {
-              id: 'network-roles',
-              value: t('index.networkRoles.title'),
-              depth: 2,
-            },
-            {
-              id: 'products',
-              value: t('index.products.title'),
-              depth: 2,
-            },
-            {
-              id: 'supported-networks',
-              value: t('index.supportedNetworks.title'),
-              depth: 2,
-            },
-          ]
-        : pageOpts.headings,
-    [pageOpts.headings, filePath, t]
-  )
 
   const args = useMemo(() => {
-    const filteredPageMap = pageMap.find(
-      (pageItem): pageItem is Folder => pageItem.kind === 'Folder' && pageItem.name === locale
-    )!.children
-    filteredPageMap.find((pageItem): pageItem is MetaJsonFile => pageItem.kind === 'Meta')!.data.index =
-      t('index.title')
-
     const result = normalizePages({
-      list: filteredPageMap,
+      list: pageMap,
       locale,
       defaultLocale: defaultLocale,
       route: fsPath,
@@ -122,7 +91,7 @@ export function MDXLayout({ children, pageOpts }: NextraThemeLayoutProps) {
         (item) => item.type !== 'separator' && item.type !== 'heading' && item.route !== ''
       ),
     }
-  }, [defaultLocale, fsPath, locale, pageMap, t])
+  }, [defaultLocale, fsPath, locale, pageMap])
 
   // Provide `markOutlineItem` to the `DocumentContext` so child `Heading` components can mark outline items as "in or above view" or not
   const [

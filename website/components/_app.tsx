@@ -3,6 +3,8 @@ import mixpanel from 'mixpanel-browser'
 import { AppProps } from 'next/app'
 import NextLink from 'next/link'
 import { DefaultSeo, DefaultSeoProps } from 'next-seo'
+import { Folder, MetaJsonFile, NextraInternalGlobal } from 'nextra'
+import { NEXTRA_INTERNAL } from 'nextra/constants'
 import { useMemo } from 'react'
 
 import {
@@ -14,6 +16,7 @@ import {
   Layout,
   LocaleSwitcher,
   NavigationMarketing,
+  translate,
 } from '@edgeandnode/components'
 
 import { supportedLocales, translations, useI18n } from '@/i18n'
@@ -61,6 +64,44 @@ const DefaultSeoWithLocale = () => {
 
 const MyApp = ({ Component, pageProps, router }: AppProps) => {
   const localeSwitcher = useMemo(() => <LocaleSwitcher key="localeSwitcher" />, [])
+  const __nextra_internal__ = (globalThis as NextraInternalGlobal)[NEXTRA_INTERNAL]
+  const { pageOpts } = __nextra_internal__.context[router.route]
+  const locale = router.asPath.split('/')[1]
+  pageOpts.headings = useMemo(
+    () =>
+      pageOpts.filePath === 'pages/[locale]/index.mdx'
+        ? [
+            {
+              id: 'network-roles',
+              value: translate(translations, locale, 'index.networkRoles.title'),
+              depth: 2,
+            },
+            {
+              id: 'products',
+              value: translate(translations, locale, 'index.products.title'),
+              depth: 2,
+            },
+            {
+              id: 'supported-networks',
+              value: translate(translations, locale, 'index.supportedNetworks.title'),
+              depth: 2,
+            },
+          ]
+        : pageOpts.headings,
+    [pageOpts.filePath, pageOpts.headings, locale]
+  )
+
+  pageOpts.pageMap = useMemo(() => {
+    const pageMap = __nextra_internal__.pageMap.find(
+      (pageItem): pageItem is Folder => pageItem.kind === 'Folder' && pageItem.name === locale
+    )!.children
+    pageMap.find((pageItem): pageItem is MetaJsonFile => pageItem.kind === 'Meta')!.data.index = translate(
+      translations,
+      locale,
+      'index.title'
+    )
+    return pageMap
+  }, [__nextra_internal__.pageMap, locale])
 
   return (
     <I18nProvider supportedLocales={supportedLocales} translations={translations} clientRouter={router}>
