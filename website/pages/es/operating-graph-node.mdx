@@ -1,0 +1,372 @@
+---
+title: Operar Graph Node
+---
+
+Graph Node es el componente que indexa los subgrafos, y hace que los datos resultantes estén disponibles para su consulta a través de una API GraphQL. Como tal, es fundamental para el stack del Indexador, y el correcto funcionamiento de Graph Node es crucial para ejecutar un Indexador con éxito.
+
+Esto proporciona un resumen contextual de Graph Node, y algunas de las opciones más avanzadas disponibles para los Indexadores. Encontrarás documentación e instrucciones detalladas en el [Graph Node repository](https://github.com/graphprotocol/graph-node).
+
+## Graph Node
+
+[Graph Node](https://github.com/graphprotocol/graph-node) es la implementación de referencia para indexar subgrafos en The Graph Network, conectarse a clientes blockchain, indexar subgrafos y hacer que los datos indexados estén disponibles para su consulta.
+
+Graph Node (y todo el stack del Indexador) puede ejecutarse en una máquina física dedicada o en la nube. Esta flexibilidad del componente central de indexación es crucial para la robustez de The Graph Protocol. Del mismo modo, Graph Node se puede [construir desde el código fuente](https://github.com/graphprotocol/graph-node), o los Indexadores pueden utilizar una de las [imágenes Docker proporcionadas](https://hub.docker.com/r/graphprotocol/graph-node).
+
+#### Base de datos PostgreSQL
+
+El almacén principal para Graph Node, aquí es donde se almacenan los datos de los subgrafos, así como los metadatos de los subgrafos, y los datos de una red subgrafo-agnóstica como el caché de bloques, y el caché eth_call.
+
+#### Clientes de red
+
+In order to index a network, Graph Node needs access to a network client via an EVM-compatible JSON-RPC API. This RPC may connect to a single client or it could be a more complex setup that load balances across multiple.
+
+While some subgraphs may just require a full node, some may have indexing features which require additional RPC functionality. Specifically subgraphs which make `eth_calls` as part of indexing will require an archive node which supports [EIP-1898](https://eips.ethereum.org/EIPS/eip-1898), and subgraphs with `callHandlers`, or `blockHandlers` with a `call` filter, require `trace_filter` support ([see trace module documentation here](https://openethereum.github.io/JSONRPC-trace-module)).
+
+**Próximamente: Network Firehoses**: un Firehose es un servicio gRPC que proporciona un flujo de bloques ordenado, pero consciente de bifurcaciones, desarrollado por los core devs de The Graph para mejorar el rendimiento de la indexación a escala. Actualmente no es un requisito para los Indexadores, pero se les anima a que se familiaricen con la tecnología antes de que la red sea totalmente compatible. Más información sobre Firehose [aquí](https://firehose.streamingfast.io/).
+
+#### Nodos IPFS
+
+Los metadatos de deploy del subgrafo se almacenan en la red IPFS. El Graph Node accede principalmente al nodo IPFS durante el deploy del subgrafo para obtener el manifiesto del subgrafo y todos los archivos vinculados. Los Indexadores de red no necesitan alojar su propio nodo IPFS. En https://ipfs.network.thegraph.com se aloja un nodo IPFS para la red.
+
+#### Servidor de métricas Prometheus
+
+Para permitir la supervisión y la generación de informes, Graph Node puede registrar métricas opcionalmente en un servidor de métricas Prometheus.
+
+### Empezar desde el origen
+
+#### Instalar requisitos previos
+
+- **Rust**
+
+- **PostgreSQL**
+
+- **IPFS**
+
+- **Requisitos adicionales para usuarios de Ubuntu**: Para ejecutar un nodo Graph en Ubuntu, es posible que se necesiten algunos paquetes adicionales.
+
+```sh
+sudo apt-get install -y clang libpg-dev libssl-dev pkg-config
+```
+
+#### Configuración
+
+1. Inicia un servidor de base de datos PostgreSQL
+
+```sh
+initdb -D .postgres
+pg_ctl -D .postgres -l logfile start
+createdb graph-node
+```
+
+2. Clona el repositorio [Graph Node](https://github.com/graphprotocol/graph-node) y crea la fuente ejecutando `cargo build`
+
+3. Ahora que todas las dependencias están configuradas, inicia el nodo Graph:
+
+```sh
+cargo run -p graph-node --release -- \
+  --postgres-url postgresql://[USERNAME]:[PASSWORD]@localhost:5432/graph-node \
+  --ethereum-rpc [NETWORK_NAME]:[URL] \
+  --ipfs https://ipfs.network.thegraph.com
+```
+
+### Empezar usando Docker
+
+#### Prerrequisitos
+
+- **Nodo Ethereum** - Por defecto, la configuración de docker-compose utilizará mainnet: [http://host.docker.internal:8545](http://host.docker.internal:8545) para conectarse al nodo Ethereum en tu máquina host. Puedes reemplazar este nombre de red y url actualizando `docker-compose.yml`.
+
+#### Configuración
+
+1. Clona Graph Node y navega hasta el directorio de Docker:
+
+```sh
+git clone http://github.com/graphprotocol/graph-node
+cd graph-node/docker
+```
+
+2. Solo para usuarios de linux - Utiliza la dirección IP del host en lugar de `host.docker.internal` en el `docker-compose.yml` utilizando el script incluido:
+
+```sh
+./setup.sh
+```
+
+3. Inicia un Graph Node local que se conectará a tu endpoint de Ethereum:
+
+```sh
+docker-compose up
+```
+
+### Introducción a Kubernetes
+
+Puedes encontrar un ejemplo completo de configuración de Kubernetes en el [Indexer Repository](https://github.com/graphprotocol/indexer/tree/main/k8s).
+
+### Puertos
+
+Cuando está funcionando, Graph Node muestra los siguientes puertos:
+
+| Puerto | Objeto | Rutas | Argumento CLI | Variable de Entorno |
+| --- | --- | --- | --- | --- |
+| 8000 | Servidor HTTP GraphQL<br />(para consultas de subgrafos) | /subgraphs/id/...<br />/subgraphs/name/.../... | --http-port | - |
+| 8001 | GraphQL WS<br />(para suscripciones a subgrafos) | /subgraphs/id/...<br />/subgraphs/name/.../... | --ws-port | - |
+| 8020 | JSON-RPC<br />(para administrar implementaciones) | / | --admin-port | - |
+| 8030 | API de estado de indexación de subgrafos | /graphql | --index-node-port | - |
+| 8040 | Métricas de Prometheus | /metrics | --metrics-port | - |
+
+> **Importante**: Ten cuidado con exponer puertos públicamente - los **puertos de administración** deben mantenerse bloqueados. Esto incluye el punto final JSON-RPC de Graph Node.
+
+# Configuración avanzada de Graph Node
+
+En su forma más simple, Graph Node puede funcionar con una única instancia de Graph Node, una única base de datos PostgreSQL, un nodo IPFS y los clientes de red que requieran los subgrafos a indexar.
+
+Esta configuración puede escalarse horizontalmente, añadiendo múltiples Graph Nodes, y múltiples bases de datos para soportar esos Graph Nodes. Los usuarios avanzados pueden querer aprovechar algunas de las capacidades de escalado horizontal de Graph Node, así como algunas de las opciones de configuración más avanzadas, a través del archivo `config.toml` y las variables de entorno de Graph Node.
+
+## config.toml
+
+Se puede utilizar un archivo de configuración [TOML](https://toml.io/en/) para establecer configuraciones más complejas que las expuestas en la CLI. La ubicación del archivo se pasa con el modificador de línea de comandos --config.
+
+> Cuando se utiliza un archivo de configuración, no es posible utilizar las opciones --postgres-url, --postgres-secondary-hosts y --postgres-host-weights.
+
+Se puede proveer un archivo `config.toml` mínimo; el siguiente archivo es equivalente al uso de la opción de línea de comandos --postgres-url:
+
+```toml
+[store]
+[store.primary]
+connection="<.. postgres-url argument ..>"
+[deployment]
+[[deployment.rule]]
+indexers = [ "<.. list of all indexing nodes ..>" ]
+```
+
+La documentación completa de `config.toml` se puede encontrar en los [documentos de Graph Node](https://github.com/graphprotocol/graph-node/blob/master/docs/config.md).
+
+### Graph Nodes múltiples
+
+La indexación de Graph Node puede escalarse horizontalmente, ejecutando múltiples instancias de Graph Node para dividir la indexación y la consulta entre diferentes nodos. Esto se puede hacer simplemente ejecutando Graph Nodes configurados con un `node_id` diferente al inicio (por ejemplo, en el archivo Docker Compose), que luego se puede utilizar en el archivo `config.toml` para especificar [nodos de consulta dedicados](#dedicated-query-nodes), [block ingestors](#dedicated-block-ingestor) y división de subgrafos entre nodos con [reglas de deploy](#deployment-rules).
+
+> Ten en cuenta que varios Graph Nodes pueden configurarse para utilizar la misma base de datos, que a su vez puede escalarse horizontalmente mediante sharding.
+
+### Reglas de deploy
+
+Dados múltiples Graph Nodes, es necesario gestionar el deploy de nuevos subgrafos para que el mismo subgrafo no sea indexado por dos nodos diferentes, lo que llevaría a colisiones. Esto puede hacerse usando reglas de deploy, que también pueden especificar en qué `shard` deben almacenarse los datos de un subgrafo, si se está usando la fragmentación de la base de datos. Las reglas de deploy pueden coincidir con el nombre del subgrafo y la red que el deploy está indexando para tomar una decisión.
+
+Ejemplo de configuración de reglas de deploy:
+
+```toml
+[deployment]
+[[deployment.rule]]
+match = { name = "(vip|important)/.*" }
+shard = "vip"
+indexers = [ "index_node_vip_0", "index_node_vip_1" ]
+[[deployment.rule]]
+match = { network = "kovan" }
+# No shard, so we use the default shard called 'primary'
+indexers = [ "index_node_kovan_0" ]
+[[deployment.rule]]
+match = { network = [ "xdai", "poa-core" ] }
+indexers = [ "index_node_other_0" ]
+[[deployment.rule]]
+# There's no 'match', so any subgraph matches
+shards = [ "sharda", "shardb" ]
+indexers = [
+    "index_node_community_0",
+    "index_node_community_1",
+    "index_node_community_2",
+    "index_node_community_3",
+    "index_node_community_4",
+    "index_node_community_5"
+  ]
+```
+
+Más información sobre las reglas de deploy [aquí](https://github.com/graphprotocol/graph-node/blob/master/docs/config.md#controlling-deployment).
+
+### Nodos de consulta dedicados
+
+Los nodos pueden configurarse para ser explícitamente nodos de consulta incluyendo lo siguiente en el archivo de configuración:
+
+```toml
+[general]
+query = "<regular expression>"
+```
+
+Cualquier nodo cuyo --node-id coincida con la expresión regular se configurará para que solo responda a consultas.
+
+### Escalado de bases de datos mediante sharding
+
+Para la mayoría de los casos de uso, una única base de datos Postgres es suficiente para soportar una instancia de graph-node. Cuando una instancia de graph-node supera una única base de datos Postgres, es posible dividir el almacenamiento de los datos de graph-node en varias bases de datos Postgres. Todas las bases de datos juntas forman el almacén de la instancia graph-node. Cada base de datos individual se denomina shard.
+
+Los shards pueden usarse para dividir deploys de subgrafos en múltiples bases de datos, y también pueden usarse para usar réplicas para repartir la carga de consultas entre las bases de datos. Esto incluye la configuración del número de conexiones de base de datos disponibles que cada `graph-node` debe mantener en su pool de conexiones para cada base de datos, lo que se vuelve cada vez más importante a medida que se indexan más subgrafos.
+
+El Sharding resulta útil cuando la base de datos existente no puede soportar la carga que le impone Graph Node y cuando ya no es posible aumentar el tamaño de la base de datos.
+
+> En general, es mejor hacer una única base de datos lo más grande posible, antes de empezar con los shards. Una excepción es cuando el tráfico de consultas se divide de forma muy desigual entre los subgrafos; en esas situaciones puede ayudar dramáticamente si los subgrafos de alto volumen se mantienen en un shard y todo lo demás en otro, porque esa configuración hace que sea más probable que los datos de los subgrafos de alto volumen permanezcan en la caché interna de la base de datos y no sean reemplazados por datos que no se necesitan tanto de los subgrafos de bajo volumen.
+
+En términos de configuración de las conexiones, comienza con max_connections en postgresql.conf establecido en 400 (o tal vez incluso 200) y mira las métricas de Prometheus store_connection_wait_time_ms y store_connection_checkout_count. Tiempos de espera notables (cualquier cosa por encima de 5ms) es una indicación de que hay muy pocas conexiones disponibles; altos tiempos de espera allí también serán causados por la base de datos que está muy ocupada (como alta carga de CPU). Sin embargo, si la base de datos parece estable, los tiempos de espera elevados indican la necesidad de aumentar el número de conexiones. En la configuración, el número de conexiones que puede utilizar cada instancia de Graph Node es un límite superior, y Graph Node no mantendrá conexiones abiertas si no las necesita.
+
+Más información sobre la configuración de almacenamiento [aquí](https://github.com/graphprotocol/graph-node/blob/master/docs/config.md#configuring-multiple-databases).
+
+### Bloques de procesamiento dedicado
+
+Si hay varios nodos configurados, será necesario especificar un nodo que sea responsable de la ingesta de nuevos bloques, con el fin de evitar que todos los nodos de indexación configurados estén consultando la cabeza de la cadena. Esto se hace como parte del espacio de nombres de las `chains`, especificando el `node_id` que se utilizará para la ingestión de bloques:
+
+```toml
+[chains]
+ingestor = "block_ingestor_node"
+```
+
+### Soporte de múltiples redes
+
+The Graph Protocol está aumentando el número de redes admitidas para recompensas de indexación, y existen muchos subgrafos que indexan redes no soportadas que un Indexador desearía procesar. El archivo `config.toml` permite una configuración expresiva y flexible de:
+
+- Redes múltiples
+- Múltiples proveedores por red (esto puede permitir dividir la carga entre los proveedores, y también puede permitir la configuración de nodos completos, así como nodos de archivo, con Graph Node prefiriendo proveedores más baratos si una carga de trabajo dada lo permite).
+- Detalles adicionales del proveedor, como features, autenticación y tipo de proveedor (para soporte experimental de Firehose)
+
+La sección `[chains]` controla los proveedores de ethereum a los que se conecta graph-node, y dónde se almacenan los bloques y otros metadatos de cada cadena. El siguiente ejemplo configura dos cadenas, mainnet y kovan, donde los bloques para mainnet se almacenan en el shard vip y los bloques para kovan se almacenan en el shard primary. La cadena mainnet puede utilizar dos proveedores diferentes, mientras que kovan sólo tiene un proveedor.
+
+```toml
+[chains]
+ingestor = "block_ingestor_node"
+[chains.mainnet]
+shard = "vip"
+provider = [
+  { label = "mainnet1", url = "http://..", features = [], headers = { Authorization = "Bearer foo" } },
+  { label = "mainnet2", url = "http://..", features = [ "archive", "traces" ] }
+]
+[chains.kovan]
+shard = "primary"
+provider = [ { label = "kovan", url = "http://..", features = [] } ]
+```
+
+Más información sobre la configuración de proveedores [aquí](https://github.com/graphprotocol/graph-node/blob/master/docs/config.md#configuring-ethereum-providers).
+
+## Variables del entorno
+
+Graph Node soporta una serie de variables de entorno que pueden activar features o cambiar el comportamiento de Graph Node. Estas variables están documentadas [aquí](https://github.com/graphprotocol/graph-node/blob/master/docs/environment-variables.md).
+
+## Deploy continuo
+
+Los usuarios que están operando una configuración de indexación escalada con configuración avanzada pueden beneficiarse de la gestión de sus Graph Nodes con Kubernetes.
+
+- El repositorio del Indexador tiene un [example Kubernetes reference](https://github.com/graphprotocol/indexer/tree/main/k8s)
+- [Launchpad](https://docs.graphops.xyz/launchpad/intro) es un conjunto de herramientas para ejecutar un Indexador de Graph Protocol en Kubernetes mantenido por GraphOps. Proporciona un conjunto de gráficos Helm y una CLI para gestionar un deploy de Graph Node.
+
+## Operar Graph Node
+
+Dado un Graph Node en funcionamiento (¡o Graph Nodes!), el reto consiste en gestionar los subgrafos deployados en esos nodos. Graph Node ofrece una serie de herramientas para ayudar a gestionar los subgrafos.
+
+### Logging
+
+Los registros de Graph Node pueden proporcionar información útil para la depuración y optimización de Graph Node y subgrafos específicos. Graph Node soporta diferentes niveles de registro a través de la variable de entorno `GRAPH_LOG`, con los siguientes niveles: error, warn, info, debug o trace.
+
+Además, establecer `GRAPH_LOG_QUERY_TIMING` como `gql` proporciona más detalles sobre cómo se están ejecutando las consultas GraphQL (aunque esto generará un gran volumen de registros).
+
+### Supervisión & alerta
+
+Graph Node proporciona las métricas a través del endpoint Prometheus en el puerto 8040 por defecto. Grafana se puede utilizar para visualizar estas métricas.
+
+El repositorio del Indexador proporciona un [example Grafana configuration](https://github.com/graphprotocol/indexer/blob/main/k8s/base/grafana.yaml).
+
+### Graphman
+
+`Graphman` es una herramienta de mantenimiento para Graph Node, que ayuda en el diagnóstico y resolución de diferentes tareas cotidianas y excepcionales.
+
+El comando graphman está incluido en los contenedores oficiales, y puedes docker exec en tu contenedor graph-node para ejecutarlo. Esto requiere un archivo `config.toml`.
+
+La documentación completa de los comandos de `graphman` está disponible en el repositorio Graph Node. Ver \[/docs/graphman.md\] (https://github.com/graphprotocol/graph-node/blob/master/docs/graphman.md) en el Graph Node `/docs`
+
+## Trabajar con subgrafos
+
+### API de estado de indexación
+
+Disponible por defecto en el puerto 8030/graphql, la API de estado de indexación expone una serie de métodos para comprobar el estado de indexación de diferentes subgrafos, comprobar pruebas de indexación, inspeccionar características de subgrafos y mucho más.
+
+El esquema completo está disponible [aquí](https://github.com/graphprotocol/graph-node/blob/master/server/index-node/src/schema.graphql).
+
+### Rendimiento de indexación
+
+El proceso de indexación consta de tres partes diferenciadas:
+
+- Obtener eventos de interés del proveedor
+- Procesar los eventos en orden con los handlers apropiados (esto puede implicar llamar a la cadena para obtener el estado y obtener datos del store)
+- Escribir los datos resultantes en el store
+
+"Estas etapas están en serie (es decir, se pueden ejecutar en paralelo), pero dependen una de la otra. Cuando los subgrafos son lentos en indexarse, la causa subyacente dependerá del subgrafo específico.
+
+Causas habituales de la lentitud de indexación:
+
+- Tiempo empleado en encontrar eventos relevantes de la cadena (los call handlers en particular pueden ser lentos, dada la dependencia de `trace_filter`)
+- Realización de un gran número de` eth_calls` como parte de los handlers
+- Gran cantidad de interacción con el depósito durante la ejecución
+- Una gran cantidad de datos para guardar en el depósito
+- Un gran número de eventos que procesar
+- Tiempo de conexión a la base de datos lento, para nodos abarrotados
+- El proveedor en sí mismo se está quedando rezagado con respecto a la cabeza de la cadena
+- Lentitud en la obtención de nuevos recibos en la cabeza de la cadena desde el proveedor
+
+Las métricas de indexación de subgrafos pueden ayudar a diagnosticar la causa raíz de la lentitud de la indexación. En algunos casos, el problema reside en el propio subgrafo, pero en otros, la mejora de los proveedores de red, la reducción de la contención de la base de datos y otras mejoras de configuración pueden mejorar notablemente el rendimiento de la indexación.
+
+### Subgrafos fallidos
+
+Durante la indexación, los subgrafos pueden fallar si encuentran datos inesperados, si algún componente no funciona como se esperaba o si hay algún error en los event handlers o en la configuración. Hay dos tipos generales de fallo:
+
+- Fallos deterministas: son fallos que no se resolverán con reintentos
+- Fallos no deterministas: pueden deberse a problemas con el proveedor o a algún error inesperado de Graph Node. Cuando se produce un fallo no determinista, Graph Node reintentará los handlers que han fallado, retrocediendo en el tiempo.
+
+En algunos casos, un fallo puede ser resuelto por el Indexador (por ejemplo, si el error es resultado de no tener el tipo correcto de proveedor, añadir el proveedor necesario permitirá continuar con la indexación). Sin embargo, en otros, se requiere un cambio en el código del subgrafo.
+
+> Los fallos deterministas se consideran "finales", con una Prueba de Indexación generada para el bloque que falla, mientras que los fallos no deterministas no lo son, ya que el subgrafo puede conseguir "no fallar" y continuar indexando. En algunos casos, la etiqueta no determinista es incorrecta, y el subgrafo nunca superará el error; tales fallos deben ser reportados como incidencias en el repositorio del Graph Node.
+
+### Caché de bloques y llamadas
+
+Graph Node almacena en caché ciertos datos en el depósito con el fin de ahorrar refetching desde el proveedor. Los bloques se almacenan en caché, así como los resultados de `eth_calls` (estos últimos se almacenan en caché a partir de un bloque específico). Este almacenamiento en caché puede aumentar drásticamente la velocidad de indexación durante la "resincronización" de un subgrafo ligeramente alterado.
+
+Sin embargo, en algunos casos, si un nodo de Ethereum ha proporcionado datos incorrectos durante algún tiempo, estos pueden introducirse en el caché, dando lugar a datos incorrectos o subgrafos fallidos. En este caso, los Indexadores pueden utilizar `graphman` para limpiar la caché envenenada y, a continuación, rebobinar los subgrafos afectados, que recuperarán datos frescos del proveedor (esperemos) sano.
+
+Si se sospecha de una inconsistencia en el caché de bloques, como un evento de falta de recepción tx:
+
+1. `graphman chain list` para encontrar el nombre de la cadena.
+2. `graphman chain check-blocks <CHAIN> by-number <NUMBER>` comprobará si el bloque en caché coincide con el proveedor, y elimina el bloque de la caché si no es así.
+   1. Si hay alguna diferencia, puede ser más seguro truncar todo el caché con `graphman chain truncate <CHAIN>`>.
+   2. Si el bloque coincide con el proveedor, el problema puede depurarse directamente contra el proveedor.
+
+### Consulta de problemas y errores
+
+Una vez que un subgrafo ha sido indexado, los Indexadores pueden esperar servir consultas a través del endpoint de consulta dedicado del subgrafo. Si el Indexador espera servir un volumen de consultas significativo, se recomienda un nodo de consulta dedicado, y en caso de volúmenes de consulta muy altos, los Indexadores pueden querer configurar shards de réplica para que las consultas no impacten en el proceso de indexación.
+
+Sin embargo, incluso con un nodo de consulta dedicado y réplicas, ciertas consultas pueden tardar mucho tiempo en ejecutarse y, en algunos casos, aumentar el uso de memoria y repercutir negativamente en el tiempo de consulta de otros usuarios.
+
+No existe una "bala de plata", sino toda una serie de herramientas para prevenir, diagnosticar y tratar las consultas lentas.
+
+#### Caché de consultas
+
+Graph Node almacena en caché las consultas GraphQL por defecto, lo que puede reducir significativamente la carga de la base de datos. Esto se puede configurar aún más con los ajustes `GRAPH_QUERY_CACHE_BLOCKS` y `GRAPH_QUERY_CACHE_MAX_MEM` - lee más [aquí](https://github.com/graphprotocol/graph-node/blob/master/docs/environment-variables.md#graphql-caching).
+
+#### Análisis de consultas
+
+Las consultas problemáticas suelen surgir de dos maneras. En algunos casos, los propios usuarios informan de que una consulta determinada es lenta. En ese caso, el reto consiste en diagnosticar el motivo de la lentitud, ya sea un problema general o específico de ese subgrafo o consulta. Y, por supuesto, resolverlo, si es posible.
+
+En otros casos, el desencadenante puede ser un uso elevado de memoria en un nodo de consulta, en cuyo caso el reto consiste primero en identificar la consulta causante del problema.
+
+Los Indexadores pueden utilizar [qlog](https://github.com/graphprotocol/qlog/) para procesar y resumir los registros de consultas de Graph Node. `GRAPH_LOG_QUERY_TIMING` también puede habilitarse para ayudar a identificar y depurar consultas lentas.
+
+Ante una consulta lenta, los Indexadores tienen algunas opciones. Por supuesto, pueden alterar su modelo de costes, para aumentar significativamente el coste de envío de la consulta problemática. Esto puede dar lugar a una reducción de la frecuencia de esa consulta. Sin embargo, a menudo esto no resuelve la raíz del problema.
+
+#### Optimización a nivel de cuenta
+
+Las tablas de bases de datos que almacenan entidades suelen ser de dos tipos: Las de tipo "transacción", en las que las entidades, una vez creadas, no se actualizan nunca, es decir, almacenan algo parecido a una lista de transacciones financieras, y las de tipo "cuenta", en las que las entidades se actualizan muy a menudo, es decir, almacenan algo parecido a cuentas financieras que se modifican cada vez que se registra una transacción. Las tablas tipo cuenta se caracterizan por contener un gran número de versiones de entidades, pero relativamente pocas entidades distintas. A menudo, en este tipo de tablas, el número de entidades distintas es del 1% del número total de filas (versiones de entidades)
+
+En el caso de las tablas tipo cuenta, `graph-node` puede generar consultas que aprovechan los detalles de cómo Postgres acaba almacenando datos con una tasa de cambio tan alta, a saber, que todas las versiones de los bloques recientes se encuentran en una pequeña subsección del almacenamiento global de dicha tabla.
+
+El comando `graphman stats show <sgdNNNN`> muestra, para cada tipo de entidad/tabla en un deploy, cuántas entidades distintas y cuántas versiones de entidades contiene cada tabla. Estos datos se basan en estimaciones internas de Postgres y, por lo tanto, son necesariamente imprecisos y pueden variar en un orden de magnitud. Un `-1` en la columna de `entidades` significa que Postgres cree que todas las filas contienen una entidad distinta.
+
+En general, las tablas en las que el número de entidades distintas es inferior al 1% del número total de filas/versiones de entidad son buenas candidatas para la optimización tipo cuenta. Cuando la salida de `graphman stats show` indica que una tabla podría beneficiarse de esta optimización, la ejecución de `graphman stats show<sgdNNN><table>` realizará un recuento completo de la tabla, que puede ser lento, pero proporciona una medida precisa de la proporción de entidades distintas con respecto al total de versiones de entidades.
+
+Una vez que se ha determinado que una tabla es tipo cuenta, la ejecución de `graphman stats account-like <sgdNNN>.<table>` activará la optimización tipo cuenta para las consultas de esa tabla. La optimización se puede volver a desactivar con `graphman stats account-like --clear <sgdNNN>.<table>` Los nodos de consulta tardan hasta 5 minutos en darse cuenta de que se ha activado o desactivado la optimización. Después de activar la optimización, es necesario verificar que el cambio no hace que las consultas sean más lentas para esa tabla. Si has configurado Grafana para monitorizar Postgres, las consultas lentas aparecerán en `pg_stat_activity` en grandes números, tardando varios segundos. En ese caso, la optimización necesita ser desactivada de nuevo.
+
+En el caso de los subgrafos tipo Uniswap, las tablas de `pair` y `token` son las principales candidatas para esta optimización, y pueden tener un efecto drástico en la carga de la base de datos.
+
+### Eliminar subgrafos
+
+> Se trata de una nueva funcionalidad, que estará disponible en Graph Node 0.29.x
+
+En algún momento un Indexador puede querer eliminar un subgrafo dado. Esto se puede hacer fácilmente mediante `graphman drop`, que elimina un deploy y todos sus datos indexados. El deploy puede especificarse como un nombre de subgrafo, un hash IPFS `Qm..`, o el espacio de nombre de la base de datos `sgdNNN`. Más documentación disponible [aquí](https://github.com/graphprotocol/graph-node/blob/master/docs/graphman.md#-drop).

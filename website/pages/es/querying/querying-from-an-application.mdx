@@ -1,8 +1,8 @@
 ---
-title: Consultar desde una Aplicacion
+title: Consultar desde una Aplicación
 ---
 
-Una vez que un subgrafo se despliega en Subgraph Studio o en The Graph Explorer, te darán el punto final para su API GraphQL que debería ser algo así:
+Una vez que se realiza el deploy de un subgrafo en Subgraph Studio o en The Graph Explorer, te darán el endpoint para su API GraphQL que debería ser algo así:
 
 **Subgraph Studio (endpoint de prueba)**
 
@@ -22,9 +22,145 @@ Usando el endpoint de GraphQL, puedes usar varias librerías de Clientes de Grap
 
 A continuación se presentan un par de clientes GraphQL más populares en el ecosistema y cómo utilizarlos:
 
+## Clientes de GraphQL
+
+### Cliente de Graph
+
+The Graph proporciona su propio cliente GraphQL, `graph-client`, que admite características únicas como:
+
+- Manejo de subgrafos cross-chain: consultas desde múltiples subgrafos en una sola consulta
+- [Automatic Block Tracking](https://github.com/graphprotocol/graph-client/blob/main/packages/block-tracking/README.md)
+- [Automatic Pagination](https://github.com/graphprotocol/graph-client/blob/main/packages/auto-pagination/README.md)
+- Resultado completamente tipificado
+
+<br />
+
+También integrado con clientes GraphQL populares como Apollo y URQL y compatible con todos los entornos (React, Angular, Node.js, React Native), el uso de `graph-client` te brindará la mejor experiencia para interactuar con The Graph.
+
+<br />
+
+Veamos cómo obtener datos de un subgrafo con `graphql-client`.
+
+Para comenzar, asegúrate de instalar The Graph Client CLI en tu proyecto:
+
+```sh
+yarn add -D @graphprotocol/client-cli
+# or, with NPM:
+npm install --save-dev @graphprotocol/client-cli
+```
+
+Define your query in a `.graphql` file (or inlined in your `.js` or `.ts` file):
+
+```graphql
+query ExampleQuery {
+  # this one is coming from compound-v2
+  markets(first: 7) {
+    borrowRate
+    cash
+    collateralFactor
+  }
+  # this one is coming from uniswap-v2
+  pair(id: "0x00004ee988665cdda9a1080d5792cecd16dc1220") {
+    id
+    token0 {
+      id
+      symbol
+      name
+    }
+    token1 {
+      id
+      symbol
+      name
+    }
+  }
+}
+```
+
+Luego, crea un archivo de configuración (llamado `.graphclientrc.yml`) y apunta a sus endpoints de GraphQL proporcionados por The Graph, por ejemplo:
+
+```yaml
+# .graphclientrc.yml
+sources:
+  - name: uniswapv2
+    handler:
+      graphql:
+        endpoint: https://api.thegraph.com/subgraphs/name/uniswap/uniswap-v2
+  - name: compoundv2
+    handler:
+      graphql:
+        endpoint: https://api.thegraph.com/subgraphs/name/graphprotocol/compound-v2
+
+documents:
+  - ./src/example-query.graphql
+```
+
+Ejecutar el siguiente comando de la CLI de Graph Client generará un código JavaScript escrito y listo para usar:
+
+```sh
+graphclient build
+```
+
+Finalmente, actualiza tu archivo `.ts` para usar los documentos GraphQL escritos generados:
+
+```tsx
+import React, { useEffect } from 'react'
+// ...
+// we import types and typed-graphql document from the generated code (`..graphclient/`)
+import { ExampleQueryDocument, ExampleQueryQuery, execute } from '../.graphclient'
+
+function App() {
+  const [data, setData] = React.useState<ExampleQueryQuery>()
+
+  useEffect(() => {
+    execute(ExampleQueryDocument, {}).then((result) => {
+      setData(result?.data)
+    })
+  }, [setData])
+  return (
+    <div className="App">
+      <header className="App-header">
+        <img src={logo} className="App-logo" alt="logo" />
+        <p>Graph Client Example</p>
+        <fieldset>
+          {data && (
+            <form>
+              <label>Data</label>
+              <br />
+              <textarea value={JSON.stringify(data, null, 2)} readOnly rows={25} />
+            </form>
+          )}
+        </fieldset>
+      </header>
+    </div>
+  )
+}
+
+export default App
+```
+
+<br />
+
+**⚠️ Nota importante**
+
+`graph-client` está perfectamente integrado con otros clientes GraphQL como el cliente Apollo, URQL o React Query; [encontrarás ejemplos en el repositorio oficial](https://github.com/graphprotocol/graph-client/tree/main/examples).
+
+Sin embargo, si eliges ir con otro cliente, ten en cuenta que **no podrás utilizar Cross-chain Subgraph Handling o Automatic Pagination, que son características principales para realizar consultas de The Graph**.
+
+<br />
+
 ### Cliente Apollo
 
-[El cliente Apollo](https://www.apollographql.com/docs/) es compatible con proyectos web, incluyendo frameworks como React y Vue, así como clientes móviles como iOS, Android y React Native.
+[Apollo client](https://www.apollographql.com/docs/) es el cliente omnipresente de GraphQL en el ecosistema front-end.
+
+Disponible para React, Angular, Vue, Ember, iOS y Android, Apollo Client, aunque es el cliente más pesado, ofrece muchas funciones para crear una interfaz de usuario avanzada sobre GraphQL:
+
+- advanced error handling (manejo avanzado de errores)
+- pagination (paginado)
+- data prefetching (captura previa de datos)
+- optimistic UI (interfaz de usuario optimista)
+- local state management (gestión de estado local)
+
+<br />
 
 Veamos cómo obtener datos de un subgrafo con el cliente Apollo en un proyecto web.
 
@@ -98,9 +234,18 @@ client
   })
 ```
 
+<br />
+
 ### URQL
 
-Otra opción es [URQL](https://formidable.com/open-source/urql/), una biblioteca cliente GraphQL algo más ligera.
+Otra opción es [URQL](https://formidable.com/open-source/urql/), que está disponible en entornos Node.js, React/Preact, Vue y Svelte, con funciones más avanzadas:
+
+- Flexible cache system (Sistema de caché flexible)
+- Extensible design (Diseño extensible, que facilita agregar nuevas capacidades encima)
+- Lightweight bundle (Paquete ligero, ~5 veces más ligero que Apollo Client)
+- Soporte para carga de archivos y modo fuera de línea
+
+<br />
 
 Veamos cómo obtener datos de un subgrafo con URQL en un proyecto web.
 

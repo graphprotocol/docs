@@ -1,0 +1,259 @@
+---
+title: कॉसमॉस पर सब-ग्राफ्स बनाना
+---
+
+यह गाइड [कॉसमॉस](https://docs.cosmos.network/) पर इंडेक्स होने वाले सब-ग्राफ्स बनाने का एक परिचय है|
+
+## कॉसमॉस सब-ग्राफ्स क्या होते हैं?
+
+द ग्राफ की मदद से डेवेलपर्स ब्लॉकचेन की गतिविधियों को प्रोसेस कर सकते हैं और उससे आने वाले डाटा को आसानी से GraphQL एपीआई की मदद से उपलब्ध करवा सकते हैं जिन्हे, सब-ग्राफ कहा जाता है| [ग्राफ नोड](https://github.com/graphprotocol/graph-node) अब कॉसमॉस की गतिविधियों को प्रोसेस करने में सक्षम है जिसका मतलब यह है की अब डेवेलपर्स चेन पर होने वाली गतिविधियों पर नज़र रखने के लिए आसानी से सब-ग्राफ्स बना सकते हैं|
+
+कॉसमॉस सब-ग्राफ्स में कुल चार प्रकार के हैंडलर्स सहयोगी हैं:
+
+- **ब्लॉक हैंडलर्स** तब चलते हैं जब कोई नया ब्लॉक चेन में जुड़ता है|
+- **इवेंट हैंडलर्स** तब चलते हैं जब कोई विशिष्ट गतिविधि उत्पन्न हो|
+- **ट्रांसक्शन हैंडलर्स** तब चलते हैं जब कोई ट्रांसक्शन होता है|
+- **मैसेज हैंडलर्स** तब चलते हैं जब कोई विशिष्ट सन्देश आये|
+
+[आधिकारिक कॉसमॉस डॉक्यूमेंटेशन](https://docs.cosmos.network/) के अनुसार:
+
+> [इवेंट्स](https://docs.cosmos.network/main/core/events) वह ऑब्जेक्ट्स होते हैं जो एप्लीकेशन के अमल में लाने की सारी जानकारी रखता है| इनका मुख्यतः इस्तेमाल सेवा प्रदाताटों जैसे ब्लॉक एक्सप्लोरर्स और वॉलेट्स के द्वारा विभिन्न संदेशो को अमल में लाने और ट्रांसक्शन्स को एक्सेक्यूट करने के लिए किया जाता है|
+
+> [ट्रांसक्शन्स](https://docs.cosmos.network/main/core/transactions) वह ऑब्जेक्ट्स होते हैं जो की उपयोगकर्ता के द्वारा आप्लिकेशन की अवस्था को बदलने के लिए इस्तेमाल होते हैं|
+
+> [मैसेज](https://docs.cosmos.network/main/core/transactions#messages) मॉडल इकाई विशिष्ट वह ओब्जेट होते हैं जो अपनी इकाई के दायरे के अंदर ही अवस्था में बदलाव लाने के लिए इस्तेमाल किये जाते हैं|
+
+जबकि सारा डाटा एक ब्लॉक हैंडलर की मदद से प्राप्त किया जा सकता है, बाकी हैंडलर्स सब-ग्राफ डेवलपरों को डाटा अधिक बारीक तरह से प्रोसेस करने में सहायता करते हैं|
+
+## एक कॉसमॉस सब-ग्राफ बनाना
+
+### सब-ग्राफ्स की निर्भरता
+
+[ग्राफ-सीएलआई ](https://github.com/graphprotocol/graph-cli) एक सीएलआई टूल है जिसका उपयोग सब-ग्राफ्स बनाने और डिप्लॉय करने में किया जाता है| कॉसमॉस सब-ग्राफ्स के साथ काम करने के लिए वर्जन `>=0.30.0` जरुरी है|
+
+[ग्राफ-टीएस](https://github.com/graphprotocol/graph-ts) एक विशिस्ट सब-ग्राफ की लाइब्रेरी है, कॉसमॉस सब-ग्राफ्स के साथ सुप्योग करने के लिए वर्जन `>=0.27.0` जरुरी है|
+
+### सब-ग्राफ के मुख्या कॉम्पोनेन्ट
+
+सब-ग्राफ्स को परिभासित करने के तीन मुख्या अंग हैं:
+
+**subgraph.yaml**: एक YAML फाइल जिसमे सब-ग्राफ मैनिफेस्ट फाइल होती है, जो कि इवेंट्स की पहचान करती है और उन पर नज़र रखती है|
+
+**schema.graphql**: एक ग्राफक्यूएल स्कीमा जो कौन सा डाटा आपके सुब-ग्राफ ेमिन स्टोर करना है इसको प्रभासित करती है और बताती है कि उसे ग्राफक्यूएल के द्वारा कैसे क्वेरी करना है|
+
+**असेंबली स्क्रिप्ट मैप्पिंग्स**: [असेंबली स्क्रिप्ट](https://github.com/AssemblyScript/assemblyscript) कोड जो कि ब्लॉकचैन के डाटा को आपकी स्कीमा के अनुसार अनुवादित करता है|
+
+### सब ग्राफ मैनिफेस्ट की परिभाषा
+
+सब-ग्राफ मैनिफेस्ट (`subgraph.yaml`) सब-ग्राफ के डाटा सोर्स, ट्रिगर ऑफ़ इंटरेस्ट, और फंक्शन्स (`handlers`) की पहचान करता है जो कि उन ट्रिगर के जवाब में चलाये जाने चाहिए| कॉसमॉस सब-ग्राफ के उदहारण मैनिफेस्ट के लिए नीचे देखें:
+
+```yaml
+specVersion: 0.0.5
+description: Cosmos Subgraph Example
+schema:
+  file: ./schema.graphql # link to the schema file
+dataSources:
+  - kind: cosmos
+    name: CosmosHub
+    network: cosmoshub-4 # This will change for each cosmos-based blockchain. In this case, the example uses the Cosmos Hub mainnet.
+    source:
+      startBlock: 0 # Required for Cosmos, set this to 0 to start indexing from chain genesis
+    mapping:
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      blockHandlers:
+        - handler: handleNewBlock # the function name in the mapping file
+      eventHandlers:
+        - event: rewards # the type of the event that will be handled
+          handler: handleReward # the function name in the mapping file
+      transactionHandlers:
+        - handler: handleTransaction # the function name in the mapping file
+      messageHandlers:
+        - message: /cosmos.staking.v1beta1.MsgDelegate # the type of a message
+          handler: handleMsgDelegate # the function name in the mapping file
+      file: ./src/mapping.ts # link to the file with the Assemblyscript mappings
+```
+
+- कॉसमॉस सब-ग्राफ्स एक नए `प्रकार` का डाटा सोर्स ले कर आते हैं (`कॉसमॉस`)
+- `नेटवर्क` कॉसमॉस इकोसिस्टम के किसी चैन के अनुरूप होना चाहिए| उदाहरण में कॉसमॉस हब मैन नेट का उपयोग किया गया था|
+
+### स्कीमा की परिभाषा
+
+स्कीमा की परिभाषा बनने वाले सब-ग्राफ डाटाबेस और उनके बीच के रिश्तों को बताती है| यह मूल डाटा सोर्स से प्रभावित नहीं होता| सब-ग्राफ स्कीमा के बारे में अधिक जानकारियां [यहां](/developing/creating-a-subgraph/#the-graph-ql-schema) हैं|
+
+### असेंबली स्क्रिप्ट मैप्पिंग्स
+
+इवेंट्स को प्रोसेस करने के हैंडलर्स [असेंबली स्क्रिप्ट ](https://www.assemblyscript.org/) में लिखे गए हैं|
+
+Cosmos indexing introduces Cosmos-specific data types to the [AssemblyScript API](/developing/assemblyscript-api/).
+
+```tsx
+class Block {
+  header: Header
+  evidence: EvidenceList
+  resultBeginBlock: ResponseBeginBlock
+  resultEndBlock: ResponseEndBlock
+  transactions: Array<TxResult>
+  validatorUpdates: Array<Validator>
+}
+
+class EventData {
+  event: Event
+  block: HeaderOnlyBlock
+  tx: TransactionContext
+}
+
+class TransactionData {
+  tx: TxResult
+  block: HeaderOnlyBlock
+}
+
+class MessageData {
+  message: Any
+  block: HeaderOnlyBlock
+  tx: TransactionContext
+}
+
+class TransactionContext {
+  hash: Bytes
+  index: u32
+  code: u32
+  gasWanted: i64
+  gasUsed: i64
+}
+
+class HeaderOnlyBlock {
+  header: Header
+}
+
+class Header {
+  version: Consensus
+  chainId: string
+  height: u64
+  time: Timestamp
+  lastBlockId: BlockID
+  lastCommitHash: Bytes
+  dataHash: Bytes
+  validatorsHash: Bytes
+  nextValidatorsHash: Bytes
+  consensusHash: Bytes
+  appHash: Bytes
+  lastResultsHash: Bytes
+  evidenceHash: Bytes
+  proposerAddress: Bytes
+  hash: Bytes
+}
+
+class TxResult {
+  height: u64
+  index: u32
+  tx: Tx
+  result: ResponseDeliverTx
+  hash: Bytes
+}
+
+class Event {
+  eventType: string
+  attributes: Array<EventAttribute>
+}
+
+class Any {
+  typeUrl: string
+  value: Bytes
+}
+```
+
+हर हैंडलर प्रकार अपने खुद के डाटा स्ट्रक्चर के साथ आता है जिसे आर्गुमेंट की तरह मैपिंग फंक्शन में पास किया जा सकता है|
+
+- ब्लॉक हैंडलर्स को `ब्लॉक` प्रकार मिलता है|
+- इवेंट हैंडलर्स को `EventData` प्रकार मिलता है|
+- ट्रांसक्शन हैंडलर्स `TransactionData` प्रकार प्राप्त करते हैं |
+- मैसेज हैंडलर्स `MessageData` प्रकार प्राप्त करते हैं|
+
+`MessageData` के हिस्से के तौर पर मैसेज हैंडलर एक ट्रांसक्शन का प्रसंग प्राप्त करता है जिसमे मैसेज के अंतर्गत कई महत्वपूर्ण जानकारियाँ रहती हैं| यह ट्रांसक्शन का प्रसंग `EventData` प्रकार में भी मौजूद रहता है लेकिन तब हीं जब तदनुसार गतिविधि ट्रांसक्शन से सम्बंधित हो| इसके अतिरिक्त सभी हैंडलर्स ब्लॉक का एक सन्दर्भ प्राप्त करते हैं (`HeaderOnlyBlock`)|
+
+आप सभी प्रकार से कॉसमॉस से एकीकरण करने की सभी जानकारियां [यहाँ](https://github.com/graphprotocol/graph-ts/blob/4c064a8118dff43b110de22c7756e5d47fcbc8df/chain/cosmos.ts) प्राप्त कर सकते है|
+
+### मैसेज डिकोडिंग
+
+यह गौर करना अत्यंत जरुरी है कि कॉसमॉस के मैसेज चेन-विशिष्ट हैं और उन्हें सब-ग्राफ्स में एक क्रमबद्ध [प्रोटोकॉल बफर्स](https://developers.google.com/protocol-buffers/) की तरह पास किया जाता है| परिणामस्वरूप, मैसेज के डाटा को प्रोसेस करने से पहले मैपिंग फंक्शन में डिकोड करने की आवश्यकता होती है|
+
+सब-ग्राफ में मैसेज डिकोड करने का एक उदहारण [यहाँ](https://github.com/graphprotocol/example-subgraphs/blob/main/cosmos/validator-delegations/src/decoding.ts) से देखें|
+
+## कॉसमॉस सब-ग्राफ्स बनाना और निर्माण करना
+
+सब-ग्राफ मैपिंग लिखने से पहले पहला कदम सब-ग्राफ स्कीमा (`schema.graphql`) में परिभाषित इकाइयों के अनुसार टाइप बाईनडिंग्स बनाना होता है| इसकी वजह से मैपिंग फंक्शन नए ओब्जेक्टब बना कर उन्हें सेव कर सकेंगे| यह करने के लिए `codegen` का इस्तेमाल किया जाता है|
+
+```bash
+$ graph codegen
+```
+
+एक बार मप्पिंग्स तैयार हो जाएं, फिर सब-ग्राफ को बनाना होगा| यह कदम मैनिफेस्ट या मैपिंग की त्रुटियों को उभार कर दिखायेगा| ग्राफ नोड पर डेप्लॉय करने के लिए एक सुब-ग्राफ को सफलतापूर्वक बनाना आवश्यक है| यह करने के लिए `build` कमांड का इस्तेमाल किया जा सकता है|
+
+```bash
+$ graph build
+```
+
+## एक कॉसमॉस सब-ग्राफ डेप्लॉय करना
+
+एक बार आपका सब-ग्राफ बन जाये, आप उसे `graph create` सी एल आई कमांड से बनाने के बाद `graph deploy` सी एल आई कमांड से डेप्लॉय कर सकते हैं|
+
+**होस्टेड सेवा**
+
+```bash
+graph create account/subgraph-name --product hosted-service
+```
+
+```bash
+graph deploy account/subgraph-name --product hosted-service
+```
+
+**लोकल ग्राफ नोड (पहले से मौजूद सेटिंग व्यवस्था के अनुसार):**
+
+```bash
+graph create subgraph-name --node http://localhost:8020
+```
+
+```bash
+graph deploy subgraph-name --node http://localhost:8020/ --ipfs http://localhost:5001
+```
+
+## कॉसमॉस सब-ग्राफ को क्वेरी करना
+
+कॉसमॉस सब-ग्राफ्स के लिए ग्राफ क्यूएल का अंतिम छोर स्कीमा की परिभासा से निर्धारित किया जाता है| अधिक जानकारी के लिए कृपया [ग्राफ क्यूएल ऐ पी आई डॉक्यूमेंटेशन](/querying/graphql-api/) का रुख करें|
+
+## समर्थित कॉसमॉस ब्लॉकचेन्स
+
+### कॉसमॉस हब
+
+#### कॉसमॉस हब क्या है?
+
+[कॉसमॉस हब ब्लॉकचेन](https://hub.cosmos.network/), [कॉसमॉस](https://cosmos.network/) इकोसिस्टम का पहला ब्लॉकचेन है| आप [आधिकारिक डॉक्यूमेंटेशन](https://docs.cosmos.network/) के लिए यहाँ रुख करें|
+
+#### नेटवर्क्स
+
+`cosmoshub-4` कॉसमॉस हब का मैन नेट है| कॉसमॉस हब का मौजूदा टेस्ट-नेट `theta-testnet-001` है|<br/> बाकी कॉसमॉस हब के नेटवर्क जैसे की `cosmoshub-3` अभी रुके हुए हैं, इसलिए उनके बारे में कोई जानकारी नहीं प्राप्त हो सकी है|
+
+### ऑस्मोसिस
+
+> ऑस्मोसिस के बारे में ग्राफ नोड पर सहायता अभी बीटा स्थिति में है: ओसमोसिस सब-ग्राफ्स पर निर्माण करने हेतु कोई सवाल होने पर कृपया ग्राफ टीम से संपर्क करें!
+
+#### ऑस्मोसिस क्या है?
+
+[ऑस्मोसिस](https://osmosis.zone/) एक विकेन्द्रीकृत, कई चैनों पर मौजूद स्वचालित बाजार निर्माता (ए एम एम्) है जो की कॉसमॉस एस डी के पर आधारित हो कर बना है| यह उपयोगकर्ताओं को कॉसमॉस लिक्विडिटी पूल बनाने और आई बी सी सक्रिय टोकन का लेन-देन करने में सहायता करता है| आप [आधिकारिक डॉक्यूमेंटेशन](https://docs.osmosis.zone/) पर जा कर अधिक जानकारी प्राप्त क्र सकते हैं|
+
+#### नेटवर्क्स
+
+ऑस्मोसिस का मैन नेट `osmosis-1` है| ऑस्मोसिस का मौजूदा टेस्ट-नेट `osmo-test-4` है|
+
+## सब-ग्राफ के उदाहरण
+
+सन्दर्भ के लिए कुछ सब-ग्राफ्स के उदाहरण:
+
+[ब्लॉक फ़िल्टर उदहारण](https://github.com/graphprotocol/example-subgraphs/tree/main/cosmos/block-filtering)
+
+[सत्यापनकर्ता इनाम उदाहरण](https://github.com/graphprotocol/example-subgraphs/tree/main/cosmos/validator-rewards)
+
+[सत्यापनकर्ता प्रतिनिधि मंडल उदाहरण](https://github.com/graphprotocol/example-subgraphs/tree/main/cosmos/validator-delegations)
+
+[ऑस्मोसिस टोकन अदला-बदली उदाहरण](https://github.com/graphprotocol/example-subgraphs/tree/main/cosmos/osmosis-token-swaps)

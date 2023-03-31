@@ -22,9 +22,145 @@ GraphQL エンドポイントを使用すると、さまざまな GraphQL クラ
 
 ここでは、エコシステムで人気のある GraphQL クライアントをいくつか紹介し、その使い方を説明します:
 
+## GraphQL clients
+
+### Graph client
+
+The Graph は、独自の GraphQL クライアント`graph-client`を提供し、以下のような独自の機能をサポートしています：
+
+- クロスチェーンのサブグラフ処理：1 回のクエリで複数のサブグラフからクエリを実行可能
+- [自動ブロック追跡](https://github.com/graphprotocol/graph-client/blob/main/packages/block-tracking/README.md)
+- [自動ページング](https://github.com/graphprotocol/graph-client/blob/main/packages/auto-pagination/README.md)
+- 完全なタイプ付け結果
+
+<br />
+
+また、Apollo や URQL などの一般的な GraphQL クライアントと統合されており、あらゆる環境（React、Angular、Node.js、React Native）に対応しているため、`graph-client`を使用することで The Graph との対話に最高の体験を提供することが可能です。
+
+<br />
+
+`graphql-client`を使用してサブグラフからデータを取得する方法を見てみましょう。
+
+はじめに、プロジェクトに The Graph Client CLI をインストールしてください：
+
+```sh
+yarn add -D @graphprotocol/client-cli
+# or, with NPM:
+npm install --save-dev @graphprotocol/client-cli
+```
+
+`.graphql` ファイルでクエリを定義します (または `.js` または `.ts` ファイルでインライン化します):
+
+```graphql
+query ExampleQuery {
+  # this one is coming from compound-v2
+  markets(first: 7) {
+    borrowRate
+    cash
+    collateralFactor
+  }
+  # this one is coming from uniswap-v2
+  pair(id: "0x00004ee988665cdda9a1080d5792cecd16dc1220") {
+    id
+    token0 {
+      id
+      symbol
+      name
+    }
+    token1 {
+      id
+      symbol
+      name
+    }
+  }
+}
+```
+
+次に、設定ファイル（`.graphclientrc.yml`）を作成し、The Graph が提供する GraphQL エンドポイントなどを指し示します：
+
+```yaml
+# .graphclientrc.yml
+sources:
+  - name: uniswapv2
+    handler:
+      graphql:
+        endpoint: https://api.thegraph.com/subgraphs/name/uniswap/uniswap-v2
+  - name: compoundv2
+    handler:
+      graphql:
+        endpoint: https://api.thegraph.com/subgraphs/name/graphprotocol/compound-v2
+
+documents:
+  - ./src/example-query.graphql
+```
+
+以下の The Graph Client CLI コマンドを実行すると、型付けされ、すぐに使える JavaScript コードが生成されます：
+
+```sh
+graphclient build
+```
+
+最後に、生成された型付き GraphQL ドキュメントを使用するように `.ts` ファイルを更新してください：
+
+```tsx
+import React, { useEffect } from 'react'
+// ...
+// we import types and typed-graphql document from the generated code (`..graphclient/`)
+import { ExampleQueryDocument, ExampleQueryQuery, execute } from '../.graphclient'
+
+function App() {
+  const [data, setData] = React.useState<ExampleQueryQuery>()
+
+  useEffect(() => {
+    execute(ExampleQueryDocument, {}).then((result) => {
+      setData(result?.data)
+    })
+  }, [setData])
+  return (
+    <div className="App">
+      <header className="App-header">
+        <img src={logo} className="App-logo" alt="logo" />
+        <p>Graph Client Example</p>
+        <fieldset>
+          {data && (
+            <form>
+              <label>Data</label>
+              <br />
+              <textarea value={JSON.stringify(data, null, 2)} readOnly rows={25} />
+            </form>
+          )}
+        </fieldset>
+      </header>
+    </div>
+  )
+}
+
+export default App
+```
+
+<br />
+
+**⚠️ 重要なお知らせ**
+
+`graph-client` は Apollo client、URQL、React Query などの他の GraphQL クライアントと完全に統合されています。[ 公式リポジトリ](https://github.com/graphprotocol/graph-client/tree/main/examples)でサンプルを見つけることができます。
+
+ただし、他のクライアントを選択した場合、**グラフのクエリの中核機能であるクロスチェーン サブグラフ処理や自動ページ処理**を使用できなくなることに注意してください。
+
+<br />
+
 ### Apollo クライアント
 
-[Apollo クライアント](https://www.apollographql.com/docs/)は、React や Vue などのフレームワークを含む Web プロジェクトや、iOS、Android、React Native などのモバイルクライアントをサポートしています。
+[Apollo client](https://www.apollographql.com/docs/) は、フロントエンドのエコシステム上に存在するユビキタスな GraphQL クライアントです。
+
+Apollo Client は、React、Angular、Vue、Ember、iOS、Android に対応しており、最も重いクライアントですが、GraphQL の上に高度な UI を構築するための多くの機能を備えています：
+
+- 高度なエラー処理
+- ページネーション
+- データのプリフェッチ
+- 楽観的な UI
+- ローカル状態管理
+
+<br />
 
 Web プロジェクトで Apollo クライアントを使ってサブグラフからデータを取得する方法を見てみましょう。
 
@@ -98,13 +234,22 @@ client
   })
 ```
 
+<br />
+
 ### URQL
 
-もう一つの選択肢は[URQL](https://formidable.com/open-source/urql/)で、URQL は、やや軽量な GraphQL クライアントライブラリです。
+また、Node.js、React/Preact、Vue、Svelte の各環境で利用できる[URQL](https://formidable.com/open-source/urql/)もあり、より高度な機能を備えています：
+
+- 柔軟なキャッシュ システム
+- Extensible design（新しい機能の追加を容易にする）
+- Lightweight bundle（Apollo Client の約 5 倍の軽さ）
+- ファイルアップロードとオフラインモードに対応
+
+<br />
 
 URQL は、やや軽量な GraphQL クライアントライブラリです。
 
-Web プロジェクトで URQL を使ってサブグラフからデータを取得する方法を見てみましょう。 まず、`urql`と`graphql`をインストールします。
+まず、`urql` と `graphql` をインストールします。
 
 ```sh
 npm install urql graphql

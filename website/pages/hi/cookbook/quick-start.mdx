@@ -1,0 +1,228 @@
+---
+title: क्विक स्टार्ट
+---
+
+This guide will quickly take you through how to initialize, create, and deploy your subgraph to the Subgraph Studio or the [hosted service](#hosted-service).
+
+Ensure that your subgraph will be indexing data from a [supported network](/developing/supported-networks).
+
+## सबग्राफ स्टूडियो
+
+### 1. ग्राफ़ सीएलआई इनस्टॉल करें
+
+ग्राफ़ सीएलआई जावास्क्रिप्ट में लिखा गया है और इसका उपयोग करने के लिए आपको या तो `npm` या `yarn` इंस्टॉल करना होगा।
+
+```sh
+# NPM
+$ npm install -g @graphprotocol/graph-cli
+
+# Yarn
+$ yarn global add @graphprotocol/graph-cli
+```
+
+### 2. अपना सबग्राफ इनिशियलाइज़ करें
+
+- मौजूदा कॉन्ट्रैक्ट से अपना सबग्राफ इनिशियलाइज़ करें।
+
+```sh
+graph init --studio <SUBGRAPH_SLUG>
+```
+
+- आपका सबग्राफ स्लग आपके सबग्राफ के लिए एक पहचानकर्ता है। जैसा कि आप नीचे स्क्रीनशॉट में देख सकते हैं, सीएलआई टूल आपको सबग्राफ बनाने के चरणों के बारे में बताएगा, जैसे कॉन्ट्रैक्ट का पता, नेटवर्क, आदि।
+
+![सबग्राफ कमांड](/img/Subgraph-Slug.png)
+
+> नोट: समय बचाने के लिए उपरोक्त आदेश में `--index-events` जोड़ने पर विचार करें। यह सबग्राफ को स्कीमा में संस्थाओं के साथ बूटस्ट्रैप करता है और प्रत्येक उत्सर्जित घटना के लिए सरल मैपिंग करता है।
+
+### 3. अपना सबग्राफ लिखें
+
+पिछले आदेश एक मचान सबग्राफ बनाते हैं जिसका उपयोग आप अपने सबग्राफ के निर्माण के लिए शुरुआती बिंदु के रूप में कर सकते हैं। सबग्राफ में बदलाव करते समय, आप मुख्य रूप से तीन फाइलों के साथ काम करेंगे:
+
+- मेनिफेस्ट (subgraph.yaml) - मेनिफेस्ट परिभाषित करता है कि आपके सबग्राफ को कौन से डेटा सोर्स इंडेक्स करेंगे।
+- Schema (schema.graphql) - The GraphQL schema defines what data you wish to retrieve from the subgraph.
+- असेंबलीस्क्रिप्ट मैपिंग (mapping.ts) - यह वह कोड है जो स्कीमा में परिभाषित इकाई के लिए आपके डेटा सोर्स से डेटा का अनुवाद करता है।
+
+अपना सबग्राफ लिखने के बारे में अधिक जानकारी के लिए, [एक सबग्राफ बनाना](/developing/creating-a-subgraph) देखें।
+
+### 4. सबग्राफ स्टूडियो में तैनात करें
+
+- सबग्राफ स्टूडियो [https://thegraph.com/studio/](https://thegraph.com/studio/) पर जाएं और अपने वॉलेट को कनेक्ट करें।
+- "Create" पर क्लिक करें और चरण 2 में आपके द्वारा उपयोग किए गए सबग्राफ स्लग को दर्ज करें।
+- इन आदेशों को सबग्राफ फ़ोल्डर में चलाएँ
+
+```sh
+$ graph codegen
+$ graph build
+```
+
+- अपने सबग्राफ को प्रमाणित और तैनात करें। तैनाती key सबग्राफ स्टूडियो में सबग्राफ पेज पर पाई जा सकती है।
+
+```sh
+$ graph auth --studio <DEPLOY_KEY>
+$ graph deploy --studio <SUBGRAPH_SLUG>
+```
+
+- आपसे एक संस्करण लेबल के लिए कहा जाएगा। अपने संस्करणों के नामकरण के लिए निम्नलिखित सम्मेलनों का उपयोग करने की दृढ़तापूर्वक अनुशंसा की जाती है। उदाहरण: `0.0.1`, `v1`, `version1`
+
+### 5. अपने लॉग जांचें
+
+यदि कोई त्रुटि हो तो लॉग आपको बताना चाहिए। यदि आपका सबग्राफ विफल हो रहा है, तो आप [GraphiQL Playground](https://graphiql-online.com/) का उपयोग करके सबग्राफ स्वास्थ्य का क्वेरी कर सकते हैं। [इस समापन बिंदु](https://api.thegraph.com/index-node/graphql) का उपयोग करें। ध्यान दें कि आप नीचे दी गई क्वेरी का लाभ उठा सकते हैं और अपने सबग्राफ के लिए अपनी डिप्लॉयमेंट आईडी डाल सकते हैं। इस मामले में, `Qm...` डिप्लॉयमेंट आईडी है (जिसे **विवरण** के अंतर्गत सबग्राफ पेज पर पाया जा सकता है)। नीचे दी गई क्वेरी आपको बताएगी कि कब एक सबग्राफ विफल हो जाता है ताकि आप तदनुसार डिबग कर सकें:
+
+```sh
+{
+  indexingStatuses(subgraphs: ["Qm..."]) {
+    node
+    synced
+    health
+    fatalError {
+      message
+      block {
+        number
+        hash
+      }
+      handler
+    }
+    nonFatalErrors {
+      message
+      block {
+        number
+        hash
+      }
+      handler
+    }
+    chains {
+      network
+      chainHeadBlock {
+        number
+      }
+      earliestBlock {
+        number
+      }
+      latestBlock {
+        number
+      }
+      lastHealthyBlock {
+        number
+      }
+    }
+    entityCount
+  }
+}
+```
+
+### 6. अपना सबग्राफ क्वेरी करें
+
+अब आप [इन निर्देशों](/querying/querying-the-graph) का पालन करके अपने सबग्राफ को क्वेरी कर सकते हैं। यदि आपके पास अपनी एपीआई key नहीं है तो आप अपने डैप से मुफ्त, दर-सीमित अस्थायी क्वेरी यूआरएल के माध्यम से पूछताछ कर सकते हैं जिसका उपयोग विकास और स्टेजिंग के लिए किया जा सकता है। आप फ्रंटएंड एप्लिकेशन से सबग्राफ को क्वेरी करने के तरीके के बारे में अतिरिक्त निर्देश [यहां](/querying/querying-from-an-application) पढ़ सकते हैं।
+
+## होस्टेड सर्विस
+
+### 1. ग्राफ़ सीएलआई इनस्टॉल करें
+
+"द ग्राफ सीएलआई एक एनपीएम पैकेज है और इसका उपयोग करने के लिए आपको `npm` या `yarn` की आवश्यकता होगी।
+
+```sh
+# NPM
+$ npm install -g @graphprotocol/graph-cli
+
+# Yarn
+$ yarn global add @graphprotocol/graph-cli
+```
+
+### 2. अपना सबग्राफ इनिशियलाइज़ करें
+
+- मौजूदा कॉन्ट्रैक्ट से अपना सबग्राफ इनिशियलाइज़ करें।
+
+```sh
+$ graph init --product hosted-service --from-contract <Address>
+```
+
+- आपसे एक सबग्राफ नाम मांगा जाएगा। प्रारूप`<Github>/<Subgraph Name>` है। उदाहरण: `graphprotocol/examplesubgraph`
+
+- यदि आप एक उदाहरण से प्रारंभ करना चाहते हैं, तो नीचे दी गई कमांड चलाएँ:
+
+```sh
+$ graph init --product hosted-service --from-example
+```
+
+- उदाहरण के मामले में, सबग्राफ दानी ग्रांट द्वारा ग्रेविटी कॉन्ट्रैक्ट पर आधारित है जो यूजर अवतारों का प्रबंधन करता है और जब भी अवतार बनाए या अपडेट किए जाते हैं तो `NewGravatar` या `UpdateGravatar` ईवेंट उत्सर्जित करता है।
+
+### 3. अपना सबग्राफ लिखें
+
+पिछले कमांड ने एक मचान बनाया होगा जहाँ से आप अपना सबग्राफ बना सकते हैं। सबग्राफ में बदलाव करते समय, आप मुख्य रूप से तीन फाइलों के साथ काम करेंगे:
+
+- Manifest (subgraph.yaml) - मेनिफेस्ट परिभाषित करता है कि आपका सबग्राफ किस डेटा सोर्स को अनुक्रमित करेगा
+- Schema (schema.graphql) - ग्राफक्यूएल स्कीमा परिभाषित करता है कि आप सबग्राफ से कौन सा डेटा प्राप्त करना चाहते हैं
+- AssemblyScript Mappings (mapping.ts) - यह वह कोड है जो स्कीमा में परिभाषित इकाइयां के लिए आपके डेटा सोर्स से डेटा का अनुवाद करता है
+
+अपना सबग्राफ लिखने के बारे में अधिक जानकारी के लिए, [एक सबग्राफ बनाना](/developing/creating-a-subgraph) देखें।
+
+### 4. अपना सबग्राफ तैनात करें
+
+- अपने GitHub एकाउंट का उपयोग करके [होस्ट की गई सेवा](https://thegraph.com/hosted-service/) में साइन इन करें
+- Add Subgraph पर क्लिक करें और आवश्यक जानकारी भरें। चरण 2 के समान सबग्राफ नाम का उपयोग करें।
+- सबग्राफ फोल्डर में `codegen` रन करें
+
+```sh
+ # NPM
+$ npm run codegen
+
+# Yarn
+$ yarn codegen
+```
+
+- अपना एक्सेस टोकन जोड़ें और अपना सबग्राफ तैनात करें। एक्सेस टोकन आपके डैशबोर्ड पर होस्ट की गई सेवा में पाया जाता है।
+
+```sh
+$ graph auth --product hosted-service <ACCESS_TOKEN>
+$ graph deploy --product hosted-service <GITHUB_USER>/<SUBGRAPH NAME>
+```
+
+### 5. अपने लॉग जांचें
+
+यदि कोई त्रुटि हो तो लॉग आपको बताना चाहिए। यदि आपका सबग्राफ विफल हो रहा है, तो आप [GraphiQL Playground](https://graphiql-online.com/) का उपयोग करके सबग्राफ स्वास्थ्य का क्वेरी कर सकते हैं। [इस समापन बिंदु](https://api.thegraph.com/index-node/graphql) का उपयोग करें। ध्यान दें कि आप नीचे दी गई क्वेरी का लाभ उठा सकते हैं और अपने सबग्राफ के लिए अपनी डिप्लॉयमेंट आईडी डाल सकते हैं। इस मामले में, `Qm...` डिप्लॉयमेंट आईडी है (जिसे **विवरण** के अंतर्गत सबग्राफ पेज पर पाया जा सकता है)। नीचे दी गई क्वेरी आपको बताएगी कि कब एक सबग्राफ विफल हो जाता है ताकि आप तदनुसार डिबग कर सकें:
+
+```sh
+{
+  indexingStatuses(subgraphs: ["Qm..."]) {
+    node
+    synced
+    health
+    fatalError {
+      message
+      block {
+        number
+        hash
+      }
+      handler
+    }
+    nonFatalErrors {
+      message
+      block {
+        number
+        hash
+      }
+      handler
+    }
+    chains {
+      network
+      chainHeadBlock {
+        number
+      }
+      earliestBlock {
+        number
+      }
+      latestBlock {
+        number
+      }
+      lastHealthyBlock {
+        number
+      }
+    }
+    entityCount
+  }
+}
+```
+
+### 6. अपना सबग्राफ क्वेरी करें
+
+होस्ट की गई सेवा पर अपने सबग्राफ को क्वेरी करने के लिए [इन निर्देशों](/querying/querying-the-hosted-service) का पालन करें।

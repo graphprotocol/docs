@@ -1,0 +1,186 @@
+---
+title: Replace a Contract and Keep its History With Grafting
+---
+
+In this guide, you will learn how to build and deploy new subgraphs by grafting existing subgraphs.
+
+## What is Grafting?
+
+Grafting reuses the data from an existing subgraph and starts indexing it at a later block. This is useful during development to get past simple errors in the mappings quickly or to temporarily get an existing subgraph working again after it has failed. Also, it can be used when adding a feature to a subgraph that takes long to index from scratch.
+
+The grafted subgraph can use a GraphQL schema that is not identical to the one of the base subgraph, but merely compatible with it. It has to be a valid subgraph schema in its own right, but may deviate from the base subgraph's schema in the following ways:
+
+- It adds or removes entity types
+- It removes attributes from entity types
+- It adds nullable attributes to entity types
+- It turns non-nullable attributes into nullable attributes
+- It adds values to enums
+- It adds or removes interfaces
+- It changes for which entity types an interface is implemented
+
+For more information, you can check:
+
+- [Grafting](https://thegraph.com/docs/en/developing/creating-a-subgraph#grafting-onto-existing-subgraphs)
+
+In this tutorial, we will be covering a basic usecase. We will replace an existing contract with an identical contract (with a new address, but the same code). Then, graft the existing subgraph onto the "base" subgraph that tracks the new contract.
+
+## Building an Existing Subgraph
+
+Building subgraphs is an essential part of The Graph, described more in depth [here](http://localhost:3000/en/cookbook/quick-start/). To be able to build and deploy the existing subgraph used in this tutorial, the following repo is provided:
+
+- [Subgraph example repo](https://github.com/t-proctor/grafting-tutorial)
+
+> Note: The contract used in the subgraph was taken from the following [Hackathon Starterkit](https://github.com/schmidsi/hackathon-starterkit).
+
+## Subgraph Manifest Definition
+
+The subgraph manifest `subgraph.yaml` identifies the data sources for the subgraph, the triggers of interest, and the functions that should be run in response to those triggers. See below for an example subgraph manifest that you will use:
+
+```yaml
+specVersion: 0.0.4
+schema:
+  file: ./schema.graphql
+dataSources:
+  - kind: ethereum
+    name: Lock
+    network: goerli
+    source:
+      address: '0x4Ed995e775D3629b0566D2279f058729Ae6EA493'
+      abi: Lock
+      startBlock: 7674603
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.6
+      language: wasm/assemblyscript
+      entities:
+        - Withdrawal
+      abis:
+        - name: Lock
+          file: ./abis/Lock.json
+      eventHandlers:
+        - event: Withdrawal(uint256,uint256)
+          handler: handleWithdrawal
+      file: ./src/lock.ts
+```
+
+- The `Lock` data source is the abi and contract address we will get when we compile and deploy the contract
+- The network should correspond to a indexed network being queried. Since we're running on Goerli testnet, the network is `goerli`
+- The `mapping` section defines the triggers of interest and the functions that should be run in response to those triggers. In this case, we are listening for the `Withdrawal` event and calling the `handleWithdrawal` function when it is emitted.
+
+## Grafting Manifest Definition
+
+Grafting requires adding two new items to the original subgraph manifest:
+
+```yaml
+---
+features:
+  - grafting # feature name
+graft:
+  base: Qm... # subgraph ID of base subgraph
+  block: 1502122 # block number
+```
+
+- `features:` is a list of all used [feature names](developing/creating-a-subgraph/#experimental-features).
+- `graft:` is a map of the `base` subgraph and the block to graft on to. The `block` is the block number to start indexing from. The Graph will copy the data of the base subgraph up to and including the given block and then continue indexing the new subgraph from that block on.
+
+The `base` and `block` values can be found by deploying two subgraphs: one for the base indexing and one with grafting
+
+## Deploying the Base Subgraph
+
+1. Go to [The Graph Studio UI](https://thegraph.com/studio/) and create a subgraph on Goerli testnet called `graft-example`
+2. Follow the directions in the `AUTH & DEPLOY` section on your subgraph page in the `graft-example` folder from the repo
+3. Once finished, verify the subgraph is indexing properly. If you run the following command in The Graph Playground
+
+```graphql
+{
+  withdrawals(first: 5) {
+    id
+    amount
+    when
+  }
+}
+```
+
+It returns something like this:
+
+```
+{
+  "data": {
+    "withdrawals": [
+      {
+        "id": "0x13098b538a61837e9f29b32fb40527bbbe63c9120c250242b02b69bb42c287e5-5",
+        "amount": "0",
+        "when": "1664367528"
+      },
+      {
+        "id": "0x800c92fcc0edbd26f74e19ad058c62008a47c7789f2064023b987028343dd498-3",
+        "amount": "0",
+        "when": "1664367648"
+      }
+    ]
+  }
+}
+```
+
+Once you have verified the subgraph is indexing properly, you can quickly update the subgraph with grafting.
+
+## Deploying the Grafting Subgraph
+
+The graft replacement subgraph.yaml will have a new contract address. This could happen when you update your dapp, redeploy a contract, etc.
+
+1. Go to [The Graph Studio UI](https://thegraph.com/studio/) and create a subgraph on Goerli testnet called `graft-replacement`
+2. Create a new manifest. The `subgraph.yaml` for `graph-replacement` contains a different contract address and new information about how it should graft. These are the `block` of the [last event emitted](https://goerli.etherscan.io/tx/0x800c92fcc0edbd26f74e19ad058c62008a47c7789f2064023b987028343dd498) you care about by the old contract and the `base` of the old subgraph. The `base` subgraph ID is the `Deployment ID` of your original `graph-example` subgraph. You can find this in The Graph Studio UI.
+3. Follow the directions in the `AUTH & DEPLOY` section on your subgraph page in the `graft-replacement` folder from the repo
+4. Once finished, verify the subgraph is indexing properly. If you run the following command in The Graph Playground
+
+```graphql
+{
+  withdrawals(first: 5) {
+    id
+    amount
+    when
+  }
+}
+```
+
+It should return the following:
+
+```
+{
+  "data": {
+    "withdrawals": [
+      {
+        "id": "0x13098b538a61837e9f29b32fb40527bbbe63c9120c250242b02b69bb42c287e5-5",
+        "amount": "0",
+        "when": "1664367528"
+      },
+      {
+        "id": "0x800c92fcc0edbd26f74e19ad058c62008a47c7789f2064023b987028343dd498-3",
+        "amount": "0",
+        "when": "1664367648"
+      },
+      {
+        "id": "0xb4010e4c76f86762beb997a13cf020231778eaf7c64fa3b7794971a5e6b343d3-22",
+        "amount": "0",
+        "when": "1664371512"
+      }
+    ]
+  }
+}
+```
+
+You can see that the `graft-replacement` subgraph is indexing from older `graph-example` data and newer data from the new contract address. The original contract emitted two `Withdrawal` events, [Event 1](https://goerli.etherscan.io/tx/0x800c92fcc0edbd26f74e19ad058c62008a47c7789f2064023b987028343dd498) and [Event 2](https://goerli.etherscan.io/address/0x4ed995e775d3629b0566d2279f058729ae6ea493). The new contract emitted one `Withdrawal` after, [Event 3](https://goerli.etherscan.io/tx/0xb4010e4c76f86762beb997a13cf020231778eaf7c64fa3b7794971a5e6b343d3). The two previously indexed transactions (Event 1 and 2) and the new transaction (Event 3) were combined together in the `graft-replacement` subgraph.
+
+Congrats! You have succesfully grafted a subgraph onto another subgraph.
+
+## Additional Resources
+
+If you want more experience with grafting, here's a few examples for popular contracts:
+
+- [Curve](https://github.com/messari/subgraphs/blob/master/subgraphs/curve-finance/protocols/curve-finance/templates/curve.template.yaml)
+- [ERC-721](https://github.com/messari/subgraphs/blob/master/subgraphs/erc721-metadata/subgraph.yaml)
+- [Uniswap](https://github.com/messari/subgraphs/blob/master/subgraphs/uniswap-v3/protocols/uniswap-v3/config/templates/uniswap.v3.template.yaml),
+
+To become even more of a Graph expert, consider learning about other ways to handle changes in underlying datasources. Alternatives like [Data Source Templates](developing/creating-a-subgraph/#data-source-templates) can achieve similar results
+
+> Note: A lot of material from this article was taken from the previously published [Arweave article](/cookbook/arweave/)
