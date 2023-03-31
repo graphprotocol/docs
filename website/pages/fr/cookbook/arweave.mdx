@@ -1,0 +1,239 @@
+---
+title: Building Subgraphs on Arweave
+---
+
+> Arweave support in Graph Node and on the Hosted Service is in beta: please reach us on [Discord](https://discord.gg/rC8rBuRtbH) with any questions about building Arweave subgraphs!
+
+Ce guide vous apprendra à construire et à déployer des subgraphes pour indexer la blockchain Arweave.
+
+## Qu'est-ce que Arweave ?
+
+Arweave est un protocole qui permet aux développeurs de stocker des données de façon permanente. C'est cette caractéristique qui constitue la principale différence entre Arweave et IPFS. En effet, IPFS n'a pas la caractéristique de permanence, et les fichiers stockés sur Arweave ne peuvent pas être modifiés ou supprimés.
+
+Ce protocole a déjà construit de nombreuses bibliothèques pour intégrer un certain nombre de langages de programmation différents. Si vous souhaitez en savoir plus, vous pouvez consulter :
+
+- [Arwiki](https://arwiki.wiki/#/en/main)
+- [Ressources Arweave](https://www.arweave.org/build)
+
+## À quoi servent les subgraphes d'Arweave ?
+
+The Graph allows you to build custom open APIs called "Subgraphs". Subgraphs are used to tell indexers (server operators) which data to index on a blockchain and save on their servers in order for you to be able to query it at any time using [GraphQL](https://graphql.org/).
+
+À l'heure d'aujourd'hui, [Graph Node](https://github.com/graphprotocol/graph-node) est capable d'indexer les données sur le protocole Arweave. L'intégration actuelle indexe uniquement protocole en tant que blockchain (blocs et transactions), elle n'indexe donc pas encore les fichiers stockés.
+
+## Building an Arweave Subgraph
+
+To be able to build and deploy Arweave Subgraphs, you need two packages:
+
+1. Les versions supérieures à 0.30.2 du `@graphprotocol/graph-cli` - Il s'agit d'un outil caractérisé par l'utilisation de lignes de commandes pour construire et déployer des subgraphes. Cliquez [ici](https://www.npmjs.com/package/@graphprotocol/graph-cli) pour le télécharger en utilisant `npm`.
+2. Les versions supérieures à 0.27.0 du `@graphprotocol/graph-ts` - Il s'agit d'une bibliothèque de types spécifiques aux subgraphes. Cliquez [ici](https://www.npmjs.com/package/@graphprotocol/graph-ts) pour la télécharger en utilisant `npm`.
+
+## Caractéristique des subgraphes
+
+Trois éléments caractérisent un subgraphe :
+
+### 1. Manifeste - `subgraph.yaml`
+
+Définit les sources de données d'intérêt et la manière dont elles doivent être traitées. Arweave est aujourd'hui un nouveau type de source de données.
+
+### 2. Schema - `schema.graphql`
+
+Vous définissez ici les données que vous souhaitez pouvoir interroger après avoir indexé votre subgraphe à l'aide de GraphQL. Ceci est en fait similaire à un modèle pour une API, où le modèle définit la structure d'un corps de requête.
+
+Les exigences relatives aux subgraphes Arweave sont couvertes dans la [documentation existante](/developing/creating-a-subgraph/#the-graphql-schema).
+
+### 3. Mappages AssemblyScript - `mapping.ts`
+
+This is the logic that determines how data should be retrieved and stored when someone interacts with the data sources you are listening to. The data gets translated and is stored based off the schema you have listed.
+
+Lors du développement du subgraphe, il y a deux commandes clés :
+
+```
+$ graph codegen # génère des types à partir du fichier de schéma identifié dans le manifeste
+$ graph build # génère le Web Assembly à partir des fichiers AssemblyScript, et prépare tous les fichiers de subgraphes dans un dossier /build
+```
+
+## Définition du manifeste du subgraphe
+
+The subgraph manifest `subgraph.yaml` identifies the data sources for the subgraph, the triggers of interest, and the functions that should be run in response to those triggers. See below for an example subgraph manifest for an Arweave subgraph:
+
+```yaml
+specVersion: 0.0.5
+description: Arweave Blocks Indexing
+schema:
+  file: ./schema.graphql # lien vers le fichier de schéma
+dataSources:
+  - kind: arweave
+    name: arweave-blocks
+    network: arweave-mainnet # The Graph ne supporte que le Arweave Mainnet
+    source:
+      owner: 'ID-OF-AN-OWNER' # La clé publique d'un porte-monnaie Arweave
+      startBlock: 0 # mettez cette valeur à 0 pour commencer l'indexation à partir de la genèse de la chaîne.
+    mapping:
+      apiVersion: 0.0.5
+      language: wasm/assemblyscript
+      file: ./src/blocks.ts # lien vers le fichier contenant les mappages d'Assemblyscript
+      entities:
+        - Block
+        - Transaction
+      blockHandlers:
+        - handler: handleBlock # le nom de la fonction dans le fichier de mapping
+      transactionHandlers:
+        - handler: handleTx # le nom de la fonction dans le fichier de mapping
+```
+
+- Les subgraphes Arweave introduisent un nouveau type de source de données (`arweave`)
+- The network should correspond to a network on the hosting Graph Node. On the Hosted Service, Arweave's mainnet is `arweave-mainnet`
+- Les sources de données Arweave introduisent un champ optionnel source.owner, qui est la clé publique d'un porte-monnaie Arweave
+
+Les sources de données Arweave supportent deux types de gestionnaires :
+
+- `blockHandlers` - exécuté sur chaque nouveau bloc Arweave. Aucune source.owner n'est requise.
+- `transactionHandlers` - Run on every transaction where the data source's `source.owner` is the owner. Currently an owner is required for `transactionHandlers`, if users want to process all transactions they should provide "" as the `source.owner`
+
+> La source.owner peut être l'adresse du propriétaire ou sa clé publique.
+
+> Transactions are the building blocks of the Arweave permaweb and they are objects created by end-users.
+
+> Remarque : les transactions [Bundlr](https://bundlr.network/) ne sont pas encore prises en charge.
+
+## Définition du Schema
+
+La définition du schema décrit la structure de la base de données de subgraphes en sortie et les relations entre les entités. Elle est indépendante de la source de données d'origine. Il y a plus de détails sur la définition du schema du subgraphe [ici](/developing/creating-a-subgraph/#the-graphql-schema).
+
+## Mappages AssemblyScript
+
+Les gestionnaires de traitement des événements sont écrits en [AssemblyScript](https://www.assemblyscript.org/).
+
+L'indexation Arweave introduit des types de données spécifiques à Arweave dans l'API [AssemblyScript](/developing/assemblyscript-api/).
+
+```tsx
+class Block {
+  timestamp: u64
+  lastRetarget: u64
+  height: u64
+  indepHash: Bytes
+  nonce: Bytes
+  previousBlock: Bytes
+  diff: Bytes
+  hash: Bytes
+  txRoot: Bytes
+  txs: Bytes[]
+  walletList: Bytes
+  rewardAddr: Bytes
+  tags: Tag[]
+  rewardPool: Bytes
+  weaveSize: Bytes
+  blockSize: Bytes
+  cumulativeDiff: Bytes
+  hashListMerkle: Bytes
+  poa: ProofOfAccess
+}
+
+class Transaction {
+  format: u32
+  id: Bytes
+  lastTx: Bytes
+  owner: Bytes
+  tags: Tag[]
+  target: Bytes
+  quantity: Bytes
+  data: Bytes
+  dataSize: Bytes
+  dataRoot: Bytes
+  signature: Bytes
+  reward: Bytes
+}
+```
+
+Les gestionnaires de bloc reçoivent un `bloc`, tandis que les transactions reçoivent une `transaction`.
+
+L'écriture des mappings d'un subgraphe visant Arweave est très similaire à l'écriture des mappings d'un subgraphe Ethereum. Pour plus d'informations, cliquez [ici](/developing/creating-a-subgraph/#writing-mappings).
+
+## Déploiement d'un subgraphe Arweave sur le Service Hébergé
+
+Une fois que votre subgraphe a été créé sur le tableau de bord du Service hébergé, vous pouvez le déployer en utilisant la commande CLI `graph deploy`.
+
+```bash
+graph deploy --node https://api.thegraph.com/deploy/ --ipfs https://api.thegraph.com/ipfs/ --access-token <your-access-token>
+```
+
+## Interroger un subgraphe d'Arweave
+
+Le endpoint GraphQL pour les subgraphes d'Arweave est déterminé par la définition du schema, avec l'interface API existante. Veuillez consulter la [documentation de l'API GraphQL](/querying/graphql-api/) pour plus d'informations.
+
+## Exemples de subgraphes
+
+Voici un exemple de modèle subgraphe :
+
+- [Exemple de subgraphe pour Arweave](https://github.com/graphprotocol/example-subgraphs/tree/main/arweave/blocks-transactions)
+
+## FAQ
+
+### Un subgraphe peut-il indexer Arweave et d'autres chaînes ?
+
+Non, un subgraphe ne peut supporter que les sources de données d'une seule chaîne/réseau.
+
+### Puis-je indexer les fichiers stockés sur Arweave ?
+
+Actuellement, The Graph indexe uniquement Arweave en tant que blockchain (ses blocs et ses transactions).
+
+### Puis-je identifier les bundles de Bundlr dans mon subgraphe ?
+
+Ceci n'est pas pris en charge actuellement.
+
+### Comment puis-je filtrer les transactions sur un compte spécifique ?
+
+La source.owner peut être la clé publique de l'utilisateur ou l'adresse du compte.
+
+### Quel est le format de cryptage actuel ?
+
+Les données sont généralement transmises dans les mappings sous forme d'octets. Si elles sont stockées directement, elles sont renvoyées dans le subgraphe au format `hexadécimal` (par exemple, les hachages de blocs et de transactions). Vous pouvez vouloir convertir en un format `base64` ou `base64 URL`-safe dans vos mappings, afin de correspondre à ce qui est affiché dans les explorateurs de blocs comme [Arweave Explorer](https://viewblock.io/arweave/).
+
+La fonction d'aide suivante `bytesToBase64(bytes : Uint8Array, urlSafe : boolean) : string` peut être utilisée et sera ajoutée à `graph-ts` :
+
+```
+const base64Alphabet = [
+    "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M",
+    "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z",
+    "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m",
+    "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z",
+    "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "+", "/"
+];
+
+const base64UrlAlphabet = [
+    "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M",
+    "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z",
+    "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m",
+    "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z",
+    "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "-", "_"
+];
+
+function bytesToBase64(bytes: Uint8Array, urlSafe: boolean): string {
+    let alphabet = urlSafe? base64UrlAlphabet : base64Alphabet;
+
+    let result = '', i: i32, l = bytes.length;
+    for (i = 2; i < l; i += 3) {
+        result += alphabet[bytes[i - 2] >> 2];
+        result += alphabet[((bytes[i - 2] & 0x03) << 4) | (bytes[i - 1] >> 4)];
+        result += alphabet[((bytes[i - 1] & 0x0F) << 2) | (bytes[i] >> 6)];
+        result += alphabet[bytes[i] & 0x3F];
+    }
+    if (i === l + 1) { // 1 octet yet to write
+        result += alphabet[bytes[i - 2] >> 2];
+        result += alphabet[(bytes[i - 2] & 0x03) << 4];
+        if (!urlSafe) {
+            result += "==";
+        }
+    }
+    if (!urlSafe && i === l) { // 2 octets yet to write
+        result += alphabet[bytes[i - 2] >> 2];
+        result += alphabet[((bytes[i - 2] & 0x03) << 4) | (bytes[i - 1] >> 4)];
+        result += alphabet[(bytes[i - 1] & 0x0F) << 2];
+        if (!urlSafe) {
+            result += "=";
+        }
+    }
+    return result;
+}
+```
