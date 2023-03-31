@@ -1,9 +1,8 @@
 import { HTMLAttributes, useContext } from 'react'
 
-import { BorderRadius, buildShadow, buildTransition, Flex, Icon, Opacity, Spacing, Text } from '@edgeandnode/components'
+import { BorderRadius, buildShadow, buildTransition, Flex, Icon, Opacity, Spacing, Text, useI18n } from '@edgeandnode/components'
 
 import { Link } from '@/components'
-import { useI18n } from '@/i18n'
 import { NavContext } from '@/layout/NavContext'
 
 export type EditPageLinkProps = {

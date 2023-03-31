@@ -24,6 +24,7 @@ import {
   Paragraph,
   Table,
   VideoEmbed,
+  Link
 } from '@/components'
 import { DocumentContext, MDXLayoutNav, MDXLayoutOutline, MDXLayoutPagination, NavContext } from '@/layout'
 
@@ -56,6 +57,8 @@ const mdxStyles: ThemeUIStyleObject = {
     textAlign: 'center',
   },
 }
+
+export { Heading, Image, Link, LinkInline, Paragraph }
 
 export function NextraLayout({ children, pageOpts }: NextraThemeLayoutProps): ReactElement {
   const { frontMatter, filePath, pageMap, headings } = pageOpts

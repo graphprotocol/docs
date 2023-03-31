@@ -3,10 +3,9 @@ import { HTMLAttributes, useContext } from 'react'
 import { useInView } from 'react-intersection-observer'
 import { useDebounce } from 'react-use'
 
-import { buildShadow, buildTransition, Opacity, Spacing, Text, TextProps } from '@edgeandnode/components'
+import { buildShadow, buildTransition, Opacity, Spacing, Text, TextProps, useI18n } from '@edgeandnode/components'
 
 import { LinkInline } from '@/components'
-import { useI18n } from '@/i18n'
 import { DocumentContext } from '@/layout/DocumentContext'
 
 export type HeadingProps = TextProps & {

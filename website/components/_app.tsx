@@ -52,9 +52,7 @@ const DefaultSeoWithLocale = () => {
   const seoProps = useMemo(
     () =>
       merge(DEFAULT_SEO_PROPS, {
-        openGraph: {
-          locale,
-        },
+        openGraph: { locale },
       }),
     [locale]
   )
