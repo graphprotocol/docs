@@ -2,7 +2,7 @@
 title: 单元测试框架
 ---
 
-Matchstick 是一个单元测试框架，由[LimeChain](https://limechain.tech/)开发，使子图开发者能够在沙盒环境中测试他们的映射逻辑，并放心地部署他们的子图
+Matchstick is a unit testing framework, developed by [LimeChain](https://limechain.tech/), that enables subgraph developers to test their mapping logic in a sandboxed environment and deploy their subgraphs with confidence!
 
 ## Getting Started
 
@@ -24,6 +24,12 @@ Postgres installation command:
 brew install postgresql
 ```
 
+Create a symlink to the latest libpq.5.lib _You may need to create this dir first_ `/usr/local/opt/postgresql/lib/`
+
+```sh
+ln -sf /usr/local/opt/postgresql@14/lib/postgresql@14/libpq.5.dylib /usr/local/opt/postgresql/lib/libpq.5.dylib
+```
+
 #### Linux
 
 Postgres installation command (depends on your distro):
@@ -32,9 +38,79 @@ Postgres installation command (depends on your distro):
 sudo apt install postgresql
 ```
 
-### OS-specific release binaries
+### WSL (Windows Subsystem for Linux)
 
-The release binary comes in two flavours - for **МacOS** and **Linux**. To add **Matchstick** to your subgraph project just open up a terminal, navigate to the root folder of your project and simply run `graph test` - it downloads the latest **Matchstick** binary and runs the specified test or all tests in a test folder (or all existing tests if no datasource flag is specified). Example usage: `graph test gravity`.
+You can use Matchstick on WSL both using the Docker approach and the binary approach. As WSL can be a bit tricky, here's a few tips in case you encounter issues like
+
+```
+static BYTES = Symbol("Bytes") SyntaxError: Unexpected token =
+```
+
+或者
+
+```
+<PROJECT_PATH>/node_modules/gluegun/build/index.js:13 throw up;
+```
+
+Please make sure you're on a newer version of Node.js graph-cli doesn't support **v10.19.0** anymore, and that is still the default version for new Ubuntu images on WSL. For instance Matchstick is confirmed to be working on WSL with **v18.1.0**, you can switch to it either via **nvm** or if you update your global Node.js. Don't forget to delete `node_modules` and to run `npm install` again after updating you nodejs! Then, make sure you have **libpq** installed, you can do that by running
+
+```
+sudo apt-get install libpq-dev
+```
+
+And finally, do not use `graph test` (which uses your global installation of graph-cli and for some reason that looks like it's broken on WSL currently), instead use `yarn test` or `npm run test` (that will use the local, project-level instance of graph-cli, which works like a charm). For that you would of course need to have a `"test"` script in your `package.json` file which can be something as simple as
+
+```json
+{
+  "name": "demo-subgraph",
+  "version": "0.1.0",
+  "scripts": {
+    "test": "graph test",
+    ...
+  },
+  "dependencies": {
+    "@graphprotocol/graph-cli": "^0.30.0",
+    "@graphprotocol/graph-ts": "^0.27.0",
+    "matchstick-as": "^0.5.0"
+  }
+}
+```
+
+### Usage
+
+To use **Matchstick** in your subgraph project just open up a terminal, navigate to the root folder of your project and simply run `graph test [options] <datasource>` - it downloads the latest **Matchstick** binary and runs the specified test or all tests in a test folder (or all existing tests if no datasource flag is specified).
+
+### CLI options
+
+This will run all tests in the test folder:
+
+```sh
+graph test
+```
+
+This will run a test named gravity.test.ts and/or all test inside of a folder named gravity:
+
+```sh
+graph test gravity
+```
+
+This will run only that specific test file:
+
+```sh
+graph test path/to/file.test.ts
+```
+
+**Options:**
+
+```sh
+-c, --coverage                Run the tests in coverage mode
+-d, --docker                  Run the tests in a docker container (Note: Please execute from the root folder of the subgraph)
+-f  --force                   Binary: Redownloads the binary. Docker: Redownloads the Dockerfile and rebuilds the docker image.
+-h, --help                    Show usage information
+-l, --logs                    Logs to the console information about the OS, CPU model and download url (debugging purposes)
+-r, --recompile               Forces tests to be recompiled
+-v, --version <tag>           Choose the version of the rust binary that you want to be downloaded/used
+```
 
 ### Docker
 
@@ -42,7 +118,7 @@ From `graph-cli 0.25.2`, the `graph test` command supports running `matchstick` 
 
 ❗ If you have previously ran `graph test` you may encounter the following error during docker build:
 
-```
+```sh
   error from sender: failed to xattr node_modules/binary-install-raw/bin/binary-<platform>: permission denied
 ```
 
@@ -50,24 +126,405 @@ In this case create a `.dockerignore` in the root folder and add `node_modules/b
 
 ### Configuration
 
-Matchstick can be configured to use a custom tests and libs folder via `matchstick.yaml` config file:
+Matchstick can be configured to use a custom tests, libs and manifest path via `matchstick.yaml` config file:
 
 ```yaml
-testsFolder: ./folderName
+testsFolder: path/to/tests
 libsFolder: path/to/libs
+manifestPath: path/to/subgraph.yaml
 ```
 
-### Example Subgraph
+### Demo subgraph
 
-You can try out and play around with the examples from this guide by cloning the [Example Subgraph repo](https://github.com/graphprotocol/example-subgraph)
+You can try out and play around with the examples from this guide by cloning the [Demo Subgraph repo](https://github.com/LimeChain/demo-subgraph)
 
 ### Video tutorials
 
 Also you can check out the video series on ["How to use Matchstick to write unit tests for your subgraphs"](https://www.youtube.com/playlist?list=PLTqyKgxaGF3SNakGQwczpSGVjS_xvOv3h)
 
+## Tests structure (>=0.5.0)
+
+_**IMPORTANT: Requires matchstick-as >=0.5.0**_
+
+### describe()
+
+`describe(name: String , () => {})` - Defines a test group.
+
+**_Notes:_**
+
+- _Describes are not mandatory. You can still use test() the old way, outside of the describe() blocks_
+
+例子:
+
+```typescript
+import { describe, test } from "matchstick-as/assembly/index"
+import { handleNewGravatar } from "../../src/gravity"
+
+describe("handleNewGravatar()", () => {
+  test("Should create a new Gravatar entity", () => {
+    ...
+  })
+})
+```
+
+Nested `describe()` example:
+
+```typescript
+import { describe, test } from "matchstick-as/assembly/index"
+import { handleUpdatedGravatar } from "../../src/gravity"
+
+describe("handleUpdatedGravatar()", () => {
+  describe("When entity exists", () => {
+    test("updates the entity", () => {
+      ...
+    })
+  })
+
+  describe("When entity does not exists", () => {
+    test("it creates a new entity", () => {
+      ...
+    })
+  })
+})
+```
+
+---
+
+### test()
+
+`test(name: String, () =>, should_fail: bool)` - Defines a test case. You can use test() inside of describe() blocks or independently.
+
+例子:
+
+```typescript
+import { describe, test } from "matchstick-as/assembly/index"
+import { handleNewGravatar } from "../../src/gravity"
+
+describe("handleNewGravatar()", () => {
+  test("Should create a new Entity", () => {
+    ...
+  })
+})
+```
+
+或者
+
+```typescript
+test("handleNewGravatar() should create a new entity", () => {
+  ...
+})
+
+
+```
+
+---
+
+### beforeAll()
+
+Runs a code block before any of the tests in the file. If `beforeAll` is declared inside of a `describe` block, it runs at the beginning of that `describe` block.
+
+例子：
+
+Code inside `beforeAll` will execute once before _all_ tests in the file.
+
+```typescript
+import { describe, test, beforeAll } from "matchstick-as/assembly/index"
+import { handleUpdatedGravatar, handleNewGravatar } from "../../src/gravity"
+import { Gravatar } from "../../generated/schema"
+
+beforeAll(() => {
+  let gravatar = new Gravatar("0x0")
+  gravatar.displayName = “First Gravatar”
+  gravatar.save()
+  ...
+})
+
+describe("When the entity does not exist", () => {
+  test("it should create a new Gravatar with id 0x1", () => {
+    ...
+  })
+})
+
+describe("When entity already exists", () => {
+  test("it should update the Gravatar with id 0x0", () => {
+    ...
+  })
+})
+```
+
+Code inside `beforeAll` will execute once before all tests in the first describe block
+
+```typescript
+import { describe, test, beforeAll } from "matchstick-as/assembly/index"
+import { handleUpdatedGravatar, handleNewGravatar } from "../../src/gravity"
+import { Gravatar } from "../../generated/schema"
+
+describe("handleUpdatedGravatar()", () => {
+  beforeAll(() => {
+    let gravatar = new Gravatar("0x0")
+    gravatar.displayName = “First Gravatar”
+    gravatar.save()
+    ...
+  })
+
+  test("updates Gravatar with id 0x0", () => {
+    ...
+  })
+
+  test("creates new Gravatar with id 0x1", () => {
+    ...
+  })
+})
+```
+
+---
+
+### afterAll()
+
+Runs a code block after all of the tests in the file. If `afterAll` is declared inside of a `describe` block, it runs at the end of that `describe` block.
+
+例子:
+
+`afterAll`中的代码将在文件中的_all_测试之后执行一次。
+
+```typescript
+import { describe, test, afterAll } from "matchstick-as/assembly/index"
+import { handleUpdatedGravatar, handleNewGravatar } from "../../src/gravity"
+import { store } from "@graphprotocol/graph-ts"
+
+afterAll(() => {
+  store.remove("Gravatar", "0x0")
+  ...
+})
+
+describe("handleNewGravatar, () => {
+  test("creates Gravatar with id 0x0", () => {
+    ...
+  })
+})
+
+describe("handleUpdatedGravatar", () => {
+  test("updates Gravatar with id 0x0", () => {
+    ...
+  })
+})
+```
+
+Code inside `afterAll` will execute once after all tests in the first describe block
+
+```typescript
+import { describe, test, afterAll, clearStore } from "matchstick-as/assembly/index"
+import { handleUpdatedGravatar, handleNewGravatar } from "../../src/gravity"
+
+describe("handleNewGravatar", () => {
+    afterAll(() => {
+    store.remove("Gravatar", "0x1")
+    ...
+    })
+
+  test("It creates a new entity with Id 0x0", () => {
+    ...
+  })
+
+  test("It creates a new entity with Id 0x1", () => {
+    ...
+  })
+})
+
+describe("handleUpdatedGravatar", () => {
+  test("updates Gravatar with id 0x0", () => {
+    ...
+  })
+})
+```
+
+---
+
+### beforeEach()
+
+Runs a code block before every test. If `beforeEach` is declared inside of a `describe` block, it runs before each test in that `describe` block.
+
+Examples: Code inside `beforeEach` will execute before each tests.
+
+```typescript
+import { describe, test, beforeEach, clearStore } from "matchstick-as/assembly/index"
+import { handleNewGravatars } from "./utils"
+
+beforeEach(() => {
+  clearStore() // <-- clear the store before each test in the file
+})
+
+describe("handleNewGravatars, () => {
+  test("A test that requires a clean store", () => {
+    ...
+  })
+
+  test("Second that requires a clean store", () => {
+    ...
+  })
+})
+
+ ...
+```
+
+Code inside `beforeEach` will execute only before each test in the that describe
+
+```typescript
+import { describe, test, beforeEach } from 'matchstick-as/assembly/index'
+import { handleUpdatedGravatar, handleNewGravatar } from '../../src/gravity'
+
+describe('handleUpdatedGravatars', () => {
+  beforeEach(() => {
+    let gravatar = new Gravatar('0x0')
+    gravatar.displayName = 'First Gravatar'
+    gravatar.imageUrl = ''
+    gravatar.save()
+  })
+
+  test('Upates the displayName', () => {
+    assert.fieldEquals('Gravatar', '0x0', 'displayName', 'First Gravatar')
+
+    // code that should update the displayName to 1st Gravatar
+
+    assert.fieldEquals('Gravatar', '0x0', 'displayName', '1st Gravatar')
+    store.remove('Gravatar', '0x0')
+  })
+
+  test('Updates the imageUrl', () => {
+    assert.fieldEquals('Gravatar', '0x0', 'imageUrl', '')
+
+    // code that should changes the imageUrl to https://www.gravatar.com/avatar/0x0
+
+    assert.fieldEquals('Gravatar', '0x0', 'imageUrl', 'https://www.gravatar.com/avatar/0x0')
+    store.remove('Gravatar', '0x0')
+  })
+})
+```
+
+---
+
+### afterEach()
+
+Runs a code block after every test. If `afterEach` is declared inside of a `describe` block, it runs after each test in that `describe` block.
+
+例子：
+
+Code inside `afterEach` will execute after every test.
+
+```typescript
+import { describe, test, beforeEach, afterEach } from "matchstick-as/assembly/index"
+import { handleUpdatedGravatar, handleNewGravatar } from "../../src/gravity"
+
+beforeEach(() => {
+  let gravatar = new Gravatar("0x0")
+  gravatar.displayName = “First Gravatar”
+  gravatar.save()
+})
+
+afterEach(() => {
+  store.remove("Gravatar", "0x0")
+})
+
+describe("handleNewGravatar", () => {
+  ...
+})
+
+describe("handleUpdatedGravatar", () => {
+  test("Upates the displayName", () => {
+     assert.fieldEquals("Gravatar", "0x0", "displayName", "First Gravatar")
+
+    // code that should update the displayName to 1st Gravatar
+
+    assert.fieldEquals("Gravatar", "0x0", "displayName", "1st Gravatar")
+  })
+
+  test("Updates the imageUrl", () => {
+    assert.fieldEquals("Gravatar", "0x0", "imageUrl", "")
+
+    // code that should changes the imageUrl to https://www.gravatar.com/avatar/0x0
+
+    assert.fieldEquals("Gravatar", "0x0", "imageUrl", "https://www.gravatar.com/avatar/0x0")
+  })
+})
+```
+
+Code inside `afterEach` will execute after each test in that describe
+
+```typescript
+import { describe, test, beforeEach, afterEach } from "matchstick-as/assembly/index"
+import { handleUpdatedGravatar, handleNewGravatar } from "../../src/gravity"
+
+describe("handleNewGravatar", () => {
+  ...
+})
+
+describe("handleUpdatedGravatar", () => {
+  beforeEach(() => {
+    let gravatar = new Gravatar("0x0")
+    gravatar.displayName = "First Gravatar"
+    gravatar.imageUrl = ""
+    gravatar.save()
+  })
+
+  afterEach(() => {
+    store.remove("Gravatar", "0x0")
+  })
+
+  test("Upates the displayName", () => {
+     assert.fieldEquals("Gravatar", "0x0", "displayName", "First Gravatar")
+
+    // code that should update the displayName to 1st Gravatar
+
+    assert.fieldEquals("Gravatar", "0x0", "displayName", "1st Gravatar")
+  })
+
+  test("Updates the imageUrl", () => {
+    assert.fieldEquals("Gravatar", "0x0", "imageUrl", "")
+
+    // code that should changes the imageUrl to https://www.gravatar.com/avatar/0x0
+
+    assert.fieldEquals("Gravatar", "0x0", "imageUrl", "https://www.gravatar.com/avatar/0x0")
+  })
+})
+```
+
+## Asserts
+
+```typescript
+fieldEquals(entityType: string, id: string, fieldName: string, expectedVal: string)
+
+equals(expected: ethereum.Value, actual: ethereum.Value)
+
+notInStore(entityType: string, id: string)
+
+addressEquals(address1: Address, address2: Address)
+
+bytesEquals(bytes1: Bytes, bytes2: Bytes)
+
+i32Equals(number1: i32, number2: i32)
+
+bigIntEquals(bigInt1: BigInt, bigInt2: BigInt)
+
+booleanEquals(bool1: boolean, bool2: boolean)
+
+stringEquals(string1: string, string2: string)
+
+arrayEquals(array1: Array<ethereum.Value>, array2: Array<ethereum.Value>)
+
+tupleEquals(tuple1: ethereum.Tuple, tuple2: ethereum.Tuple)
+
+assertTrue(value: boolean)
+
+assertNull<T>(value: T)
+
+assertNotNull<T>(value: T)
+
+entityCount(entityType: string, expectedCount: i32)
+```
+
 ## Write a Unit Test
 
-Let's see how a simple unit test would look like, using the Gravatar [Example Subgraph](https://github.com/graphprotocol/example-subgraph).
+Let's see how a simple unit test would look like using the Gravatar examples in the [Demo Subgraph](https://github.com/LimeChain/demo-subgraph/blob/main/src/gravity.ts).
 
 Assuming we have the following handler function (along with two helper functions to make our life easier):
 
@@ -156,11 +613,11 @@ test('Next test', () => {
 
 That's a lot to unpack! First off, an important thing to notice is that we're importing things from `matchstick-as`, our AssemblyScript helper library (distributed as an npm module). You can find the repository [here](https://github.com/LimeChain/matchstick-as). `matchstick-as` provides us with useful testing methods and also defines the `test()` function which we will use to build our test blocks. The rest of it is pretty straightforward - here's what happens:
 
-- 我们正在设置我们的初始状态并添加一个自定义的 Gravatar 实体。
-- 我们使用`createNewGravatarEvent()`函数定义了两个`NewGravatar`事件对象以及它们的数据。
-- 我们正在为这些事件调用处理方法-`-handleNewGravatars()`，并传入我们的自定义事件列表。
-- 我们断言商店的状态。那是怎么做的呢？- 我们传递一个实体类型和 ID 的唯一组合。然后我们检查该实体的一个特定字段，并断言它具有我们期望的值。我们为我们添加到商店的初始 Gravatar 实体，以及当处理函数被调用时被添加的两个 Gravatar 实体都做这个。
-- 最后--我们用`clearStore()`清理存储，这样我们的下一个测试就可以从一个新鲜的空存储对象开始。我们可以定义任意多的测试块。
+- We're setting up our initial state and adding one custom Gravatar entity;
+- We define two `NewGravatar` event objects along with their data, using the `createNewGravatarEvent()` function;
+- We're calling out handler methods for those events - `handleNewGravatars()` and passing in the list of our custom events;
+- We assert the state of the store. How does that work? - We're passing a unique combination of Entity type and id. Then we check a specific field on that Entity and assert that it has the value we expect it to have. We're doing this both for the initial Gravatar Entity we added to the store, as well as the two Gravatar entities that gets added when the handler function is called;
+- And lastly - we're cleaning the store using `clearStore()` so that our next test can start with a fresh and empty store object. We can define as many test blocks as we want.
 
 There we go - we've created our first test! 👏
 
@@ -414,7 +871,7 @@ test(
 
 If the test is marked with shouldFail = true but DOES NOT fail, that will show up as an error in the logs and the test block will fail. Also, if it's marked with shouldFail = false (the default state), the test executor will crash.
 
-### Logging
+### 日志
 
 Having custom logs in the unit tests is exactly the same as logging in the mappings. The difference is that the log object needs to be imported from matchstick-as rather than graph-ts. Here's a simple example with all non-critical log types:
 
@@ -476,7 +933,11 @@ test('Derived fields example test', () => {
 
 ### Testing dynamic data sources
 
-Testing dynamic data sources can be be done by mocking the return value of the context(), address() and network() functions of the dataSource namespace. These functions currently return the following: context - returns an empty entity (DataSourceContext), address - returns "0x0000000000000000000000000000000000000000", network - returns "mainnet". The create(...) and createWithContext(...) functions are mocked to do nothing so they don't need to be called in the tests at all. Changes to the return values can be done through the functions of the dataSourceMock namespace in matchstick-as (version 0.3.0+). Example below: First we have the following event handler (which has been intentionally repurposed to showcase datasource mocking):
+Testing dynamic data sources can be be done by mocking the return value of the `context()`, `address()` and `network()` functions of the dataSource namespace. These functions currently return the following: `context()` - returns an empty entity (DataSourceContext), `address()` - returns `0x0000000000000000000000000000000000000000`, `network()` - returns `mainnet`. The `create(...)` and `createWithContext(...)` functions are mocked to do nothing so they don't need to be called in the tests at all. Changes to the return values can be done through the functions of the `dataSourceMock` namespace in `matchstick-as` (version 0.3.0+).
+
+Example below:
+
+First we have the following event handler (which has been intentionally repurposed to showcase datasource mocking):
 
 ```typescript
 export function handleApproveTokenDestinations(event: ApproveTokenDestinations): void {
@@ -541,17 +1002,17 @@ To run the test coverage functionality provided in **Matchstick**, there are a f
 
 In order for **Matchstick** to check which handlers are being run, those handlers need to be exported from the **test file**. So for instance in our example, in our gravity.test.ts file we have the following handler being imported:
 
-```ts
+```typescript
 import { handleNewGravatar } from '../../src/gravity'
 ```
 
 In order for that function to be visible (for it to be included in the `wat` file **by name**) we need to also export it, like this:
 
-```ts
+```typescript
 export { handleNewGravatar }
 ```
 
-### 使用方法
+### Usage
 
 Once that's all set up, to run the test coverage tool, simply run:
 
@@ -561,7 +1022,7 @@ graph test -- -c
 
 You could also add a custom `coverage` command to your `package.json` file, like so:
 
-```ts
+```typescript
  "scripts": {
     /.../
     "coverage": "graph test -- -c"
@@ -620,15 +1081,15 @@ The log output includes the test run duration. Here's an example:
 This means you have used `console.log` in your code, which is not supported by AssemblyScript. Please consider using the [Logging API](/developing/assemblyscript-api/#logging-api)
 
 > ERROR TS2554: Expected ? arguments, but got ?.
->
+> 
 > return new ethereum.Block(defaultAddressBytes, defaultAddressBytes, defaultAddressBytes, defaultAddress, defaultAddressBytes, defaultAddressBytes, defaultAddressBytes, defaultBigInt, defaultBigInt, defaultBigInt, defaultBigInt, defaultBigInt, defaultBigInt, defaultBigInt, defaultBigInt);
->
+> 
 > in ~lib/matchstick-as/assembly/defaults.ts(18,12)
->
+> 
 > ERROR TS2554: Expected ? arguments, but got ?.
->
+> 
 > return new ethereum.Transaction(defaultAddressBytes, defaultBigInt, defaultAddress, defaultAddress, defaultBigInt, defaultBigInt, defaultBigInt, defaultAddressBytes, defaultBigInt);
->
+> 
 > in ~lib/matchstick-as/assembly/defaults.ts(24,12)
 
 The mismatch in arguments is caused by mismatch in `graph-ts` and `matchstick-as`. The best way to fix issues like this one is to update everything to the latest released version.
