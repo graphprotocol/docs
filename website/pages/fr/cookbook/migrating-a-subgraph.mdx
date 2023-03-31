@@ -1,0 +1,219 @@
+---
+title: Migration d'un subgraphe existant vers le réseau The Graph
+---
+
+## Introduction
+
+This is a guide on how to migrate your subgraph from the Hosted Service to The Graph's decentralized network. Migration to The Graph Network has been successful for projects like Opyn, UMA, mStable, Audius, PoolTogether, Livepeer, RAI, Enzyme, DODO, Pickle, and BadgerDAO all of which are relying on data served by Indexers on the network. There are now over 700 subgraphs live on The Graph's decentralized network, generating query fees and actively indexing web3 data.
+
+Le processus de migration est rapide. De plus, vos subgraphes bénéficieront de façon permanente de la fiabilité et des performances uniquement accessibles sur le réseau The Graph.
+
+### Suppositions
+
+- Vous avez déjà déployé un subgraphe sur le service hébergé.
+- The subgraph is indexing a chain available (or available in beta) on The Graph Network.
+- Le subgraphe n'a pas de dépendances IPFS ou de recherche plein texte (celles-ci ne sont pas encore totalement supportées sur le réseau décentralisé).
+
+## Migration d'un subgraphe existant vers le réseau The Graph
+
+> You can find specific commands for your subgraph in the [Subgraph Studio](https://thegraph.com/studio/).
+
+1. Get the latest version of the graph-cli installed:
+
+```sh
+npm install -g @graphprotocol/graph-cli
+```
+
+```sh
+yarn global add @graphprotocol/graph-cli
+```
+
+Make sure your `apiVersion` in subgraph.yaml is `0.0.5` or greater.
+
+2. À l'intérieur du répertoire principal du projet du subgraphe, authentifiez le pour déployer et construire sur le studio :
+
+```sh
+graph auth --studio <DEPLOY_KEY>
+```
+
+3. Générez les fichiers et construisez le subgraphe :
+
+```sh
+graph codegen && graph build
+```
+
+Si votre subgraphe présente des erreurs de construction, consultez le [guide de migration AssemblyScript](/release-notes/assemblyscript-migration-guide/).
+
+4. Connectez-vous à [Subgraph Studio](https://thegraph.com/studio/) avec votre portefeuille et déployez le subgraphe. Vous pouvez trouver votre `<SUBGRAPH_SLUG>` dans l'interface utilisateur de Studio, qui est basé sur le nom de votre subgraphe.
+
+```sh
+graph deploy --studio <SUBGRAPH_SLUG>
+```
+
+5. Testez les requêtes sur le playground du Studio. Voici quelques exemples avec le [Sushi, le subgraphe du bureau d'échange du réseau principal](https://thegraph.com/explorer/subgraph?id=0x4bb4c1b0745ef7b4642feeccd0740dec417ca0a0-0&view=Playground):
+
+```sh
+{
+  users(first: 5) {
+    id
+    liquidityPositions {
+      id
+    }
+  }
+  bundles(first: 5) {
+    id
+    ethPrice
+  }
+}
+```
+
+6. À ce stade, votre subgraphe est maintenant déployé sur Subgraph Studio, mais pas encore publié sur le réseau décentralisé. Vous pouvez désormais tester le sous-graphe pour vous assurer qu'il fonctionne comme prévu en utilisant l'URL de requête temporaire, comme indiqué en haut de la colonne de droite ci-dessus. Comme son nom l'indique déjà, il s'agit d'une URL temporaire qui ne doit pas être utilisée en production.
+
+- Publishing is an on-chain action and will require gas to be paid for in Ethereum - see an example transaction [here](https://etherscan.io/tx/0xd0c3fa0bc035703c9ba1ce40c1862559b9c5b6ea1198b3320871d535aa0de87b). Prices are roughly around 0.0425 ETH at 100 gwei.
+- Any time you need to upgrade your subgraph, you will be charged an upgrade fee. Upgrading is just publishing another version of your existing subgraph on-chain. Because this incurs a cost, it is highly recommended to deploy and test your subgraph on Goerli before deploying to mainnet. It can, in some cases, also require some GRT if there is no signal on that subgraph. In the case there is signal/curation on that subgraph version (using auto-migrate), the taxes will be split.
+
+7. Publiez le sous-graphe sur le réseau décentralisé de The Graph en cliquant sur le bouton "Publier".
+
+Et c'est tout ! Une fois la publication terminée, vous pourrez visualiser vos sous-graphes en direct sur le réseau décentralisé via [The Graph Explorer](https://thegraph.com/explorer).
+
+Feel free to leverage the [#Curators channel](https://discord.gg/rC8rBuRtbH) on Discord to let Curators know that your subgraph is ready to be signaled. It would also be helpful if you share your expected query volume with them. Therefore, they can estimate how much GRT they should signal on your subgraph.
+
+### Créer une clé API
+
+Vous pouvez générer une clé API dans Subgraph Studio [ici](https://thegraph.com/studio/apikeys/).
+
+![Page de création d'une clé API](/img/api-image.png)
+
+At the end of each week, an invoice will be generated based on the query fees that have been incurred during this period. This invoice will be paid automatically using the GRT available in your balance. Your balance will be updated after the cost of your query fees are withdrawn. Query fees are paid in GRT via the Arbitrum network. You will need to add GRT to the Arbitrum billing contract to enable your API key via the following steps:
+
+- Achetez des GRT sur un échange de votre choix.
+- Envoyez le GRT à votre portefeuille.
+- Sur la page de facturation de Studio, cliquez sur ajouter des GRT.
+
+![Ajouter GRT dans la facturation](/img/Add-GRT-New-Page.png)
+
+- Follow the steps to add your GRT to your billing balance.
+- Your GRT will be automatically bridged to the Arbitrum network and added to your billing balance.
+
+![Volet de facturation](/img/New-Billing-Pane.png)
+
+> Note: see the [official billing page](../billing.mdx) for full instructions on adding GRT to your billing balance.
+
+### Securing your API key
+
+Il est recommandé de sécuriser l'API en limitant son utilisation de deux manières :
+
+1. Les subgraphes autorisés
+2. Domaine autorisé
+
+You can secure your API key [here](https://thegraph.com/studio/apikeys/test/).
+
+![Page de verrouillage du subgraphe](/img/subgraph-lockdown.png)
+
+### Interroger votre subgraphe sur le réseau décentralisé
+
+Vous pouvez maintenant vérifier le statut d'indexation des indexeurs du réseau dans Graph Explorer (exemple [ici](https://thegraph.com/explorer/subgraph?id=S9ihna8D733WTEShJ1KctSTCvY1VJ7gdVwhUujq4Ejo&view=Indexers)). La ligne verte en haut indique qu'au moment de l'affichage, 8 indexeurs ont réussi à indexer ce subgraphe. Dans l'onglet Indexer, vous pouvez également voir quels indexeurs ont récupéré votre subgraphe.
+
+![Rocket Pool subgraph](/img/rocket-pool-subgraph.png)
+
+Dès que le premier indexeur a complètement indexé votre subgraphe, vous pouvez commencer à interroger le subgraphe sur le réseau décentralisé. Afin de récupérer l'URL de requête pour votre subgraphe, vous pouvez le copier/coller en cliquant sur le symbole à côté de l'URL de requête. Vous verrez quelque chose comme ceci :
+
+`https://gateway.thegraph.com/api/[api-key]/subgraphs/id/S9ihna8D733WTEShJ1KctSTCvY1VJ7gdVwhUujq4Ejo`
+
+Important : veillez à remplacer `[api-key]` par une clé d'API réelle générée dans la section ci-dessus.
+
+Vous pouvez maintenant utiliser cette URL de requête dans votre dapp pour y envoyer vos requêtes GraphQL.
+
+Félicitations ! Vous êtes maintenant un pionnier de la décentralisation !
+
+> Remarque : En raison de la nature distribuée du réseau, il se peut que différents indexeurs aient indexé jusqu'à différents blocs. Afin de ne recevoir que des données récentes, vous pouvez spécifier le bloc minimum qu'un indexeur doit avoir indexé pour servir votre requête avec le bloc : `{ number_gte: $minBlock }` comme indiqué dans l'exemple ci-dessous :
+
+```graphql
+{
+  stakers(block: { number_gte: 14486109 }) {
+    id
+  }
+}
+```
+
+De plus amples informations sur la nature du réseau et la manière de gérer les réorganisations sont décrites dans l'article de la documentation intitulé [systèmes distribués](/querying/distributed-systems/).
+
+## Mise à niveau d'un subgraphe sur le réseau
+
+Si vous souhaitez mettre à niveau un subgraphe existant sur le réseau, vous pouvez le faire en déployant une nouvelle version de votre subgraphe dans le subgraph Studio à l'aide du Graph CLI.
+
+1. Apportez des modifications à votre subgraphe actuel. Une bonne idée est de tester les petites corrections sur le Subgraph Studio en les publiant sur Goerli.
+2. Déployez ce qui suit et spécifiez la nouvelle version dans la commande (par exemple v0.0.1, v0.0.2, etc) :
+
+```sh
+graph deploy --studio <SUBGRAPH_SLUG>
+```
+
+3. Testez la nouvelle version dans le Subgraph Studio en effectuant des requêtes dans le terrain de jeu
+4. Publiez la nouvelle version sur The Graph Network. N'oubliez pas que cela nécessite du gaz (comme décrit dans la section ci-dessus).
+
+### Owner Upgrade Fee: Deep Dive
+
+An upgrade requires GRT to be migrated from the old version of the subgraph to the new version. This means that for every upgrade, a new bonding curve will be created (more on bonding curves [here](/network/curating#bonding-curve-101)).
+
+The new bonding curve charges the 2.5% curation tax on all GRT being migrated to the new version. The owner must pay 50% of this or 1.25%. The other 1.25% is absorbed by all the curators as a fee. This incentive design is in place to prevent an owner of a subgraph from being able to drain all their curator's funds with recursive upgrade calls. If there is no curation activity, you will have to pay a minimum of 100 GRT in order to signal your own subgraph.
+
+Prenons un exemple, ce n'est le cas que si votre subgraphe fait l'objet d'une curation active :
+
+- 100,000 GRT sont signalés en utilisant la migration automatique sur la v1 d'un subgraphe
+- Le propriétaire passe à la version 2. 100 000 GRT sont transférés vers une nouvelle courbe de liaison, où 97 500 GRT sont placés dans la nouvelle courbe et 2 500 GRT sont brûlés
+- Le propriétaire fait alors brûler 1250 GRT pour payer la moitié des frais. Le propriétaire doit avoir cette somme dans son portefeuille avant la mise à niveau, sinon la mise à niveau n'aboutira pas. Cela se produit dans la même transaction que la mise à niveau.
+
+_While this mechanism is currently live on the network, the community is currently discussing ways to reduce the cost of upgrades for subgraph developers._
+
+### Maintenir une version stable d'un subgraphe
+
+If you're making a lot of changes to your subgraph, it is not a good idea to continually upgrade it and front the upgrade costs. Maintaining a stable and consistent version of your subgraph is critical, not only from the cost perspective but also so that Indexers can feel confident in their syncing times. Indexers should be flagged when you plan for an upgrade so that Indexer syncing times do not get impacted. Feel free to leverage the [#Indexers channel](https://discord.gg/rC8rBuRtbH) on Discord to let Indexers know when you're versioning your subgraphs.
+
+Subgraphs are open APIs that external developers are leveraging. Open APIs need to follow strict standards so that they do not break external developers' applications. In The Graph Network, a subgraph developer must consider Indexers and how long it takes them to sync a new subgraph **as well as** other developers who are using their subgraphs.
+
+### Mise à jour des métadonnées d'un subgraphe
+
+You can update the metadata of your subgraphs without having to publish a new version. The metadata includes the subgraph name, image, description, website URL, source code URL, and categories. Developers can do this by updating their subgraph details in the Subgraph Studio where you can edit all applicable fields.
+
+Assurez-vous que l'option **mettre à jour les détails du subgraphe** dans l'explorateur est cochée et cliquez sur **enregistrer**. Si cette case est cochée, une transaction est générée sur la chaîne pour mettre à jour les détails du subgraphe dans l'explorateur sans avoir à publier une nouvelle version avec un nouveau déploiement.
+
+## Meilleures pratiques pour le déploiement d'un subgraphe sur le réseau The Graph
+
+1. Utilisation d'un nom d'ENS pour le développement de subgraphe :
+
+- Configurez votre ENS : [https://app.ens.domains/](https://app.ens.domains/)
+- Ajoutez votre nom d'ENS à vos paramètres [ici](https://thegraph.com/explorer/settings?view=display-name).
+
+2. The more filled out your profiles are, the better the chances for your subgraphs to be indexed and curated.
+
+## Désactiver un subgraph sur le réseau The Graph
+
+Suivez les étapes [suivantes](/managing/deprecating-a-subgraph) pour désactiver votre subgraphe et le retirer de The Graph.
+
+## Interrogation d'un subgraphe + facturation sur le reseau The Graph
+
+Le Service Hébergé a été mis en place pour permettre aux développeurs de déployer leurs subgraphes sans aucune restriction.
+
+Pour que le réseau The Graph soit réellement décentralisé, les frais d'interrogation doivent être payés comme une partie essentielle des incitations du protocole. Pour plus d'informations sur la souscription aux API et le paiement des frais de requête, consultez la documentation sur la facturation [ici](/billing/).
+
+### Estimate Query Fees on the Network
+
+Bien que cette fonctionnalité ne soit pas encore disponible dans l'interface utilisateur du produit, vous pouvez définir votre budget maximum par requête en divisant le montant que vous êtes prêt à payer par mois par le volume de requêtes prévu.
+
+Bien que vous puissiez décider de votre budget de requêtes, il n'y a aucune garantie qu'un indexeur sera prêt à servir des requêtes à ce prix. Si une passerelle peut vous mettre en relation avec un indexeur prêt à traiter une requête à un prix inférieur ou égal à celui que vous êtes prêt à payer, vous paierez le delta/la différence entre votre budget **et** son prix. Par conséquent, un prix de requête inférieur réduit le nombre d'indexeurs disponibles, ce qui peut affecter la qualité du service que vous recevez. Il est avantageux d'avoir des frais de requête élevés, car cela peut attirer la curation et les indexeurs de renom vers votre subgraphe.
+
+Remember that it's a dynamic and growing market, but how you interact with it is in your control. There is no maximum or minimum price specified in the protocol or the Gateways. For example, you can look at the price paid by a few of the dapps on the network (on a per-week basis), below. See the last column, which shows query fees in GRT.
+
+![Frais de requête](/img/QueryFee.png)
+
+## Ressources supplémentaires
+
+If you're still confused, fear not! Check out the following resources or watch our video guide on migrating subgraphs to the decentralized network below:
+
+<VideoEmbed youtube="CzdQ3dFFrjo" />
+
+- [Les contrats du réseau The Graph](https://github.com/graphprotocol/contracts)
+- [Curation Contract](https://github.com/graphprotocol/contracts/blob/dev/contracts/curation/Curation.sol) - the underlying contract that the GNS wraps around
+  - Adresse - `0x8fe00a685bcb3b2cc296ff6ffeab10aca4ce1538`
+- [Subgraph Studio documentation](/deploying/subgraph-studio)
