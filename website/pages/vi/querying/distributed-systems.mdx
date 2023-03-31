@@ -1,37 +1,37 @@
 ---
-title: Hệ thống phân tán
+title: Distributed Systems
 ---
 
-The Graph là một giao thức được thực hiện như một hệ thống phân tán.
+The Graph is a protocol implemented as a distributed system.
 
-Kết nối không thành công. Yêu cầu đến không theo thứ tự. Các máy tính khác nhau có đồng hồ và trạng thái không đồng bộ sẽ xử lý các yêu cầu liên quan. Máy chủ khởi động lại. Tổ chức lại xảy ra giữa các yêu cầu. Những vấn đề này vốn có đối với tất cả các hệ thống phân tán nhưng ngày càng trầm trọng hơn trong các hệ thống hoạt động ở quy mô toàn cầu.
+Connections fail. Requests arrive out of order. Different computers with out-of-sync clocks and states process related requests. Servers restart. Re-orgs happen between requests. These problems are inherent to all distributed systems but are exacerbated in systems operating at a global scale.
 
-Hãy xem xét ví dụ này về những gì có thể xảy ra nếu một máy khách thăm dò một Indexer để biết dữ liệu mới nhất trong một lần tổ chức lại (re-org).
+Consider this example of what may occur if a client polls an Indexer for the latest data during a re-org.
 
-1. Indexer nhập khối 8
-2. Yêu cầu được cung cấp cho máy khách đối với khối 8
-3. Indexer nhập khối 9
-4. Indexer nhập khối 10A
-5. Yêu cầu được cung cấp cho máy khách đối với khối 10A
-6. Indexer phát hiện reorg đến 10B và cuộn lại 10A
-7. Yêu cầu được cung cấp cho máy khách đối với khối 9
-8. Indexer nhập khối 10B
-9. Indexer nhập khối 11
-10. Yêu cầu được cung cấp cho máy khách đối với khối 11
+1. Indexer ingests block 8
+2. Request served to the client for block 8
+3. Indexer ingests block 9
+4. Indexer ingests block 10A
+5. Request served to the client for block 10A
+6. Indexer detects reorg to 10B and rolls back 10A
+7. Request served to the client for block 9
+8. Indexer ingests block 10B
+9. Indexer ingests block 11
+10. Request served to the client for block 11
 
-Theo quan điểm của Indexer, mọi thứ đang tiến triển về phía trước một cách hợp lý. Thời gian đang trôi về phía trước, mặc dù chúng tôi đã phải quay lại một khối chú và chơi khối dưới sự đồng thuận về phía trên của nó. Trên đường đi, Trình lập chỉ mục phục vụ các yêu cầu bằng cách sử dụng trạng thái mới nhất mà nó biết tại thời điểm đó.
+From the point of view of the Indexer, things are progressing forward logically. Time is moving forward, though we did have to roll back an uncle block and play the block under consensus forward on top of it. Along the way, the Indexer serves requests using the latest state it knows about at that time.
 
-Tuy nhiên, từ quan điểm của máy khách, mọi thứ có vẻ hỗn loạn. Máy khách nhận thấy rằng các câu trả lời dành cho các khối 8, 10, 9 và 11 theo thứ tự đó. Chúng ta gọi đây là vấn đề "khối chao đảo". Khi khách hàng gặp phải trường hợp khối bị lung lay, dữ liệu có thể mâu thuẫn với chính nó theo thời gian. Tình hình trở nên tồi tệ hơn khi chúng ta nhận thấy rằng các Indexer không nhập các khối mới nhất đồng thời và các yêu cầu của bạn có thể được chuyển đến nhiều Indexer.
+From the point of view of the client, however, things appear chaotic. The client observes that the responses were for blocks 8, 10, 9, and 11 in that order. We call this the "block wobble" problem. When a client experiences block wobble, data may appear to contradict itself over time. The situation worsens when we consider that Indexers do not all ingest the latest blocks simultaneously, and your requests may be routed to multiple Indexers.
 
-Máy khách và máy chủ có trách nhiệm làm việc cùng nhau để cung cấp dữ liệu nhất quán cho người dùng. Các cách tiếp cận khác nhau phải được sử dụng tùy thuộc vào tính nhất quán mong muốn vì không có một chương trình phù hợp cho mọi vấn đề.
+It is the responsibility of the client and server to work together to provide consistent data to the user. Different approaches must be used depending on the desired consistency as there is no one right program for every problem.
 
-Việc lý luận thông qua các tác động của hệ thống phân tán là khó, nhưng có thể không khắc phục được! Chúng tôi đã thiết lập các API và mẫu để giúp bạn điều hướng một số trường hợp sử dụng phổ biến. Các ví dụ sau minh họa các mẫu đó nhưng vẫn giải thích các chi tiết theo yêu cầu của mã sản xuất (như xử lý lỗi và hủy bỏ) để không làm xáo trộn các ý chính.
+Reasoning through the implications of distributed systems is hard, but the fix may not be! We've established APIs and patterns to help you navigate some common use-cases. The following examples illustrate those patterns but still elide details required by production code (like error handling and cancellation) to not obfuscate the main ideas.
 
-## Thăm dò dữ liệu cập nhật
+## Polling for updated data
 
-Graph cung cấp API `block: { number_gte: $minBlock }` đảm bảo rằng phản hồi dành cho một khối duy nhất bằng hoặc cao hơn `$minBlock`. Nếu yêu cầu được thực hiện tới một cá thể `graph-node` và khối min chưa được đồng bộ hóa, thì `graph-node` sẽ trả về lỗi. Nếu `graph-node` đã đồng bộ hóa khối min, nó sẽ chạy phản hồi cho khối mới nhất. Nếu yêu cầu được thực hiện với Edge & Node Gateway, Gateway sẽ lọc ra bất kỳ Indexer nào chưa đồng bộ hóa khối min và đưa ra yêu cầu đối với khối mới nhất mà Indexer đã đồng bộ hóa.
+The Graph provides the `block: { number_gte: $minBlock }` API, which ensures that the response is for a single block equal or higher to `$minBlock`. If the request is made to a `graph-node` instance and the min block is not yet synced, `graph-node` will return an error. If `graph-node` has synced min block, it will run the response for the latest block. If the request is made to an Edge & Node Gateway, the Gateway will filter out any Indexers that have not yet synced min block and make the request for the latest block the Indexer has synced.
 
-Chúng tôi có thể sử dụng `number_gte` để đảm bảo rằng thời gian không bao giờ quay ngược lại khi thăm dò dữ liệu trong một vòng lặp. Đây là một ví dụ:
+We can use `number_gte` to ensure that time never travels backward when polling for data in a loop. Here is an example:
 
 ```javascript
 /// Updates the protocol.paused variable to the latest
@@ -74,11 +74,11 @@ async function updateProtocolPaused() {
 }
 ```
 
-## Tìm nạp một tập hợp các mục liên quan
+## Fetching a set of related items
 
-Một ca sử dụng khác là truy xuất một tập hợp lớn hay nói chung là truy xuất các mục có liên quan qua nhiều yêu cầu. Không giống như trường hợp thăm dò ý kiến (trong đó tính nhất quán mong muốn được tiến hành kịp thời), tính nhất quán mong muốn dành cho một thời điểm duy nhất.
+Another use-case is retrieving a large set or, more generally, retrieving related items across multiple requests. Unlike the polling case (where the desired consistency was to move forward in time), the desired consistency is for a single point in time.
 
-Ở đây chúng ta sẽ sử dụng đối số `block: { hash: $blockHash }` để ghim tất cả các kết quả của chúng ta vào cùng một khối.
+Here we will use the `block: { hash: $blockHash }` argument to pin all of our results to the same block.
 
 ```javascript
 /// Gets a list of domain names from a single block using pagination
@@ -131,4 +131,4 @@ async function getDomainNames() {
 }
 ```
 
-Lưu ý rằng trong trường hợp tổ chức lại (re-org), khách hàng sẽ cần thử lại từ yêu cầu đầu tiên để cập nhật băm khối thành một khối không phải là non-uncle block.
+Note that in case of a re-org, the client will need to retry from the first request to update the block hash to a non-uncle block.
