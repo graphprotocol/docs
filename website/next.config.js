@@ -9,7 +9,7 @@ const env = {
 }
 
 const withNextra = nextra({
-  theme: '@graphprotocol/theme',
+  theme: '@graphprotocol/nextra-theme',
   staticImage: true,
   flexsearch: false,
   codeHighlight: false,

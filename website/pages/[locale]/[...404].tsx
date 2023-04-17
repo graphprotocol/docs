@@ -1,4 +1,4 @@
-import { LinkInline } from '@graphprotocol/theme'
+import { LinkInline } from '@graphprotocol/nextra-theme'
 import { GetStaticPaths, GetStaticProps, NextPage } from 'next'
 
 import { NotFound, Spacing } from '@edgeandnode/components'
