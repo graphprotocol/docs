@@ -1,6 +1,6 @@
 import { useContext } from 'react'
 
-import { buildShadow, buildTransition, Divider, Flex, Icon, Spacing, Text, useI18n } from '@edgeandnode/components'
+import { buildShadow, buildTransition, Divider, Flex, Icon, Spacing, Text, useI18n } from '@edgeandnode/gds'
 
 import { Link } from '@/components'
 import { NavContext } from '@/layout'

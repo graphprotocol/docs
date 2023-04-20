@@ -3,17 +3,7 @@ import * as Collapsible from '@radix-ui/react-collapsible'
 import { createContext, HTMLAttributes, useContext, useState } from 'react'
 import { SxProp } from 'theme-ui'
 
-import {
-  buildTransition,
-  Divider,
-  Flex,
-  Icon,
-  IconProps,
-  Spacing,
-  Text,
-  TextProps,
-  useI18n,
-} from '@edgeandnode/components'
+import { buildTransition, Divider, Flex, Icon, IconProps, Spacing, Text, TextProps, useI18n } from '@edgeandnode/gds'
 
 import { Link, LinkProps } from '@/components'
 
