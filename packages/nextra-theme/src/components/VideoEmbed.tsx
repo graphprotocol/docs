@@ -1,6 +1,6 @@
 import { HTMLAttributes } from 'react'
 
-import { useI18n } from '@edgeandnode/components'
+import { useI18n } from '@edgeandnode/gds'
 
 export type VideoProps = (
   | {

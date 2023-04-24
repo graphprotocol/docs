@@ -1,7 +1,7 @@
 import NextLink, { LinkProps as NextLinkProps } from 'next/link'
 import { AnchorHTMLAttributes } from 'react'
 
-import { buildShadow, buildTransition, useI18n, useTheme } from '@edgeandnode/components'
+import { buildShadow, buildTransition, useI18n, useTheme } from '@edgeandnode/gds'
 
 export type LinkProps = Pick<NextLinkProps, 'replace' | 'scroll' | 'shallow' | 'prefetch'> &
   Omit<AnchorHTMLAttributes<HTMLAnchorElement>, 'href'> & {

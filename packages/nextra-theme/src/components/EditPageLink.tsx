@@ -10,7 +10,7 @@ import {
   Spacing,
   Text,
   useI18n,
-} from '@edgeandnode/components'
+} from '@edgeandnode/gds'
 
 import { Link } from '@/components'
 import { NavContext } from '@/layout/NavContext'

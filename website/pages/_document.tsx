@@ -1,6 +1,6 @@
 import Document, { DocumentContext, DocumentInitialProps, Head, Html, Main, NextScript } from 'next/document'
 
-import { defaultLocale, extractLocaleFromPath, getHtmlAttributesForLocale, Locale } from '@edgeandnode/components'
+import { defaultLocale, extractLocaleFromRouter, getHtmlAttributesForLocale, Locale } from '@edgeandnode/gds'
 
 type MyDocumentProps = DocumentInitialProps & {
   locale: Locale | null
@@ -8,7 +8,7 @@ type MyDocumentProps = DocumentInitialProps & {
 
 export default class MyDocument extends Document<MyDocumentProps> {
   static async getInitialProps(context: DocumentContext) {
-    const { locale } = extractLocaleFromPath(context.asPath ?? context.pathname)
+    const { locale } = extractLocaleFromRouter(context)
     const initialProps = await Document.getInitialProps(context)
     return {
       ...initialProps,

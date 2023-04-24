@@ -19,11 +19,11 @@ import {
   LocaleSwitcher,
   NavigationMarketing,
   translate,
-} from '@edgeandnode/components'
+} from '@edgeandnode/gds'
 
 import { supportedLocales, translations, useI18n } from '@/i18n'
 
-import '@edgeandnode/components/build/components.css'
+import '@edgeandnode/gds/dist/components.css'
 import '@docsearch/css'
 
 const DEFAULT_SEO_PROPS: DefaultSeoProps = {
@@ -141,9 +141,7 @@ const MyApp = ({ Component, pageProps, router }: AppProps) => {
           <Layout
             headerSticky
             headerContent={
-              <div dir="ltr">
-                <NavigationMarketing activeRoute="/docs" NextLink={NextLink} rightAlignItems={[localeSwitcher]} />
-              </div>
+              <NavigationMarketing activeRoute="/docs" NextLink={NextLink} rightAlignItems={[localeSwitcher]} />
             }
             mainContainer
             footerContent={<Footer localeSwitcher={localeSwitcher} />}

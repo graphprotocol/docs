@@ -8,7 +8,7 @@ import { ReactElement, useCallback, useMemo } from 'react'
 import { useSet } from 'react-use'
 import { ThemeUIStyleObject } from 'theme-ui'
 
-import { Divider, DividerProps, Flex, Spacing, useI18n } from '@edgeandnode/components'
+import { Divider, DividerProps, Flex, Spacing, useI18n } from '@edgeandnode/gds'
 
 import {
   Blockquote,

@@ -1,6 +1,6 @@
 import { HTMLAttributes } from 'react'
 
-import { buildBorder, buildColor, FontWeight, Spacing, Text } from '@edgeandnode/components'
+import { buildBorder, buildColor, FontWeight, Spacing, Text } from '@edgeandnode/gds'
 
 export type TableProps = Omit<HTMLAttributes<HTMLTableElement>, 'color'>
 

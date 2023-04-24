@@ -1,7 +1,7 @@
 import { Heading, Image, Link, LinkInline, Paragraph } from '@graphprotocol/nextra-theme'
 import { GetStaticPaths, GetStaticProps } from 'next'
 
-import { BorderRadius, buildBorder, buildShadow, buildTransition, Flex, Spacing, Text } from '@edgeandnode/components'
+import { BorderRadius, buildBorder, buildShadow, buildTransition, Flex, Spacing, Text } from '@edgeandnode/gds'
 
 import { supportedLocales, useI18n } from '@/i18n'
 
