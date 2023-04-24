@@ -1,0 +1,53 @@
+import { visit } from 'unist-util-visit'
+import { RemoteContent } from 'nextra/data'
+import { buildDynamicMDX } from 'nextra/remote'
+import { listFiles } from './_meta.js'
+import { getPageMap } from '@/components/get-page-map'
+
+export async function getStaticPaths() {
+  const files = await listFiles()
+  return {
+    fallback: false,
+    paths: files.map((filePath) => ({
+      params: {
+        slug: filePath.replace(/\.mdx?/, '').split('/'),
+      },
+    })),
+  }
+}
+export async function getStaticProps({ params: { slug = ['README'] } }) {
+  const baseURL = 'https://raw.githubusercontent.com/streamingfast/substreams/develop/docs/'
+  const paths = slug.join('/')
+  let response = await fetch(`${baseURL}${paths}.md`)
+  if (response.status === 404 && paths !== 'README') {
+    response = await fetch(`${baseURL}${paths}/README.md`)
+  }
+  const data = await response.text()
+  const mdx = await buildDynamicMDX(data, {
+    mdxOptions: {
+      format: 'md',
+      remarkPlugins: [
+        () => (tree, _file, done) => {
+          const GITBOOK_CALLOUT_REGEX = /{%.*?%}/
+          visit(tree, 'paragraph', (node) => {
+            for (const child of node.children) {
+              if (child.value) {
+                child.value = child.value.replace(GITBOOK_CALLOUT_REGEX, '')
+              }
+            }
+          })
+          done()
+        },
+      ],
+    },
+    codeHighlight: false,
+  })
+  return {
+    props: {
+      ...mdx,
+      __nextra_pageMap: await getPageMap('en'),
+    },
+  }
+}
+
+<RemoteContent />

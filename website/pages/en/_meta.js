@@ -31,7 +31,7 @@ export default {
     title: 'Indexing',
   },
   'operating-graph-node': '',
-  substreams: '',
+  substreams: 'Substreams',
   firehose: '',
   '---4': {
     type: 'separator',
