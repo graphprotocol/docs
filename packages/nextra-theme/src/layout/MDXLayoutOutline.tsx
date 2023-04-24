@@ -1,9 +1,8 @@
 import { useContext, useEffect, useState } from 'react'
 
-import { buildTransition, Divider, Flex, Spacing, Text } from '@edgeandnode/components'
+import { buildTransition, Divider, Flex, Spacing, Text, useI18n } from '@edgeandnode/components'
 
 import { EditPageLink, Link } from '@/components'
-import { useI18n } from '@/i18n'
 import { DocumentContext } from '@/layout'
 
 export const MDXLayoutOutline = () => {

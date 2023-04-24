@@ -1,9 +1,18 @@
 import { HTMLAttributes, useContext } from 'react'
 
-import { BorderRadius, buildShadow, buildTransition, Flex, Icon, Opacity, Spacing, Text } from '@edgeandnode/components'
+import {
+  BorderRadius,
+  buildShadow,
+  buildTransition,
+  Flex,
+  Icon,
+  Opacity,
+  Spacing,
+  Text,
+  useI18n,
+} from '@edgeandnode/components'
 
 import { Link } from '@/components'
-import { useI18n } from '@/i18n'
 import { NavContext } from '@/layout/NavContext'
 
 export type EditPageLinkProps = {
@@ -11,7 +20,7 @@ export type EditPageLinkProps = {
 } & Omit<HTMLAttributes<HTMLElement>, 'children'>
 
 export const EditPageLink = ({ mobile = false, ...props }: EditPageLinkProps) => {
-  const { t } = useI18n()
+  const { t } = useI18n<any>()
 
   // If the current page is in a language other than English, link to the English version, as translations are handled by Crowdin
   const { filePath } = useContext(NavContext)!

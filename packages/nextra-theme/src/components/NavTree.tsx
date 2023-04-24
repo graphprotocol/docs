@@ -9,14 +9,13 @@ import {
   Flex,
   Icon,
   IconProps,
-  Locale,
   Spacing,
   Text,
   TextProps,
+  useI18n,
 } from '@edgeandnode/components'
 
 import { Link, LinkProps } from '@/components'
-import { useI18n } from '@/i18n'
 
 const animationExpand = keyframes({
   from: { height: 0 },
@@ -127,7 +126,7 @@ const NavTreeGroup = ({ active = false, children, ...props }: NavTreeGroupProps)
 const NavTreeGroupHeading = ({ children, buttonProps = {}, ...props }: NavTreeGroupHeadingProps) => {
   const { sx: buttonSx, ...buttonOtherProps } = buttonProps
   const context = useContext(NavTreeGroupContext)
-  const { t } = useI18n()
+  const { t } = useI18n<any>()
 
   return (
     <div {...props}>
@@ -189,7 +188,14 @@ const NavTreeDivider = (props: NavTreeDividerProps) => {
 
 const NavTreeHeading = ({ children, ...props }: NavTreeHeadingProps) => {
   return (
-    <li sx={{ mt: Spacing['24px'], mb: Spacing['12px'], paddingInlineStart: Spacing['24px'] }} {...props}>
+    <li
+      sx={{
+        mt: Spacing['24px'],
+        mb: Spacing['12px'],
+        paddingInlineStart: Spacing['24px'],
+      }}
+      {...props}
+    >
       <Text.C12 color="White48">{children}</Text.C12>
     </li>
   )
