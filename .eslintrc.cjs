@@ -2,14 +2,14 @@ module.exports = {
   root: true,
   overrides: [
     {
-      files: ['*.{ts,tsx,js,jsx,mjs,cjs}'],
+      files: ['**/*.{ts,tsx,js,jsx,mjs,cjs}'],
       extends: ['@edgeandnode/eslint-config', '@edgeandnode/eslint-config/next'],
       settings: {
         next: { rootDir: 'website' },
       },
     },
     {
-      files: ['*.{ts,tsx}'],
+      files: ['**/*.{ts,tsx}'],
       excludedFiles: ['**/*.{md,mdx}/*.{ts,tsx}'],
       parserOptions: {
         project: 'tsconfig.json',
@@ -50,6 +50,10 @@ module.exports = {
         // Disable rules for code-blocks
         'no-restricted-globals': 'off',
       },
+    },
+    {
+      files: ['**/*.graphql'],
+      parser: '@graphql-eslint/eslint-plugin',
     },
   ],
 }
