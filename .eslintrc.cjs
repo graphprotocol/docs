@@ -1,3 +1,4 @@
+/** @type {import('eslint').Linter.Config} */
 module.exports = {
   root: true,
   overrides: [
@@ -22,6 +23,10 @@ module.exports = {
       plugins: ['mdx'],
       rules: {
         'mdx/remark': 'error',
+      },
+      parserOptions: {
+        ecmaVersion: 'latest',
+        sourceType: 'module',
       },
     },
   ],
