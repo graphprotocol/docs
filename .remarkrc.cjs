@@ -6,6 +6,6 @@ module.exports = {
     'remark-lint-heading-increment',
     ['remark-lint-no-heading-punctuation', '\\.,;:'],
     'remark-lint-no-shell-dollars',
-    'remark-lint-fenced-code-flag'
+    'remark-lint-fenced-code-flag',
   ],
 }
