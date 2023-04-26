@@ -3,6 +3,9 @@ module.exports = {
   overrides: [
     {
       files: ['**/*.{ts,tsx,js,jsx,mjs,cjs}'],
+      // to lint graphql documents marked with /* GraphQL */ comments inside js/ts codeblocks in markdown
+      processor: '@graphql-eslint/graphql',
+      plugins: ['@graphql-eslint'],
       extends: ['@edgeandnode/eslint-config', '@edgeandnode/eslint-config/next'],
       settings: {
         next: { rootDir: 'website' },
