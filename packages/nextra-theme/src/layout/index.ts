@@ -1,5 +1,4 @@
 export * from './DocumentContext'
-export { MDXLayout as default } from './MDXLayout'
 export * from './MDXLayoutNav'
 export * from './MDXLayoutOutline'
 export * from './MDXLayoutPagination'

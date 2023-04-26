@@ -1,7 +1,7 @@
 import Highlight, { defaultProps, Language, PrismTheme } from 'prism-react-renderer'
 import { HTMLAttributes } from 'react'
 
-import { BorderRadius, FontFamily, Spacing } from '@edgeandnode/components'
+import { BorderRadius, FontFamily, Spacing } from '@edgeandnode/gds'
 
 export type CodeBlockProps = HTMLAttributes<HTMLPreElement>
 export type CodeInlineProps = HTMLAttributes<HTMLElement>

@@ -3,10 +3,9 @@ import { HTMLAttributes, useContext } from 'react'
 import { useInView } from 'react-intersection-observer'
 import { useDebounce } from 'react-use'
 
-import { buildShadow, buildTransition, Opacity, Spacing, Text, TextProps } from '@edgeandnode/components'
+import { buildShadow, buildTransition, Opacity, Spacing, Text, TextProps, useI18n } from '@edgeandnode/gds'
 
 import { LinkInline } from '@/components'
-import { useI18n } from '@/i18n'
 import { DocumentContext } from '@/layout/DocumentContext'
 
 export type HeadingProps = TextProps & {
@@ -29,7 +28,7 @@ const BaseHeading = ({ level, id, children, ...props }: HeadingProps) => {
     100,
     [id, inOrAboveView, markOutlineItem]
   )
-  const { t } = useI18n()
+  const { t } = useI18n<any>()
 
   return (
     <Text ref={ref} as={`h${level}`} id={id} weight="SEMIBOLD" color="White" sx={{ whiteSpace: 'nowrap' }} {...props}>
