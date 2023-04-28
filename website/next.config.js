@@ -48,8 +48,8 @@ export default withNextra({
       permanent: false,
     },
     {
-      source: '/en/substreams',
-      destination: '/en/substreams/README',
+      source: '/en/substreams/',
+      destination: '/en/substreams/README/',
       permanent: false,
     },
   ],
