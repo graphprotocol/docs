@@ -57,9 +57,10 @@ const DefaultSeoWithLocale = () => {
   return <DefaultSeo {...seoProps} />
 }
 
-const localeSwitcher = <LocaleSwitcher key="localeSwitcher" />
-
 function MyApp({ Component, pageProps, router }: AppProps): ReactElement {
+  const hideLocaleSwitcher = pageProps.hideLocaleSwitcher ?? false
+  const localeSwitcher = hideLocaleSwitcher ? null : <LocaleSwitcher key="localeSwitcher" />
+
   return (
     <I18nProvider supportedLocales={supportedLocales} translations={translations} clientRouter={router}>
       <DefaultSeoWithLocale />
@@ -92,7 +93,11 @@ function MyApp({ Component, pageProps, router }: AppProps): ReactElement {
           <Layout
             headerSticky
             headerContent={
-              <NavigationMarketing activeRoute="/docs" NextLink={NextLink} rightAlignItems={[localeSwitcher]} />
+              <NavigationMarketing
+                activeRoute="/docs"
+                NextLink={NextLink}
+                rightAlignItems={localeSwitcher ? [localeSwitcher] : undefined}
+              />
             }
             mainContainer
             footerContent={<Footer localeSwitcher={localeSwitcher} />}

@@ -47,6 +47,11 @@ export default withNextra({
       destination: '/en/',
       permanent: false,
     },
+    {
+      source: '/en/substreams',
+      destination: '/en/substreams/README',
+      permanent: false,
+    },
   ],
   webpack(config) {
     config.module.rules.push({
