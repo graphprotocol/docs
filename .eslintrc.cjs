@@ -10,6 +10,7 @@ module.exports = {
     },
     {
       files: ['*.{ts,tsx}'],
+      excludedFiles: ['**/*.{md,mdx}/*.{ts,tsx}'],
       parserOptions: {
         project: 'tsconfig.json',
       },
@@ -22,6 +23,32 @@ module.exports = {
       plugins: ['mdx'],
       rules: {
         'mdx/remark': 'error',
+      },
+      settings: {
+        'mdx/code-blocks': true,
+      },
+    },
+    {
+      files: ['**/*.{md,mdx}/*.{ts,tsx}'],
+      rules: {
+        // Disables rules that requires type information
+        '@typescript-eslint/await-thenable': 'off',
+        '@typescript-eslint/no-floating-promises': 'off',
+        '@typescript-eslint/no-implied-eval': 'off',
+        '@typescript-eslint/no-misused-promises': 'off',
+        '@typescript-eslint/no-unnecessary-type-assertion': 'off',
+        '@typescript-eslint/no-unsafe-return': 'off',
+        '@typescript-eslint/prefer-regexp-exec': 'off',
+        '@typescript-eslint/no-base-to-string': 'off',
+        '@typescript-eslint/no-unnecessary-boolean-literal-compare': 'off',
+        '@typescript-eslint/no-unnecessary-condition': 'off',
+        '@typescript-eslint/no-unnecessary-type-arguments': 'off',
+        '@typescript-eslint/non-nullable-type-assertion-style': 'off',
+        '@typescript-eslint/prefer-includes': 'off',
+        '@typescript-eslint/prefer-return-this-type': 'off',
+        '@typescript-eslint/prefer-string-starts-ends-with': 'off',
+        // Disable rules for code-blocks
+        'no-restricted-globals': 'off',
       },
     },
   ],
