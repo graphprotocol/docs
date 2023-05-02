@@ -3,7 +3,7 @@ import { defineConfig } from 'tsup'
 import tsconfig from './tsconfig.json'
 
 export default defineConfig({
-  name: 'nextra-theme-docs',
+  name: 'nextra-theme',
   entry: ['src/index.tsx'],
   format: 'esm',
   dts: true,
