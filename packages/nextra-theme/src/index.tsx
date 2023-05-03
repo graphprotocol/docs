@@ -61,7 +61,7 @@ const mdxStyles: ThemeUIStyleObject = {
 export { Heading, Image, Link, LinkInline, Paragraph }
 
 export default function NextraLayout({ children, pageOpts }: NextraThemeLayoutProps): ReactElement {
-  const { frontMatter, filePath, pageMap, headings } = pageOpts
+  const { frontMatter, filePath, pageMap, headings, title } = pageOpts
   const { locale, defaultLocale } = useI18n()
   const fsPath = useFSRoute()
 
@@ -123,7 +123,7 @@ export default function NextraLayout({ children, pageOpts }: NextraThemeLayoutPr
   }, [headings, outlineItemIsInOrAboveView])
 
   let seo: NextSeoProps = {
-    title: `${frontMatter.title ? `${frontMatter.title} - ` : ''}The Graph Docs`,
+    title: `${title ? `${title} - ` : ''}The Graph Docs`,
   }
   if (frontMatter.description) {
     seo.description = frontMatter.description
