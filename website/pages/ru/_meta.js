@@ -1,6 +1,6 @@
 import meta from '../en/_meta.js'
 
 export default {
-  ...meta,
+  ...JSON.parse(JSON.stringify(meta)),
   tokenomics: 'Токеномика',
 }

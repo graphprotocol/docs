@@ -185,6 +185,10 @@ export const MDXLayoutNav = ({ mobile = false }: { mobile?: boolean }) => {
               return <NavTree.Heading key={pageItem.name}>{pageItem.title}</NavTree.Heading>
             }
             if ('children' in pageItem && pageItem.children) {
+              if (pageItem.type === 'children') {
+                return <>{pageItem.children.map(renderSidebar)}</>
+              }
+
               return (
                 <NavTree.Group key={pageItem.name} active={activePage.route.startsWith(`${pageItem.route}/`)}>
                   <NavTree.Group.Heading

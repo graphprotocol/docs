@@ -1,7 +1,7 @@
 import meta from '../en/_meta.js'
 
 export default {
-  ...meta,
+  ...JSON.parse(JSON.stringify(meta)),
   network: 'The Graph Network',
   '###1': {
     type: 'heading',
@@ -13,7 +13,7 @@ export default {
   managing: 'Administrando',
   querying: 'Consultando',
   cookbook: 'Recetario',
-  '###2': {
+  '###3': {
     type: 'heading',
     title: 'Indexación',
   },
