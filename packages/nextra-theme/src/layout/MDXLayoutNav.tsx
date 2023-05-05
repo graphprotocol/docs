@@ -3,7 +3,7 @@ import { keyframes } from '@emotion/react'
 import * as Collapsible from '@radix-ui/react-collapsible'
 import { useRouter } from 'next/router'
 import { Item } from 'nextra/normalize-pages'
-import { PropsWithChildren, useContext, useEffect, useState } from 'react'
+import { Fragment, PropsWithChildren, useContext, useEffect, useState } from 'react'
 
 import { BorderRadius, buildTransition, Flex, Icon, NestedStrings, Spacing, Text, useI18n } from '@edgeandnode/gds'
 
@@ -186,7 +186,7 @@ export const MDXLayoutNav = ({ mobile = false }: { mobile?: boolean }) => {
             }
             if ('children' in pageItem && pageItem.children) {
               if (pageItem.type === 'children') {
-                return <>{pageItem.children.map(renderSidebar)}</>
+                return <Fragment key={pageItem.name}>{pageItem.children.map(renderSidebar)}</Fragment>
               }
 
               return (

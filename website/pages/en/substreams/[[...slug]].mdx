@@ -22,20 +22,32 @@ export async function getStaticProps({ params: { slug = ['README'] } }) {
   if (response.status === 404 && paths !== 'README') {
     response = await fetch(`${baseURL}${paths}/README.md`)
   }
-  const data = await response.text()
+  const data = (await response.text())
+    // replace {% embed ... %} with <iframe />
+    .replaceAll(
+      /{%\s+embed\s+url="(.*?)"\s+%}/g,
+      (...m) =>
+        `<iframe src="${m[1].replace(
+          // we need enhance YouTube links, otherwise they will be not loaded in iframe
+          'youtube.com/watch?v=',
+          'youtube.com/embed/'
+        )}" style={{aspectRatio: 16/9, width: '100%'}}/>`
+    )
+    // remove gitbook {% ... %} elements
+    .replaceAll(/{%.*?%}/g, '')
+    // close img tags only if he doesn't point to .gitbook
+    .replaceAll(/<img(.*?)>/g, (...m) => (m[1].includes('src=".gitbook') ? '' : `<img${m[1]}/>`))
+    // fixes http://localhost:3000/en/substreams/reference-and-specs/authentication/
+    .replaceAll('<pre class="language-bash" data-overflow="wrap"><code class="lang-bash">', '```bash\n')
+    // fixes http://localhost:3000/en/substreams/developers-guide/modules/inputs/
+    .replaceAll('<pre class="language-yaml" data-title="manifest excerpt"><code class="lang-yaml">', '```yaml\n')
+    .replaceAll('</code></pre>', '```')
   const mdx = await buildDynamicMDX(data, {
     mdxOptions: {
-      format: 'md',
+      format: paths.endsWith('/change-log') ? 'md' : 'mdx',
       remarkPlugins: [
         () => (tree, _file, done) => {
-          const GITBOOK_CALLOUT_REGEX = /{%.*?%}/
-          visit(tree, 'paragraph', (node) => {
-            for (const child of node.children) {
-              if (child.value) {
-                child.value = child.value.replace(GITBOOK_CALLOUT_REGEX, '')
-              }
-            }
-          })
+          // enhance links
           visit(tree, 'link', (node) => {
             if (node.url.startsWith('./')) {
               node.url = node.url.slice(2)
