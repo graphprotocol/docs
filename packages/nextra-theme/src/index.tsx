@@ -60,7 +60,7 @@ const mdxStyles: ThemeUIStyleObject = {
 
 export { Heading, Image, Link, LinkInline, Paragraph }
 
-export default function NextraLayout({ children, pageOpts }: NextraThemeLayoutProps): ReactElement {
+export default function NextraLayout({ children, pageOpts, pageProps }: NextraThemeLayoutProps): ReactElement {
   const { frontMatter, filePath, pageMap, headings, title } = pageOpts
   const { locale, defaultLocale } = useI18n()
   const fsPath = useFSRoute()
@@ -138,7 +138,7 @@ export default function NextraLayout({ children, pageOpts }: NextraThemeLayoutPr
   }
 
   return (
-    <NavContext.Provider value={{ filePath, ...args }}>
+    <NavContext.Provider value={{ filePath: pageProps.remoteFilePath || filePath, ...args }}>
       <DocumentContext.Provider value={{ frontMatter, headings, markOutlineItem, highlightedOutlineItemId }}>
         <NextSeo {...seo} />
 

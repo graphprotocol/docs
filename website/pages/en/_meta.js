@@ -31,7 +31,7 @@ export default {
     title: 'Substreams',
   },
   substreams: {
-    type: 'children'
+    type: 'children',
   },
   '###3': {
     type: 'heading',
