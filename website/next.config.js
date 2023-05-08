@@ -17,7 +17,7 @@ const withNextra = nextra({
   transform(result, { route }) {
     if (route && !result.includes('getStaticProps')) {
       const banner = `
-import { getPageMap } from '@/components/get-page-map'
+import { getPageMap } from '@/src/getPageMap'
 
 export const getStaticProps = async context => ({
   props: {

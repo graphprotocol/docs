@@ -1,7 +1,7 @@
 import meta from '../en/_meta.js'
 
 export default {
-  ...meta,
+  ...structuredClone(meta),
   network: 'گراف نیٹورک',
   '###1': {
     type: 'heading',
@@ -13,7 +13,7 @@ export default {
   managing: 'انتظام',
   querying: 'استفسار کرنا',
   cookbook: 'ہدایت نامہ',
-  '###2': {
+  '###3': {
     type: 'heading',
     title: 'انڈیکسنگ',
   },

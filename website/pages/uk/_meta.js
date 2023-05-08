@@ -1,7 +1,7 @@
 import meta from '../en/_meta.js'
 
 export default {
-  ...meta,
+  ...structuredClone(meta),
   network: 'Graph мережа',
   '###1': {
     type: 'heading',
@@ -13,7 +13,7 @@ export default {
   managing: 'Управління',
   querying: 'Запити',
   cookbook: 'Книга поетапних порад',
-  '###2': {
+  '###3': {
     type: 'heading',
     title: 'Індексація',
   },
