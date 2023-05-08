@@ -28,10 +28,16 @@ export default {
   },
   '###2': {
     type: 'heading',
+    title: 'Substreams',
+  },
+  substreams: {
+    type: 'children',
+  },
+  '###3': {
+    type: 'heading',
     title: 'Indexing',
   },
   'operating-graph-node': '',
-  substreams: '',
   firehose: '',
   '---4': {
     type: 'separator',

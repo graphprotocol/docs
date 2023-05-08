@@ -1,7 +1,7 @@
 import meta from '../en/_meta.js'
 
 export default {
-  ...meta,
+  ...structuredClone(meta),
   network: 'Graph网络',
   '###1': {
     type: 'heading',
@@ -13,7 +13,7 @@ export default {
   managing: '管理',
   querying: '查询',
   cookbook: '导览',
-  '###2': {
+  '###3': {
     type: 'heading',
     title: '索引',
   },

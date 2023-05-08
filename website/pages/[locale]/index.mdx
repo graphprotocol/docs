@@ -1,3 +1,54 @@
-{/* we use index.mdx instead index.tsx to wrap page with <MDXLayout /> */}
+{/* we use index.mdx instead index.tsx to wrap page with <MDXLayout />, then */}
 
-export { default, getStaticPaths, getStaticProps } from '@/components/IndexPage'
+{/* parse headings to build TOC and parse frontmatter to add page heading */}
+
+import { translate } from '@edgeandnode/gds'
+import { buildDynamicMDX } from 'nextra/remote'
+import { RemoteContent } from 'nextra/data'
+import { supportedLocales, translations } from '@/i18n'
+
+import { Intro, NetworkRoles, Products, SupportedNetworks } from '@/src/IndexPage'
+import { getPageMap } from '@/src/getPageMap'
+
+export const getStaticPaths = () => {
+  return {
+    paths: supportedLocales.map(locale => ({ params: { locale } })),
+    fallback: false,
+  }
+}
+
+export const getStaticProps = async ({ params: { locale } }) => {
+  const t = key => translate(translations, locale, key)
+  const rawMdx = `---
+title: ${t('index.title')}
+---
+
+${t('index.intro')}
+
+<Intro />
+
+## ${t('index.networkRoles.title')}
+
+${t('index.networkRoles.description')}
+
+<NetworkRoles />
+
+## ${t('index.products.title')}
+
+<Products />
+
+## ${t('index.supportedNetworks.title')}
+
+${t('index.supportedNetworks.description')}
+
+<SupportedNetworks />`
+  const mdx = await buildDynamicMDX(rawMdx, { codeHighlight: false })
+  return {
+    props: {
+      ...mdx,
+      __nextra_pageMap: await getPageMap(locale)
+    },
+  }
+}
+
+<RemoteContent components={{ Intro, NetworkRoles, Products, SupportedNetworks }} />

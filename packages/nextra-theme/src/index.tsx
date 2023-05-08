@@ -60,8 +60,8 @@ const mdxStyles: ThemeUIStyleObject = {
 
 export { Heading, Image, Link, LinkInline, Paragraph }
 
-export default function NextraLayout({ children, pageOpts }: NextraThemeLayoutProps): ReactElement {
-  const { frontMatter, filePath, pageMap, headings } = pageOpts
+export default function NextraLayout({ children, pageOpts, pageProps }: NextraThemeLayoutProps): ReactElement {
+  const { frontMatter, filePath, pageMap, headings, title } = pageOpts
   const { locale, defaultLocale } = useI18n()
   const fsPath = useFSRoute()
 
@@ -123,7 +123,7 @@ export default function NextraLayout({ children, pageOpts }: NextraThemeLayoutPr
   }, [headings, outlineItemIsInOrAboveView])
 
   let seo: NextSeoProps = {
-    title: `${frontMatter.title ? `${frontMatter.title} - ` : ''}The Graph Docs`,
+    title: `${title ? `${title} - ` : ''}The Graph Docs`,
   }
   if (frontMatter.description) {
     seo.description = frontMatter.description
@@ -138,7 +138,7 @@ export default function NextraLayout({ children, pageOpts }: NextraThemeLayoutPr
   }
 
   return (
-    <NavContext.Provider value={{ filePath, ...args }}>
+    <NavContext.Provider value={{ filePath: pageProps.remoteFilePath || filePath, ...args }}>
       <DocumentContext.Provider value={{ frontMatter, headings, markOutlineItem, highlightedOutlineItemId }}>
         <NextSeo {...seo} />
 

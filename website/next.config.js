@@ -14,23 +14,20 @@ const withNextra = nextra({
   flexsearch: false,
   codeHighlight: false,
   defaultShowCopyCode: false,
-  transformPageOpts(pageOpts) {
-    if (pageOpts.filePath === 'pages/_app.mdx') {
-      pageOpts.pageMap = pageOpts.pageMap
-        // remove redundant dynamic page folder
-        .filter((pageItem) => pageItem.name !== '[locale]')
-        .map((pageItem) => {
-          if (pageItem.kind === 'Folder' && pageItem.name.length === 2) {
-            // add missing dynamic index page
-            return {
-              ...pageItem,
-              children: [{ kind: 'MdxPage', name: 'index', route: pageItem.route }, ...pageItem.children],
-            }
-          }
-          return pageItem
-        })
+  transform(result, { route }) {
+    if (route && !result.includes('getStaticProps')) {
+      const banner = `
+import { getPageMap } from '@/src/getPageMap'
+
+export const getStaticProps = async context => ({
+  props: {
+    __nextra_pageMap: await getPageMap('${route.split('/')[1]}')
+  }
+})`
+      result += banner
     }
-    return pageOpts
+
+    return result
   },
 })
 
@@ -48,6 +45,11 @@ export default withNextra({
     {
       source: '/',
       destination: '/en/',
+      permanent: false,
+    },
+    {
+      source: '/en/substreams/',
+      destination: '/en/substreams/README/',
       permanent: false,
     },
   ],
