@@ -1,0 +1,82 @@
+import { visit } from 'unist-util-visit'
+import { RemoteContent } from 'nextra/data'
+import { buildDynamicMDX } from 'nextra/remote'
+import { listFiles } from './_meta.js'
+import { getPageMap } from '@/src/getPageMap'
+
+export async function getStaticPaths() {
+  const files = await listFiles()
+  return {
+    fallback: false,
+    paths: files.map((filePath) => ({
+      params: {
+        slug: filePath.replace(/\.mdx?/, '').split('/'),
+      },
+    })),
+  }
+}
+export async function getStaticProps({ params: { slug = ['README'] } }) {
+  const baseURL = 'https://raw.githubusercontent.com/streamingfast/substreams/develop/docs/'
+  const paths = slug.join('/')
+  let fileURL = `${paths}.md`
+  let response = await fetch(baseURL + fileURL)
+  if (response.status === 404 && paths !== 'README') {
+    fileURL = `$${paths}/README.md`
+    response = await fetch(baseURL + fileURL)
+  }
+  const data = (await response.text())
+    // replace {% embed ... %} with <iframe />
+    .replaceAll(
+      /{%\s+embed\s+url="(.*?)"\s+%}/g,
+      (...m) =>
+        `<iframe src="${m[1].replace(
+          // we need enhance YouTube links, otherwise they will be not loaded in iframe
+          'youtube.com/watch?v=',
+          'youtube.com/embed/'
+        )}" style={{aspectRatio: 16/9, width: '100%'}}/>`
+    )
+    // remove gitbook {% ... %} elements
+    .replaceAll(/{%.*?%}/g, '')
+    // close img tags only if he doesn't point to .gitbook
+    .replaceAll(/<img(.*?)>/g, (...m) => (m[1].includes('src=".gitbook') ? '' : `<img${m[1]}/>`))
+    // fixes http://localhost:3000/en/substreams/reference-and-specs/authentication/
+    .replaceAll('<pre class="language-bash" data-overflow="wrap"><code class="lang-bash">', '```bash\n')
+    // fixes http://localhost:3000/en/substreams/developers-guide/modules/inputs/
+    .replaceAll('<pre class="language-yaml" data-title="manifest excerpt"><code class="lang-yaml">', '```yaml\n')
+    .replaceAll('</code></pre>', '```')
+  const mdx = await buildDynamicMDX(data, {
+    mdxOptions: {
+      // change-log contains `{variable}` text that is thrown an error by MDX2 parser since he treat it as variable injection, to fix it we parse chang-log with the markdown parser
+      format: paths.endsWith('/change-log') ? 'md' : 'mdx',
+      remarkPlugins: [
+        () => (tree, _file, done) => {
+          // enhance links
+          visit(tree, 'link', (node) => {
+            if (node.url.startsWith('./')) {
+              node.url = node.url.slice(2)
+            }
+            if (node.url.startsWith('/')) {
+              // (foo)[/foo/bar]
+              node.url = node.url.replace('/', '/substreams/')
+            } else if (!node.url.includes('/') && node.url.endsWith('.md')) {
+              // (foo)[foo.md]
+              node.url = [...slug.slice(0, -1), node.url].join('/')
+            }
+          })
+          done()
+        },
+      ],
+    },
+    codeHighlight: false,
+  })
+  return {
+    props: {
+      ...mdx,
+      __nextra_pageMap: await getPageMap('en'),
+      hideLocaleSwitcher: true,
+      remoteFilePath: `https://github.com/streamingfast/substreams/tree/develop/docs/${fileURL}`,
+    },
+  }
+}
+
+<RemoteContent />
