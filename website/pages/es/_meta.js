@@ -1,7 +1,7 @@
 import meta from '../en/_meta.js'
 
 export default {
-  ...JSON.parse(JSON.stringify(meta)),
+  ...structuredClone(meta),
   network: 'The Graph Network',
   '###1': {
     type: 'heading',
