@@ -2,19 +2,19 @@
 title: Quick and Easy Subgraph Debugging Using Forks
 ---
 
-As with many systems processing large amounts of data, The Graph's Indexers (Graph nodes) may take quite some time to sync-up your subgraph with the target blockchain. The discrepancy between quick changes with the purpose of debugging and long wait times needed for indexing is extremely counterproductive and we are well aware of that. This is why we are introducing **subgraph forking**, developed by [LimeChain](https://limechain.tech/), and in this article I will show you how this feature can be used to substantially speed-up subgraph debugging!
+बर्‍याच प्रणाली मोठ्या प्रमाणात डेटावर प्रक्रिया करतात त्याप्रमाणे, ग्राफचे इंडेक्सर्स (ग्राफ नोड्स) लक्ष्य ब्लॉकचेनसह तुमचा सबग्राफ समक्रमित करण्यासाठी थोडा वेळ लागू शकतात. डीबगिंगच्या उद्देशाने झटपट बदल आणि इंडेक्सिंगसाठी आवश्यक असलेली दीर्घ प्रतीक्षा वेळ यांच्यातील तफावत अत्यंत प्रतिकूल आहे आणि आम्हाला याची चांगली जाणीव आहे. म्हणूनच आम्ही **सबग्राफ फोर्किंग** सादर करत आहोत, जे [LimeChain](https://limechain.tech/) ने विकसित केले आहे आणि या लेखात मी तुम्हाला हे वैशिष्ट्य दाखवणार आहे की हे वैशिष्ट्य सबग्राफ डीबगिंगचा वेग वाढवण्यासाठी कसा वापरला जाऊ शकतो!
 
 ## Ok, what is it?
 
-**Subgraph forking** is the process of lazily fetching entities from _another_ subgraph's store (usually a remote one).
+**सबग्राफ फोर्किंग** ही _दुसऱ्या_ सबग्राफच्या स्टोअरमधून (सामान्यत: रिमोट एक) घटक आणण्याची प्रक्रिया आहे.
 
-In the context of debugging, **subgraph forking** allows you to debug your failed subgraph at block _X_ without needing to wait to sync-up to block _X_.
+डीबगिंगच्या संदर्भात, **सबग्राफ फोर्किंग** तुम्हाला तुमचा अयशस्वी सबग्राफ ब्लॉक _X_ येथे वाट न पाहता डीबग करण्याची अनुमती देते _X_ ला ब्लॉक करण्यासाठी सिंक-अप करण्यासाठी.
 
 ## What?! How?
 
-When you deploy a subgraph to a remote Graph node for indexing and it fails at block _X_, the good news is that the Graph node will still serve GraphQL queries using its store, which is synced-up to block _X_. That's great! This means we can take advantage of this "up-to-date" store to fix the bugs arising when indexing block _X_.
+जेव्हा तुम्ही इंडेक्सिंगसाठी रिमोट ग्राफ नोडवर सबग्राफ उपयोजित करता आणि तो ब्लॉक _X_ वर अयशस्वी होतो, तेव्हा चांगली बातमी अशी आहे की आलेख नोड अजूनही त्याचे स्टोअर वापरून GraphQL क्वेरी सर्व्ह करेल, जे _X_ अवरोधित करण्यासाठी समक्रमित केले आहे. खूप छान आहे! याचा अर्थ ब्लॉक _X_ अनुक्रमित करताना उद्भवणाऱ्या बगचे निराकरण करण्यासाठी आम्ही या "अप-टू-डेट" स्टोअरचा लाभ घेऊ शकतो.
 
-In a nutshell, we are going to _fork the failing subgraph_ from a remote Graph node that is guaranteed to have the subgraph indexed up to block _X_ in order to provide the locally deployed subgraph being debugged at block _X_ an up-to-date view of the indexing state.
+थोडक्यात, आम्ही एका रिमोट ग्राफ नोडवरून _अयशस्वी सबग्राफ फोर्क करणार आहोत_ ज्याला *X* ब्लॉक _X_ वर डीबग केलेला स्थानिकरित्या उपयोजित सबग्राफ प्रदान करण्यासाठी अनुक्रमणिका स्थितीचे अद्ययावत दृश्य.
 
 ## Please, show me some code!
 
@@ -44,7 +44,7 @@ export function handleUpdatedGravatar(event: UpdatedGravatar): void {
 }
 ```
 
-Oops, how unfortunate, when I deploy my perfect looking subgraph to the [Hosted Service](https://thegraph.com/hosted-service/) it fails with the _"Gravatar not found!"_ error.
+अरेरे, किती दुर्दैवी आहे, जेव्हा मी माझा परिपूर्ण दिसणारा सबग्राफ [होस्टेड सर्व्हिस](https://thegraph.com/hosted-service/) वर तैनात करतो तेव्हा तो *"Gravatar आढळले नाही!"* त्रुटी.
 
 The usual way to attempt a fix is:
 
@@ -53,7 +53,7 @@ The usual way to attempt a fix is:
 3. Wait for it to sync-up.
 4. If it breaks again go back to 1, otherwise: Hooray!
 
-It is indeed pretty familiar to an ordinary debug process, but there is one step that horribly slows down the process: _3. Wait for it to sync-up._
+सामान्य डीबग प्रक्रियेसाठी हे खरोखरच परिचित आहे, परंतु एक पायरी आहे जी प्रक्रिया अत्यंत मंद करते: _3. ते समक्रमित होण्याची प्रतीक्षा करा._
 
 Using **subgraph forking** we can essentially eliminate this step. Here is how it looks:
 
@@ -76,11 +76,11 @@ And I answer:
 $ graph deploy <subgraph-name> --debug-fork <subgraph-id> --ipfs http://localhost:5001 --node http://localhost:8020
 ```
 
-Also, don't forget to set the `dataSources.source.startBlock` field in the subgraph manifest to the number of the problematic block, so you can skip indexing unnecessary blocks and take advantage of the fork!
+तसेच, सबग्राफ मॅनिफेस्टमधील `dataSources.source.startBlock` फील्ड समस्याग्रस्त ब्लॉकच्या संख्येवर सेट करण्यास विसरू नका, जेणेकरून तुम्ही अनावश्यक ब्लॉक्सची अनुक्रमणिका वगळू शकता आणि फोर्कचा फायदा घेऊ शकता!
 
 So, here is what I do:
 
-0. I spin-up a local graph node ([here is how to do it](https://github.com/graphprotocol/graph-node#running-a-local-graph-node)) with the `fork-base` option set to: `https://api.thegraph.com/subgraphs/id/`, since I will fork a subgraph, the buggy one I deployed earlier, from the [HostedService](https://thegraph.com/hosted-service/).
+0. मी स्थानिक आलेख नोड स्पिन-अप करतो ([हे कसे करायचे ते येथे आहे](https://github.com/graphprotocol/graph-node#running-a-local-graph-node)) `फोर्क-बेस` पर्याय यावर सेट केला आहे: `https://api.thegraph.com/subgraphs/id/`, कारण मी सबग्राफ फोर्क करीन, मी तैनात केलेली बग्गी पूर्वी, [HostedService](https://thegraph.com/hosted-service/) वरून.
 
 ```
 $ cargo run -p graph-node --release -- \
