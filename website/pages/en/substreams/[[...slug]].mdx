@@ -3,6 +3,7 @@ import { RemoteContent } from 'nextra/data'
 import { buildDynamicMDX } from 'nextra/remote'
 import { listFiles } from './_meta.js'
 import { getPageMap } from '@/src/getPageMap'
+import path from 'node:path'
 
 export async function getStaticPaths() {
   const files = await listFiles()
@@ -37,8 +38,13 @@ export async function getStaticProps({ params: { slug = ['README'] } }) {
     )
     // remove gitbook {% ... %} elements
     .replaceAll(/{%.*?%}/g, '')
-    // close img tags only if he doesn't point to .gitbook
-    .replaceAll(/<img(.*?)>/g, (...m) => (m[1].includes('src=".gitbook') ? '' : `<img${m[1]}/>`))
+    // close unclosed img tags
+    .replaceAll(/<img((?:(?!\/>)[^>])*?)>/g, (...m) => `<img${m[1]}/>`)
+    // fix gitbook image srcs
+    .replaceAll(/src="[^>"]*\.gitbook\/(.*)"/g, (...m) => {
+      console.log({ m })
+      return `src="${baseURL}.gitbook/${m[1]}"`
+    })
     // fixes http://localhost:3000/en/substreams/reference-and-specs/authentication/
     .replaceAll('<pre class="language-bash" data-overflow="wrap"><code class="lang-bash">', '```bash\n')
     // fixes http://localhost:3000/en/substreams/developers-guide/modules/inputs/
@@ -52,15 +58,12 @@ export async function getStaticProps({ params: { slug = ['README'] } }) {
         () => (tree, _file, done) => {
           // enhance links
           visit(tree, 'link', (node) => {
-            if (node.url.startsWith('./')) {
-              node.url = node.url.slice(2)
-            }
             if (node.url.startsWith('/')) {
               // (foo)[/foo/bar]
               node.url = node.url.replace('/', '/substreams/')
-            } else if (!node.url.includes('/') && node.url.endsWith('.md')) {
-              // (foo)[foo.md]
-              node.url = [...slug.slice(0, -1), node.url].join('/')
+            } else {
+              // (foo)[foo.md] or (foo)[./foo.md] or (foo)[../foo.md]
+              node.url = path.join(path.dirname(fileURL), node.url)
             }
           })
           done()

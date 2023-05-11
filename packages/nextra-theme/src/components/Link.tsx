@@ -9,6 +9,8 @@ export type LinkProps = Pick<NextLinkProps, 'replace' | 'scroll' | 'shallow' | '
     locale?: string
   }
 
+const externalHrefRegex = /^(https?:)?\/\//
+
 export const Link = ({
   href,
   replace,
@@ -33,16 +35,15 @@ export const Link = ({
     )
   }
 
-  const isInternal = finalHref.startsWith('/')
-
-  // If the link is internal, automatically prepend the locale to it
-  if (isInternal) {
+  // If the link is root-relative, automatically prepend the locale to it
+  if (finalHref.startsWith('/')) {
     const { locale: pathLocale, pathWithoutLocale } = extractLocaleFromPath(finalHref)
     finalHref = `/${linkLocale ?? pathLocale ?? currentLocale}${pathWithoutLocale}`
   }
 
   // If the link is external, default the target to `_blank`
-  const finalTarget = target ?? (!isInternal ? '_blank' : undefined)
+  const isExternal = externalHrefRegex.test(finalHref)
+  const finalTarget = target ?? (isExternal ? '_blank' : undefined)
 
   return (
     <NextLink
