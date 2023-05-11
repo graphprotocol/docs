@@ -51,7 +51,7 @@ export default async () => {
         prerequisites: 'Prerequisites',
       },
     },
-    'architecture/': {
+    architecture: {
       title: 'Architecture',
       type: 'folder',
       items: {
