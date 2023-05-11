@@ -39,7 +39,6 @@ export async function listFiles() {
   return result
 }
 
-const A = ['README.md', 'concepts/README.md']
 export default async () => {
   return createCatchAllMeta(await listFiles(), {
     README: 'Quick Start',
