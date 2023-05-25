@@ -41,22 +41,21 @@ export async function getStaticProps({ params: { slug = ['README'] } }) {
     // close unclosed img tags
     .replaceAll(/<img((?:(?!\/>)[^>])*?)>/g, (...m) => `<img${m[1]}/>`)
     // fix gitbook image srcs
-    .replaceAll(/src="[^>"]*\.gitbook\/(.*)"/g, (...m) => {
-      console.log({ m })
-      return `src="${baseURL}.gitbook/${m[1]}"`
-    })
+    .replaceAll(/src="[^>"]*\.gitbook\/(.*)"/g, (...m) => `src="${baseURL}.gitbook/${m[1]}"`)
   const mdx = await buildDynamicMDX(data, {
     mdxOptions: {
-      // change-log contains `{variable}` text that is thrown an error by MDX2 parser since he treat it as variable injection, to fix it we parse chang-log with the markdown parser
+      // change-log contains `{variable}` text that is thrown an error by MDX2 parser since he treats
+      // it as variable injection, to fix it we parse chang-log with the Markdown parser
       format: paths.endsWith('/change-log') ? 'md' : 'mdx',
       remarkPlugins: [
         () => (tree, _file, done) => {
           // enhance links
           visit(tree, 'link', (node) => {
+            const EXTERNAL_LINK_REGEX = /^https?:\/\//
             if (node.url.startsWith('/')) {
               // (foo)[/foo/bar]
               node.url = node.url.replace('/', '/substreams/')
-            } else {
+            } else if (!EXTERNAL_LINK_REGEX.test(node.url)) {
               // (foo)[foo.md] or (foo)[./foo.md] or (foo)[../foo.md]
               node.url = path.join(path.dirname(fileURL), node.url)
             }
