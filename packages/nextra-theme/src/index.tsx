@@ -47,6 +47,8 @@ const mdxComponents = {
   table: Table,
   VideoEmbed,
   Difficulty,
+  ListUnordered,
+  CodeInline,
 }
 
 const mdxStyles: ThemeUIStyleObject = {
