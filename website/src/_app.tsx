@@ -18,7 +18,7 @@ import {
 
 import { supportedLocales, translations, useI18n } from '@/i18n'
 
-import '@edgeandnode/gds/dist/components.css'
+import '@edgeandnode/gds/dist/style.css'
 import '@docsearch/css'
 
 const DEFAULT_SEO_PROPS: DefaultSeoProps = {
