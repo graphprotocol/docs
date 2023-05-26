@@ -8,7 +8,7 @@ import { translations } from '@/i18n'
 export async function getPageMap(locale: Locale = Locale.ENGLISH) {
   const { __nextra_pageMap } = await buildDynamicMeta()
 
-  const pageMap = (__nextra_pageMap as PageMapItem[]).find(
+  const pageMap = __nextra_pageMap!.find(
     (pageItem): pageItem is Folder => pageItem.kind === 'Folder' && pageItem.name === locale
   )!.children
 
