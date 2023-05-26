@@ -5,5 +5,7 @@ module.exports = {
     ['remark-lint-restrict-elements', { type: 'heading', depth: 1 }],
     'remark-lint-heading-increment',
     ['remark-lint-no-heading-punctuation', '\\.,;:'],
+    'remark-lint-no-shell-dollars',
+    'remark-lint-fenced-code-flag',
   ],
 }

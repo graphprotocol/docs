@@ -73,7 +73,7 @@ And I answer:
 2. Forking is easy, no need to sweat:
 
 ```bash
-$ graph deploy <subgraph-name> --debug-fork <subgraph-id> --ipfs http://localhost:5001 --node http://localhost:8020
+graph deploy <subgraph-name> --debug-fork <subgraph-id> --ipfs http://localhost:5001 --node http://localhost:8020
 ```
 
 Also, don't forget to set the `dataSources.source.startBlock` field in the subgraph manifest to the number of the problematic block, so you can skip indexing unnecessary blocks and take advantage of the fork!
@@ -82,19 +82,19 @@ So, here is what I do:
 
 0. I spin-up a local graph node ([here is how to do it](https://github.com/graphprotocol/graph-node#running-a-local-graph-node)) with the `fork-base` option set to: `https://api.thegraph.com/subgraphs/id/`, since I will fork a subgraph, the buggy one I deployed earlier, from the [HostedService](https://thegraph.com/hosted-service/).
 
-```
-$ cargo run -p graph-node --release -- \
-    --postgres-url postgresql://USERNAME[:PASSWORD]@localhost:5432/graph-node \
-    --ethereum-rpc NETWORK_NAME:[CAPABILITIES]:URL \
-    --ipfs 127.0.0.1:5001
-    --fork-base https://api.thegraph.com/subgraphs/id/
+```sh
+cargo run -p graph-node --release -- \
+  --postgres-url postgresql://USERNAME[:PASSWORD]@localhost:5432/graph-node \
+  --ethereum-rpc NETWORK_NAME:[CAPABILITIES]:URL \
+  --ipfs 127.0.0.1:5001
+  --fork-base https://api.thegraph.com/subgraphs/id/
 ```
 
 1. After careful inspection I notice that there is a mismatch in the `id` representations used when indexing `Gravatar`s in my two handlers. While `handleNewGravatar` converts it to a hex (`event.params.id.toHex()`), `handleUpdatedGravatar` uses an int32 (`event.params.id.toI32()`) which causes the `handleUpdatedGravatar` to panic with "Gravatar not found!". I make them both convert the `id` to a hex.
 2. After I made the changes I deploy my subgraph to the local Graph node, **_forking the failing subgraph_** and setting `dataSources.source.startBlock` to `6190343` in `subgraph.yaml`:
 
 ```bash
-$ graph deploy gravity --debug-fork QmNp169tKvomnH3cPXTfGg4ZEhAHA6kEq5oy1XDqAxqHmW --ipfs http://localhost:5001 --node http://localhost:8020
+graph deploy gravity --debug-fork QmNp169tKvomnH3cPXTfGg4ZEhAHA6kEq5oy1XDqAxqHmW --ipfs http://localhost:5001 --node http://localhost:8020
 ```
 
 3. I inspect the logs produced by the local Graph node and, Hooray!, everything seems to be working.

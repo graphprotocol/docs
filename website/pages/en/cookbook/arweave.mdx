@@ -48,9 +48,9 @@ This is the logic that determines how data should be retrieved and stored when s
 
 During subgraph development there are two key commands:
 
-```
-$ graph codegen # generates types from the schema file identified in the manifest
-$ graph build # generates Web Assembly from the AssemblyScript files, and prepares all the subgraph files in a /build folder
+```sh
+graph codegen # generates types from the schema file identified in the manifest
+graph build # generates Web Assembly from the AssemblyScript files, and prepares all the subgraph files in a /build folder
 ```
 
 ## Subgraph Manifest Definition
@@ -84,18 +84,18 @@ dataSources:
 
 - Arweave subgraphs introduce a new kind of data source (`arweave`)
 - The network should correspond to a network on the hosting Graph Node. On the Hosted Service, Arweave's mainnet is `arweave-mainnet`
-- Arweave data sources introduce an optional source.owner field, which is the public key of an Arweave wallet
+- Arweave data sources introduce an optional `source.owner` field, which is the public key of an Arweave wallet
 
 Arweave data sources support two types of handlers:
 
-- `blockHandlers` - Run on every new Arweave block. No source.owner is required.
-- `transactionHandlers` - Run on every transaction where the data source's `source.owner` is the owner. Currently an owner is required for `transactionHandlers`, if users want to process all transactions they should provide "" as the `source.owner`
+- `blockHandlers` - Run on every new Arweave block. No `source.owner` is required.
+- `transactionHandlers` - Run on every transaction where the data source's `source.owner` is the owner. Currently, an owner is required for `transactionHandlers`, if users want to process all transactions they should provide "" as the `source.owner`
 
-> The source.owner can be the owner's address, or their Public Key.
+> The `source.owner` can be the owner's address, or their Public Key.
 
 > Transactions are the building blocks of the Arweave permaweb and they are objects created by end-users.
 
-> Note: [Bundlr](https://bundlr.network/) transactions are not supported yet.
+> **Note:** [Bundlr](https://bundlr.network/) transactions are not supported yet.
 
 ## Schema Definition
 
@@ -184,7 +184,7 @@ This is not currently supported.
 
 ### How can I filter transactions to a specific account?
 
-The source.owner can be the user's public key or account address.
+The `source.owner` can be the user's public key or account address.
 
 ### What is the current encryption format?
 
@@ -192,48 +192,54 @@ Data is generally passed into the mappings as Bytes, which if stored directly is
 
 The following `bytesToBase64(bytes: Uint8Array, urlSafe: boolean): string` helper function can be used, and will be added to `graph-ts`:
 
-```
+```ts
+// prettier-ignore
 const base64Alphabet = [
-	"A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M",
-	"N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z",
-	"a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m",
-	"n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z",
-	"0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "+", "/"
-];
+  'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M',
+  'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
+  'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm',
+  'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
+  '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '+', '/',
+]
 
+// prettier-ignore
 const base64UrlAlphabet = [
-	"A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M",
-	"N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z",
-	"a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m",
-	"n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z",
-	"0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "-", "_"
-];
+  'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M',
+  'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
+  'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm',
+  'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
+  '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '-', '_',
+]
 
 function bytesToBase64(bytes: Uint8Array, urlSafe: boolean): string {
-	let alphabet = urlSafe? base64UrlAlphabet : base64Alphabet;
+  let alphabet = urlSafe ? base64UrlAlphabet : base64Alphabet
 
-	let result = '', i: i32, l = bytes.length;
-	for (i = 2; i < l; i += 3) {
-		result += alphabet[bytes[i - 2] >> 2];
-		result += alphabet[((bytes[i - 2] & 0x03) << 4) | (bytes[i - 1] >> 4)];
-		result += alphabet[((bytes[i - 1] & 0x0F) << 2) | (bytes[i] >> 6)];
-		result += alphabet[bytes[i] & 0x3F];
-	}
-	if (i === l + 1) { // 1 octet yet to write
-		result += alphabet[bytes[i - 2] >> 2];
-		result += alphabet[(bytes[i - 2] & 0x03) << 4];
-		if (!urlSafe) {
-			result += "==";
-		}
-	}
-	if (!urlSafe && i === l) { // 2 octets yet to write
-		result += alphabet[bytes[i - 2] >> 2];
-		result += alphabet[((bytes[i - 2] & 0x03) << 4) | (bytes[i - 1] >> 4)];
-		result += alphabet[(bytes[i - 1] & 0x0F) << 2];
-		if (!urlSafe) {
-			result += "=";
-		}
-	}
-	return result;
+  let result = '',
+    i: i32,
+    l = bytes.length
+  for (i = 2; i < l; i += 3) {
+    result += alphabet[bytes[i - 2] >> 2]
+    result += alphabet[((bytes[i - 2] & 0x03) << 4) | (bytes[i - 1] >> 4)]
+    result += alphabet[((bytes[i - 1] & 0x0f) << 2) | (bytes[i] >> 6)]
+    result += alphabet[bytes[i] & 0x3f]
+  }
+  if (i === l + 1) {
+    // 1 octet yet to write
+    result += alphabet[bytes[i - 2] >> 2]
+    result += alphabet[(bytes[i - 2] & 0x03) << 4]
+    if (!urlSafe) {
+      result += '=='
+    }
+  }
+  if (!urlSafe && i === l) {
+    // 2 octets yet to write
+    result += alphabet[bytes[i - 2] >> 2]
+    result += alphabet[((bytes[i - 2] & 0x03) << 4) | (bytes[i - 1] >> 4)]
+    result += alphabet[(bytes[i - 1] & 0x0f) << 2]
+    if (!urlSafe) {
+      result += '='
+    }
+  }
+  return result
 }
 ```
