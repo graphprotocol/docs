@@ -28,7 +28,7 @@ export async function listFiles() {
 
 export default async () => {
   return createCatchAllMeta(await listFiles(), {
-    README: 'Quick Start',
+    README: 'Introduction',
     'concepts-and-fundamentals': {
       type: 'folder',
       items: {
