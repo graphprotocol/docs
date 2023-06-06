@@ -1,8 +1,8 @@
-import { visit } from 'unist-util-visit'
 import { RemoteContent } from 'nextra/data'
 import { buildDynamicMDX } from 'nextra/remote'
 import { getPageMap } from '@/src/getPageMap'
-import json from '../../../remote-files/firehose.json'
+import { remarkReplaceLinks } from '@/src/remarkReplaceLinks'
+import json from '@/remote-files/firehose.json'
 
 export const getStaticPaths = () => ({
   fallback: false,
@@ -13,15 +13,12 @@ export const getStaticPaths = () => ({
   })),
 })
 
-export async function getStaticProps({ params: { slug = ['README'] } }) {
-  const baseURL = 'https://raw.githubusercontent.com/streamingfast/firehose-docs/master/'
-  const paths = slug.join('/')
-  let fileURL = `${paths}.md`
-  let response = await fetch(baseURL + fileURL)
-  if (response.status === 404 && paths !== 'README') {
-    fileURL = `$${paths}/README.md`
-    response = await fetch(baseURL + fileURL)
-  }
+export async function getStaticProps({ params }) {
+  const { filePaths, user, repo, branch, docsPath } = json
+  const paths = params?.slug?.join('/') ?? 'README'
+  const foundPath = filePaths.find((filePath) => filePath.startsWith(paths))
+  const baseURL = `https://raw.githubusercontent.com/${user}/${repo}/${branch}/${docsPath}${foundPath}`
+  const response = await fetch(baseURL)
   const data = (await response.text())
     // replace {% embed ... %} with <iframe />
     .replaceAll(
@@ -36,45 +33,28 @@ export async function getStaticProps({ params: { slug = ['README'] } }) {
     // remove gitbook {% ... %} elements
     .replaceAll(/{%.*?%}/g, '')
     // Replaces all the relative paths of images to absolute paths to the repo
-    .replaceAll('../assets', 'https://raw.githubusercontent.com/streamingfast/firehose-docs/master/assets/')
+    .replaceAll('../assets', `https://raw.githubusercontent.com/${user}/${repo}/${branch}/assets/`)
     // close img tags only if he doesn't point to .gitbook
     .replaceAll(/<img(.*?)>/g, (...m) => (m[1].includes('src=".gitbook') ? '' : `<img${m[1]}/>`))
   let mdx = await buildDynamicMDX(data, {
     mdxOptions: {
       format: 'mdx',
-      remarkPlugins: [
-        () => (tree, _file, done) => {
-          // enhance links
-          visit(tree, 'link', (node) => {
-            if (node.url.startsWith('./')) {
-              node.url = node.url.slice(2)
-            }
-            if (node.url.startsWith('/')) {
-              // (foo)[/foo/bar]
-              node.url = node.url.replace('/', '/firehose/')
-            } else if (!node.url.includes('/') && node.url.endsWith('.md')) {
-              // (foo)[foo.md]
-              node.url = [...slug.slice(0, -1), node.url].join('/')
-            }
-          })
-          done()
-        },
-      ],
+      remarkPlugins: [[remarkReplaceLinks, { foundPath, basePath: '/firehose/' }]],
     },
     codeHighlight: false,
   })
-  let parsedData = JSON.parse(mdx.__nextra_dynamic_opts)
+  const parsedData = JSON.parse(mdx.__nextra_dynamic_opts)
   // remove title from frontMatter if it's the same as the title of the page
   if (parsedData.title === parsedData.frontMatter.title) {
     parsedData.frontMatter.title = ''
   }
-  mdx.__nextra_dynamic_opts = JSON.stringify(parsedData)
   return {
     props: {
       ...mdx,
+      __nextra_dynamic_opts: JSON.stringify(parsedData),
       __nextra_pageMap: await getPageMap('en'),
       hideLocaleSwitcher: true,
-      remoteFilePath: `https://github.com/streamingfast/firehose-docs/tree/master/${fileURL}`,
+      remoteFilePath: `https://github.com/${user}/${repo}/tree/${branch}/${docsPath}${foundPath}`,
     },
   }
 }
