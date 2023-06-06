@@ -38,7 +38,7 @@ async function fetchRemoteFilePaths({ user, repo, branch, docsPath, outputPath }
   console.log(`✅ Remote files from "${url}" saved!`)
 }
 
-fetchRemoteFilePaths({
+await fetchRemoteFilePaths({
   user: 'streamingfast',
   repo: 'substreams',
   branch: 'develop',
@@ -46,10 +46,18 @@ fetchRemoteFilePaths({
   outputPath: path.join(process.cwd(), 'remote-files', 'substreams.json'),
 })
 
-fetchRemoteFilePaths({
+await fetchRemoteFilePaths({
   user: 'streamingfast',
   repo: 'firehose-docs',
   branch: 'master',
   docsPath: '',
   outputPath: path.join(process.cwd(), 'remote-files', 'firehose.json'),
+})
+
+await fetchRemoteFilePaths({
+  user: 'graphprotocol',
+  repo: 'graph-client',
+  branch: 'main',
+  docsPath: 'docs/',
+  outputPath: path.join(process.cwd(), 'remote-files', 'graph-client.json'),
 })
