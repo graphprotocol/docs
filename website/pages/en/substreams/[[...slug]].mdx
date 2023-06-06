@@ -1,9 +1,8 @@
-import path from 'node:path'
-import { visit } from 'unist-util-visit'
 import { RemoteContent } from 'nextra/data'
 import { buildDynamicMDX } from 'nextra/remote'
 import { getPageMap } from '@/src/getPageMap'
-import json from '../../../remote-files/substreams.json'
+import { remarkReplaceLinks } from '@/src/remarkReplaceLinks'
+import json from '@/remote-files/substreams.json'
 
 export const getStaticPaths = () => ({
   fallback: false,
@@ -42,22 +41,7 @@ export async function getStaticProps({ params }) {
       // change-log contains `{variable}` text that is thrown an error by MDX2 parser since he treats
       // it as variable injection, to fix it we parse chang-log with the Markdown parser
       format: paths.endsWith('/change-log') ? 'md' : 'mdx',
-      remarkPlugins: [
-        () => (tree, _file, done) => {
-          // enhance links
-          visit(tree, 'link', (node) => {
-            const EXTERNAL_LINK_REGEX = /^https?:\/\//
-            if (node.url.startsWith('/')) {
-              // (foo)[/foo/bar]
-              node.url = node.url.replace('/', '/substreams/')
-            } else if (!EXTERNAL_LINK_REGEX.test(node.url)) {
-              // (foo)[foo.md] or (foo)[./foo.md] or (foo)[../foo.md]
-              node.url = path.join(path.dirname(foundPath), node.url)
-            }
-          })
-          done()
-        },
-      ],
+      remarkPlugins: [[remarkReplaceLinks, { foundPath, basePath: '/substreams/' }]],
     },
     codeHighlight: false,
   })
