@@ -1,7 +1,15 @@
-
-# gsutil mb gs://tf-state-graph-docs
 terraform {
-  backend "gcs" {
-    bucket  = "tf-state-graph-docs"
+
+  required_providers {
+    tfe = {
+      version = "~> 0.44.0"
+    }
+  }
+  cloud {
+    organization = "edgeandnode"
+
+    workspaces {
+      name = "tf-state-graph-docs"
+    }
   }
 }

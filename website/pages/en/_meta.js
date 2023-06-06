@@ -33,13 +33,16 @@ export default {
   substreams: {
     type: 'children',
   },
+  '---4': {
+    type: 'separator',
+  },
   '###3': {
     type: 'heading',
     title: 'Indexing',
   },
   'operating-graph-node': '',
   firehose: 'Firehose',
-  '---4': {
+  '---5': {
     type: 'separator',
   },
   'release-notes': 'Release Notes & Upgrade Guides',
