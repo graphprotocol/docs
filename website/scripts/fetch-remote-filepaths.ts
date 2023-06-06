@@ -9,9 +9,10 @@ type Params = {
   branch: string
   docsPath: string
   outputPath: string
+  filterDocs?: (filePath: string) => boolean
 }
 
-async function fetchRemoteFilePaths({ user, repo, branch, docsPath, outputPath }: Params): Promise<void> {
+async function fetchRemoteFilePaths({ user, repo, branch, docsPath, outputPath, filterDocs }: Params): Promise<void> {
   const url = `https://api.github.com/repos/${user}/${repo}/git/trees/${branch}?recursive=1`
   const response = await fetch(url)
 
@@ -31,6 +32,9 @@ async function fetchRemoteFilePaths({ user, repo, branch, docsPath, outputPath }
     docsPath,
     filePaths: filePaths.filter((filePath) => /\.mdx?$/.test(filePath)),
   }
+  if (filterDocs) {
+    result.filePaths = result.filePaths.filter(filterDocs)
+  }
   const json = JSON.stringify(result, null, 2)
 
   await fs.writeFile(outputPath, prettier.format(json, { parser: 'json' }), 'utf8')
@@ -44,6 +48,11 @@ await fetchRemoteFilePaths({
   branch: 'develop',
   docsPath: 'docs/',
   outputPath: path.join(process.cwd(), 'remote-files', 'substreams.json'),
+  filterDocs: (filePath) =>
+    ![
+      'SUMMARY.md', // toc
+      'developers-guide/modules/README.md', // generated cards by gitbook
+    ].includes(filePath),
 })
 
 await fetchRemoteFilePaths({
