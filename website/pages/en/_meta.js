@@ -10,6 +10,7 @@ export default {
   glossary: '',
   'arbitrum-faq': '',
   tokenomics: 'Tokenomics',
+  'graph-client': 'Graph Client',
   '---2': {
     type: 'separator',
   },
