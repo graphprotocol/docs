@@ -45,3 +45,11 @@ fetchRemoteFilePaths({
   docsPath: 'docs/',
   outputPath: path.join(process.cwd(), 'remote-files', 'substreams.json'),
 })
+
+fetchRemoteFilePaths({
+  user: 'streamingfast',
+  repo: 'firehose-docs',
+  branch: 'master',
+  docsPath: '',
+  outputPath: path.join(process.cwd(), 'remote-files', 'firehose.json'),
+})
