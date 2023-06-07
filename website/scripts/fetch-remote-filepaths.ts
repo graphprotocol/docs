@@ -1,7 +1,6 @@
 /* eslint-disable no-console */
 import fs from 'node:fs/promises'
 import path from 'node:path'
-import prettier from 'prettier'
 
 type Params = {
   user: string
@@ -37,7 +36,7 @@ async function fetchRemoteFilePaths({ user, repo, branch, docsPath, outputPath, 
   }
   const json = JSON.stringify(result, null, 2)
 
-  await fs.writeFile(outputPath, prettier.format(json, { parser: 'json' }), 'utf8')
+  await fs.writeFile(outputPath, json, 'utf8')
 
   console.log(`✅ Remote files from "${url}" saved!`)
 }
