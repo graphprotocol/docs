@@ -8,4 +8,5 @@ export default {
   arweave: '',
   grafting: '',
   'subgraph-uncrashable': '',
+  'substreams-powered-subgraphs': '',
 }
