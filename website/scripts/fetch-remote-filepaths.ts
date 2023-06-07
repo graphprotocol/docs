@@ -61,18 +61,21 @@ await fetchRemoteFilePaths({
   outputPath: path.join(process.cwd(), 'remote-files', 'firehose.json'),
   filterDocs: (filePath) =>
     ![
-      'SUMMARY.md',
+      'SUMMARY.md', // toc
+      // ---- empty placeholders ----
       'intro/README.md',
       'firehose-setup/overview.md',
       'firehose-setup/near/README.md',
-      'firehose-setup/cosmos/single-machine-deployment.md',
       'integrate-new-chains/README.md',
       'references/README.md',
+      'concepts/README.md',
+      // ----------------------------
+      // ---- not shown in the existing site ----
       'setup/cosmos/README.md',
       'setup/ethereum/README.md',
       'setup/ethereum/reprocessing-history.md',
       'setup/ethereum/synchronization.md',
-      'concepts/README.md',
+      // ----------------------------------------
     ].includes(filePath),
 })
 
