@@ -2,7 +2,7 @@ import { RemoteContent } from 'nextra/data'
 import { buildDynamicMDX } from 'nextra/remote'
 import { getPageMap } from '@/src/getPageMap'
 import { remarkReplaceLinks } from '@/src/remarkReplaceLinks'
-import json from '@/remote-files/substreams.json'
+import json from '@/remote-files/firehose.json'
 
 export const getStaticPaths = () => ({
   fallback: false,
@@ -32,22 +32,25 @@ export async function getStaticProps({ params }) {
     )
     // remove gitbook {% ... %} elements
     .replaceAll(/{%.*?%}/g, '')
-    // close unclosed img tags
-    .replaceAll(/<img((?:(?!\/>)[^>])*?)>/g, (...m) => `<img${m[1]}/>`)
-    // fix gitbook image srcs
-    .replaceAll(/src="[^>"]*\.gitbook\/(.*)"/g, (...m) => `src="${baseURL}.gitbook/${m[1]}"`)
+    // Replaces all the relative paths of images to absolute paths to the repo
+    .replaceAll('../assets', `https://raw.githubusercontent.com/${user}/${repo}/${branch}/assets/`)
+    // close img tags only if he doesn't point to .gitbook
+    .replaceAll(/<img(.*?)>/g, (...m) => (m[1].includes('src=".gitbook') ? '' : `<img${m[1]}/>`))
   const mdx = await buildDynamicMDX(data, {
     mdxOptions: {
-      // change-log contains `{variable}` text that is thrown an error by MDX2 parser since he treats
-      // it as variable injection, to fix it we parse chang-log with the Markdown parser
-      format: paths.endsWith('/change-log') ? 'md' : 'mdx',
-      remarkPlugins: [[remarkReplaceLinks, { foundPath, basePath: '/substreams/' }]],
+      remarkPlugins: [[remarkReplaceLinks, { foundPath, basePath: '/firehose/' }]],
     },
     codeHighlight: false,
   })
+  const parsedData = JSON.parse(mdx.__nextra_dynamic_opts)
+  // remove title from frontMatter if it's the same as the title of the page
+  if (parsedData.title === parsedData.frontMatter.title) {
+    parsedData.frontMatter.title = ''
+  }
   return {
     props: {
       ...mdx,
+      __nextra_dynamic_opts: JSON.stringify(parsedData),
       __nextra_pageMap: await getPageMap('en'),
       hideLocaleSwitcher: true,
       remoteFilePath: `https://github.com/${user}/${repo}/tree/${branch}/${docsPath}${foundPath}`,
