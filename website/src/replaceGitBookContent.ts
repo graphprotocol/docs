@@ -14,7 +14,7 @@ export function replaceGitBookContent({ content, user, repo, branch, docsPath }:
         /{%\s+embed\s+url="(.*?)"\s+%}/g,
         (...m) =>
           `<iframe src="${m[1].replace(
-            // we need enhance YouTube links, otherwise they will be not loaded in iframe
+            // we need to enhance YouTube links, otherwise they will be not loaded in iframe
             'youtube.com/watch?v=',
             'youtube.com/embed/'
           )}" style={{aspectRatio: 16/9, width: '100%'}}/>`
