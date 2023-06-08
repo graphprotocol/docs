@@ -1,6 +1,7 @@
 import { RemoteContent } from 'nextra/data'
 import { buildDynamicMDX } from 'nextra/remote'
 import { Mermaid } from 'nextra/components'
+import { visit } from 'unist-util-visit'
 import { getPageMap } from '@/src/getPageMap'
 import json from '@/remote-files/graph-client.json'
 
@@ -22,6 +23,18 @@ export async function getStaticProps({ params }) {
   const data = await response.text()
   const mdx = await buildDynamicMDX(data, {
     codeHighlight: false,
+    mdxOptions: {
+      remarkPlugins: [
+        () => (tree, _file, done) => {
+          visit(tree, 'link', (node) => {
+            if (node.url.startsWith('../')) {
+              node.url = node.url.replace('../', `https://github.com/${user}/${repo}/tree/${branch}/`)
+            }
+          })
+          done()
+        },
+      ],
+    },
   })
   return {
     props: {
