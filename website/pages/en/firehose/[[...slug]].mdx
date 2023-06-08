@@ -2,6 +2,7 @@ import { RemoteContent } from 'nextra/data'
 import { buildDynamicMDX } from 'nextra/remote'
 import { getPageMap } from '@/src/getPageMap'
 import { remarkReplaceLinks } from '@/src/remarkReplaceLinks'
+import { replaceGitBookContent } from '@/src/replaceGitBookContent'
 import json from '@/remote-files/firehose.json'
 
 export const getStaticPaths = () => ({
@@ -19,29 +20,22 @@ export async function getStaticProps({ params }) {
   const foundPath = filePaths.find((filePath) => filePath.startsWith(paths))
   const baseURL = `https://raw.githubusercontent.com/${user}/${repo}/${branch}/${docsPath}${foundPath}`
   const response = await fetch(baseURL)
-  const data = (await response.text())
-    // replace {% embed ... %} with <iframe />
-    .replaceAll(
-      /{%\s+embed\s+url="(.*?)"\s+%}/g,
-      (...m) =>
-        `<iframe src="${m[1].replace(
-          // we need enhance YouTube links, otherwise they will be not loaded in iframe
-          'youtube.com/watch?v=',
-          'youtube.com/embed/'
-        )}" style={{aspectRatio: 16/9, width: '100%'}}/>`
-    )
-    // remove gitbook {% ... %} elements
-    .replaceAll(/{%.*?%}/g, '')
-    // Replaces all the relative paths of images to absolute paths to the repo
-    .replaceAll('../assets', `https://raw.githubusercontent.com/${user}/${repo}/${branch}/assets/`)
-    // close img tags only if he doesn't point to .gitbook
-    .replaceAll(/<img(.*?)>/g, (...m) => (m[1].includes('src=".gitbook') ? '' : `<img${m[1]}/>`))
-  const mdx = await buildDynamicMDX(data, {
-    mdxOptions: {
-      remarkPlugins: [[remarkReplaceLinks, { foundPath, basePath: '/firehose/' }]],
-    },
-    codeHighlight: false,
-  })
+  const content = await response.text()
+  const mdx = await buildDynamicMDX(
+    replaceGitBookContent({
+      content,
+      user,
+      repo,
+      branch,
+      docsPath,
+    }),
+    {
+      mdxOptions: {
+        remarkPlugins: [[remarkReplaceLinks, { foundPath, basePath: '/firehose/' }]],
+      },
+      codeHighlight: false,
+    }
+  )
   const parsedData = JSON.parse(mdx.__nextra_dynamic_opts)
   // remove title from frontMatter if it's the same as the title of the page
   if (parsedData.title === parsedData.frontMatter.title) {
