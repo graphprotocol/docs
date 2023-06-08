@@ -1,46 +1,9 @@
 import { createCatchAllMeta } from 'nextra/catch-all'
 
-export async function listFiles() {
-  const { cache } = listFiles
-  if (cache) {
-    return cache
-  }
+import json from '../../../remote-files/firehose.json' assert { type: 'json' }
 
-  const response = await fetch('https://api.github.com/repos/streamingfast/firehose-docs/git/trees/master?recursive=1')
-  const data = await response.json()
-  if (data.message) {
-    throw new Error(JSON.stringify(data, null, 2))
-  }
-
-  const result = data.tree
-    .filter(
-      (item) =>
-        /\.mdx?/.test(item.path) &&
-        ![
-          'SUMMARY.md',
-          'intro/README.md',
-          'firehose-setup/overview.md',
-          'firehose-setup/near/README.md',
-          'firehose-setup/cosmos/single-machine-deployment.md',
-          'integrate-new-chains/README.md',
-          'references/README.md',
-          'setup/cosmos/README.md',
-          'setup/ethereum/README.md',
-          'setup/ethereum/reprocessing-history.md',
-          'setup/ethereum/synchronization.md',
-          'concepts/README.md',
-        ].includes(item.path)
-    )
-    .map((item) => item.path.replace(/^docs\//, ''))
-
-  // Implement simple caching for avoid API rate limit from GitHub
-  listFiles.cache = result
-
-  return result
-}
-
-export default async () => {
-  return createCatchAllMeta(await listFiles(), {
+export default () =>
+  createCatchAllMeta(json.filePaths, {
     README: 'Quick Start',
     intro: {
       title: 'Introduction',
@@ -127,4 +90,3 @@ export default async () => {
       },
     },
   })
-}

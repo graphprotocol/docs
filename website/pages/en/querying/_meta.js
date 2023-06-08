@@ -6,4 +6,5 @@ export default {
   'distributed-systems': '',
   'graphql-api': '',
   'querying-the-hosted-service': '',
+  'graph-client': 'Graph Client',
 }

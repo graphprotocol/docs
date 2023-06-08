@@ -1,30 +1,24 @@
-import { visit } from 'unist-util-visit'
 import { RemoteContent } from 'nextra/data'
 import { buildDynamicMDX } from 'nextra/remote'
-import { listFiles } from './_meta.js'
 import { getPageMap } from '@/src/getPageMap'
-import path from 'node:path'
+import { remarkReplaceLinks } from '@/src/remarkReplaceLinks'
+import json from '@/remote-files/substreams.json'
 
-export async function getStaticPaths() {
-  const files = await listFiles()
-  return {
-    fallback: false,
-    paths: files.map((filePath) => ({
-      params: {
-        slug: filePath.replace(/\.mdx?/, '').split('/'),
-      },
-    })),
-  }
-}
-export async function getStaticProps({ params: { slug = ['README'] } }) {
-  const baseURL = 'https://raw.githubusercontent.com/streamingfast/substreams/develop/docs/'
-  const paths = slug.join('/')
-  let fileURL = `${paths}.md`
-  let response = await fetch(baseURL + fileURL)
-  if (response.status === 404 && paths !== 'README') {
-    fileURL = `$${paths}/README.md`
-    response = await fetch(baseURL + fileURL)
-  }
+export const getStaticPaths = () => ({
+  fallback: false,
+  paths: json.filePaths.map((filePath) => ({
+    params: {
+      slug: filePath.replace(/\.mdx?/, '').split('/'),
+    },
+  })),
+})
+
+export async function getStaticProps({ params }) {
+  const { filePaths, user, repo, branch, docsPath } = json
+  const paths = params?.slug?.join('/') ?? 'README'
+  const foundPath = filePaths.find((filePath) => filePath.startsWith(paths))
+  const baseURL = `https://raw.githubusercontent.com/${user}/${repo}/${branch}/${docsPath}${foundPath}`
+  const response = await fetch(baseURL)
   const data = (await response.text())
     // replace {% embed ... %} with <iframe />
     .replaceAll(
@@ -47,22 +41,7 @@ export async function getStaticProps({ params: { slug = ['README'] } }) {
       // change-log contains `{variable}` text that is thrown an error by MDX2 parser since he treats
       // it as variable injection, to fix it we parse chang-log with the Markdown parser
       format: paths.endsWith('/change-log') ? 'md' : 'mdx',
-      remarkPlugins: [
-        () => (tree, _file, done) => {
-          // enhance links
-          visit(tree, 'link', (node) => {
-            const EXTERNAL_LINK_REGEX = /^https?:\/\//
-            if (node.url.startsWith('/')) {
-              // (foo)[/foo/bar]
-              node.url = node.url.replace('/', '/substreams/')
-            } else if (!EXTERNAL_LINK_REGEX.test(node.url)) {
-              // (foo)[foo.md] or (foo)[./foo.md] or (foo)[../foo.md]
-              node.url = path.join(path.dirname(fileURL), node.url)
-            }
-          })
-          done()
-        },
-      ],
+      remarkPlugins: [[remarkReplaceLinks, { foundPath, basePath: '/substreams/' }]],
     },
     codeHighlight: false,
   })
@@ -71,7 +50,7 @@ export async function getStaticProps({ params: { slug = ['README'] } }) {
       ...mdx,
       __nextra_pageMap: await getPageMap('en'),
       hideLocaleSwitcher: true,
-      remoteFilePath: `https://github.com/streamingfast/substreams/tree/develop/docs/${fileURL}`,
+      remoteFilePath: `https://github.com/${user}/${repo}/tree/${branch}/${docsPath}${foundPath}`,
     },
   }
 }
