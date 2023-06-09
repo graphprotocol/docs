@@ -8,16 +8,24 @@ export function getSupportedNetworks() {
       .map((chain) => {
         if (!chain.graphCliName) {
           return null
-        } else {
-          return {
-            name: chain.name,
-            cliName: chain.graphCliName,
-            chainId: chain.chainId,
-            supportedOnHosted: chain.productDeployStatus.hostedService === ChainProductStatus.ALLOWED,
-            supportedOnStudio: chain.studioHosted || chain.productDeployStatus.studio === ChainProductStatus.ALLOWED,
-            supportedOnNetwork: chain.networkPublishChainAllowStatusMap != null,
-            isBeta: chain.graphCliName !== 'mainnet', // TODO: Include a `beta` property in `@edgeandnode/common`?
-          }
+        }
+
+        const supportedOnHosted = chain.productDeployStatus.hostedService === ChainProductStatus.ALLOWED
+        const supportedOnStudio = chain.studioHosted || chain.productDeployStatus.studio === ChainProductStatus.ALLOWED
+        const supportedOnNetwork = chain.networkPublishChainAllowStatusMap != null
+
+        if (!supportedOnHosted && !supportedOnStudio && !supportedOnNetwork) {
+          return null
+        }
+
+        return {
+          name: chain.name,
+          cliName: chain.graphCliName,
+          chainId: chain.chainId,
+          supportedOnHosted,
+          supportedOnStudio,
+          supportedOnNetwork,
+          isBeta: chain.graphCliName !== 'mainnet', // TODO: Include a `beta` property in `@edgeandnode/common`?
         }
       })
       .filter(isNotNull)
