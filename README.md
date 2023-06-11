@@ -28,6 +28,12 @@ Install the dependencies:
 pnpm install
 ```
 
+Build the project:
+
+```bash
+pnpm build
+```
+
 Then, run the project:
 
 ```bash
