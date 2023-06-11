@@ -2,223 +2,181 @@
 title: Substreams-powered subgraphs
 ---
 
-Substreams is a new framework for processing blockchain data, developed by StreamingFast for The Graph Network. A substreams modules can output entity changes, which are compatible with Subgraph entities. A subgraph can use such a Substreams module as a data source, bringing the indexing speed and additional data of Substreams to subgraph developers.
+[Substreams](/substreams/README) is a new framework for processing blockchain data, developed by StreamingFast for The Graph Network. A substreams modules can output entity changes, which are compatible with Subgraph entities. A subgraph can use such a Substreams module as a data source, bringing the indexing speed and additional data of Substreams to subgraph developers.
 
-> This cookbook uses the [Messari Eth Supply substream as a reference](https://github.com/messari/substreams/tree/master/eth-supply). [Learn more about Substreams development](/substreams/README).
+> This cookbook uses this [Substreams-powered subgraph as a reference](https://github.com/graphprotocol/graph-tooling/tree/azf20/substreams-powered-subgraph-example/examples/substreams-powered-subgraph).
 
-## substreams.yaml
+## Requirements
 
-A Substreams package can be used by a subgraph as long as it has a module which outputs compatible entity changes. The following simple Substreams package has a `map_entity_changes` module with a `proto:substreams.entity.v1.EntityChanges` output:
+This cookbook [requires the dependencies necessary for local Substreams development](https://substreams.streamingfast.io/developers-guide/installation-requirements), as well as Graph CLI >=0.51.1:
 
-```yaml
+```
+yarn global add @graphprotocol/graph-cli
+```
+
+## Defining a Substreams package
+
+A Substreams package is composed of types (defined as [Protocol Buffers](https://protobuf.dev/)), modules (written in Rust), and a `substreams.yaml` file which references the types, and specifies how modules are triggered. [Learn more about Substreams development](/substreams/README).
+
+The Substreams package in question detects contract deployments on Mainnet Ethereum, tracking the creation block and timestamp for all newly deployed contracts. To do this, there is a dedicated `Contract` type in `/proto/example.proto`:
+
+```proto
+syntax = "proto3";
+
+package example;
+
+message BigInt {
+  bytes bytes = 1;
+}
+
+message Contracts {
+  repeated Contract contracts = 1;
+}
+
+message Contract {
+    string address = 1;
+    uint64 blockNumber = 2;
+    string timestamp = 3;
+    uint64 ordinal = 4;
+}
+```
+
+The core logic of the Substreams package is a `map_contract` module in `lib.rs`, which processes every block, filtering for Create calls which did not revert, returning `Contracts`:
+
+```
+#[substreams::handlers::map]
+fn map_contract(block: eth::v2::Block) -> Result<Contracts, substreams::errors::Error> {
+    let contracts = block
+        .transactions()
+        .flat_map(|tx| {
+            tx.calls
+                .iter()
+                .filter(|call| !call.state_reverted)
+                .filter(|call| call.call_type == eth::v2::CallType::Create as i32)
+                .map(|call| Contract {
+                    address: format!("0x{}", Hex(&call.address)),
+                    block_number: block.number,
+                    timestamp: block.timestamp_seconds().to_string(),
+                    ordinal: tx.begin_ordinal,
+                })
+        })
+        .collect();
+    Ok(Contracts { contracts })
+}
+```
+
+A Substreams package can be used by a subgraph as long as it has a module which outputs compatible entity changes. The example Substreams package has an additional `graph_out` module in `lib.rs` which returns a `substreams_entity_change::pb::entity::EntityChanges` output, which can be processed by Graph Node.
+
+> The `substreams_entity_change` crate also has a dedicated `Tables` function for simply generating entity changes ([documentation](https://docs.rs/substreams-entity-change/1.2.2/substreams_entity_change/tables/index.html)). The Entity Changes generated must be compatible with the `schema.graphql` entities defined in the `subgraph.graphql` of the corresponding subgraph.
+
+```
+#[substreams::handlers::map]
+pub fn graph_out(contracts: Contracts) -> Result<EntityChanges, substreams::errors::Error> {
+    // hash map of name to a table
+    let mut tables = Tables::new();
+
+    for contract in contracts.contracts.into_iter() {
+        tables
+            .create_row("Contract", contract.address)
+            .set("timestamp", contract.timestamp)
+            .set("blockNumber", contract.block_number);
+    }
+
+    Ok(tables.to_entity_changes())
+}
+```
+
+These types and modules are pulled together in `substreams.yaml`:
+
+```
 specVersion: v0.1.0
 package:
-  name: eth_supply
-  version: v0.1.0
+  name: 'substreams_test'
+  version: v1.0.1
 
 imports:
-  eth: 'https://github.com/streamingfast/sf-ethereum/releases/download/v0.10.2/ethereum-v0.10.4.spkg'
-  entity: 'https://github.com/streamingfast/substreams-entity-change/releases/download/v0.2.1/substreams-entity-change-v0.2.1.spkg'
+  entity: https://github.com/streamingfast/substreams-entity-change/releases/download/v0.2.1/substreams-entity-change-v0.2.1.spkg
+
+protobuf:
+  files:
+    - example.proto
+  importPaths:
+    - ./proto
 
 binaries:
   default:
     type: wasm/rust-v1
-    file: '../target/wasm32-unknown-unknown/release/eth_supply.wasm'
+    file: ./target/wasm32-unknown-unknown/release/substreams.wasm
 
 modules:
-  - name: map_supply_delta
+  - name: map_contract
     kind: map
     inputs:
       - source: sf.ethereum.type.v2.Block
     output:
-      type: 'proto:messari.eth_supply.v1.EthSupply'
+      type: proto:test.Contracts
 
-  - name: store_supply
-    kind: store
-    updatePolicy: add
-    valueType: bigint
-    inputs:
-      - map: map_supply_delta
-
-  - name: map_output
+  - name: graph_out
     kind: map
     inputs:
-      - store: store_supply
+      - map: map_contract
     output:
-      type: 'proto:messari.eth_supply.v1.EthSupply'
-
-  - name: map_entity_changes
-    kind: map
-    inputs:
-      - source: sf.substreams.v1.Clock
-      - map: map_supply_delta
-      - map: map_output
-    output:
-      type: 'proto:substreams.entity.v1.EntityChanges'
-
-protobuf:
-  files:
-    - eth_supply.proto
-  importPaths:
-    - './proto/v1'
+      type: proto:substreams.entity.v1.EntityChanges
 ```
 
-This `map_entity_changes` module is the final step in this Substreams package, and takes processed inputs and creates the required entity changes:
+To prepare the Substreams package for consumption by a subgraph, you must run the following commands:
 
-```rust
-use hex::FromHex;
-
-use substreams::pb::substreams::Clock;
-use substreams::scalar::BigInt;
-use substreams_entity_change::change::ToField;
-use substreams_entity_change::pb::entity::entity_change::Operation;
-use substreams_entity_change::pb::entity::{EntityChange, EntityChanges};
-
-use substreams_helper::convert::BigIntDeserializeExt;
-
-use crate::pb::eth_supply::v1::EthSupply;
-
-#[substreams::handlers::map]
-fn map_entity_changes(
-    clock: Clock,
-    block_delta: EthSupply,
-    cumulative: EthSupply,
-) -> Result<EntityChanges, substreams::errors::Error> {
-    let block_hash: String = clock.id;
-    let hash_bytes: Vec<u8> = FromHex::from_hex::<&String>(&block_hash).unwrap();
-    let timestamp = BigInt::from(clock.timestamp.unwrap().seconds);
-    let block_num = clock.number;
-
-    let entity_changes = vec![EntityChange {
-        entity: "Supply".to_string(),
-        id: block_hash.to_string(),
-        ordinal: 1,
-        operation: Operation::Create.into(),
-        fields: vec![
-            hash_bytes.to_field("blockHash".to_string()),
-            block_num.to_field("blockNumber".to_string()),
-            timestamp.to_field("timestamp".to_string()),
-            cumulative
-                .total
-                .unwrap()
-                .deserialize()
-                .to_field("currentSupply"),
-            cumulative
-                .genesis
-                .unwrap()
-                .deserialize()
-                .to_field("genesisSupply"),
-            cumulative
-                .block_rewards
-                .unwrap()
-                .deserialize()
-                .to_field("cumulativeMiningRewards"),
-            cumulative
-                .uncle_rewards
-                .unwrap()
-                .deserialize()
-                .to_field("cumulativeUncleRewards"),
-            cumulative
-                .burned
-                .unwrap()
-                .deserialize()
-                .to_field("cumulativeBurnedFees"),
-            block_delta
-                .block_rewards
-                .unwrap()
-                .deserialize()
-                .to_field("blockMiningReward"),
-            block_delta
-                .uncle_rewards
-                .unwrap()
-                .deserialize()
-                .to_field("blockUncleReward"),
-            block_delta
-                .burned
-                .unwrap()
-                .deserialize()
-                .to_field("blockBurnedFees"),
-        ],
-    }];
-    Ok(EntityChanges { entity_changes })
-}
+```bash
+cargo protogen # generates types in /src/pb
+cargo build # builds the substreams
+cargo package # packages the substreams in a .spkg file
 ```
 
-An `EntityChange` must specify the entity type, ID (which can be a String, or Bytes, in line with subgraph entity IDs), operation, and fields.
+> If you update the Substreams package, depending on the changes you make, you may need to run some or all of the above commands so that the `spkg` is up to date.
 
-> The ID and fields must be compatible with the `schema.graphql` definition on the corresponding subgraph for the entity type.
-
-The operation can be "Create", "Update" or "Delete".
-
-## subgraph.yaml
+## Defining a Substreams-powered subgraph
 
 Substreams-powered subgraphs introduce a new `kind` of data source, "substreams". Such subgraphs can only have one data source. This data source must specify the Substreams network, the Substreams package as a relative file location, and the module within that Substreams package which produces subgraph-compatible entity changes (in this case `map_entity_changes`, from the Substreams package above). The mapping is specified, but simply identifies the mapping kind ("substreams/graph-entities") and the apiVersion.
 
 ```yaml
 specVersion: 0.0.4
-description: Ethereum supply subgraph powered by substreams
-repository: https://github.com/messari/substreams/eth-supply
+description: Ethereum Contract Tracking Subgraph (powered by Substreams)
+repository: https://github.com/graphprotocol/graph-tooling
 schema:
-  file: ./schema.graphql
-
+  file: schema.graphql
 dataSources:
   - kind: substreams
-    name: eth_supply
+    name: substream_test
     network: mainnet
     source:
       package:
-        moduleName: map_entity_changes
-        file: eth-supply-v0.1.0.spkg
+        moduleName: graph_out
+        file: substreams-test-v1.0.1.spkg
     mapping:
       kind: substreams/graph-entities
       apiVersion: 0.0.5
 ```
 
-## schema.graphql
-
 The `subgraph.yaml` also references a schema file. The requirements for this file are unchanged, but the entities specified must be compatible with the entity changes produced by the Substreams module referenced in the `subgraph.yaml`.
 
 ```graphql
-type Supply @entity(immutable: true) {
-  id: Bytes!
-
-  blockHash: Bytes!
-  blockNumber: BigInt!
-  timestamp: BigInt!
-
-  " Total ETH in existence at this block. All initial supply and rewards added up, minus burned fees. "
-  currentSupply: BigInt!
-
-  " ETH created at genesis. "
-  genesisSupply: BigInt!
-
-  " ETH created as block mining rewards (up until the merge). "
-  cumulativeMiningRewards: BigInt!
-
-  " ETH created as part of including uncle blocks (up until the merge). "
-  cumulativeUncleRewards: BigInt!
-
-  " ETH burned because of base fee burn after eip1559. "
-  cumulativeBurnedFees: BigInt!
-
-  " ETH created in this block as mining rewards. "
-  blockMiningReward: BigInt!
-
-  " ETH created in this block as uncle rewards. "
-  blockUncleReward: BigInt!
-
-  " Eth burned in this block via eip1559. "
-  blockBurnedFees: BigInt!
+type Contract @entity {
+  id: ID! #address of the contract
+  timestamp: String! #timestamp of when the contract was deployed
+  blockNumber: BigInt! #block number of the contract deployment
 }
 ```
 
-Given the above, subgraph developers can use Graph CLI >=0.51.0 to deploy this Substreams-powered subgraph.
-
-```bash
-graph deploy
-```
+Given the above, subgraph developers can use Graph CLI to deploy this Substreams-powered subgraph.
 
 > Substreams-powered subgraphs indexing mainnet Ethereum can be deployed to the [Subgraph Studio](https://thegraph.com/studio/).
+
+```bash
+graph build # build the subgraph
+graph deploy --studio subgraph-name-here # deploy the subgraph to the Subgraph Studio
+```
+
+That's it! You have built and deployed a Substreams-powered subgraph.
 
 ## Serving Substreams-powered subgraphs
 
