@@ -87,13 +87,13 @@ These types and modules are pulled together in `substreams.yaml`:
 ```
 specVersion: v0.1.0
 package:
-  name: 'substreams_test'
-  version: v1.0.1
+  name: 'substreams_test' # the name to be used in the .spkg
+  version: v1.0.1 # the version to use when creating the .spkg
 
-imports:
+imports: # dependencies
   entity: https://github.com/streamingfast/substreams-entity-change/releases/download/v0.2.1/substreams-entity-change-v0.2.1.spkg
 
-protobuf:
+protobuf: # specifies custom types for use by Substreams modules
   files:
     - example.proto
   importPaths:
@@ -104,7 +104,7 @@ binaries:
     type: wasm/rust-v1
     file: ./target/wasm32-unknown-unknown/release/substreams.wasm
 
-modules:
+modules: # specify modules with their inputs and outputs.
   - name: map_contract
     kind: map
     inputs:
@@ -117,10 +117,21 @@ modules:
     inputs:
       - map: map_contract
     output:
-      type: proto:substreams.entity.v1.EntityChanges
+      type: proto:substreams.entity.v1.EntityChanges # this type can be consumed by Graph Node
+
 ```
 
-To prepare the Substreams package for consumption by a subgraph, you must run the following commands:
+You can check the overall "flow" from a Block, to `map_contract` to `graph_out` by running `substreams graph`:
+
+```mermaid
+graph TD;
+  map_contract[map: map_contract];
+  sf.ethereum.type.v2.Block[source: sf.ethereum.type.v2.Block] --> map_contract;
+  graph_out[map: graph_out];
+  map_contract --> graph_out;
+```
+
+To prepare this Substreams package for consumption by a subgraph, you must run the following commands:
 
 ```bash
 make protogen # generates types in /src/pb
@@ -128,11 +139,13 @@ make build # builds the substreams
 make package # packages the substreams in a .spkg file
 ```
 
+This generates a `spkg` file based on the package name and version from `substreams.yaml`. The `spkg` file has all the information which Graph Node needs to ingest this Substreams package.
+
 > If you update the Substreams package, depending on the changes you make, you may need to run some or all of the above commands so that the `spkg` is up to date.
 
 ## Defining a Substreams-powered subgraph
 
-Substreams-powered subgraphs introduce a new `kind` of data source, "substreams". Such subgraphs can only have one data source. This data source must specify the Substreams network, the Substreams package as a relative file location, and the module within that Substreams package which produces subgraph-compatible entity changes (in this case `map_entity_changes`, from the Substreams package above). The mapping is specified, but simply identifies the mapping kind ("substreams/graph-entities") and the apiVersion.
+Substreams-powered subgraphs introduce a new `kind` of data source, "substreams". Such subgraphs can only have one data source. This data source must specify the Substreams network, the Substreams package (`spkg`) as a relative file location, and the module within that Substreams package which produces subgraph-compatible entity changes (in this case `map_entity_changes`, from the Substreams package above). The mapping is specified, but simply identifies the mapping kind ("substreams/graph-entities") and the apiVersion.
 
 ```yaml
 specVersion: 0.0.4
@@ -157,9 +170,13 @@ The `subgraph.yaml` also references a schema file. The requirements for this fil
 
 ```graphql
 type Contract @entity {
-  id: ID! #address of the contract
-  timestamp: String! #timestamp of when the contract was deployed
-  blockNumber: BigInt! #block number of the contract deployment
+  id: ID!
+
+  "The timestamp when the contract was deployed"
+  timestamp: String!
+
+  "The block number of the contract deployment"
+  blockNumber: BigInt!
 }
 ```
 
