@@ -3,7 +3,7 @@ import { buildDynamicMDX } from 'nextra/remote'
 import { getPageMap } from '@/src/getPageMap'
 import { remarkReplaceLinks } from '@/src/remarkReplaceLinks'
 import { replaceGitBookContent } from '@/src/replaceGitBookContent'
-import json from '@/remote-files/substreams.json'
+import json from '@/remote-files/firehose.json'
 
 export const getStaticPaths = () => ({
   fallback: false,
@@ -31,17 +31,20 @@ export async function getStaticProps({ params }) {
     }),
     {
       mdxOptions: {
-        // change-log contains `{variable}` text that is thrown an error by MDX2 parser since he treats
-        // it as variable injection, to fix it we parse chang-log with the Markdown parser
-        format: paths.endsWith('/change-log') ? 'md' : 'mdx',
-        remarkPlugins: [[remarkReplaceLinks, { foundPath, basePath: '/substreams/' }]],
+        remarkPlugins: [[remarkReplaceLinks, { foundPath, basePath: '/firehose/' }]],
       },
       codeHighlight: false,
     }
   )
+  const parsedData = JSON.parse(mdx.__nextra_dynamic_opts)
+  // remove title from frontMatter if it's the same as the title of the page
+  if (parsedData.title === parsedData.frontMatter.title) {
+    parsedData.frontMatter.title = ''
+  }
   return {
     props: {
       ...mdx,
+      __nextra_dynamic_opts: JSON.stringify(parsedData),
       __nextra_pageMap: await getPageMap('en'),
       hideLocaleSwitcher: true,
       remoteFilePath: `https://github.com/${user}/${repo}/tree/${branch}/${docsPath}${foundPath}`,

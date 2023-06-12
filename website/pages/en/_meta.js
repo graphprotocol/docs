@@ -41,7 +41,7 @@ export default {
     title: 'Indexing',
   },
   'operating-graph-node': '',
-  firehose: '',
+  firehose: 'Firehose',
   '---5': {
     type: 'separator',
   },
