@@ -52,6 +52,11 @@ export default withNextra({
       destination: '/en/substreams/README/',
       permanent: false,
     },
+    {
+      source: '/en/firehose/',
+      destination: '/en/firehose/README/',
+      permanent: false,
+    },
   ],
   webpack(config) {
     config.module.rules.push({
