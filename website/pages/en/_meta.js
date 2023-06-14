@@ -8,8 +8,8 @@ export default {
   billing: '',
   'network-transition-faq': '',
   glossary: '',
-  'arbitrum-faq': '',
   tokenomics: 'Tokenomics',
+  arbitrum: 'Scaling with Arbitrum',
   '---2': {
     type: 'separator',
   },
