@@ -9,7 +9,7 @@ export default {
   'network-transition-faq': '',
   glossary: '',
   tokenomics: 'Tokenomics',
-  'scaling-with-arbitrum': 'Scaling with Arbitrum',
+  arbitrum: 'Scaling with Arbitrum',
   '---2': {
     type: 'separator',
   },
