@@ -54,7 +54,7 @@ export default withNextra({
     },
     {
       source: '/en/arbitrum-faq/',
-      destination: '/en/scaling-with-arbitrum/arbitrum-faq/',
+      destination: '/en/arbitrum/faq/',
       permanent: true,
     },
     {
