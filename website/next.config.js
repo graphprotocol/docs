@@ -53,6 +53,11 @@ export default withNextra({
       permanent: false,
     },
     {
+      source: '/en/arbitrum-faq/',
+      destination: '/en/arbitrum/arbitrum-faq/',
+      permanent: true,
+    },
+    {
       source: '/en/firehose/',
       destination: '/en/firehose/README/',
       permanent: false,
