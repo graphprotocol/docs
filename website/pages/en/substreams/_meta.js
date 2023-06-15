@@ -1,33 +1,9 @@
 import { createCatchAllMeta } from 'nextra/catch-all'
 
-export async function listFiles() {
-  const { cache } = listFiles
-  if (cache) {
-    return cache
-  }
-  const response = await fetch('https://api.github.com/repos/streamingfast/substreams/git/trees/develop?recursive=1')
-  const data = await response.json()
-  if (data.message) {
-    throw new Error(JSON.stringify(data, null, 2))
-  }
-  const result = data.tree
-    .filter(
-      (item) =>
-        item.path.startsWith('docs/') &&
-        /\.mdx?/.test(item.path) &&
-        item.path !== 'docs/SUMMARY.md' &&
-        item.path !== 'docs/developers-guide/modules/README.md'
-    )
-    .map((item) => item.path.replace(/^docs\//, ''))
+import json from '../../../remote-files/substreams.json' assert { type: 'json' }
 
-  // Implement simple caching for avoid API rate limit from GitHub
-  listFiles.cache = result
-
-  return result
-}
-
-export default async () => {
-  return createCatchAllMeta(await listFiles(), {
+export default () =>
+  createCatchAllMeta(json.filePaths, {
     README: 'Introduction',
     'concepts-and-fundamentals': {
       type: 'folder',
@@ -80,4 +56,3 @@ export default async () => {
       },
     },
   })
-}
