@@ -1,3 +1,4 @@
+import { Global } from '@emotion/react'
 import merge from 'lodash/merge'
 import mixpanel from 'mixpanel-browser'
 import { AppProps } from 'next/app'
@@ -65,6 +66,15 @@ function MyApp({ Component, pageProps, router }: AppProps): ReactElement {
     <I18nProvider supportedLocales={supportedLocales} translations={translations} clientRouter={router}>
       <DefaultSeoWithLocale />
       <GDSProvider clientLink={NextLink}>
+        <Global
+          styles={() => ({
+            // Fix SVGs on `/en/querying/graph-client/architecture/` in Safari
+            // TODO: Move to `@edgeandnode/gds`'s global styles
+            'svg *': {
+              position: 'revert',
+            },
+          })}
+        />
         <AnalyticsProvider
           app="DOCS"
           clientRouter={router}
