@@ -42,6 +42,8 @@ export default {
   },
   'operating-graph-node': '',
   firehose: 'Firehose',
+  graphcast: 'Graphcast',
+  'mips-faqs': 'MIPs FAQs',
   '---5': {
     type: 'separator',
   },
