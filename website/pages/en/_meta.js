@@ -5,7 +5,7 @@ export default {
   },
   about: '',
   network: 'The Graph Network',
-  billing: '',
+  billing: 'Billing',
   'network-transition-faq': '',
   glossary: '',
   tokenomics: 'Tokenomics',
