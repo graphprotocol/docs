@@ -9,7 +9,7 @@ export async function handler(request: Request): Promise<Response> {
 
     const rawSvg = await toSVG(
       <div
-        tw="flex h-full flex-col w-full items-center justify-center text-white p-10"
+        tw="flex h-full flex-col w-full items-center justify-center text-white p-10 pt-20"
         style={{
           backgroundImage: 'url(https://storage.googleapis.com/graph-website/seo/graph-website.jpg)',
           backgroundPosition: title ? '0 -70%' : '0 -55%',
