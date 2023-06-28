@@ -6,7 +6,7 @@ const require = createRequire(import.meta.url)
 const __dirname = new URL('.', import.meta.url).pathname
 
 await writeFile(
-  join(__dirname, 'vender/index_bg.wasm'),
+  join(__dirname, '../vender/index_bg.wasm'),
   await readFile(require.resolve('@resvg/resvg-wasm/index_bg.wasm'))
 )
 
