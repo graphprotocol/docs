@@ -11,21 +11,21 @@ vi.mock('../vender/index_bg.wasm', async () => {
 describe('handler()', () => {
   it('should works', async () => {
     const response = await handler({
-      url: 'http://localhost:3000?product=CONDUCTOR',
+      url: 'http://localhost:3000',
     });
     const result = Buffer.from(await response.arrayBuffer());
     expect(result).toMatchImageSnapshot();
   });
   it('should align title and have container padding', async () => {
     const response = await handler({
-      url: 'http://localhost:3000?product=ESLINT&title=Hello this is a test of really really really really really really long title',
+      url: 'http://localhost:3000?title=Hello this is a test of really really really really really really long title',
     });
     const result = Buffer.from(await response.arrayBuffer());
     expect(result).toMatchImageSnapshot();
   });
   it('should align title without whitespaces', async () => {
     const response = await handler({
-      url: 'http://localhost:3000?product=FETS&title=Home',
+      url: 'http://localhost:3000?title=Home',
     });
     const result = Buffer.from(await response.arrayBuffer());
     expect(result).toMatchImageSnapshot();
