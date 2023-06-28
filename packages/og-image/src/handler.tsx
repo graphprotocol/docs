@@ -12,7 +12,7 @@ export async function handler(request: Request): Promise<Response> {
         tw="flex h-full flex-col w-full items-center justify-center text-white p-10"
         style={{
           backgroundImage: 'url(https://storage.googleapis.com/graph-website/seo/graph-website.jpg)',
-          backgroundPosition: '0 -70%',
+          backgroundPosition: title ? '0 -70%' : '0 -55%',
         }}
       >
         {title && (
