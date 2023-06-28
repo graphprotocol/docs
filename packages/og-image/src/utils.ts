@@ -47,12 +47,13 @@ let init = false
 
 export async function toSVG(node: ReactNode): Promise<string> {
   if (!init) {
-    fonts = [
-      await loadGoogleFont({ family: 'Noto Sans', weight: 400 }),
-      await loadGoogleFont({ family: 'Noto Sans Arabic', weight: 400 }),
-      await loadGoogleFont({ family: 'Noto Sans JP', weight: 400 }),
-      await loadGoogleFont({ family: 'Noto Sans KR', weight: 400 }),
-    ]
+    fonts = await Promise.all([
+      loadGoogleFont({ family: 'Noto Sans', weight: 400 }),
+      loadGoogleFont({ family: 'Noto Sans Arabic', weight: 400 }),
+      // await loadGoogleFont({ family: 'Noto Sans JP', weight: 400 }),
+      loadGoogleFont({ family: 'Noto Sans KR', weight: 400 }), // ko
+      loadGoogleFont({ family: 'Noto Sans SC', weight: 400 }), // zh
+    ])
     await initWasm(resvgWasm)
     init = true
   }
