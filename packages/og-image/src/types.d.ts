@@ -1,3 +1,3 @@
 declare module '*.wasm' {
-  export default ArrayBuffer;
+  export default ArrayBuffer
 }
