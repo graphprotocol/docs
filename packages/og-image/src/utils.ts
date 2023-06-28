@@ -1,6 +1,6 @@
 import { initWasm, Resvg } from '@resvg/resvg-wasm'
 import { ReactNode } from 'react'
-import satori from 'satori'
+import satori, { FontWeight } from 'satori'
 
 import resvgWasm from '../vender/index_bg.wasm'
 
@@ -10,18 +10,11 @@ export function toImage(svg: string): Uint8Array {
   return pngData.asPng()
 }
 
-export async function loadGoogleFont({
-  family,
-  weight,
-  text,
-}: {
-  family: string
-  weight?: number
-  text?: string
-}): Promise<ArrayBuffer> {
+type Font = { data: ArrayBuffer; weight: FontWeight; name: string }
+
+export async function loadGoogleFont({ family, weight }: { family: string; weight?: number }): Promise<Font> {
   const params: Record<string, string> = {
     family: `${family}${weight ? `:wght@${weight}` : ''}`,
-    ...(text ? { text } : { subset: 'latin' }),
   }
 
   const url = `https://fonts.googleapis.com/css2?${new URLSearchParams(params)}`
@@ -35,31 +28,37 @@ export async function loadGoogleFont({
   })
   const css = await response.text()
   // Get the font URL from the CSS text
-  const fontUrl = /src: url\((.+)\) format\('(opentype|truetype)'\)/.exec(css)?.[1]
 
+  const fontUrl = /src: url\((.+)\) format\('(opentype|truetype)'\)/.exec(css)?.[1]
   if (!fontUrl) {
     throw new Error('Could not find font URL')
   }
 
   const res = await fetch(fontUrl)
-  return res.arrayBuffer()
+  return {
+    data: await res.arrayBuffer(),
+    weight: Number(/weight: (.+);/.exec(css)?.[1]) as FontWeight,
+    name: family,
+  }
 }
 
-let font: ArrayBuffer
+let fonts: Font[]
 let init = false
 
 export async function toSVG(node: ReactNode): Promise<string> {
   if (!init) {
-    font = await loadGoogleFont({
-      family: 'Inter',
-      weight: 400,
-    })
+    fonts = [
+      await loadGoogleFont({ family: 'Noto Sans', weight: 400 }),
+      await loadGoogleFont({ family: 'Noto Sans Arabic', weight: 400 }),
+      await loadGoogleFont({ family: 'Noto Sans JP', weight: 400 }),
+      await loadGoogleFont({ family: 'Noto Sans KR', weight: 400 }),
+    ]
     await initWasm(resvgWasm)
     init = true
   }
   return satori(node, {
     width: 1200,
     height: 600,
-    fonts: [{ name: 'Inter', data: font, weight: 400 }],
+    fonts,
   })
 }
