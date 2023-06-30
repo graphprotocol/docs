@@ -41,6 +41,7 @@ export default {
     title: 'Indexing',
   },
   'operating-graph-node': '',
+  'new-network-integration': 'Integrating New Networks',
   firehose: 'Firehose',
   '---5': {
     type: 'separator',
