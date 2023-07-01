@@ -48,7 +48,7 @@ export const remarkReplaceLinks: Plugin<
     )
     visit(tree, 'image', (node) => {
       if (node.url.includes('../assets/')) {
-        node.url = node.url.replace(/.*\.\.\/assets\//, `https://raw.githubusercontent.com/${assetsBasePath}/assets/`)
+        node.url = node.url.replace(/.*\.\.\/assets\//, `https://raw.githubusercontent.com/${assetsBasePath}assets/`)
       }
     })
     done()
