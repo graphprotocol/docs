@@ -1,12 +1,4 @@
-type ReplaceGitBookContentParams = {
-  content: string
-  user: string
-  repo: string
-  branch: string
-  docsPath: string
-}
-
-export function replaceGitBookContent({ content, user, repo, branch, docsPath }: ReplaceGitBookContentParams): string {
+export function replaceGitBookContent({ content }: { content: string }): string {
   return (
     content
       // replace {% embed ... %} with <iframe />
@@ -23,11 +15,5 @@ export function replaceGitBookContent({ content, user, repo, branch, docsPath }:
       .replaceAll(/{%.*?%}/g, '')
       // close unclosed img tags
       .replaceAll(/<img((?:(?!\/>)[^>])*?)>/g, (...m) => `<img${m[1]}/>`)
-      // Replaces all the relative paths of images to absolute paths to the repo
-      .replaceAll('../assets', `https://raw.githubusercontent.com/${user}/${repo}/${branch}/assets/`)
-      .replaceAll(
-        '.gitbook/assets/',
-        `https://raw.githubusercontent.com/${user}/${repo}/${branch}/${docsPath}.gitbook/assets/`
-      )
   )
 }
