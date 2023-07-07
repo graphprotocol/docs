@@ -2,7 +2,7 @@ import { Root } from 'mdast'
 import { Plugin } from 'unified'
 import { visit } from 'unist-util-visit'
 
-export const remarkReplaceLinks: Plugin<[{ assetsBasePath: string }], Root> = ({ assetsBasePath }) => {
+export const remarkReplaceImages: Plugin<[{ assetsBasePath: string }], Root> = ({ assetsBasePath }) => {
   if (!assetsBasePath) throw new Error('remarkReplaceLinks: assetsBasePath is required')
 
   return (tree, _file, done) => {
