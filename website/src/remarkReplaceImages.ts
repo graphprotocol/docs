@@ -18,17 +18,6 @@ export const remarkReplaceLinks: Plugin<
   if (!assetsBasePath) throw new Error('remarkReplaceLinks: assetsBasePath is required')
 
   return (tree, _file, done) => {
-    // enhance links
-    visit(tree, 'link', (node) => {
-      const EXTERNAL_LINK_REGEX = /^https?:\/\//
-      if (node.url.startsWith('/')) {
-        // (foo)[/foo/bar]
-        node.url = node.url.replace('/', basePath)
-      } else if (!EXTERNAL_LINK_REGEX.test(node.url)) {
-        // (foo)[foo.md] or (foo)[./foo.md] or (foo)[../foo.md]
-        node.url = path.join(path.dirname(foundPath), node.url)
-      }
-    })
     visit(
       tree,
       [
