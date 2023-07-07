@@ -1,20 +1,8 @@
 import { Root } from 'mdast'
-import path from 'node:path'
 import { Plugin } from 'unified'
 import { visit } from 'unist-util-visit'
 
-export const remarkReplaceLinks: Plugin<
-  [
-    {
-      foundPath: string
-      basePath: string
-      assetsBasePath: string
-    }
-  ],
-  Root
-> = ({ foundPath, basePath, assetsBasePath }) => {
-  if (!foundPath) throw new Error('remarkReplaceLinks: foundPath is required')
-  if (!basePath) throw new Error('remarkReplaceLinks: basePath is required')
+export const remarkReplaceLinks: Plugin<[{ assetsBasePath: string }], Root> = ({ assetsBasePath }) => {
   if (!assetsBasePath) throw new Error('remarkReplaceLinks: assetsBasePath is required')
 
   return (tree, _file, done) => {
