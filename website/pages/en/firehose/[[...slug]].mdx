@@ -2,6 +2,7 @@ import { RemoteContent } from 'nextra/data'
 import { buildDynamicMDX } from 'nextra/remote'
 import { getPageMap } from '@/src/getPageMap'
 import { remarkReplaceLinks } from '@/src/remarkReplaceLinks'
+import { remarkReplaceImages } from '@/src/remarkReplaceImages'
 import { replaceGitBookContent } from '@/src/replaceGitBookContent'
 import json from '@/remote-files/firehose.json'
 
@@ -21,21 +22,15 @@ export async function getStaticProps({ params }) {
   const baseURL = `https://raw.githubusercontent.com/${user}/${repo}/${branch}/${docsPath}${foundPath}`
   const response = await fetch(baseURL)
   const content = await response.text()
-  const mdx = await buildDynamicMDX(
-    replaceGitBookContent({
-      content,
-      user,
-      repo,
-      branch,
-      docsPath,
-    }),
-    {
-      mdxOptions: {
-        remarkPlugins: [[remarkReplaceLinks, { foundPath, basePath: '/firehose/' }]],
-      },
-      codeHighlight: false,
-    }
-  )
+  const mdx = await buildDynamicMDX(replaceGitBookContent({ content }), {
+    mdxOptions: {
+      remarkPlugins: [
+        [remarkReplaceLinks, { foundPath, basePath: '/firehose/' }],
+        [remarkReplaceImages, { assetsBasePath: `${user}/${repo}/${branch}/${docsPath}` }],
+      ],
+    },
+    codeHighlight: false,
+  })
   const parsedData = JSON.parse(mdx.__nextra_dynamic_opts)
   // remove title from frontMatter if it's the same as the title of the page
   if (parsedData.title === parsedData.frontMatter.title) {
