@@ -7,7 +7,7 @@ import { NavContext } from '@/layout'
 
 export const MDXLayoutPagination = () => {
   const { flatDirectories, activeIndex } = useContext(NavContext)
-  const { t } = useI18n()
+  const { t } = useI18n<any>()
 
   const prev = flatDirectories[activeIndex - 1]
   const next = flatDirectories[activeIndex + 1]

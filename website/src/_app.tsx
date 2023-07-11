@@ -52,7 +52,7 @@ const DefaultSeoWithLocale = () => {
       merge(DEFAULT_SEO_PROPS, {
         openGraph: { locale },
       }),
-    [locale]
+    [locale],
   )
 
   return <DefaultSeo {...seoProps} />

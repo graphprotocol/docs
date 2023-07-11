@@ -28,6 +28,6 @@ export function getSupportedNetworks() {
           isBeta: chain.graphCliName !== 'mainnet', // TODO: Include a `beta` property in `@edgeandnode/common`?
         }
       })
-      .filter(isNotNull)
+      .filter(isNotNull),
   )
 }

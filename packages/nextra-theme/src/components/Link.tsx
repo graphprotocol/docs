@@ -22,7 +22,7 @@ export const Link = ({
   locale: linkLocale,
   ...props
 }: LinkProps) => {
-  const { locale: currentLocale, extractLocaleFromPath } = useI18n()
+  const { locale: currentLocale, extractLocaleFromPath } = useI18n<any>()
 
   let finalHref = typeof href === 'object' ? href.href ?? undefined : href
 
