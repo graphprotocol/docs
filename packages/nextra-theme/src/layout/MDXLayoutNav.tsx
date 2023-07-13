@@ -58,7 +58,7 @@ const DesktopWrapper = ({ children }: PropsWithChildren<{}>) => {
 
 const MobileWrapper = ({ title, children }: PropsWithChildren<{ title?: string }>) => {
   const [open, setOpen] = useState(false)
-  const { t } = useI18n()
+  const { t } = useI18n<any>()
 
   return (
     <Collapsible.Root
@@ -131,7 +131,7 @@ const DocSearchHit = ({ hit, children }: PropsWithChildren<{ hit: { url: string 
 export const MDXLayoutNav = ({ mobile = false }: { mobile?: boolean }) => {
   const router = useRouter()
   const { activePath, directories } = useContext(NavContext)!
-  const { t, translations, locale } = useI18n()
+  const { t, translations, locale } = useI18n<any>()
 
   const Wrapper = mobile ? MobileWrapper : DesktopWrapper
 
@@ -221,7 +221,7 @@ export const MDXLayoutNav = ({ mobile = false }: { mobile?: boolean }) => {
                 {pageItem.title}
               </NavTree.Item>
             )
-          })(pageItem)
+          })(pageItem),
         )}
       </NavTree>
     </Wrapper>

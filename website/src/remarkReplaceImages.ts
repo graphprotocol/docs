@@ -18,10 +18,10 @@ export const remarkReplaceImages: Plugin<[{ assetsBasePath: string }], Root> = (
         if (srcAttr.value.includes('.gitbook/assets/')) {
           srcAttr.value = srcAttr.value.replace(
             /.*\.gitbook\/assets\//,
-            `https://raw.githubusercontent.com/${assetsBasePath}.gitbook/assets/`
+            `https://raw.githubusercontent.com/${assetsBasePath}.gitbook/assets/`,
           )
         }
-      }
+      },
     )
     visit(tree, 'image', (node) => {
       if (node.url.includes('../assets/')) {

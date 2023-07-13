@@ -65,7 +65,7 @@ export { Heading, Image, Link, LinkInline, Paragraph }
 
 export default function NextraLayout({ children, pageOpts, pageProps }: NextraThemeLayoutProps): ReactElement {
   const { frontMatter, filePath, pageMap, headings, title } = pageOpts
-  const { locale, defaultLocale } = useI18n()
+  const { locale, defaultLocale } = useI18n<any>()
   const fsPath = useFSRoute()
 
   const args = useMemo(() => {
@@ -93,7 +93,7 @@ export default function NextraLayout({ children, pageOpts, pageProps }: NextraTh
       ...result,
       directories: removeNonExistedRoutes(result.directories),
       flatDirectories: result.flatDirectories.filter(
-        (item) => item.type !== 'separator' && item.type !== 'heading' && item.route !== ''
+        (item) => item.type !== 'separator' && item.type !== 'heading' && item.route !== '',
       ),
     }
   }, [defaultLocale, fsPath, locale, pageMap])
@@ -112,7 +112,7 @@ export default function NextraLayout({ children, pageOpts, pageProps }: NextraTh
         markOutlineItemAsNotInOrAboveView(id)
       }
     },
-    [markOutlineItemAsInOrAboveView, markOutlineItemAsNotInOrAboveView]
+    [markOutlineItemAsInOrAboveView, markOutlineItemAsNotInOrAboveView],
   )
   // Compute `highlightedOutlineItemId` for the `DocumentContext` based on outline items that have been marked as "in or above view"
   const highlightedOutlineItemId = useMemo(() => {

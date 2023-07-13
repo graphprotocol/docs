@@ -26,7 +26,7 @@ const BaseHeading = ({ level, id, children, ...props }: HeadingProps) => {
       }
     },
     100,
-    [id, inOrAboveView, markOutlineItem]
+    [id, inOrAboveView, markOutlineItem],
   )
   const { t } = useI18n<any>()
 

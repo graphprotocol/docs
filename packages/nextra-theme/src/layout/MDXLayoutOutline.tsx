@@ -8,7 +8,7 @@ import { DocumentContext } from '@/layout'
 export const MDXLayoutOutline = () => {
   const { headings, highlightedOutlineItemId } = useContext(DocumentContext)!
   const [enableTransition, setEnableTransition] = useState(false)
-  const { t } = useI18n()
+  const { t } = useI18n<any>()
 
   // Fix issue where the `translateY` is animated on initial load
   useEffect(() => {

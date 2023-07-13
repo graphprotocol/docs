@@ -37,7 +37,7 @@ export function DocSearch(props: DocSearchProps) {
       setIsOpen(true)
       setInitialQuery(event.key)
     },
-    [setIsOpen, setInitialQuery]
+    [setIsOpen, setInitialQuery],
   )
 
   useDocSearchKeyboardEvents({
@@ -93,7 +93,7 @@ export function DocSearch(props: DocSearchProps) {
               translations={props.translations?.modal}
               onClose={onClose}
             />,
-            document.body
+            document.body,
           )
         : null}
 
