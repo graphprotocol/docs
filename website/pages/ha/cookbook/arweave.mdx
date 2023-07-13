@@ -1,0 +1,239 @@
+---
+title: Building Subgraphs on Arweave
+---
+
+> Arweave support in Graph Node and on the Hosted Service is in beta: please reach us on [Discord](https://discord.gg/rC8rBuRtbH) with any questions about building Arweave subgraphs!
+
+In this guide, you will learn how to build and deploy Subgraphs to index the Arweave blockchain.
+
+## What is Arweave?
+
+The Arweave protocol allows developers to store data permanently and that is the main difference between Arweave and IPFS, where IPFS lacks the feature; permanence, and files stored on Arweave can't be changed or deleted.
+
+Arweave already has built numerous libraries for integrating the protocol in a number of different programming languages. For more information you can check:
+
+- [Arwiki](https://arwiki.wiki/#/en/main)
+- [Arweave Resources](https://www.arweave.org/build)
+
+## What are Arweave Subgraphs?
+
+The Graph allows you to build custom open APIs called "Subgraphs". Subgraphs are used to tell indexers (server operators) which data to index on a blockchain and save on their servers in order for you to be able to query it at any time using [GraphQL](https://graphql.org/).
+
+[Graph Node](https://github.com/graphprotocol/graph-node) is now able to index data on Arweave protocol. The current integration is only indexing Arweave as a blockchain (blocks and transactions), it is not indexing the stored files yet.
+
+## Building an Arweave Subgraph
+
+To be able to build and deploy Arweave Subgraphs, you need two packages:
+
+1. `@graphprotocol/graph-cli` above version 0.30.2 - This is a command-line tool for building and deploying subgraphs. [Click here](https://www.npmjs.com/package/@graphprotocol/graph-cli) to download using `npm`.
+2. `@graphprotocol/graph-ts` above version 0.27.0 - This is library of subgraph-specific types. [Click here](https://www.npmjs.com/package/@graphprotocol/graph-ts) to download using `npm`.
+
+## Subgraph's components
+
+There are three components of a subgraph:
+
+### 1. Manifest - `subgraph.yaml`
+
+Defines the data sources of interest, and how they should be processed. Arweave is a new kind of data source.
+
+### 2. Schema - `schema.graphql`
+
+Here you define which data you want to be able to query after indexing your Subgraph using GraphQL. This is actually similar to a model for an API, where the model defines the structure of a request body.
+
+The requirements for Arweave subgraphs are covered by the [existing documentation](/developing/creating-a-subgraph/#the-graphql-schema).
+
+### 3. AssemblyScript Mappings - `mapping.ts`
+
+This is the logic that determines how data should be retrieved and stored when someone interacts with the data sources you are listening to. The data gets translated and is stored based off the schema you have listed.
+
+During subgraph development there are two key commands:
+
+```
+$ graph codegen # generates types from the schema file identified in the manifest
+$ graph build # generates Web Assembly from the AssemblyScript files, and prepares all the subgraph files in a /build folder
+```
+
+## Subgraph Manifest Definition
+
+The subgraph manifest `subgraph.yaml` identifies the data sources for the subgraph, the triggers of interest, and the functions that should be run in response to those triggers. See below for an example subgraph manifest for an Arweave subgraph:
+
+```yaml
+specVersion: 0.0.5
+description: Arweave Blocks Indexing
+schema:
+  file: ./schema.graphql # link to the schema file
+dataSources:
+  - kind: arweave
+    name: arweave-blocks
+    network: arweave-mainnet # The Graph only supports Arweave Mainnet
+    source:
+      owner: 'ID-OF-AN-OWNER' # The public key of an Arweave wallet
+      startBlock: 0 # set this to 0 to start indexing from chain genesis
+    mapping:
+      apiVersion: 0.0.5
+      language: wasm/assemblyscript
+      file: ./src/blocks.ts # link to the file with the Assemblyscript mappings
+      entities:
+        - Block
+        - Transaction
+      blockHandlers:
+        - handler: handleBlock # the function name in the mapping file
+      transactionHandlers:
+        - handler: handleTx # the function name in the mapping file
+```
+
+- Arweave subgraphs introduce a new kind of data source (`arweave`)
+- The network should correspond to a network on the hosting Graph Node. On the Hosted Service, Arweave's mainnet is `arweave-mainnet`
+- Arweave data sources introduce an optional source.owner field, which is the public key of an Arweave wallet
+
+Arweave data sources support two types of handlers:
+
+- `blockHandlers` - Run on every new Arweave block. No source.owner is required.
+- `transactionHandlers` - Run on every transaction where the data source's `source.owner` is the owner. Currently an owner is required for `transactionHandlers`, if users want to process all transactions they should provide "" as the `source.owner`
+
+> The source.owner can be the owner's address, or their Public Key.
+
+> Transactions are the building blocks of the Arweave permaweb and they are objects created by end-users.
+
+> Note: [Bundlr](https://bundlr.network/) transactions are not supported yet.
+
+## Schema Definition
+
+Schema definition describes the structure of the resulting subgraph database and the relationships between entities. This is agnostic of the original data source. There are more details on the subgraph schema definition [here](/developing/creating-a-subgraph/#the-graphql-schema).
+
+## AssemblyScript Mappings
+
+The handlers for processing events are written in [AssemblyScript](https://www.assemblyscript.org/).
+
+Arweave indexing introduces Arweave-specific data types to the [AssemblyScript API](/developing/assemblyscript-api/).
+
+```tsx
+class Block {
+  timestamp: u64
+  lastRetarget: u64
+  height: u64
+  indepHash: Bytes
+  nonce: Bytes
+  previousBlock: Bytes
+  diff: Bytes
+  hash: Bytes
+  txRoot: Bytes
+  txs: Bytes[]
+  walletList: Bytes
+  rewardAddr: Bytes
+  tags: Tag[]
+  rewardPool: Bytes
+  weaveSize: Bytes
+  blockSize: Bytes
+  cumulativeDiff: Bytes
+  hashListMerkle: Bytes
+  poa: ProofOfAccess
+}
+
+class Transaction {
+  format: u32
+  id: Bytes
+  lastTx: Bytes
+  owner: Bytes
+  tags: Tag[]
+  target: Bytes
+  quantity: Bytes
+  data: Bytes
+  dataSize: Bytes
+  dataRoot: Bytes
+  signature: Bytes
+  reward: Bytes
+}
+```
+
+Block handlers receive a `Block`, while transactions receive a `Transaction`.
+
+Writing the mappings of an Arweave Subgraph is very similar to writing the mappings of an Ethereum Subgraph. For more information, click [here](/developing/creating-a-subgraph/#writing-mappings).
+
+## Deploying an Arweave Subgraph on the Hosted Service
+
+Once your subgraph has been created on the Hosed Service dashboard, you can deploy by using the `graph deploy` CLI command.
+
+```bash
+graph deploy --node https://api.thegraph.com/deploy/ --ipfs https://api.thegraph.com/ipfs/ --access-token <your-access-token>
+```
+
+## Querying an Arweave Subgraph
+
+The GraphQL endpoint for Arweave subgraphs is determined by the schema definition, with the existing API interface. Please visit the [GraphQL API documentation](/querying/graphql-api/) for more information.
+
+## Example Subgraphs
+
+Here is an example subgraph for reference:
+
+- [Example subgraph for Arweave](https://github.com/graphprotocol/graph-tooling/tree/main/examples/arweave-blocks-transactions)
+
+## FAQ
+
+### Can a subgraph index Arweave and other chains?
+
+No, a subgraph can only support data sources from one chain/network.
+
+### Can I index the stored files on Arweave?
+
+Currently, The Graph is only indexing Arweave as a blockchain (its blocks and transactions).
+
+### Can I identify Bundlr bundles in my subgraph?
+
+This is not currently supported.
+
+### How can I filter transactions to a specific account?
+
+The source.owner can be the user's public key or account address.
+
+### What is the current encryption format?
+
+Data is generally passed into the mappings as Bytes, which if stored directly is returned in the subgraph in a `hex` format (ex. block and transaction hashes). You may want to convert to a `base64` or `base64 URL`-safe format in your mappings, in order to match what is displayed in block explorers like [Arweave Explorer](https://viewblock.io/arweave/).
+
+The following `bytesToBase64(bytes: Uint8Array, urlSafe: boolean): string` helper function can be used, and will be added to `graph-ts`:
+
+```
+const base64Alphabet = [
+    "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M",
+    "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z",
+    "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m",
+    "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z",
+    "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "+", "/"
+];
+
+const base64UrlAlphabet = [
+    "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M",
+    "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z",
+    "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m",
+    "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z",
+    "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "-", "_"
+];
+
+function bytesToBase64(bytes: Uint8Array, urlSafe: boolean): string {
+    let alphabet = urlSafe? base64UrlAlphabet : base64Alphabet;
+
+    let result = '', i: i32, l = bytes.length;
+    for (i = 2; i < l; i += 3) {
+        result += alphabet[bytes[i - 2] >> 2];
+        result += alphabet[((bytes[i - 2] & 0x03) << 4) | (bytes[i - 1] >> 4)];
+        result += alphabet[((bytes[i - 1] & 0x0F) << 2) | (bytes[i] >> 6)];
+        result += alphabet[bytes[i] & 0x3F];
+    }
+    if (i === l + 1) { // 1 octet yet to write
+        result += alphabet[bytes[i - 2] >> 2];
+        result += alphabet[(bytes[i - 2] & 0x03) << 4];
+        if (!urlSafe) {
+            result += "==";
+        }
+    }
+    if (!urlSafe && i === l) { // 2 octets yet to write
+        result += alphabet[bytes[i - 2] >> 2];
+        result += alphabet[((bytes[i - 2] & 0x03) << 4) | (bytes[i - 1] >> 4)];
+        result += alphabet[(bytes[i - 1] & 0x0F) << 2];
+        if (!urlSafe) {
+            result += "=";
+        }
+    }
+    return result;
+}
+```
