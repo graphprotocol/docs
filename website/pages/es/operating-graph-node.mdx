@@ -18,9 +18,9 @@ El almacén principal para Graph Node, aquí es donde se almacenan los datos de 
 
 ### Clientes de red
 
-In order to index a network, Graph Node needs access to a network client via an EVM-compatible JSON-RPC API. This RPC may connect to a single client or it could be a more complex setup that load balances across multiple.
+Para indexar una red, Graph Node necesita acceso a un cliente de red a través de una API JSON-RPC compatible con EVM. Esta RPC puede conectarse a un solo cliente o puede ser una configuración más compleja que equilibre la carga entre varios clientes.
 
-While some subgraphs may just require a full node, some may have indexing features which require additional RPC functionality. Specifically subgraphs which make `eth_calls` as part of indexing will require an archive node which supports [EIP-1898](https://eips.ethereum.org/EIPS/eip-1898), and subgraphs with `callHandlers`, or `blockHandlers` with a `call` filter, require `trace_filter` support ([see trace module documentation here](https://openethereum.github.io/JSONRPC-trace-module)).
+Mientras que algunos subgrafos pueden requerir solo un nodo completo, otros pueden tener features de indexación que requieren funcionalidades adicionales de RPC. Específicamente, los subgrafos que realicen `eth_calls` como parte de la indexación requerirán un nodo de archivo que admita el [EIP-1898](https://eips.ethereum.org/EIPS/eip-1898), y los subgrafos con` callHandlers` o `blockHandlers` con un filtro de `call` requerirán soporte de `trace_filter` ([consulta la documentación del módulo de trazas aquí](https://openethereum.github.io/JSONRPC-trace-module)).
 
 **Próximamente: Network Firehoses**: un Firehose es un servicio gRPC que proporciona un flujo de bloques ordenado, pero consciente de bifurcaciones, desarrollado por los core devs de The Graph para mejorar el rendimiento de la indexación a escala. Actualmente no es un requisito para los Indexadores, pero se les anima a que se familiaricen con la tecnología antes de que la red sea totalmente compatible. Más información sobre Firehose [aquí](https://firehose.streamingfast.io/).
 
@@ -69,33 +69,6 @@ cargo run -p graph-node --release -- \
   --ipfs https://ipfs.network.thegraph.com
 ```
 
-### Empezar usando Docker
-
-#### Prerrequisitos
-
-- **Nodo Ethereum** - Por defecto, la configuración de docker-compose utilizará mainnet: [http://host.docker.internal:8545](http://host.docker.internal:8545) para conectarse al nodo Ethereum en tu máquina host. Puedes reemplazar este nombre de red y url actualizando `docker-compose.yml`.
-
-#### Configuración
-
-1. Clona Graph Node y navega hasta el directorio de Docker:
-
-```sh
-git clone http://github.com/graphprotocol/graph-node
-cd graph-node/docker
-```
-
-2. Solo para usuarios de linux - Utiliza la dirección IP del host en lugar de `host.docker.internal` en el `docker-compose.yml` utilizando el script incluido:
-
-```sh
-./setup.sh
-```
-
-3. Inicia un Graph Node local que se conectará a tu endpoint de Ethereum:
-
-```sh
-docker-compose up
-```
-
 ### Introducción a Kubernetes
 
 Puedes encontrar un ejemplo completo de configuración de Kubernetes en el [Indexer Repository](https://github.com/graphprotocol/indexer/tree/main/k8s).
@@ -104,13 +77,13 @@ Puedes encontrar un ejemplo completo de configuración de Kubernetes en el [Inde
 
 Cuando está funcionando, Graph Node muestra los siguientes puertos:
 
-| Puerto | Objeto | Rutas | Argumento CLI | Variable de Entorno |
-| --- | --- | --- | --- | --- |
-| 8000 | Servidor HTTP GraphQL<br />(para consultas de subgrafos) | /subgraphs/id/...<br />/subgraphs/name/.../... | --http-port | - |
-| 8001 | GraphQL WS<br />(para suscripciones a subgrafos) | /subgraphs/id/...<br />/subgraphs/name/.../... | --ws-port | - |
-| 8020 | JSON-RPC<br />(para administrar implementaciones) | / | --admin-port | - |
-| 8030 | API de estado de indexación de subgrafos | /graphql | --index-node-port | - |
-| 8040 | Métricas de Prometheus | /metrics | --metrics-port | - |
+| Puerto | Objeto                                                         | Rutas                                                | Argumento CLI     | Variable de Entorno |
+| ------ | -------------------------------------------------------------- | ---------------------------------------------------- | ----------------- | ------------------- |
+| 8000   | Servidor HTTP GraphQL<br />(para consultas de subgrafos) | /subgraphs/id/...<br />/subgraphs/name/.../... | --http-port       | -                   |
+| 8001   | GraphQL WS<br />(para suscripciones a subgrafos)         | /subgraphs/id/...<br />/subgraphs/name/.../... | --ws-port         | -                   |
+| 8020   | JSON-RPC<br />(para administrar implementaciones)        | /                                                    | --admin-port      | -                   |
+| 8030   | API de estado de indexación de subgrafos                       | /graphql                                             | --index-node-port | -                   |
+| 8040   | Métricas de Prometheus                                         | /metrics                                             | --metrics-port    | -                   |
 
 > **Importante**: Ten cuidado con exponer puertos públicamente - los **puertos de administración** deben mantenerse bloqueados. Esto incluye el punto final JSON-RPC de Graph Node.
 
@@ -320,7 +293,7 @@ En algunos casos, un fallo puede ser resuelto por el Indexador (por ejemplo, si 
 
 Graph Node almacena en caché ciertos datos en el depósito con el fin de ahorrar refetching desde el proveedor. Los bloques se almacenan en caché, así como los resultados de `eth_calls` (estos últimos se almacenan en caché a partir de un bloque específico). Este almacenamiento en caché puede aumentar drásticamente la velocidad de indexación durante la "resincronización" de un subgrafo ligeramente alterado.
 
-However, in some instances, if an Ethereum node has provided incorrect data for some period, that can make its way into the cache, leading to incorrect data or failed subgraphs. In this case indexers can use `graphman` to clear the poisoned cache, and then rewind the affected subgraphs, which will then fetch fresh data from the (hopefully) healthy provider.
+Sin embargo, en algunos casos, si un nodo de Ethereum ha proporcionado datos incorrectos durante algún período de tiempo, esos datos incorrectos pueden almacenarse en la memoria caché, lo que puede resultar en datos incorrectos o subgrafos fallidos. En este caso, los indexadores pueden utilizar `graphman` para limpiar la memoria caché afectada y luego retroceder los subgrafos afectados, lo que permitirá obtener datos actualizados del proveedor de datos (esperemos) saludable.
 
 Si se sospecha de una inconsistencia en el caché de bloques, como un evento de falta de recepción tx:
 
@@ -333,7 +306,7 @@ Si se sospecha de una inconsistencia en el caché de bloques, como un evento de 
 
 Una vez que un subgrafo ha sido indexado, los Indexadores pueden esperar servir consultas a través del endpoint de consulta dedicado del subgrafo. Si el Indexador espera servir un volumen de consultas significativo, se recomienda un nodo de consulta dedicado, y en caso de volúmenes de consulta muy altos, los Indexadores pueden querer configurar shards de réplica para que las consultas no impacten en el proceso de indexación.
 
-However, even with a dedicated query node and replicas, certain queries can take a long time to execute, and in some cases increase memory usage and negatively impact the query time for other users.
+Sin embargo, incluso con un nodo de consulta dedicado y réplicas, ciertas consultas pueden llevar mucho tiempo para ejecutarse y, en algunos casos, aumentar el uso de memoria y afectar negativamente el tiempo de consulta de otros usuarios.
 
 No existe una "bala de plata", sino toda una serie de herramientas para prevenir, diagnosticar y tratar las consultas lentas.
 
