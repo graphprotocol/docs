@@ -2,34 +2,34 @@
 title: 分布式系统
 ---
 
-The Graph is a protocol implemented as a distributed system.
+Graph 是分布式系统实现的协议。
 
-Connections fail. Requests arrive out of order. Different computers with out-of-sync clocks and states process related requests. Servers restart. Re-orgs happen between requests. These problems are inherent to all distributed systems but are exacerbated in systems operating at a global scale.
+连接可能失败。 请求无序到达。 具有不同步时钟和状态的很多计算机在处理相关请求。 服务器重新启动。 重组发生在请求之间。以上这些问题是所有分布式系统所固有的，但在全球范围内运行的系统中会更加严重。
 
-Consider this example of what may occur if a client polls an Indexer for the latest data during a re-org.
+考虑这个例子，如果客户端在重组期间轮询索引人以获取最新数据，可能会发生什么。
 
-1. Indexer ingests block 8
+1. 索引人获取区块 8
 2. 区块 8 的数据传送给客户端
-3. Indexer ingests block 9
-4. Indexer ingests block 10A
+3. 索引人获取区块 9
+4. 索引人获取区块 10A
 5. 区块 10A 的数据传送给客户端
-6. Indexer detects reorg to 10B and rolls back 10A
+6. 索引人检测到区块重组到 10B 并回转到 10A
 7. 区块 9 的数据传送给客户端
-8. Indexer ingests block 10B
-9. Indexer ingests block 11
+8. 索引人获取区块 10B
+9. 索引人获取区块 11
 10. 区块 11 的数据传送给客户端
 
-From the point of view of the Indexer, things are progressing forward logically. Time is moving forward, though we did have to roll back an uncle block and play the block under consensus forward on top of it. Along the way, the Indexer serves requests using the latest state it knows about at that time.
+从索引人的角度来看，事情进展得完全合乎逻辑。 时间不断前行，尽管我们确实必须回滚一个相邻区块，并在共识下处理该区块。 在此过程中，索引人使用它当时知道的最新状态为请求提供服务。
 
-From the point of view of the client, however, things appear chaotic. The client observes that the responses were for blocks 8, 10, 9, and 11 in that order. We call this the "block wobble" problem. When a client experiences block wobble, data may appear to contradict itself over time. The situation worsens when we consider that Indexers do not all ingest the latest blocks simultaneously, and your requests may be routed to multiple Indexers.
+然而，从客户的角度来看，事情却显得很混乱。 客户端观察到响应依次是区块 8、10、9 和 11。 我们称之为“区块摆动”问题。 当客户端遇到区块摆动时，数据可能会随着时间的推移而自相矛盾。 当考虑到索引人不会同时获取最新区块，并且您的请求可能会被路由到多个索引人的时候，情况会变得更糟。
 
 客户端和服务器有责任协同工作，以便向用户提供一致的数据。 根据所需的一致性目标的不同，我们必须使用不同的方法，因为没有一个适合所有问题的完美解决方案。
 
-Reasoning through the implications of distributed systems is hard, but the fix may not be! We've established APIs and patterns to help you navigate some common use-cases. The following examples illustrate those patterns but still elide details required by production code (like error handling and cancellation) to not obfuscate the main ideas.
+通过分布式系统的影响进行推理是困难的，但修复可能不是！ 我们已经建立了一些 API 和模式来帮助您解决一些常见的用例。 以下示例说明了这些模式，但仍然省略了生产代码所需的细节（如错误处理和消除），以免混淆主要思想。
 
 ## 轮询更新的数据
 
-The Graph provides the `block: { number_gte: $minBlock }` API, which ensures that the response is for a single block equal or higher to `$minBlock`. If the request is made to a `graph-node` instance and the min block is not yet synced, `graph-node` will return an error. If `graph-node` has synced min block, it will run the response for the latest block. If the request is made to an Edge & Node Gateway, the Gateway will filter out any Indexers that have not yet synced min block and make the request for the latest block the Indexer has synced.
+Graph 提供 `block: { number_gte: $minBlock }` API，确保响应是针对等于或高于 `$minBlock` 的单个区块。 如果向 `graph-node` 实例发出请求并且最小区块尚未同步，则 `graph-node` 将返回错误。 如果 `graph-node` 已同步最小区块，它将返回最新区块的响应。 如果请求是发给 Edge & Node 网关的，网关将过滤掉任何尚未同步最小区块的索引人，并请求索引人已同步的最新区块。
 
 我们可以使用 `number_gte`， 从而确保在循环中轮询数据时，时间不会倒流。 这是一个例子：
 
@@ -131,4 +131,4 @@ async function getDomainNames() {
 }
 ```
 
-Note that in case of a re-org, the client will need to retry from the first request to update the block hash to a non-uncle block.
+请注意，在重组的情况下，客户端将需要从第一个请求重试，以将区块hash更新为非相邻区块。
