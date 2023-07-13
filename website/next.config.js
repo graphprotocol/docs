@@ -45,12 +45,7 @@ export default withNextra({
     {
       source: '/',
       destination: '/en/',
-      permanent: false,
-    },
-    {
-      source: '/en/substreams/',
-      destination: '/en/substreams/README/',
-      permanent: false,
+      permanent: true,
     },
     {
       source: '/en/arbitrum-faq/',
@@ -60,6 +55,16 @@ export default withNextra({
     {
       source: '/en/firehose/',
       destination: '/en/firehose/README/',
+      permanent: false,
+    },
+    {
+      source: '/en/querying/graph-client/',
+      destination: '/en/querying/graph-client/README/',
+      permanent: false,
+    },
+    {
+      source: '/en/substreams/',
+      destination: '/en/substreams/README/',
       permanent: false,
     },
   ],
