@@ -73,7 +73,7 @@ cargo run -p graph-node --release -- \
 
 Veja uma configuração de exemplo completa do Kubernetes no [repositório de indexer](https://github.com/graphprotocol/indexer/tree/main/k8s).
 
-### Portas
+### Os básicos do Kubernetes
 
 Durante a execução, o Graph Node expõe as seguintes portas:
 
@@ -102,12 +102,8 @@ Um arquivo de configuração [TOML](https://toml.io/en/) pode ser usado para faz
 Um arquivo mínimo `config.toml` pode ser fornecido; o seguinte arquivo é o equivalente à opção de linha de comando --postgres-url:
 
 ```toml
-[store]
-[store.primary]
-connection="<.. postgres-url argument ..>"
-[deployment]
-[[deployment.rule]]
-indexers = [ "<.. list of all indexing nodes ..>" ]
+git clone http://github.com/graphprotocol/graph-node
+cd graph-node/docker
 ```
 
 Veja a documentação completa do `config.toml` na documentação do [Graph Node](https://github.com/graphprotocol/graph-node/blob/master/docs/config.md).
@@ -123,6 +119,59 @@ A indexação de Graph Nodes pode escalar horizontalmente, com a execução de v
 Levando em conta vários Graph Nodes, é necessário gerir o lançamento de novos subgraphs para que o mesmo subgraph não seja indexado por dois nodes diferentes, o que levaria a colisões. Isto é possível regras de lançamento, que também podem especificar em qual `shard` os dados de um subgraph devem ser armazenados, caso seja usado o sharding de bancos de dados. As regras de lançamento podem combinar com o nome do subgraph e com a rede que o lançamento indexa para fazer uma decisão.
 
 Exemplo de configuração de regra de lançamento:
+
+```toml
+./setup.sh
+```
+
+Leia mais sobre as regras de lançamento [aqui](https://github.com/graphprotocol/graph-node/blob/master/docs/config.md#controlling-deployment).
+
+#### Nodes dedicados de query
+
+Os nodes podem ser configurados explicitamente para fins de query ao incluir o seguinte no arquivo de configuração:
+
+```toml
+docker-compose up
+```
+
+Qualquer node cujo --node-id combina com a expressão regular será programado para responder apenas a queries.
+
+#### Escalamento de bancos de dados via sharding
+
+Para a maioria dos casos de uso, um único banco de dados Postgres é suficiente para apoiar uma instância de graph-node. Quando uma instância de graph-node cresce mais que um único banco Postgres, é possível dividir o armazenamento dos dados do graph-node entre múltiplos bancos Postgres. Todos os bancos de dados, juntos, formam o armazenamento da instância do graph-node. Cada banco de dados individual é chamado de shard.
+
+Os shards são úteis para dividir lançamentos de subgraph em múltiplos bancos de dados, e podem também ser configurados a usarem réplicas para dividir a carga de query entre bancos de dados. Isto inclui a configuração do número de conexões disponíveis do banco que cada `graph-node` deve manter em seu pool de conexão para cada banco, o que fica cada vez mais importante conforme são indexados mais subgraphs.
+
+O sharding torna-se útil quando o seu banco de dados existente não aguenta o peso do Graph Node, e quando não é mais possível aumentar o tamanho do banco.
+
+> Geralmente, antes de começar com shards, é melhor maximizar o tamanho de um único banco de dados. Uma exceção é onde o tráfego de queries é dividido de maneira muito desigual entre subgraphs; nestes casos, pode ser de bom valor que os subgraphs de alto volume sejam mantidos em um shard e todo o resto em outro, porque aquele setup aumenta muito a chance dos dados para os subgraphs de alto volume permanecerem no cache db-internal e não serem substituídos por dados de menor prioridade nos subgraphs de baixo volume.
+
+Em termos de configuração de conexões, comece com o max_connections no postgresql.conf configurado em 400 (ou talvez até 200) e preste atenção nas métricas do Prometheus store_connection_wait_time_ms e store_connection_checkout_count. Tempos de espera óbvios (acima de 5ms) indicam que há poucas conexões disponíveis; também podem ser causados por atividade excessiva no banco de dados (como uso alto de CPU). Mas caso o banco de dados pareça estável fora isto, os tempos de espera longos indicam uma necessidade de aumento no número de conexões. Na configuração, há um limite máximo de conexões que cada instância graph-node pode usar, e o Graph Node não manterá conexões abertas caso não sejam necessárias.
+
+Leia mais sobre configuração de armazenamento [aqui](https://github.com/graphprotocol/graph-node/blob/master/docs/config.md#configuring-multiple-databases).
+
+#### Ingestão dedicada de blocos
+
+Caso hajam múltiplos nodes configurados, especifique um node a ser responsável pela ingestão de novos blocos, para que todos os nodes de indexação configurados não consultem o topo da cadeia. Isto é feito como parte do namespace `chains`, a especificar o `node_id` usado para ingestão de blocos:
+
+```toml
+[store]
+[store.primary]
+connection="<.. postgres-url argument ..>"
+[deployment]
+[[deployment.rule]]
+indexers = [ "<.. list of all indexing nodes ..>" ]
+```
+
+#### Apoio a múltiplas redes
+
+O Graph Protocol só aumenta o número de redes com apoio a recompensas de indexing, e existem muitos subgraphs a indexarem redes não apoiadas que um indexer gostaria de processar. O arquivo `config.toml` permite a configuração expressiva e flexível de:
+
+- Múltiplas redes
+- Múltiplos provedores por rede (isto pode permitir a separação de peso entre eles, e pode permitir a configuração de nodes completos além de nodes de arquivo; o Graph Node prefere provedores mais baratos, caso permita uma carga de trabalho).
+- Detalhes adicionais de provedor, como recursos, autenticação e tipo (para apoio experimental ao Firehose)
+
+A seção `[chains]` controla os provedores de ethereum a que o graph-node se conecta, e o local de armazenamento de blocos e outros metadados para cada chain. O seguinte exemplo configura duas chains, mainnet e kovan, onde blocos para a mainnet são armazenados no shard vip e blocos para kovan vão para o shard primário. A chain da mainnet pode usar dois provedores diferentes, sendo que o kovan só tem um provedor.
 
 ```toml
 [deployment]
@@ -150,66 +199,6 @@ indexers = [
   ]
 ```
 
-Leia mais sobre as regras de lançamento [aqui](https://github.com/graphprotocol/graph-node/blob/master/docs/config.md#controlling-deployment).
-
-#### Nodes dedicados de query
-
-Os nodes podem ser configurados explicitamente para fins de query ao incluir o seguinte no arquivo de configuração:
-
-```toml
-[general]
-query = "<regular expression>"
-```
-
-Qualquer node cujo --node-id combina com a expressão regular será programado para responder apenas a queries.
-
-#### Escalamento de banco de dados via sharding
-
-Para a maioria dos casos de uso, um único banco de dados Postgres é suficiente para apoiar uma instância de graph-node. Quando uma instância de graph-node cresce mais que um único banco Postgres, é possível dividir o armazenamento dos dados do graph-node entre múltiplos bancos Postgres. Todos os bancos de dados, juntos, formam o armazenamento da instância do graph-node. Cada banco de dados individual é chamado de shard.
-
-Os shards são úteis para dividir lançamentos de subgraph em múltiplos bancos de dados, e podem também ser configurados a usarem réplicas para dividir a carga de query entre bancos de dados. Isto inclui a configuração do número de conexões disponíveis do banco que cada `graph-node` deve manter em seu pool de conexão para cada banco, o que fica cada vez mais importante conforme são indexados mais subgraphs.
-
-O sharding torna-se útil quando o seu banco de dados existente não aguenta o peso do Graph Node, e quando não é mais possível aumentar o tamanho do banco.
-
-> Geralmente, antes de começar com shards, é melhor maximizar o tamanho de um único banco de dados. Uma exceção é onde o tráfego de queries é dividido de maneira muito desigual entre subgraphs; nestes casos, pode ser de bom valor que os subgraphs de alto volume sejam mantidos em um shard e todo o resto em outro, porque aquele setup aumenta muito a chance dos dados para os subgraphs de alto volume permanecerem no cache db-internal e não serem substituídos por dados de menor prioridade nos subgraphs de baixo volume.
-
-Em termos de configuração de conexões, comece com o max_connections no postgresql.conf configurado em 400 (ou talvez até 200) e preste atenção nas métricas do Prometheus store_connection_wait_time_ms e store_connection_checkout_count. Tempos de espera óbvios (acima de 5ms) indicam que há poucas conexões disponíveis; também podem ser causados por atividade excessiva no banco de dados (como uso alto de CPU). Mas caso o banco de dados pareça estável fora isto, os tempos de espera longos indicam uma necessidade de aumento no número de conexões. Na configuração, há um limite máximo de conexões que cada instância graph-node pode usar, e o Graph Node não manterá conexões abertas caso não sejam necessárias.
-
-Leia mais sobre configuração de armazenamento [aqui](https://github.com/graphprotocol/graph-node/blob/master/docs/config.md#configuring-multiple-databases).
-
-#### Ingestão dedicada de blocos
-
-Caso hajam múltiplos nodes configurados, especifique um node a ser responsável pela ingestão de novos blocos, para que todos os nodes de indexação configurados não consultem o topo da cadeia. Isto é feito como parte do namespace `chains`, a especificar o `node_id` usado para ingestão de blocos:
-
-```toml
-[chains]
-ingestor = "block_ingestor_node"
-```
-
-#### Apoio a múltiplas redes
-
-O Graph Protocol só aumenta o número de redes com apoio a recompensas de indexing, e existem muitos subgraphs a indexarem redes não apoiadas que um indexer gostaria de processar. O arquivo `config.toml` permite a configuração expressiva e flexível de:
-
-- Múltiplas redes
-- Múltiplos provedores por rede (isto pode permitir a separação de peso entre eles, e pode permitir a configuração de nodes completos além de nodes de arquivo; o Graph Node prefere provedores mais baratos, caso permita uma carga de trabalho).
-- Detalhes adicionais de provedor, como recursos, autenticação e tipo (para apoio experimental ao Firehose)
-
-A seção `[chains]` controla os provedores de ethereum a que o graph-node se conecta, e o local de armazenamento de blocos e outros metadados para cada chain. O seguinte exemplo configura duas chains, mainnet e kovan, onde blocos para a mainnet são armazenados no shard vip e blocos para kovan vão para o shard primário. A chain da mainnet pode usar dois provedores diferentes, sendo que o kovan só tem um provedor.
-
-```toml
-[chains]
-ingestor = "block_ingestor_node"
-[chains.mainnet]
-shard = "vip"
-provider = [
-  { label = "mainnet1", url = "http://..", features = [], headers = { Authorization = "Bearer foo" } },
-  { label = "mainnet2", url = "http://..", features = [ "archive", "traces" ] }
-]
-[chains.kovan]
-shard = "primary"
-provider = [ { label = "kovan", url = "http://..", features = [] } ]
-```
-
 Leia mais sobre configuração de provedores [aqui](https://github.com/graphprotocol/graph-node/blob/master/docs/config.md#configuring-ethereum-providers).
 
 ### Variáveis de ambiente
@@ -220,7 +209,7 @@ O Graph Node apoia uma gama de variáveis de ambiente, que podem permitir recurs
 
 Os utilizadores a operar um setup de indexing escalado, com configurações avançadas, podem ganhar mais ao gerir os seus Graph Nodes com o Kubernetes.
 
-- O repositório de indexer tem [uma referência de exemplo do Kubernetes](https://github.com/graphprotocol/indexer/tree/main/k8s)
+- O repositório de indexadores tem uma [referência de exemplo do Kubernetes](https://github.com/graphprotocol/indexer/tree/main/k8s)
 - O [Launchpad](https://docs.graphops.xyz/launchpad/intro) é um conjunto de ferramentas para executar um Indexer do Graph Protocol no Kubernetes, mantido pelo GraphOps. Ele providencia um conjunto de charts Helm e uma CLI para gerir um lançamento de Graph Node.
 
 ### Como gerir o Graph Node
@@ -249,7 +238,7 @@ A documentação completa dos comandos do `graphman` está no repositório do Gr
 
 ### Como trabalhar com subgraphs
 
-#### API de estado de indexing
+#### API de estado de indexação
 
 Inicialmente disponível na porta 8030/graphql, a API de estado de indexação expõe uma gama de métodos para conferir o estado da indexação para subgraphs diferentes, conferir provas de indexação, inspecionar características de subgraphs, e mais.
 
@@ -268,7 +257,7 @@ Estes estágios são segmentados (por ex., podem ser executados em paralelo), ma
 Causas comuns de lentidão na indexação:
 
 - Tempo para encontrar eventos relevantes na chain (handlers de chamada em particular podem ser lentos, dada a dependência no `trace_filter`)
-- Fazer números grandes de `eth_calls` como parte de handlers
+- Fazer uma grande quantidade de `eth_calls` como parte de handlers
 - Excesso de interações no armazenamento durante a execução
 - Muitos dados para guardar no armazenamento
 - Muitos eventos a serem processados
