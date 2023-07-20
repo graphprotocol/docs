@@ -1,0 +1,213 @@
+---
+title: सबस्ट्रीम-संचालित सबग्राफ
+---
+
+[Substreams](/सबस्ट्रीम/रीडमी) ब्लॉकचेन डेटा को संसाधित करने के लिए एक नया ढांचा है, जिसे ग्राफ़ नेटवर्क के लिए स्ट्रीमिंगफ़ास्ट द्वारा विकसित किया गया है। एक सबस्ट्रीम मॉड्यूल इकाई परिवर्तनों को आउटपुट कर सकता है, जो सबग्राफ इकाइयों के साथ संगत हैं। एक सबग्राफ ऐसे सबस्ट्रीम मॉड्यूल को डेटा स्रोत के रूप में उपयोग कर सकता है, जो सबग्राफ डेवलपर्स के लिए सबस्ट्रीम की अनुक्रमण गति और अतिरिक्त डेटा लाता है।
+
+> यह कुकबुक इस [संदर्भ के रूप में सबस्ट्रीम-संचालित सबग्राफ] \(https://github.com/graphprotocol/graph-tooling/tree/main/examples/substreams-powered-subgraph) का उपयोग करती है।
+
+## आवश्यकताएं
+
+इस कुकबुक के लिए [yarn](https://yarnpkg.com/) के साथ-साथ [स्थानीय सबस्ट्रीम विकास के लिए आवश्यक निर्भरताएं](https://substreams.streamingfast.io/developers-guide/installation-requirements) की आवश्यकता होती है।
+
+## सबस्ट्रीम पैकेज को परिभाषित करना
+
+एक सबस्ट्रीम पैकेज प्रकारों से बना होता है ([प्रोटोकॉल बफ़र्स] \(https://protobuf.dev/) के रूप में परिभाषित), मॉड्यूल (रस्ट में लिखा गया), और एक `substreams.yaml` फ़ाइल जो प्रकारों को संदर्भित करती है, और निर्दिष्ट करती है कि मॉड्यूल कैसे हैं ट्रिगर हो गए हैं. [सबस्ट्रीम विकास के बारे में और जानें](/सबस्ट्रीम/रीडमी)।
+
+विचाराधीन सबस्ट्रीम पैकेज मेननेट एथेरियम पर अनुबंध परिनियोजन का पता लगाता है, सभी नए तैनात अनुबंधों के लिए निर्माण ब्लॉक और टाइमस्टैम्प को ट्रैक करता है। ऐसा करने के लिए, `/proto/example.proto` में एक समर्पित `अनुबंध` प्रकार है ([प्रोटोकॉल बफ़र्स को परिभाषित करने के बारे में और जानें](https://protobuf.dev/programming-guides/proto3/#simple)):
+
+```proto
+syntax = "proto3";
+
+package example;
+
+message Contracts {
+  repeated Contract contracts = 1;
+}
+
+message Contract {
+    string address = 1;
+    uint64 blockNumber = 2;
+    string timestamp = 3;
+    uint64 ordinal = 4;
+}
+```
+
+सबस्ट्रीम पैकेज का मुख्य तर्क `lib.rs` में एक `map_contract` मॉड्यूल है, जो प्रत्येक ब्लॉक को संसाधित करता है, क्रिएट कॉल के लिए फ़िल्टर करता है जो वापस नहीं आया, और `कॉन्ट्रैक्ट` लौटाता है:
+
+```
+#[substreams::handlers::map]
+fn map_contract(block: eth::v2::Block) -> Result<Contracts, substreams::errors::Error> {
+    let contracts = block
+        .transactions()
+        .flat_map(|tx| {
+            tx.calls
+                .iter()
+                .filter(|call| !call.state_reverted)
+                .filter(|call| call.call_type == eth::v2::CallType::Create as i32)
+                .map(|call| Contract {
+                    address: format!("0x{}", Hex(&call.address)),
+                    block_number: block.number,
+                    timestamp: block.timestamp_seconds().to_string(),
+                    ordinal: tx.begin_ordinal,
+                })
+        })
+        .collect();
+    Ok(Contracts { contracts })
+}
+```
+
+एक Substreams पैकेज सबग्राफ द्वारा उपयोग किया जा सकता है जब तक उसमें एक मॉड्यूल हो जो संगत संदर्भ परिवर्तनों को उत्पन्न करता है। उदाहरण Substreams पैकेज में lib.rs में एक अतिरिक्त graph_out मॉड्यूल होता है जो substreams_entity_change::pb::entity::EntityChanges आउटपुट लौटाता है, जिसे ग्राफ नोड द्वारा प्रसंस्कृत किया जा सकता है।
+
+> `substreams_entity_change` क्रेट में केवल इकाई परिवर्तन उत्पन्न करने के लिए एक समर्पित `टेबल्स` फ़ंक्शन भी है ([documentation](https://docs.rs/substreams-entity-change/1.2.2/substreams_entity_change/tables/index.html)). उत्पन्न इकाई परिवर्तन संबंधित सबग्राफ के `subgraph.graphql` में परिभाषित `schema.graphql` इकाइयों के साथ संगत होना चाहिए।
+
+```
+#[substreams::handlers::map]
+pub fn graph_out(contracts: Contracts) -> Result<EntityChanges, substreams::errors::Error> {
+    // hash map of name to a table
+    let mut tables = Tables::new();
+
+    for contract in contracts.contracts.into_iter() {
+        tables
+            .create_row("Contract", contract.address)
+            .set("timestamp", contract.timestamp)
+            .set("blockNumber", contract.block_number);
+    }
+
+    Ok(tables.to_entity_changes())
+}
+```
+
+इन प्रकारों और मॉड्यूल को `substreams.yaml` में एक साथ खींचा गया है:
+
+```
+specVersion: v0.1.0
+package:
+  name: 'substreams_test' # the name to be used in the .spkg
+  version: v1.0.1 # the version to use when creating the .spkg
+
+imports: # dependencies
+  entity: https://github.com/streamingfast/substreams-entity-change/releases/download/v0.2.1/substreams-entity-change-v0.2.1.spkg
+
+protobuf: # specifies custom types for use by Substreams modules
+  files:
+    - example.proto
+  importPaths:
+    - ./proto
+
+binaries:
+  default:
+    type: wasm/rust-v1
+    file: ./target/wasm32-unknown-unknown/release/substreams.wasm
+
+modules: # specify modules with their inputs and outputs.
+  - name: map_contract
+    kind: map
+    inputs:
+      - source: sf.ethereum.type.v2.Block
+    output:
+      type: proto:test.Contracts
+
+  - name: graph_out
+    kind: map
+    inputs:
+      - map: map_contract
+    output:
+      type: proto:substreams.entity.v1.EntityChanges # this type can be consumed by Graph Node
+
+```
+
+आप `सबस्ट्रीम ग्राफ़` चलाकर किसी ब्लॉक से `map_contract` से `graph_out` तक के समग्र "प्रवाह" की जांच कर सकते हैं:
+
+```mermaid
+graph TD;
+  map_contract[map: map_contract];
+  sf.ethereum.type.v2.Block[source: sf.ethereum.type.v2.Block] --> map_contract;
+  graph_out[map: graph_out];
+  map_contract --> graph_out;
+```
+
+इस सबस्ट्रीम पैकेज को सबग्राफ द्वारा उपभोग के लिए तैयार करने के लिए, आपको निम्नलिखित कमांड चलाने होंगे:
+
+```bash
+yarn substreams:protogen # generates types in /src/pb
+yarn substreams:build # builds the substreams
+yarn substreams:package # packages the substreams in a .spkg file
+
+# alternatively, yarn substreams:prepare calls all of the above commands
+```
+
+> यदि आप अंतर्निहित सबस्ट्रीम कमांड को समझना चाहते हैं तो इन स्क्रिप्ट को `package.json` फ़ाइल में परिभाषित किया गया है
+
+यह पैकेज नाम और `substreams.yaml` के संस्करण के आधार पर एक `spkg` फ़ाइल उत्पन्न करता है। `spkg` फ़ाइल में वह सारी जानकारी है जो ग्राफ़ नोड को इस सबस्ट्रीम पैकेज को ग्रहण करने के लिए आवश्यक है।
+
+> यदि आप सबस्ट्रीम पैकेज को अपडेट करते हैं, तो आपके द्वारा किए गए परिवर्तनों के आधार पर, आपको उपरोक्त कुछ या सभी कमांड चलाने की आवश्यकता हो सकती है ताकि `spkg` अद्यतित रहे।
+
+## सबस्ट्रीम-संचालित सबग्राफ को परिभाषित करना
+
+Substreams-प्रचालित सबग्राफ में "सबस्ट्रीम्स" का एक नया "प्रकार" डेटा स्रोत के रूप में प्रस्तुत होता है। ऐसे सबग्राफ में केवल एक ही डेटा स्रोत हो सकता है। यह डेटा स्रोत सबस्ट्रीम्स नेटवर्क, सबस्ट्रीम्स पैकेज (spkg) को एक संबंधित फ़ाइल स्थान और उस सबस्ट्रीम्स पैकेज के भीतर एक मॉड्यूल को निर्दिष्ट करना चाहिए जो सबग्राफ-संगत इकाइयों के लिए परिवर्तनों को उत्पन्न करता है (इस मामले में, ऊपर दिए गए Substreams पैकेज से map_entity_changes)। मैपिंग निर्दिष्ट होता है, लेकिन यह सिर्फ मैपिंग प्रकार ("substreams/graph-entities") और एपीआई संस्करण की पहचान करता है।
+
+```yaml
+specVersion: 0.0.4
+description: Ethereum Contract Tracking Subgraph (powered by Substreams)
+repository: https://github.com/graphprotocol/graph-tooling
+schema:
+  file: schema.graphql
+dataSources:
+  - kind: substreams
+    name: substream_test
+    network: mainnet
+    source:
+      package:
+        moduleName: graph_out
+        file: substreams-test-v1.0.1.spkg
+    mapping:
+      kind: substreams/graph-entities
+      apiVersion: 0.0.5
+```
+
+Subgraph.yaml में एक स्कीमा फ़ाइल का संदर्भ भी होता है। इस फ़ाइल के लिए आवश्यकताएं बदली नहीं हैं, लेकिन निर्दिष्ट किए गए इकाइयाँ subgraph.yaml में संदर्भित Substreams मॉड्यूल द्वारा उत्पन्न परिवर्तनों के संगत होने चाहिए।
+
+```graphql
+type Contract @entity {
+  id: ID!
+
+  "The timestamp when the contract was deployed"
+  timestamp: String!
+
+  "The block number of the contract deployment"
+  blockNumber: BigInt!
+}
+```
+
+उपरोक्त को देखते हुए, सबग्राफ डेवलपर्स इस सबस्ट्रीम-संचालित सबग्राफ को तैनात करने के लिए ग्राफ़ सीएलआई का उपयोग कर सकते हैं।
+
+> मेननेट एथेरियम को अनुक्रमित करने वाले सबस्ट्रीम-संचालित सबग्राफ को [सबग्राफ स्टूडियो] \(https://thegraph.com/studio/) पर तैनात किया जा सकता है।
+
+```bash
+yarn install # install graph-cli
+yarn subgraph:build # build the subgraph
+yarn subgraph:deploy # deploy the subgraph
+```
+
+इतना ही! आपने एक सबस्ट्रीम-संचालित सबग्राफ बनाया और तैनात किया है।
+
+## सबस्ट्रीम-संचालित सबग्राफ की सेवा
+
+Substreams-प्रचालित सबग्राफ को सेव करने के लिए, ग्राफ नोड को संबंधित नेटवर्क के लिए एक Substreams प्रदाता के साथ कॉन्फ़िगर किया जाना चाहिए, साथ ही चेन हेड को ट्रैक करने के लिए एक फायरहोस या आरपीसी। इन प्रदाताओं को एक config.toml फ़ाइल के माध्यम से कॉन्फ़िगर किया जा सकता है:
+
+```toml
+[chains.mainnet]
+shard = "main"
+protocol = "ethereum"
+provider = [
+  { label = "substreams-provider-mainnet",
+    details = { type = "substreams",
+    url = "https://mainnet-substreams-url.grpc.substreams.io/",
+    token = "exampletokenhere" }},
+  { label = "firehose-provider-mainnet",
+    details = { type = "firehose",
+    url = "https://mainnet-firehose-url.grpc.firehose.io/",
+    token = "exampletokenhere" }},
+]
+```
