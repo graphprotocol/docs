@@ -4,17 +4,27 @@ title: सबस्ट्रीम-संचालित सबग्राफ
 
 [Substreams](/सबस्ट्रीम/रीडमी) ब्लॉकचेन डेटा को संसाधित करने के लिए एक नया ढांचा है, जिसे ग्राफ़ नेटवर्क के लिए स्ट्रीमिंगफ़ास्ट द्वारा विकसित किया गया है। एक सबस्ट्रीम मॉड्यूल इकाई परिवर्तनों को आउटपुट कर सकता है, जो सबग्राफ इकाइयों के साथ संगत हैं। एक सबग्राफ ऐसे सबस्ट्रीम मॉड्यूल को डेटा स्रोत के रूप में उपयोग कर सकता है, जो सबग्राफ डेवलपर्स के लिए सबस्ट्रीम की अनुक्रमण गति और अतिरिक्त डेटा लाता है।
 
-> यह कुकबुक इस [संदर्भ के रूप में सबस्ट्रीम-संचालित सबग्राफ] \(https://github.com/graphprotocol/graph-tooling/tree/main/examples/substreams-powered-subgraph) का उपयोग करती है।
+## Requirements
 
-## आवश्यकताएं
+This cookbook requires [yarn](https://yarnpkg.com/), [the dependencies necessary for local Substreams development](https://substreams.streamingfast.io/developers-guide/installation-requirements), and the latest version of Graph CLI (>=0.52.0):
 
-इस कुकबुक के लिए [yarn](https://yarnpkg.com/) के साथ-साथ [स्थानीय सबस्ट्रीम विकास के लिए आवश्यक निर्भरताएं](https://substreams.streamingfast.io/developers-guide/installation-requirements) की आवश्यकता होती है।
+```
+npm install -g @graphprotocol/graph-cli
+```
 
-## सबस्ट्रीम पैकेज को परिभाषित करना
+## Get the cookbook
 
-एक सबस्ट्रीम पैकेज प्रकारों से बना होता है ([प्रोटोकॉल बफ़र्स] \(https://protobuf.dev/) के रूप में परिभाषित), मॉड्यूल (रस्ट में लिखा गया), और एक `substreams.yaml` फ़ाइल जो प्रकारों को संदर्भित करती है, और निर्दिष्ट करती है कि मॉड्यूल कैसे हैं ट्रिगर हो गए हैं. [सबस्ट्रीम विकास के बारे में और जानें](/सबस्ट्रीम/रीडमी)।
+> This cookbook uses this [Substreams-powered subgraph as a reference](https://github.com/graphprotocol/graph-tooling/tree/main/examples/substreams-powered-subgraph).
 
-विचाराधीन सबस्ट्रीम पैकेज मेननेट एथेरियम पर अनुबंध परिनियोजन का पता लगाता है, सभी नए तैनात अनुबंधों के लिए निर्माण ब्लॉक और टाइमस्टैम्प को ट्रैक करता है। ऐसा करने के लिए, `/proto/example.proto` में एक समर्पित `अनुबंध` प्रकार है ([प्रोटोकॉल बफ़र्स को परिभाषित करने के बारे में और जानें](https://protobuf.dev/programming-guides/proto3/#simple)):
+```
+graph init --from-example substreams-powered-subgraph
+```
+
+## Defining a Substreams package
+
+A Substreams package is composed of types (defined as [Protocol Buffers](https://protobuf.dev/)), modules (written in Rust), and a `substreams.yaml` file which references the types, and specifies how modules are triggered. [Visit the Substreams documentation to learn more about Substreams development](/substreams/README), and check out [awesome-substreams](https://github.com/pinax-network/awesome-substreams) and the [Substreams cookbook](https://github.com/pinax-network/substreams-cookbook) for more examples.
+
+The Substreams package in question detects contract deployments on Mainnet Ethereum, tracking the creation block and timestamp for all newly deployed contracts. To do this, there is a dedicated `Contract` type in `/proto/example.proto` ([learn more about defining Protocol Buffers](https://protobuf.dev/programming-guides/proto3/#simple)):
 
 ```proto
 syntax = "proto3";
@@ -33,7 +43,7 @@ message Contract {
 }
 ```
 
-सबस्ट्रीम पैकेज का मुख्य तर्क `lib.rs` में एक `map_contract` मॉड्यूल है, जो प्रत्येक ब्लॉक को संसाधित करता है, क्रिएट कॉल के लिए फ़िल्टर करता है जो वापस नहीं आया, और `कॉन्ट्रैक्ट` लौटाता है:
+The core logic of the Substreams package is a `map_contract` module in `lib.rs`, which processes every block, filtering for Create calls which did not revert, returning `Contracts`:
 
 ```
 #[substreams::handlers::map]
@@ -57,9 +67,9 @@ fn map_contract(block: eth::v2::Block) -> Result<Contracts, substreams::errors::
 }
 ```
 
-एक Substreams पैकेज सबग्राफ द्वारा उपयोग किया जा सकता है जब तक उसमें एक मॉड्यूल हो जो संगत संदर्भ परिवर्तनों को उत्पन्न करता है। उदाहरण Substreams पैकेज में lib.rs में एक अतिरिक्त graph_out मॉड्यूल होता है जो substreams_entity_change::pb::entity::EntityChanges आउटपुट लौटाता है, जिसे ग्राफ नोड द्वारा प्रसंस्कृत किया जा सकता है।
+A Substreams package can be used by a subgraph as long as it has a module which outputs compatible entity changes. The example Substreams package has an additional `graph_out` module in `lib.rs` which returns a `substreams_entity_change::pb::entity::EntityChanges` output, which can be processed by Graph Node.
 
-> `substreams_entity_change` क्रेट में केवल इकाई परिवर्तन उत्पन्न करने के लिए एक समर्पित `टेबल्स` फ़ंक्शन भी है ([documentation](https://docs.rs/substreams-entity-change/1.2.2/substreams_entity_change/tables/index.html)). उत्पन्न इकाई परिवर्तन संबंधित सबग्राफ के `subgraph.graphql` में परिभाषित `schema.graphql` इकाइयों के साथ संगत होना चाहिए।
+> The `substreams_entity_change` crate also has a dedicated `Tables` function for simply generating entity changes ([documentation](https://docs.rs/substreams-entity-change/1.2.2/substreams_entity_change/tables/index.html)). The Entity Changes generated must be compatible with the `schema.graphql` entities defined in the `subgraph.graphql` of the corresponding subgraph.
 
 ```
 #[substreams::handlers::map]
@@ -78,7 +88,7 @@ pub fn graph_out(contracts: Contracts) -> Result<EntityChanges, substreams::erro
 }
 ```
 
-इन प्रकारों और मॉड्यूल को `substreams.yaml` में एक साथ खींचा गया है:
+These types and modules are pulled together in `substreams.yaml`:
 
 ```
 specVersion: v0.1.0
@@ -117,7 +127,7 @@ modules: # specify modules with their inputs and outputs.
 
 ```
 
-आप `सबस्ट्रीम ग्राफ़` चलाकर किसी ब्लॉक से `map_contract` से `graph_out` तक के समग्र "प्रवाह" की जांच कर सकते हैं:
+You can check the overall "flow" from a Block, to `map_contract` to `graph_out` by running `substreams graph`:
 
 ```mermaid
 graph TD;
@@ -127,7 +137,7 @@ graph TD;
   map_contract --> graph_out;
 ```
 
-इस सबस्ट्रीम पैकेज को सबग्राफ द्वारा उपभोग के लिए तैयार करने के लिए, आपको निम्नलिखित कमांड चलाने होंगे:
+To prepare this Substreams package for consumption by a subgraph, you must run the following commands:
 
 ```bash
 yarn substreams:protogen # generates types in /src/pb
@@ -137,15 +147,19 @@ yarn substreams:package # packages the substreams in a .spkg file
 # alternatively, yarn substreams:prepare calls all of the above commands
 ```
 
-> यदि आप अंतर्निहित सबस्ट्रीम कमांड को समझना चाहते हैं तो इन स्क्रिप्ट को `package.json` फ़ाइल में परिभाषित किया गया है
+> These scripts are defined in the `package.json` file if you want to understand the underlying substreams commands
 
-यह पैकेज नाम और `substreams.yaml` के संस्करण के आधार पर एक `spkg` फ़ाइल उत्पन्न करता है। `spkg` फ़ाइल में वह सारी जानकारी है जो ग्राफ़ नोड को इस सबस्ट्रीम पैकेज को ग्रहण करने के लिए आवश्यक है।
+This generates a `spkg` file based on the package name and version from `substreams.yaml`. The `spkg` file has all the information which Graph Node needs to ingest this Substreams package.
 
-> यदि आप सबस्ट्रीम पैकेज को अपडेट करते हैं, तो आपके द्वारा किए गए परिवर्तनों के आधार पर, आपको उपरोक्त कुछ या सभी कमांड चलाने की आवश्यकता हो सकती है ताकि `spkg` अद्यतित रहे।
+> If you update the Substreams package, depending on the changes you make, you may need to run some or all of the above commands so that the `spkg` is up to date.
 
-## सबस्ट्रीम-संचालित सबग्राफ को परिभाषित करना
+## Defining a Substreams-powered subgraph
 
-Substreams-प्रचालित सबग्राफ में "सबस्ट्रीम्स" का एक नया "प्रकार" डेटा स्रोत के रूप में प्रस्तुत होता है। ऐसे सबग्राफ में केवल एक ही डेटा स्रोत हो सकता है। यह डेटा स्रोत सबस्ट्रीम्स नेटवर्क, सबस्ट्रीम्स पैकेज (spkg) को एक संबंधित फ़ाइल स्थान और उस सबस्ट्रीम्स पैकेज के भीतर एक मॉड्यूल को निर्दिष्ट करना चाहिए जो सबग्राफ-संगत इकाइयों के लिए परिवर्तनों को उत्पन्न करता है (इस मामले में, ऊपर दिए गए Substreams पैकेज से map_entity_changes)। मैपिंग निर्दिष्ट होता है, लेकिन यह सिर्फ मैपिंग प्रकार ("substreams/graph-entities") और एपीआई संस्करण की पहचान करता है।
+Substreams-powered subgraphs introduce a new `kind` of data source, "substreams". Such subgraphs can only have one data source.
+
+This data source must specify the indexed network, the Substreams package (`spkg`) as a relative file location, and the module within that Substreams package which produces subgraph-compatible entity changes (in this case `map_entity_changes`, from the Substreams package above). The mapping is specified, but simply identifies the mapping kind ("substreams/graph-entities") and the apiVersion.
+
+> Currently the Subgraph Studio and The Graph Network support Substreams-powered subgraphs which index `mainnet` (Mainnet Ethereum).
 
 ```yaml
 specVersion: 0.0.4
@@ -166,7 +180,7 @@ dataSources:
       apiVersion: 0.0.5
 ```
 
-Subgraph.yaml में एक स्कीमा फ़ाइल का संदर्भ भी होता है। इस फ़ाइल के लिए आवश्यकताएं बदली नहीं हैं, लेकिन निर्दिष्ट किए गए इकाइयाँ subgraph.yaml में संदर्भित Substreams मॉड्यूल द्वारा उत्पन्न परिवर्तनों के संगत होने चाहिए।
+The `subgraph.yaml` also references a schema file. The requirements for this file are unchanged, but the entities specified must be compatible with the entity changes produced by the Substreams module referenced in the `subgraph.yaml`.
 
 ```graphql
 type Contract @entity {
@@ -180,9 +194,9 @@ type Contract @entity {
 }
 ```
 
-उपरोक्त को देखते हुए, सबग्राफ डेवलपर्स इस सबस्ट्रीम-संचालित सबग्राफ को तैनात करने के लिए ग्राफ़ सीएलआई का उपयोग कर सकते हैं।
+Given the above, subgraph developers can use Graph CLI to deploy this Substreams-powered subgraph.
 
-> मेननेट एथेरियम को अनुक्रमित करने वाले सबस्ट्रीम-संचालित सबग्राफ को [सबग्राफ स्टूडियो] \(https://thegraph.com/studio/) पर तैनात किया जा सकता है।
+> Substreams-powered subgraphs indexing mainnet Ethereum can be deployed to the [Subgraph Studio](https://thegraph.com/studio/).
 
 ```bash
 yarn install # install graph-cli
@@ -190,11 +204,11 @@ yarn subgraph:build # build the subgraph
 yarn subgraph:deploy # deploy the subgraph
 ```
 
-इतना ही! आपने एक सबस्ट्रीम-संचालित सबग्राफ बनाया और तैनात किया है।
+That's it! You have built and deployed a Substreams-powered subgraph.
 
-## सबस्ट्रीम-संचालित सबग्राफ की सेवा
+## Serving Substreams-powered subgraphs
 
-Substreams-प्रचालित सबग्राफ को सेव करने के लिए, ग्राफ नोड को संबंधित नेटवर्क के लिए एक Substreams प्रदाता के साथ कॉन्फ़िगर किया जाना चाहिए, साथ ही चेन हेड को ट्रैक करने के लिए एक फायरहोस या आरपीसी। इन प्रदाताओं को एक config.toml फ़ाइल के माध्यम से कॉन्फ़िगर किया जा सकता है:
+In order to serve Substreams-powered subgraphs, Graph Node must be configured with a Substreams provider for the relevant network, as well as a Firehose or RPC to track the chain head. These providers can be configured via a `config.toml` file:
 
 ```toml
 [chains.mainnet]
