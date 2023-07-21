@@ -12,7 +12,7 @@ export function getSupportedNetworks() {
 
         const supportedOnHosted = chain.productDeployStatus.hostedService === ChainProductStatus.ALLOWED
         const supportedOnStudio = chain.studioHosted || chain.productDeployStatus.studio === ChainProductStatus.ALLOWED
-        const supportedOnNetwork = chain.networkPublishChainAllowStatusMap != null
+        const supportedOnNetwork = chain.networkPublishChainAllowStatusMap != null && !chain.testnet
 
         if (!supportedOnHosted && !supportedOnStudio && !supportedOnNetwork) {
           return null
@@ -25,6 +25,7 @@ export function getSupportedNetworks() {
           supportedOnHosted,
           supportedOnStudio,
           supportedOnNetwork,
+          substreams: chain.substreams,
           isBeta: chain.graphCliName !== 'mainnet', // TODO: Include a `beta` property in `@edgeandnode/common`?
         }
       })
