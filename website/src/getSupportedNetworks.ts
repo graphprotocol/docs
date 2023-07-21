@@ -12,7 +12,7 @@ export function getSupportedNetworks() {
 
         const supportedOnHosted = chain.productDeployStatus.hostedService === ChainProductStatus.ALLOWED
         const supportedOnStudio = chain.studioHosted || chain.productDeployStatus.studio === ChainProductStatus.ALLOWED
-        const supportedOnNetwork = chain.networkPublishChainAllowStatusMap != null
+        const supportedOnNetwork = chain.networkPublishChainAllowStatusMap != null && !chain.testnet
 
         if (!supportedOnHosted && !supportedOnStudio && !supportedOnNetwork) {
           return null
