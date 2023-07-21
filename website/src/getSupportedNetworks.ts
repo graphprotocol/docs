@@ -25,6 +25,7 @@ export function getSupportedNetworks() {
           supportedOnHosted,
           supportedOnStudio,
           supportedOnNetwork,
+          substreams: chain.substreams,
           isBeta: chain.graphCliName !== 'mainnet', // TODO: Include a `beta` property in `@edgeandnode/common`?
         }
       })
