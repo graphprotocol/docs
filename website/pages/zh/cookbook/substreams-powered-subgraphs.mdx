@@ -1,30 +1,30 @@
 ---
-title: Substreams-powered subgraphs
+title: 基于Substreams的子图
 ---
 
-[Substreams](/substreams/README) is a new framework for processing blockchain data, developed by StreamingFast for The Graph Network. A substreams modules can output entity changes, which are compatible with Subgraph entities. A subgraph can use such a Substreams module as a data source, bringing the indexing speed and additional data of Substreams to subgraph developers.
+[Substreams](/substreams/README) 是由StreamingFast为The Graph Network开发的一种处理区块链数据的新框架。Substreams模块可以输出与Subgraph实体兼容的实体变更。子图可以将这样的Substreams模块作为数据源，将Substreams的索引速度和附加数据带给子图开发者。
 
-## Requirements
+## 要求
 
-This cookbook requires [yarn](https://yarnpkg.com/), [the dependencies necessary for local Substreams development](https://substreams.streamingfast.io/developers-guide/installation-requirements), and the latest version of Graph CLI (>=0.52.0):
+本手册需要 [yarn](https://yarnpkg.com/) ，以及本地Substreams开发所需的依赖项 [the dependencies necessary for local Substreams development](https://substreams.streamingfast.io/developers-guide/installation-requirements)，以及最新版本的Graph CLI (>=0.52.0):
 
 ```
 npm install -g @graphprotocol/graph-cli
 ```
 
-## Get the cookbook
+## 获取手册
 
-> This cookbook uses this [Substreams-powered subgraph as a reference](https://github.com/graphprotocol/graph-tooling/tree/main/examples/substreams-powered-subgraph).
+> 本手册使用这个基于Substreams的子图[Substreams-powered subgraph as a reference](https://github.com/graphprotocol/graph-tooling/tree/main/examples/substreams-powered-subgraph)作为参考。
 
 ```
 graph init --from-example substreams-powered-subgraph
 ```
 
-## Defining a Substreams package
+## 定义Substreams包
 
-A Substreams package is composed of types (defined as [Protocol Buffers](https://protobuf.dev/)), modules (written in Rust), and a `substreams.yaml` file which references the types, and specifies how modules are triggered. [Visit the Substreams documentation to learn more about Substreams development](/substreams/README), and check out [awesome-substreams](https://github.com/pinax-network/awesome-substreams) and the [Substreams cookbook](https://github.com/pinax-network/substreams-cookbook) for more examples.
+Substreams（子流）包由类型（定义为 [Protocol Buffers](https://protobuf.dev/)）、模块（用 Rust 编写）和一个 `substreams.yaml` 文件组成，该文件引用类型并指定模块的触发方式。如果您想了解更多关于 Substreams 开发的信息，请访问 [Substreams 文档](/substreams/README)。另外，您还可以查看 [awesome-substreams](https://github.com/pinax-network/awesome-substreams) 和 [Substreams cookbook](https://github.com/pinax-network/substreams-cookbook) 来获取更多示例。
 
-The Substreams package in question detects contract deployments on Mainnet Ethereum, tracking the creation block and timestamp for all newly deployed contracts. To do this, there is a dedicated `Contract` type in `/proto/example.proto` ([learn more about defining Protocol Buffers](https://protobuf.dev/programming-guides/proto3/#simple)):
+该Substreams包可以检测以太坊主网上的合约部署，并跟踪所有新部署合约的创建块和时间戳。为此，在/proto/example.proto中有一个专门的Contract类型（了解更多关于定义Protocol Buffers的信息[learn more about defining Protocol Buffers](https://protobuf.dev/programming-guides/proto3/#simple)）：
 
 ```proto
 syntax = "proto3";
@@ -43,7 +43,7 @@ message Contract {
 }
 ```
 
-The core logic of the Substreams package is a `map_contract` module in `lib.rs`, which processes every block, filtering for Create calls which did not revert, returning `Contracts`:
+Substreams包的核心逻辑是lib.rs中的map_contract模块，它处理每个区块，过滤未回滚的Create调用，并返回Contracts：
 
 ```
 #[substreams::handlers::map]
@@ -67,9 +67,9 @@ fn map_contract(block: eth::v2::Block) -> Result<Contracts, substreams::errors::
 }
 ```
 
-A Substreams package can be used by a subgraph as long as it has a module which outputs compatible entity changes. The example Substreams package has an additional `graph_out` module in `lib.rs` which returns a `substreams_entity_change::pb::entity::EntityChanges` output, which can be processed by Graph Node.
+只要Substreams包有一个模块输出与子图兼容的实体变更，就可以被子图使用。示例Substreams包中还有一个额外的graph_out模块在lib.rs中，它返回一个substreams_entity_change::pb::entity::EntityChanges输出，Graph Node可以处理该输出。
 
-> The `substreams_entity_change` crate also has a dedicated `Tables` function for simply generating entity changes ([documentation](https://docs.rs/substreams-entity-change/1.2.2/substreams_entity_change/tables/index.html)). The Entity Changes generated must be compatible with the `schema.graphql` entities defined in the `subgraph.graphql` of the corresponding subgraph.
+> Substreams_entity_change crate还有一个专门的Tables函数，用于生成实体变更（文档[documentation](https://docs.rs/substreams-entity-change/1.2.2/substreams_entity_change/tables/index.html)）。生成的实体变更必须与相应子图的subgraph.graphql中定义的schema.graphql实体兼容。
 
 ```
 #[substreams::handlers::map]
@@ -88,18 +88,18 @@ pub fn graph_out(contracts: Contracts) -> Result<EntityChanges, substreams::erro
 }
 ```
 
-These types and modules are pulled together in `substreams.yaml`:
+这些类型和模块在substreams.yaml中汇集在一起：
 
 ```
 specVersion: v0.1.0
 package:
-  name: 'substreams_test' # the name to be used in the .spkg
-  version: v1.0.1 # the version to use when creating the .spkg
+  name: 'substreams_test' # 在 .spkg 中使用的名称
+  version: v1.0.1 # 创建 .spkg 时使用的版本
 
-imports: # dependencies
+imports: # 依赖项
   entity: https://github.com/streamingfast/substreams-entity-change/releases/download/v0.2.1/substreams-entity-change-v0.2.1.spkg
 
-protobuf: # specifies custom types for use by Substreams modules
+protobuf: # 为Substreams模块指定自定义类型
   files:
     - example.proto
   importPaths:
@@ -110,7 +110,7 @@ binaries:
     type: wasm/rust-v1
     file: ./target/wasm32-unknown-unknown/release/substreams.wasm
 
-modules: # specify modules with their inputs and outputs.
+modules: # 指定模块及其输入和输出
   - name: map_contract
     kind: map
     inputs:
@@ -123,11 +123,11 @@ modules: # specify modules with their inputs and outputs.
     inputs:
       - map: map_contract
     output:
-      type: proto:substreams.entity.v1.EntityChanges # this type can be consumed by Graph Node
+      type: proto:substreams.entity.v1.EntityChanges # 这个类型可以被Graph Node消费
 
 ```
 
-You can check the overall "flow" from a Block, to `map_contract` to `graph_out` by running `substreams graph`:
+您可以通过运行substreams graph来检查从区块到map_contract到graph_out的整体"流程"：
 
 ```mermaid
 graph TD;
@@ -137,29 +137,29 @@ graph TD;
   map_contract --> graph_out;
 ```
 
-To prepare this Substreams package for consumption by a subgraph, you must run the following commands:
+为了准备这个Substreams包供子图使用，您必须运行以下命令：
 
 ```bash
-yarn substreams:protogen # generates types in /src/pb
-yarn substreams:build # builds the substreams
-yarn substreams:package # packages the substreams in a .spkg file
+yarn substreams:protogen # 生成/src/pb中的类型
+yarn substreams:build # 构建Substreams
+yarn substreams:package # 将Substreams打包成.spkg文件
 
-# alternatively, yarn substreams:prepare calls all of the above commands
+# 或者，yarn substreams:prepare会调用上述所有命令
 ```
 
-> These scripts are defined in the `package.json` file if you want to understand the underlying substreams commands
+> 这些脚本在package.json文件中定义，如果想了解底层的Substreams命令，可以查看这些脚本。
 
-This generates a `spkg` file based on the package name and version from `substreams.yaml`. The `spkg` file has all the information which Graph Node needs to ingest this Substreams package.
+这将根据substreams.yaml中的包名称和版本生成一个spkg文件。spkg文件包含了Graph Node需要获取此Substreams包的所有信息。
 
-> If you update the Substreams package, depending on the changes you make, you may need to run some or all of the above commands so that the `spkg` is up to date.
+> 如果您更新了Substreams包，根据所做的更改，您可能需要运行部分或全部上述命令，以使spkg保持更新。
 
-## Defining a Substreams-powered subgraph
+## 定义一个基于Substreams的子图
 
-Substreams-powered subgraphs introduce a new `kind` of data source, "substreams". Such subgraphs can only have one data source.
+Substreams-powered subgraphs引入了一种名为"substreams"的新型数据源。这样的子图只能包含一个数据源。
 
-This data source must specify the indexed network, the Substreams package (`spkg`) as a relative file location, and the module within that Substreams package which produces subgraph-compatible entity changes (in this case `map_entity_changes`, from the Substreams package above). The mapping is specified, but simply identifies the mapping kind ("substreams/graph-entities") and the apiVersion.
+基于Substreams的子图引入了一种新的数据源类型，"substreams"。这样的子图只能有一个数据源。该数据源必须指定Substreams网络、Substreams包（spkg）的相对文件位置，以及该Substreams包中生成子图兼容实体变更的模块（在本例中为map_entity_changes）。映射是指定的，但只是标识了映射类型（"substreams/graph-entities"）和apiVersion。
 
-> Currently the Subgraph Studio and The Graph Network support Substreams-powered subgraphs which index `mainnet` (Mainnet Ethereum).
+> 目前，Subgraph Studio和The Graph Network支持使用Substreams强化的子图来索引"mainnet"（主网以太坊）数据。
 
 ```yaml
 specVersion: 0.0.4
@@ -180,7 +180,7 @@ dataSources:
       apiVersion: 0.0.5
 ```
 
-The `subgraph.yaml` also references a schema file. The requirements for this file are unchanged, but the entities specified must be compatible with the entity changes produced by the Substreams module referenced in the `subgraph.yaml`.
+Subgraph.yaml还引用了一个模式文件。对于这个文件的要求没有变化，但是指定的实体必须与subgraph.yaml中引用的Substreams模块生成的实体变更兼容。
 
 ```graphql
 type Contract @entity {
@@ -194,21 +194,21 @@ type Contract @entity {
 }
 ```
 
-Given the above, subgraph developers can use Graph CLI to deploy this Substreams-powered subgraph.
+有了以上内容，子图开发者可以使用Graph CLI部署这个基于Substreams的子图。
 
-> Substreams-powered subgraphs indexing mainnet Ethereum can be deployed to the [Subgraph Studio](https://thegraph.com/studio/).
+> 基于Substreams的子图索引以太坊主网可以部署到[Subgraph Studio](https://thegraph.com/studio/)。
 
 ```bash
-yarn install # install graph-cli
-yarn subgraph:build # build the subgraph
-yarn subgraph:deploy # deploy the subgraph
+yarn install # 安装graph-cli
+yarn subgraph:build # 构建子图
+yarn subgraph:deploy # 部署子图
 ```
 
-That's it! You have built and deployed a Substreams-powered subgraph.
+就是这样！您已经构建并部署了一个基于Substreams的子图。
 
-## Serving Substreams-powered subgraphs
+## 服务基于Substreams的子图
 
-In order to serve Substreams-powered subgraphs, Graph Node must be configured with a Substreams provider for the relevant network, as well as a Firehose or RPC to track the chain head. These providers can be configured via a `config.toml` file:
+为了服务基于Substreams的子图，Graph Node必须配置与相关网络的Substreams提供程序，以及用于跟踪链头的Firehose或RPC。这些提供程序可以通过config.toml文件进行配置：
 
 ```toml
 [chains.mainnet]
