@@ -1,11 +1,21 @@
 import { keyframes } from '@emotion/react'
 import * as Collapsible from '@radix-ui/react-collapsible'
-import { createContext, HTMLAttributes, useContext, useState } from 'react'
+import { AnchorHTMLAttributes, createContext, HTMLAttributes, useContext, useState } from 'react'
 import { SxProp } from 'theme-ui'
 
-import { buildTransition, Divider, Flex, Icon, IconProps, Spacing, Text, TextProps, useI18n } from '@edgeandnode/gds'
-
-import { Link, LinkProps } from '@/components'
+import {
+  buildTransition,
+  ButtonOrLink,
+  ButtonOrLinkProps,
+  Divider,
+  Flex,
+  Icon,
+  IconProps,
+  Spacing,
+  Text,
+  TextProps,
+  useI18n,
+} from '@edgeandnode/gds'
 
 const animationExpand = keyframes({
   from: { height: 0 },
@@ -21,10 +31,10 @@ export type NavTreeProps = HTMLAttributes<HTMLElement> & {
   textProps?: TextProps
 }
 export type NavTreeItemProps = HTMLAttributes<HTMLElement> &
-  Pick<LinkProps, 'href' | 'target'> & {
+  Pick<AnchorHTMLAttributes<HTMLAnchorElement>, 'href' | 'target'> & {
     active?: boolean
-    linkProps?: LinkProps & SxProp
-    diamondProps?: IconProps & SxProp
+    linkProps?: HTMLAttributes<HTMLElement> & SxProp
+    diamondProps?: Partial<IconProps> & SxProp
   }
 export type NavTreeGroupProps = HTMLAttributes<HTMLElement> & {
   active?: boolean
@@ -39,7 +49,7 @@ export type NavTreeHeadingProps = HTMLAttributes<HTMLElement>
 const NavTree = ({ children, textProps, ...props }: NavTreeProps) => {
   return (
     <Flex.Column as="nav" {...props}>
-      <Text weight="SEMIBOLD" size="14px" as="ul" {...textProps}>
+      <Text as="ul" weight="SEMIBOLD" size="14px" {...textProps}>
         {children}
       </Text>
     </Flex.Column>
@@ -59,7 +69,7 @@ const NavTreeItem = ({
   const { sx: diamondSx, ...diamondOtherProps } = diamondProps
   return (
     <li {...props}>
-      <Link
+      <ButtonOrLink
         href={href}
         target={target}
         sx={{
@@ -90,7 +100,7 @@ const NavTreeItem = ({
             {...diamondOtherProps}
           />
         ) : null}
-      </Link>
+      </ButtonOrLink>
     </li>
   )
 }
@@ -159,7 +169,7 @@ const NavTreeGroupContent = ({ children, ...props }: NavTreeGroupContentProps) =
     <Collapsible.Content
       sx={{
         overflow: 'hidden',
-        animation: buildTransition((context.open ? animationExpand.toString() : animationCollapse.toString()) as any),
+        animation: buildTransition(context.open ? animationExpand.toString() : animationCollapse.toString()),
       }}
       {...props}
     >
