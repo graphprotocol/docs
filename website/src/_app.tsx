@@ -74,7 +74,6 @@ function MyAppWithLocale({ Component, pageProps, router }: AppProps) {
           const isInternal = href.startsWith('/') && !href.startsWith('//')
 
           // If the link is internal and doesn't start with a locale, prepend the current locale
-          // eslint-disable-next-line @typescript-eslint/prefer-string-starts-ends-with
           if (isInternal) {
             const { locale: pathLocale, pathWithoutLocale } = extractLocaleFromPath(href)
             href = `/${pathLocale ?? locale}${pathWithoutLocale}`
