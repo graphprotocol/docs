@@ -187,6 +187,7 @@ export default function NextraLayout({ children, pageOpts, pageProps }: NextraTh
 
             <div sx={{ mt: Spacing['64px'] }}>
               <MDXLayoutPagination />
+              {/* TODO: Uncomment when we're ready to add the NPS form to the docs
               <NPSForm
                 key={fsPath}
                 question="Was this page helpful?"
@@ -209,6 +210,7 @@ export default function NextraLayout({ children, pageOpts, pageProps }: NextraTh
                 chipSize="xlarge"
                 sx={{ mb: Spacing['32px'] }}
               />
+              */}
             </div>
           </div>
 
