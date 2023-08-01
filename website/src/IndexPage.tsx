@@ -1,6 +1,6 @@
-import { Heading, Image, Link, LinkInline } from '@graphprotocol/nextra-theme'
+import { Heading, Image, LinkInline } from '@graphprotocol/nextra-theme'
 
-import { BorderRadius, buildBorder, buildShadow, buildTransition, Flex, Icon, Spacing, Text } from '@edgeandnode/gds'
+import { BorderRadius, buildBorder, buildTransition, ButtonOrLink, Flex, Icon, Spacing, Text } from '@edgeandnode/gds'
 
 import { useI18n } from '@/i18n'
 
@@ -51,7 +51,7 @@ export function Intro() {
         },
       ].map((card) => (
         <li key={card.href} sx={{ aspectRatio: '258/136' }}>
-          <Link
+          <ButtonOrLink
             href={card.href}
             sx={{
               display: 'flex',
@@ -78,7 +78,7 @@ export function Intro() {
             <Text as="small" size="16px" color="White64">
               {card.description}
             </Text>
-          </Link>
+          </ButtonOrLink>
         </li>
       ))}
     </ul>
@@ -127,7 +127,7 @@ export function NetworkRoles() {
         <Flex.Column as="li" key={index}>
           <div sx={{ mb: Spacing['16px'] }}>
             <Image src={role.image} alt="" sx={{ mb: Spacing['16px'], width: '96px', height: '96px' }} />
-            <Text as="h3" weight="SEMIBOLD" size="20px" sx={{ textShadow: buildShadow('S') }}>
+            <Text as="h3" weight="SEMIBOLD" size="20px">
               {role.title}
             </Text>
             <Text as="p" size="16px" color="White64" sx={{ mt: Spacing['16px'] }}>
@@ -175,7 +175,7 @@ export function Products() {
       ].map((product) => (
         <Flex.Column as="li" key={product.href}>
           <div sx={{ mb: Spacing['16px'] }}>
-            <Text as="h3" weight="SEMIBOLD" size="20px" sx={{ textShadow: buildShadow('S') }}>
+            <Text as="h3" weight="SEMIBOLD" size="20px">
               {product.title}
             </Text>
             <Text as="p" size="16px" color="White64" sx={{ mt: Spacing['16px'] }}>
@@ -254,7 +254,7 @@ export function SupportedNetworks() {
             return (
               <Flex.Column as="li" key={index}>
                 <Text as="div" size="14px" color="White64" sx={{ textAlign: 'center' }}>
-                  <Link
+                  <ButtonOrLink
                     href={network.href}
                     target="_blank"
                     sx={{
@@ -275,7 +275,7 @@ export function SupportedNetworks() {
                     />
                     {network.title}
                     {network.beta ? '*' : ''}
-                  </Link>
+                  </ButtonOrLink>
                 </Text>
               </Flex.Column>
             )
@@ -377,7 +377,7 @@ export function SupportedNetworks() {
             return (
               <Flex.Column as="li" key={network.href}>
                 <Text as="div" size="14px" color="White64" sx={{ textAlign: 'center' }}>
-                  <Link
+                  <ButtonOrLink
                     href={network.href}
                     target="_blank"
                     sx={{
@@ -398,7 +398,7 @@ export function SupportedNetworks() {
                     />
                     {network.title}
                     {network.beta ? '*' : ''}
-                  </Link>
+                  </ButtonOrLink>
                 </Text>
               </Flex.Column>
             )

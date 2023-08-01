@@ -1,12 +1,11 @@
 import { useContext } from 'react'
 
-import { buildShadow, buildTransition, Divider, Flex, Icon, Spacing, Text, useI18n } from '@edgeandnode/gds'
+import { buildTransition, ButtonOrLink, Divider, Flex, Icon, Spacing, Text, useI18n } from '@edgeandnode/gds'
 
-import { Link } from '@/components'
 import { NavContext } from '@/layout'
 
 export const MDXLayoutPagination = () => {
-  const { flatDirectories, activeIndex } = useContext(NavContext)
+  const { flatDirectories, activeIndex } = useContext(NavContext)!
   const { t } = useI18n<any>()
 
   const prev = flatDirectories[activeIndex - 1]
@@ -17,10 +16,10 @@ export const MDXLayoutPagination = () => {
   return (
     <div>
       <Divider diamonds />
-      <Flex.Row justify="space-between" sx={{ mt: Spacing['32px'], overflow: 'hidden' }}>
+      <Flex.Row justify="space-between" sx={{ my: Spacing['32px'] }}>
         <div>
           {prev ? (
-            <Link
+            <ButtonOrLink
               href={prev.route}
               sx={{
                 display: 'block',
@@ -28,7 +27,7 @@ export const MDXLayoutPagination = () => {
                 paddingInlineStart: [0, null, Spacing['24px']],
                 paddingInlineEnd: Spacing['12px'],
                 color: 'White64',
-                '&:hover': { color: 'White', textShadow: buildShadow('M') },
+                '&:hover': { color: 'White' },
                 transition: buildTransition(),
               }}
             >
@@ -53,12 +52,12 @@ export const MDXLayoutPagination = () => {
                   {prev.title}
                 </Text>
               </Flex.Column>
-            </Link>
+            </ButtonOrLink>
           ) : null}
         </div>
         <div>
           {next ? (
-            <Link
+            <ButtonOrLink
               href={next.route}
               sx={{
                 display: 'block',
@@ -66,7 +65,7 @@ export const MDXLayoutPagination = () => {
                 paddingInlineStart: Spacing['12px'],
                 paddingInlineEnd: [0, null, Spacing['24px']],
                 color: 'White64',
-                '&:hover': { color: 'White', textShadow: buildShadow('M') },
+                '&:hover': { color: 'White' },
                 transition: buildTransition(),
               }}
             >
@@ -91,7 +90,7 @@ export const MDXLayoutPagination = () => {
                   {next.title}
                 </Text>
               </Flex.Column>
-            </Link>
+            </ButtonOrLink>
           ) : null}
         </div>
       </Flex.Row>

@@ -5,9 +5,19 @@ import { useRouter } from 'next/router'
 import { Item } from 'nextra/normalize-pages'
 import { Fragment, PropsWithChildren, useContext, useEffect, useState } from 'react'
 
-import { BorderRadius, buildTransition, Flex, Icon, NestedStrings, Spacing, Text, useI18n } from '@edgeandnode/gds'
+import {
+  BorderRadius,
+  buildTransition,
+  ButtonOrLink,
+  Flex,
+  Icon,
+  NestedStrings,
+  Spacing,
+  Text,
+  useI18n,
+} from '@edgeandnode/gds'
 
-import { DocSearch, Link, NavTree } from '@/components'
+import { DocSearch, NavTree } from '@/components'
 import { NavContext } from '@/layout'
 
 const removeBasePathFromUrl = (url: string) => url.substring((process.env.BASE_PATH ?? '').length)
@@ -27,7 +37,7 @@ const DesktopWrapper = ({ children }: PropsWithChildren<{}>) => {
 
   // Fix issue where the `translateY` is animated on initial load
   useEffect(() => {
-    setTimeout(() => setEnableTransition(true), 0)
+    setTimeout(() => setEnableTransition(true), 20)
   }, [])
 
   return (
@@ -49,7 +59,7 @@ const DesktopWrapper = ({ children }: PropsWithChildren<{}>) => {
       <div
         sx={{
           height: 'var(--gds-header-height-visible)',
-          transition: enableTransition ? buildTransition('height' as any, '400ms') : undefined,
+          transition: enableTransition ? buildTransition('height', '400ms') : undefined,
         }}
       />
     </div>
@@ -109,7 +119,7 @@ const MobileWrapper = ({ title, children }: PropsWithChildren<{ title?: string }
         sx={{
           borderTop: 'White8',
           overflow: 'hidden',
-          animation: buildTransition((open ? animationExpand.toString() : animationCollapse.toString()) as any),
+          animation: buildTransition(open ? animationExpand.toString() : animationCollapse.toString()),
         }}
       >
         <div
@@ -125,7 +135,7 @@ const MobileWrapper = ({ title, children }: PropsWithChildren<{ title?: string }
 }
 
 const DocSearchHit = ({ hit, children }: PropsWithChildren<{ hit: { url: string } }>) => (
-  <Link href={removeBasePathFromUrl(hit.url)}>{children}</Link>
+  <ButtonOrLink href={removeBasePathFromUrl(hit.url)}>{children}</ButtonOrLink>
 )
 
 export const MDXLayoutNav = ({ mobile = false }: { mobile?: boolean }) => {
