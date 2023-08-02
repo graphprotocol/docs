@@ -3,7 +3,7 @@ import { Plugin } from 'unified'
 import { visit } from 'unist-util-visit'
 
 export const remarkReplaceImages: Plugin<[{ assetsBasePath: string }], Root> = ({ assetsBasePath }) => {
-  if (!assetsBasePath) throw new Error('remarkReplaceLinks: assetsBasePath is required')
+  if (!assetsBasePath) throw new Error('remarkReplaceImages: assetsBasePath is required')
 
   return (tree, _file, done) => {
     visit(
