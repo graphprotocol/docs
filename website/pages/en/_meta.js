@@ -23,6 +23,7 @@ export default {
   managing: 'Managing',
   querying: 'Querying',
   cookbook: 'Cookbook',
+  'release-notes': 'Release Notes & Upgrade Guides',
   '---3': {
     type: 'separator',
   },
@@ -44,8 +45,4 @@ export default {
   firehose: 'Firehose',
   graphcast: '',
   'mips-faqs': '',
-  '---5': {
-    type: 'separator',
-  },
-  'release-notes': 'Release Notes & Upgrade Guides',
 }
