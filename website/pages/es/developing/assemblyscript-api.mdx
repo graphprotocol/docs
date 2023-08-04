@@ -43,14 +43,14 @@ La librería de `@graphprotocol/graph-ts` proporciona las siguientes APIs:
 
 La `apiVersion` en el manifiesto del subgrafo especifica la versión de la API correspondiente al mapeo que está siendo ejecutado en el Graph Node de un subgrafo en específico. La versión actual para la APÍ de mapeo es la 0.0.6.
 
-| Version | Notas del lanzamiento |
-| :-: | --- |
-| 0.0.7 | Agregado de clases `TransactionReceipt` y `Log` a los tipos de Ethereum<br />Agregado el campo `receipt` al objeto Ethereum Event |
-| 0.0.6 | Agregado el campo `nonce` al objeto Ethereum Transaction<br />Agregado `baseFeePerGas` al objeto Ethereum Block |
-| 0.0.5 | AssemblyScript actualizado a la versión 0.19.10 (esto incluye cambios importantes, consulte la [`Migration Guide`](/release-notes/assemblyscript-migration-guide))<br />`ethereum.transaction.gasUsed` renombrado a `ethereum.transaction.gasLimit` |
-| 0.0.4 | Agregado el campo `functionSignature` al objeto Ethereum SmartContractCall |
-| 0.0.3 | Agregado el campo `from` al objeto Ethereum Call<br />`etherem.call.address` renombrado `ethereum.call.to` |
-| 0.0.2 | Agregado el campo `input` al objeto Ethereum Transaction |
+| Version | Notas del lanzamiento                                                                                                                                                                                                                                     |
+|:-------:| --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+|  0.0.7  | Agregado de clases `TransactionReceipt` y `Log` a los tipos de Ethereum<br />Agregado el campo `receipt` al objeto Ethereum Event                                                                                                                   |
+|  0.0.6  | Agregado el campo `nonce` al objeto Ethereum Transaction<br />Agregado `baseFeePerGas` al objeto Ethereum Block                                                                                                                                     |
+|  0.0.5  | AssemblyScript actualizado a la versión 0.19.10 (esto incluye cambios importantes, consulte la [`Migration Guide`](/release-notes/assemblyscript-migration-guide))<br />`ethereum.transaction.gasUsed` renombrado a `ethereum.transaction.gasLimit` |
+|  0.0.4  | Agregado el campo `functionSignature` al objeto Ethereum SmartContractCall                                                                                                                                                                                |
+|  0.0.3  | Agregado el campo `from` al objeto Ethereum Call<br />`etherem.call.address` renombrado `ethereum.call.to`                                                                                                                                          |
+|  0.0.2  | Agregado el campo `input` al objeto Ethereum Transaction                                                                                                                                                                                                  |
 
 ### Tipos Incorporados
 
@@ -176,7 +176,7 @@ import { TypedMap } from '@graphprotocol/graph-ts'
 
 La `TypedMap` clase tiene la siguiente API:
 
-- `new TypedMap<K, V>()` – crea un mapa vacio con claves del tipo `K` y valores del tipo `T`
+- `new TypedMap<K, V>()` – creates an empty map with keys of type `K` and values of type `V`
 - `map.set(key: K, value: V): void` – establece el valor del `key` a `value`
 - `map.getEntry(key: K): TypedMapEntry<K, V> | null` – devuelve el par key-value de un `key` o `null` si el `key` no existe en el mapa
 - `map.get(key: K): V | null` – returna el valor de una `key` o `null` si el `key` no existe en el mapa
@@ -279,6 +279,51 @@ if (transfer == null) {
 Como la entidad puede no existir todavía en el almacén, el método `load` devuelve un valor de tipo `Transfer | null`. Por lo tanto, puede ser necesario comprobar el caso `null` antes de utilizar el valor.
 
 > **Nota:** La carga de entidades sólo es necesaria si los cambios realizados en el mapeo dependen de los datos anteriores de una entidad. Consulta en la siguiente sección las dos formas de actualizar las entidades existentes.
+
+#### Buscando entidades creadas dentro de un bloque
+
+A partir de `graph-node` v0.31.0, `@graphprotocol/graph-ts` v0.30.0 y `@graphprotocol/graph-cli` v0.49.0, el método `loadInBlock` está disponible para todos los tipos de entidades.
+
+La API de almacenamiento facilita la recuperación de entidades que se crearon o actualizaron en el bloque actual. Una situación típica para esto es cuando un handler crea una Transacción a partir de algún evento en la cadena, y un handler posterior quiere acceder a esta transacción si existe. En el caso de que la transacción no exista, el subgrafo tendrá que ir a la base de datos solo para averiguar que la entidad no existe; si el autor del subgrafo ya sabe que la entidad debe haber sido creada en el mismo bloque, el uso de loadInBlock evita este viaje de ida y vuelta a la base de datos. Para algunos subgrafos, estas búsquedas perdidas pueden contribuir significativamente al tiempo de indexación.
+
+```typescript
+let id = event.transaction.hash // or however the ID is constructed
+let transfer = Transfer.load(id)
+if (transfer == null) {
+  transfer = new Transfer(id)
+}
+
+// Usa la identidad de transferencia como se indica arriba
+```
+
+> Nota: si no hay ninguna entidad creada en el bloque dado, `loadInBlock` devolverá `null`, incluso si hay una entidad con la ID dada en el almacenamiento.
+
+#### Looking up derived entities
+
+As of `graph-node` v0.31.0, `@graphprotocol/graph-ts` v0.31.0 and `@graphprotocol/graph-cli` v0.51.0 the `loadRelated` method is available.
+
+This enables loading derived entity fields from within an event handler. For example, given the following schema:
+
+```graphql
+type Token @entity {
+  id: ID!
+  holder: Holder!
+  color: String
+}
+
+type Holder @entity {
+  id: ID!
+  tokens: [Token!]! @derivedFrom(field: "holder")
+}
+```
+
+The following code will load the `Token` entity that the `Holder` entity was derived from:
+
+```typescript
+let holder = Holder.load('test-id')
+// Load the Token entity that the Holder entity was derived from
+let token = holder.tokens.load()
+```
 
 #### Actualización de las entidades existentes
 
