@@ -43,7 +43,8 @@ const DEFAULT_SEO_PROPS: DefaultSeoProps = {
   },
 }
 
-const internalHrefRegex = /^(#|\/(docs\/|(?=[^/])|$)|(https?:)?\/\/((www|staging)\.)?thegraph\.com\/docs\/)/
+const internalAbsoluteHrefRegex = /^(((https?:)?\/\/((www|staging)\.)?thegraph\.com)?\/docs\/|\/(?=[^/]))/
+const externalHrefRegex = /^([a-zA-Z0-9+.-]+:)?\/\//
 
 function MyAppWithLocale({ Component, pageProps, router }: AppProps) {
   const hideLocaleSwitcher = pageProps.hideLocaleSwitcher ?? false
@@ -62,25 +63,26 @@ function MyAppWithLocale({ Component, pageProps, router }: AppProps) {
         mapButtonOrLinkProps={<T extends ButtonOrLinkProps>(props: T) => {
           let href = typeof props.href === 'object' ? props.href.href : props.href
 
+          // Don't do anything if it's not a link, or a link to an anchor on the same page
           if (!props.href || !href || href.startsWith('#')) {
             return props
           }
 
-          // Determine if the link is internal and if so, ensure `href` is root-relative (starts with `/`)
-          const internalHrefMatches = internalHrefRegex.exec(href)
-          if (internalHrefMatches) {
-            href = href.substring(internalHrefMatches[0].length - 1)
-          }
-          const isInternal = href.startsWith('/') && !href.startsWith('//')
+          let target = props.target
 
-          // If the link is internal and doesn't start with a locale, prepend the current locale
-          if (isInternal) {
+          // If the link is internal and absolute, ensure `href` is relative to the base path (i.e. starts with `/`,
+          // not `/docs/` or `https://...`) and includes a locale (by prepending the current locale if there is none)
+          const internalAbsoluteHrefMatches = internalAbsoluteHrefRegex.exec(href)
+          if (internalAbsoluteHrefMatches) {
+            href = href.substring(internalAbsoluteHrefMatches[0].length - 1)
             const { locale: pathLocale, pathWithoutLocale } = extractLocaleFromPath(href)
             href = `/${pathLocale ?? locale}${pathWithoutLocale}`
           }
 
           // If the link is external, default the target to `_blank`
-          const target = props.target ?? (!isInternal ? '_blank' : undefined)
+          if (externalHrefRegex.test(href)) {
+            target = target ?? '_blank'
+          }
 
           return { ...props, href, target }
         }}
