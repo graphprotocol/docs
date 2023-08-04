@@ -63,7 +63,7 @@ function MyAppWithLocale({ Component, pageProps, router }: AppProps) {
         mapButtonOrLinkProps={<T extends ButtonOrLinkProps>(props: T) => {
           let href = typeof props.href === 'object' ? props.href.href : props.href
 
-          // Don't do anything if it's not a link, or a link to an anchor on the same page
+          // Don't do anything if it's not a link, or if it's a link to an anchor on the same page
           if (!props.href || !href || href.startsWith('#')) {
             return props
           }
