@@ -1,40 +1,40 @@
 ---
-title: Replace a Contract and Keep its History With Grafting
+title: Como Substituir um Contrato e Manter a sua História com Enxertos
 ---
 
-In this guide, you will learn how to build and deploy new subgraphs by grafting existing subgraphs.
+Neste guia, aprenda como construir e lançar novos subgraphs com o enxerto de subgraphs existentes.
 
-## What is Grafting?
+## O que é Enxerto?
 
-Grafting reuses the data from an existing subgraph and starts indexing it at a later block. This is useful during development to get past simple errors in the mappings quickly or to temporarily get an existing subgraph working again after it has failed. Also, it can be used when adding a feature to a subgraph that takes long to index from scratch.
+O processo de enxerto reutiliza os dados de um subgraph existente e o indexa em um bloco seguinte. Isto é útil durante o desenvolvimento para rapidamente superar erros simples nos mapeamentos, ou fazer um subgraph existente funcionar temporariamente após ele ter falhado. Ele também pode ser usado ao adicionar uma característica a um subgraph que demora para ser indexado do zero.
 
-The grafted subgraph can use a GraphQL schema that is not identical to the one of the base subgraph, but merely compatible with it. It has to be a valid subgraph schema in its own right, but may deviate from the base subgraph's schema in the following ways:
+O subgraph enxertado pode usar um schema GraphQL que não é idêntico ao schema do subgraph base, mas é apenas compatível com ele. Ele deve ser um schema válido no seu próprio mérito, mas pode desviar do schema do subgraph base nas seguintes maneiras:
 
-- It adds or removes entity types
-- It removes attributes from entity types
-- It adds nullable attributes to entity types
-- It turns non-nullable attributes into nullable attributes
-- It adds values to enums
-- It adds or removes interfaces
-- It changes for which entity types an interface is implemented
+- Ele adiciona ou remove tipos de entidade
+- Ele retira atributos de tipos de entidade
+- Ele adiciona atributos anuláveis a tipos de entidade
+- Ele transforma atributos não anuláveis em atributos anuláveis
+- Ele adiciona valores a enums
+- Ele adiciona ou remove interfaces
+- Ele muda os tipos de entidades para qual implementar uma interface
 
-For more information, you can check:
+Para mais informações, confira:
 
-- [Grafting](https://thegraph.com/docs/en/developing/creating-a-subgraph#grafting-onto-existing-subgraphs)
+- [Enxertos](https://thegraph.com/docs/en/developing/creating-a-subgraph#grafting-onto-existing-subgraphs)
 
-In this tutorial, we will be covering a basic usecase. We will replace an existing contract with an identical contract (with a new address, but the same code). Then, graft the existing subgraph onto the "base" subgraph that tracks the new contract.
+Neste tutorial, cobriremos um caso de uso básico. Substituiremos um contrato existente com um contrato idêntico (com um novo endereço, mas o mesmo código). Depois, enxertaremos o subgraph existente ao subgraph "base" que rastreará o novo contrato.
 
-## Building an Existing Subgraph
+## Como Construir um Subgraph Existente
 
-Building subgraphs is an essential part of The Graph, described more in depth [here](http://localhost:3000/en/cookbook/quick-start/). To be able to build and deploy the existing subgraph used in this tutorial, the following repo is provided:
+Construir subgraphs é uma parte essencial do Graph; o processo é descrito em mais detalhes [aqui](http://localhost:3000/en/cookbook/quick-start/). Para poder lançar o subgraph existente usado neste tutorial, há o seguinte repo:
 
-- [Subgraph example repo](https://github.com/t-proctor/grafting-tutorial)
+- [Exemplo de repo de subgraph](https://github.com/t-proctor/grafting-tutorial)
 
-> Note: The contract used in the subgraph was taken from the following [Hackathon Starterkit](https://github.com/schmidsi/hackathon-starterkit).
+> Nota: O contrato usado no subgraph foi retirado do seguinte [Kit de Iniciante de Hackathon](https://github.com/schmidsi/hackathon-starterkit).
 
-## Subgraph Manifest Definition
+## Definição de Manifest de Subgraph
 
-The subgraph manifest `subgraph.yaml` identifies the data sources for the subgraph, the triggers of interest, and the functions that should be run in response to those triggers. See below for an example subgraph manifest that you will use:
+O manifest de subgraph `subgraph.yaml` identifica as fontes de dados para o subgraph, os gatilhos de interesse, e as funções que devem ser executadas em resposta a tais gatilhos. Veja abaixo um exemplo de um manifest de subgraph para uso prático:
 
 ```yaml
 specVersion: 0.0.4
@@ -63,13 +63,13 @@ dataSources:
       file: ./src/lock.ts
 ```
 
-- The `Lock` data source is the abi and contract address we will get when we compile and deploy the contract
-- The network should correspond to a indexed network being queried. Since we're running on Goerli testnet, the network is `goerli`
-- The `mapping` section defines the triggers of interest and the functions that should be run in response to those triggers. In this case, we are listening for the `Withdrawal` event and calling the `handleWithdrawal` function when it is emitted.
+- A fonte de dados `Lock` é o abi e o endereço do contrato que receberemos ao compilar e lançar o contrato
+- A rede deve corresponder a uma rede indexada a ser consultada. Como executamos na testnet Goerli, a rede é `goerli`
+- A seção `mapping` define os gatilhos de interesse e as funções que devem ser executadas em resposta àqueles gatilhos. Neste caso, esperamos o evento `Withdrawal` e chamaremos a função `handleWithdrawal` quando o evento for emitido.
 
-## Grafting Manifest Definition
+## Definição de Manifest de Enxertos
 
-Grafting requires adding two new items to the original subgraph manifest:
+Enxertos exigem a adição de dois novos itens ao manifest do subgraph original:
 
 ```yaml
 ---
@@ -80,16 +80,16 @@ graft:
   block: 1502122 # block number
 ```
 
-- `features:` is a list of all used [feature names](developing/creating-a-subgraph/#experimental-features).
-- `graft:` is a map of the `base` subgraph and the block to graft on to. The `block` is the block number to start indexing from. The Graph will copy the data of the base subgraph up to and including the given block and then continue indexing the new subgraph from that block on.
+- `features:` uma lista de todos os [nomes de características](developing/creating-a-subgraph/#experimental-features) usados.
+- `graft:` um mapa do subgraph `base` e o bloco que o enxertará. O `block` é o número do bloco de onde a indexação começará. O Graph então copiará os dados do subgraph base, até e incluindo o bloco dado, e então continuará a indexar o novo subgraph a partir daquele bloco.
 
-The `base` and `block` values can be found by deploying two subgraphs: one for the base indexing and one with grafting
+Os valores `base` e `block` podem ser encontrados ao lançar dois subgraphs: um para a indexação base e um com o enxerto
 
-## Deploying the Base Subgraph
+## Como Lançar o Subgraph Base
 
-1. Go to [The Graph Studio UI](https://thegraph.com/studio/) and create a subgraph on Goerli testnet called `graft-example`
-2. Follow the directions in the `AUTH & DEPLOY` section on your subgraph page in the `graft-example` folder from the repo
-3. Once finished, verify the subgraph is indexing properly. If you run the following command in The Graph Playground
+1. Vá para a [UI do Graph Studio](https://thegraph.com/studio/) e crie um subgraph na testnet Goerli chamado `graft-example`
+2. Siga as direções na seção `AUTH & DEPLOY` na página do seu subgraph, na pasta `graft-example` do repo
+3. Ao terminar, verifique que o subgraph está a indexar corretamente. Se executar o seguinte comando no The Graph Playground
 
 ```graphql
 {
@@ -101,7 +101,7 @@ The `base` and `block` values can be found by deploying two subgraphs: one for t
 }
 ```
 
-It returns something like this:
+Ele deve retornar algo assim:
 
 ```
 {
@@ -122,16 +122,16 @@ It returns something like this:
 }
 ```
 
-Once you have verified the subgraph is indexing properly, you can quickly update the subgraph with grafting.
+Após verificar que o subgraph está a indexar corretamente, será possível atualizar rapidamente o subgraph com o enxerto.
 
-## Deploying the Grafting Subgraph
+## Como Lançar o Subgraph de Enxerto
 
-The graft replacement subgraph.yaml will have a new contract address. This could happen when you update your dapp, redeploy a contract, etc.
+O subgraph.yaml do substituto terá um novo endereço de contrato. Isto pode acontecer quando atualizar o seu dapp, relançar um contrato, etc.
 
-1. Go to [The Graph Studio UI](https://thegraph.com/studio/) and create a subgraph on Goerli testnet called `graft-replacement`
-2. Create a new manifest. The `subgraph.yaml` for `graph-replacement` contains a different contract address and new information about how it should graft. These are the `block` of the [last event emitted](https://goerli.etherscan.io/tx/0x800c92fcc0edbd26f74e19ad058c62008a47c7789f2064023b987028343dd498) you care about by the old contract and the `base` of the old subgraph. The `base` subgraph ID is the `Deployment ID` of your original `graph-example` subgraph. You can find this in The Graph Studio UI.
-3. Follow the directions in the `AUTH & DEPLOY` section on your subgraph page in the `graft-replacement` folder from the repo
-4. Once finished, verify the subgraph is indexing properly. If you run the following command in The Graph Playground
+1. Vá para a [UI do The Graph Studio](https://thegraph.com/studio/) e crie um subgraph na testnet Goerli chamado `graft-replacement`
+2. Crie um novo manifest. O `subgraph.yaml` para o `graph-replacement` contém um endereço diferente de contrato e uma informação nova sobre como ele deve enxertar. Estes são o `block` do [último evento emitido](https://goerli.etherscan.io/tx/0x800c92fcc0edbd26f74e19ad058c62008a47c7789f2064023b987028343dd498) de seu interesse pelo contrato antigo, e o `base` do subgraph antigo. O ID do subgraph `base` é o `Deployment ID` do seu subgraph `graph-example`. Isto está disponível no UI do Graph Studio.
+3. Siga as direções na seção `AUTH & DEPLOY` na página do seu subgraph, na pasta `graft-replacement` do repo
+4. Ao terminar, verifique que o subgraph está a indexar corretamente. Se executar o seguinte comando no The Graph Playground
 
 ```graphql
 {
@@ -143,7 +143,7 @@ The graft replacement subgraph.yaml will have a new contract address. This could
 }
 ```
 
-It should return the following:
+Ele deve retornar algo como:
 
 ```
 {
@@ -169,18 +169,18 @@ It should return the following:
 }
 ```
 
-You can see that the `graft-replacement` subgraph is indexing from older `graph-example` data and newer data from the new contract address. The original contract emitted two `Withdrawal` events, [Event 1](https://goerli.etherscan.io/tx/0x800c92fcc0edbd26f74e19ad058c62008a47c7789f2064023b987028343dd498) and [Event 2](https://goerli.etherscan.io/address/0x4ed995e775d3629b0566d2279f058729ae6ea493). The new contract emitted one `Withdrawal` after, [Event 3](https://goerli.etherscan.io/tx/0xb4010e4c76f86762beb997a13cf020231778eaf7c64fa3b7794971a5e6b343d3). The two previously indexed transactions (Event 1 and 2) and the new transaction (Event 3) were combined together in the `graft-replacement` subgraph.
+Pode-se ver que o subgraph `graft-replacement` indexa de dados mais antigos do `graph-example` e dados mais recentes do endereço do novo contrato. O contrato original emitiu dois eventos `Withdrawal`, [Event 1](https://goerli.etherscan.io/tx/0x800c92fcc0edbd26f74e19ad058c62008a47c7789f2064023b987028343dd498) e [Event 2](https://goerli.etherscan.io/address/0x4ed995e775d3629b0566d2279f058729ae6ea493). O novo contrato, em seguida, emitiu um código `Withdrawal`, [Event 3](https://goerli.etherscan.io/tx/0xb4010e4c76f86762beb997a13cf020231778eaf7c64fa3b7794971a5e6b343d3). As duas transações indexadas anteriormente, (Event 1 e 2) e a nova transação (Event 3) foram combinadas no subgraph `graft-replacement`.
 
-Congrats! You have succesfully grafted a subgraph onto another subgraph.
+Parabéns! Está enxertado um subgraph em outro subgraph.
 
-## Additional Resources
+## Outros Recursos
 
-If you want more experience with grafting, here's a few examples for popular contracts:
+Caso queira mais experiência com enxertos, veja alguns exemplos de contratos populares:
 
 - [Curve](https://github.com/messari/subgraphs/blob/master/subgraphs/curve-finance/protocols/curve-finance/templates/curve.template.yaml)
 - [ERC-721](https://github.com/messari/subgraphs/blob/master/subgraphs/erc721-metadata/subgraph.yaml)
-- [Uniswap](https://github.com/messari/subgraphs/blob/master/subgraphs/uniswap-v3/protocols/uniswap-v3/config/templates/uniswap.v3.template.yaml),
+- [Uniswap](https://github.com/messari/subgraphs/blob/master/subgraphs/uniswap-v3/protocols/uniswap-v3/config/templates/uniswap.v3.template.yaml)
 
-To become even more of a Graph expert, consider learning about other ways to handle changes in underlying datasources. Alternatives like [Data Source Templates](developing/creating-a-subgraph/#data-source-templates) can achieve similar results
+Para se tornar um especialista no Graph, considere aprender sobre outras maneiras de lidar com mudanças em fontes de dados subjacentes. Alternativas como [Templates de Fontes de Dados](developing/creating-a-subgraph/#data-source-templates) podem dar em resultados parecidos
 
-> Note: A lot of material from this article was taken from the previously published [Arweave article](/cookbook/arweave/)
+> Nota: Grande parte do material deste artigo foi tirado do [artigo sobre o Arweave](/cookbook/arweave/)
