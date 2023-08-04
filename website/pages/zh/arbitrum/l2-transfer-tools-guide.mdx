@@ -1,0 +1,165 @@
+---
+title: L2转移工具指南
+---
+
+> L2转移工具尚未发布。预计它们将在2023年夏季提供。
+
+The Graph 使迁移到 Arbitrum One(L2) 上变得非常容易。对于每个协议参与者，都有一组 L2 转账工具，使所有网络参与者无缝地迁移到 L2。根据你要转移的内容，这些工具会要求你按照特定的步骤操作。
+
+关于这些工具的一些常见问题在 L2 Transfer Tools FAQ(/arbitrum/l2-transfer-tools-faq) 中有详细解答。FAQ 中深入解释了如何使用这些工具、它们的工作原理以及在使用过程中需要注意的事项。
+
+## 如何将你的子图转移到 Arbitrum（L2）
+
+## 将子图转移到 Arbitrum 的好处
+
+过去一年里，Graph社区和核心开发人员一直在为迁移到 Arbitrum 做准备(https://forum.thegraph.com/t/gip-0031-arbitrum-grt-bridge/3305) 。Arbitrum 是一种二层网络或“L2”区块链，继承了以太坊的安全性，但提供了大幅降低的燃气费用。
+
+When you publish or upgrade your subgraph to The Graph Network, you're interacting with smart contracts on the protocol and this requires paying for gas using ETH. By moving your subgraphs to Arbitrum, any future updates to your subgraph will require much lower gas fees. The lower fees, and the fact that curation bonding curves on L2 are flat, also make it easier for other Curators to curate on your subgraph, increasing the rewards for Indexers on your subgraph. This lower-cost environment also makes it cheaper for Indexers to index and serve your subgraph. Indexing rewards will be increasing on Arbitrum and decreasing on Ethereum mainnet over the coming months, so more and more Indexers will be transferring their stake and setting up their operations on L2.
+
+## 理解信号、你的 L1 子图和查询 URL 的变化
+
+将子图转移到 Arbitrum 使用了 Arbitrum GRT 跨链桥，该跨链桥又使用了本机的 Arbitrum 跨链桥，将子图发送到 L2。这个“转账”操作会废弃主网上的子图，并使用跨链桥将重建子图所需的信息发送到 L2。它还包括子图所有者的信号 GRT，跨链桥需要接受转账时，这些信号 GRT 必须大于零。
+
+当你选择转移子图时，这将把所有子图的策展信号转换为 GRT。这相当于在主网上“废弃”子图。与你的策展相对应的 GRT 将与子图一起发送到 L2，其中它们将被用于代表你铸造信号。
+
+其他策展人可以选择是否提取他们所占份额的 GRT，或者将其转移到 L2 上的同一子图上，以铸造新的策展信号。如果一个子图所有者不将他们的子图转移到 L2 并通过合约调用手动废弃它，那么策展人将收到通知并可以提取他们的策展。
+
+一旦子图转移完成，由于所有策展都转换为 GRT，索引人将不再因索引子图而获得奖励。但是，有些索引人会保持对转移的子图进行 24 小时的服务，并立即开始在 L2 上进行子图索引。由于这些索引人已经对子图进行了索引，所以无需等待子图同步，几乎可以立即查询 L2 子图。
+
+对 L2 子图的查询需要使用不同的 URL（on `arbitrum-gateway.thegraph.com`），但 L1 URL 将继续工作至少 48 小时。之后，L1 网关将把查询转发到 L2 网关（一段时间内），但这会增加延迟，因此建议尽快将所有查询切换到新的 URL。
+
+## 选择你的 L2 钱包
+
+When you published your subgraph on mainnet, you used a connected wallet to create the subgraph, and this wallet owns the NFT that represents this subgraph and allows you to publish updates.
+
+当将子图转移到 Arbitrum 时，你可以选择一个不同的钱包在 L2 上持有这个子图 NFT 。
+
+如果你使用的是像 MetaMask 这样的“常规”钱包（外部拥有账户或 EOA，即不是智能合约钱包），那么这是可选的，建议保持与 L1 中相同的所有者地址。
+
+如果你使用的是智能合约钱包，比如多签钱包（例如 Safe），那么选择不同的 L2 钱包地址是必需的，因为这个账户很可能只存在于主网上，你将无法使用这个钱包在 Arbitrum 上进行交易。如果你想继续使用智能合约钱包或多签钱包，那么可以在 Arbitrum 上创建一个新的钱包，并使用其地址作为你的子图的 L2 所有者。
+
+**使用你能控制并且能在 Arbitrum 上进行交易的钱包地址非常重要，否则子图将丢失且无法恢复。**
+
+## 为转移做准备：转移一些 ETH
+
+转移子图涉及通过跨链桥发送一个交易，然后在 Arbitrum 上执行另一个交易。第一个交易使用主网上的 ETH，并包含一些 ETH 用于接收 L2 上的消息时支付燃气费用。然而，如果这个燃气费用不足，你将不得不重试交易，并直接在 L2 上支付燃气费用（这是下面的“第 3 步：确认转移”）。这一步必须在开始转移后的 7 天内执行。此外，第二个交易（“第 4 步：在 L2 上完成转移”）将直接在 Arbitrum 上执行。因此，你需要在 Arbitrum 钱包中拥有一些 ETH。如果你使用的是多签或智能合约账户，则 ETH 必须在你用于执行交易的常规（EOA）钱包中，而不是多签钱包本身。
+
+你可以在一些交易所购买 ETH，并直接将其提取到 Arbitrum，或者你可以使用 Arbitrum 跨链桥将 ETH 从主网钱包发送到 L2：[bridge.arbitrum.io](http://bridge.arbitrum.io)。由于 Arbitrum 上的燃气费用较低，你只需要一小笔资金即可。建议你设置一个较低的阈值（例如 0.01 ETH），以便你的交易得到批准。
+
+## 查找子图转移工具
+
+在 Subgraph Studio 查看你的子图页面时，你可以找到 L2 转移工具：
+
+![transfer tool](/img/L2-transfer-tool1.png)
+
+如果你使用拥有子图的钱包连接到 Explorer，你还可以在 Explorer 上的子图页面上找到它：
+
+![Transferring to L2](/img/transferToL2.png)
+
+点击 "Transfer to L2" 按钮将打开转移工具，在那里你可以开始转移进程。
+
+## 第 1 步：开始转移
+
+在开始转移之前，你必须决定哪个地址将在 L2 上拥有这个子图（参见上面的“选择你的 L2 钱包”），并且强烈建议提前转移一些 ETH到 Arbitrum （参见上面的“为转移做准备：转移一些 ETH”）
+
+另外，请注意转移子图需要在拥有与子图相同账户的非零信号 GRT 的情况下进行；如果你没有对子图发出信号，你将需要添加一点策展（添加少量，如 1 GRT 就足够）。
+
+在打开转移工具后，你将能够在“接收钱包地址”字段中输入 L2 钱包地址-请确保你在这里输入的地址是正确的。点击 "Transfer Subgraph" 将提示你在钱包上执行交易（注意，其中包含一定数量的 ETH，用于支付 L2 燃气费用）；这将启动转移并废弃你的 L1 子图（关于背后发生的详细信息，请参见上面的“理解信号、你的 L1 子图和查询 URL 的变化”）。
+
+如果你执行了此步骤，确保在 7 天内完成第 3 步，否则子图和你的信号 GRT 将会丢失。这是由于 L1-L2 消息在 Arbitrum 上的工作方式：通过跨链桥发送的消息是“可重试的票据”，必须在 7 天内执行。如果 Arbitrum 上的燃气价格飙升，初始执行可能需要重试。
+
+![Start the transfer to L2](/img/startTransferL2.png)
+
+## 第 2 步：等待子图到达 L2
+
+在开始转移后，发送你的 L1 子图到 L2 的消息必须通过 Arbitrum 跨链桥传播。这大约需要 20 分钟（跨链桥会等待包含交易的主网区块在潜在的链重组方面是“安全”的）。
+
+等待时间结束后，Arbitrum 将尝试自动在 L2 合约上执行转移。
+
+![Wait screen](/img/screenshotOfWaitScreenL2.png)
+
+## 第 3 步：确认转移
+
+在大多数情况下，这一步将自动执行，因为步骤 1 中包含的 L2 燃气应该足以执行在 Arbitrum 合约上接收子图的交易。但是，在某些情况下，Arbitrum 上的燃气价格激增可能导致此自动执行失败。在这种情况下，发送你的子图到 L2 的“票据”将处于挂起状态，并在 7 天内需要重试。
+
+如果是这种情况，你将需要使用在 Arbitrum 上有一些 ETH 的 L2 钱包进行连接，将你的钱包网络切换到 Arbitrum，并点击“Confirm Transfer”以重试交易。
+
+![Confirm the transfer to L2](/img/confirmTransferToL2.png)
+
+## 第 4 步：在 L2 上完成转移
+
+此时，你的子图和 GRT 已在 Arbitrum 上接收，但子图尚未发布。你需要使用你选择的 L2 钱包连接，将钱包网络切换到 Arbitrum，并点击“发布子图”。
+
+![Publish the subgraph](/img/publishSubgraphL2TransferTools.png)
+
+![Wait for the subgraph to be published](/img/waitForSubgraphToPublishL2TransferTools.png)
+
+这将发布子图，使在 Arbitrum 上运行的索引人可以开始提供服务。它还将使用从 L1 转移过来的 GRT 铸造策展信号。
+
+## 第 5 步：更新查询 URL
+
+你的子图已成功转移到 Arbitrum！要查询子图，新的 URL 将为：
+
+`https://arbitrum-gateway.thegraph.com/api/[api-key]/subgraphs/id/[l2-subgraph-id]`
+
+请注意，Arbitrum 上的子图 ID 将与你在主网上的 ID 不同，但你始终可以在 Explorer 或 Studio 上找到它。如上所述（参见“理解信号、你的 L1 子图和查询 URL 的变化”），旧的 L1 URL 将在短期内支持，但一旦子图在 L2 上同步，应尽快切换查询到新的地址。
+
+## 如何将你的策展转移到 Arbitrum（L2）
+
+## 理解子图转移到 L2 时的策展处理
+
+当子图所有者将子图转移到 Arbitrum 时，所有子图的策展信号都会同时转换为 GRT。这适用于“自动迁移”的信号，即不特定于子图版本或部署的信号，而是遵循子图的最新版本。
+
+这种信号到 GRT 的转换与子图所有者在 L1 上废弃子图时会发生的情况相同。当子图被废弃或转移时，所有策展信号都将同时被“销毁”（使用策展绑定曲线），并且由 GNS 智能合约（负责子图升级和自动迁移信号的合约）持有产生的 GRT。因此，每个在子图上的策展人都对那些 GRT 有一个按份额比例的提取权。
+
+其中一部分与子图所有者对应的 GRT 会与子图一起发送到 L2。
+
+此时，策展的GRT将不再累积任何查询费用，因此，策展人可以选择撤回其GRT或将其转移到L2上的同一子图中，这样可以用于铸造新的策展信号。没有必要匆忙进行此操作，因为GRT可以无限期持有，每个人的份额比例无关紧要。
+
+## 选择你的 L2 钱包
+
+如果决定将策展的GRT转移到L2，可以选择一个不同的钱包作为L2上的策展信号的所有者。
+
+如果使用的是像 Metamask 这样的“普通”钱包（即外部拥有的账户或EOA，即不是智能合约钱包），则此操作是可选的，并建议保持与L1相同的策展人地址。
+
+如果你使用的是智能合约钱包，如多签钱包（例如 Safe），则必须选择不同的L2钱包地址，因为这个账户很可能仅存在于主网，无法使用此钱包在 Arbitrum 上进行交易。如果希望继续使用智能合约钱包或多签钱包，请在 Arbitrum 上创建一个新的钱包，并使用其地址作为L2接收钱包地址。
+
+**使用您自己控制的、可以在 Arbitrum 上进行交易的钱包地址非常重要，否则策展将丢失且无法恢复。**
+
+## 发送策展到L2：步骤1
+
+在开始转移之前，您必须决定哪个地址将在L2上拥有策展信号（参见上文的“选择您的L2钱包”），并建议您当需要在L2上重试消息执行时，提前转移一些用于手续费的 ETH到Arbitrum 上。您可以在某些交易所购买 ETH，并直接提款到 Arbitrum，或者您可以使用 Arbitrum 跨链桥将 ETH 从主网钱包发送到 L2： [bridge.arbitrum.io](http://bridge.arbitrum.io) - 由于 Arbitrum 上的燃料费用非常低，您可能只需要一小笔金额，例如 0.01 ETH 应该足够了。
+
+如果您策展的子图已经转移到L2，您将在Exploer上看到一条消息，告诉您正在为转移的子图进行策展。
+
+在查看子图页面时，您可以选择撤回或转移策展。点击“将信号转移到 Arbitrum”将打开转移工具。
+
+![Transfer signal](/img/transferSignalL2TransferTools.png)
+
+打开转移工具后，如果您没有任何ETH，可能需要向您的钱包添加一些ETH。然后，您将能够在“Receiving wallet address”字段中输入L2钱包地址 - 请确保在此处输入正确的地址。点击转移信号将提示您在钱包上执行交易（注意，包含了一些ETH用于支付L2的燃料费）；这将启动转移过程。
+
+如果执行了此步骤，请确保在不到7天的时间内继续完成第3步，否则您的信号GRT将丢失。这是由于在Arbitrum上的L1-L2消息传递的工作方式：通过跨链桥发送的消息是“可重试的票据”，必须在7天内执行。如果Arbitrum的燃气价格出现波动，初始执行可能需要重试。
+
+## 发送策展到L2：步骤2
+
+开始转移：
+
+![Send signal to L2](/img/sendingCurationToL2Step2First.png)
+
+在开始转移后，发送您的L1策展到L2的消息必须通过Arbitrum跨链桥传播。这大约需要20分钟（跨链桥等待包含交易的主网区块从潜在的链重组中“安全”）。
+
+等待时间结束后，Arbitrum 将尝试自动在 L2 合约上执行转移。
+
+![Sending curation signal to L2](/img/sendingCurationToL2Step2Second.png)
+
+## 将策展转移到L2：步骤3
+
+在大多数情况下，此步骤将自动执行，因为步骤1中包含的L2燃气应足以执行接收策展的交易。但是，在某些情况下，Arbitrum上燃气价格的激增可能导致此自动执行失败。在这种情况下，发送您的策展到L2的“票据”将处于待处理状态，并在7天内需要重试。
+
+如果是这种情况，你将需要使用在 Arbitrum 上有一些 ETH 的 L2 钱包进行连接，将你的钱包网络切换到 Arbitrum，并点击“Confirm Transfer”以重试交易。
+
+![Send signal to L2](/img/L2TransferToolsFinalCurationImage.png)
+
+## 从L1上撤回您的策展
+
+如果您不希望将您的GRT发送到L2，或者您更愿意手动桥接GRT，您可以在L1上撤回您的策展GRT。在子图页面的横幅上，选择“撤回信号”并确认交易；GRT将被发送到您的策展者地址。
