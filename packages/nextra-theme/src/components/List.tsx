@@ -1,42 +1,35 @@
 import { HTMLAttributes } from 'react'
 
-import { Spacing, Text, TextProps } from '@edgeandnode/gds'
+import { List, Spacing } from '@edgeandnode/gds'
 
-export type ListProps = Omit<
-  Omit<TextProps, 'as'> & {
-    as: 'ol' | 'ul'
-  } & HTMLAttributes<HTMLElement>,
-  'color'
->
-
-export type ListSpecificProps = Omit<ListProps, 'as'>
-
-export const List = ({ as, children, ...props }: ListProps) => {
+export const ListOrdered = (props: HTMLAttributes<HTMLOListElement>) => {
   return (
-    <Text
-      as={as}
-      size="18px"
+    <List.Numbers
       sx={{
         mt: Spacing['16px'],
         mb: Spacing['24px'],
-        paddingInlineStart: Spacing['32px'],
-        listStyleType: as === 'ol' ? 'decimal' : 'disc',
-        '& > li': {
-          display: 'list-item',
-          my: Spacing['16px'],
-        },
+        '/* emotion-disable-server-rendering-unsafe-selector-warning-please-do-not-use-this-the-warning-exists-for-a-reason */ &:nth-last-child(1 of :not(style))':
+          { mb: 0 },
       }}
       {...props}
-    >
-      {children}
-    </Text>
+    />
   )
 }
 
-export const ListOrdered = (props: ListSpecificProps) => {
-  return <List as="ol" {...props} />
+export const ListUnordered = (props: HTMLAttributes<HTMLUListElement>) => {
+  return (
+    <List.Arrows
+      sx={{
+        mt: Spacing['16px'],
+        mb: Spacing['24px'],
+        '/* emotion-disable-server-rendering-unsafe-selector-warning-please-do-not-use-this-the-warning-exists-for-a-reason */ &:nth-last-child(1 of :not(style))':
+          { mb: 0 },
+      }}
+      {...props}
+    />
+  )
 }
 
-export const ListUnordered = (props: ListSpecificProps) => {
-  return <List as="ul" {...props} />
+export const ListItem = (props: HTMLAttributes<HTMLLIElement>) => {
+  return <List.Item {...props} />
 }

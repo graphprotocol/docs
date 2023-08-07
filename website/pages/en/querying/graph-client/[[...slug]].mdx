@@ -1,8 +1,9 @@
 import { RemoteContent } from 'nextra/data'
 import { buildDynamicMDX } from 'nextra/remote'
+import { getPageMap } from '@/src/getPageMap'
+import { remarkReplaceLinks } from '@/src/remarkReplaceLinks'
 import { Mermaid } from 'nextra/components'
 import { visit } from 'unist-util-visit'
-import { getPageMap } from '@/src/getPageMap'
 import json from '@/remote-files/graph-client.json'
 
 export const getStaticPaths = () => ({
@@ -20,9 +21,8 @@ export async function getStaticProps({ params }) {
   const foundPath = filePaths.find((filePath) => filePath.startsWith(paths))
   const baseURL = `https://raw.githubusercontent.com/${user}/${repo}/${branch}/${docsPath}${foundPath}`
   const response = await fetch(baseURL)
-  const data = await response.text()
-  const mdx = await buildDynamicMDX(data, {
-    codeHighlight: false,
+  const content = await response.text()
+  const mdx = await buildDynamicMDX(content, {
     mdxOptions: {
       remarkPlugins: [
         () => (tree, _file, done) => {
@@ -33,8 +33,10 @@ export async function getStaticProps({ params }) {
           })
           done()
         },
+        [remarkReplaceLinks, { foundPath, basePath: '/querying/graph-client/' }],
       ],
     },
+    codeHighlight: false,
   })
   return {
     props: {

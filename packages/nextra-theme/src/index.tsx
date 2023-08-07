@@ -8,7 +8,8 @@ import { ReactElement, useCallback, useMemo } from 'react'
 import { useSet } from 'react-use'
 import { ThemeUIStyleObject } from 'theme-ui'
 
-import { Divider, DividerProps, Flex, Spacing, useI18n } from '@edgeandnode/gds'
+import { Divider, DividerProps, Flex, Icon, Spacing, useI18n } from '@edgeandnode/gds'
+import { NPSForm } from '@edgeandnode/organisms'
 
 import {
   Blockquote,
@@ -18,8 +19,8 @@ import {
   EditPageLink,
   Heading,
   Image,
-  Link,
   LinkInline,
+  ListItem,
   ListOrdered,
   ListUnordered,
   Paragraph,
@@ -41,15 +42,16 @@ const mdxComponents = {
   h6: Heading.H6,
   img: Image,
   a: LinkInline,
+  li: ListItem,
   ol: ListOrdered,
   ul: ListUnordered,
   p: Paragraph,
   table: Table,
-  VideoEmbed,
-  Difficulty,
   CodeInline,
+  Difficulty,
   ListUnordered,
   Table,
+  VideoEmbed,
 }
 
 const mdxStyles: ThemeUIStyleObject = {
@@ -61,11 +63,11 @@ const mdxStyles: ThemeUIStyleObject = {
   },
 }
 
-export { Heading, Image, Link, LinkInline, Paragraph }
+export { Heading, Image, LinkInline, Paragraph }
 
 export default function NextraLayout({ children, pageOpts, pageProps }: NextraThemeLayoutProps): ReactElement {
   const { frontMatter, filePath, pageMap, headings, title } = pageOpts
-  const { locale, defaultLocale } = useI18n()
+  const { locale, defaultLocale } = useI18n<any>()
   const fsPath = useFSRoute()
 
   const args = useMemo(() => {
@@ -93,7 +95,7 @@ export default function NextraLayout({ children, pageOpts, pageProps }: NextraTh
       ...result,
       directories: removeNonExistedRoutes(result.directories),
       flatDirectories: result.flatDirectories.filter(
-        (item) => item.type !== 'separator' && item.type !== 'heading' && item.route !== ''
+        (item) => item.type !== 'separator' && item.type !== 'heading' && item.route !== '',
       ),
     }
   }, [defaultLocale, fsPath, locale, pageMap])
@@ -112,7 +114,7 @@ export default function NextraLayout({ children, pageOpts, pageProps }: NextraTh
         markOutlineItemAsNotInOrAboveView(id)
       }
     },
-    [markOutlineItemAsInOrAboveView, markOutlineItemAsNotInOrAboveView]
+    [markOutlineItemAsInOrAboveView, markOutlineItemAsNotInOrAboveView],
   )
   // Compute `highlightedOutlineItemId` for the `DocumentContext` based on outline items that have been marked as "in or above view"
   const highlightedOutlineItemId = useMemo(() => {
@@ -148,8 +150,8 @@ export default function NextraLayout({ children, pageOpts, pageProps }: NextraTh
         <div
           sx={{
             display: ['flex', null, null, 'grid'],
-            gridTemplateColumns: '244px auto 216px',
             flexDirection: 'column',
+            gridTemplateColumns: '224px auto 224px',
           }}
         >
           <div
@@ -157,18 +159,13 @@ export default function NextraLayout({ children, pageOpts, pageProps }: NextraTh
               display: ['none', null, null, 'block'],
               mt: 'calc(-1 * var(--gds-header-height) * var(--gds-header-fixed))',
               marginInlineStart: '-8px',
-              marginInlineEnd: '24px',
+              marginInlineEnd: '16px',
             }}
           >
             <MDXLayoutNav />
           </div>
 
-          <div
-            sx={{
-              pt: [null, null, null, Spacing['32px']],
-              pb: Spacing['64px'],
-            }}
-          >
+          <div sx={{ pt: [null, null, null, Spacing['32px']] }}>
             <div sx={{ display: [null, null, null, 'none'], mb: Spacing['32px'] }}>
               <MDXLayoutNav mobile />
             </div>
@@ -190,6 +187,30 @@ export default function NextraLayout({ children, pageOpts, pageProps }: NextraTh
 
             <div sx={{ mt: Spacing['64px'] }}>
               <MDXLayoutPagination />
+              {/* TODO: Uncomment when we're ready to add the NPS form to the docs
+              <NPSForm
+                key={fsPath}
+                question="Was this page helpful?"
+                choices={[
+                  {
+                    label: 'No',
+                    commentsLabel: 'How can we improve this page?',
+                    icon: <Icon.ThumbsDown title="No" size="24px" />,
+                    hideLabel: true,
+                    score: -1,
+                  },
+                  {
+                    label: 'Yes',
+                    commentsLabel: 'In what way did this page help you?',
+                    icon: <Icon.ThumbsUp title="Yes" size="24px" />,
+                    hideLabel: true,
+                    score: 1,
+                  },
+                ]}
+                chipSize="xlarge"
+                sx={{ mb: Spacing['32px'] }}
+              />
+              */}
             </div>
           </div>
 
@@ -197,7 +218,7 @@ export default function NextraLayout({ children, pageOpts, pageProps }: NextraTh
             sx={{
               display: ['none', null, null, 'block'],
               mt: 'calc(-1 * var(--gds-header-height) * var(--gds-header-fixed))',
-              marginInlineStart: '40px',
+              marginInlineStart: '32px',
               marginInlineEnd: '-8px',
             }}
           >

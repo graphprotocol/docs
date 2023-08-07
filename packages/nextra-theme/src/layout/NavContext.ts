@@ -5,4 +5,4 @@ type NavContextProps = {
   filePath: string
 } & ReturnType<typeof normalizePages>
 
-export const NavContext = createContext<NavContextProps>({} as any)
+export const NavContext = createContext<NavContextProps | null>(null)
