@@ -1,0 +1,1178 @@
+---
+title: Creating a Subgraph
+---
+
+A subgraph extracts data from a blockchain, processing it and storing it so that it can be easily queried via GraphQL.
+
+![Defining a Subgraph](/img/defining-a-subgraph.png)
+
+The subgraph definition consists of a few files:
+
+- `subgraph.yaml`: a YAML file containing the subgraph manifest
+
+- `schema.graphql`: a GraphQL schema that defines what data is stored for your subgraph, and how to query it via GraphQL
+
+- `AssemblyScript Mappings`: [AssemblyScript](https://github.com/AssemblyScript/assemblyscript) code that translates from the event data to the entities defined in your schema (e.g. `mapping.ts` in this tutorial)
+
+> In order to use your subgraph on The Graph's decentralized network, you will need to [create an API key](/deploying/subgraph-studio-faqs/#2-how-do-i-create-an-api-key). It is recommended that you [add signal](/network/curating/#how-to-signal) to your subgraph with at least [10,000 GRT](/network-transition-faq/#how-can-i-ensure-that-my-subgraph-will-be-picked-up-by-indexer-on-the-graph-network).
+
+Before you go into detail about the contents of the manifest file, you need to install the [Graph CLI](https://github.com/graphprotocol/graph-cli) which you will need to build and deploy a subgraph.
+
+## Install the Graph CLI
+
+The Graph CLI is written in JavaScript, and you will need to install either `yarn` or `npm` to use it; it is assumed that you have yarn in what follows.
+
+Once you have `yarn`, install the Graph CLI by running
+
+**Install with yarn:**
+
+```bash
+yarn global add @graphprotocol/graph-cli
+```
+
+**Install with npm:**
+
+```bash
+npm install -g @graphprotocol/graph-cli
+```
+
+Once installed, the `graph init` command can be used to set up a new subgraph project, either from an existing contract or from an example subgraph. This command can be used to create a subgraph on the Subgraph Studio by passing in `graph init --product subgraph-studio`. If you already have a smart contract deployed to your preferred network, bootstrapping a new subgraph from that contract can be a good way to get started.
+
+## From An Existing Contract
+
+The following command creates a subgraph that indexes all events of an existing contract. It attempts to fetch the contract ABI from Etherscan and falls back to requesting a local file path. If any of the optional arguments are missing, it takes you through an interactive form.
+
+```sh
+graph init \
+  --product subgraph-studio
+  --from-contract <CONTRACT_ADDRESS> \
+  [--network <ETHEREUM_NETWORK>] \
+  [--abi <FILE>] \
+  <SUBGRAPH_SLUG> [<DIRECTORY>]
+```
+
+The `<SUBGRAPH_SLUG>` is the ID of your subgraph in Subgraph Studio, it can be found on your subgraph details page.
+
+## From An Example Subgraph
+
+The second mode `graph init` supports is creating a new project from an example subgraph. The following command does this:
+
+```sh
+graph init --studio <SUBGRAPH_SLUG>
+```
+
+The example subgraph is based on the Gravity contract by Dani Grant that manages user avatars and emits `NewGravatar` or `UpdateGravatar` events whenever avatars are created or updated. The subgraph handles these events by writing `Gravatar` entities to the Graph Node store and ensuring these are updated according to the events. The following sections will go over the files that make up the subgraph manifest for this example.
+
+## Add New dataSources To An Existing Subgraph
+
+Since `v0.31.0` the `graph-cli` supports adding new dataSources to an existing subgraph through the `graph add` command.
+
+```sh
+graph add <address> [<subgraph-manifest default: "./subgraph.yaml">]
+
+Options:
+
+      --abi <path>              Path to the contract ABI (default: download from Etherscan)
+      --contract-name           Name of the contract (default: Contract)
+      --merge-entities          Whether to merge entities with the same name (default: false)
+      --network-file <path>     Networks config file path (default: "./networks.json")
+```
+
+The `add` command will fetch the ABI from Etherscan (unless an ABI path is specified with the `--abi` option), and will create a new `dataSource` in the same way that `graph init` command creates a `dataSource` `--from-contract`, updating the schema and mappings accordingly.
+
+The `--merge-entities` option identifies how the developer would like to handle `entity` and `event` name conflicts:
+
+- If `true`: the new `dataSource` should use existing `eventHandlers` & `entities`.
+- If `false`: a new entity & event handler should be created with `${dataSourceName}{EventName}`.
+
+The contract `address` will be written to the `networks.json` for the relevant network.
+
+> **Note:** When using the interactive cli, after successfully running `graph init`, you'll be prompted to add a new `dataSource`.
+
+## The Subgraph Manifest
+
+The subgraph manifest `subgraph.yaml` defines the smart contracts your subgraph indexes, which events from these contracts to pay attention to, and how to map event data to entities that Graph Node stores and allows to query. The full specification for subgraph manifests can be found [here](https://github.com/graphprotocol/graph-node/blob/master/docs/subgraph-manifest.md).
+
+For the example subgraph, `subgraph.yaml` is:
+
+```yaml
+specVersion: 0.0.4
+description: Gravatar for Ethereum
+repository: https://github.com/graphprotocol/graph-tooling
+schema:
+  file: ./schema.graphql
+dataSources:
+  - kind: ethereum/contract
+    name: Gravity
+    network: mainnet
+    source:
+      address: '0x2E645469f354BB4F5c8a05B3b30A929361cf77eC'
+      abi: Gravity
+      startBlock: 6175244
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.6
+      language: wasm/assemblyscript
+      entities:
+        - Gravatar
+      abis:
+        - name: Gravity
+          file: ./abis/Gravity.json
+      eventHandlers:
+        - event: NewGravatar(uint256,address,string,string)
+          handler: handleNewGravatar
+        - event: UpdatedGravatar(uint256,address,string,string)
+          handler: handleUpdatedGravatar
+      callHandlers:
+        - function: createGravatar(string,string)
+          handler: handleCreateGravatar
+      blockHandlers:
+        - handler: handleBlock
+        - handler: handleBlockWithCall
+          filter:
+            kind: call
+      file: ./src/mapping.ts
+```
+
+The important entries to update for the manifest are:
+
+- `description`: a human-readable description of what the subgraph is. This description is displayed by the Graph Explorer when the subgraph is deployed to the Hosted Service.
+
+- `repository`: the URL of the repository where the subgraph manifest can be found. This is also displayed by The Graph Explorer.
+
+- `features`: a list of all used [feature](#experimental-features) names.
+
+- `dataSources.source`: the address of the smart contract the subgraph sources, and the ABI of the smart contract to use. The address is optional; omitting it allows to index matching events from all contracts.
+
+- `dataSources.source.startBlock`: the optional number of the block that the data source starts indexing from. In most cases, we suggest using the block in which the contract was created.
+
+- `dataSources.mapping.entities`: the entities that the data source writes to the store. The schema for each entity is defined in the schema.graphql file.
+
+- `dataSources.mapping.abis`: one or more named ABI files for the source contract as well as any other smart contracts that you interact with from within the mappings.
+
+- `dataSources.mapping.eventHandlers`: lists the smart contract events this subgraph reacts to and the handlers in the mapping—./src/mapping.ts in the example—that transform these events into entities in the store.
+
+- `dataSources.mapping.callHandlers`: lists the smart contract functions this subgraph reacts to and handlers in the mapping that transform the inputs and outputs to function calls into entities in the store.
+
+- `dataSources.mapping.blockHandlers`: lists the blocks this subgraph reacts to and handlers in the mapping to run when a block is appended to the chain. Without a filter, the block handler will be run every block. An optional call-filter can be provided by adding a `filter` field with `kind: call` to the handler. This will only run the handler if the block contains at least one call to the data source contract.
+
+A single subgraph can index data from multiple smart contracts. Add an entry for each contract from which data needs to be indexed to the `dataSources` array.
+
+The triggers for a data source within a block are ordered using the following process:
+
+1. Event and call triggers are first ordered by transaction index within the block.
+2. Event and call triggers within the same transaction are ordered using a convention: event triggers first then call triggers, each type respecting the order they are defined in the manifest.
+3. Block triggers are run after event and call triggers, in the order they are defined in the manifest.
+
+These ordering rules are subject to change.
+
+### Getting The ABIs
+
+The ABI file(s) must match your contract(s). There are a few ways to obtain ABI files:
+
+- If you are building your own project, you will likely have access to your most current ABIs.
+- If you are building a subgraph for a public project, you can download that project to your computer and get the ABI by using [`truffle compile`](https://truffleframework.com/docs/truffle/overview) or using solc to compile.
+- You can also find the ABI on [Etherscan](https://etherscan.io/), but this isn't always reliable, as the ABI that is uploaded there may be out of date. Make sure you have the right ABI, otherwise running your subgraph will fail.
+
+## The GraphQL Schema
+
+The schema for your subgraph is in the file `schema.graphql`. GraphQL schemas are defined using the GraphQL interface definition language. If you've never written a GraphQL schema, it is recommended that you check out this primer on the GraphQL type system. Reference documentation for GraphQL schemas can be found in the [GraphQL API](/querying/graphql-api) section.
+
+## Defining Entities
+
+Before defining entities, it is important to take a step back and think about how your data is structured and linked. All queries will be made against the data model defined in the subgraph schema and the entities indexed by the subgraph. Because of this, it is good to define the subgraph schema in a way that matches the needs of your dapp. It may be useful to imagine entities as "objects containing data", rather than as events or functions.
+
+With The Graph, you simply define entity types in `schema.graphql`, and Graph Node will generate top level fields for querying single instances and collections of that entity type. Each type that should be an entity is required to be annotated with an `@entity` directive. By default, entities are mutable, meaning that mappings can load existing entities, modify them and store a new version of that entity. Mutability comes at a price, and for entity types for which it is known that they will never be modified, for example, because they simply contain data extracted verbatim from the chain, it is recommended to mark them as immutable with `@entity(immutable: true)`. Mappings can make changes to immutable entities as long as those changes happen in the same block in which the entity was created. Immutable entities are much faster to write and to query, and should therefore be used whenever possible.
+
+### Good Example
+
+The `Gravatar` entity below is structured around a Gravatar object and is a good example of how an entity could be defined.
+
+```graphql
+type Gravatar @entity(immutable: true) {
+  id: Bytes!
+  owner: Bytes
+  displayName: String
+  imageUrl: String
+  accepted: Boolean
+}
+```
+
+### Bad Example
+
+The example `GravatarAccepted` and `GravatarDeclined` entities below are based around events. It is not recommended to map events or function calls to entities 1:1.
+
+```graphql
+type GravatarAccepted @entity {
+  id: Bytes!
+  owner: Bytes
+  displayName: String
+  imageUrl: String
+}
+
+type GravatarDeclined @entity {
+  id: Bytes!
+  owner: Bytes
+  displayName: String
+  imageUrl: String
+}
+```
+
+### Optional and Required Fields
+
+Entity fields can be defined as required or optional. Required fields are indicated by the `!` in the schema. If a required field is not set in the mapping, you will receive this error when querying the field:
+
+```
+Null value resolved for non-null field 'name'
+```
+
+Each entity must have an `id` field, which must be of type `Bytes!` or `String!`. It is generally recommended to use `Bytes!`, unless the `id` contains human-readable text, since entities with `Bytes!` id's will be faster to write and query as those with a `String!` `id`. The `id` field serves as the primary key, and needs to be unique among all entities of the same type. For historical reasons, the type `ID!` is also accepted and is a synonym for `String!`.
+
+For some entity types the `id` is constructed from the id's of two other entities; that is possible using `concat`, e.g., `let id = left.id.concat(right.id)` to form the id from the id's of `left` and `right`. Similarly, to construct an id from the id of an existing entity and a counter `count`, `let id = left.id.concatI32(count)` can be used. The concatenation is guaranteed to produce unique id's as long as the length of `left` is the same for all such entities, for example, because `left.id` is an `Address`.
+
+### Built-In Scalar Types
+
+#### GraphQL Supported Scalars
+
+We support the following scalars in our GraphQL API:
+
+| Type         | Description                                                                                                                                                                          |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `Bytes`      | Byte array, represented as a hexadecimal string. Commonly used for Ethereum hashes and addresses.                                                                                    |
+| `String`     | Scalar for `string` values. Null characters are not supported and are automatically removed.                                                                                         |
+| `Boolean`    | Scalar for `boolean` values.                                                                                                                                                         |
+| `Int`        | The GraphQL spec defines `Int` to have a size of 32 bytes.                                                                                                                           |
+| `BigInt`     | Large integers. Used for Ethereum's `uint32`, `int64`, `uint64`, ..., `uint256` types. Note: Everything below `uint32`, such as `int32`, `uint24` or `int8` is represented as `i32`. |
+| `BigDecimal` | `BigDecimal` High precision decimals represented as a significand and an exponent. The exponent range is from −6143 to +6144. Rounded to 34 significant digits.                      |
+
+#### Enums
+
+You can also create enums within a schema. Enums have the following syntax:
+
+```graphql
+enum TokenStatus {
+  OriginalOwner
+  SecondOwner
+  ThirdOwner
+}
+```
+
+Once the enum is defined in the schema, you can use the string representation of the enum value to set an enum field on an entity. For example, you can set the `tokenStatus` to `SecondOwner` by first defining your entity and subsequently setting the field with `entity.tokenStatus = "SecondOwner"`. The example below demonstrates what the Token entity would look like with an enum field:
+
+More detail on writing enums can be found in the [GraphQL documentation](https://graphql.org/learn/schema/).
+
+#### Entity Relationships
+
+An entity may have a relationship to one or more other entities in your schema. These relationships may be traversed in your queries. Relationships in The Graph are unidirectional. It is possible to simulate bidirectional relationships by defining a unidirectional relationship on either "end" of the relationship.
+
+Relationships are defined on entities just like any other field except that the type specified is that of another entity.
+
+#### One-To-One Relationships
+
+Define a `Transaction` entity type with an optional one-to-one relationship with a `TransactionReceipt` entity type:
+
+```graphql
+type Transaction @entity(immutable: true) {
+  id: Bytes!
+  transactionReceipt: TransactionReceipt
+}
+
+type TransactionReceipt @entity(immutable: true) {
+  id: Bytes!
+  transaction: Transaction
+}
+```
+
+#### One-To-Many Relationships
+
+Define a `TokenBalance` entity type with a required one-to-many relationship with a Token entity type:
+
+```graphql
+type Token @entity(immutable: true) {
+  id: Bytes!
+}
+
+type TokenBalance @entity {
+  id: Bytes!
+  amount: Int!
+  token: Token!
+}
+```
+
+#### Reverse Lookups
+
+Reverse lookups can be defined on an entity through the `@derivedFrom` field. This creates a virtual field on the entity that may be queried but cannot be set manually through the mappings API. Rather, it is derived from the relationship defined on the other entity. For such relationships, it rarely makes sense to store both sides of the relationship, and both indexing and query performance will be better when only one side is stored and the other is derived.
+
+For one-to-many relationships, the relationship should always be stored on the 'one' side, and the 'many' side should always be derived. Storing the relationship this way, rather than storing an array of entities on the 'many' side, will result in dramatically better performance for both indexing and querying the subgraph. In general, storing arrays of entities should be avoided as much as is practical.
+
+#### Example
+
+We can make the balances for a token accessible from the token by deriving a `tokenBalances` field:
+
+```graphql
+type Token @entity(immutable: true) {
+  id: Bytes!
+  tokenBalances: [TokenBalance!]! @derivedFrom(field: "token")
+}
+
+type TokenBalance @entity {
+  id: Bytes!
+  amount: Int!
+  token: Token!
+}
+```
+
+#### Many-To-Many Relationships
+
+For many-to-many relationships, such as users that each may belong to any number of organizations, the most straightforward, but generally not the most performant, way to model the relationship is as an array in each of the two entities involved. If the relationship is symmetric, only one side of the relationship needs to be stored and the other side can be derived.
+
+#### Example
+
+Define a reverse lookup from a `User` entity type to an `Organization` entity type. In the example below, this is achieved by looking up the `members` attribute from within the `Organization` entity. In queries, the `organizations` field on `User` will be resolved by finding all `Organization` entities that include the user's ID.
+
+```graphql
+type Organization @entity {
+  id: Bytes!
+  name: String!
+  members: [User!]!
+}
+
+type User @entity {
+  id: Bytes!
+  name: String!
+  organizations: [Organization!]! @derivedFrom(field: "members")
+}
+```
+
+A more performant way to store this relationship is through a mapping table that has one entry for each `User` / `Organization` pair with a schema like
+
+```graphql
+type Organization @entity {
+  id: Bytes!
+  name: String!
+  members: [UserOrganization!]! @derivedFrom(field: "organization")
+}
+
+type User @entity {
+  id: Bytes!
+  name: String!
+  organizations: [UserOrganization!] @derivedFrom(field: "user")
+}
+
+type UserOrganization @entity {
+  id: Bytes! # Set to `user.id.concat(organization.id)`
+  user: User!
+  organization: Organization!
+}
+```
+
+This approach requires that queries descend into one additional level to retrieve, for example, the organizations for users:
+
+```graphql
+query usersWithOrganizations {
+  users {
+    organizations {
+      # this is a UserOrganization entity
+      organization {
+        name
+      }
+    }
+  }
+}
+```
+
+This more elaborate way of storing many-to-many relationships will result in less data stored for the subgraph, and therefore to a subgraph that is often dramatically faster to index and to query.
+
+#### Adding comments to the schema
+
+As per GraphQL spec, comments can be added above schema entity attributes using double quotations `""`. This is illustrated in the example below:
+
+```graphql
+type MyFirstEntity @entity {
+  "unique identifier and primary key of the entity"
+  id: Bytes!
+  address: Bytes!
+}
+```
+
+## Defining Fulltext Search Fields
+
+Fulltext search queries filter and rank entities based on a text search input. Fulltext queries are able to return matches for similar words by processing the query text input into stems before comparing them to the indexed text data.
+
+A fulltext query definition includes the query name, the language dictionary used to process the text fields, the ranking algorithm used to order the results, and the fields included in the search. Each fulltext query may span multiple fields, but all included fields must be from a single entity type.
+
+To add a fulltext query, include a `_Schema_` type with a fulltext directive in the GraphQL schema.
+
+```graphql
+type _Schema_
+  @fulltext(
+    name: "bandSearch"
+    language: en
+    algorithm: rank
+    include: [{ entity: "Band", fields: [{ name: "name" }, { name: "description" }, { name: "bio" }] }]
+  )
+
+type Band @entity {
+  id: Bytes!
+  name: String!
+  description: String!
+  bio: String
+  wallet: Address
+  labels: [Label!]!
+  discography: [Album!]!
+  members: [Musician!]!
+}
+```
+
+The example `bandSearch` field can be used in queries to filter `Band` entities based on the text documents in the `name`, `description`, and `bio` fields. Jump to [GraphQL API - Queries](/querying/graphql-api#queries) for a description of the fulltext search API and more example usage.
+
+```graphql
+query {
+  bandSearch(text: "breaks & electro & detroit") {
+    id
+    name
+    description
+    wallet
+  }
+}
+```
+
+> **[Feature Management](#experimental-features):** From `specVersion` `0.0.4` and onwards, `fullTextSearch` must be declared under the `features` section in the subgraph manifest.
+
+### Languages supported
+
+Choosing a different language will have a definitive, though sometimes subtle, effect on the fulltext search API. Fields covered by a fulltext query field are examined in the context of the chosen language, so the lexemes produced by analysis and search queries vary from language to language. For example: when using the supported Turkish dictionary "token" is stemmed to "toke" while, of course, the English dictionary will stem it to "token".
+
+Supported language dictionaries:
+
+| Code   | Dictionary |
+| ------ | ---------- |
+| simple | General    |
+| da     | Danish     |
+| nl     | Dutch      |
+| en     | English    |
+| fi     | Finnish    |
+| fr     | French     |
+| de     | German     |
+| hu     | Hungarian  |
+| it     | Italian    |
+| no     | Norwegian  |
+| pt     | Portuguese |
+| ro     | Romanian   |
+| ru     | Russian    |
+| es     | Spanish    |
+| sv     | Swedish    |
+| tr     | Turkish    |
+
+### Ranking Algorithms
+
+Supported algorithms for ordering results:
+
+| Algorithm     | Description                                                             |
+| ------------- | ----------------------------------------------------------------------- |
+| rank          | Use the match quality (0-1) of the fulltext query to order the results. |
+| proximityRank | Similar to rank but also includes the proximity of the matches.         |
+
+## Writing Mappings
+
+The mappings take data from a particular source and transform it into entities that are defined within your schema. Mappings are written in a subset of [TypeScript](https://www.typescriptlang.org/docs/handbook/typescript-in-5-minutes.html) called [AssemblyScript](https://github.com/AssemblyScript/assemblyscript/wiki) which can be compiled to WASM ([WebAssembly](https://webassembly.org/)). AssemblyScript is stricter than normal TypeScript, yet provides a familiar syntax.
+
+For each event handler that is defined in `subgraph.yaml` under `mapping.eventHandlers`, create an exported function of the same name. Each handler must accept a single parameter called `event` with a type corresponding to the name of the event which is being handled.
+
+In the example subgraph, `src/mapping.ts` contains handlers for the `NewGravatar` and `UpdatedGravatar` events:
+
+```javascript
+import { NewGravatar, UpdatedGravatar } from '../generated/Gravity/Gravity'
+import { Gravatar } from '../generated/schema'
+
+export function handleNewGravatar(event: NewGravatar): void {
+  let gravatar = new Gravatar(event.params.id)
+  gravatar.owner = event.params.owner
+  gravatar.displayName = event.params.displayName
+  gravatar.imageUrl = event.params.imageUrl
+  gravatar.save()
+}
+
+export function handleUpdatedGravatar(event: UpdatedGravatar): void {
+  let id = event.params.id
+  let gravatar = Gravatar.load(id)
+  if (gravatar == null) {
+    gravatar = new Gravatar(id)
+  }
+  gravatar.owner = event.params.owner
+  gravatar.displayName = event.params.displayName
+  gravatar.imageUrl = event.params.imageUrl
+  gravatar.save()
+}
+```
+
+The first handler takes a `NewGravatar` event and creates a new `Gravatar` entity with `new Gravatar(event.params.id.toHex())`, populating the entity fields using the corresponding event parameters. This entity instance is represented by the variable `gravatar`, with an id value of `event.params.id.toHex()`.
+
+The second handler tries to load the existing `Gravatar` from the Graph Node store. If it does not exist yet, it is created on-demand. The entity is then updated to match the new event parameters before it is saved back to the store using `gravatar.save()`.
+
+### Recommended IDs for Creating New Entities
+
+Every entity has to have an `id` that is unique among all entities of the same type. An entity's `id` value is set when the entity is created. Below are some recommended `id` values to consider when creating new entities. NOTE: The value of `id` must be a `string`.
+
+- `event.params.id.toHex()`
+- `event.transaction.from.toHex()`
+- `event.transaction.hash.toHex() + "-" + event.logIndex.toString()`
+
+We provide the [Graph Typescript Library](https://github.com/graphprotocol/graph-ts) which contains utilies for interacting with the Graph Node store and conveniences for handling smart contract data and entities. You can use this library in your mappings by importing `@graphprotocol/graph-ts` in `mapping.ts`.
+
+## Code Generation
+
+In order to make it easy and type-safe to work with smart contracts, events and entities, the Graph CLI can generate AssemblyScript types from the subgraph's GraphQL schema and the contract ABIs included in the data sources.
+
+This is done with
+
+```sh
+graph codegen [--output-dir <OUTPUT_DIR>] [<MANIFEST>]
+```
+
+but in most cases, subgraphs are already preconfigured via `package.json` to allow you to simply run one of the following to achieve the same:
+
+```sh
+# Yarn
+yarn codegen
+
+# NPM
+npm run codegen
+```
+
+This will generate an AssemblyScript class for every smart contract in the ABI files mentioned in `subgraph.yaml`, allowing you to bind these contracts to specific addresses in the mappings and call read-only contract methods against the block being processed. It will also generate a class for every contract event to provide easy access to event parameters, as well as the block and transaction the event originated from. All of these types are written to `<OUTPUT_DIR>/<DATA_SOURCE_NAME>/<ABI_NAME>.ts`. In the example subgraph, this would be `generated/Gravity/Gravity.ts`, allowing mappings to import these types with.
+
+```javascript
+import {
+  // The contract class:
+  Gravity,
+  // The events classes:
+  NewGravatar,
+  UpdatedGravatar,
+} from '../generated/Gravity/Gravity'
+```
+
+In addition to this, one class is generated for each entity type in the subgraph's GraphQL schema. These classes provide type-safe entity loading, read and write access to entity fields as well as a `save()` method to write entities to store. All entity classes are written to `<OUTPUT_DIR>/schema.ts`, allowing mappings to import them with
+
+```javascript
+import { Gravatar } from '../generated/schema'
+```
+
+> **Note:** The code generation must be performed again after every change to the GraphQL schema or the ABIs included in the manifest. It must also be performed at least once before building or deploying the subgraph.
+
+Code generation does not check your mapping code in `src/mapping.ts`. If you want to check that before trying to deploy your subgraph to the Graph Explorer, you can run `yarn build` and fix any syntax errors that the TypeScript compiler might find.
+
+## Data Source Templates
+
+A common pattern in EVM-compatible smart contracts is the use of registry or factory contracts, where one contract creates, manages, or references an arbitrary number of other contracts that each have their own state and events.
+
+The addresses of these sub-contracts may or may not be known upfront and many of these contracts may be created and/or added over time. This is why, in such cases, defining a single data source or a fixed number of data sources is impossible and a more dynamic approach is needed: _data source templates_.
+
+### Data Source for the Main Contract
+
+First, you define a regular data source for the main contract. The snippet below shows a simplified example data source for the [Uniswap](https://uniswap.org) exchange factory contract. Note the `NewExchange(address,address)` event handler. This is emitted when a new exchange contract is created on-chain by the factory contract.
+
+```yaml
+dataSources:
+  - kind: ethereum/contract
+    name: Factory
+    network: mainnet
+    source:
+      address: '0xc0a47dFe034B400B47bDaD5FecDa2621de6c4d95'
+      abi: Factory
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.6
+      language: wasm/assemblyscript
+      file: ./src/mappings/factory.ts
+      entities:
+        - Directory
+      abis:
+        - name: Factory
+          file: ./abis/factory.json
+      eventHandlers:
+        - event: NewExchange(address,address)
+          handler: handleNewExchange
+```
+
+### Data Source Templates for Dynamically Created Contracts
+
+Then, you add _data source templates_ to the manifest. These are identical to regular data sources, except that they lack a pre-defined contract address under `source`. Typically, you would define one template for each type of sub-contract managed or referenced by the parent contract.
+
+```yaml
+dataSources:
+  - kind: ethereum/contract
+    name: Factory
+    # ... other source fields for the main contract ...
+templates:
+  - name: Exchange
+    kind: ethereum/contract
+    network: mainnet
+    source:
+      abi: Exchange
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.6
+      language: wasm/assemblyscript
+      file: ./src/mappings/exchange.ts
+      entities:
+        - Exchange
+      abis:
+        - name: Exchange
+          file: ./abis/exchange.json
+      eventHandlers:
+        - event: TokenPurchase(address,uint256,uint256)
+          handler: handleTokenPurchase
+        - event: EthPurchase(address,uint256,uint256)
+          handler: handleEthPurchase
+        - event: AddLiquidity(address,uint256,uint256)
+          handler: handleAddLiquidity
+        - event: RemoveLiquidity(address,uint256,uint256)
+          handler: handleRemoveLiquidity
+```
+
+### Instantiating a Data Source Template
+
+In the final step, you update your main contract mapping to create a dynamic data source instance from one of the templates. In this example, you would change the main contract mapping to import the `Exchange` template and call the `Exchange.create(address)` method on it to start indexing the new exchange contract.
+
+```typescript
+import { Exchange } from '../generated/templates'
+
+export function handleNewExchange(event: NewExchange): void {
+  // Start indexing the exchange; `event.params.exchange` is the
+  // address of the new exchange contract
+  Exchange.create(event.params.exchange)
+}
+```
+
+> **Note:** A new data source will only process the calls and events for the block in which it was created and all following blocks, but will not process historical data, i.e., data that is contained in prior blocks.
+> 
+> If prior blocks contain data relevant to the new data source, it is best to index that data by reading the current state of the contract and creating entities representing that state at the time the new data source is created.
+
+### Data Source Context
+
+Data source contexts allow passing extra configuration when instantiating a template. In our example, let's say exchanges are associated with a particular trading pair, which is included in the `NewExchange` event. That information can be passed into the instantiated data source, like so:
+
+```typescript
+import { Exchange } from '../generated/templates'
+
+export function handleNewExchange(event: NewExchange): void {
+  let context = new DataSourceContext()
+  context.setString('tradingPair', event.params.tradingPair)
+  Exchange.createWithContext(event.params.exchange, context)
+}
+```
+
+Inside a mapping of the `Exchange` template, the context can then be accessed:
+
+```typescript
+import { dataSource } from '@graphprotocol/graph-ts'
+
+let context = dataSource.context()
+let tradingPair = context.getString('tradingPair')
+```
+
+There are setters and getters like `setString` and `getString` for all value types.
+
+## Start Blocks
+
+The `startBlock` is an optional setting that allows you to define from which block in the chain the data source will start indexing. Setting the start block allows the data source to skip potentially millions of blocks that are irrelevant. Typically, a subgraph developer will set `startBlock` to the block in which the smart contract of the data source was created.
+
+```yaml
+dataSources:
+  - kind: ethereum/contract
+    name: ExampleSource
+    network: mainnet
+    source:
+      address: '0xc0a47dFe034B400B47bDaD5FecDa2621de6c4d95'
+      abi: ExampleContract
+      startBlock: 6627917
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.6
+      language: wasm/assemblyscript
+      file: ./src/mappings/factory.ts
+      entities:
+        - User
+      abis:
+        - name: ExampleContract
+          file: ./abis/ExampleContract.json
+      eventHandlers:
+        - event: NewEvent(address,address)
+          handler: handleNewEvent
+```
+
+> **Note:** The contract creation block can be quickly looked up on Etherscan:
+> 
+> 1. Search for the contract by entering its address in the search bar.
+> 2. Click on the creation transaction hash in the `Contract Creator` section.
+> 3. Load the transaction details page where you'll find the start block for that contract.
+
+## Call Handlers
+
+While events provide an effective way to collect relevant changes to the state of a contract, many contracts avoid generating logs to optimize gas costs. In these cases, a subgraph can subscribe to calls made to the data source contract. This is achieved by defining call handlers referencing the function signature and the mapping handler that will process calls to this function. To process these calls, the mapping handler will receive an `ethereum.Call` as an argument with the typed inputs to and outputs from the call. Calls made at any depth in a transaction's call chain will trigger the mapping, allowing activity with the data source contract through proxy contracts to be captured.
+
+Call handlers will only trigger in one of two cases: when the function specified is called by an account other than the contract itself or when it is marked as external in Solidity and called as part of another function in the same contract.
+
+> **Note:** Call handlers currently depend on the Parity tracing API. Certain networks, such as BNB chain and Arbitrum, does not support this API. If a subgraph indexing one of these networks contain one or more call handlers, it will not start syncing. Subgraph developers should instead use event handlers. These are far more performant than call handlers, and are supported on every evm network.
+
+### Defining a Call Handler
+
+To define a call handler in your manifest, simply add a `callHandlers` array under the data source you would like to subscribe to.
+
+```yaml
+dataSources:
+  - kind: ethereum/contract
+    name: Gravity
+    network: mainnet
+    source:
+      address: '0x731a10897d267e19b34503ad902d0a29173ba4b1'
+      abi: Gravity
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.6
+      language: wasm/assemblyscript
+      entities:
+        - Gravatar
+        - Transaction
+      abis:
+        - name: Gravity
+          file: ./abis/Gravity.json
+      callHandlers:
+        - function: createGravatar(string,string)
+          handler: handleCreateGravatar
+```
+
+The `function` is the normalized function signature to filter calls by. The `handler` property is the name of the function in your mapping you would like to execute when the target function is called in the data source contract.
+
+### Mapping Function
+
+Each call handler takes a single parameter that has a type corresponding to the name of the called function. In the example subgraph above, the mapping contains a handler for when the `createGravatar` function is called and receives a `CreateGravatarCall` parameter as an argument:
+
+```typescript
+import { CreateGravatarCall } from '../generated/Gravity/Gravity'
+import { Transaction } from '../generated/schema'
+
+export function handleCreateGravatar(call: CreateGravatarCall): void {
+  let id = call.transaction.hash
+  let transaction = new Transaction(id)
+  transaction.displayName = call.inputs._displayName
+  transaction.imageUrl = call.inputs._imageUrl
+  transaction.save()
+}
+```
+
+The `handleCreateGravatar` function takes a new `CreateGravatarCall` which is a subclass of `ethereum.Call`, provided by `@graphprotocol/graph-ts`, that includes the typed inputs and outputs of the call. The `CreateGravatarCall` type is generated for you when you run `graph codegen`.
+
+## Block Handlers
+
+In addition to subscribing to contract events or function calls, a subgraph may want to update its data as new blocks are appended to the chain. To achieve this a subgraph can run a function after every block or after blocks that match a pre-defined filter.
+
+### Supported Filters
+
+```yaml
+filter:
+  kind: call
+```
+
+_The defined handler will be called once for every block which contains a call to the contract (data source) the handler is defined under._
+
+> **Note:** The `call` filter currently depend on the Parity tracing API. Certain networks, such as BNB chain and Arbitrum, does not support this API. If a subgraph indexing one of these networks contain one or more block handlers with a `call` filter, it will not start syncing.
+
+The absence of a filter for a block handler will ensure that the handler is called every block. A data source can only contain one block handler for each filter type.
+
+```yaml
+dataSources:
+  - kind: ethereum/contract
+    name: Gravity
+    network: dev
+    source:
+      address: '0x731a10897d267e19b34503ad902d0a29173ba4b1'
+      abi: Gravity
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.6
+      language: wasm/assemblyscript
+      entities:
+        - Gravatar
+        - Transaction
+      abis:
+        - name: Gravity
+          file: ./abis/Gravity.json
+      blockHandlers:
+        - handler: handleBlock
+        - handler: handleBlockWithCallToContract
+          filter:
+            kind: call
+```
+
+### Mapping Function
+
+The mapping function will receive an `ethereum.Block` as its only argument. Like mapping functions for events, this function can access existing subgraph entities in the store, call smart contracts and create or update entities.
+
+```typescript
+import { ethereum } from '@graphprotocol/graph-ts'
+
+export function handleBlock(block: ethereum.Block): void {
+  let id = block.hash
+  let entity = new Block(id)
+  entity.save()
+}
+```
+
+## Anonymous Events
+
+If you need to process anonymous events in Solidity, that can be achieved by providing the topic 0 of the event, as in the example:
+
+```yaml
+eventHandlers:
+  - event: LogNote(bytes4,address,bytes32,bytes32,uint256,bytes)
+    topic0: '0x644843f351d3fba4abcd60109eaff9f54bac8fb8ccf0bab941009c21df21cf31'
+    handler: handleGive
+```
+
+An event will only be triggered when both the signature and topic 0 match. By default, `topic0` is equal to the hash of the event signature.
+
+## Transaction Receipts in Event Handlers
+
+Starting from `specVersion` `0.0.5` and `apiVersion` `0.0.7`, event handlers can have access to the receipt for the transaction which emitted them.
+
+To do so, event handlers must be declared in the subgraph manifest with the new `receipt: true` key, which is optional and defaults to false.
+
+```yaml
+eventHandlers:
+  - event: NewGravatar(uint256,address,string,string)
+    handler: handleNewGravatar
+    receipt: true
+```
+
+Inside the handler function, the receipt can be accessed in the `Event.receipt` field. When the `receipt` key is set to `false` or omitted in the manifest, a `null` value will be returned instead.
+
+## Experimental features
+
+Starting from `specVersion` `0.0.4`, subgraph features must be explicitly declared in the `features` section at the top level of the manifest file, using their `camelCase` name, as listed in the table below:
+
+| Feature                                                   | Name                                                |
+| --------------------------------------------------------- | --------------------------------------------------- |
+| [Non-fatal errors](#non-fatal-errors)                     | `nonFatalErrors`                                    |
+| [Full-text Search](#defining-fulltext-search-fields)      | `fullTextSearch`                                    |
+| [Grafting](#grafting-onto-existing-subgraphs)             | `grafting`                                          |
+| [IPFS on Ethereum Contracts](#ipfs-on-ethereum-contracts) | `ipfsOnEthereumContracts` or `nonDeterministicIpfs` |
+
+For instance, if a subgraph uses the **Full-Text Search** and the **Non-fatal Errors** features, the `features` field in the manifest should be:
+
+```yaml
+specVersion: 0.0.4
+description: Gravatar for Ethereum
+features:
+  - fullTextSearch
+  - nonFatalErrors
+dataSources: ...
+```
+
+Note that using a feature without declaring it will incur a **validation error** during subgraph deployment, but no errors will occur if a feature is declared but not used.
+
+### IPFS on Ethereum Contracts
+
+A common use case for combining IPFS with Ethereum is to store data on IPFS that would be too expensive to maintain on-chain, and reference the IPFS hash in Ethereum contracts.
+
+Given such IPFS hashes, subgraphs can read the corresponding files from IPFS using `ipfs.cat` and `ipfs.map`. To do this reliably, it is required that these files are pinned to an IPFS node with high availability, so that the [hosted service](https://thegraph.com/hosted-service) IPFS node can find them during indexing.
+
+> **Note:** The Graph Network does not yet support `ipfs.cat` and `ipfs.map`, and developers should not deploy subgraphs using that functionality to the network via the Studio.
+
+> **[Feature Management](#experimental-features):** `ipfsOnEthereumContracts` must be declared under `features` in the subgraph manifest. For non EVM chains, the `nonDeterministicIpfs` alias can also be used for the same purpose.
+
+When running a local Graph Node, the `GRAPH_ALLOW_NON_DETERMINISTIC_IPFS` environment variable must be set in order to index subgraphs using this experimental functionality.
+
+### Non-fatal errors
+
+Indexing errors on already synced subgraphs will, by default, cause the subgraph to fail and stop syncing. Subgraphs can alternatively be configured to continue syncing in the presence of errors, by ignoring the changes made by the handler which provoked the error. This gives subgraph authors time to correct their subgraphs while queries continue to be served against the latest block, though the results might be inconsistent due to the bug that caused the error. Note that some errors are still always fatal. To be non-fatal, the error must be known to be deterministic.
+
+> **Note:** The Graph Network does not yet support non-fatal errors, and developers should not deploy subgraphs using that functionality to the network via the Studio.
+
+Enabling non-fatal errors requires setting the following feature flag on the subgraph manifest:
+
+```yaml
+specVersion: 0.0.4
+description: Gravatar for Ethereum
+features:
+    - nonFatalErrors
+    ...
+```
+
+The query must also opt-in to querying data with potential inconsistencies through the `subgraphError` argument. It is also recommended to query `_meta` to check if the subgraph has skipped over errors, as in the example:
+
+```graphql
+foos(first: 100, subgraphError: allow) {
+  id
+}
+
+_meta {
+  hasIndexingErrors
+}
+```
+
+If the subgraph encounters an error, that query will return both the data and a graphql error with the message `"indexing_error"`, as in this example response:
+
+```graphql
+"data": {
+    "foos": [
+        {
+          "id": "0xdead"
+        }
+    ],
+    "_meta": {
+        "hasIndexingErrors": true
+    }
+},
+"errors": [
+    {
+        "message": "indexing_error"
+    }
+]
+```
+
+### Grafting onto Existing Subgraphs
+
+When a subgraph is first deployed, it starts indexing events at the genesis block of the corresponding chain (or at the `startBlock` defined with each data source) In some circumstances; it is beneficial to reuse the data from an existing subgraph and start indexing at a much later block. This mode of indexing is called _Grafting_. Grafting is, for example, useful during development to get past simple errors in the mappings quickly or to temporarily get an existing subgraph working again after it has failed.
+
+A subgraph is grafted onto a base subgraph when the subgraph manifest in `subgraph.yaml` contains a `graft` block at the top-level:
+
+```yaml
+description: ...
+graft:
+  base: Qm... # Subgraph ID of base subgraph
+  block: 7345624 # Block number
+```
+
+When a subgraph whose manifest contains a `graft` block is deployed, Graph Node will copy the data of the `base` subgraph up to and including the given `block` and then continue indexing the new subgraph from that block on. The base subgraph must exist on the target Graph Node instance and must have indexed up to at least the given block. Because of this restriction, grafting should only be used during development or during an emergency to speed up producing an equivalent non-grafted subgraph.
+
+Because grafting copies rather than indexes base data, it is much quicker to get the subgraph to the desired block than indexing from scratch, though the initial data copy can still take several hours for very large subgraphs. While the grafted subgraph is being initialized, the Graph Node will log information about the entity types that have already been copied.
+
+The grafted subgraph can use a GraphQL schema that is not identical to the one of the base subgraph, but merely compatible with it. It has to be a valid subgraph schema in its own right, but may deviate from the base subgraph's schema in the following ways:
+
+- It adds or removes entity types
+- It removes attributes from entity types
+- It adds nullable attributes to entity types
+- It turns non-nullable attributes into nullable attributes
+- It adds values to enums
+- It adds or removes interfaces
+- It changes for which entity types an interface is implemented
+
+> **[Feature Management](#experimental-features):** `grafting` must be declared under `features` in the subgraph manifest.
+
+## File Data Sources
+
+File data sources are a new subgraph functionality for accessing off-chain data during indexing in a robust, extendable way, starting with IPFS.
+
+> This also lays the groundwork for deterministic indexing of off-chain data, as well as the potential introduction of arbitrary HTTP-sourced data.
+
+### Overview
+
+Rather than fetching files "in line" during handler exectuion, this introduces templates which can be spawned as new data sources for a given file identifier. These new data sources fetch the files, retrying if they are unsuccessful, running a dedicated handler when the file is found.
+
+This is similar to the [existing data source templates](https://thegraph.com/docs/en/developing/creating-a-subgraph/#data-source-templates), which are used to dynamically create new chain-based data sources.
+
+> This replaces the existing `ipfs.cat` API
+
+### Upgrade guide
+
+#### Update `graph-ts` and `graph-cli`
+
+File data sources requires graph-ts >=0.29.0 and graph-cli >=0.33.1
+
+#### Add a new entity type which will be updated when files are found
+
+File data sources cannot access or update chain-based entities, but must update file specific entities.
+
+This may mean splitting out fields from existing entities into separate entities, linked together.
+
+Original combined entity:
+
+```graphql
+type Token @entity {
+  id: ID!
+  tokenID: BigInt!
+  tokenURI: String!
+  externalURL: String!
+  ipfsURI: String!
+  image: String!
+  name: String!
+  description: String!
+  type: String!
+  updatedAtTimestamp: BigInt
+  owner: User!
+}
+```
+
+New, split entity:
+
+```graphql
+type Token @entity {
+  id: ID!
+  tokenID: BigInt!
+  tokenURI: String!
+  ipfsURI: TokenMetadata
+  updatedAtTimestamp: BigInt
+  owner: String!
+}
+
+type TokenMetadata @entity {
+  id: ID!
+  image: String!
+  externalURL: String!
+  name: String!
+  description: String!
+}
+```
+
+If the relationship is 1:1 between the parent entity and the resulting file data source entity, the simplest pattern is to link the parent entity to a resulting file entity by using the IPFS CID as the lookup. Get in touch on Discord if you are having difficulty modelling your new file-based entities!
+
+> You can use [nested filters](https://thegraph.com/docs/en/querying/graphql-api/#example-for-nested-entity-filtering) to filter parent entities on the basis of these nested entities.
+
+#### Add a new templated data source with `kind: file/ipfs`
+
+This is the data source which will be spawned when a file of interest is identified.
+
+```yaml
+templates:
+  - name: TokenMetadata
+    kind: file/ipfs
+    mapping:
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      file: ./src/mapping.ts
+      handler: handleMetadata
+      entities:
+        - TokenMetadata
+      abis:
+        - name: Token
+          file: ./abis/Token.json
+```
+
+> Currently `abis` are required, though it is not possible to call contracts from within file data sources
+
+The file data source must specifically mention all the entity types which it will interact with under `entities`. See [limitations](#Limitations) for more details.
+
+#### Create a new handler to process files
+
+This handler should accept one `Bytes` parameter, which will be the contents of the file, when it is found, which can then be processed. This will often be a JSON file, which can be processed with `graph-ts` helpers ([documentation](https://thegraph.com/docs/en/developing/assemblyscript-api/#json-api)).
+
+The CID of the file as a readable string can be accessed via the `dataSource` as follows:
+
+```typescript
+const cid = dataSource.stringParam()
+```
+
+Example handler:
+
+```typescript
+import { json, Bytes, dataSource } from '@graphprotocol/graph-ts'
+import { TokenMetadata } from '../generated/schema'
+
+export function handleMetadata(content: Bytes): void {
+  let tokenMetadata = new TokenMetadata(dataSource.stringParam())
+  const value = json.fromBytes(content).toObject()
+  if (value) {
+    const image = value.get('image')
+    const name = value.get('name')
+    const description = value.get('description')
+    const externalURL = value.get('external_url')
+
+    if (name && image && description && externalURL) {
+      tokenMetadata.name = name.toString()
+      tokenMetadata.image = image.toString()
+      tokenMetadata.externalURL = externalURL.toString()
+      tokenMetadata.description = description.toString()
+    }
+
+    tokenMetadata.save()
+  }
+}
+```
+
+#### Spawn file data sources when required
+
+You can now create file data sources during execution of chain-based handlers:
+
+- Import the template from the auto-generated `templates`
+- call `TemplateName.create(cid: string)` from within a mapping, where the cid is a valid IPFS content identifier
+
+> Currently Graph Node supports [v0 and v1 content identifiers](https://docs.ipfs.tech/concepts/content-addressing/), and content identifers with directories (e.g. `bafyreighykzv2we26wfrbzkcdw37sbrby4upq7ae3aqobbq7i4er3tnxci/metadata.json`)
+
+Example:
+
+```typescript
+import { TokenMetadata as TokenMetadataTemplate } from '../generated/templates'
+
+const ipfshash = 'QmaXzZhcYnsisuue5WRdQDH6FDvqkLQX1NckLqBYeYYEfm'
+//This example code is for a Crypto coven subgraph. The above ipfs hash is a directory with token metadata for all crypto coven NFTs.
+
+export function handleTransfer(event: TransferEvent): void {
+  let token = Token.load(event.params.tokenId.toString())
+  if (!token) {
+    token = new Token(event.params.tokenId.toString())
+    token.tokenID = event.params.tokenId
+
+    token.tokenURI = '/' + event.params.tokenId.toString() + '.json'
+    const tokenIpfsHash = ipfshash + token.tokenURI
+    //This creates a path to the metadata for a single Crypto coven NFT. It concats the directory with "/" + filename + ".json"
+
+    token.ipfsURI = tokenIpfsHash
+
+    TokenMetadataTemplate.create(tokenIpfsHash)
+  }
+
+  token.updatedAtTimestamp = event.block.timestamp
+  token.owner = event.params.to.toHexString()
+  token.save()
+}
+```
+
+This will create a new file data source, which will poll Graph Node's configured IPFS endpoint, retrying if it is not found. When the file is found, the file data source handler will be executed.
+
+This example is using the CID as the lookup between the parent `Token` entity and the resulting `TokenMetadata` entity.
+
+> Previously, this is the point at which a subgraph developer would have called `ipfs.cat(CID)` to fetch the file
+
+Congratulations, you are using file data sources!
+
+#### Deploying your subgraphs
+
+You can now `build` and `deploy` your subgraph to any Graph Node >=v0.30.0-rc.0.
+
+#### Limitations
+
+File data source handlers and entities are isolated from other subgraph entities, ensuring that they are deterministic when executed, and ensuring no contamination of chain-based data sources. To be specific:
+
+- Entities created by File Data Sources are immutable, and cannot be updated
+- File Data Source handlers cannot access entities from other file data sources
+- Entities associated with File Data Sources cannot be accessed by chain-based handlers
+
+> While this constraint should not be problematic for most use-cases, it may introduce complexity for some. Please get in touch via Discord if you are having issues modelling your file-based data in a subgraph!
+
+Additionally, it is not possible to create data sources from a file data source, be it an onchain data source or another file data source. This restriction may be lifted in the future.
+
+#### Best practices
+
+If you are linking NFT metadata to corresponding tokens, use the metadata's IPFS hash to reference a Metadata entity from the Token entity. Save the Metadata entity using the IPFS hash as an ID.
+
+You can use [DataSource context](https://thegraph.com/docs/en/developing/assemblyscript-api/#entity-and-data-source-context) when creating File Data Sources to pass extra information which will be available to the File Data Source handler.
+
+If you have entities which are refreshed multiple times, create unique file-based entities using the IPFS hash & the entity ID, and reference them using a derived field in the chain-based entity.
+
+> We are working to improve the above recommendation, so queries only return the "most recent" version
+
+#### Known issues
+
+File data sources currently require ABIs, even though ABIs are not used ([issue](https://github.com/graphprotocol/graph-cli/issues/961)). Workaround is to add any ABI.
+
+Handlers for File Data Sources cannot be in files which import `eth_call` contract bindings, failing with "unknown import: `ethereum::ethereum.call` has not been defined" ([issue](https://github.com/graphprotocol/graph-cli/issues/4309)). Workaround is to create file data source handlers in a dedicated file.
+
+#### Examples
+
+[Crypto Coven Subgraph migration](https://github.com/azf20/cryptocoven-api/tree/file-data-sources-refactor)
+
+#### References
+
+[GIP File Data Sources](https://forum.thegraph.com/t/gip-file-data-sources/2721)
