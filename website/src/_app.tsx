@@ -1,13 +1,11 @@
-import merge from 'lodash/merge'
 import mixpanel from 'mixpanel-browser'
 import { AppProps } from 'next/app'
 import NextLink from 'next/link'
-import { DefaultSeo, DefaultSeoProps } from 'next-seo'
+import { DefaultSeo } from 'next-seo'
 
 import {
   AnalyticsProvider,
   ButtonOrLinkProps,
-  defaultLocale,
   Footer,
   GDSProvider,
   I18nProvider,
@@ -21,28 +19,6 @@ import { supportedLocales, translations, useI18n } from '@/i18n'
 import '@edgeandnode/gds/dist/style.css'
 import '@docsearch/css'
 
-const DEFAULT_SEO_PROPS: DefaultSeoProps = {
-  title: 'The Graph Docs',
-  description: 'Browse the latest developer documentation including API reference, articles, and sample code',
-  openGraph: {
-    siteName: 'The Graph Docs',
-    type: 'website',
-    url: 'https://thegraph.com/docs/',
-    locale: defaultLocale,
-    images: [
-      {
-        url: 'https://storage.googleapis.com/graph-website/seo/graph-website.jpg',
-        alt: 'The Graph',
-      },
-    ],
-  },
-  twitter: {
-    handle: '@graphprotocol',
-    site: '@graphprotocol',
-    cardType: 'summary_large_image',
-  },
-}
-
 const internalAbsoluteHrefRegex = /^(((https?:)?\/\/((www|staging)\.)?thegraph\.com)?\/docs\/|\/(?=[^/]))/
 const externalHrefRegex = /^([a-zA-Z0-9+.-]+:)?\/\//
 
@@ -51,13 +27,29 @@ function MyAppWithLocale({ Component, pageProps, router }: AppProps) {
   const localeSwitcher = hideLocaleSwitcher ? null : <LocaleSwitcher key="localeSwitcher" />
   const { locale, extractLocaleFromPath } = useI18n()
 
-  const seoProps = merge(DEFAULT_SEO_PROPS, {
-    openGraph: { locale },
-  })
-
   return (
     <>
-      <DefaultSeo {...seoProps} />
+      <DefaultSeo
+        title="Docs | The Graph"
+        description="Browse the latest developer documentation including API reference, articles, and sample code"
+        openGraph={{
+          type: 'website',
+          locale,
+          url: 'https://thegraph.com/',
+          siteName: 'The Graph',
+          images: [
+            {
+              url: 'https://storage.googleapis.com/graph-website/seo/graph-website.jpg',
+              alt: 'The Graph',
+            },
+          ],
+        }}
+        twitter={{
+          handle: '@graphprotocol',
+          site: '@graphprotocol',
+          cardType: 'summary_large_image',
+        }}
+      />
       <GDSProvider
         clientLink={NextLink}
         mapButtonOrLinkProps={<T extends ButtonOrLinkProps>(props: T) => {

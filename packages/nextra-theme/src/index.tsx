@@ -128,15 +128,12 @@ export default function NextraLayout({ children, pageOpts, pageProps }: NextraTh
   }, [headings, outlineItemIsInOrAboveView])
 
   let seo: NextSeoProps = {
-    title: `${title ? `${title} - ` : ''}The Graph Docs`,
-  }
-  if (frontMatter.description) {
-    seo.description = frontMatter.description
-  }
-  if (frontMatter.socialImage) {
-    seo.openGraph = {
-      images: [{ url: frontMatter.socialImage }],
-    }
+    title: `${title ? `${title} | ` : ''}Docs | The Graph`,
+    description: frontMatter.description,
+    openGraph: {
+      title,
+      images: frontMatter.socialImage ? [{ url: frontMatter.socialImage }] : undefined,
+    },
   }
   if (frontMatter.seo) {
     seo = merge(seo, frontMatter.seo)
