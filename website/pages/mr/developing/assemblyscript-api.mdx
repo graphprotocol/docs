@@ -229,35 +229,36 @@ _ऑपरेटर्स_
 
 `store` API ग्राफ नोड स्टोअरमधून आणि त्यामध्ये घटक लोड, जतन आणि काढण्याची परवानगी देते.
 
-सबग्राफच्या GraphQL स्कीमामध्ये परिभाषित केलेल्या `@entity` प्रकारांना स्टोअर मॅपवर वन-टू-वन लिहिलेल्या संस्था. या घटकांसोबत काम करणे सोयीस्कर करण्यासाठी, [ग्राफ CLI](https://github.com/graphprotocol/graph-cli) द्वारे प्रदान केलेली `ग्राफ कोडजेन` कमांड एंटिटी क्लासेस व्युत्पन्न करते, जे अंगभूत `एंटिटी</0 चे उपवर्ग आहेत. > स्कीमामधील फील्डसाठी प्रॉपर्टी गेटर्स आणि सेटर तसेच या संस्था लोड आणि सेव्ह करण्याच्या पद्धतींसह टाइप करा.</p>
+Entities written to the store map one-to-one to the `@entity` types defined in the subgraph's GraphQL schema. To make working with these entities convenient, the `graph codegen` command provided by the [Graph CLI](https://github.com/graphprotocol/graph-cli) generates entity classes, which are subclasses of the built-in `Entity` type, with property getters and setters for the fields in the schema as well as methods to load and save these entities.
 
-<h4 spaces-before="0">अंदाज निर्मिती करणे</h4>
+#### अंदाज निर्मिती करणे
 
-<p spaces-before="0">इथरियम इव्हेंटमधून संस्था तयार करण्यासाठी खालील एक सामान्य नमुना आहे.</p>
+इथरियम इव्हेंटमधून संस्था तयार करण्यासाठी खालील एक सामान्य नमुना आहे.
 
-<pre><code class="typescript">// ERC20 ABI मधून व्युत्पन्न केलेला ट्रान्सफर इव्हेंट वर्ग आयात करा
-'../generated/ERC20/ERC20' वरून { TransferEvent as Transfer } आयात करा
+```typescript
+// Import the Transfer event class generated from the ERC20 ABI
+import { Transfer as TransferEvent } from '../generated/ERC20/ERC20'
 
-// GraphQL स्कीमामधून व्युत्पन्न केलेला हस्तांतरण घटक प्रकार आयात करा
-'../generated/schema' वरून { हस्तांतरण } आयात करा
+// Import the Transfer entity type generated from the GraphQL schema
+import { Transfer } from '../generated/schema'
 
-// इव्हेंट हँडलर स्थानांतरित करा
-निर्यात कार्य handleTransfer(इव्हेंट: TransferEvent): void {
-  // एंटिटी आयडी म्हणून ट्रान्झॅक्शन हॅश वापरून ट्रान्सफर एंटिटी तयार करा
-  id = event.transaction.hash द्या
-  हस्तांतरण करू द्या = नवीन हस्तांतरण (आयडी)
+// Transfer event handler
+export function handleTransfer(event: TransferEvent): void {
+  // Create a Transfer entity, using the transaction hash as the entity ID
+  let id = event.transaction.hash
+  let transfer = new Transfer(id)
 
-  // इव्हेंट पॅरामीटर्स वापरून घटकावर गुणधर्म सेट करा
+  // Set properties on the entity, using the event parameters
   transfer.from = event.params.from
   transfer.to = event.params.to
   transfer.amount = event.params.amount
 
-  // स्टोअरमध्ये अस्तित्व जतन करा
+  // Save the entity to the store
   transfer.save()
 }
-`</pre>
+```
 
-साखळीवर प्रक्रिया करत असताना जेव्हा `हस्तांतरण` इव्हेंट समोर येतो, तेव्हा तो जनरेट केलेला `हस्तांतरण` प्रकार वापरून `हँडल ट्रान्सफर` इव्हेंट हँडलरकडे पाठवला जातो (<code या नावाचे नाव >स्थानांतरण इव्हेंट</code> येथे अस्तित्व प्रकारासह नामकरण विरोध टाळण्यासाठी). हा प्रकार इव्हेंटचा पालक व्यवहार आणि त्याचे पॅरामीटर्स यासारख्या डेटामध्ये प्रवेश करण्याची परवानगी देतो.
+When a `Transfer` event is encountered while processing the chain, it is passed to the `handleTransfer` event handler using the generated `Transfer` type (aliased to `TransferEvent` here to avoid a naming conflict with the entity type). This type allows accessing data such as the event's parent transaction and its parameters.
 
 इतर घटकांशी टक्कर टाळण्यासाठी प्रत्येक घटकाकडे एक अद्वितीय आयडी असणे आवश्यक आहे. इव्हेंट पॅरामीटर्समध्ये वापरला जाऊ शकणारा एक अद्वितीय अभिज्ञापक समाविष्ट करणे सामान्य आहे. टीप: आयडी म्हणून ट्रान्झॅक्शन हॅश वापरणे हे गृहित धरते की समान व्यवहारातील इतर कोणत्याही इव्हेंटमध्ये या हॅशसह आयडी म्हणून अस्तित्व निर्माण होत नाही.
 
