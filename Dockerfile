@@ -24,3 +24,4 @@ COPY --from=builder /app/out /usr/share/nginx/html
 EXPOSE 80/tcp
 
 CMD ["nginx", "-g", "daemon off;"]
+resolvers : @helpers fix issues no matter what 
