@@ -1,0 +1,75 @@
+---
+title: नए नेटवर्कों का एकीकरण
+---
+
+वर्तमान में ग्राफ नोड निम्नलिखित श्रृंखला प्रकारों से डेटा को सूचीबद्ध कर सकता है:
+
+- ईथरियम, EVM JSON-RPC और [Ethereum Firehose](https://github.com/streamingfast/firehose-ethereum) के माध्यम से
+- NEAR, [NEAR Firehose](https://github.com/streamingfast/near-firehose-indexer) के माध्यम से
+- Cosmos [Cosmos Firehose](https://github.com/graphprotocol/firehose-cosmos) के माध्यम से
+- Arweave, [Arweave Firehose](https://github.com/graphprotocol/firehose-arweave) के माध्यम से
+
+If you are interested in any of those chains, integration is a matter of Graph Node configuration and testing.
+
+अगर आप किसी अलग श्रृंखला प्रकार में रुचि रखते हैं, तो आपको ग्राफ नोड के साथ एक नई एकीकरण बनाने की आवश्यकता होगी। हमारी सिफारिशित दिशा-निर्देशिका यह है कि श्रृंखला के लिए एक फायरहोस का विकास करें, और फिर उस फायरहोस को ग्राफ नोड के साथ एकीकृत करें।
+
+** 1. EVM JSON-RPC**
+
+अगर ब्लॉकचेन EVM समरूपी है और क्लाइंट/नोड मानक EVM JSON-RPC API को उदाहरणीय रूप से प्रकट करता है, तो ग्राफ नोड को नए श्रृंखला को सूचीबद्ध करने की क्षमता होनी चाहिए। अधिक जानकारी के लिए, [Testing an EVM JSON-RPC](new-chain-integration#testing-an-evm-json-rpc) की परीक्षण के लिए देखें।
+
+**2. Firehose**
+
+गैर-ईवीएम-आधारित श्रृंखलाओं के लिए, ग्राफ़ नोड को जीआरपीसी और ज्ञात प्रकार परिभाषाओं के माध्यम से ब्लॉकचेन डेटा को अंतर्ग्रहण करने की आवश्यकता होगी। यह [Firehose] \(firehose/README/) के माध्यम से किया जा सकता है, जो [StreamingFast](https://www.streamingfast.io/) द्वारा विकसित एक नई तकनीक है जो फ़ाइल-आधारित का उपयोग करके एक उच्च-स्केलेबल इंडेक्सिंग ब्लॉकचेन समाधान प्रदान करती है। स्ट्रीमिंग-प्रथम दृष्टिकोण।
+
+## Difference between EVM JSON-RPC & Firehose
+
+जबकि दोनों सबग्राफ के लिए उपयुक्त हैं, एक फ़ायरहोज़ की हमेशा उन डेवलपर्स के लिए आवश्यकता होती है जो [Substreams](substreams/), के साथ निर्माण करना चाहते हैं, जैसे कि [Substreams-powered subgraphs](cookbook/substreams-powered-subgraphs/). का निर्माण करना चाहते हैं। इसके अलावा, JSON-RPC की तुलना में फ़ायरहोज़ बेहतर अनुक्रमण गति की अनुमति देता है।
+
+नए EVM श्रृंखला एकीकरणकर्ताओं को सब-स्ट्रीमों के लाभ और उसकी विशाल पैरालेल इंडेक्सिंग क्षमताओं को ध्यान में रखकर फायरहोस पर आधारित दिशा-निर्देशित दृष्टिकोण को भी विचार सकते हैं। दोनों का समर्थन करने से विकासकर्ताओं को नए श्रृंखला के लिए सब-स्ट्रीमों या सबग्राफ बनाने में चयन करने की स्वतंत्रता मिलती है।
+
+> **ध्यान दें**: ईवीएम श्रृंखलाओं के लिए फ़ायरहोज़-आधारित एकीकरण के लिए अभी भी इंडेक्सर्स को श्रृंखला के संग्रह आरपीसी नोड को सबग्राफ को ठीक से अनुक्रमित करने के लिए चलाने की आवश्यकता होगी। यह `eth_call` RPC विधि द्वारा आम तौर पर पहुंच योग्य स्मार्ट अनुबंध स्थिति प्रदान करने में फ़ायरहोज़ की असमर्थता के कारण है। (यह याद दिलाने लायक है कि eth_calls [डेवलपर्स के लिए अच्छा अभ्यास नहीं है](https://thegraph.com/blog/improve-subgraph-performance-reduce-eth-calls/))
+
+---
+
+## Testing an EVM JSON-RPC
+
+For Graph Node to be able to ingest data from an EVM chain, the RPC node must expose the following EVM JSON RPC methods:
+
+- `eth_getLogs`
+- `eth_call` \_(for historical blocks, with EIP-1898 - requires archive node):
+- `eth_getBlockByNumber`
+- `eth_getBlockByHash`
+- `net_version`
+- `eth_getTransactionReceipt`, in a JSON-RPC batch request
+- _`trace_filter`_ _(optionally required for Graph Node to support call handlers)_
+
+### Graph Node Configuration
+
+**Start by preparing your local environment**
+
+1.  [Clone Graph Node](https://github.com/graphprotocol/graph-node)
+2.  Modify [this line](https://github.com/graphprotocol/graph-node/blob/master/docker/docker-compose.yml#L22) to include the new network name and the EVM JSON RPC compliant URL
+    > Do not change the env var name itself. It must remain `ethereum` even if the network name is different.
+3.  Run an IPFS node or use the one used by The Graph: https://api.thegraph.com/ipfs/
+
+\*Test the integration by locally deploying a subgraph\*\*
+
+1.  Install [graph-cli](https://github.com/graphprotocol/graph-cli)
+2.  Create a simple example subgraph. Some options are below:
+    1.  The pre-packed [Gravitar](https://github.com/graphprotocol/example-subgraph/tree/f89bdd4628efa4badae7367d4919b3f648083323) smart contract and subgraph is a good starting point
+    2.  Bootstrap a local subgraph from any existing smart contract or solidity dev environment [using Hardhat with a Graph plugin](https://github.com/graphprotocol/hardhat-graph)
+3.  Adapt the resulting `subgraph.yaml` by changing [`dataSources.network`](http://dataSources.network) to the same name previously passed on to Graph Node.
+4.  Create your subgraph in Graph Node: `graph create $SUBGRAPH_NAME --node $GRAPH_NODE_ENDPOINT`
+5.  Publish your subgraph to Graph Node: `graph deploy $SUBGRAPH_NAME --ipfs $IPFS_ENDPOINT --node $GRAPH_NODE_ENDPOINT`
+
+Graph Node should be syncing the deployed subgraph if there are no errors. Give it time to sync, then send some GraphQL queries to the API endpoint printed in the logs.
+
+---
+
+## Integrating a new Firehose-enabled chain
+
+Integrating a new chain is also possible using the Firehose approach. This is currently the best option for non-EVM chains and a requirement for substreams support. Additional documentation focuses on how Firehose works, adding Firehose support for a new chain and integrating it with Graph Node. Recommended docs for integrators:
+
+1.  [General docs on Firehose](firehose/)
+2.  [Adding Firehose support for a new chain](firehose/integrate-new-chains/new-blockchains/)
+3.  [Integrating Graph Node with a new chain via Firehose](https://github.com/graphprotocol/graph-node/blob/master/docs/implementation/add-chain.md)
