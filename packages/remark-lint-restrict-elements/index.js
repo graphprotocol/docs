@@ -18,5 +18,5 @@ export default lintRule(
         file.message(`Element ${JSON.stringify(selector)} is restricted`, node)
       })
     }
-  }
+  },
 )

@@ -19,7 +19,7 @@ new Crawler({
       indexName: 'thegraph-docs',
       pathsToMatch: ['https://thegraph.com/docs/**'],
       recordExtractor: ({ helpers }) => {
-        return helpers.docsearch({
+        const data = helpers.docsearch({
           recordProps: {
             lvl0: {
               selectors: '.graph-docs-current-group',
@@ -34,6 +34,15 @@ new Crawler({
             content: '.graph-docs-content p, .graph-docs-content li',
           },
         })
+        // See https://github.com/algolia/docsearch/issues/1723
+        data.forEach((record) => {
+          Object.entries(record.hierarchy)
+            .filter(([_level, content]) => content)
+            .forEach(([level, content]) => {
+              record.hierarchy[level] = content.replaceAll('&lt;', '<').replaceAll('&gt;', '>').replaceAll('&amp;', '&')
+            })
+        })
+        return data
       },
     },
   ],

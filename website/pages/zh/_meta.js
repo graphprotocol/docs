@@ -13,9 +13,9 @@ export default {
   managing: '管理',
   querying: '查询',
   cookbook: '导览',
+  'release-notes': '发布说明&更新向导',
   '###3': {
     type: 'heading',
     title: '索引',
   },
-  'release-notes': '发布说明&更新向导',
 }
