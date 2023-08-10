@@ -1,23 +1,19 @@
 import { useContext, useEffect, useState } from 'react'
 
-import { buildTransition, Divider, Flex, Spacing, Text, useI18n } from '@edgeandnode/gds'
+import { buildTransition, ButtonOrLink, Divider, Flex, Spacing, Text, useI18n } from '@edgeandnode/gds'
 
-import { EditPageLink, Link } from '@/components'
+import { EditPageLink } from '@/components'
 import { DocumentContext } from '@/layout'
 
 export const MDXLayoutOutline = () => {
   const { headings, highlightedOutlineItemId } = useContext(DocumentContext)!
   const [enableTransition, setEnableTransition] = useState(false)
-  const { t } = useI18n()
+  const { t } = useI18n<any>()
 
   // Fix issue where the `translateY` is animated on initial load
   useEffect(() => {
-    setTimeout(() => setEnableTransition(true), 0)
+    setTimeout(() => setEnableTransition(true), 20)
   }, [])
-
-  if (headings.length === 0) {
-    return <div />
-  }
 
   return (
     <div
@@ -36,40 +32,44 @@ export const MDXLayoutOutline = () => {
       <Flex.Row>
         <EditPageLink />
       </Flex.Row>
-      <Divider sx={{ my: Spacing['32px'] }} />
-      <nav sx={{ paddingInlineEnd: '16px' }}>
-        <Text.C10 as="header" color="White64" sx={{ mb: Spacing['12px'] }}>
-          {t('global.pageSections')}
-        </Text.C10>
-        <Text as="ul" size="14px" color="White48">
-          {headings.map((heading, outlineItemIndex) => {
-            if (heading.depth > 3) {
-              return null
-            }
-            return (
-              <li key={outlineItemIndex}>
-                <Link
-                  href={`#${heading.id}`}
-                  sx={{
-                    display: 'block',
-                    paddingInlineStart: `${8 * Math.max(0, heading.depth - 2)}px`,
-                    py: '6px',
-                    color: heading.id === highlightedOutlineItemId ? 'White88' : undefined,
-                    '&:hover': { color: 'White' },
-                    transition: buildTransition('COLORS'),
-                  }}
-                >
-                  {heading.value}
-                </Link>
-              </li>
-            )
-          })}
-        </Text>
-      </nav>
+      {headings.length > 0 ? (
+        <>
+          <Divider sx={{ my: Spacing['32px'] }} />
+          <nav sx={{ paddingInlineEnd: '16px' }}>
+            <Text.C10 as="header" color="White64" sx={{ mb: Spacing['12px'] }}>
+              {t('global.pageSections')}
+            </Text.C10>
+            <Text as="ul" size="14px" color="White48">
+              {headings.map((heading, outlineItemIndex) => {
+                if (heading.depth > 3) {
+                  return null
+                }
+                return (
+                  <li key={outlineItemIndex}>
+                    <ButtonOrLink
+                      href={`#${heading.id}`}
+                      sx={{
+                        display: 'block',
+                        paddingInlineStart: `${8 * Math.max(0, heading.depth - 2)}px`,
+                        py: '6px',
+                        color: heading.id === highlightedOutlineItemId ? 'White88' : undefined,
+                        '&:hover': { color: 'White' },
+                        transition: buildTransition('COLORS'),
+                      }}
+                    >
+                      {heading.value}
+                    </ButtonOrLink>
+                  </li>
+                )
+              })}
+            </Text>
+          </nav>
+        </>
+      ) : null}
       <div
         sx={{
           height: 'var(--gds-header-height-visible)',
-          transition: enableTransition ? buildTransition('height' as any, '400ms') : undefined,
+          transition: enableTransition ? buildTransition('height', '400ms') : undefined,
         }}
       />
     </div>

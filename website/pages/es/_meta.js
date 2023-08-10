@@ -13,10 +13,10 @@ export default {
   managing: 'Administrando',
   querying: 'Consultando',
   cookbook: 'Recetario',
+  'release-notes': 'Notas de Publicación y Guías de Actualización',
   '###3': {
     type: 'heading',
     title: 'Indexación',
   },
-  'release-notes': 'Notas de Publicación y Guías de Actualización',
   tokenomics: 'Tokenomics',
 }

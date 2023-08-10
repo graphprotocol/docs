@@ -1,14 +1,11 @@
-import { Global } from '@emotion/react'
-import merge from 'lodash/merge'
 import mixpanel from 'mixpanel-browser'
 import { AppProps } from 'next/app'
 import NextLink from 'next/link'
-import { DefaultSeo, DefaultSeoProps } from 'next-seo'
-import { ReactElement, useMemo } from 'react'
+import { DefaultSeo } from 'next-seo'
 
 import {
   AnalyticsProvider,
-  defaultLocale,
+  ButtonOrLinkProps,
   Footer,
   GDSProvider,
   I18nProvider,
@@ -22,59 +19,66 @@ import { supportedLocales, translations, useI18n } from '@/i18n'
 import '@edgeandnode/gds/dist/style.css'
 import '@docsearch/css'
 
-const DEFAULT_SEO_PROPS: DefaultSeoProps = {
-  title: 'The Graph Docs',
-  description: 'Browse the latest developer documentation including API reference, articles, and sample code',
-  openGraph: {
-    siteName: 'The Graph Docs',
-    type: 'website',
-    url: 'https://thegraph.com/docs/',
-    locale: defaultLocale,
-    images: [
-      {
-        url: 'https://storage.googleapis.com/graph-website/seo/graph-website.jpg',
-        alt: 'The Graph',
-      },
-    ],
-  },
-  twitter: {
-    handle: '@graphprotocol',
-    site: '@graphprotocol',
-    cardType: 'summary_large_image',
-  },
-}
+const internalAbsoluteHrefRegex = /^(((https?:)?\/\/((www|staging)\.)?thegraph\.com)?\/docs\/|\/(?=[^/]))/
+const externalHrefRegex = /^([a-zA-Z0-9+.-]+:)?\/\//
 
-const DefaultSeoWithLocale = () => {
-  const { locale } = useI18n()
-
-  const seoProps = useMemo(
-    () =>
-      merge(DEFAULT_SEO_PROPS, {
-        openGraph: { locale },
-      }),
-    [locale]
-  )
-
-  return <DefaultSeo {...seoProps} />
-}
-
-function MyApp({ Component, pageProps, router }: AppProps): ReactElement {
+function MyAppWithLocale({ Component, pageProps, router }: AppProps) {
   const hideLocaleSwitcher = pageProps.hideLocaleSwitcher ?? false
   const localeSwitcher = hideLocaleSwitcher ? null : <LocaleSwitcher key="localeSwitcher" />
+  const { locale, extractLocaleFromPath } = useI18n()
 
   return (
-    <I18nProvider supportedLocales={supportedLocales} translations={translations} clientRouter={router}>
-      <DefaultSeoWithLocale />
-      <GDSProvider clientLink={NextLink}>
-        <Global
-          styles={() => ({
-            // Fix SVGs on `/en/querying/graph-client/architecture/` in Safari
-            // TODO: Move to `@edgeandnode/gds`'s global styles
-            'svg *': {
-              position: 'revert',
+    <>
+      <DefaultSeo
+        title="Docs | The Graph"
+        description="Browse the latest developer documentation including API reference, articles, and sample code"
+        openGraph={{
+          type: 'website',
+          locale,
+          url: 'https://thegraph.com/',
+          siteName: 'The Graph',
+          images: [
+            {
+              url: 'https://storage.googleapis.com/graph-website/seo/graph-website.jpg',
+              alt: 'The Graph',
             },
-          })}
-        />
+          ],
+        }}
+        twitter={{
+          handle: '@graphprotocol',
+          site: '@graphprotocol',
+          cardType: 'summary_large_image',
+        }}
+      />
+      <GDSProvider
+        clientLink={NextLink}
+        mapButtonOrLinkProps={<T extends ButtonOrLinkProps>(props: T) => {
+          let href = typeof props.href === 'object' ? props.href.href : props.href
+
+          // Don't do anything if it's not a link, or if it's a link to an anchor on the same page
+          if (!props.href || !href || href.startsWith('#')) {
+            return props
+          }
+
+          let target = props.target
+
+          // If the link is internal and absolute, ensure `href` is relative to the base path (i.e. starts with `/`,
+          // not `/docs/` or `https://...`) and includes a locale (by prepending the current locale if there is none)
+          const internalAbsoluteHrefMatches = internalAbsoluteHrefRegex.exec(href)
+          if (internalAbsoluteHrefMatches) {
+            href = href.substring(internalAbsoluteHrefMatches[0].length - 1)
+            const { locale: pathLocale, pathWithoutLocale } = extractLocaleFromPath(href)
+            href = `/${pathLocale ?? locale}${pathWithoutLocale}`
+          }
+
+          // If the link is external, default the target to `_blank`
+          if (externalHrefRegex.test(href)) {
+            target = target ?? '_blank'
+          }
+
+          return { ...props, href, target }
+        }}
+      >
         <AnalyticsProvider
           app="DOCS"
           clientRouter={router}
@@ -116,6 +120,14 @@ function MyApp({ Component, pageProps, router }: AppProps): ReactElement {
           </Layout>
         </AnalyticsProvider>
       </GDSProvider>
+    </>
+  )
+}
+
+function MyApp(props: AppProps) {
+  return (
+    <I18nProvider supportedLocales={supportedLocales} translations={translations} clientRouter={props.router}>
+      <MyAppWithLocale {...props} />
     </I18nProvider>
   )
 }
