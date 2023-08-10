@@ -12,7 +12,7 @@ import { Divider, DividerProps, Flex, Icon, Spacing, useI18n } from '@edgeandnod
 import { NPSForm } from '@edgeandnode/organisms'
 
 import {
-  Blockquote,
+  Callout,
   CodeBlock,
   CodeInline,
   Difficulty,
@@ -30,7 +30,7 @@ import {
 import { DocumentContext, MDXLayoutNav, MDXLayoutOutline, MDXLayoutPagination, NavContext } from '@/layout'
 
 const mdxComponents = {
-  blockquote: Blockquote,
+  blockquote: Callout,
   pre: CodeBlock,
   code: CodeInline,
   hr: (props: DividerProps) => <Divider sx={{ my: Spacing['32px'] }} {...props} />,

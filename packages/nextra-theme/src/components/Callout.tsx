@@ -1,13 +1,10 @@
-import { BlockquoteHTMLAttributes } from 'react'
-
 import { buildBorder, Spacing, Text, TextProps } from '@edgeandnode/gds'
 
-export type BlockquoteProps = Omit<TextProps & BlockquoteHTMLAttributes<HTMLQuoteElement>, 'color'>
+export type CalloutProps = Omit<TextProps, 'color'>
 
-export const Blockquote = ({ children, ...props }: BlockquoteProps) => {
+export const Callout = ({ children, ...props }: CalloutProps) => {
   return (
     <Text
-      as="blockquote"
       sx={{
         my: Spacing['32px'],
         '/* emotion-disable-server-rendering-unsafe-selector-warning-please-do-not-use-this-the-warning-exists-for-a-reason */ &:nth-child(1 of :not(style))':

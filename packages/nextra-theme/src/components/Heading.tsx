@@ -1,5 +1,5 @@
 import * as VisuallyHidden from '@radix-ui/react-visually-hidden'
-import { HTMLAttributes, useContext } from 'react'
+import { ElementType, useContext } from 'react'
 import { useInView } from 'react-intersection-observer'
 import { useDebounce } from 'react-use'
 
@@ -10,13 +10,15 @@ import { DocumentContext } from '@/layout/DocumentContext'
 
 export type HeadingProps = TextProps & {
   level: 1 | 2 | 3 | 4 | 5 | 6
-} & HTMLAttributes<HTMLHeadingElement>
+}
 
 const BaseHeading = ({ level, id, children, ...props }: HeadingProps) => {
   const { markOutlineItem } = useContext(DocumentContext)!
+
   const { ref, inView: inOrAboveView } = useInView({
-    rootMargin: '99999px 0px -90% 0px', // consider it "in or above view" if it's anywhere above 10% from the top of the viewport
+    rootMargin: '99999px 0px -80% 0px', // consider it "in or above view" if it's anywhere above 20% from the top of the viewport
   })
+
   useDebounce(
     () => {
       if (id) {
@@ -26,17 +28,20 @@ const BaseHeading = ({ level, id, children, ...props }: HeadingProps) => {
     100,
     [id, inOrAboveView, markOutlineItem],
   )
+
+  const Heading: ElementType = `h${level}`
+
   const { t } = useI18n<any>()
 
   return (
-    <Text ref={ref} as={`h${level}`} id={id} weight="SEMIBOLD" color="White" {...props}>
-      {children}
+    <Text ref={ref} id={id} weight="SEMIBOLD" color="White" {...props}>
+      <Heading sx={{ display: 'inline' }}>{children}</Heading>
       {id ? (
         <span
           sx={{
             marginInlineStart: '0.35em',
             opacity: Opacity['0%'],
-            [`h${level}:hover &, &:focus-within`]: { opacity: Opacity['100%'] },
+            [`*:hover > &, &:focus-within`]: { opacity: Opacity['100%'] },
             transition: buildTransition('OPACITY'),
           }}
         >

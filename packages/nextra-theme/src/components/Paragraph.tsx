@@ -1,8 +1,6 @@
-import { HTMLAttributes } from 'react'
-
 import { Spacing, Text, TextProps } from '@edgeandnode/gds'
 
-export type ParagraphProps = Omit<TextProps & HTMLAttributes<HTMLParagraphElement>, 'color'>
+export type ParagraphProps = Omit<TextProps, 'color'>
 
 export const Paragraph = ({ children, ...props }: ParagraphProps) => {
   return (

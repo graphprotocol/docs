@@ -1,4 +1,4 @@
-export * from './Blockquote'
+export * from './Callout'
 export * from './Code'
 export * from './Difficulty'
 export * from './DocSearch'
