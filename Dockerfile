@@ -16,7 +16,7 @@ RUN pnpm build
 RUN pnpm export
 
 ## production environment
-FROM nginx:1.16.0-alpine
+FROM nginx:1.24-alpine
 
 COPY --from=builder ./app/nginx.conf /etc/nginx/
 COPY --from=builder /app/out /usr/share/nginx/html
