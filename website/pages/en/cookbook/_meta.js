@@ -9,4 +9,6 @@ export default {
   grafting: '',
   'subgraph-uncrashable': '',
   'substreams-powered-subgraphs': '',
+  'chain-integration-overview': '',
+  'chain-integration-guide': '',
 }
