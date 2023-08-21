@@ -3,13 +3,17 @@ import { buildDynamicMeta } from 'nextra/remote'
 
 import { Locale, translate } from '@edgeandnode/gds'
 
-import { translations } from '@/i18n'
+import { supportedLocales, translations } from '@/i18n'
 
 export async function getPageMap(locale: Locale = Locale.ENGLISH) {
+  if (!(supportedLocales as Locale[]).includes(locale)) {
+    return []
+  }
+
   const { __nextra_pageMap } = await buildDynamicMeta()
 
   const pageMap = __nextra_pageMap!.find(
-    (pageItem): pageItem is Folder => pageItem.kind === 'Folder' && pageItem.name === locale
+    (pageItem): pageItem is Folder => pageItem.kind === 'Folder' && pageItem.name === (locale as string),
   )!.children
 
   const resultPageMap = [

@@ -5,7 +5,11 @@ const env = {
   ALGOLIA_API_KEY: process.env.ALGOLIA_API_KEY,
   ALGOLIA_APP_ID: process.env.ALGOLIA_APP_ID,
   MIXPANEL_TOKEN:
-    process.env.ENVIRONMENT === 'production' ? 'cfeac8baf33c9b4d255f28d57f3c9148' : 'e57a9892339b2acfd02943c86b746d32',
+    process.env.NODE_ENV === 'production'
+      ? process.env.ENVIRONMENT === 'production'
+        ? 'cfeac8baf33c9b4d255f28d57f3c9148' // production
+        : 'e57a9892339b2acfd02943c86b746d32' // staging
+      : null, // local dev (no tracking)
 }
 
 const withNextra = nextra({
@@ -45,16 +49,26 @@ export default withNextra({
     {
       source: '/',
       destination: '/en/',
+      permanent: true,
+    },
+    {
+      source: '/en/arbitrum-faq/',
+      destination: '/en/arbitrum/arbitrum-faq/',
+      permanent: true,
+    },
+    {
+      source: '/en/firehose/',
+      destination: '/en/firehose/README/',
+      permanent: false,
+    },
+    {
+      source: '/en/querying/graph-client/',
+      destination: '/en/querying/graph-client/README/',
       permanent: false,
     },
     {
       source: '/en/substreams/',
       destination: '/en/substreams/README/',
-      permanent: false,
-    },
-    {
-      source: '/en/firehose/',
-      destination: '/en/firehose/README/',
       permanent: false,
     },
   ],

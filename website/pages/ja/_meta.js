@@ -13,9 +13,9 @@ export default {
   managing: '管理します',
   querying: 'クエリ',
   cookbook: 'クックブック',
+  'release-notes': 'リリースノート＆アップグレードガイド',
   '###3': {
     type: 'heading',
     title: 'インデキシング',
   },
-  'release-notes': 'リリースノート＆アップグレードガイド',
 }

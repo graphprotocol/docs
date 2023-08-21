@@ -1,46 +1,46 @@
 ---
-title: Creating a Subgraph
+title: सबग्राफ तयार करणे
 ---
 
-A subgraph extracts data from a blockchain, processing it and storing it so that it can be easily queried via GraphQL.
+सबग्राफ ब्लॉकचेनमधून डेटा काढतो, त्यावर प्रक्रिया करतो आणि तो संग्रहित करतो जेणेकरून GraphQL द्वारे सहजपणे क्वेरी करता येईल.
 
-![Defining a Subgraph](/img/defining-a-subgraph.png)
+![सबग्राफ परिभाषित करणे](/img/defining-a-subgraph.png)
 
-The subgraph definition consists of a few files:
+सबग्राफ व्याख्येमध्ये काही फाइल्स असतात:
 
-- `subgraph.yaml`: a YAML file containing the subgraph manifest
+- `subgraph.yaml`: सबग्राफ मॅनिफेस्ट असलेली YAML फाइल
 
-- `schema.graphql`: a GraphQL schema that defines what data is stored for your subgraph, and how to query it via GraphQL
+- `schema.graphql`: एक GraphQL स्कीमा जो तुमच्या सबग्राफसाठी कोणता डेटा संग्रहित केला जातो आणि GraphQL द्वारे त्याची क्वेरी कशी करावी हे परिभाषित करते
 
-- `AssemblyScript Mappings`: [AssemblyScript](https://github.com/AssemblyScript/assemblyscript) code that translates from the event data to the entities defined in your schema (e.g. `mapping.ts` in this tutorial)
+- `AssemblyScript मॅपिंग`: [AssemblyScript](https://github.com/AssemblyScript/assemblyscript) कोड जो इव्हेंट डेटामधून तुमच्या स्कीमामध्ये परिभाषित केलेल्या घटकांमध्ये अनुवादित करतो (उदा. `mapping.ts` या ट्युटोरियलमध्ये)
 
-> In order to use your subgraph on The Graph's decentralized network, you will need to [create an API key](/deploying/subgraph-studio-faqs/#2-how-do-i-create-an-api-key). It is recommended that you [add signal](/network/curating/#how-to-signal) to your subgraph with at least [10,000 GRT](/network-transition-faq/#how-can-i-ensure-that-my-subgraph-will-be-picked-up-by-indexer-on-the-graph-network).
+> ग्राफच्या विकेंद्रीकृत नेटवर्कवर तुमचा सबग्राफ वापरण्यासाठी, तुम्हाला [एपीआय की तयार करणे](/deploying/subgraph-studio-faqs/#2-how-do-i-create-an-api-key) आवश्यक असेल. तुम्ही तुमच्या सबग्राफमध्ये किमान [10,000 GRT](/network-transition-faq/#how-can-i-ensure-that-my-subgraph-will-be-picked-up-by-indexer-on-the-graph-network) सह [सिग्नल जोडावे](/network/curating/#how-to-signal) अशी शिफारस केली जाते.
 
-Before you go into detail about the contents of the manifest file, you need to install the [Graph CLI](https://github.com/graphprotocol/graph-cli) which you will need to build and deploy a subgraph.
+तुम्ही मॅनिफेस्ट फाइलच्या सामग्रीबद्दल तपशीलात जाण्यापूर्वी, तुम्हाला [ग्राफ CLI](https://github.com/graphprotocol/graph-cli) स्थापित करणे आवश्यक आहे जे तुम्हाला तयार करण्यासाठी आवश्यक असेल. आणि सबग्राफ तैनात करा.
 
-## Install the Graph CLI
+## ग्राफ CLI स्थापित करा
 
-The Graph CLI is written in JavaScript, and you will need to install either `yarn` or `npm` to use it; it is assumed that you have yarn in what follows.
+आलेख CLI JavaScript मध्ये लिहिलेले आहे, आणि ते वापरण्यासाठी तुम्हाला `यार्न` किंवा `npm` स्थापित करावे लागेल; असे गृहीत धरले जाते की तुमच्याकडे पुढील गोष्टींमध्ये सूत आहे.
 
-Once you have `yarn`, install the Graph CLI by running
+तुमच्याकडे `यार्न` आल्यावर, चालवून आलेख CLI स्थापित करा
 
-**Install with yarn:**
+**यार्नसह स्थापित करा:**
 
 ```bash
 yarn global add @graphprotocol/graph-cli
 ```
 
-**Install with npm:**
+**सह स्थापित करा npm:**
 
 ```bash
 npm install -g @graphprotocol/graph-cli
 ```
 
-Once installed, the `graph init` command can be used to set up a new subgraph project, either from an existing contract or from an example subgraph. This command can be used to create a subgraph on the Subgraph Studio by passing in `graph init --product subgraph-studio`. If you already have a smart contract deployed to your preferred network, bootstrapping a new subgraph from that contract can be a good way to get started.
+एकदा स्थापित केल्यानंतर, `graph init` कमांडचा वापर नवीन सबग्राफ प्रोजेक्ट सेट करण्यासाठी केला जाऊ शकतो, एकतर विद्यमान करारातून किंवा उदाहरण सबग्राफमधून. ही कमांड `graph init --product subgraph-studio` मध्ये पास करून सबग्राफ स्टुडिओवर सबग्राफ तयार करण्यासाठी वापरली जाऊ शकते. जर तुमच्याकडे आधीपासून तुमच्या पसंतीच्या नेटवर्कवर स्मार्ट कॉन्ट्रॅक्ट तैनात केले असेल, तर त्या कॉन्ट्रॅक्टमधून नवीन सबग्राफ बूटस्ट्रॅप करणे हा सुरू करण्याचा एक चांगला मार्ग असू शकतो.
 
-## From An Existing Contract
+## विद्यमान करारातून
 
-The following command creates a subgraph that indexes all events of an existing contract. It attempts to fetch the contract ABI from Etherscan and falls back to requesting a local file path. If any of the optional arguments are missing, it takes you through an interactive form.
+खालील कमांड एक सबग्राफ तयार करते जे विद्यमान कराराच्या सर्व घटनांना अनुक्रमित करते. ते इथरस्कॅन वरून ABI करार मिळवण्याचा प्रयत्न करते आणि स्थानिक फाइल मार्गाची विनंती करण्यासाठी परत येते. पर्यायी युक्तिवादांपैकी कोणतेही गहाळ असल्यास, ते तुम्हाला परस्परसंवादी फॉर्ममधून घेऊन जाते.
 
 ```sh
 graph init \
@@ -51,21 +51,21 @@ graph init \
   <SUBGRAPH_SLUG> [<DIRECTORY>]
 ```
 
-The `<SUBGRAPH_SLUG>` is the ID of your subgraph in Subgraph Studio, it can be found on your subgraph details page.
+सबग्राफ स्टुडिओमध्ये `<SUBGRAPH_SLUG>` हा तुमच्या सबग्राफचा आयडी आहे, तो तुमच्या सबग्राफ तपशील पेजवर आढळू शकतो.
 
-## From An Example Subgraph
+## उदाहरणाच्या सबग्राफमधून
 
-The second mode `graph init` supports is creating a new project from an example subgraph. The following command does this:
+दुसरा मोड `graph init` सपोर्ट करतो तो उदाहरण सबग्राफमधून नवीन प्रोजेक्ट तयार करतो. खालील कमांड हे करते:
 
 ```sh
-graph init --studio <SUBGRAPH_SLUG>
+आलेख init --studio <SUBGRAPH_SLUG>
 ```
 
-The example subgraph is based on the Gravity contract by Dani Grant that manages user avatars and emits `NewGravatar` or `UpdateGravatar` events whenever avatars are created or updated. The subgraph handles these events by writing `Gravatar` entities to the Graph Node store and ensuring these are updated according to the events. The following sections will go over the files that make up the subgraph manifest for this example.
+उदाहरण सबग्राफ हे Dani Grant च्या ग्रॅव्हिटी कॉन्ट्रॅक्टवर आधारित आहे जे वापरकर्ता अवतार व्यवस्थापित करते आणि `NewGravatar` किंवा `UpdateGravatar` इव्हेंट जेव्हाही अवतार तयार किंवा अपडेट केले जातात. सबग्राफ ग्राफ नोड स्टोअरमध्ये `Gravatar` संस्था लिहून आणि हे इव्हेंटनुसार अपडेट केले जातील याची खात्री करून हे इव्हेंट हाताळते. या उदाहरणासाठी सबग्राफ मॅनिफेस्ट बनवणार्‍या फाइल्सवर पुढील विभाग जातील.
 
-## Add New dataSources To An Existing Subgraph
+## विद्यमान सबग्राफमध्ये नवीन डेटास्रोत जोडा
 
-Since `v0.31.0` the `graph-cli` supports adding new dataSources to an existing subgraph through the `graph add` command.
+`v0.31.0` पासून `graph-cli` `graph add` आदेशाद्वारे विद्यमान सबग्राफमध्ये नवीन डेटास्रोत जोडण्यास समर्थन देते.
 
 ```sh
 graph add <address> [<subgraph-manifest default: "./subgraph.yaml">]
@@ -78,22 +78,22 @@ Options:
       --network-file <path>     Networks config file path (default: "./networks.json")
 ```
 
-The `add` command will fetch the ABI from Etherscan (unless an ABI path is specified with the `--abi` option), and will create a new `dataSource` in the same way that `graph init` command creates a `dataSource` `--from-contract`, updating the schema and mappings accordingly.
+`add` कमांड इथरस्कॅनमधून ABI आणेल (जोपर्यंत ABI पथ `--abi` पर्यायाने निर्दिष्ट केला जात नाही), आणि नवीन `डेटास्रोत` तयार करेल. > त्याच प्रकारे `graph init` कमांड `डेटास्रोत` `---करारातून` तयार करते, त्यानुसार स्कीमा आणि मॅपिंग अद्यतनित करते.
 
-The `--merge-entities` option identifies how the developer would like to handle `entity` and `event` name conflicts:
+`--merge-entities` पर्याय विकसकाला `संस्था` आणि `इव्हेंट` नावातील विरोधाभास कसे हाताळायचे आहेत हे ओळखतो:
 
-- If `true`: the new `dataSource` should use existing `eventHandlers` & `entities`.
-- If `false`: a new entity & event handler should be created with `${dataSourceName}{EventName}`.
+- `सत्य` असल्यास: नवीन `डेटास्रोत` ने विद्यमान `इव्हेंटहँडलर्स` वापरावे & `संस्था`.
+- जर `असत्य`: एक नवीन अस्तित्व & इव्हेंट हँडलर `${dataSourceName}{EventName}` सह तयार केला पाहिजे.
 
-The contract `address` will be written to the `networks.json` for the relevant network.
+कराराचा `पत्ता` संबंधित नेटवर्कसाठी `networks.json` वर लिहिला जाईल.
 
-> **Note:** When using the interactive cli, after successfully running `graph init`, you'll be prompted to add a new `dataSource`.
+> **टीप:** परस्परसंवादी क्ली वापरताना, यशस्वीरित्या `ग्राफ इनिट` चालवल्यानंतर, तुम्हाला एक नवीन `डेटास्रोत` जोडण्यासाठी सूचित केले जाईल.
 
-## The Subgraph Manifest
+## सबग्राफ मॅनिफेस्ट
 
-The subgraph manifest `subgraph.yaml` defines the smart contracts your subgraph indexes, which events from these contracts to pay attention to, and how to map event data to entities that Graph Node stores and allows to query. The full specification for subgraph manifests can be found [here](https://github.com/graphprotocol/graph-node/blob/master/docs/subgraph-manifest.md).
+सबग्राफ मॅनिफेस्ट `subgraph.yaml` स्मार्ट कॉन्ट्रॅक्ट्स तुमच्या सबग्राफ इंडेक्सेस परिभाषित करतो, या कॉन्ट्रॅक्टमधील कोणत्या इव्हेंट्सकडे लक्ष द्यायचे आणि ग्राफ नोड स्टोअर करत असलेल्या आणि क्वेरी करण्याची परवानगी देणार्‍या घटकांसाठी इव्हेंट डेटा कसा मॅप करायचा. सबग्राफ मॅनिफेस्टसाठी संपूर्ण तपशील [येथे](https://github.com/graphprotocol/graph-node/blob/master/docs/subgraph-manifest.md) आढळू शकतात.
 
-For the example subgraph, `subgraph.yaml` is:
+सबग्राफच्या उदाहरणासाठी, `subgraph.yaml` आहे:
 
 ```yaml
 specVersion: 0.0.4
@@ -134,59 +134,59 @@ dataSources:
       file: ./src/mapping.ts
 ```
 
-The important entries to update for the manifest are:
+मॅनिफेस्टसाठी अद्यतनित करण्याच्या महत्त्वाच्या नोंदी आहेत:
 
-- `description`: a human-readable description of what the subgraph is. This description is displayed by the Graph Explorer when the subgraph is deployed to the Hosted Service.
+- `वर्णन`: सबग्राफ काय आहे याचे मानवी वाचनीय वर्णन. जेव्हा सबग्राफ होस्ट केलेल्या सेवेवर तैनात केला जातो तेव्हा हे वर्णन ग्राफ एक्सप्लोररद्वारे प्रदर्शित केले जाते.
 
-- `repository`: the URL of the repository where the subgraph manifest can be found. This is also displayed by The Graph Explorer.
+- `रेपॉजिटरी`: रिपॉझिटरीची URL जिथे सबग्राफ मॅनिफेस्ट आढळू शकते. हे ग्राफ एक्सप्लोररद्वारे देखील प्रदर्शित केले जाते.
 
-- `features`: a list of all used [feature](#experimental-features) names.
+- `वैशिष्ट्ये`: सर्व वापरलेल्या [वैशिष्ट्य](#experimental-features) नावांची सूची.
 
-- `dataSources.source`: the address of the smart contract the subgraph sources, and the ABI of the smart contract to use. The address is optional; omitting it allows to index matching events from all contracts.
+- `dataSources.source`: स्मार्ट कॉन्ट्रॅक्टचा पत्ता सबग्राफ स्त्रोत आणि वापरण्यासाठी स्मार्ट कॉन्ट्रॅक्टचा ABI. पत्ता ऐच्छिक आहे; ते वगळणे सर्व करारांमधून जुळणारे इव्हेंट अनुक्रमित करण्यास अनुमती देते.
 
-- `dataSources.source.startBlock`: the optional number of the block that the data source starts indexing from. In most cases, we suggest using the block in which the contract was created.
+- `dataSources.source.startBlock`: ब्लॉकची पर्यायी संख्या ज्यावरून डेटा स्रोत अनुक्रमणिका सुरू करतो. बहुतेक प्रकरणांमध्ये, आम्ही ज्या ब्लॉकमध्ये करार तयार केला होता तो वापरण्याचा सल्ला देतो.
 
-- `dataSources.mapping.entities`: the entities that the data source writes to the store. The schema for each entity is defined in the schema.graphql file.
+- `dataSources.mapping.entities`: डेटा स्रोत स्टोअरमध्ये लिहित असलेल्या संस्था. प्रत्येक घटकासाठी स्कीमा schema.graphql फाइलमध्ये परिभाषित केले आहे.
 
-- `dataSources.mapping.abis`: one or more named ABI files for the source contract as well as any other smart contracts that you interact with from within the mappings.
+- `dataSources.mapping.abis`: स्त्रोत करारासाठी एक किंवा अधिक नावाच्या ABI फाइल्स तसेच तुम्ही मॅपिंगमधून परस्परसंवाद करता अशा इतर स्मार्ट करारांसाठी.
 
-- `dataSources.mapping.eventHandlers`: lists the smart contract events this subgraph reacts to and the handlers in the mapping—./src/mapping.ts in the example—that transform these events into entities in the store.
+- `dataSources.mapping.eventHandlers`: या सबग्राफवर प्रतिक्रिया देणारे स्मार्ट कॉन्ट्रॅक्ट इव्हेंट आणि मॅपिंगमधील हँडलर्सची यादी करते—./src/mapping.ts उदाहरणामध्ये—जे या इव्हेंटचे स्टोअरमधील घटकांमध्ये रूपांतर करतात.
 
-- `dataSources.mapping.callHandlers`: lists the smart contract functions this subgraph reacts to and handlers in the mapping that transform the inputs and outputs to function calls into entities in the store.
+- `dataSources.mapping.callHandlers`: या सबग्राफवर प्रतिक्रिया देणारे स्मार्ट कॉन्ट्रॅक्ट फंक्शन्स सूचीबद्ध करते आणि मॅपिंगमधील हँडलर्स जे इनपुट आणि आउटपुटला स्टोअरमधील संस्थांमध्ये फंक्शन कॉलमध्ये रूपांतरित करतात.
 
-- `dataSources.mapping.blockHandlers`: lists the blocks this subgraph reacts to and handlers in the mapping to run when a block is appended to the chain. Without a filter, the block handler will be run every block. An optional call-filter can be provided by adding a `filter` field with `kind: call` to the handler. This will only run the handler if the block contains at least one call to the data source contract.
+- `dataSources.mapping.blockHandlers`: हा सबग्राफ ज्या ब्लॉक्सवर प्रतिक्रिया देतो आणि मॅपिंगमधील हँडलर चेनमध्ये ब्लॉक जोडला जातो तेव्हा रन करण्यासाठी सूचीबद्ध करतो. फिल्टरशिवाय, ब्लॉक हँडलर प्रत्येक ब्लॉकला चालवला जाईल. हँडलरला `kind: call` सह `filter` फील्ड जोडून पर्यायी कॉल-फिल्टर प्रदान केले जाऊ शकते. ब्लॉकमध्ये डेटा स्रोत करारासाठी किमान एक कॉल असेल तरच हे हँडलर चालवेल.
 
-A single subgraph can index data from multiple smart contracts. Add an entry for each contract from which data needs to be indexed to the `dataSources` array.
+एकच सबग्राफ एकाधिक स्मार्ट कॉन्ट्रॅक्ट्समधील डेटा अनुक्रमित करू शकतो. प्रत्येक करारासाठी एक एंट्री जोडा ज्यामधून डेटा `डेटास्रोत` अॅरेमध्ये अनुक्रमित करणे आवश्यक आहे.
 
-The triggers for a data source within a block are ordered using the following process:
+ब्लॉकमधील डेटा स्रोतासाठी ट्रिगर खालील प्रक्रिया वापरून क्रमबद्ध केले जातात:
 
-1. Event and call triggers are first ordered by transaction index within the block.
-2. Event and call triggers within the same transaction are ordered using a convention: event triggers first then call triggers, each type respecting the order they are defined in the manifest.
-3. Block triggers are run after event and call triggers, in the order they are defined in the manifest.
+1. इव्हेंट आणि कॉल ट्रिगर प्रथम ब्लॉकमधील व्यवहार निर्देशांकानुसार ऑर्डर केले जातात.
+2. समान व्यवहारामधील इव्हेंट आणि कॉल ट्रिगर्स एक नियम वापरून ऑर्डर केले जातात: प्रथम इव्हेंट ट्रिगर नंतर कॉल ट्रिगर, प्रत्येक प्रकार मॅनिफेस्टमध्ये परिभाषित केलेल्या क्रमाचा आदर करतो.
+3. ब्लॉक ट्रिगर इव्हेंट आणि कॉल ट्रिगर्सनंतर चालवले जातात, ते मॅनिफेस्टमध्ये परिभाषित केलेल्या क्रमाने.
 
-These ordering rules are subject to change.
+हे ऑर्डरिंग नियम बदलू शकतात.
 
-### Getting The ABIs
+### ABIs मिळवणे
 
-The ABI file(s) must match your contract(s). There are a few ways to obtain ABI files:
+ABI फाइल(ल्या) तुमच्या कराराशी जुळल्या पाहिजेत. ABI फाइल्स मिळविण्याचे काही मार्ग आहेत:
 
-- If you are building your own project, you will likely have access to your most current ABIs.
-- If you are building a subgraph for a public project, you can download that project to your computer and get the ABI by using [`truffle compile`](https://truffleframework.com/docs/truffle/overview) or using solc to compile.
-- You can also find the ABI on [Etherscan](https://etherscan.io/), but this isn't always reliable, as the ABI that is uploaded there may be out of date. Make sure you have the right ABI, otherwise running your subgraph will fail.
+- तुम्ही तुमचा स्वतःचा प्रकल्प तयार करत असल्यास, तुम्हाला तुमच्या सर्वात वर्तमान ABI मध्ये प्रवेश मिळण्याची शक्यता आहे.
+- तुम्ही सार्वजनिक प्रकल्पासाठी सबग्राफ तयार करत असल्यास, तुम्ही तो प्रकल्प तुमच्या संगणकावर डाउनलोड करू शकता आणि [`ट्रफल कंपाइल`](https://truffleframework.com/docs/truffle/overview) वापरून किंवा कंपाइल करण्यासाठी सोल्क वापरून ABI मिळवू शकता.
+- तुम्ही [Etherscan](https://etherscan.io/) वर ABI देखील शोधू शकता, परंतु हे नेहमीच विश्वसनीय नसते, कारण तेथे अपलोड केलेला ABI कालबाह्य असू शकतो. तुमच्याकडे योग्य ABI असल्याची खात्री करा, अन्यथा तुमचा सबग्राफ चालवणे अयशस्वी होईल.
 
-## The GraphQL Schema
+## ग्राफक्यूएल स्कीमा
 
-The schema for your subgraph is in the file `schema.graphql`. GraphQL schemas are defined using the GraphQL interface definition language. If you've never written a GraphQL schema, it is recommended that you check out this primer on the GraphQL type system. Reference documentation for GraphQL schemas can be found in the [GraphQL API](/querying/graphql-api) section.
+तुमच्या सबग्राफसाठी स्कीमा `schema.graphql` फाइलमध्ये आहे. GraphQL स्कीमा GraphQL इंटरफेस व्याख्या भाषा वापरून परिभाषित केले आहेत. तुम्ही कधीही GraphQL स्कीमा लिहिला नसल्यास, GraphQL प्रकार प्रणालीवर हा प्राइमर तपासण्याची शिफारस केली जाते. GraphQL स्कीमासाठी संदर्भ दस्तऐवजीकरण [GraphQL API](/querying/graphql-api) विभागात आढळू शकते.
 
-## Defining Entities
+## संस्था परिभाषित करणे
 
-Before defining entities, it is important to take a step back and think about how your data is structured and linked. All queries will be made against the data model defined in the subgraph schema and the entities indexed by the subgraph. Because of this, it is good to define the subgraph schema in a way that matches the needs of your dapp. It may be useful to imagine entities as "objects containing data", rather than as events or functions.
+संस्था परिभाषित करण्यापूर्वी, एक पाऊल मागे घेणे आणि तुमचा डेटा कसा संरचित आणि लिंक केलेला आहे याचा विचार करणे महत्त्वाचे आहे. सबग्राफ स्कीमामध्ये परिभाषित केलेल्या डेटा मॉडेल आणि सबग्राफद्वारे अनुक्रमित घटकांविरुद्ध सर्व क्वेरी केल्या जातील. यामुळे, सबग्राफ स्कीमा तुमच्या dapp च्या गरजांशी जुळेल अशा प्रकारे परिभाषित करणे चांगले आहे. इव्हेंट किंवा फंक्शन्स ऐवजी "डेटा असलेले ऑब्जेक्ट्स" म्हणून घटकांची कल्पना करणे उपयुक्त ठरू शकते.
 
-With The Graph, you simply define entity types in `schema.graphql`, and Graph Node will generate top level fields for querying single instances and collections of that entity type. Each type that should be an entity is required to be annotated with an `@entity` directive. By default, entities are mutable, meaning that mappings can load existing entities, modify them and store a new version of that entity. Mutability comes at a price, and for entity types for which it is known that they will never be modified, for example, because they simply contain data extracted verbatim from the chain, it is recommended to mark them as immutable with `@entity(immutable: true)`. Mappings can make changes to immutable entities as long as those changes happen in the same block in which the entity was created. Immutable entities are much faster to write and to query, and should therefore be used whenever possible.
+The Graph सह, तुम्ही फक्त `schema.graphql` मध्ये अस्तित्व प्रकार परिभाषित करता, आणि ग्राफ नोड एकल उदाहरणे आणि त्या घटक प्रकाराच्या संग्रहासाठी क्वेरी करण्यासाठी उच्च स्तरीय फील्ड तयार करेल. प्रत्येक प्रकार जो अस्तित्व असावा त्याला `@entity` निर्देशासह भाष्य करणे आवश्यक आहे. डीफॉल्टनुसार, घटक बदलण्यायोग्य असतात, याचा अर्थ मॅपिंग विद्यमान घटक लोड करू शकतात, त्यामध्ये सुधारणा करू शकतात आणि त्या घटकाची नवीन आवृत्ती संग्रहित करू शकतात. परिवर्तनशीलता किंमतीवर येते आणि ज्या घटकांसाठी हे ज्ञात आहे की ते कधीही सुधारित केले जाणार नाहीत, उदाहरणार्थ, त्यांच्यामध्ये केवळ साखळीतून शब्दशः काढलेला डेटा असतो, त्यांना `@entity सह अपरिवर्तनीय म्हणून चिन्हांकित करण्याची शिफारस केली जाते. (अपरिवर्तनीय: खरे)`. मॅपिंग अपरिवर्तनीय घटकांमध्ये बदल करू शकतात जोपर्यंत ते बदल त्याच ब्लॉकमध्ये होतात ज्यामध्ये अस्तित्व तयार केले गेले होते. अपरिवर्तनीय संस्था लिहिण्यासाठी आणि क्वेरी करण्यासाठी खूप वेगवान असतात आणि म्हणून जेव्हा शक्य असेल तेव्हा वापरल्या पाहिजेत.
 
-### Good Example
+### उत्तम उदाहरण
 
-The `Gravatar` entity below is structured around a Gravatar object and is a good example of how an entity could be defined.
+खाली दिलेला `Gravatar` घटक एका Gravatar ऑब्जेक्टभोवती संरचित आहे आणि एखाद्या घटकाची व्याख्या कशी करता येईल याचे उत्तम उदाहरण आहे.
 
 ```graphql
 type Gravatar @entity(immutable: true) {
@@ -198,9 +198,9 @@ type Gravatar @entity(immutable: true) {
 }
 ```
 
-### Bad Example
+### वाईट उदाहरण
 
-The example `GravatarAccepted` and `GravatarDeclined` entities below are based around events. It is not recommended to map events or function calls to entities 1:1.
+खालील उदाहरण `GravatarAccepted` आणि `GravatarDeclined` घटक इव्हेंटवर आधारित आहेत. 1:1 घटकांना इव्हेंट किंवा फंक्शन कॉल मॅप करण्याची शिफारस केलेली नाही.
 
 ```graphql
 type GravatarAccepted @entity {
@@ -218,36 +218,36 @@ type GravatarDeclined @entity {
 }
 ```
 
-### Optional and Required Fields
+### पर्यायी आणि आवश्यक फील्ड
 
-Entity fields can be defined as required or optional. Required fields are indicated by the `!` in the schema. If a required field is not set in the mapping, you will receive this error when querying the field:
+घटक फील्ड आवश्यक किंवा पर्यायी म्हणून परिभाषित केले जाऊ शकतात. आवश्यक फील्ड स्कीमामधील `!` द्वारे सूचित केले जातात. मॅपिंगमध्ये आवश्यक फील्ड सेट केले नसल्यास, फील्डची चौकशी करताना तुम्हाला ही त्रुटी प्राप्त होईल:
 
 ```
-Null value resolved for non-null field 'name'
+नॉन-नल फील्ड 'नावासाठी शून्य मूल्य सोडवले
 ```
 
-Each entity must have an `id` field, which must be of type `Bytes!` or `String!`. It is generally recommended to use `Bytes!`, unless the `id` contains human-readable text, since entities with `Bytes!` id's will be faster to write and query as those with a `String!` `id`. The `id` field serves as the primary key, and needs to be unique among all entities of the same type. For historical reasons, the type `ID!` is also accepted and is a synonym for `String!`.
+प्रत्येक घटकामध्ये एक `id` फील्ड असणे आवश्यक आहे, जे `Bytes!` किंवा `String!` प्रकारचे असणे आवश्यक आहे. सामान्यतः `बाइट्स!` वापरण्याची शिफारस केली जाते, जोपर्यंत `id` मध्ये मानवी वाचता येण्याजोगा मजकूर नसतो, कारण `Bytes!` आयडी असलेल्या संस्था लिहिण्यास जलद असतील. आणि `स्ट्रिंग!` `id` सह क्वेरी करा. `id` फील्ड प्राथमिक की म्हणून काम करते आणि समान प्रकारच्या सर्व घटकांमध्ये अद्वितीय असणे आवश्यक आहे. ऐतिहासिक कारणांसाठी, `ID!` हा प्रकार देखील स्वीकारला जातो आणि `String!` साठी समानार्थी शब्द आहे.
 
-For some entity types the `id` is constructed from the id's of two other entities; that is possible using `concat`, e.g., `let id = left.id.concat(right.id)` to form the id from the id's of `left` and `right`. Similarly, to construct an id from the id of an existing entity and a counter `count`, `let id = left.id.concatI32(count)` can be used. The concatenation is guaranteed to produce unique id's as long as the length of `left` is the same for all such entities, for example, because `left.id` is an `Address`.
+काही घटक प्रकारांसाठी `id` हे इतर दोन घटकांच्या आयडीवरून तयार केले जाते; ते `concat` वापरून शक्य आहे, उदा., `left` च्या id वरून id तयार करण्यासाठी `let id = left.id.concat(right.id)` > आणि `उजवीकडे`. त्याचप्रमाणे, विद्यमान घटकाच्या आयडी आणि काउंटर `count` वरून आयडी तयार करण्यासाठी, `let id = left.id.concatI32(count)` वापरता येईल. अशा सर्व घटकांसाठी `left` ची लांबी समान असेल तोपर्यंत युनिक आयडी तयार करण्याची हमी दिली जाते, उदाहरणार्थ, `left.id` हा `पत्ता आहे `.
 
-### Built-In Scalar Types
+### अंगभूत स्केलर प्रकार
 
-#### GraphQL Supported Scalars
+#### ग्राफक्यूएल समर्थित स्केलर
 
-We support the following scalars in our GraphQL API:
+आम्ही आमच्या GraphQL API मध्ये खालील स्केलरला समर्थन देतो:
 
-| Type | Description |
+| प्रकार | वर्णन |
 | --- | --- |
-| `Bytes` | Byte array, represented as a hexadecimal string. Commonly used for Ethereum hashes and addresses. |
-| `String` | Scalar for `string` values. Null characters are not supported and are automatically removed. |
-| `Boolean` | Scalar for `boolean` values. |
-| `Int` | The GraphQL spec defines `Int` to have a size of 32 bytes. |
-| `BigInt` | Large integers. Used for Ethereum's `uint32`, `int64`, `uint64`, ..., `uint256` types. Note: Everything below `uint32`, such as `int32`, `uint24` or `int8` is represented as `i32`. |
-| `BigDecimal` | `BigDecimal` High precision decimals represented as a significand and an exponent. The exponent range is from −6143 to +6144. Rounded to 34 significant digits. |
+| `बाइट्स` | बाइट अॅरे, हेक्साडेसिमल स्ट्रिंग म्हणून प्रस्तुत केले जाते. सामान्यतः इथरियम हॅश आणि पत्त्यांसाठी वापरले जाते. |
+| `स्ट्रिंग` | `स्ट्रिंग` मूल्यांसाठी स्केलर. शून्य वर्ण समर्थित नाहीत आणि आपोआप काढले जातात. |
+| `बुलियन` | `बूलियन` मूल्यांसाठी स्केलर. |
+| `इंट` | GraphQL spec `Int` ला ३२ बाइट्सचा आकार ठरवतो. |
+| `BigInt` | मोठे पूर्णांक. इथरियमच्या `uint32`, `int64`, `uint64`, ..., `uint256` प्रकारांसाठी वापरले जाते. टीप: `uint32` खाली सर्व काही, जसे की `int32`, `uint24` किंवा `int8` `i32` म्हणून प्रस्तुत केले जाते 0>. |
+| `बिग डेसिमल` | `BigDecimal` उच्च सुस्पष्टता दशांश एक महत्त्वपूर्ण आणि घातांक म्हणून प्रस्तुत केले जाते. घातांक श्रेणी −6143 ते +6144 पर्यंत आहे. 34 लक्षणीय अंकांपर्यंत पूर्णांक. |
 
-#### Enums
+#### एनम्स
 
-You can also create enums within a schema. Enums have the following syntax:
+तुम्ही स्कीमामध्ये enums देखील तयार करू शकता. Enums मध्ये खालील वाक्यरचना आहे:
 
 ```graphql
 enum TokenStatus {
@@ -257,19 +257,19 @@ enum TokenStatus {
 }
 ```
 
-Once the enum is defined in the schema, you can use the string representation of the enum value to set an enum field on an entity. For example, you can set the `tokenStatus` to `SecondOwner` by first defining your entity and subsequently setting the field with `entity.tokenStatus = "SecondOwner"`. The example below demonstrates what the Token entity would look like with an enum field:
+एकदा enum स्कीमामध्ये परिभाषित केल्यावर, तुम्ही enum मूल्याचे स्ट्रिंग प्रतिनिधित्व एखाद्या घटकावर enum फील्ड सेट करण्यासाठी वापरू शकता. उदाहरणार्थ, तुम्ही प्रथम तुमची संस्था परिभाषित करून आणि नंतर `entity.tokenStatus = "SecondOwner"` सह फील्ड सेट करून `tokenStatus` ला `SecondOwner` वर सेट करू शकता. इनम फील्डसह टोकन अस्तित्व कसे दिसेल हे खालील उदाहरण दाखवते:
 
-More detail on writing enums can be found in the [GraphQL documentation](https://graphql.org/learn/schema/).
+एनम्स लिहिण्याबद्दल अधिक तपशील [GraphQL दस्तऐवजीकरण](https://graphql.org/learn/schema/) मध्ये आढळू शकतात.
 
-#### Entity Relationships
+#### अस्तित्व संबंध
 
-An entity may have a relationship to one or more other entities in your schema. These relationships may be traversed in your queries. Relationships in The Graph are unidirectional. It is possible to simulate bidirectional relationships by defining a unidirectional relationship on either "end" of the relationship.
+एखाद्या घटकाचा तुमच्या स्कीमामधील एक किंवा अधिक इतर घटकांशी संबंध असू शकतो. हे नातेसंबंध तुमच्या प्रश्नांमध्ये असू शकतात. आलेखामधील संबंध दिशाहीन आहेत. नात्याच्या "शेवट" वर एकदिशात्मक संबंध परिभाषित करून द्विदिशात्मक संबंधांचे अनुकरण करणे शक्य आहे.
 
-Relationships are defined on entities just like any other field except that the type specified is that of another entity.
+नातेसंबंध हे इतर कोणत्याही क्षेत्राप्रमाणेच घटकांवर परिभाषित केले जातात शिवाय निर्दिष्ट केलेला प्रकार दुसर्‍या घटकाचा आहे.
 
-#### One-To-One Relationships
+#### वन-टू-वन संबंध
 
-Define a `Transaction` entity type with an optional one-to-one relationship with a `TransactionReceipt` entity type:
+`TransactionReceipt` घटक प्रकारासह पर्यायी वन-टू-वन संबंधांसह `व्यवहार` अस्तित्व प्रकार परिभाषित करा:
 
 ```graphql
 type Transaction @entity(immutable: true) {
@@ -283,9 +283,9 @@ type TransactionReceipt @entity(immutable: true) {
 }
 ```
 
-#### One-To-Many Relationships
+#### एक-ते-अनेक संबंध
 
-Define a `TokenBalance` entity type with a required one-to-many relationship with a Token entity type:
+टोकन अस्तित्व प्रकारासह आवश्यक एक-ते-अनेक संबंधांसह `टोकन बॅलन्स` अस्तित्व प्रकार परिभाषित करा:
 
 ```graphql
 type Token @entity(immutable: true) {
@@ -299,15 +299,15 @@ type TokenBalance @entity {
 }
 ```
 
-#### Reverse Lookups
+#### उलटे लुकअप
 
-Reverse lookups can be defined on an entity through the `@derivedFrom` field. This creates a virtual field on the entity that may be queried but cannot be set manually through the mappings API. Rather, it is derived from the relationship defined on the other entity. For such relationships, it rarely makes sense to store both sides of the relationship, and both indexing and query performance will be better when only one side is stored and the other is derived.
+`@derivedFrom` फील्डद्वारे एखाद्या घटकावर उलट लुकअप परिभाषित केले जाऊ शकतात. हे घटकावर एक आभासी फील्ड तयार करते ज्याची चौकशी केली जाऊ शकते परंतु मॅपिंग API द्वारे व्यक्तिचलितपणे सेट केली जाऊ शकत नाही. उलट, ते इतर घटकावर परिभाषित केलेल्या नातेसंबंधातून प्राप्त झाले आहे. अशा संबंधांसाठी, नातेसंबंधाच्या दोन्ही बाजू संचयित करणे क्वचितच अर्थपूर्ण आहे आणि अनुक्रमणिका आणि क्वेरी कार्यप्रदर्शन दोन्ही चांगले होईल जेव्हा फक्त एक बाजू संग्रहित केली जाते आणि दुसरी साधित केली जाते.
 
-For one-to-many relationships, the relationship should always be stored on the 'one' side, and the 'many' side should always be derived. Storing the relationship this way, rather than storing an array of entities on the 'many' side, will result in dramatically better performance for both indexing and querying the subgraph. In general, storing arrays of entities should be avoided as much as is practical.
+एक-ते-अनेक संबंधांसाठी, संबंध नेहमी 'एका' बाजूला साठवले पाहिजेत आणि 'अनेक' बाजू नेहमी काढल्या पाहिजेत. 'अनेक' बाजूंवर संस्थांचा अ‍ॅरे संचयित करण्याऐवजी अशा प्रकारे नातेसंबंध संचयित केल्याने, अनुक्रमणिका आणि सबग्राफ क्वेरी या दोन्हीसाठी नाटकीयरित्या चांगले कार्यप्रदर्शन होईल. सर्वसाधारणपणे, घटकांचे अ‍ॅरे संग्रहित करणे जितके व्यावहारिक आहे तितके टाळले पाहिजे.
 
-#### Example
+#### उदाहरण
 
-We can make the balances for a token accessible from the token by deriving a `tokenBalances` field:
+आम्ही `tokenBalances` फील्ड मिळवून टोकनमधून टोकनसाठी शिल्लक उपलब्ध करू शकतो:
 
 ```graphql
 type Token @entity(immutable: true) {
@@ -322,13 +322,13 @@ type TokenBalance @entity {
 }
 ```
 
-#### Many-To-Many Relationships
+#### अनेक-ते-अनेक संबंध
 
-For many-to-many relationships, such as users that each may belong to any number of organizations, the most straightforward, but generally not the most performant, way to model the relationship is as an array in each of the two entities involved. If the relationship is symmetric, only one side of the relationship needs to be stored and the other side can be derived.
+अनेक-ते-अनेक नातेसंबंधांसाठी, जसे की वापरकर्ते जे कोणत्याही संस्थेशी संबंधित असू शकतात, सर्वात सरळ, परंतु सामान्यतः सर्वात कार्यक्षम नसतात, संबंध मॉडेल करण्याचा मार्ग समाविष्ट असलेल्या दोन घटकांपैकी प्रत्येकामध्ये एक अॅरे आहे. नातेसंबंध सममितीय असल्यास, नातेसंबंधाची फक्त एक बाजू संग्रहित करणे आवश्यक आहे आणि दुसरी बाजू मिळवता येते.
 
-#### Example
+#### उदाहरण
 
-Define a reverse lookup from a `User` entity type to an `Organization` entity type. In the example below, this is achieved by looking up the `members` attribute from within the `Organization` entity. In queries, the `organizations` field on `User` will be resolved by finding all `Organization` entities that include the user's ID.
+`वापरकर्ता` घटक प्रकारापासून `संस्थे` घटक प्रकारापर्यंत रिव्हर्स लुकअप परिभाषित करा. खालील उदाहरणामध्ये, हे `संस्था` घटकामधील `सदस्य` विशेषता शोधून साध्य केले जाते. क्वेरींमध्ये, `वापरकर्ता` वरील `संस्था` फील्ड वापरकर्त्याचा आयडी समाविष्ट असलेल्या सर्व `संस्था` घटक शोधून सोडवले जाईल.
 
 ```graphql
 type Organization @entity {
@@ -344,7 +344,7 @@ type User @entity {
 }
 ```
 
-A more performant way to store this relationship is through a mapping table that has one entry for each `User` / `Organization` pair with a schema like
+हे नातेसंबंध संचयित करण्याचा अधिक कार्यक्षम मार्ग म्हणजे मॅपिंग टेबलद्वारे ज्यामध्ये प्रत्येक `वापरकर्ता` / `संस्था` जोडीसाठी एक एंट्री आहे जसे की स्कीमा
 
 ```graphql
 type Organization @entity {
@@ -366,7 +366,7 @@ type UserOrganization @entity {
 }
 ```
 
-This approach requires that queries descend into one additional level to retrieve, for example, the organizations for users:
+या दृष्टिकोनासाठी क्वेरी पुनर्प्राप्त करण्यासाठी एका अतिरिक्त स्तरावर उतरणे आवश्यक आहे, उदाहरणार्थ, वापरकर्त्यांसाठी संस्था:
 
 ```graphql
 query usersWithOrganizations {
@@ -381,11 +381,11 @@ query usersWithOrganizations {
 }
 ```
 
-This more elaborate way of storing many-to-many relationships will result in less data stored for the subgraph, and therefore to a subgraph that is often dramatically faster to index and to query.
+अनेक-ते-अनेक संबंध संचयित करण्याच्या या अधिक विस्तृत मार्गामुळे सबग्राफसाठी कमी डेटा संग्रहित केला जाईल आणि म्हणूनच अनुक्रमणिका आणि क्वेरीसाठी नाटकीयरित्या वेगवान असलेल्या सबग्राफमध्ये.
 
-#### Adding comments to the schema
+#### स्कीमामध्ये टिप्पण्या जोडत आहे
 
-As per GraphQL spec, comments can be added above schema entity attributes using double quotations `""`. This is illustrated in the example below:
+GraphQL स्पेसनुसार, दुहेरी कोटेशन `""` वापरून स्कीमा एंटिटी विशेषतांवर टिप्पण्या जोडल्या जाऊ शकतात. हे खालील उदाहरणात स्पष्ट केले आहे:
 
 ```graphql
 type MyFirstEntity @entity {
@@ -395,13 +395,13 @@ type MyFirstEntity @entity {
 }
 ```
 
-## Defining Fulltext Search Fields
+## पूर्ण मजकूर शोध फील्ड परिभाषित करणे
 
-Fulltext search queries filter and rank entities based on a text search input. Fulltext queries are able to return matches for similar words by processing the query text input into stems before comparing them to the indexed text data.
+मजकूर शोध इनपुटवर आधारित फुलटेक्स्ट शोध क्वेरी फिल्टर आणि रँक घटक. फुलटेक्स्ट क्वेरी अनुक्रमित मजकूर डेटाशी तुलना करण्यापूर्वी स्टेममध्ये क्वेरी मजकूर इनपुटवर प्रक्रिया करून समान शब्दांसाठी जुळणी परत करण्यास सक्षम आहेत.
 
-A fulltext query definition includes the query name, the language dictionary used to process the text fields, the ranking algorithm used to order the results, and the fields included in the search. Each fulltext query may span multiple fields, but all included fields must be from a single entity type.
+पूर्ण मजकूर क्वेरी व्याख्येमध्ये क्वेरीचे नाव, मजकूर फील्डवर प्रक्रिया करण्यासाठी वापरला जाणारा भाषा शब्दकोष, परिणाम ऑर्डर करण्यासाठी वापरले जाणारे रँकिंग अल्गोरिदम आणि शोधामध्ये समाविष्ट फील्ड समाविष्ट असतात. प्रत्येक फुलटेक्स्ट क्वेरी एकाधिक फील्डमध्ये असू शकते, परंतु सर्व समाविष्ट फील्ड एकाच घटक प्रकारातील असणे आवश्यक आहे.
 
-To add a fulltext query, include a `_Schema_` type with a fulltext directive in the GraphQL schema.
+पूर्ण मजकूर क्वेरी जोडण्यासाठी, GraphQL स्कीमामध्ये फुलटेक्स्ट निर्देशासह `_Schema__` प्रकार समाविष्ट करा.
 
 ```graphql
 type _Schema_
@@ -424,7 +424,7 @@ type Band @entity {
 }
 ```
 
-The example `bandSearch` field can be used in queries to filter `Band` entities based on the text documents in the `name`, `description`, and `bio` fields. Jump to [GraphQL API - Queries](/querying/graphql-api#queries) for a description of the fulltext search API and more example usage.
+उदाहरण `bandSearch` फील्ड `नाव`, `वर्णन</0 मधील मजकूर दस्तऐवजांवर आधारित <code>बँड` घटक फिल्टर करण्यासाठी क्वेरींमध्ये वापरले जाऊ शकते >, आणि `जैव` फील्ड. पूर्ण मजकूर शोध API आणि अधिक उदाहरण वापराच्या वर्णनासाठी [GraphQL API - क्वेरी](/querying/graphql-api#queries) वर जा.
 
 ```graphql
 query {
@@ -437,49 +437,49 @@ query {
 }
 ```
 
-> **[Feature Management](#experimental-features):** From `specVersion` `0.0.4` and onwards, `fullTextSearch` must be declared under the `features` section in the subgraph manifest.
+> **[वैशिष्ट्य व्यवस्थापन](#experimental-features):** `specVersion` `0.0.4</code वरून > आणि पुढे, सबग्राफ मॅनिफेस्टमधील <code>वैशिष्ट्ये` विभागांतर्गत `fullTextSearch` घोषित करणे आवश्यक आहे.
 
-### Languages supported
+### भाषा समर्थित
 
-Choosing a different language will have a definitive, though sometimes subtle, effect on the fulltext search API. Fields covered by a fulltext query field are examined in the context of the chosen language, so the lexemes produced by analysis and search queries vary from language to language. For example: when using the supported Turkish dictionary "token" is stemmed to "toke" while, of course, the English dictionary will stem it to "token".
+भिन्न भाषा निवडल्याने पूर्ण मजकूर शोध API वर निश्चित, काहीवेळा सूक्ष्म असले तरी परिणाम होईल. फुलटेक्स्ट क्वेरी फील्डद्वारे कव्हर केलेले फील्ड निवडलेल्या भाषेच्या संदर्भात तपासले जातात, म्हणून विश्लेषण आणि शोध क्वेरीद्वारे तयार केलेले लेक्सेम भाषेनुसार भिन्न असतात. उदाहरणार्थ: समर्थित तुर्की शब्दकोश वापरताना "टोकन" हे "टोक" वर स्टेम केले जाते, तर अर्थातच, इंग्रजी शब्दकोश "टोकन" वर स्टेम करेल.
 
-Supported language dictionaries:
+समर्थित भाषा शब्दकोश:
 
-| Code   | Dictionary |
-| ------ | ---------- |
-| simple | General    |
-| da     | Danish     |
-| nl     | Dutch      |
-| en     | English    |
-| fi     | Finnish    |
-| fr     | French     |
-| de     | German     |
-| hu     | Hungarian  |
-| it     | Italian    |
-| no     | Norwegian  |
-| pt     | Portuguese |
-| ro     | Romanian   |
-| ru     | Russian    |
-| es     | Spanish    |
-| sv     | Swedish    |
-| tr     | Turkish    |
+| कोड  | शब्दकोश    |
+| ---- | ---------- |
+| सोपे | सामान्य    |
+| da   | डॅनिश      |
+| nl   | डच         |
+| en   | इंग्रजी    |
+| fi   | फिनिश      |
+| fr   | फ्रेंच     |
+| de   | जर्मन      |
+| hu   | हंगेरियन   |
+| ते   | इटालियन    |
+| नाही | नॉर्वेजियन |
+| pt   | पोर्तुगीज  |
+| ro   | रोमानियन   |
+| ru   | रशियन      |
+| es   | स्पॅनिश    |
+| sv   | स्वीडिश    |
+| tr   | तुर्की     |
 
-### Ranking Algorithms
+### रँकिंग अल्गोरिदम
 
-Supported algorithms for ordering results:
+परिणाम ऑर्डर करण्यासाठी समर्थित अल्गोरिदम:
 
-| Algorithm     | Description                                                             |
-| ------------- | ----------------------------------------------------------------------- |
-| rank          | Use the match quality (0-1) of the fulltext query to order the results. |
-| proximityRank | Similar to rank but also includes the proximity of the matches.         |
+| अल्गोरिदम     | वर्णन                                                                  |
+| ------------- | ---------------------------------------------------------------------- |
+| रँक           | निकाल ऑर्डर करण्यासाठी फुलटेक्स्ट क्वेरीची जुळणी गुणवत्ता (0-1) वापरा. |
+| proximityRank | रँक प्रमाणेच पण सामन्यांच्या समीपतेचाही समावेश आहे.                    |
 
-## Writing Mappings
+## मॅपिंग लेखन
 
-The mappings take data from a particular source and transform it into entities that are defined within your schema. Mappings are written in a subset of [TypeScript](https://www.typescriptlang.org/docs/handbook/typescript-in-5-minutes.html) called [AssemblyScript](https://github.com/AssemblyScript/assemblyscript/wiki) which can be compiled to WASM ([WebAssembly](https://webassembly.org/)). AssemblyScript is stricter than normal TypeScript, yet provides a familiar syntax.
+मॅपिंग्स एका विशिष्ट स्त्रोताकडून डेटा घेतात आणि आपल्या स्कीमामध्ये परिभाषित केलेल्या घटकांमध्ये त्याचे रूपांतर करतात. मॅपिंग्स [TypeScript](https://www.typescriptlang.org/docs/handbook/typescript-in-5-minutes.html) नावाच्या [AssemblyScript](https://github.com/AssemblyScript/assemblyscript/wiki) नावाच्या उपसंचात लिहिल्या जातात जे WASM ([WebAssembly](https://webassembly.org/)) मध्ये संकलित केले जाऊ शकतात. असेंबलीस्क्रिप्ट सामान्य TypeScript पेक्षा कठोर आहे, तरीही एक परिचित वाक्यरचना प्रदान करते.
 
-For each event handler that is defined in `subgraph.yaml` under `mapping.eventHandlers`, create an exported function of the same name. Each handler must accept a single parameter called `event` with a type corresponding to the name of the event which is being handled.
+`mapping.eventHandlers` अंतर्गत `subgraph.yaml` मध्ये परिभाषित केलेल्या प्रत्येक इव्हेंट हँडलरसाठी, त्याच नावाचे निर्यात केलेले कार्य तयार करा. प्रत्येक हँडलरने हाताळल्या जात असलेल्या इव्हेंटच्या नावाशी संबंधित प्रकारासह `इव्हेंट` नावाचा एकच पॅरामीटर स्वीकारला पाहिजे.
 
-In the example subgraph, `src/mapping.ts` contains handlers for the `NewGravatar` and `UpdatedGravatar` events:
+उदाहरणाच्या सबग्राफमध्ये, `src/mapping.ts` मध्ये `NewGravatar` आणि `UpdatedGravatar` इव्हेंटसाठी हँडलर आहेत:
 
 ```javascript
 import { NewGravatar, UpdatedGravatar } from '../generated/Gravity/Gravity'
@@ -506,31 +506,31 @@ export function handleUpdatedGravatar(event: UpdatedGravatar): void {
 }
 ```
 
-The first handler takes a `NewGravatar` event and creates a new `Gravatar` entity with `new Gravatar(event.params.id.toHex())`, populating the entity fields using the corresponding event parameters. This entity instance is represented by the variable `gravatar`, with an id value of `event.params.id.toHex()`.
+पहिला हँडलर `NewGravatar` इव्हेंट घेतो आणि `नवीन Gravatar(event.params.id.toHex())` सह एक नवीन `Gravatar` अस्तित्व तयार करतो, पॉप्युलेट करतो संबंधित इव्हेंट पॅरामीटर्स वापरून संस्था फील्ड. हे घटक उदाहरण `event.params.id.toHex()` च्या id मूल्यासह, व्हेरिएबल `gravatar` द्वारे प्रस्तुत केले जाते.
 
-The second handler tries to load the existing `Gravatar` from the Graph Node store. If it does not exist yet, it is created on-demand. The entity is then updated to match the new event parameters before it is saved back to the store using `gravatar.save()`.
+दुसरा हँडलर ग्राफ नोड स्टोअरमधून विद्यमान `Gravatar` लोड करण्याचा प्रयत्न करतो. ते अद्याप अस्तित्वात नसल्यास, ते मागणीनुसार तयार केले जाते. नंतर `gravatar.save()` वापरून स्टोअरमध्ये परत सेव्ह करण्यापूर्वी नवीन इव्हेंट पॅरामीटर्सशी जुळण्यासाठी घटक अपडेट केला जातो.
 
-### Recommended IDs for Creating New Entities
+### नवीन संस्था तयार करण्यासाठी शिफारस केलेले आयडी
 
-Every entity has to have an `id` that is unique among all entities of the same type. An entity's `id` value is set when the entity is created. Below are some recommended `id` values to consider when creating new entities. NOTE: The value of `id` must be a `string`.
+प्रत्येक घटकाकडे एक `id` असणे आवश्यक आहे जे समान प्रकारच्या सर्व घटकांमध्ये अद्वितीय आहे. जेव्हा अस्तित्व तयार केले जाते तेव्हा घटकाचे `id` मूल्य सेट केले जाते. नवीन घटक तयार करताना विचारात घेण्यासाठी खाली काही शिफारस केलेली `id` मूल्ये आहेत. टीप: `id` चे मूल्य `स्ट्रिंग` असणे आवश्यक आहे.
 
 - `event.params.id.toHex()`
 - `event.transaction.from.toHex()`
 - `event.transaction.hash.toHex() + "-" + event.logIndex.toString()`
 
-We provide the [Graph Typescript Library](https://github.com/graphprotocol/graph-ts) which contains utilies for interacting with the Graph Node store and conveniences for handling smart contract data and entities. You can use this library in your mappings by importing `@graphprotocol/graph-ts` in `mapping.ts`.
+आम्ही [ग्राफ टाइपस्क्रिप्ट लायब्ररी](https://github.com/graphprotocol/graph-ts) प्रदान करतो ज्यामध्ये ग्राफ नोड स्टोअरशी संवाद साधण्यासाठी उपयुक्तता आणि स्मार्ट कॉन्ट्रॅक्ट डेटा आणि संस्था हाताळण्यासाठी सोयी असतात. तुम्ही `mapping.ts` मध्ये `@graphprotocol/graph-ts` आयात करून ही लायब्ररी तुमच्या मॅपिंगमध्ये वापरू शकता.
 
-## Code Generation
+## कोड जनरेशन
 
-In order to make it easy and type-safe to work with smart contracts, events and entities, the Graph CLI can generate AssemblyScript types from the subgraph's GraphQL schema and the contract ABIs included in the data sources.
+स्मार्ट कॉन्ट्रॅक्ट्स, इव्हेंट्स आणि संस्थांसोबत काम करणे सोपे आणि टाइप-सुरक्षित करण्यासाठी, ग्राफ CLI सबग्राफच्या GraphQL स्कीमा आणि डेटा स्रोतांमध्ये समाविष्ट केलेल्या कॉन्ट्रॅक्ट ABIs मधून असेंबलीस्क्रिप्ट प्रकार व्युत्पन्न करू शकतो.
 
-This is done with
+यासह केले जाते
 
 ```sh
 graph codegen [--output-dir <OUTPUT_DIR>] [<MANIFEST>]
 ```
 
-but in most cases, subgraphs are already preconfigured via `package.json` to allow you to simply run one of the following to achieve the same:
+परंतु बर्‍याच प्रकरणांमध्ये, सबग्राफ आधीपासूनच `package.json` द्वारे कॉन्फिगर केलेले असतात जे तुम्हाला ते साध्य करण्यासाठी खालीलपैकी एक चालवण्याची परवानगी देतात:
 
 ```sh
 # Yarn
@@ -540,7 +540,7 @@ yarn codegen
 npm run codegen
 ```
 
-This will generate an AssemblyScript class for every smart contract in the ABI files mentioned in `subgraph.yaml`, allowing you to bind these contracts to specific addresses in the mappings and call read-only contract methods against the block being processed. It will also generate a class for every contract event to provide easy access to event parameters, as well as the block and transaction the event originated from. All of these types are written to `<OUTPUT_DIR>/<DATA_SOURCE_NAME>/<ABI_NAME>.ts`. In the example subgraph, this would be `generated/Gravity/Gravity.ts`, allowing mappings to import these types with.
+हे `subgraph.yaml` मध्ये नमूद केलेल्या ABI फाइल्समधील प्रत्येक स्मार्ट करारासाठी असेंब्लीस्क्रिप्ट क्लास तयार करेल, ज्यामुळे तुम्हाला हे करार मॅपिंगमधील विशिष्ट पत्त्यांवर बंधनकारक करता येतील आणि ब्लॉकच्या विरूद्ध केवळ-वाचनीय करार पद्धती कॉल करता येतील. प्रक्रिया केली. हे प्रत्येक कॉन्ट्रॅक्ट इव्हेंटसाठी इव्हेंट पॅरामीटर्स तसेच ब्लॉक आणि इव्हेंटमधून उद्भवलेल्या व्यवहारासाठी सुलभ प्रवेश प्रदान करण्यासाठी एक वर्ग देखील तयार करेल. हे सर्व प्रकार `<OUTPUT_DIR>/<DATA_SOURCE_NAME>/<ABI_NAME>.ts` वर लिहिलेले आहेत. उदाहरणाच्या सबग्राफमध्ये, हे `generated/Gravity/Gravity.ts` असेल, मॅपिंगना हे प्रकार आयात करण्यास अनुमती देतात.
 
 ```javascript
 import {
@@ -552,25 +552,25 @@ import {
 } from '../generated/Gravity/Gravity'
 ```
 
-In addition to this, one class is generated for each entity type in the subgraph's GraphQL schema. These classes provide type-safe entity loading, read and write access to entity fields as well as a `save()` method to write entities to store. All entity classes are written to `<OUTPUT_DIR>/schema.ts`, allowing mappings to import them with
+या व्यतिरिक्त, सबग्राफच्या GraphQL स्कीमामध्ये प्रत्येक घटक प्रकारासाठी एक वर्ग तयार केला जातो. हे वर्ग टाइप-सेफ एंटिटी लोडिंग, एंटिटी फील्डमध्ये वाचन आणि लिहिण्याचा अॅक्सेस प्रदान करतात तसेच स्टोअर करण्यासाठी संस्था लिहिण्यासाठी `सेव्ह()` पद्धत प्रदान करतात. सर्व घटक वर्ग `<OUTPUT_DIR>/schema.ts` वर लिहिलेले आहेत, मॅपिंगना ते यासह आयात करण्यास अनुमती देतात
 
 ```javascript
 import { Gravatar } from '../generated/schema'
 ```
 
-> **Note:** The code generation must be performed again after every change to the GraphQL schema or the ABIs included in the manifest. It must also be performed at least once before building or deploying the subgraph.
+> **टीप:** मॅनिफेस्टमध्ये समाविष्ट केलेल्या GraphQL स्कीमा किंवा ABI मध्ये प्रत्येक बदलानंतर कोड जनरेशन पुन्हा केले जाणे आवश्यक आहे. सबग्राफ तयार करण्यापूर्वी किंवा उपयोजित करण्यापूर्वी ते किमान एकदा केले जाणे आवश्यक आहे.
 
-Code generation does not check your mapping code in `src/mapping.ts`. If you want to check that before trying to deploy your subgraph to the Graph Explorer, you can run `yarn build` and fix any syntax errors that the TypeScript compiler might find.
+कोड जनरेशन तुमचा मॅपिंग कोड `src/mapping.ts` मध्ये तपासत नाही. ग्राफ एक्सप्लोररमध्ये तुमचा सबग्राफ उपयोजित करण्याचा प्रयत्न करण्यापूर्वी तुम्हाला ते तपासायचे असल्यास, तुम्ही `यार्न बिल्ड` चालवू शकता आणि टाइपस्क्रिप्ट कंपायलरला सापडलेल्या कोणत्याही वाक्यरचना त्रुटींचे निराकरण करू शकता.
 
-## Data Source Templates
+## डेटा स्रोत टेम्पलेट्स
 
-A common pattern in EVM-compatible smart contracts is the use of registry or factory contracts, where one contract creates, manages, or references an arbitrary number of other contracts that each have their own state and events.
+EVM-सुसंगत स्मार्ट कॉन्ट्रॅक्ट्समधील एक सामान्य नमुना म्हणजे नोंदणी किंवा फॅक्टरी कॉन्ट्रॅक्टचा वापर, जिथे एक करार तयार करतो, व्यवस्थापित करतो किंवा इतर करारांची अनियंत्रित संख्या संदर्भित करतो ज्या प्रत्येकाची स्वतःची स्थिती आणि घटना असतात.
 
-The addresses of these sub-contracts may or may not be known upfront and many of these contracts may be created and/or added over time. This is why, in such cases, defining a single data source or a fixed number of data sources is impossible and a more dynamic approach is needed: _data source templates_.
+या उप-करारांचे पत्ते कदाचित माहीत नसतील किंवा नसतील आणि यापैकी बरेच करार तयार केले जाऊ शकतात आणि/किंवा कालांतराने जोडले जाऊ शकतात. म्हणूनच, अशा प्रकरणांमध्ये, एकल डेटा स्रोत किंवा डेटा स्त्रोतांची निश्चित संख्या परिभाषित करणे अशक्य आहे आणि अधिक गतिशील दृष्टीकोन आवश्यक आहे: _डेटा स्रोत टेम्पलेट्स_.
 
-### Data Source for the Main Contract
+### मुख्य करारासाठी डेटा स्रोत
 
-First, you define a regular data source for the main contract. The snippet below shows a simplified example data source for the [Uniswap](https://uniswap.org) exchange factory contract. Note the `NewExchange(address,address)` event handler. This is emitted when a new exchange contract is created on-chain by the factory contract.
+प्रथम, तुम्ही मुख्य करारासाठी नियमित डेटा स्रोत परिभाषित करता. खाली दिलेला स्निपेट [Uniswap](https://uniswap.org) एक्सचेंज फॅक्टरी करारासाठी एक सरलीकृत उदाहरण डेटा स्रोत दर्शवितो. `NewExchange(address,address)` इव्हेंट हँडलर लक्षात ठेवा. जेव्हा कारखाना कराराद्वारे नवीन एक्सचेंज कॉन्ट्रॅक्ट ऑन-चेन तयार केला जातो तेव्हा हे उत्सर्जित होते.
 
 ```yaml
 dataSources:
@@ -595,9 +595,9 @@ dataSources:
           handler: handleNewExchange
 ```
 
-### Data Source Templates for Dynamically Created Contracts
+### डायनॅमिकली तयार केलेल्या करारांसाठी डेटा स्रोत टेम्पलेट्स
 
-Then, you add _data source templates_ to the manifest. These are identical to regular data sources, except that they lack a pre-defined contract address under `source`. Typically, you would define one template for each type of sub-contract managed or referenced by the parent contract.
+त्यानंतर, तुम्ही मॅनिफेस्टमध्ये _डेटा स्रोत टेम्पलेट्स_ जोडता. हे नियमित डेटा स्रोतांसारखेच आहेत, त्याशिवाय त्यांना `स्रोत` अंतर्गत पूर्व-परिभाषित करार पत्ता नाही. सामान्यत:, तुम्ही पालक कराराद्वारे व्यवस्थापित किंवा संदर्भित केलेल्या प्रत्येक प्रकारच्या उप-करारासाठी एक टेम्पलेट परिभाषित कराल.
 
 ```yaml
 dataSources:
@@ -631,9 +631,9 @@ templates:
           handler: handleRemoveLiquidity
 ```
 
-### Instantiating a Data Source Template
+### डेटा स्रोत टेम्पलेट इन्स्टंट करणे
 
-In the final step, you update your main contract mapping to create a dynamic data source instance from one of the templates. In this example, you would change the main contract mapping to import the `Exchange` template and call the `Exchange.create(address)` method on it to start indexing the new exchange contract.
+अंतिम चरणात, तुम्ही टेम्पलेटपैकी एकावरून डायनॅमिक डेटा स्रोत उदाहरण तयार करण्यासाठी तुमचे मुख्य कॉन्ट्रॅक्ट मॅपिंग अपडेट करता. या उदाहरणात, तुम्ही `Exchange` टेम्प्लेट इंपोर्ट करण्यासाठी मुख्य कॉन्ट्रॅक्ट मॅपिंग बदलू शकता आणि नवीन एक्सचेंज कॉन्ट्रॅक्ट इंडेक्सिंग सुरू करण्यासाठी त्यावर `Exchange.create(address)` पद्धत कॉल कराल.
 
 ```typescript
 import { Exchange } from '../generated/templates'
@@ -645,13 +645,13 @@ export function handleNewExchange(event: NewExchange): void {
 }
 ```
 
-> **Note:** A new data source will only process the calls and events for the block in which it was created and all following blocks, but will not process historical data, i.e., data that is contained in prior blocks.
+> **टीप:** नवीन डेटा स्रोत केवळ तो ज्या ब्लॉकमध्ये तयार केला गेला होता आणि पुढील सर्व ब्लॉकसाठी कॉल्स आणि इव्हेंटवर प्रक्रिया करेल, परंतु ऐतिहासिक डेटावर प्रक्रिया करणार नाही, म्हणजे, डेटावर प्रक्रिया करणार नाही. जे आधीच्या ब्लॉक्समध्ये समाविष्ट आहे.
 >
-> If prior blocks contain data relevant to the new data source, it is best to index that data by reading the current state of the contract and creating entities representing that state at the time the new data source is created.
+> पूर्वीच्या ब्लॉक्समध्ये नवीन डेटा स्रोताशी संबंधित डेटा असल्यास, कराराची वर्तमान स्थिती वाचून आणि नवीन डेटा स्रोत तयार करताना त्या स्थितीचे प्रतिनिधित्व करणारी संस्था तयार करून तो डेटा अनुक्रमित करणे सर्वोत्तम आहे.
 
-### Data Source Context
+### डेटा स्रोत संदर्भ
 
-Data source contexts allow passing extra configuration when instantiating a template. In our example, let's say exchanges are associated with a particular trading pair, which is included in the `NewExchange` event. That information can be passed into the instantiated data source, like so:
+डेटा स्रोत संदर्भ टेम्प्लेट इन्स्टंट करताना अतिरिक्त कॉन्फिगरेशन पास करण्याची परवानगी देतात. आमच्या उदाहरणात, समजा एक्सचेंजेस एका विशिष्ट ट्रेडिंग जोडीशी संबंधित आहेत, जे `NewExchange` इव्हेंटमध्ये समाविष्ट आहे. ती माहिती तात्काळ डेटा स्त्रोतामध्ये पास केली जाऊ शकते, जसे की:
 
 ```typescript
 import { Exchange } from '../generated/templates'
@@ -663,7 +663,7 @@ export function handleNewExchange(event: NewExchange): void {
 }
 ```
 
-Inside a mapping of the `Exchange` template, the context can then be accessed:
+`एक्सचेंज` टेम्प्लेटच्या मॅपिंगमध्ये, संदर्भ नंतर प्रवेश केला जाऊ शकतो:
 
 ```typescript
 import { dataSource } from '@graphprotocol/graph-ts'
@@ -672,11 +672,11 @@ let context = dataSource.context()
 let tradingPair = context.getString('tradingPair')
 ```
 
-There are setters and getters like `setString` and `getString` for all value types.
+सर्व मूल्य प्रकारांसाठी `setString` आणि `getString` सारखे सेटर आणि गेटर्स आहेत.
 
-## Start Blocks
+## ब्लॉक सुरू करा
 
-The `startBlock` is an optional setting that allows you to define from which block in the chain the data source will start indexing. Setting the start block allows the data source to skip potentially millions of blocks that are irrelevant. Typically, a subgraph developer will set `startBlock` to the block in which the smart contract of the data source was created.
+`startBlock` ही एक पर्यायी सेटिंग आहे जी तुम्हाला साखळीतील कोणत्या ब्लॉकमधून डेटा स्रोत अनुक्रमणिका सुरू करेल हे परिभाषित करू देते. स्टार्ट ब्लॉक सेट केल्याने डेटा स्त्रोताला अप्रासंगिक असलेले लाखो ब्लॉक्स वगळण्याची परवानगी मिळते. सामान्यतः, सबग्राफ डेव्हलपर `startBlock` सेट करेल ज्या ब्लॉकमध्ये डेटा स्रोताचा स्मार्ट करार तयार केला गेला होता.
 
 ```yaml
 dataSources:
@@ -702,23 +702,23 @@ dataSources:
           handler: handleNewEvent
 ```
 
-> **Note:** The contract creation block can be quickly looked up on Etherscan:
+> **टीप:** इथरस्कॅनवर कॉन्ट्रॅक्ट क्रिएशन ब्लॉक त्वरीत शोधला जाऊ शकतो:
 >
-> 1. Search for the contract by entering its address in the search bar.
-> 2. Click on the creation transaction hash in the `Contract Creator` section.
-> 3. Load the transaction details page where you'll find the start block for that contract.
+> 1. शोध बारमध्ये त्याचा पत्ता प्रविष्ट करून करार शोधा.
+> 2. `Contract Creator` विभागातील निर्मिती व्यवहार हॅशवर क्लिक करा.
+> 3. व्यवहार तपशील पृष्ठ लोड करा जिथे तुम्हाला त्या करारासाठी प्रारंभ ब्लॉक मिळेल.
 
-## Call Handlers
+## हँडलर्सना कॉल करा
 
-While events provide an effective way to collect relevant changes to the state of a contract, many contracts avoid generating logs to optimize gas costs. In these cases, a subgraph can subscribe to calls made to the data source contract. This is achieved by defining call handlers referencing the function signature and the mapping handler that will process calls to this function. To process these calls, the mapping handler will receive an `ethereum.Call` as an argument with the typed inputs to and outputs from the call. Calls made at any depth in a transaction's call chain will trigger the mapping, allowing activity with the data source contract through proxy contracts to be captured.
+इव्हेंट्स कराराच्या स्थितीत संबंधित बदल एकत्रित करण्याचा एक प्रभावी मार्ग प्रदान करतात, तर अनेक करार गॅसच्या किमती ऑप्टिमाइझ करण्यासाठी लॉग तयार करणे टाळतात. या प्रकरणांमध्ये, सबग्राफ डेटा स्त्रोत करारावर केलेल्या कॉलची सदस्यता घेऊ शकतो. फंक्शन सिग्नेचर आणि मॅपिंग हँडलरचा संदर्भ देणारे कॉल हँडलर परिभाषित करून हे साध्य केले जाते जे या फंक्शनवर कॉलवर प्रक्रिया करेल. या कॉल्सवर प्रक्रिया करण्यासाठी, मॅपिंग हँडलरला कॉलमधील टाइप केलेल्या इनपुट आणि आउटपुटसह युक्तिवाद म्हणून `ethereum.Call` प्राप्त होईल. व्यवहाराच्या कॉल साखळीतील कोणत्याही खोलीत केलेले कॉल मॅपिंगला ट्रिगर करतील, प्रॉक्सी कॉन्ट्रॅक्टद्वारे डेटा स्त्रोत करारासह क्रियाकलाप कॅप्चर करण्यास अनुमती देईल.
 
-Call handlers will only trigger in one of two cases: when the function specified is called by an account other than the contract itself or when it is marked as external in Solidity and called as part of another function in the same contract.
+कॉल हँडलर्स फक्त दोनपैकी एका प्रकरणात ट्रिगर होतील: जेव्हा निर्दिष्ट केलेल्या फंक्शनला कॉन्ट्रॅक्ट व्यतिरिक्त इतर खात्याद्वारे कॉल केले जाते किंवा जेव्हा ते सॉलिडिटीमध्ये बाह्य म्हणून चिन्हांकित केले जाते आणि त्याच कॉन्ट्रॅक्टमधील दुसर्‍या फंक्शनचा भाग म्हणून कॉल केले जाते.
 
-> **Note:** Call handlers currently depend on the Parity tracing API. Certain networks, such as BNB chain and Arbitrum, does not support this API. If a subgraph indexing one of these networks contain one or more call handlers, it will not start syncing. Subgraph developers should instead use event handlers. These are far more performant than call handlers, and are supported on every evm network.
+> **टीप:** कॉल हँडलर सध्या पॅरिटी ट्रेसिंग API वर अवलंबून आहेत. काही नेटवर्क, जसे की BNB चेन आणि आर्बिट्रम, या API चे समर्थन करत नाहीत. जर या नेटवर्कपैकी एका सबग्राफ इंडेक्सिंगमध्ये एक किंवा अधिक कॉल हँडलर असतील, तर ते समक्रमण सुरू होणार नाही. सबग्राफ विकसकांनी त्याऐवजी इव्हेंट हँडलर वापरावे. हे कॉल हँडलर्सपेक्षा कितीतरी अधिक कार्यक्षम आहेत, आणि प्रत्येक evm नेटवर्कवर समर्थित आहेत.
 
-### Defining a Call Handler
+### कॉल हँडलरची व्याख्या
 
-To define a call handler in your manifest, simply add a `callHandlers` array under the data source you would like to subscribe to.
+तुमच्‍या मॅनिफेस्‍टमध्‍ये कॉल हँडलर परिभाषित करण्‍यासाठी, तुम्ही ज्या डेटा स्रोताची सदस्यता घेऊ इच्छिता त्याखाली फक्त `कॉल हँडलर` अॅरे जोडा.
 
 ```yaml
 dataSources:
@@ -743,11 +743,11 @@ dataSources:
           handler: handleCreateGravatar
 ```
 
-The `function` is the normalized function signature to filter calls by. The `handler` property is the name of the function in your mapping you would like to execute when the target function is called in the data source contract.
+`फंक्शन` हे कॉल फिल्टर करण्यासाठी सामान्यीकृत फंक्शन स्वाक्षरी आहे. `हँडलर` गुणधर्म हे तुमच्या मॅपिंगमधील फंक्शनचे नाव आहे जे तुम्ही डेटा सोर्स कॉन्ट्रॅक्टमध्ये टार्गेट फंक्शन कॉल केल्यावर कार्यान्वित करू इच्छिता.
 
-### Mapping Function
+### मॅपिंग कार्य
 
-Each call handler takes a single parameter that has a type corresponding to the name of the called function. In the example subgraph above, the mapping contains a handler for when the `createGravatar` function is called and receives a `CreateGravatarCall` parameter as an argument:
+प्रत्येक कॉल हँडलर एकच पॅरामीटर घेतो ज्याचा प्रकार कॉल फंक्शनच्या नावाशी संबंधित असतो. वरील उदाहरणातील सबग्राफमध्ये, मॅपिंगमध्ये `createGravatar` फंक्शन कॉल केल्यावर आणि वितर्क म्हणून `CreateGravatarCall` पॅरामीटर प्राप्त करण्यासाठी हँडलर असतो:
 
 ```typescript
 import { CreateGravatarCall } from '../generated/Gravity/Gravity'
@@ -762,24 +762,24 @@ export function handleCreateGravatar(call: CreateGravatarCall): void {
 }
 ```
 
-The `handleCreateGravatar` function takes a new `CreateGravatarCall` which is a subclass of `ethereum.Call`, provided by `@graphprotocol/graph-ts`, that includes the typed inputs and outputs of the call. The `CreateGravatarCall` type is generated for you when you run `graph codegen`.
+`handleCreateGravatar` फंक्शन एक नवीन `CreateGravatarCall` घेते जो `@graphprotocol/graph-ts</ द्वारे प्रदान केलेला <code>ethereum.Call` चा उपवर्ग आहे. code>, ज्यामध्ये कॉलचे टाइप केलेले इनपुट आणि आउटपुट समाविष्ट आहेत. तुम्ही `graph codegen` चालवता तेव्हा तुमच्यासाठी `CreateGravatarCall` प्रकार जनरेट केला जातो.
 
-## Block Handlers
+## ब्लॉक हँडलर
 
-In addition to subscribing to contract events or function calls, a subgraph may want to update its data as new blocks are appended to the chain. To achieve this a subgraph can run a function after every block or after blocks that match a pre-defined filter.
+कॉन्ट्रॅक्ट इव्हेंट्स किंवा फंक्शन कॉल्सची सदस्यता घेण्याव्यतिरिक्त, सबग्राफला त्याचा डेटा अद्यतनित करायचा असेल कारण साखळीमध्ये नवीन ब्लॉक्स जोडले जातात. हे साध्य करण्यासाठी सबग्राफ प्रत्येक ब्लॉकनंतर किंवा पूर्व-परिभाषित फिल्टरशी जुळणार्‍या ब्लॉक्सनंतर फंक्शन चालवू शकतो.
 
-### Supported Filters
+### समर्थित फिल्टर
 
 ```yaml
 filter:
   kind: call
 ```
 
-_The defined handler will be called once for every block which contains a call to the contract (data source) the handler is defined under._
+_परिभाषित हँडलरला प्रत्येक ब्लॉकसाठी एकदा कॉल केला जाईल ज्यात हँडलरने परिभाषित केलेल्या कॉन्ट्रॅक्टला (डेटा स्त्रोत) कॉल असेल._
 
-> **Note:** The `call` filter currently depend on the Parity tracing API. Certain networks, such as BNB chain and Arbitrum, does not support this API. If a subgraph indexing one of these networks contain one or more block handlers with a `call` filter, it will not start syncing.
+> **टीप:** `कॉल` फिल्टर सध्या पॅरिटी ट्रेसिंग API वर अवलंबून आहे. काही नेटवर्क, जसे की BNB चेन आणि आर्बिट्रम, या API चे समर्थन करत नाहीत. जर या नेटवर्कपैकी एक सबग्राफ अनुक्रमणिकामध्ये `कॉल` फिल्टरसह एक किंवा अधिक ब्लॉक हँडलर असतील, तर ते समक्रमण सुरू होणार नाही.
 
-The absence of a filter for a block handler will ensure that the handler is called every block. A data source can only contain one block handler for each filter type.
+ब्लॉक हँडलरसाठी फिल्टरची अनुपस्थिती हे सुनिश्चित करेल की हँडलरला प्रत्येक ब्लॉक म्हटले जाईल. डेटा स्त्रोतामध्ये प्रत्येक फिल्टर प्रकारासाठी फक्त एक ब्लॉक हँडलर असू शकतो.
 
 ```yaml
 dataSources:
@@ -806,9 +806,9 @@ dataSources:
             kind: call
 ```
 
-### Mapping Function
+### मॅपिंग कार्य
 
-The mapping function will receive an `ethereum.Block` as its only argument. Like mapping functions for events, this function can access existing subgraph entities in the store, call smart contracts and create or update entities.
+मॅपिंग फंक्शनला त्याचा एकमेव युक्तिवाद म्हणून `ethereum.Block` प्राप्त होईल. इव्हेंटसाठी मॅपिंग फंक्शन्सप्रमाणे, हे फंक्शन स्टोअरमधील विद्यमान सबग्राफ घटकांमध्ये प्रवेश करू शकते, स्मार्ट कॉन्ट्रॅक्ट कॉल करू शकते आणि संस्था तयार किंवा अद्यतनित करू शकते.
 
 ```typescript
 import { ethereum } from '@graphprotocol/graph-ts'
@@ -820,9 +820,9 @@ export function handleBlock(block: ethereum.Block): void {
 }
 ```
 
-## Anonymous Events
+## अनामिक घटना
 
-If you need to process anonymous events in Solidity, that can be achieved by providing the topic 0 of the event, as in the example:
+तुम्हाला सॉलिडिटीमध्ये निनावी इव्हेंटवर प्रक्रिया करायची असल्यास, ते इव्हेंटचा विषय 0 प्रदान करून प्राप्त केले जाऊ शकते, उदाहरणार्थ:
 
 ```yaml
 eventHandlers:
@@ -831,13 +831,13 @@ eventHandlers:
     handler: handleGive
 ```
 
-An event will only be triggered when both the signature and topic 0 match. By default, `topic0` is equal to the hash of the event signature.
+जेव्हा स्वाक्षरी आणि विषय 0 दोन्ही जुळतात तेव्हाच इव्हेंट ट्रिगर केला जाईल. डीफॉल्टनुसार, `topic0` इव्हेंट स्वाक्षरीच्या हॅशच्या समान आहे.
 
-## Transaction Receipts in Event Handlers
+## इव्हेंट हँडलर्समधील व्यवहाराच्या पावत्या
 
-Starting from `specVersion` `0.0.5` and `apiVersion` `0.0.7`, event handlers can have access to the receipt for the transaction which emitted them.
+`specVersion` `0.0.5` आणि `apiVersion` `0.0.7` पासून प्रारंभ करून, इव्हेंट हँडलर्सना पावतीवर प्रवेश असू शकतो व्यवहार ज्याने त्यांना उत्सर्जित केले.
 
-To do so, event handlers must be declared in the subgraph manifest with the new `receipt: true` key, which is optional and defaults to false.
+असे करण्यासाठी, नवीन `पावती: सत्य` की सह सबग्राफ मॅनिफेस्टमध्ये इव्हेंट हँडलर घोषित करणे आवश्यक आहे, जे पर्यायी आहे आणि डीफॉल्ट असत्य आहे.
 
 ```yaml
 eventHandlers:
@@ -846,20 +846,20 @@ eventHandlers:
     receipt: true
 ```
 
-Inside the handler function, the receipt can be accessed in the `Event.receipt` field. When the `receipt` key is set to `false` or omitted in the manifest, a `null` value will be returned instead.
+हँडलर फंक्शनच्या आत, पावती `Event.receipt` फील्डमध्ये ऍक्सेस केली जाऊ शकते. जेव्हा `पावती` की `false` वर सेट केली जाते किंवा मॅनिफेस्टमध्ये वगळली जाते, तेव्हा त्याऐवजी `null` मूल्य परत केले जाईल.
 
-## Experimental features
+## प्रायोगिक वैशिष्ट्ये
 
-Starting from `specVersion` `0.0.4`, subgraph features must be explicitly declared in the `features` section at the top level of the manifest file, using their `camelCase` name, as listed in the table below:
+`specVersion` `0.0.4` पासून सुरू करून, सबग्राफ वैशिष्ट्ये मॅनिफेस्ट फाइलच्या शीर्ष स्तरावरील `वैशिष्ट्ये` विभागात स्पष्टपणे घोषित करणे आवश्यक आहे, त्यांचा वापर करून `camelCase` नाव, खालील तक्त्यामध्ये सूचीबद्ध केल्याप्रमाणे:
 
-| Feature                                                   | Name                                                |
-| --------------------------------------------------------- | --------------------------------------------------- |
-| [Non-fatal errors](#non-fatal-errors)                     | `nonFatalErrors`                                    |
-| [Full-text Search](#defining-fulltext-search-fields)      | `fullTextSearch`                                    |
-| [Grafting](#grafting-onto-existing-subgraphs)             | `grafting`                                          |
-| [IPFS on Ethereum Contracts](#ipfs-on-ethereum-contracts) | `ipfsOnEthereumContracts` or `nonDeterministicIpfs` |
+| वैशिष्ट्य                                               | नाव                                                 |
+| ------------------------------------------------------- | --------------------------------------------------- |
+| [गैर-घातक त्रुटी](#non-fatal-errors)                    | `nonFatalErrors`                                    |
+| [पूर्ण मजकूर शोध](#defining-fulltext-search-fields)     | `fullTextSearch`                                    |
+| [कलम करणे](#grafting-onto-existing-subgraphs)           | `कलम करणे`                                          |
+| [इथरियम करारांवर आयपीएफएस](#ipfs-on-ethereum-contracts) | `ipfsOnEthereumContracts` or `nonDeterministicIpfs` |
 
-For instance, if a subgraph uses the **Full-Text Search** and the **Non-fatal Errors** features, the `features` field in the manifest should be:
+उदाहरणार्थ, जर सबग्राफ **पूर्ण-मजकूर शोध** आणि **नॉन-फेटल एरर** वैशिष्ट्ये वापरत असेल, तर मॅनिफेस्टमधील `वैशिष्ट्ये` फील्ड हे असावे:
 
 ```yaml
 specVersion: 0.0.4
@@ -870,27 +870,27 @@ features:
 dataSources: ...
 ```
 
-Note that using a feature without declaring it will incur a **validation error** during subgraph deployment, but no errors will occur if a feature is declared but not used.
+लक्षात ठेवा की वैशिष्ट्य घोषित न करता वापरल्याने सबग्राफ डिप्लॉयमेंट दरम्यान **प्रमाणीकरण त्रुटी** येईल, परंतु वैशिष्ट्य घोषित केले असल्यास परंतु वापरलेले नसल्यास कोणतीही त्रुटी येणार नाही.
 
-### IPFS on Ethereum Contracts
+### इथरियम करारांवर आयपीएफएस
 
-A common use case for combining IPFS with Ethereum is to store data on IPFS that would be too expensive to maintain on-chain, and reference the IPFS hash in Ethereum contracts.
+इथरियमसह IPFS एकत्र करण्यासाठी एक सामान्य वापर केस म्हणजे IPFS वर डेटा संग्रहित करणे जे ऑन-चेन राखण्यासाठी खूप महाग असेल आणि Ethereum कॉन्ट्रॅक्टमध्ये IPFS हॅशचा संदर्भ घ्या.
 
-Given such IPFS hashes, subgraphs can read the corresponding files from IPFS using `ipfs.cat` and `ipfs.map`. To do this reliably, it is required that these files are pinned to an IPFS node with high availability, so that the [hosted service](https://thegraph.com/hosted-service) IPFS node can find them during indexing.
+अशा IPFS हॅश दिल्यास, सबग्राफ `ipfs.cat` आणि `ipfs.map` वापरून IPFS मधील संबंधित फाइल्स वाचू शकतात. हे विश्वासार्हपणे करण्यासाठी, या फायली उच्च उपलब्धता असलेल्या IPFS नोडवर पिन केलेल्या असणे आवश्यक आहे, जेणेकरून [होस्टेड सेवा](https://thegraph.com/hosted-service) IPFS नोड अनुक्रमणिका दरम्यान शोधू शकता.
 
-> **Note:** The Graph Network does not yet support `ipfs.cat` and `ipfs.map`, and developers should not deploy subgraphs using that functionality to the network via the Studio.
+> **टीप:** ग्राफ नेटवर्क अद्याप `ipfs.cat` आणि `ipfs.map` ला समर्थन देत नाही आणि विकसकांनी उपयोजित करू नये स्टुडिओद्वारे नेटवर्कवर ती कार्यक्षमता वापरून सबग्राफ.
 
-> **[Feature Management](#experimental-features):** `ipfsOnEthereumContracts` must be declared under `features` in the subgraph manifest. For non EVM chains, the `nonDeterministicIpfs` alias can also be used for the same purpose.
+> **[वैशिष्ट्य व्यवस्थापन](#experimental-features):** `ipfsOnEthereumContracts` `वैशिष्ट्ये` अंतर्गत घोषित करणे आवश्यक आहे code> सबग्राफ मॅनिफेस्टमध्ये. ईव्हीएम नसलेल्या साखळ्यांसाठी, `nonDeterministicIpfs` उपनाव देखील त्याच उद्देशासाठी वापरला जाऊ शकतो.
 
-When running a local Graph Node, the `GRAPH_ALLOW_NON_DETERMINISTIC_IPFS` environment variable must be set in order to index subgraphs using this experimental functionality.
+स्थानिक आलेख नोड चालवताना, ही प्रायोगिक कार्यक्षमता वापरून सबग्राफ अनुक्रमित करण्यासाठी `GRAPH_ALLOW_NON_DETERMINISTIC_IPFS` पर्यावरण व्हेरिएबल सेट करणे आवश्यक आहे.
 
-### Non-fatal errors
+### गैर-घातक त्रुटी
 
-Indexing errors on already synced subgraphs will, by default, cause the subgraph to fail and stop syncing. Subgraphs can alternatively be configured to continue syncing in the presence of errors, by ignoring the changes made by the handler which provoked the error. This gives subgraph authors time to correct their subgraphs while queries continue to be served against the latest block, though the results might be inconsistent due to the bug that caused the error. Note that some errors are still always fatal. To be non-fatal, the error must be known to be deterministic.
+आधीच समक्रमित केलेल्या सबग्राफ्सवर अनुक्रमणिका त्रुटी, डीफॉल्टनुसार, सबग्राफ अयशस्वी होण्यास आणि समक्रमण थांबवण्यास कारणीभूत ठरतील. सबग्राफ वैकल्पिकरित्या त्रुटींच्या उपस्थितीत समक्रमण सुरू ठेवण्यासाठी कॉन्फिगर केले जाऊ शकतात, हँडलरने केलेल्या बदलांकडे दुर्लक्ष करून, ज्यामुळे त्रुटी उद्भवली. हे सबग्राफ लेखकांना त्यांचे सबग्राफ दुरुस्त करण्यासाठी वेळ देते जेव्हा की नवीनतम ब्लॉकच्या विरूद्ध क्वेरी चालू ठेवल्या जातात, जरी त्रुटीमुळे परिणाम विसंगत असू शकतात. लक्षात घ्या की काही त्रुटी अजूनही नेहमीच घातक असतात. गैर-घातक होण्यासाठी, त्रुटी निश्चितपणे ज्ञात असणे आवश्यक आहे.
 
-> **Note:** The Graph Network does not yet support non-fatal errors, and developers should not deploy subgraphs using that functionality to the network via the Studio.
+> **टीप:** ग्राफ नेटवर्क अद्याप घातक नसलेल्या त्रुटींना समर्थन देत नाही आणि विकासकांनी स्टुडिओद्वारे नेटवर्कवर ती कार्यक्षमता वापरून सबग्राफ उपयोजित करू नये.
 
-Enabling non-fatal errors requires setting the following feature flag on the subgraph manifest:
+गैर-घातक त्रुटी सक्षम करण्यासाठी सबग्राफ मॅनिफेस्टवर खालील वैशिष्ट्य ध्वज सेट करणे आवश्यक आहे:
 
 ```yaml
 specVersion: 0.0.4
@@ -900,7 +900,7 @@ features:
     ...
 ```
 
-The query must also opt-in to querying data with potential inconsistencies through the `subgraphError` argument. It is also recommended to query `_meta` to check if the subgraph has skipped over errors, as in the example:
+क्वेरीने `subgraphError` युक्तिवादाद्वारे संभाव्य विसंगती असलेल्या डेटाची क्वेरी करणे देखील निवडले पाहिजे. उदाहरणाप्रमाणे सबग्राफ एरर वगळला आहे की नाही हे तपासण्यासाठी `_meta` क्वेरी करण्याची देखील शिफारस केली जाते:
 
 ```graphql
 foos(first: 100, subgraphError: allow) {
@@ -912,7 +912,7 @@ _meta {
 }
 ```
 
-If the subgraph encounters an error, that query will return both the data and a graphql error with the message `"indexing_error"`, as in this example response:
+सबग्राफमध्ये त्रुटी आढळल्यास, ती क्वेरी या उदाहरणाच्या प्रतिसादाप्रमाणे `"indexing_error"` संदेशासह डेटा आणि graphql त्रुटी दोन्ही देईल:
 
 ```graphql
 "data": {
@@ -932,11 +932,11 @@ If the subgraph encounters an error, that query will return both the data and a 
 ]
 ```
 
-### Grafting onto Existing Subgraphs
+### विद्यमान सबग्राफवर कलम करणे
 
-When a subgraph is first deployed, it starts indexing events at the genesis block of the corresponding chain (or at the `startBlock` defined with each data source) In some circumstances; it is beneficial to reuse the data from an existing subgraph and start indexing at a much later block. This mode of indexing is called _Grafting_. Grafting is, for example, useful during development to get past simple errors in the mappings quickly or to temporarily get an existing subgraph working again after it has failed.
+जेव्हा सबग्राफ प्रथम उपयोजित केला जातो, तेव्हा तो संबंधित साखळीच्या उत्पत्ती ब्लॉकवर (किंवा प्रत्येक डेटा स्त्रोतासह परिभाषित केलेल्या `startBlock` वर) काही परिस्थितींमध्ये इव्हेंट्सचे अनुक्रमणिका सुरू करतो; विद्यमान सबग्राफमधील डेटा पुन्हा वापरणे आणि नंतरच्या ब्लॉकमध्ये अनुक्रमणिका सुरू करणे फायदेशीर आहे. अनुक्रमणिकेच्या या मोडला _ग्राफ्टिंग_ म्हणतात. उदाहरणार्थ, मॅपिंगमध्ये भूतकाळातील साध्या चुका लवकर मिळवण्यासाठी किंवा विद्यमान सबग्राफ अयशस्वी झाल्यानंतर तात्पुरते काम करण्यासाठी विकासादरम्यान ग्राफ्टिंग उपयुक्त आहे.
 
-A subgraph is grafted onto a base subgraph when the subgraph manifest in `subgraph.yaml` contains a `graft` block at the top-level:
+सबग्राफ बेस सबग्राफवर ग्राफ्ट केला जातो जेव्हा `subgraph.yaml` मधील सबग्राफ मॅनिफेस्टमध्ये शीर्ष-स्तरावर `ग्राफ्ट` ब्लॉक असतो:
 
 ```yaml
 description: ...
@@ -945,49 +945,49 @@ graft:
   block: 7345624 # Block number
 ```
 
-When a subgraph whose manifest contains a `graft` block is deployed, Graph Node will copy the data of the `base` subgraph up to and including the given `block` and then continue indexing the new subgraph from that block on. The base subgraph must exist on the target Graph Node instance and must have indexed up to at least the given block. Because of this restriction, grafting should only be used during development or during an emergency to speed up producing an equivalent non-grafted subgraph.
+जेव्हा एखादा सबग्राफ ज्याच्या मॅनिफेस्टमध्ये `ग्राफ्ट` ब्लॉक असतो तो उपयोजित केला जातो, तेव्हा आलेख नोड `बेस` सबग्राफचा डेटा कॉपी करेल आणि दिलेल्या `ब्लॉक` सह आणि नंतर त्या ब्लॉकमधून नवीन सबग्राफ अनुक्रमित करणे सुरू ठेवा. बेस सबग्राफ लक्ष्य ग्राफ नोडच्या उदाहरणावर अस्तित्वात असणे आवश्यक आहे आणि कमीतकमी दिलेल्या ब्लॉकपर्यंत अनुक्रमित केलेले असणे आवश्यक आहे. या निर्बंधामुळे, ग्राफ्टिंगचा वापर केवळ विकासादरम्यान किंवा आणीबाणीच्या काळात समतुल्य नॉन-ग्राफ्टेड सबग्राफ तयार करण्यासाठी वेगवान करण्यासाठी केला पाहिजे.
 
-Because grafting copies rather than indexes base data, it is much quicker to get the subgraph to the desired block than indexing from scratch, though the initial data copy can still take several hours for very large subgraphs. While the grafted subgraph is being initialized, the Graph Node will log information about the entity types that have already been copied.
+बेस डेटा इंडेक्स करण्याऐवजी कॉपीचे ग्राफ्टिंग केल्यामुळे, सुरवातीपासून इंडेक्स करण्यापेक्षा इच्छित ब्लॉकमध्ये सबग्राफ मिळवणे खूप जलद आहे, जरी सुरुवातीच्या डेटा कॉपीला खूप मोठ्या सबग्राफसाठी बरेच तास लागू शकतात. ग्रॅफ्टेड सबग्राफ सुरू होत असताना, ग्राफ नोड आधीपासून कॉपी केलेल्या घटक प्रकारांबद्दल माहिती लॉग करेल.
 
-The grafted subgraph can use a GraphQL schema that is not identical to the one of the base subgraph, but merely compatible with it. It has to be a valid subgraph schema in its own right, but may deviate from the base subgraph's schema in the following ways:
+ग्राफ्टेड सबग्राफ GraphQL स्कीमा वापरू शकतो जो बेस सबग्राफपैकी एकाशी एकसारखा नसतो, परंतु त्याच्याशी फक्त सुसंगत असतो. ती स्वतःच्या अधिकारात वैध सबग्राफ स्कीमा असणे आवश्यक आहे, परंतु खालील प्रकारे बेस सबग्राफच्या स्कीमापासून विचलित होऊ शकते:
 
-- It adds or removes entity types
-- It removes attributes from entity types
-- It adds nullable attributes to entity types
-- It turns non-nullable attributes into nullable attributes
-- It adds values to enums
-- It adds or removes interfaces
-- It changes for which entity types an interface is implemented
+- हे घटक प्रकार जोडते किंवा काढून टाकते
+- हे घटक प्रकारातील गुणधर्म काढून टाकते
+- हे अस्तित्व प्रकारांमध्ये रद्द करण्यायोग्य विशेषता जोडते
+- हे नॉन-नलेबल अॅट्रिब्यूट्सना न्युलेबल अॅट्रिब्यूटमध्ये बदलते
+- हे enums मध्ये मूल्ये जोडते
+- हे इंटरफेस जोडते किंवा काढून टाकते
+- कोणत्या घटकासाठी इंटरफेस लागू केला जातो ते बदलते
 
-> **[Feature Management](#experimental-features):** `grafting` must be declared under `features` in the subgraph manifest.
+> **[वैशिष्ट्य व्यवस्थापन](#experimental-features):** `ग्राफ्टिंग` सबग्राफ मॅनिफेस्टमध्ये `वैशिष्ट्ये` अंतर्गत घोषित करणे आवश्यक आहे.
 
-## File Data Sources
+## फाइल डेटा स्रोत
 
-File data sources are a new subgraph functionality for accessing off-chain data during indexing in a robust, extendable way, starting with IPFS.
+फाईल डेटा स्रोत ही एक नवीन सबग्राफ कार्यक्षमता आहे जी आयपीएफएसपासून सुरू होणार्‍या, मजबूत, वाढवता येण्याजोग्या पद्धतीने अनुक्रमणिकेदरम्यान ऑफ-चेन डेटामध्ये प्रवेश करण्यासाठी आहे.
 
-> This also lays the groundwork for deterministic indexing of off-chain data, as well as the potential introduction of arbitrary HTTP-sourced data.
+> हे ऑफ-चेन डेटाच्या निर्धारवादी अनुक्रमणिकेसाठी तसेच अनियंत्रित HTTP-स्रोत डेटाच्या संभाव्य परिचयासाठी देखील पाया घालते.
 
-### Overview
+### सविश्लेषण
 
-Rather than fetching files "in line" during handler exectuion, this introduces templates which can be spawned as new data sources for a given file identifier. These new data sources fetch the files, retrying if they are unsuccessful, running a dedicated handler when the file is found.
+हँडलर कार्यान्वित करताना फाईल्स "इन लाइन" आणण्याऐवजी, हे टेम्पलेट्स सादर करते जे दिलेल्या फाइल आयडेंटिफायरसाठी नवीन डेटा स्रोत म्हणून तयार केले जाऊ शकतात. हे नवीन डेटा स्रोत फाइल्स आणतात, अयशस्वी झाल्यास पुन्हा प्रयत्न करतात, फाइल सापडल्यावर समर्पित हँडलर चालवतात.
 
-This is similar to the [existing data source templates](https://thegraph.com/docs/en/developing/creating-a-subgraph/#data-source-templates), which are used to dynamically create new chain-based data sources.
+हे [विद्यमान डेटा स्रोत टेम्पलेट](https://thegraph.com/docs/en/developing/creating-a-subgraph/#data-source-templates) सारखे आहे, जे वापरले जातात गतिशीलपणे नवीन साखळी-आधारित डेटा स्रोत तयार करण्यासाठी.
 
-> This replaces the existing `ipfs.cat` API
+> हे विद्यमान `ipfs.cat` API बदलते
 
-### Migration guide
+### अपग्रेड मार्गदर्शक
 
-#### Update `graph-ts` and `graph-cli`
+#### `graph-ts` आणि `graph-cli` अपडेट करा
 
-File data sources requires graph-ts >=0.29.0 and graph-cli >=0.33.1
+फाइल डेटा स्रोतांना ग्राफ-ts >=0.29.0 आणि ग्राफ-cli>=0.33.1 आवश्यक आहे
 
-#### Add a new entity type which will be updated when files are found
+#### नवीन अस्तित्व प्रकार जोडा जो फाइल सापडल्यावर अपडेट केला जाईल
 
-File data sources cannot access or update chain-based entities, but must update file specific entities.
+फाइल डेटा स्रोत साखळी-आधारित घटकांमध्ये प्रवेश करू शकत नाहीत किंवा अद्यतनित करू शकत नाहीत, परंतु फाइल विशिष्ट घटक अद्यतनित करणे आवश्यक आहे.
 
-This may mean splitting out fields from existing entities into separate entities, linked together.
+याचा अर्थ असा असू शकतो की विद्यमान संस्थांमधून फील्ड एकत्र जोडलेल्या वेगळ्या संस्थांमध्ये विभाजित करणे.
 
-Original combined entity:
+मूळ एकत्रित अस्तित्व:
 
 ```graphql
 type Token @entity {
@@ -1005,7 +1005,7 @@ type Token @entity {
 }
 ```
 
-New, split entity:
+नवीन, विभाजित अस्तित्व:
 
 ```graphql
 type Token @entity {
@@ -1026,13 +1026,13 @@ type TokenMetadata @entity {
 }
 ```
 
-If the relationship is 1:1 between the parent entity and the resulting file data source entity, the simplest pattern is to link the parent entity to a resulting file entity by using the IPFS CID as the lookup. Get in touch on Discord if you are having difficulty modelling your new file-based entities!
+जर मूळ घटक आणि परिणामी फाइल डेटा स्रोत घटक यांच्यातील संबंध 1:1 असेल तर, आयपीएफएस सीआयडी लुकअप म्हणून वापरून मूळ घटकाला परिणामी फाइल घटकाशी जोडणे हा सर्वात सोपा नमुना आहे. तुम्हाला तुमच्या नवीन फाइल-आधारित घटकांचे मॉडेलिंग करण्यात अडचण येत असल्यास Discord वर संपर्क साधा!
 
-> You can use [nested filters](https://thegraph.com/docs/en/querying/graphql-api/#example-for-nested-entity-filtering) to filter parent entities on the basis of these nested entities.
+> तुम्ही या नेस्टेड घटकांच्या आधारे मूळ घटक फिल्टर करण्यासाठी [नेस्टेड फिल्टर](https://thegraph.com/docs/en/querying/graphql-api/#example-for-nested-entity-filtering) वापरू शकता.
 
-#### Add a new templated data source with `kind: file/ipfs`
+#### `kind: file/ipfs` सह एक नवीन टेम्पलेट डेटा स्रोत जोडा
 
-This is the data source which will be spawned when a file of interest is identified.
+हा डेटा स्त्रोत आहे जो जेव्हा स्वारस्य असलेली फाइल ओळखली जाईल तेव्हा तयार होईल.
 
 ```yaml
 templates:
@@ -1050,21 +1050,21 @@ templates:
           file: ./abis/Token.json
 ```
 
-> Currently `abis` are required, though it is not possible to call contracts from within file data sources
+> सध्या `abis` आवश्यक आहेत, जरी फाइल डेटा स्रोतांमधून करार कॉल करणे शक्य नाही
 
-The file data source must specifically mention all the entity types which it will interact with under `entities`. See [limitations](#Limitations) for more details.
+फाइल डेटा स्रोताने विशेषत: सर्व घटक प्रकारांचा उल्लेख करणे आवश्यक आहे ज्यांच्याशी तो `संस्था` अंतर्गत संवाद साधेल. अधिक तपशीलांसाठी [मर्यादा](#Limitations) पहा.
 
-#### Create a new handler to process files
+#### फाइल्सवर प्रक्रिया करण्यासाठी नवीन हँडलर तयार करा
 
-This handler should accept one `Bytes` parameter, which will be the contents of the file, when it is found, which can then be processed. This will often be a JSON file, which can be processed with `graph-ts` helpers ([documentation](https://thegraph.com/docs/en/developing/assemblyscript-api/#json-api)).
+या हँडलरने एक `बाइट्स` पॅरामीटर स्वीकारला पाहिजे, जो फाइल सापडल्यावर त्यातील सामग्री असेल, ज्यावर नंतर प्रक्रिया केली जाऊ शकते. ही बर्‍याचदा JSON फाइल असेल, ज्यावर `graph-ts` मदतनीस ([दस्तऐवजीकरण](https://thegraph.com/docs/en/developing/assemblyscript-api/#json-api)) सह प्रक्रिया केली जाऊ शकते.
 
-The CID of the file as a readable string can be accessed via the `dataSource` as follows:
+वाचनीय स्ट्रिंग म्हणून फाइलचा CID खालीलप्रमाणे `डेटास्रोत` द्वारे प्रवेश केला जाऊ शकतो:
 
 ```typescript
 const cid = dataSource.stringParam()
 ```
 
-Example handler:
+उदाहरण हँडलर:
 
 ```typescript
 import { json, Bytes, dataSource } from '@graphprotocol/graph-ts'
@@ -1091,16 +1091,16 @@ export function handleMetadata(content: Bytes): void {
 }
 ```
 
-#### Spawn file data sources when required
+#### आवश्यकतेनुसार फाईल डेटा स्रोत तयार करा
 
-You can now create file data sources during execution of chain-based handlers:
+साखळी-आधारित हँडलर्सच्या अंमलबजावणीदरम्यान तुम्ही आता फाइल डेटा स्रोत तयार करू शकता:
 
-- Import the template from the auto-generated `templates`
-- call `TemplateName.create(cid: string)` from within a mapping, where the cid is a valid IPFS content identifier
+- स्वयं-निर्मित `टेम्पलेट` मधून टेम्पलेट आयात करा
+- मॅपिंगमधून `TemplateName.create(cid: string)` वर कॉल करा, जेथे cid वैध IPFS सामग्री अभिज्ञापक आहे
 
-> Currently Graph Node supports [v0 and v1 content identifiers](https://docs.ipfs.tech/concepts/content-addressing/), and content identifers with directories (e.g. `bafyreighykzv2we26wfrbzkcdw37sbrby4upq7ae3aqobbq7i4er3tnxci/metadata.json`)
+> सध्या ग्राफ नोड [v0 आणि v1 सामग्री अभिज्ञापकांना](https://docs.ipfs.tech/concepts/content-addressing/), आणि निर्देशिकांसह सामग्री अभिज्ञापकांना समर्थन देते (उदा. `bafyreighykzv2we26wfrbzkcdw37sbrby4upq7ae3aqobbq7i4er3tnxci/metadata`)
 
-Example:
+उदाहरण:
 
 ```typescript
 import { TokenMetadata as TokenMetadataTemplate } from '../generated/templates'
@@ -1129,50 +1129,50 @@ export function handleTransfer(event: TransferEvent): void {
 }
 ```
 
-This will create a new file data source, which will poll Graph Node's configured IPFS endpoint, retrying if it is not found. When the file is found, the file data source handler will be executed.
+हे एक नवीन फाइल डेटा स्रोत तयार करेल, जे ग्राफ नोडच्या कॉन्फिगर केलेल्या IPFS एंडपॉईंटचे मतदान करेल, तो सापडला नाही तर पुन्हा प्रयत्न करेल. फाइल सापडल्यावर, फाइल डेटा स्रोत हँडलर कार्यान्वित केला जाईल.
 
-This example is using the CID as the lookup between the parent `Token` entity and the resulting `TokenMetadata` entity.
+हे उदाहरण पालक `टोकन` घटक आणि परिणामी `टोकनमेटाडेटा` घटक यांच्यातील लुकअप म्हणून CID वापरत आहे.
 
-> Previously, this is the point at which a subgraph developer would have called `ipfs.cat(CID)` to fetch the file
+> पूर्वी, फाईल आणण्यासाठी सबग्राफ डेव्हलपरने `ipfs.cat(CID)` ला कॉल केला असता
 
-Congratulations, you are using file data sources!
+अभिनंदन, तुम्ही फाइल डेटा स्रोत वापरत आहात!
 
-#### Deploying your subgraphs
+#### तुमचे सबग्राफ उपयोजित करत आहे
 
-You can now `build` and `deploy` your subgraph to any Graph Node >=v0.30.0-rc.0.
+तुम्ही आता कोणत्याही ग्राफ नोडवर तुमचा सबग्राफ `बिल्ड` आणि `डिप्लॉय` करू शकता >=v0.30.0-rc.0.
 
-#### Limitations
+#### मर्यादा
 
-File data source handlers and entities are isolated from other subgraph entities, ensuring that they are deterministic when executed, and ensuring no contamination of chain-based data sources. To be specific:
+फाइल डेटा स्रोत हँडलर आणि संस्था इतर सबग्राफ संस्थांपासून वेगळ्या केल्या जातात, ते कार्यान्वित केल्यावर ते निर्धारवादी आहेत याची खात्री करून आणि साखळी-आधारित डेटा स्रोतांचे दूषित होणार नाही याची खात्री करतात. विशिष्ट असणे:
 
-- Entities created by File Data Sources are immutable, and cannot be updated
-- File Data Source handlers cannot access entities from other file data sources
-- Entities associated with File Data Sources cannot be accessed by chain-based handlers
+- फाइल डेटा स्त्रोतांद्वारे तयार केलेल्या संस्था अपरिवर्तनीय आहेत आणि अद्यतनित केल्या जाऊ शकत नाहीत
+- फाइल डेटा स्रोत हँडलर इतर फाइल डेटा स्रोतांमधून संस्थांमध्ये प्रवेश करू शकत नाहीत
+- फाईल डेटा स्रोतांशी संबंधित संस्थांमध्ये साखळी-आधारित हँडलर्सद्वारे प्रवेश केला जाऊ शकत नाही
 
-> While this constraint should not be problematic for most use-cases, it may introduce complexity for some. Please get in touch via Discord if you are having issues modelling your file-based data in a subgraph!
+> बहुतेक वापर-प्रकरणांसाठी ही मर्यादा समस्याप्रधान नसावी, परंतु काहींसाठी ते जटिलता आणू शकते. सबग्राफमध्‍ये तुमच्‍या फाईल-आधारित डेटाचे मॉडेल बनवण्‍यात तुम्‍हाला समस्या येत असल्‍यास कृपया डिस्‍कॉर्ड द्वारे संपर्क साधा!
 
-Additionally, it is not possible to create data sources from a file data source, be it an onchain data source or another file data source. This restriction may be lifted in the future.
+याव्यतिरिक्त, फाइल डेटा स्रोतावरून डेटा स्रोत तयार करणे शक्य नाही, मग ते ऑनचेन डेटा स्रोत असो किंवा अन्य फाइल डेटा स्रोत. भविष्यात हे निर्बंध उठवले जाऊ शकतात.
 
-#### Best practices
+#### चांगला सराव
 
-If you are linking NFT metadata to corresponding tokens, use the metadata's IPFS hash to reference a Metadata entity from the Token entity. Save the Metadata entity using the IPFS hash as an ID.
+तुम्ही एनएफटी मेटाडेटाला संबंधित टोकनशी लिंक करत असल्यास, टोकन एंटिटीमधील मेटाडेटा घटकाचा संदर्भ देण्यासाठी मेटाडेटाचा IPFS हॅश वापरा. आयडी म्हणून IPFS हॅश वापरून मेटाडेटा घटक जतन करा.
 
-You can use [DataSource context](https://thegraph.com/docs/en/developing/assemblyscript-api/#entity-and-data-source-context) when creating File Data Sources to pass extra information which will be available to the File Data Source handler.
+फाइल डेटा स्रोत तयार करताना तुम्ही [डेटास्रोत संदर्भ](https://thegraph.com/docs/en/developing/assemblyscript-api/#entity-and-data-source-context) वापरू शकता अतिरिक्त माहिती पास करा जी फाइल डेटा स्रोत हँडलरकडे उपलब्ध असेल.
 
-If you have entities which are refreshed multiple times, create unique file-based entities using the IPFS hash & the entity ID, and reference them using a derived field in the chain-based entity.
+तुमच्याकडे अनेक वेळा रीफ्रेश केलेल्या संस्था असल्यास, IPFS हॅश वापरून अद्वितीय फाइल-आधारित संस्था तयार करा & एंटिटी आयडी आणि साखळी-आधारित घटकामध्ये व्युत्पन्न फील्ड वापरून त्यांचा संदर्भ द्या.
 
-> We are working to improve the above recommendation, so queries only return the "most recent" version
+> आम्ही वरील शिफारसी सुधारण्यासाठी कार्य करत आहोत, त्यामुळे क्वेरी फक्त "सर्वात अलीकडील" आवृत्ती परत करतात
 
-#### Known issues
+#### ओळखलेले समस्या
 
-File data sources currently require ABIs, even though ABIs are not used ([issue](https://github.com/graphprotocol/graph-cli/issues/961)). Workaround is to add any ABI.
+फाइल डेटा स्रोतांना सध्या ABI ची आवश्यकता आहे, जरी ABIs वापरले जात नसले तरी ([समस्या](https://github.com/graphprotocol/graph-cli/issues/961)). वर्कअराउंड म्हणजे कोणताही ABI जोडणे.
 
-Handlers for File Data Sources cannot be in files which import `eth_call` contract bindings, failing with "unknown import: `ethereum::ethereum.call` has not been defined" ([issue](https://github.com/graphprotocol/graph-cli/issues/4309)). Workaround is to create file data source handlers in a dedicated file.
+फाइल डेटा स्रोतांसाठी हँडलर फाईल्समध्ये असू शकत नाहीत जे `eth_call` कॉन्ट्रॅक्ट बाइंडिंग आयात करतात, "अज्ञात आयात: `ethereum::ethereum.call` परिभाषित केले गेले नाहीत" ([ समस्या](https://github.com/graphprotocol/graph-cli/issues/4309)). वर्कअराउंड म्हणजे समर्पित फाइलमध्ये फाइल डेटा स्रोत हँडलर तयार करणे.
 
-#### Examples
+#### उदाहरणे
 
-[Crypto Coven Subgraph migration](https://github.com/azf20/cryptocoven-api/tree/file-data-sources-refactor)
+[क्रिप्टो कोव्हन सबग्राफ स्थलांतर](https://github.com/azf20/cryptocoven-api/tree/file-data-sources-refactor)
 
-#### References
+#### संदर्भ
 
-[GIP File Data Sources](https://forum.thegraph.com/t/gip-file-data-sources/2721)
+[GIP फाइल डेटा स्रोत](https://forum.thegraph.com/t/gip-file-data-sources/2721)

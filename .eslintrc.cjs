@@ -14,6 +14,9 @@ module.exports = {
       parserOptions: {
         project: 'tsconfig.json',
       },
+      rules: {
+        '@typescript-eslint/no-unsafe-argument': 'off', // lots of false positives for some reason
+      },
     },
     {
       // We lint only english pages because other languages will be translated from english

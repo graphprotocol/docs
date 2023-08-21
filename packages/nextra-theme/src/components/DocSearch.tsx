@@ -37,7 +37,7 @@ export function DocSearch(props: DocSearchProps) {
       setIsOpen(true)
       setInitialQuery(event.key)
     },
-    [setIsOpen, setInitialQuery]
+    [setIsOpen, setInitialQuery],
   )
 
   useDocSearchKeyboardEvents({
@@ -69,13 +69,7 @@ export function DocSearch(props: DocSearchProps) {
         >
           <Icon.Search size="14px" title="" sx={{ flexShrink: 0 }} />
           <Text.P14 size="14px">{props.translations?.button?.buttonText ?? 'Search'}</Text.P14>
-          {/* TODO: Remove `fontFamily: 'inherit'` when it's included in `@edgeandnode/gds`'s global styles */}
-          <Text.P14
-            as="kbd"
-            size="14px"
-            color="White48"
-            sx={{ marginInlineStart: 'auto', px: Spacing['8px'], fontFamily: 'inherit' }}
-          >
+          <Text.P14 as="kbd" size="14px" color="White48" sx={{ marginInlineStart: 'auto', px: Spacing['8px'] }}>
             <abbr title="Command" sx={{ textDecoration: 'none' }}>
               ⌘
             </abbr>
@@ -93,7 +87,7 @@ export function DocSearch(props: DocSearchProps) {
               translations={props.translations?.modal}
               onClose={onClose}
             />,
-            document.body
+            document.body,
           )
         : null}
 

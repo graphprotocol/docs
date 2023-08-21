@@ -2,6 +2,7 @@ import { RemoteContent } from 'nextra/data'
 import { buildDynamicMDX } from 'nextra/remote'
 import { getPageMap } from '@/src/getPageMap'
 import { remarkReplaceLinks } from '@/src/remarkReplaceLinks'
+import { remarkReplaceImages } from '@/src/remarkReplaceImages'
 import { replaceGitBookContent } from '@/src/replaceGitBookContent'
 import json from '@/remote-files/substreams.json'
 
@@ -21,24 +22,18 @@ export async function getStaticProps({ params }) {
   const baseURL = `https://raw.githubusercontent.com/${user}/${repo}/${branch}/${docsPath}${foundPath}`
   const response = await fetch(baseURL)
   const content = await response.text()
-  const mdx = await buildDynamicMDX(
-    replaceGitBookContent({
-      content,
-      user,
-      repo,
-      branch,
-      docsPath,
-    }),
-    {
-      mdxOptions: {
-        // change-log contains `{variable}` text that is thrown an error by MDX2 parser since he treats
-        // it as variable injection, to fix it we parse chang-log with the Markdown parser
-        format: paths.endsWith('/change-log') ? 'md' : 'mdx',
-        remarkPlugins: [[remarkReplaceLinks, { foundPath, basePath: '/substreams/' }]],
-      },
-      codeHighlight: false,
-    }
-  )
+  const mdx = await buildDynamicMDX(replaceGitBookContent({ content }), {
+    mdxOptions: {
+      // change-log contains `{variable}` text that is thrown an error by MDX2 parser since it treats
+      // it as variable injection, to fix it we parse `change-log` with the Markdown parser
+      format: paths.endsWith('/change-log') ? 'md' : 'mdx',
+      remarkPlugins: [
+        [remarkReplaceLinks, { foundPath, basePath: '/substreams/' }],
+        [remarkReplaceImages, { assetsBasePath: `${user}/${repo}/${branch}/${docsPath}` }],
+      ],
+    },
+    codeHighlight: false,
+  })
   return {
     props: {
       ...mdx,
