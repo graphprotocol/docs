@@ -46,4 +46,5 @@ export default {
   firehose: 'Firehose',
   graphcast: '',
   'mips-faqs': '',
+  'chain-integration': 'Chain Integration',
 }
