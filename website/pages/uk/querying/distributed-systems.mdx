@@ -1,37 +1,37 @@
 ---
-title: Distributed Systems
+title: Розподілені системи
 ---
 
-The Graph is a protocol implemented as a distributed system.
+The Graph - це протокол, що реалізований як розподілена система.
 
-Connections fail. Requests arrive out of order. Different computers with out-of-sync clocks and states process related requests. Servers restart. Re-orgs happen between requests. These problems are inherent to all distributed systems but are exacerbated in systems operating at a global scale.
+З'єднання не вдається. Запити поступають не за порядком. Різні комп'ютери з неузгодженими часовими та становими процесами обробляють пов'язані між собою запити. Сервери перезавантажуються. Між запитами відбуваються реорганізації. Ці проблеми притаманні всім розподіленим системам, але вони поглиблюються в системах, що працюють в глобальному масштабі.
 
-Consider this example of what may occur if a client polls an Indexer for the latest data during a re-org.
+Розглянемо на цьому прикладі, що може статися, якщо клієнт запросить в індексатора останні дані під час повторної реорганізації.
 
-1. Indexer ingests block 8
-2. Request served to the client for block 8
-3. Indexer ingests block 9
-4. Indexer ingests block 10A
-5. Request served to the client for block 10A
-6. Indexer detects reorg to 10B and rolls back 10A
-7. Request served to the client for block 9
-8. Indexer ingests block 10B
-9. Indexer ingests block 11
-10. Request served to the client for block 11
+1. Індексатор індексує блок 8
+2. Запит від клієнта для блоку 8 обробляється
+3. Індексатор індексує блок 9
+4. Індексатор індексує блок 10А
+5. Запит від клієнта для блоку 10А обробляється
+6. Індексатор знаходить перерозподіл на блоці 10B і відкочується на 10A
+7. Запит від клієнта для блоку 9 обробляється
+8. Індексатор індексує блок 10В
+9. Індексатор індексує блок 11
+10. Запит від клієнта для блоку 11 обробляється
 
-From the point of view of the Indexer, things are progressing forward logically. Time is moving forward, though we did have to roll back an uncle block and play the block under consensus forward on top of it. Along the way, the Indexer serves requests using the latest state it knows about at that time.
+З точки зору Індексатора, все розвивається цілком логічно. Час рухається вперед, хоча нам довелося відкотити старий блок назад і відтворити блок за принципом консенсусу на його основі. Протягом цього часу Індексатор обслуговує запити, використовуючи останній відомий йому актуальний статус.
 
-From the point of view of the client, however, things appear chaotic. The client observes that the responses were for blocks 8, 10, 9, and 11 in that order. We call this the "block wobble" problem. When a client experiences block wobble, data may appear to contradict itself over time. The situation worsens when we consider that Indexers do not all ingest the latest blocks simultaneously, and your requests may be routed to multiple Indexers.
+З точки зору клієнта, щоправда, все виглядає хаотично. Клієнт зауважив, що відповіді були для блоків 8, 10, 9 та 11, саме в такому порядку. Ми називаємо це проблемою "block wobble" або "коливанням блоків". Коли клієнт стикається з цим, дані можуть з часом суперечити один одному. Ситуація погіршується, якщо врахувати те, що Індексатори не індексують останні блоки одночасно разом, і ваші запити можуть бути направлені до декількох різних Індексаторів.
 
-It is the responsibility of the client and server to work together to provide consistent data to the user. Different approaches must be used depending on the desired consistency as there is no one right program for every problem.
+Клієнт і сервер несуть відповідальність за спільну роботу з метою надання користувачеві узгоджених даних. Залежно від бажаної послідовності необхідно використовувати різні підходи, оскільки не існує єдиної правильної стратегії для розв'язання кожної проблеми.
 
-Reasoning through the implications of distributed systems is hard, but the fix may not be! We've established APIs and patterns to help you navigate some common use-cases. The following examples illustrate those patterns but still elide details required by production code (like error handling and cancellation) to not obfuscate the main ideas.
+Складно зрозуміти наслідки використання розподілених систем, але рішення може взагалі не існувати! Ми створили API та шаблони, які допоможуть вам орієнтуватися в найбільш поширених варіантах використання. Наступні приклади ілюструють ці шаблони, але все ж не розкривають деталей, необхідних у програмному коді (наприклад, обробка та усунення помилок), щоб не затьмарити основні ідеї.
 
-## Polling for updated data
+## Запит на отримання оновлених даних
 
-The Graph provides the `block: { number_gte: $minBlock }` API, which ensures that the response is for a single block equal or higher to `$minBlock`. If the request is made to a `graph-node` instance and the min block is not yet synced, `graph-node` will return an error. If `graph-node` has synced min block, it will run the response for the latest block. If the request is made to an Edge & Node Gateway, the Gateway will filter out any Indexers that have not yet synced min block and make the request for the latest block the Indexer has synced.
+The Graph надає `block: { number_gte: $minBlock }` API, який гарантує, що відповідь для одного блоку дорівнює або перевищує `$minBlock`. Якщо запит зроблено до `graph-node`, на приклад, а block min ще не синхронізовано, то `graph-node` видасть помилку. Якщо `graph-node` синхронізувала block min, то, в такому випадку, він дасть надішле відповідь для останнього блоку. Якщо запит надіслано до Edge & Node Gateway, Gateway відфільтрує всіх Індексаторів, які ще не синхронізували min block, і зробить запит на останній блок, який Індексатор синхронізував.
 
-We can use `number_gte` to ensure that time never travels backward when polling for data in a loop. Here is an example:
+Ми можемо використовувати `number_gte`, щоб гарантувати, що час ніколи не рухатиметься назад під час циклічного збору даних. Ось приклад:
 
 ```javascript
 /// Updates the protocol.paused variable to the latest
@@ -74,11 +74,11 @@ async function updateProtocolPaused() {
 }
 ```
 
-## Fetching a set of related items
+## Отримання взаємопов'язаних елементів
 
-Another use-case is retrieving a large set or, more generally, retrieving related items across multiple requests. Unlike the polling case (where the desired consistency was to move forward in time), the desired consistency is for a single point in time.
+Ще один випадок використання - пошук великого набору або, в більш широкому розумінні, пошук пов'язаних елементів за кількома запитами. На відміну від випадку з запитом (де необхідна узгодженість полягала в тому, щоб переміщатися вперед у часі), бажана узгодженість стосується лише одного конкретного моменту в часі.
 
-Here we will use the `block: { hash: $blockHash }` argument to pin all of our results to the same block.
+Тут ми використаємо `block: { hash: $blockHash }` аргумент, щоб прив'язати всі наші результати до одного блоку.
 
 ```javascript
 /// Gets a list of domain names from a single block using pagination
@@ -131,4 +131,4 @@ async function getDomainNames() {
 }
 ```
 
-Note that in case of a re-org, the client will need to retry from the first request to update the block hash to a non-uncle block.
+Зауважте, що у випадку повторної операції клієнту потрібно буде повторити спробу з першого запиту, щоб оновити хеш блоку до не старого або попереднього блоку.
