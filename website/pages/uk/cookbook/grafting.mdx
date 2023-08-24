@@ -1,40 +1,40 @@
 ---
-title: Replace a Contract and Keep its History With Grafting
+title: Замініть контракт та збережіть його історію за допомогою графтингу
 ---
 
-In this guide, you will learn how to build and deploy new subgraphs by grafting existing subgraphs.
+У цьому гайді ви дізнаєтеся, як створювати та розгортати нові підграфи шляхом поєднання наявних підграфів.
 
-## What is Grafting?
+## Що таке Grafting?
 
-Grafting reuses the data from an existing subgraph and starts indexing it at a later block. This is useful during development to get past simple errors in the mappings quickly or to temporarily get an existing subgraph working again after it has failed. Also, it can be used when adding a feature to a subgraph that takes long to index from scratch.
+При цьому процесі повторно використовуються дані з наявного підграфа і починається їх індексування з наступного блоку. Це корисно під час розробки для швидкого усунення простих помилок у схемах або для тимчасового відновлення працездатності наявного підграфа після його збою. Також його можна використовувати при додаванні об'єкта до підграфа, індексація якого з нуля займає багато часу.
 
-The grafted subgraph can use a GraphQL schema that is not identical to the one of the base subgraph, but merely compatible with it. It has to be a valid subgraph schema in its own right, but may deviate from the base subgraph's schema in the following ways:
+Підграф, утворений в результаті може використовувати схему GraphQL, яка не є ідентичною схемі базового підграфа, а лише сумісною з нею. Вона повинна бути валідною схемою підграфа сама по собі, але може відхилятися від схеми базового підграфа у такому випадку:
 
-- It adds or removes entity types
-- It removes attributes from entity types
-- It adds nullable attributes to entity types
-- It turns non-nullable attributes into nullable attributes
-- It adds values to enums
-- It adds or removes interfaces
-- It changes for which entity types an interface is implemented
+- Додає або видаляє типи елементів
+- Видаляє атрибути з типів елементів
+- Додає до типів об'єктів атрибути, які можна скасувати
+- Перетворює атрибути, які не можна скасувати, на атрибути, які можна скасувати
+- Додає значення до переліків
+- Додає або видаляє інтерфейси
+- Визначає, для яких типів елементів реалізовано інтерфейс
 
-For more information, you can check:
+Для отримання додаткової інформації ви можете ознайомитися:
 
 - [Grafting](https://thegraph.com/docs/en/developing/creating-a-subgraph#grafting-onto-existing-subgraphs)
 
-In this tutorial, we will be covering a basic usecase. We will replace an existing contract with an identical contract (with a new address, but the same code). Then, graft the existing subgraph onto the "base" subgraph that tracks the new contract.
+У цьому матеріалі ми розглянемо базовий випадок використання. Ми замінимо наявний контракт на ідентичний (з новою адресою, але тим самим кодом).
 
-## Building an Existing Subgraph
+## Побудова наявного підграфа
 
-Building subgraphs is an essential part of The Graph, described more in depth [here](http://localhost:3000/en/cookbook/quick-start/). To be able to build and deploy the existing subgraph used in this tutorial, the following repo is provided:
+Побудова підграфів є важливою частиною The Graph, про яку ми розповімо докладніше [тут](http://localhost:3000/en/cookbook/quick-start/). Для того, щоб мати змогу побудувати та розгорнути наявний підграф, який використовується у цьому матеріалі, надається наступний репозиторій:
 
-- [Subgraph example repo](https://github.com/t-proctor/grafting-tutorial)
+- [Репозиторій з прикладом та відповідним підграфом](https://github.com/t-proctor/grafting-tutorial)
 
-> Note: The contract used in the subgraph was taken from the following [Hackathon Starterkit](https://github.com/schmidsi/hackathon-starterkit).
+> Примітка: Контракт, що використаний у підграфі, був взятий з [Hackathon Starterkit](https://github.com/schmidsi/hackathon-starterkit).
 
-## Subgraph Manifest Definition
+## Визначення маніфесту підграфів
 
-The subgraph manifest `subgraph.yaml` identifies the data sources for the subgraph, the triggers of interest, and the functions that should be run in response to those triggers. See below for an example subgraph manifest that you will use:
+Маніфест підграфів `subgraph.yaml` визначає джерела даних для підграфа, тригери, що нас цікавлять, та функції, які слід запускати у відповідь на ці тригери. Нижче наведено приклад маніфесту підграфів, який ви будете використовувати:
 
 ```yaml
 specVersion: 0.0.4
@@ -63,13 +63,13 @@ dataSources:
       file: ./src/lock.ts
 ```
 
-- The `Lock` data source is the abi and contract address we will get when we compile and deploy the contract
-- The network should correspond to a indexed network being queried. Since we're running on Goerli testnet, the network is `goerli`
-- The `mapping` section defines the triggers of interest and the functions that should be run in response to those triggers. In this case, we are listening for the `Withdrawal` event and calling the `handleWithdrawal` function when it is emitted.
+- Джерелом даних `Lock` є адреса abi та адреса контракту, яку ми отримаємо під час компіляції та розгортання контракту
+- Дана мережа повинна відповідати індексованій мережі, яку ми запитуємо. Оскільки ми працюємо в тестовій мережі Goerli, то ми використовуємо `goerli`
+- Розділ `mapping` визначає тригери, що нас цікавлять, і функції, які мають бути запущені у відповідь на ці тригери. У цьому випадку ми очікуємо на `Withdrawal` і після цього викликаємо функцію `handleWithdrawal` коли вона з'являється.
 
-## Grafting Manifest Definition
+## Визначення Grafting Manifest
 
-Grafting requires adding two new items to the original subgraph manifest:
+Графтинг вимагає додавання двох нових елементів до оригінального маніфесту підграфів:
 
 ```yaml
 ---
@@ -80,16 +80,16 @@ graft:
   block: 1502122 # block number
 ```
 
-- `features:` is a list of all used [feature names](developing/creating-a-subgraph/#experimental-features).
-- `graft:` is a map of the `base` subgraph and the block to graft on to. The `block` is the block number to start indexing from. The Graph will copy the data of the base subgraph up to and including the given block and then continue indexing the new subgraph from that block on.
+- `features:` це список всіх використаних [feature names](developing/creating-a-subgraph/#experimental-features).
+- `graft:` це схема підграфа `base` і блоку, з яким відбудеться графтинг. `block` - це номер блоку, з якого починається індексування. The Graph скопіює дані базового підграфа до заданого блоку включно, а потім продовжить індексування нового підграфа, починаючи з цього блоку.
 
-The `base` and `block` values can be found by deploying two subgraphs: one for the base indexing and one with grafting
+`base` і `block` можна знайти, розгорнувши два підграфа: один для базової індексації та один для графтингу
 
-## Deploying the Base Subgraph
+## Розгортання базового підграфа
 
-1. Go to [The Graph Studio UI](https://thegraph.com/studio/) and create a subgraph on Goerli testnet called `graft-example`
-2. Follow the directions in the `AUTH & DEPLOY` section on your subgraph page in the `graft-example` folder from the repo
-3. Once finished, verify the subgraph is indexing properly. If you run the following command in The Graph Playground
+1. Перейдіть на [The Graph Studio UI](https://thegraph.com/studio/) і створіть підграф в тестовій мережі Goerli під назвою `graft-example`
+2. Дотримуйтесь інструкцій у розділах `AUTH & DEPLOY` на сторінці вашого підграфа в папці `graft-example` з репозиторію
+3. Закінчивши, перевірте, чи правильно індексується підграф. Ви можете зробити це запустивши наступну команду у вікні The Graph Playground
 
 ```graphql
 {
@@ -101,7 +101,7 @@ The `base` and `block` values can be found by deploying two subgraphs: one for t
 }
 ```
 
-It returns something like this:
+Це повертає щось на зразок цього:
 
 ```
 {
@@ -122,16 +122,16 @@ It returns something like this:
 }
 ```
 
-Once you have verified the subgraph is indexing properly, you can quickly update the subgraph with grafting.
+Після того, як ви переконалися, що підграф індексується належним чином, ви можете швидко оновити його за допомогою графтингу.
 
-## Deploying the Grafting Subgraph
+## Розгортання підграфів для графтингу
 
-The graft replacement subgraph.yaml will have a new contract address. This could happen when you update your dapp, redeploy a contract, etc.
+При цьому процесі підрозділ subgraph.yaml матиме нову адресу контракту. Це може статися, коли ви оновлюєте децентралізований додаток, перерозподіляєте контракт тощо.
 
-1. Go to [The Graph Studio UI](https://thegraph.com/studio/) and create a subgraph on Goerli testnet called `graft-replacement`
-2. Create a new manifest. The `subgraph.yaml` for `graph-replacement` contains a different contract address and new information about how it should graft. These are the `block` of the [last event emitted](https://goerli.etherscan.io/tx/0x800c92fcc0edbd26f74e19ad058c62008a47c7789f2064023b987028343dd498) you care about by the old contract and the `base` of the old subgraph. The `base` subgraph ID is the `Deployment ID` of your original `graph-example` subgraph. You can find this in The Graph Studio UI.
-3. Follow the directions in the `AUTH & DEPLOY` section on your subgraph page in the `graft-replacement` folder from the repo
-4. Once finished, verify the subgraph is indexing properly. If you run the following command in The Graph Playground
+1. Перейдіть на [The Graph Studio UI](https://thegraph.com/studio/) і створіть підграф в тестовій мережі Goerli під назвою `graft-replacement`
+2. Створіть новий маніфест. `subgraph.yaml` для `graph-replacement` який містить іншу контрактну адресу та нову інформацію про те, як має відбуватися графтинг. Це `block` [останньої події, що відбулася](https://goerli.etherscan.io/tx/0x800c92fcc0edbd26f74e19ad058c62008a47c7789f2064023b987028343dd498), старого контракту і `base` старого підграфа `base` Subgraph ID це `Deployment ID` вашого оригінального `graph-example` підграфа. Ви можете побачити це в The Graph Studio UI.
+3. Дотримуйтесь інструкцій у розділах `AUTH & DEPLOY` на вашій сторінці підграфа в папці `graft-replacement` з репозиторію
+4. Закінчивши, перевірте, чи правильно індексується підграф. Ви можете зробити це запустивши наступну команду у вікні The Graph Playground
 
 ```graphql
 {
@@ -143,7 +143,7 @@ The graft replacement subgraph.yaml will have a new contract address. This could
 }
 ```
 
-It should return the following:
+Це має повернути наступне:
 
 ```
 {
@@ -169,18 +169,18 @@ It should return the following:
 }
 ```
 
-You can see that the `graft-replacement` subgraph is indexing from older `graph-example` data and newer data from the new contract address. The original contract emitted two `Withdrawal` events, [Event 1](https://goerli.etherscan.io/tx/0x800c92fcc0edbd26f74e19ad058c62008a47c7789f2064023b987028343dd498) and [Event 2](https://goerli.etherscan.io/address/0x4ed995e775d3629b0566d2279f058729ae6ea493). The new contract emitted one `Withdrawal` after, [Event 3](https://goerli.etherscan.io/tx/0xb4010e4c76f86762beb997a13cf020231778eaf7c64fa3b7794971a5e6b343d3). The two previously indexed transactions (Event 1 and 2) and the new transaction (Event 3) were combined together in the `graft-replacement` subgraph.
+Ви можете помітити, що `graft-replacement` та підграф індексується за допомогою старих даних `graph-example` і нових даних з нової адреси контракту. Оригінальний контракт містив дві `Withdrawal` події [1](https://goerli.etherscan.io/tx/0x800c92fcc0edbd26f74e19ad058c62008a47c7789f2064023b987028343dd498) and [2](https://goerli.etherscan.io/address/0x4ed995e775d3629b0566d2279f058729ae6ea493). Новий контракт, в свою чергу, містив одну `Withdrawal` подію [ 3](https://goerli.etherscan.io/tx/0xb4010e4c76f86762beb997a13cf020231778eaf7c64fa3b7794971a5e6b343d3). Дві раніше проіндексовані транзакції (Подія 1 і 2) і нова транзакція (Подія 3) були об'єднані в один підграф `graft-replacement`.
 
-Congrats! You have succesfully grafted a subgraph onto another subgraph.
+Вітаємо! Ви успішно здійснили графтинг одного підграфа з іншим.
 
-## Additional Resources
+## Додаткові матеріали
 
-If you want more experience with grafting, here's a few examples for popular contracts:
+Якщо ви хочете отримати більше досвіду роботи зі процесом графтингу, ось кілька прикладів популярних контрактів:
 
 - [Curve](https://github.com/messari/subgraphs/blob/master/subgraphs/curve-finance/protocols/curve-finance/templates/curve.template.yaml)
 - [ERC-721](https://github.com/messari/subgraphs/blob/master/subgraphs/erc721-metadata/subgraph.yaml)
 - [Uniswap](https://github.com/messari/subgraphs/blob/master/subgraphs/uniswap-v3/protocols/uniswap-v3/config/templates/uniswap.v3.template.yaml),
 
-To become even more of a Graph expert, consider learning about other ways to handle changes in underlying datasources. Alternatives like [Data Source Templates](developing/creating-a-subgraph/#data-source-templates) can achieve similar results
+Щоб стати ще кращим експертом в The Graph, розгляньте інші способи обробки змін в основних джерелах даних. За допомогою альтернатив по типу [Data Source Templates](developing/creating-a-subgraph/#data-source-templates) можна досягти подібних результатів
 
-> Note: A lot of material from this article was taken from the previously published [Arweave article](/cookbook/arweave/)
+> Примітка: Багато матеріалів для цієї статті було взято з раніше опублікованої [ статті від Arweave](/cookbook/arweave/)
