@@ -45,7 +45,7 @@ const BaseHeading = ({ level, id, children, ...props }: HeadingProps) => {
             transition: buildTransition('OPACITY'),
           }}
         >
-          {/* Non-breaking invisible space, to prevent a line break between the `#` and the previous word */}
+          {/* Zero-width non-breaking space, to prevent a line break between the `#` and the previous word */}
           &#8288;
           <LinkInline href={`#${id}`}>
             <span aria-hidden="true">#</span>

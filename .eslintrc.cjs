@@ -1,3 +1,5 @@
+const isVSCode = Boolean(process.env.VSCODE_PID)
+
 /** @type {import('eslint').Linter.Config} */
 module.exports = {
   root: true,
@@ -12,15 +14,14 @@ module.exports = {
     {
       files: ['*.{ts,tsx}'],
       parserOptions: {
-        project: 'tsconfig.json',
-      },
-      rules: {
-        '@typescript-eslint/no-unsafe-argument': 'off', // lots of false positives for some reason
+        project: true,
       },
     },
     {
-      // We lint only english pages because other languages will be translated from english
-      files: ['website/pages/en/**/*.{md,mdx}'],
+      // Only lint the English pages because the Markdown for the other languages is auto-generated from English (via Crowdin).
+      // But include all languages when running the ESLint extension in VS Code (in case the user has "eslint.validate": ["mdx"]),
+      // otherwise there will be random errors since the non-English files don't match any ruleset.
+      files: [`website/pages/${!isVSCode ? 'en/' : ''}**/*.{md,mdx}`],
       parser: 'eslint-mdx',
       processor: 'mdx/remark',
       plugins: ['mdx'],

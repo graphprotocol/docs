@@ -6,10 +6,10 @@ import { MDXProvider } from 'nextra/mdx'
 import { Item, normalizePages } from 'nextra/normalize-pages'
 import { ReactElement, useCallback, useMemo } from 'react'
 import { useSet } from 'react-use'
-import { ThemeUIStyleObject } from 'theme-ui'
+import { ThemeUICSSObject } from 'theme-ui'
 
 import { Divider, DividerProps, Flex, Icon, Spacing, useI18n } from '@edgeandnode/gds'
-import { NPSForm } from '@edgeandnode/organisms'
+import { NPSForm } from '@edgeandnode/go'
 
 import {
   Callout,
@@ -54,7 +54,7 @@ const mdxComponents = {
   VideoEmbed,
 }
 
-const mdxStyles: ThemeUIStyleObject = {
+const mdxStyles: ThemeUICSSObject = {
   overflowWrap: 'break-word',
   'img + em': {
     mt: Spacing['16px'],
