@@ -42,6 +42,7 @@ export default {
     title: 'Indexing',
   },
   'operating-graph-node': '',
+  'chain-integration-overview': '',
   'new-chain-integration': 'Integrating New Networks',
   firehose: 'Firehose',
   graphcast: '',
