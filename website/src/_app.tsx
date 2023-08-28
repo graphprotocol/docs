@@ -19,8 +19,8 @@ import { supportedLocales, translations, useI18n } from '@/i18n'
 import '@edgeandnode/gds/dist/style.css'
 import '@docsearch/css'
 
-const internalAbsoluteHrefRegex = /^(((https?:)?\/\/((www|staging)\.)?thegraph\.com)?\/docs\/|\/(?=[^/]))/
-const externalHrefRegex = /^([a-zA-Z0-9+.-]+:)?\/\//
+const internalAbsoluteHrefRegex = /^(((https?:)?\/\/((www|staging)\.)?thegraph\.com)?\/docs\/|\/(?!\/))/i
+const externalHrefRegex = /^(?!(https?:)?\/\/((www|staging)\.)?thegraph\.com)([a-zA-Z0-9+.-]+:)?\/\//i
 
 function MyAppWithLocale({ Component, pageProps, router }: AppProps) {
   const hideLocaleSwitcher = pageProps.hideLocaleSwitcher ?? false
@@ -53,14 +53,12 @@ function MyAppWithLocale({ Component, pageProps, router }: AppProps) {
       <GDSProvider
         clientLink={NextLink}
         mapButtonOrLinkProps={<T extends ButtonOrLinkProps>(props: T) => {
-          let href = typeof props.href === 'object' ? props.href.href : props.href
-
-          // Don't do anything if it's not a link, or if it's a link to an anchor on the same page
-          if (!props.href || !href || href.startsWith('#')) {
+          // Only continue if `href` is set to a string that is not an anchor on the same page
+          if (!props.href || typeof props.href === 'object' || props.href.startsWith('#')) {
             return props
           }
 
-          let target = props.target
+          let { href, target } = props
 
           // If the link is internal and absolute, ensure `href` is relative to the base path (i.e. starts with `/`,
           // not `/docs/` or `https://...`) and includes a locale (by prepending the current locale if there is none)
