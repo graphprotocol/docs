@@ -74,7 +74,6 @@ export default () =>
       items: {
         'design-principles': 'Design Principles',
         'firehose-starter': 'Firehose Acme',
-        'new-blockchains': 'New Blockchains',
         'why-integrate-the-firehose': 'Why Integrate the Firehose?',
       },
     },
