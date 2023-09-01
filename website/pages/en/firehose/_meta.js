@@ -74,7 +74,7 @@ export default () =>
       items: {
         'design-principles': 'Design Principles',
         'firehose-starter': 'Firehose Acme',
-        'why-integrate-the-firehose': 'Why Integrate the Firehose?',
+        'benefits': 'Why Integrate the Firehose',
       },
     },
     references: {
