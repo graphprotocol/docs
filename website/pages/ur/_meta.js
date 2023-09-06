@@ -13,9 +13,9 @@ export default {
   managing: 'انتظام',
   querying: 'استفسار کرنا',
   cookbook: 'ہدایت نامہ',
+  'release-notes': 'ریلیز نوٹس اور اپ گریڈ گائیڈز',
   '###3': {
     type: 'heading',
     title: 'انڈیکسنگ',
   },
-  'release-notes': 'ریلیز نوٹس اور اپ گریڈ گائیڈز',
 }
