@@ -1,5 +1,4 @@
 export default {
-  'quick-start': '',
   'base-testnet': '',
   'upgrading-a-subgraph': '',
   'subgraph-debug-forking': '',
