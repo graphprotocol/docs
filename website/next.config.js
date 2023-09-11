@@ -1,6 +1,7 @@
 import nextra from 'nextra'
 
 const env = {
+  ENVIRONMENT: process.env.ENVIRONMENT,
   BASE_PATH: process.env.NODE_ENV === 'production' ? '/docs' : '',
   ALGOLIA_API_KEY: process.env.ALGOLIA_API_KEY,
   ALGOLIA_APP_ID: process.env.ALGOLIA_APP_ID,
