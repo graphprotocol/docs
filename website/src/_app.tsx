@@ -11,8 +11,8 @@ import {
   I18nProvider,
   Layout,
   LocaleSwitcher,
-  NavigationMarketing,
 } from '@edgeandnode/gds'
+import { GlobalHeader } from '@edgeandnode/go'
 
 import { supportedLocales, translations, useI18n } from '@/i18n'
 
@@ -24,7 +24,6 @@ const externalHrefRegex = /^(?!(https?:)?\/\/((www|staging)\.)?thegraph\.com)([a
 
 function MyAppWithLocale({ Component, pageProps, router }: AppProps) {
   const hideLocaleSwitcher = pageProps.hideLocaleSwitcher ?? false
-  const localeSwitcher = hideLocaleSwitcher ? null : <LocaleSwitcher key="localeSwitcher" />
   const { locale, extractLocaleFromPath } = useI18n()
 
   return (
@@ -51,6 +50,7 @@ function MyAppWithLocale({ Component, pageProps, router }: AppProps) {
         }}
       />
       <GDSProvider
+        clientRouter={router}
         clientLink={NextLink}
         mapButtonOrLinkProps={<T extends ButtonOrLinkProps>(props: T) => {
           // Only continue if `href` is set to a string that is not an anchor on the same page
@@ -93,7 +93,7 @@ function MyAppWithLocale({ Component, pageProps, router }: AppProps) {
                 left: 0,
                 right: 0,
                 minHeight: '768px',
-                backgroundImage: `url('${process.env.BASE_PATH}/img/page-background.png')`,
+                backgroundImage: `url('${process.env.BASE_PATH ?? ''}/img/page-background.png')`,
                 backgroundSize: 'cover',
                 backgroundPosition: 'center top',
                 '@media (min-width: 1440px)': {
@@ -103,16 +103,12 @@ function MyAppWithLocale({ Component, pageProps, router }: AppProps) {
             />
           </div>
           <Layout
-            headerSticky
-            headerContent={
-              <NavigationMarketing
-                activeRoute="/docs"
-                NextLink={NextLink}
-                rightAlignItems={localeSwitcher ? [localeSwitcher] : undefined}
-              />
+            header={
+              <GlobalHeader activeProduct="THE_GRAPH" basePath="/docs" showLocaleSwitcher={!hideLocaleSwitcher} />
             }
+            headerSticky
             mainContainer
-            footerContent={<Footer localeSwitcher={localeSwitcher} />}
+            footer={<Footer localeSwitcher={!hideLocaleSwitcher ? <LocaleSwitcher /> : null} />}
           >
             <Component {...pageProps} />
           </Layout>

@@ -154,7 +154,6 @@ export default function NextraLayout({ children, pageOpts, pageProps }: NextraTh
           <div
             sx={{
               display: ['none', null, null, 'block'],
-              mt: 'calc(-1 * var(--gds-header-height) * var(--gds-header-fixed))',
               marginInlineStart: '-8px',
               marginInlineEnd: '16px',
             }}
@@ -214,7 +213,6 @@ export default function NextraLayout({ children, pageOpts, pageProps }: NextraTh
           <div
             sx={{
               display: ['none', null, null, 'block'],
-              mt: 'calc(-1 * var(--gds-header-height) * var(--gds-header-fixed))',
               marginInlineStart: '32px',
               marginInlineEnd: '-8px',
             }}

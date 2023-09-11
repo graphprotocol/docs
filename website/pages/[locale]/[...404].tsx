@@ -18,7 +18,7 @@ export const getStaticProps: GetStaticProps = () => {
   return { props: {} }
 }
 
-const NotFoundPage: NextPage = () => {
+const Page: NextPage = () => {
   const { t } = useI18n()
 
   return (
@@ -32,4 +32,4 @@ const NotFoundPage: NextPage = () => {
   )
 }
 
-export default NotFoundPage
+export default Page
