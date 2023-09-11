@@ -32,7 +32,7 @@ export default {
     type: 'heading',
     title: 'Substreams',
   },
-  substreams: 'Substreams',
+  substreams: '',
   '---4': {
     type: 'separator',
   },
