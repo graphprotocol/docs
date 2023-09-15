@@ -1,46 +1,46 @@
 ---
-title: Creating a Subgraph
+title: Skapa en Subgraph
 ---
 
-A subgraph extracts data from a blockchain, processing it and storing it so that it can be easily queried via GraphQL.
+En subgraph extraherar data från en blockchain, bearbetar den och lagrar den så att den kan frågas enkelt via GraphQL.
 
 ![Defining a Subgraph](/img/defining-a-subgraph.png)
 
-The subgraph definition consists of a few files:
+Subgraph-definitionen består av några filer:
 
-- `subgraph.yaml`: a YAML file containing the subgraph manifest
+- `subgraph.yaml`: en YAML-fil som innehåller subgraph-manifestet
 
-- `schema.graphql`: a GraphQL schema that defines what data is stored for your subgraph, and how to query it via GraphQL
+- `schema.graphql`: ett GraphQL-schema som definierar vilka data som lagras för din subgraph och hur man frågar efter det via GraphQL
 
-- `AssemblyScript Mappings`: [AssemblyScript](https://github.com/AssemblyScript/assemblyscript) code that translates from the event data to the entities defined in your schema (e.g. `mapping.ts` in this tutorial)
+- `AssemblyScript Mappings`: [AssemblyScript](https://github.com/AssemblyScript/assemblyscript) kod som översätter från händelsedata till de enheter som är definierade i ditt schema (t.ex. `mapping.ts` i den här handledningen)
 
-> In order to use your subgraph on The Graph's decentralized network, you will need to [create an API key](/deploying/subgraph-studio-faqs/#2-how-do-i-create-an-api-key). It is recommended that you [add signal](/network/curating/#how-to-signal) to your subgraph with at least [10,000 GRT](/network-transition-faq/#how-can-i-ensure-that-my-subgraph-will-be-picked-up-by-indexer-on-the-graph-network).
+> För att använda din subgraph på The Graphs decentraliserade nätverk måste du [skapa en API-nyckel](/deploying/subgraph-studio-faqs/#2-how-do-i-create-an-api-key). Det rekommenderas att du [lägger till signal](/network/curating/#how-to-signal) till din subgraph med minst [10 000 GRT](/network-transition-faq/#how-can-i-ensure-that-my-subgraph-will-be-picked-up-by-indexer-on-the-graph-network).
 
-Before you go into detail about the contents of the manifest file, you need to install the [Graph CLI](https://github.com/graphprotocol/graph-cli) which you will need to build and deploy a subgraph.
+Innan du går in på detaljer om manifest filens innehåll måste du installera [Graph CLI](https://github.com/graphprotocol/graph-cli), som du kommer att behöva för att bygga och distribuera en subgraph.
 
-## Install the Graph CLI
+## Installera Graph CLI
 
-The Graph CLI is written in JavaScript, and you will need to install either `yarn` or `npm` to use it; it is assumed that you have yarn in what follows.
+Graph CLI är skrivet i JavaScript, och du måste installera antingen `yarn` eller `npm` för att använda det; det antas att du har yarn i det följande.
 
-Once you have `yarn`, install the Graph CLI by running
+När du har `yarn`, installera Graph CLI genom att köra
 
-**Install with yarn:**
+**Installera med yarn:**
 
 ```bash
 yarn global add @graphprotocol/graph-cli
 ```
 
-**Install with npm:**
+**Installera med npm:**
 
 ```bash
 npm install -g @graphprotocol/graph-cli
 ```
 
-Once installed, the `graph init` command can be used to set up a new subgraph project, either from an existing contract or from an example subgraph. This command can be used to create a subgraph on the Subgraph Studio by passing in `graph init --product subgraph-studio`. If you already have a smart contract deployed to your preferred network, bootstrapping a new subgraph from that contract can be a good way to get started.
+Efter installationen kan kommandot `graph init` användas för att skapa ett nytt subgrafprojekt, antingen från ett befintligt kontrakt eller från en exempelsubgraf. Detta kommando kan användas för att skapa en subgraf på Subgraph Studio genom att skicka in `graph init --product subgraph-studio`. Om du redan har ett smart kontrakt distribuerat till ditt föredragna nätverk kan det vara ett bra sätt att komma igång med att starta en ny subgraf från det kontraktet.
 
-## From An Existing Contract
+## Från ett Befintligt kontrakt
 
-The following command creates a subgraph that indexes all events of an existing contract. It attempts to fetch the contract ABI from Etherscan and falls back to requesting a local file path. If any of the optional arguments are missing, it takes you through an interactive form.
+Följande kommando skapar en subgraf som indexerar alla händelser i ett befintligt kontrakt. Det försöker hämta kontraktets ABI från Etherscan och faller tillbaka till att begära en lokal filsökväg. Om något av de valfria argumenten saknas tar det dig genom ett interaktivt formulär.
 
 ```sh
 graph init \
@@ -51,49 +51,49 @@ graph init \
   <SUBGRAPH_SLUG> [<DIRECTORY>]
 ```
 
-The `<SUBGRAPH_SLUG>` is the ID of your subgraph in Subgraph Studio, it can be found on your subgraph details page.
+`<SUBGRAPH_SLUG>` är ID för din subgraf i Subgraf Studio, det kan hittas på din subgraf detaljsida.
 
-## From An Example Subgraph
+## Från ett Exempel Subgraph
 
-The second mode `graph init` supports is creating a new project from an example subgraph. The following command does this:
+Det andra läget som `graph init` stöder är att skapa ett nytt projekt från ett exempel på en undergraf. Följande kommando gör detta:
 
 ```sh
 graph init --studio <SUBGRAPH_SLUG>
 ```
 
-The example subgraph is based on the Gravity contract by Dani Grant that manages user avatars and emits `NewGravatar` or `UpdateGravatar` events whenever avatars are created or updated. The subgraph handles these events by writing `Gravatar` entities to the Graph Node store and ensuring these are updated according to the events. The following sections will go over the files that make up the subgraph manifest for this example.
+Exempelsubgrafen är baserad på Gravity-kontraktet av Dani Grant som hanterar användares avatarer och avger händelserna `NewGravatar` eller `UpdateGravatar` när avatarer skapas eller uppdateras. Subgrafen hanterar dessa händelser genom att skriva `Gravatar`-entiteter till Graph Node-förvaringen och säkerställer att dessa uppdateras enligt händelserna. Följande avsnitt kommer att gå igenom filerna som utgör subgrafens manifest för detta exempel.
 
-## Add New dataSources To An Existing Subgraph
+## Lägg till nya datakällor i en befintlig Subgraf
 
-Since `v0.31.0` the `graph-cli` supports adding new dataSources to an existing subgraph through the `graph add` command.
+Från och med `v0.31.0` stöder `graph-cli` att lägga till nya datakällor i en befintlig subgraf genom kommandot `graph add`.
 
 ```sh
 graph add <address> [<subgraph-manifest default: "./subgraph.yaml">]
 
 Options:
 
-      --abi <path>              Path to the contract ABI (default: download from Etherscan)
-      --contract-name           Name of the contract (default: Contract)
-      --merge-entities          Whether to merge entities with the same name (default: false)
-      --network-file <path>     Networks config file path (default: "./networks.json")
+      --abi <path>              Sökväg till kontraktets ABI (standard: nedladdning från Etherscan)
+      --contract-name           Kontraktets namn (standard: Kontrakt)
+      --merge-entities          Om enheter med samma namn ska slås samman (standard: false)
+      --network-file <path>     Sökväg till konfigurationsfil för nätverk (standard: "./networks.json")
 ```
 
-The `add` command will fetch the ABI from Etherscan (unless an ABI path is specified with the `--abi` option), and will create a new `dataSource` in the same way that `graph init` command creates a `dataSource` `--from-contract`, updating the schema and mappings accordingly.
+Kommandot `add` hämtar ABI: en från Etherscan (om inte en ABI-sökväg anges med alternativet `--abi`) och skapar en ny `dataSource` på samma sätt som kommandot `graph init` skapar en `dataSource` `--from-contract`, och uppdaterar schemat och mappningarna därefter.
 
-The `--merge-entities` option identifies how the developer would like to handle `entity` and `event` name conflicts:
+Alternativet `--merge-entities` identifierar hur utvecklaren vill hantera konflikter med `entity`- och `event`-namn:
 
-- If `true`: the new `dataSource` should use existing `eventHandlers` & `entities`.
-- If `false`: a new entity & event handler should be created with `${dataSourceName}{EventName}`.
+- Om `true`: den nya `dataSource` ska använda befintliga `eventHandlers` & `entities`.
+- Om `false`: en ny entitet och händelsehanterare ska skapas med `${dataSourceName}{EventName}`.
 
-The contract `address` will be written to the `networks.json` for the relevant network.
+Kontraktsadressen kommer att skrivas till `networks.json` för den relevanta nätverket.
 
-> **Note:** When using the interactive cli, after successfully running `graph init`, you'll be prompted to add a new `dataSource`.
+> **Obs:** När du använder det interaktiva kommandoraden, efter att ha kört `graph init` framgångsrikt, kommer du att bli ombedd att lägga till en ny `dataSource`.
 
-## The Subgraph Manifest
+## Subgrafens manifest
 
-The subgraph manifest `subgraph.yaml` defines the smart contracts your subgraph indexes, which events from these contracts to pay attention to, and how to map event data to entities that Graph Node stores and allows to query. The full specification for subgraph manifests can be found [here](https://github.com/graphprotocol/graph-node/blob/master/docs/subgraph-manifest.md).
+Subgrafens manifest `subgraph.yaml` definierar de smarta kontrakten som din subgraf indexerar, vilka händelser från dessa kontrakt som ska uppmärksammas och hur man kartlägger händelsedata till entiteter som Graph Node lagrar och tillåter att fråga. Den fullständiga specifikationen för subgrafens manifest finns [här](https://github.com/graphprotocol/graph-node/blob/master/docs/subgraph-manifest.md).
 
-For the example subgraph, `subgraph.yaml` is:
+För exempelsubgrafen är `subgraph.yaml`:
 
 ```yaml
 specVersion: 0.0.4
@@ -106,7 +106,7 @@ dataSources:
     name: Gravity
     network: mainnet
     source:
-      address: '0x2E645469f354BB4F5c8a05B3b30A929361cf77eC'
+      address: "0x2E645469f354BB4F5c8a05B3b30A929361cf77eC"
       abi: Gravity
       startBlock: 6175244
     mapping:
@@ -134,23 +134,23 @@ dataSources:
       file: ./src/mapping.ts
 ```
 
-The important entries to update for the manifest are:
+De viktiga posterna att uppdatera för manifestet är:
 
-- `description`: a human-readable description of what the subgraph is. This description is displayed by the Graph Explorer when the subgraph is deployed to the Hosted Service.
+- `description`: en läsbar beskrivning av vad subgrafen är. Denna beskrivning visas av Graph Explorer när subgrafen distribueras till Hosted Service.
 
-- `repository`: the URL of the repository where the subgraph manifest can be found. This is also displayed by The Graph Explorer.
+- `repository`: URL till lagringsplatsen där subgrafens manifest kan hittas. Detta visas också av The Graph Explorer.
 
-- `features`: a list of all used [feature](#experimental-features) names.
+- `features`: en lista över alla använda [funktions](#experimentella-funktioner) namn.
 
-- `dataSources.source`: the address of the smart contract the subgraph sources, and the ABI of the smart contract to use. The address is optional; omitting it allows to index matching events from all contracts.
+- `dataSources.source`: adressen till det smarta kontraktet som subgrafen hämtar data från, och ABI för det smarta kontraktet att använda. Adressen är valfri; att utelämna den gör det möjligt att indexera matchande händelser från alla kontrakt.
 
-- `dataSources.source.startBlock`: the optional number of the block that the data source starts indexing from. In most cases, we suggest using the block in which the contract was created.
+- `dataSources.source.startBlock`: det valfria blocknummer som datakällan börjar indexera från. I de flesta fall föreslår vi att du använder det block där kontraktet skapades.
 
-- `dataSources.mapping.entities`: the entities that the data source writes to the store. The schema for each entity is defined in the schema.graphql file.
+- `dataSources.mapping.entities`: de entiteter som datakällan skriver till lagringsplatsen. Schemat för varje entitet definieras i filen schema.graphql.
 
-- `dataSources.mapping.abis`: one or more named ABI files for the source contract as well as any other smart contracts that you interact with from within the mappings.
+- `dataSources.mapping.abis`: en eller flera namngivna ABI-filer för källkontraktet samt eventuella andra smarta kontrakt som du interagerar med från inom mappningarna.
 
-- `dataSources.mapping.eventHandlers`: lists the smart contract events this subgraph reacts to and the handlers in the mapping—./src/mapping.ts in the example—that transform these events into entities in the store.
+- `dataSources.mapping.eventHandlers`: listar de smarta kontraktshändelser som denna subgraf reagerar på och hanterare i mappningen—./src/mapping.ts i exemplet - som omvandlar dessa händelser till entiteter i lagringsplatsen.
 
 - `dataSources.mapping.callHandlers`: lists the smart contract functions this subgraph reacts to and handlers in the mapping that transform the inputs and outputs to function calls into entities in the store.
 
@@ -239,7 +239,7 @@ We support the following scalars in our GraphQL API:
 | Type         | Description                                                                                                                                                                          |
 | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `Bytes`      | Byte array, represented as a hexadecimal string. Commonly used for Ethereum hashes and addresses.                                                                                    |
-| `String`     | Scalar for `string` values. Null characters are not supported and are automatically removed.                                                                                         |
+| `Sträng`     | Scalar for `string` values. Null characters are not supported and are automatically removed.                                                                                         |
 | `Boolean`    | Scalar for `boolean` values.                                                                                                                                                         |
 | `Int`        | The GraphQL spec defines `Int` to have a size of 32 bytes.                                                                                                                           |
 | `BigInt`     | Large integers. Used for Ethereum's `uint32`, `int64`, `uint64`, ..., `uint256` types. Note: Everything below `uint32`, such as `int32`, `uint24` or `int8` is represented as `i32`. |
@@ -1218,6 +1218,6 @@ Handlers for File Data Sources cannot be in files which import `eth_call` contra
 
 [Crypto Coven Subgraph migration](https://github.com/azf20/cryptocoven-api/tree/file-data-sources-refactor)
 
-#### References
+#### Referenser
 
 [GIP File Data Sources](https://forum.thegraph.com/t/gip-file-data-sources/2721)
