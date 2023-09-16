@@ -20,8 +20,8 @@ export const MDXLayoutOutline = () => {
       sx={{
         zIndex: 1,
         position: 'sticky',
-        top: 'calc(var(--gds-header-height) - var(--gds-header-hidden-amount))',
-        maxHeight: 'calc(100vh - (var(--gds-header-height) - var(--gds-header-hidden-amount)))',
+        top: 'var(--gds-header-height-visible)',
+        maxHeight: 'calc(100vh - var(--gds-header-height-visible))',
         px: Spacing['8px'],
         py: Spacing['32px'],
         overflowY: 'auto',
