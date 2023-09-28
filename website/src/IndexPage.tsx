@@ -27,7 +27,7 @@ export function Intro() {
         {
           title: t('index.shortcuts.quickStart.title'),
           description: t('index.shortcuts.quickStart.description'),
-          href: '/cookbook/quick-start',
+          href: '/quick-start',
         },
         {
           title: t('index.shortcuts.developerFaqs.title'),
@@ -47,7 +47,7 @@ export function Intro() {
         {
           title: t('index.shortcuts.migrateFromHostedService.title'),
           description: t('index.shortcuts.migrateFromHostedService.description'),
-          href: '/cookbook/migrating-a-subgraph',
+          href: '/cookbook/upgrading-a-subgraph',
         },
       ].map((card) => (
         <li key={card.href} sx={{ aspectRatio: '258/136' }}>
