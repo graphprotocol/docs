@@ -58,11 +58,6 @@ export default withNextra({
       permanent: true,
     },
     {
-      source: '/en/firehose/',
-      destination: '/en/firehose/README/',
-      permanent: false,
-    },
-    {
       source: '/en/querying/graph-client/',
       destination: '/en/querying/graph-client/README/',
       permanent: false,

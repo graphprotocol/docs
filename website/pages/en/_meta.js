@@ -43,7 +43,7 @@ export default {
   'operating-graph-node': '',
   'chain-integration-overview': '',
   'new-chain-integration': 'Integrating New Networks',
-  firehose: 'Firehose',
+  firehose: '',
   graphcast: '',
   'mips-faqs': '',
 }
