@@ -1,26 +1,26 @@
 ---
-title: Quick and Easy Subgraph Debugging Using Forks
+title: Snabb och enkel subgraf felsökning med gafflar
 ---
 
-As with many systems processing large amounts of data, The Graph's Indexers (Graph nodes) may take quite some time to sync-up your subgraph with the target blockchain. The discrepancy between quick changes with the purpose of debugging and long wait times needed for indexing is extremely counterproductive and we are well aware of that. This is why we are introducing **subgraph forking**, developed by [LimeChain](https://limechain.tech/), and in this article I will show you how this feature can be used to substantially speed-up subgraph debugging!
+Som med många system som behandlar stora mängder data, kan det ta ganska lång tid för The Graphs indexerare (Graph-noder) att synkronisera din subgraf med målblockkedjan. Diskrepansen mellan snabba ändringar med syftet att felsöka och långa väntetider som behövs för indexering är extremt kontraproduktiv och vi är väl medvetna om det. Det är därför vi introducerar **subgraf forking**, utvecklad av [LimeChain](https://limechain.tech/), och i den här artikeln Jag kommer att visa dig hur den här funktionen kan användas för att avsevärt påskynda subgraffelsökning!
 
-## Ok, what is it?
+## Ok, vad är det?
 
-**Subgraph forking** is the process of lazily fetching entities from _another_ subgraph's store (usually a remote one).
+**Subgraf forking** är processen att lätt hämta entiteter från _en annan_ subgrafs butik (vanligtvis en avlägsen sådan).
 
-In the context of debugging, **subgraph forking** allows you to debug your failed subgraph at block _X_ without needing to wait to sync-up to block _X_.
+I samband med felsökning låter **subgraf forking** dig felsöka din misslyckade subgraf i block _X_ utan att behöva vänta för att synkronisera för att blockera _X_.
 
-## What?! How?
+## Vad?! Hur?
 
-When you deploy a subgraph to a remote Graph node for indexing and it fails at block _X_, the good news is that the Graph node will still serve GraphQL queries using its store, which is synced-up to block _X_. That's great! This means we can take advantage of this "up-to-date" store to fix the bugs arising when indexing block _X_.
+När du distribuerar en subgraf till en avlägsen Graph-nod för indexering och den misslyckas vid block _X_, är den goda nyheten att Graph-noden fortfarande kommer att betjäna GraphQL-frågor med hjälp av sitt lager, som synkroniseras för att blockera _X_. Toppen! Det betyder att vi kan dra nytta av denna "up-to-date" butik för att fixa de buggar som uppstår vid indexering av block _X_.
 
-In a nutshell, we are going to _fork the failing subgraph_ from a remote Graph node that is guaranteed to have the subgraph indexed up to block _X_ in order to provide the locally deployed subgraph being debugged at block _X_ an up-to-date view of the indexing state.
+I ett nötskal, vi ska _gaffla den misslyckade subgrafen_ från en avlägsen Graph-nod som garanterat har subgrafen indexerad upp till blocket *X* för att ge den lokalt distribuerade subgrafen som felsöks i blocket _X_ en uppdaterad vy av indexeringstillståndet.
 
-## Please, show me some code!
+## Snälla, visa mig lite kod!
 
-To stay focused on subgraph debugging, let's keep things simple and run along with the [example-subgraph](https://github.com/graphprotocol/graph-tooling/tree/main/examples/ethereum-gravatar) indexing the Ethereum Gravity smart contract.
+För att behålla fokus på subgraffelsökning, låt oss hålla saker och ting enkla och köra tillsammans med [exempel-undergraf](https://github.com/graphprotocol/graph-tooling/tree/main/examples/ethereum-gravatar) indexera Ethereum Gravity smarta kontrakt.
 
-Here are the handlers defined for indexing `Gravatar`s, with no bugs whatsoever:
+Här är hanterarna definierade för att indexera `Gravatar`s, utan några som helst buggar:
 
 ```tsx
 export function handleNewGravatar(event: NewGravatar): void {
@@ -44,43 +44,43 @@ export function handleUpdatedGravatar(event: UpdatedGravatar): void {
 }
 ```
 
-Oops, how unfortunate, when I deploy my perfect looking subgraph to the [Hosted Service](https://thegraph.com/hosted-service/) it fails with the _"Gravatar not found!"_ error.
+Hoppsan, vad olyckligt, när jag distribuerar min perfekt snygga subgraf till [värdtjänsten](https://thegraph.com/hosted-service/) misslyckas den med _ "Gravatar inte hittat!"_ fel.
 
-The usual way to attempt a fix is:
+Det vanliga sättet att försöka fixa är:
 
-1. Make a change in the mappings source, which you believe will solve the issue (while I know it won't).
-2. Re-deploy the subgraph to the [Hosted Service](https://thegraph.com/hosted-service/) (or another remote Graph node).
-3. Wait for it to sync-up.
-4. If it breaks again go back to 1, otherwise: Hooray!
+1. Gör en förändring i mappningskällan, som du tror kommer att lösa problemet (även om jag vet att det inte kommer att göra det).
+2. Distribuera om subgrafen till [värdtjänsten](https://thegraph.com/hosted-service/) (eller en annan fjärrnod för Graph).
+3. Vänta tills det synkroniseras.
+4. Om den går sönder igen gå tillbaka till 1, annars: Hurra!
 
-It is indeed pretty familiar to an ordinary debug process, but there is one step that horribly slows down the process: _3. Wait for it to sync-up._
+Det är faktiskt ganska bekant med en vanlig felsökningsprocess, men det finns ett steg som saktar ner processen fruktansvärt: _3. Vänta tills det synkroniseras._
 
-Using **subgraph forking** we can essentially eliminate this step. Here is how it looks:
+Genom att använda **subgraf forking** kan vi i princip eliminera detta steg. Så här ser det ut:
 
-0. Spin-up a local Graph node with the **_appropriate fork-base_** set.
-1. Make a change in the mappings source, which you believe will solve the issue.
-2. Deploy to the local Graph node, **_forking the failing subgraph_** and **_starting from the problematic block_**.
-3. If it breaks again, go back to 1, otherwise: Hooray!
+0. Snurra upp en lokal Graf nod med **_lämplig gaffelbas_**.
+1. Gör en ändring i mappningskällan som du tror kommer att lösa problemet.
+2. Distribuera till den lokala Graf-noden, **_fördelning av den misslyckade subgrafen_** och ** _med början från det problematiska blocket_**.
+3. Om den går sönder igen, gå tillbaka till 1, annars: Hurra!
 
-Now, you may have 2 questions:
+Nu kanske du har 2 frågor:
 
-1. fork-base what???
-2. Forking who?!
+1. gaffelbas vad???
+2. Forking vem?!
 
-And I answer:
+Och jag svarar:
 
-1. `fork-base` is the "base" URL, such that when the _subgraph id_ is appended the resulting URL (`<fork-base>/<subgraph-id>`) is a valid GraphQL endpoint for the subgraph's store.
-2. Forking is easy, no need to sweat:
+1. `fork-base` är "bas"-URL, så att när _subgraf id_ läggs till den resulterande URL-adressen (`<gaffel- base>/<subgraph-id>`) är en giltig GraphQL slutpunkt för subgrafens arkiv.
+2. Gaffling är lätt, du behöver inte svettas:
 
 ```bash
 $ graph deploy <subgraph-name> --debug-fork <subgraph-id> --ipfs http://localhost:5001 --node http://localhost:8020
 ```
 
-Also, don't forget to set the `dataSources.source.startBlock` field in the subgraph manifest to the number of the problematic block, so you can skip indexing unnecessary blocks and take advantage of the fork!
+Glöm inte heller att ställa in `dataSources.source.startBlock`-fältet i undergraf manifestet till numret på det problematiska blocket, så att du kan hoppa över indexering av onödiga block och dra fördel av gaffeln!
 
-So, here is what I do:
+Så här är vad jag gör:
 
-0. I spin-up a local graph node ([here is how to do it](https://github.com/graphprotocol/graph-node#running-a-local-graph-node)) with the `fork-base` option set to: `https://api.thegraph.com/subgraphs/id/`, since I will fork a subgraph, the buggy one I deployed earlier, from the [HostedService](https://thegraph.com/hosted-service/).
+0. Jag skapar en lokal grafnod ([så här gör du](https://github.com/graphprotocol/graph-node#running-a-local-graph-node)) med alternativet `fork-base` inställt på: `https://api.thegraph.com/subgraphs/id/`, eftersom jag kommer att dela en subgraf, den buggy jag distribuerade tidigare, från [HostedService](https://thegraph.com/hosted-service/).
 
 ```
 $ cargo run -p graph-node --release -- \
@@ -90,13 +90,13 @@ $ cargo run -p graph-node --release -- \
     --fork-base https://api.thegraph.com/subgraphs/id/
 ```
 
-1. After careful inspection I notice that there is a mismatch in the `id` representations used when indexing `Gravatar`s in my two handlers. While `handleNewGravatar` converts it to a hex (`event.params.id.toHex()`), `handleUpdatedGravatar` uses an int32 (`event.params.id.toI32()`) which causes the `handleUpdatedGravatar` to panic with "Gravatar not found!". I make them both convert the `id` to a hex.
-2. After I made the changes I deploy my subgraph to the local Graph node, **_forking the failing subgraph_** and setting `dataSources.source.startBlock` to `6190343` in `subgraph.yaml`:
+1. Efter noggrann inspektion märker jag att det finns en oöverensstämmelse i `id`-representationerna som används vid indexering av `Gravatar`s i mina två hanterare. Medan `handleNewGravatar` konverterar den till en hex (`event.params.id.toHex()`), använder `handleUpdatedGravatar` en int32 (`händelse. params.id.toI32()`) vilket gör att `handleUpdatedGravatar` får panik med "Gravatar not found!". Jag får dem båda att konvertera `id` till en hexadecimal.
+2. Efter att jag gjort ändringarna distribuerar jag min subgraf till den lokala Graf noden, **_fördelar den misslyckade subgrafen_** och ställer in `dataSources.source.startBlock` till `6190343` i `subgraph.yaml`:
 
 ```bash
 $ graph deploy gravity --debug-fork QmNp169tKvomnH3cPXTfGg4ZEhAHA6kEq5oy1XDqAxqHmW --ipfs http://localhost:5001 --node http://localhost:8020
 ```
 
-3. I inspect the logs produced by the local Graph node and, Hooray!, everything seems to be working.
-4. I deploy my now bug-free subgraph to a remote Graph node and live happily ever after! (no potatoes tho)
-5. The end...
+3. Jag inspekterar loggarna som produceras av den lokala Graf-noden och, hurra!, allt verkar fungera.
+4. Jag distribuerar min nu felfria subgraf till en avlägsen Graf-nod och lever lycklig i alla sina dagar! (ingen potatis dock)
+5. Slutet...
