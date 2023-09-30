@@ -1,5 +1,5 @@
 ---
-title: Operating Graph Node
+title: Drift av Graf Node
 ---
 
 Graf Node är komponenten som indexerar subgraffar och gör den resulterande datan tillgänglig för förfrågan via en GraphQL API. Som sådan är den central för indexeringsstacken, och korrekt drift av Graph Node är avgörande för att driva en framgångsrik indexerare.
@@ -245,101 +245,101 @@ Indexer-repositoriet tillhandahåller en [exempel Grafana-konfiguration](https:/
 
 Kommandot graphman ingår i de officiella containrarna, och du kan köra det med docker exen in i din graph-node-container. Det kräver en `config.toml`-fil.
 
-Full documentation of `graphman` commands is available in the Graph Node repository. See \[/docs/graphman.md\] (https://github.com/graphprotocol/graph-node/blob/master/docs/graphman.md) in the Graph Node `/docs`
+Fullständig dokumentation om `graphman`-kommandon finns i Graph Node-repositoriet. Se \[/docs/graphman.md\] (https://github.com/graphprotocol/graph-node/blob/master/docs/graphman.md) i Graph Node `/docs`
 
-### Working with subgraphs
+### Arbeta med undergrafer
 
-#### Indexing status API
+#### Indexerings status API
 
-Available on port 8030/graphql by default, the indexing status API exposes a range of methods for checking indexing status for different subgraphs, checking proofs of indexing, inspecting subgraph features and more.
+Tillgänglig som standard på port 8030/graphql, exponerar indexeringstatus-API: en en rad metoder för att kontrollera indexeringstatus för olika subgrafer, kontrollera bevis för indexering, inspektera subgrafegenskaper och mer.
 
-The full schema is available [here](https://github.com/graphprotocol/graph-node/blob/master/server/index-node/src/schema.graphql).
+Hela schemat är tillgängligt [här](https://github.com/graphprotocol/graph-node/blob/master/server/index-node/src/schema.graphql).
 
-#### Indexing performance
+#### Prestanda för indexering
 
-There are three separate parts of the indexing process:
+Det finns tre separata delar av indexeringsprocessen:
 
-- Fetching events of interest from the provider
-- Processing events in order with the appropriate handlers (this can involve calling the chain for state, and fetching data from the store)
-- Writing the resulting data to the store
+- Hämta intressanta händelser från leverantören
+- Bearbeta händelser i rätt ordning med lämpliga hanterare (detta kan innebära att kedjan anropas för status och att data hämtas från lagret)
+- Skriva de resulterande data till butiken
 
-These stages are pipelined (i.e. they can be executed in parallel), but they are dependent on one another. Where subgraphs are slow to index, the underlying cause will depend on the specific subgraph.
+Dessa stadier är pipelinerade (det vill säga de kan utföras parallellt), men de är beroende av varandra. När subgrafer är långsamma att indexera beror orsaken på den specifika subgrafgen.
 
-Common causes of indexing slowness:
+Vanliga orsaker till indexeringslångsamhet:
 
-- Time taken to find relevant events from the chain (call handlers in particular can be slow, given the reliance on `trace_filter`)
-- Making large numbers of `eth_calls` as part of handlers
-- A large amount of store interaction during execution
-- A large amount of data to save to the store
-- A large number of events to process
-- Slow database connection time, for crowded nodes
-- The provider itself falling behind the chain head
-- Slowness in fetching new receipts at the chain head from the provider
+- Tidsåtgång för att hitta relevanta händelser från kedjan (särskilt anropshanterare kan vara långsamma, eftersom de förlitar sig på `trace_filter`)
+- Göra ett stort antal `eth_calls` som en del av handläggare
+- En stor mängd interaktion med butiken under körningen
+- En stor mängd data att spara i butiken
+- Ett stort antal evenemang att bearbeta
+- Långsam databasanslutningstid, för överbelastade noder
+- Leverantören själv faller bakom kedjehuvudet
+- Långsamhet vid hämtning av nya kvitton vid kedjehuvudet från leverantören
 
-Subgraph indexing metrics can help diagnose the root cause of indexing slowness. In some cases, the problem lies with the subgraph itself, but in others, improved network providers, reduced database contention and other configuration improvements can markedly improve indexing performance.
+Subgrafindexeringsmetriker kan hjälpa till att diagnostisera grunden till indexeringens långsamhet. I vissa fall ligger problemet med subgrafgenen själv, men i andra fall kan förbättrade nätverksleverantörer, minskad databaskonflikt och andra konfigurationsförbättringar markant förbättra indexeringens prestanda.
 
-#### Failed subgraphs
+#### Undergrafer som misslyckats
 
-During indexing subgraphs might fail, if they encounter data that is unexpected, some component not working as expected, or if there is some bug in the event handlers or configuration. There are two general types of failure:
+Under indexering kan subgrafer misslyckas om de stöter på data som är oväntad, om någon komponent inte fungerar som förväntat eller om det finns något fel i händelsehanterare eller konfiguration. Det finns två allmänna typer av misslyckande:
 
-- Deterministic failures: these are failures which will not be resolved with retries
-- Non-deterministic failures: these might be down to issues with the provider, or some unexpected Graph Node error. When a non-deterministic failure occurs, Graph Node will retry the failing handlers, backing off over time.
+- Deterministiska fel: detta är fel som inte kommer att lösas med retries
+- Icke-deterministiska fel: dessa kan bero på problem med leverantören eller något oväntat Graph Node-fel. När ett icke-deterministiskt fel inträffar kommer Graph Node att försöka igen med de felande hanterarna och backa över tid.
 
-In some cases a failure might be resolvable by the indexer (for example if the error is a result of not having the right kind of provider, adding the required provider will allow indexing to continue). However in others, a change in the subgraph code is required.
+I vissa fall kan ett misslyckande vara lösbart av indexören (till exempel om felet beror på att det inte finns rätt typ av leverantör, kommer att tillåta indexering att fortsätta om den nödvändiga leverantören läggs till). Men i andra fall krävs en ändring i subgrafkoden.
 
-> Deterministic failures are considered "final", with a Proof of Indexing generated for the failing block, while non-determinstic failures are not, as the subgraph may manage to "unfail" and continue indexing. In some cases, the non-deterministic label is incorrect, and the subgraph will never overcome the error; such failures should be reported as issues on the Graph Node repository.
+> Deterministiska misslyckanden betraktas som "slutliga", med en Proof of Indexing genererad för det misslyckande blocket, medan icke-deterministiska misslyckanden inte är det, eftersom subgrafen kanske lyckas "avmisslyckas" och fortsätta indexeringen. I vissa fall är den icke-deterministiska etiketten felaktig, och subgrafen kommer aldrig att övervinna felet; sådana misslyckanden bör rapporteras som problem i Graf Node-repositoriet.
 
-#### Block and call cache
+#### Blockera och anropa cache
 
-Graph Node caches certain data in the store in order to save refetching from the provider. Blocks are cached, as are the results of `eth_calls` (the latter being cached as of a specific block). This caching can dramatically increase indexing speed during "resyncing" of a slightly altered subgraph.
+Graf Node cachar viss data i lagringen för att undvika att hämtas från leverantören. Block cachas, liksom resultaten av `eth_calls` (det senare cachas från en specifik block). Denna cachning kan dramatiskt öka indexeringens hastighet under "omjustering" av en något ändrad subgraf.
 
 However, in some instances, if an Ethereum node has provided incorrect data for some period, that can make its way into the cache, leading to incorrect data or failed subgraphs. In this case indexers can use `graphman` to clear the poisoned cache, and then rewind the affected subgraphs, which will then fetch fresh data from the (hopefully) healthy provider.
 
-If a block cache inconsistency is suspected, such as a tx receipt missing event:
+Om en blockcache-inkonsekvens misstänks, som att en tx-kvitto saknar händelse:
 
-1. `graphman chain list` to find the chain name.
-2. `graphman chain check-blocks <CHAIN> by-number <NUMBER>` will check if the cached block matches the provider, and deletes the block from the cache if it doesn’t.
-   1. If there is a difference, it may be safer to truncate the whole cache with `graphman chain truncate <CHAIN>`.
-   2. If the block matches the provider, then the issue can be debugged directly against the provider.
+1. `graphman chain list` för att hitta kedjans namn.
+2. `graphman chain check-blocks <CHAIN> by-number <NUMBER>` kontrollerar om det cachade blocket matchar leverantören, och tar bort blocket från cacheminnet om det inte gör det.
+   1. Om det finns en skillnad kan det vara säkrare att trunkera hela cacheminnet med `graphman chain truncate <CHAIN>`.
+   2. Om blocket matchar leverantören kan problemet felsökas direkt mot leverantören.
 
-#### Querying issues and errors
+#### Fråga efter problem och fel
 
-Once a subgraph has been indexed, indexers can expect to serve queries via the subgraph's dedicated query endpoint. If the indexer is hoping to serve significant query volume, a dedicated query node is recommended, and in case of very high query volumes, indexers may want to configure replica shards so that queries don't impact the indexing process.
+När en subgraf har indexeras kan indexörer förvänta sig att servera frågor via subgrafens dedikerade frågendpunkt. Om indexören hoppas på att betjäna en betydande mängd frågor rekommenderas en dedikerad frågenod, och vid mycket höga frågevolymer kan indexörer vilja konfigurera replikskivor så att frågor inte påverkar indexeringsprocessen.
 
 However, even with a dedicated query node and replicas, certain queries can take a long time to execute, and in some cases increase memory usage and negatively impact the query time for other users.
 
-There is not one "silver bullet", but a range of tools for preventing, diagnosing and dealing with slow queries.
+Det finns inte en "silverkula", men en rad verktyg för att förebygga, diagnostisera och hantera långsamma frågor.
 
-##### Query caching
+##### Fråge cachning
 
-Graph Node caches GraphQL queries by default, which can significantly reduce database load. This can be further configured with the `GRAPH_QUERY_CACHE_BLOCKS` and `GRAPH_QUERY_CACHE_MAX_MEM` settings - read more [here](https://github.com/graphprotocol/graph-node/blob/master/docs/environment-variables.md#graphql-caching).
+Graf Node cachar GraphQL-frågor som standard, vilket kan minska belastningen på databasen avsevärt. Detta kan konfigureras ytterligare med inställningarna `GRAPH_QUERY_CACHE_BLOCKS` och `GRAPH_QUERY_CACHE_MAX_MEM` - läs mer [här](https://github.com/graphprotocol/graph-node/blob/master/docs/environment-variables.md#graphql-caching).
 
-##### Analysing queries
+##### Analyserar frågor
 
-Problematic queries most often surface in one of two ways. In some cases, users themselves report that a given query is slow. In that case the challenge is to diagnose the reason for the slowness - whether it is a general issue, or specific to that subgraph or query. And then of course to resolve it, if possible.
+Problematiska frågor dyker oftast upp på ett av två sätt. I vissa fall rapporterar användare själva att en viss fråga är långsam. I det fallet är utmaningen att diagnostisera orsaken till långsamheten - om det är ett generellt problem eller specifikt för den subgraf eller fråga. Och naturligtvis att lösa det om det är möjligt.
 
-In other cases, the trigger might be high memory usage on a query node, in which case the challenge is first to identify the query causing the issue.
+I andra fall kan utlösaren vara hög minnesanvändning på en frågenod, i vilket fall utmaningen först är att identifiera frågan som orsakar problemet.
 
-Indexers can use [qlog](https://github.com/graphprotocol/qlog/) to process and summarize Graph Node's query logs. `GRAPH_LOG_QUERY_TIMING` can also be enabled to help identify and debug slow queries.
+Indexörer kan använda [qlog](https://github.com/graphprotocol/qlog/) för att bearbeta och sammanfatta Graph Nodes frågeloggar. `GRAPH_LOG_QUERY_TIMING` kan också aktiveras för att hjälpa till att identifiera och felsöka långsamma frågor.
 
-Given a slow query, indexers have a few options. Of course they can alter their cost model, to significantly increase the cost of sending the problematic query. This may result in a reduction in the frequency of that query. However this often doesn't resolve the root cause of the issue.
+Med en långsam fråga har indexörer några alternativ. Självklart kan de ändra sin kostnadsmodell för att kraftigt öka kostnaden för att skicka den problematiska frågan. Detta kan resultera i att frekvensen av den frågan minskar. Men det löser ofta inte grunden till problemet.
 
-##### Account-like optimisation
+##### Kontoliknande optimering
 
-Database tables that store entities seem to generally come in two varieties: 'transaction-like', where entities, once created, are never updated, i.e., they store something akin to a list of financial transactions, and 'account-like' where entities are updated very often, i.e., they store something like financial accounts that get modified every time a transaction is recorded. Account-like tables are characterized by the fact that they contain a large number of entity versions, but relatively few distinct entities. Often, in such tables the number of distinct entities is 1% of the total number of rows (entity versions)
+Databastabeller som lagrar enheter verkar generellt komma i två varianter: 'transaktionsliknande', där enheter, när de väl är skapade, aldrig uppdateras, dvs. de lagrar något liknande en lista över finansiella transaktioner, och 'konto-liknande', där enheter uppdateras mycket ofta, dvs. de lagrar något som finansiella konton som ändras varje gång en transaktion registreras. Tabeller med konto-liknande tabeller karakteriseras av att de innehåller ett stort antal enhetsversioner, men relativt få distinkta enheter. Ofta är antalet distinkta enheter i sådana tabeller 1% av det totala antalet rader (enhetsversioner)
 
-For account-like tables, `graph-node` can generate queries that take advantage of details of how Postgres ends up storing data with such a high rate of change, namely that all of the versions for recent blocks are in a small subsection of the overall storage for such a table.
+För konto-liknande tabeller kan `graph-node` generera frågor som utnyttjar detaljer om hur Postgres slutligen lagrar data med en så hög förändringsfrekvens, nämligen att alla versioner för nyligen block är i en liten del av den övergripande lagringen för en sådan tabell.
 
-The command `graphman stats show <sgdNNNN`> shows, for each entity type/table in a deployment, how many distinct entities, and how many entity versions each table contains. That data is based on Postgres-internal estimates, and is therefore necessarily imprecise, and can be off by an order of magnitude. A `-1` in the `entities` column means that Postgres believes that all rows contain a distinct entity.
+Kommandot `graphman stats show <sgdNNNN`> visar, för varje enhetstyp/tabell i en deployment, hur många distinkta enheter och hur många enhetsversioner varje tabell innehåller. Den data är baserad på Postgres-interna uppskattningar och är därför nödvändigtvis oprecis och kan vara fel med en ordning av storlek. Ett `-1` i kolumnen `entities` innebär att Postgres tror att alla rader innehåller en distinkt enhet.
 
-In general, tables where the number of distinct entities are less than 1% of the total number of rows/entity versions are good candidates for the account-like optimization. When the output of `graphman stats show` indicates that a table might benefit from this optimization, running `graphman stats show <sgdNNN> <table>` will perform a full count of the table - that can be slow, but gives a precise measure of the ratio of distinct entities to overall entity versions.
+I allmänhet är tabeller där antalet distinkta enheter är mindre än 1% av det totala antalet rader/enhetsversioner bra kandidater för konto-liknande optimering. När utdata från `graphman stats show` indikerar att en tabell kan dra nytta av denna optimering, kommer att köra `graphman stats show <sgdNNN> <table>` att utföra en full räkning av tabellen - det kan vara långsamt, men ger en precis mätning av förhållandet mellan distinkta enheter till totalt enhetsversioner.
 
-Once a table has been determined to be account-like, running `graphman stats account-like <sgdNNN>.<table>` will turn on the account-like optimization for queries against that table. The optimization can be turned off again with `graphman stats account-like --clear <sgdNNN>.<table>` It takes up to 5 minutes for query nodes to notice that the optimization has been turned on or off. After turning the optimization on, it is necessary to verify that the change does not in fact make queries slower for that table. If you have configured Grafana to monitor Postgres, slow queries would show up in `pg_stat_activity`in large numbers, taking several seconds. In that case, the optimization needs to be turned off again.
+När en tabell har fastställts som konto-liknande, kommer att köra `graphman stats account-like <sgdNNN>.<table>` att aktivera konto-liknande optimeringen för frågor mot den tabellen. Optimeringen kan stängas av igen med `graphman stats account-like --clear <sgdNNN>.<table>` Det tar upp till 5 minuter för frågenoder att märka att optimeringen har aktiverats eller stängts av. Efter att ha aktiverat optimeringen är det nödvändigt att verifiera att ändringen faktiskt inte gör att frågor blir långsammare för den tabellen. Om du har konfigurerat Grafana för att övervaka Postgres, skulle långsamma frågor dyka upp i `pg_stat_activity` i stora mängder, ta flera sekunder. I det fallet måste optimeringen stängas av igen.
 
-For Uniswap-like subgraphs, the `pair` and `token` tables are prime candidates for this optimization, and can have a dramatic effect on database load.
+För subgrafer som liknar Uniswap är `pair` och `token` tabeller primära kandidater för denna optimering och kan ha en dramatisk effekt på databasbelastningen.
 
-#### Removing subgraphs
+#### Ta bort undergrafer
 
-> This is new functionality, which will be available in Graph Node 0.29.x
+> Detta är ny funktionalitet, som kommer att vara tillgänglig i Graf Node 0.29.x
 
-At some point an indexer might want to remove a given subgraph. This can be easily done via `graphman drop`, which deletes a deployment and all it's indexed data. The deployment can be specified as either a subgraph name, an IPFS hash `Qm..`, or the database namespace `sgdNNN`. Further documentation is available [here](https://github.com/graphprotocol/graph-node/blob/master/docs/graphman.md#-drop).
+Vid någon tidpunkt kan en indexer vilja ta bort en given subgraf. Detta kan enkelt göras via `graphman drop`, som raderar en distribution och all dess indexerade data. Distributionen kan specificeras antingen som ett subgrafnamn, en IPFS-hash `Qm..`, Eller databasens namnrymd `sgdNNN`. Ytterligare dokumentation finns tillgänglig [här](https://github.com/graphprotocol/graph-node/blob/master/docs/graphman.md#-drop).
