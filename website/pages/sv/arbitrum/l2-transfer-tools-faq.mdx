@@ -16,386 +16,396 @@ Dessa verktyg kommer att kräva att du följer en specifik uppsättning steg ber
 
 Om du använder en [EOA](https://ethereum.org/en/developers/docs/accounts/#types-of-account)-plånbok kan du använda samma adress. Om din Ethereum huvudnät plånbok är en kontrakt (t.ex. en multisig) måste du specificera en [Arbitrum plånboksadress](/arbitrum/arbitrum-faq/#what-do-i-need-to-do-to-use-the-graph-on-l2) där din överföring kommer att skickas. Kontrollera adressen noggrant eftersom felaktiga överföringar till felaktig adress kan resultera i permanent förlust. Om du vill använda en multisig på L2 måste du se till att du implementerar en multisig-kontrakt på Arbitrum One.
 
-### Vad händer om jag inte avslutar min överföring på 7 dagar?
+Wallets on EVM blockchains like Ethereum and Arbitrum are a pair of keys (public and private), that you create without any need to interact with the blockchain. So any wallet that was created for Ethereum will also work on Arbitrum without having to do anything else.
 
-L2 Överföringsverktygen använder Arbitrums nativa mekanism för att skicka meddelanden från L1 till L2. Denna mekanism kallas en "retryable ticket" och används av alla nativa token-broar, inklusive Arbitrum GRT-broen. Du kan läsa mer om retryable tickets i [Arbitrums dokumentation](https://docs.arbitrum.io/arbos/l1-to-l2-messaging).
+The exception is with smart contract wallets like multisigs: these are smart contracts that are deployed separately on each chain, and get their address when they are deployed. If a multisig was deployed to Ethereum, it won't exist with the same address on Arbitrum. A new multisig must be created first on Arbitrum, and may get a different address.
 
-När du överför dina tillgångar (subgraf, insats, delegation eller kurering) till L2 skickas ett meddelande genom Arbitrum GRT-broen, vilket skapar en retryable ticket i L2. Överföringsverktyget inkluderar ett visst ETH-värde i transaktionen, som används för att 1) betala för att skapa biljetten och 2) betala för gasen för att utföra biljetten i L2. Men eftersom gaspriserna kan variera fram till att biljetten är redo att utföras i L2 kan det hända att detta automatiska utförsel försöket misslyckas. När det händer kommer Arbitrum-broen att behålla retryable ticket i livet i upp till 7 dagar, och vem som helst kan försöka "inlösa" biljetten (vilket kräver en plånbok med en viss mängd ETH broad till Arbitrum).
+### What happens if I don’t finish my transfer in 7 days?
 
-Detta är vad vi kallar "Bekräfta"-steget i alla överföringsverktygen - det kommer att köras automatiskt i de flesta fall, eftersom den automatiska utförandet oftast är framgångsrikt, men det är viktigt att du kontrollerar att det gick igenom. Om det inte lyckas och det inte finns några framgångsrika försök på 7 dagar kommer Arbitrum-broen att kasta biljetten, och dina tillgångar (subgraf, insats, delegation eller kurering) kommer att gå förlorade och kan inte återvinnas. The Graphs kärnutvecklare har ett övervakningssystem på plats för att upptäcka dessa situationer och försöka lösa biljetterna innan det är för sent, men det är i slutändan ditt ansvar att se till att din överföring är klar i tid. Om du har svårt att bekräfta din transaktion, kontakta oss via [detta formulär](https://noteforms.com/forms/notionform-l2-transfer-tooling-issues-0ogqfu?notionforms=1&utm_source=notionforms), och kärnutvecklarna kommer att vara där för att hjälpa dig.
+The L2 Transfer Tools use Arbitrum’s native mechanism to send messages from L1 to L2. This mechanism is called a “retryable ticket” and is used by all native token bridges, including the Arbitrum GRT bridge. You can read more about retryable tickets in the [Arbitrum docs](https://docs.arbitrum.io/arbos/l1-to-l2-messaging).
 
-### Jag startade min överföring av delegation/insats/kurering, och jag är osäker på om den lyckades komma till L2, hur kan jag bekräfta att den överfördes korrekt?
+When you transfer your assets (subgraph, stake, delegation or curation) to L2, a message is sent through the Arbitrum GRT bridge which creates a retryable ticket in L2. The transfer tool includes some ETH value in the transaction, that is used to 1) pay to create the ticket and 2) pay for the gas to execute the ticket in L2. However, because gas prices might vary in the time until the ticket is ready to execute in L2, it is possible that this auto-execution attempt fails. When that happens, the Arbitrum bridge will keep the retryable ticket alive for up to 7 days, and anyone can retry “redeeming” the ticket (which requires a wallet with some ETH bridged to Arbitrum).
 
-Om du inte ser en banner på din profil som ber dig att slutföra överföringen är det troligt att transaktionen säkert nådde L2, och ingen ytterligare åtgärd behövs. Om du är osäker kan du kontrollera om Utforskaren visar din delegation, insats eller kurering på Arbitrum One.
+This is what we call the “Confirm” step in all the transfer tools - it will run automatically in most cases, as the auto-execution is most often successful, but it is important that you check back to make sure it went through. If it doesn’t succeed and there are no successful retries in 7 days, the Arbitrum bridge will discard the ticket, and your assets (subgraph, stake, delegation or curation) will be lost and can’t be recovered. The Graph core devs have a monitoring system in place to detect these situations and try to redeem the tickets before it’s too late, but it is ultimately your responsibility to ensure your transfer is completed in time. If you’re having trouble confirming your transaction, please reach out using [this form](https://noteforms.com/forms/notionform-l2-transfer-tooling-issues-0ogqfu?notionforms=1&utm_source=notionforms) and core devs will be there help you.
 
-Om du har L1-transaktionshashen (som du kan hitta genom att titta på de senaste transaktionerna i din plånbok) kan du också bekräfta om "retryable ticket" som bar meddelandet till L2 blev inlöst här: https://retryable-dashboard.arbitrum.io/ - om det automatiska inlösandet misslyckades kan du också ansluta din plånbok där och lösa in det. Var säker på att kärnutvecklarna också övervakar meddelanden som fastnar och kommer att försöka lösa dem innan de går ut.
+### I started my delegation/stake/curation transfer and I'm not sure if it made it through to L2, how can I confirm that it was transferred correctly?
 
-## Subgraf Överföring
+If you don't see a banner on your profile asking you to finish the transfer, then it's likely the transaction made it safely to L2 and no more action is needed. If in doubt, you can check if Explorer shows your delegation, stake or curation on Arbitrum One.
 
-### Hur överför jag min subgraf?
+If you have the L1 transaction hash (which you can find by looking at the recent transactions in your wallet), you can also confirm if the "retryable ticket" that carried the message to L2 was redeemed here: https://retryable-dashboard.arbitrum.io/ - if the auto-redeem failed, you can also connect your wallet there and redeem it. Rest assured that core devs are also monitoring for messages that get stuck, and will attempt to redeem them before they expire.
+
+## Subgraph Transfer
+
+### How do I transfer my subgraph?
 
 <VideoEmbed youtube="R8_vz4lx2Co" />
 
-För att överföra din subgraf måste du slutföra följande steg:
+To transfer your subgraph, you will need to complete the following steps:
 
-1.  Initiera överföringen på Ethereum huvudnätet
+1.  Initiate the transfer on Ethereum mainnet
 
-2.  Vänta 20 minuter på bekräftelse
+2.  Wait 20 minutes for confirmation
 
-3.  Bekräfta subgraföverföringen på Arbitrum\*
+3.  Confirm subgraph transfer on Arbitrum\*
 
-4.  Slutför publiceringen av subgraf på Arbitrum
+4.  Finish publishing subgraph on Arbitrum
 
-5.  Uppdatera fråge-URL (rekommenderas)
+5.  Update Query URL (recommended)
 
-\*Observera att du måste bekräfta överföringen inom 7 dagar, annars kan din subgraf gå förlorad. I de flesta fall kommer detta steg att köras automatiskt, men en manuell bekräftelse kan behövas om det finns en gasprisspike på Arbitrum. Om det uppstår några problem under denna process finns det resurser för att hjälpa: kontakta support på support@thegraph.com eller på [Discord](https://discord.gg/graphprotocol).
+\*Note that you must confirm the transfer within 7 days otherwise your subgraph may be lost. In most cases, this step will run automatically, but a manual confirmation may be needed if there is a gas price spike on Arbitrum. If there are any issues during this process, there will be resources to help: contact support at support@thegraph.com or on [Discord](https://discord.gg/graphprotocol).
 
-### Var ska jag initiera min överföring från?
+### Where should I initiate my transfer from?
 
-Du kan initiera din överföring från [Subgraph Studio](https://thegraph.com/studio/), [Utforskaren,](https://thegraph.com/explorer) eller från vilken som helst subgrafsdetaljsida. Klicka på knappen "Överför subgraf" på subgrafsdetaljsidan för att starta överföringen.
+You can initiate your transfer from the [Subgraph Studio](https://thegraph.com/studio/), [Explorer,](https://thegraph.com/explorer) or any subgraph details page. Click the "Transfer Subgraph" button in the subgraph details page to start the transfer.
 
-### Hur länge måste jag vänta tills min subgraf överförs
+### How long do I need to wait until my subgraph is transferred
 
-Överföringstiden tar ungefär 20 minuter. Arbitrum-broen arbetar i bakgrunden för att slutföra broöverföringen automatiskt. I vissa fall kan gasavgifterna öka, och du måste bekräfta transaktionen igen.
+The transfer time takes approximately 20 minutes. The Arbitrum bridge is working in the background to complete the bridge transfer automatically. In some cases, gas costs may spike and you will need to confirm the transaction again.
 
-### Kommer min subgraf fortfarande vara sökbar efter att jag har överfört den till L2?
+### Will my subgraph still be discoverable after I transfer it to L2?
 
-Din subgraf kommer endast vara sökbar på det nätverk där den är publicerad. Till exempel, om din subgraf är på Arbitrum One, kan du endast hitta den i Utforskaren på Arbitrum One och kommer inte att kunna hitta den på Ethereum. Se till att du har valt Arbitrum One i nätverksväxlaren högst upp på sidan för att säkerställa att du är på rätt nätverk.  Efter överföringen kommer L1-subgrafen att visas som föråldrad.
+Your subgraph will only be discoverable on the network it is published to. For example, if your subgraph is on Arbitrum One, then you can only find it in Explorer on Arbitrum One and will not be able to find it on Ethereum. Please ensure that you have Arbitrum One selected in the network switcher at the top of the page to ensure you are on the correct network.  After the transfer, the L1 subgraph will appear as deprecated.
 
-### Måste min subgraf vara publicerad för att kunna överföra den?
+### Does my subgraph need to be published to transfer it?
 
-För att dra nytta av subgraföverföringsverktyget måste din subgraf redan vara publicerad på Ethereum huvudnät och måste ha något kureringssignal ägt av plånboken som äger subgrafen. Om din subgraf inte är publicerad rekommenderas det att du helt enkelt publicerar direkt på Arbitrum One - de associerade gasavgifterna kommer att vara betydligt lägre. Om du vill överföra en publicerad subgraf men ägarplånboken inte har kuraterat något signal på den kan du signalera en liten mängd (t.ex. 1 GRT) från den plånboken; se till att välja "automigrering" signal.
+To take advantage of the subgraph transfer tool, your subgraph must be already published to Ethereum mainnet and must have some curation signal owned by the wallet that owns the subgraph. If your subgraph is not published, it is recommended you simply publish directly on Arbitrum One - the associated gas fees will be considerably lower. If you want to transfer a published subgraph but the owner account hasn't curated any signal on it, you can signal a small amount (e.g. 1 GRT) from that account; make sure to choose "auto-migrating" signal.
 
-### Vad händer med Ethereum huvudnätversionen av min subgraf efter att jag har överfört till Arbitrum?
+### What happens to the Ethereum mainnet version of my subgraph after I transfer to Arbitrum?
 
-Efter att ha överfört din subgraf till Arbitrum kommer Ethereum huvudnätversionen att föråldras. Vi rekommenderar att du uppdaterar din fråge-URL inom 48 timmar. Det finns dock en nådperiod som gör att din huvudnät-URL fungerar så att stöd från tredjeparts-dappar kan uppdateras.
+After transferring your subgraph to Arbitrum, the Ethereum mainnet version will be deprecated. We recommend you update your query URL within 48 hours. However, there is a grace period in place that keeps your mainnet URL functioning so that any third-party dapp support can be updated.
 
-### Behöver jag också publicera om på Arbitrum efter överföringen?
+### After I transfer, do I also need to re-publish on Arbitrum?
 
-Efter de 20 minuters överföringsfönstret måste du bekräfta överföringen med en transaktion i användargränssnittet för att slutföra överföringen, men överföringsverktyget kommer att guida dig genom detta. Din L1-endpunkt kommer att fortsätta att stödjas under överföringsfönstret och en nådperiod efter. Det rekommenderas att du uppdaterar din endpunkt när det passar dig.
+After the 20 minute transfer window, you will need to confirm the transfer with a transaction in the UI to finish the transfer, but the transfer tool will guide you through this. Your L1 endpoint will continue to be supported during the transfer window and a grace period after. It is encouraged that you update your endpoint when convenient for you.
 
-### Kommer min endpunkt att ha nertid under ompubliceringen?
+### Will my endpoint experience downtime while re-publishing?
 
-Det är osannolikt, men det är möjligt att uppleva en kort nertid beroende på vilka indexeringar som stöder subgrafen på L1 och om de fortsätter att indexera den tills subgrafen är fullt stödd på L2.
+It is unlikely, but possible to experience a brief downtime depending on which Indexers are supporting the subgraph on L1 and whether they keep indexing it until the subgraph is fully supported on L2.
 
-### Är publicering och versionering densamma på L2 som på Ethereum huvudnätet?
+### Is publishing and versioning the same on L2 as Ethereum Ethereum mainnet?
 
-Ja. Välj Arbitrum One som ditt publicerade nätverk när du publicerar i Subgraph Studio. I studion kommer den senaste ändpunkt att vara tillgänglig, som pekar till den senaste uppdaterade versionen av subgrafen.
+Yes. Select Arbitrum One as your published network when publishing in Subgraph Studio. In the Studio, the latest endpoint will be available which points to the latest updated version of the subgraph.
 
-### Kommer min subgrafs kurering att flyttas med min subgraf?
+### Will my subgraph's curation move with my subgraph?
 
-Om du har valt automatisk migreringssignal kommer 100% av din egen kurering att flyttas med din subgraf till Arbitrum One. All subgrafens kureringssignal kommer att konverteras till GRT vid överföringstillfället, och GRT som motsvarar din kureringssignal kommer att användas för att prägla signal på L2-subgrafen.
+If you've chosen auto-migrating signal, 100% of your own curation will move with your subgraph to Arbitrum One. All of the subgraph's curation signal will be converted to GRT at the time of the transfer, and the GRT corresponding to your curation signal will be used to mint signal on the L2 subgraph.
 
-Andra kuratorer kan välja att ta tillbaka sin del av GRT eller också överföra den till L2 för att prägla signal på samma subgraf.
+Other Curators can choose whether to withdraw their fraction of GRT, or also transfer it to L2 to mint signal on the same subgraph.
 
-### Kan jag flytta min subgraf tillbaka till Ethereum huvudnätet efter överföringen?
+### Can I move my subgraph back to Ethereum mainnet after I transfer?
 
-När den är överförd kommer din Ethereum huvudnätversion av denna subgraf att vara föråldrad. Om du vill flytta tillbaka till huvudnätet måste du omimplementera och publicera på huvudnätet igen. Dock avråds starkt från att flytta tillbaka till Ethereum huvudnätet eftersom indexbelöningar till sist kommer att fördelas helt på Arbitrum One.
+Once transferred, your Ethereum mainnet version of this subgraph will be deprecated. If you would like to move back to mainnet, you will need to redeploy and publish back to mainnet. However, transferring back to Ethereum mainnet is strongly discouraged as indexing rewards will eventually be distributed entirely on Arbitrum One.
 
-### Varför behöver jag bridged ETH för att slutföra min överföring?
+### Why do I need bridged ETH to complete my transfer?
 
-Gasavgifter på Arbitrum One betalas med bridged ETH (dvs. ETH som har broats till Arbitrum One). Gasavgifterna är dock betydligt lägre jämfört med Ethereum huvudnätet.
+Gas fees on Arbitrum One are paid using bridged ETH (i.e. ETH that has been bridged to Arbitrum One). However, the gas fees are significantly lower when compared to Ethereum mainnet.
 
-## Delegering
+## Delegation
 
-### Hur överför jag min delegation?
+### How do I transfer my delegation?
 
 <VideoEmbed youtube="CAAQCKw5eV4" />
 
-För att överföra din delegation måste du följa följande steg:
+To transfer your delegation, you will need to complete the following steps:
 
-1.  Initiera överföring av delegationen på Ethereum huvudnät
-2.  Vänta 20 minuter för bekräftelse
-3.  Bekräfta överföring av delegationen på Arbitrum
+1.  Initiate delegation transfer on Ethereum mainnet
+2.  Wait 20 minutes for confirmation
+3.  Confirm delegation transfer on Arbitrum
 
-\*\*\*\*Du måste bekräfta transaktionen för att slutföra överföringen av delegationen på Arbitrum. Detta steg måste slutföras inom 7 dagar, annars kan delegationen gå förlorad. I de flesta fall kommer detta steg att köras automatiskt, men manuell bekräftelse kan behövas om det uppstår en gasprisökning på Arbitrum. Om det uppstår problem under denna process finns det resurser för att hjälpa: kontakta support på support@thegraph.com eller på [Discord](https://discord.gg/graphprotocol).
+\*\*\*\*You must confirm the transaction to complete the delegation transfer on Arbitrum. This step must be completed within 7 days or the delegation could be lost. In most cases, this step will run automatically, but a manual confirmation may be needed if there is a gas price spike on Arbitrum. If there are any issues during this process, there will be resources to help: contact support at support@thegraph.com or on [Discord](https://discord.gg/graphprotocol).
 
-### Vad händer med mina belöningar om jag inleder en överföring med en öppen tilldelning på Ethereum huvudnät?
+### What happens to my rewards if I initiate a transfer with an open allocation on Ethereum mainnet?
 
-Om Indexern som du delegerar till fortfarande är aktiv på L1, kommer du att förlora eventuella delegationsbelöningar från öppna tilldelningar på Ethereum huvudnät när du överför till Arbitrum. Det innebär att du kommer att förlora belöningar från högst den senaste 28-dagarsperioden. Om du tajmar överföringen precis efter att Indexern har stängt tilldelningarna kan du se till att detta är den minsta möjliga mängd. Om du har en kommunikationskanal med dina Indexer(s), överväg att diskutera med dem för att hitta den bästa tiden att göra din överföring.
+If the Indexer to whom you're delegating is still operating on L1, when you transfer to Arbitrum you will forfeit any delegation rewards from open allocations on Ethereum mainnet. This means that you will lose the rewards from, at most, the last 28-day period. If you time the transfer right after the Indexer has closed allocations you can make sure this is the least amount possible. If you have a communication channel with your Indexer(s), consider discussing with them to find the best time to do your transfer.
 
-### Vad händer om Indexern som jag för närvarande delegerar till inte finns på Arbitrum One?
+### What happens if the Indexer I currently delegate to isn't on Arbitrum One?
 
-Överföringsverktyget för L2 kommer endast att aktiveras om Indexern som du har delegerat till har överfört sin egen insats till Arbitrum.
+The L2 transfer tool will only be enabled if the Indexer you have delegated to has transferred their own stake to Arbitrum.
 
-### Har delegatörer möjlighet att delegera till en annan Indexer?
+### Do Delegators have the option to delegate to another Indexer?
 
-Om du vill delegera till en annan Indexerare kan du överföra till samma Indexerare på Arbitrum, sedan sluta delegera och vänta på upptiningstiden. Efter detta kan du välja en annan aktiv Indexerare att delegera till.
+If you wish to delegate to another Indexer, you can transfer to the same Indexer on Arbitrum, then undelegate and wait for the thawing period. After this, you can select another active Indexer to delegate to.
 
-### Vad gör jag om jag inte kan hitta Indexern som jag delegerar till på L2?
+### What if I can't find the Indexer I'm delegating to on L2?
 
-Överföringsverktyget för L2 kommer automatiskt att upptäcka Indexern som du tidigare har delegerat till.
+The L2 transfer tool will automatically detect the Indexer you previously delegated to.
 
-### Kan jag blanda min delegation över flera nya Indexers istället för den tidigare Indexern?
+### Will I be able to mix and match or 'spread' my delegation across new or several Indexers instead of the prior Indexer?
 
-Överföringsverktyget för L2 kommer alltid att flytta din delegation till samma Indexer som du tidigare delegerat till. När du har flyttat till L2 kan du sluta delegera, vänta på upptiningstiden och bestämma om du vill dela upp din delegation.
+The L2 transfer tool will always move your delegation to the same Indexer you delegated to previously. Once you have moved to L2, you can undelegate, wait for the thawing period, and decide if you'd like to split up your delegation.
 
-### Omfattas jag av en återhämtningsperiod eller kan jag ta ut direkt efter att ha använt överföringsverktyget för L2-delegering?
+### Am I subject to the cooldown period or can I withdraw immediately after using the L2 delegation transfer tool?
 
-Överföringsverktyget låter dig omedelbart flytta till L2. Om du vill sluta delegera måste du vänta på upptiningstiden. Om en Indexer har överfört all sin insats till L2 kan du dock ta ut på Ethereum huvudnätet direkt.
+The transfer tool allows you to immediately move to L2. If you would like to undelegate you will have to wait for the thawing period. However, if an Indexer has transferred all of their stake to L2, you can withdraw on Ethereum mainnet immediately.
 
-### Kan mina belöningar påverkas negativt om jag inte överför min delegation?
+### Can my rewards be negatively impacted if I do not transfer my delegation?
 
-Det förväntas att all nätverksdeltagande kommer att flyttas till Arbitrum One i framtiden.
+It is anticipated that all network participation will move to Arbitrum One in the future.
 
-### Hur lång tid tar det att slutföra överföringen av min delegation till L2?
+### How long does it take to complete the transfer of my delegation to L2?
 
-En 20-minuters bekräftelse krävs för delegationens överföring. Observera att efter de 20 minuterna måste du komma tillbaka och slutföra steg 3 i överföringsprocessen inom 7 dagar. Om du inte gör det kan din delegation gå förlorad. Notera att i de flesta fall kommer överföringsverktyget att slutföra detta steg åt dig automatiskt. Om det uppstår en misslyckad automatisk försök måste du slutföra det manuellt. Om några problem uppstår under denna process, oroa dig inte, vi kommer att vara här för att hjälpa: kontakta oss på support@thegraph.com eller på [Discord](https://discord.gg/graphprotocol).
+A 20-minute confirmation is required for delegation transfer. Please note that after the 20-minute period, you must come back and complete step 3 of the transfer process within 7 days. If you fail to do this, then your delegation may be lost. Note that in most cases the transfer tool will complete this step for you automatically. In case of a failed auto-attempt, you will need to complete it manually. If any issues arise during this process, don't worry, we'll be here to help: contact us at support@thegraph.com or on [Discord](https://discord.gg/graphprotocol).
 
-### Kan jag överföra min delegation om jag använder en GRT vestingkontrakt/token lock wallet?
+### Can I transfer my delegation if I'm using a GRT vesting contract/token lock wallet?
 
-Ja! Processen är något annorlunda eftersom vestingkontrakt inte kan vidarebefordra ETH som behövs för att betala för L2-gasen, så du måste sätta in det i förväg. Om ditt vestingkontrakt inte är helt mogen måste du också först initialisera ett motsvarande vestingkontrakt på L2 och kommer endast att kunna överföra delegationen till detta L2-vestingkontrakt. Användargränssnittet på Utforskaren kan vägleda dig genom denna process när du har anslutit till Utforskaren med hjälp av vestinglåsningsplånboken.
+Yes! The process is a bit different because vesting contracts can't forward the ETH needed to pay for the L2 gas, so you need to deposit it beforehand. If your vesting contract is not fully vested, you will also have to first initialize a counterpart vesting contract on L2 and will only be able to transfer the delegation to this L2 vesting contract. The UI on Explorer can guide you through this process when you've connected to Explorer using the vesting lock wallet.
 
-### Finns det någon delegatsskatt?
+### Does my Arbitrum vesting contract allow releasing GRT just like on mainnet?
 
-Nej. Mottagna tokens på L2 delegeras till den angivna indexeraren på uppdrag av den angivna delegeraren utan att ta ut en delegeringsskatt.
+No, the vesting contract that is created on Arbitrum will not allow releasing any GRT until the end of the vesting timeline, i.e. until your contract is fully vested. This is to prevent double spending, as otherwise it would be possible to release the same amounts on both layers.
 
-### Kommer mina orealiserade belöningar att överföras när jag överför min delegation?
+If you'd like to release GRT from the vesting contract, you can transfer them back to the L1 vesting contract using Explorer: in your Arbitrum One profile, you will see a banner saying you can transfer GRT back to the mainnet vesting contract. This requires a transaction on Arbitrum One, waiting 7 days, and a final transaction on mainnet, as it uses the same native bridging mechanism from the GRT bridge.
 
-Ja! De enda belöningarna som inte kan överföras är de som är för öppna tilldelningar, eftersom de inte kommer att finnas förrän Indexern stänger tilldelningarna (vanligtvis var 28:e dag). Om du har delegerat under en tid är detta troligen bara en liten del av belöningarna.
+### Is there any delegation tax?
 
-På smart kontraktsnivå är orealiserade belöningar redan en del av din delegationsbalans, så de kommer att överföras när du överför din delegation till L2.​
+No. Received tokens on L2 are delegated to the specified Indexer on behalf of the specified Delegator without charging a delegation tax.
 
-### Är det obligatoriskt att flytta delegationer till L2? Finns det en deadline?
+### Will my unrealized rewards be transferred when I transfer my delegation?
 
-Det är inte obligatoriskt att flytta delegationen till L2, men indexbelöningarna ökar på L2 enligt tidslinjen som beskrivs i [GIP-0052](https://forum.thegraph.com/t/gip-0052-tidslinje-och-krav-för-att-öka-belöningarna-på-l2/4193). Till slut, om rådet fortsätter att godkänna ökningarna, kommer alla belöningar att distribueras på L2 och det kommer inte att finnas några indexbelöningar för Indexers och Delegators på L1.​
+​Yes! The only rewards that can't be transferred are the ones for open allocations, as those won't exist until the Indexer closes the allocations (usually every 28 days). If you've been delegating for a while, this is likely only a small fraction of rewards.
 
-### Om jag delegerar till en Indexer som redan har överfört insats till L2, slutar jag att få belöningar på L1?
+At the smart contract level, unrealized rewards are already part of your delegation balance, so they will be transferred when you transfer your delegation to L2. ​
 
-Många Indexers överför insatsen successivt, så Indexers på L1 kommer fortfarande att tjäna belöningar och avgifter på L1, som sedan delas med Delegators. När en Indexer har överfört all sin insats kommer de att sluta agera på L1, så Delegators kommer inte längre att få några belöningar om de inte överför till L2.
+### Is moving delegations to L2 mandatory? Is there a deadline?
 
-Till slut, om rådet fortsätter att godkänna ökningarna av indexbelöningar på L2, kommer alla belöningar att distribueras på L2 och det kommer inte att finnas några indexbelöningar för Indexers och Delegators på L1.​
+​Moving delegation to L2 is not mandatory, but indexing rewards are increasing on L2 following the timeline described in [GIP-0052](https://forum.thegraph.com/t/gip-0052-timeline-and-requirements-to-increase-rewards-in-l2/4193). Eventually, if the Council keeps approving the increases, all rewards will be distributed in L2 and there will be no indexing rewards for Indexers and Delegators on L1. ​
 
-### Jag ser ingen knapp för att överföra min delegation. Varför är det så?
+### If I am delegating to an Indexer that has already transferred stake to L2, do I stop receiving rewards on L1?
 
-Din Indexer har förmodligen inte använt L2-överföringsverktygen för att överföra insatsen ännu.
+​Many Indexers are transferring stake gradually so Indexers on L1 will still be earning rewards and fees on L1, which are then shared with Delegators. Once an Indexer has transferred all of their stake, then they will stop operating on L1, so Delegators will not receive any more rewards unless they transfer to L2.
 
-Om du kan kontakta Indexern kan du uppmana dem att använda L2-överföringsverktygen så att Delegators kan överföra delegationer till deras L2-Indexer-adress.​
+Eventually, if the Council keeps approving the indexing rewards increases in L2, all rewards will be distributed on L2 and there will be no indexing rewards for Indexers and Delegators on L1. ​
 
-### Min Indexer finns också på Arbitrum, men jag ser ingen knapp för att överföra delegationen i mitt profil. Varför är det så?
+### I don't see a button to transfer my delegation. Why is that?
 
-Det är möjligt att Indexern har etablerat verksamhet på L2, men ännu inte har använt L2-överföringsverktygen för att överföra insatsen. L1-smartkontrakten kommer därför inte att känna till Indexerns L2-adress. Om du kan kontakta Indexern kan du uppmana dem att använda överföringsverktyget så att Delegators kan överföra delegationer till deras L2-Indexer-adress.​
+​Your Indexer has probably not used the L2 transfer tools to transfer stake yet.
 
-### Kan jag överföra min delegation till L2 om jag har påbörjat avdelegeringsprocessen och ännu inte har tagit ut den?
+If you can contact the Indexer, you can encourage them to use the L2 Transfer Tools so that Delegators can transfer delegations to their L2 Indexer address. ​
 
-Nej. Om din delegation tinar måste du vänta 28 dagar och ta ut den.
+### My Indexer is also on Arbitrum, but I don't see a button to transfer the delegation in my profile. Why is that?
 
-De tokens som avdelegeras är "låsta" och kan därför inte överföras till L2.
+​It is possible that the Indexer has set up operations on L2, but hasn't used the L2 transfer tools to transfer stake. The L1 smart contracts will therefore not know about the Indexer's L2 address. If you can contact the Indexer, you can encourage them to use the transfer tool so that Delegators can transfer delegations to their L2 Indexer address. ​
 
-## Kureringssignal
+### Can I transfer my delegation to L2 if I have started the undelegating process and haven't withdrawn it yet?
 
-### Hur överför jag min kurering?
+​No. If your delegation is thawing, you have to wait the 28 days and withdraw it.
 
-För att överföra din kurering måste du följa följande steg:
+The tokens that are being undelegated are "locked" and therefore cannot be transferred to L2.
 
-1.  Initiera signalöverföring på Ethereum huvudnät
+## Curation Signal
 
-2.  Ange en L2-kuratorsadress\*
+### How do I transfer my curation?
 
-3.  Vänta 20 minuter för bekräftelse
+To transfer your curation, you will need to complete the following steps:
 
-\*Om det behövs - dvs. om du använder en kontraktadress.
+1.  Initiate signal transfer on Ethereum mainnet
 
-### Hur vet jag om den subgraph jag har kuraterat har flyttats till L2?
+2.  Specify an L2 Curator address\*
 
-När du tittar på sidan med detaljer om subgraphen kommer en banner att meddela dig att denna subgraph har flyttats. Du kan följa uppmaningen för att överföra din kurering. Du kan också hitta denna information på sidan med detaljer om subgraphen som har flyttat.
+3.  Wait 20 minutes for confirmation
 
-### Vad händer om jag inte vill flytta min kurering till L2?
+\*If necessary - i.e. you are using a contract address.
 
-När en subgraph avvecklas har du möjlighet att ta tillbaka din signal. På samma sätt, om en subgraph har flyttats till L2, kan du välja att ta tillbaka din signal på Ethereum huvudnät eller skicka signalen till L2.
+### How will I know if the subgraph I curated has moved to L2?
 
-### Hur vet jag att min kurering har överförts framgångsrikt?
+When viewing the subgraph details page, a banner will notify you that this subgraph has been transferred. You can follow the prompt to transfer your curation. You can also find this information on the subgraph details page of any subgraph that has moved.
 
-Signaldetaljer kommer att vara tillgängliga via Explorer ungefär 20 minuter efter att L2-överföringsverktyget har initierats.
+### What if I do not wish to move my curation to L2?
 
-### Kan jag överföra min kurering på fler än en subgraph samtidigt?
+When a subgraph is deprecated you have the option to withdraw your signal. Similarly, if a subgraph has moved to L2, you can choose to withdraw your signal in Ethereum mainnet or send the signal to L2.
 
-Det finns för närvarande ingen möjlighet till bulköverföring.
+### How do I know my curation successfully transferred?
 
-## Indexer-insats
+Signal details will be accessible via Explorer approximately 20 minutes after the L2 transfer tool is initiated.
 
-### Hur överför jag min insats till Arbitrum?
+### Can I transfer my curation on more than one subgraph at a time?
 
-> Ansvarsfriskrivning: Om du för närvarande avstår från någon del av ditt GRT hos din Indexer kommer du inte att kunna använda L2 överföringsverktyg.
+There is no bulk transfer option at this time.
+
+## Indexer Stake
+
+### How do I transfer my stake to Arbitrum?
+
+> Disclaimer: If you are currently unstaking any portion of your GRT on your Indexer, you will not be able to use L2 Transfer Tools.
 
 <VideoEmbed youtube="5lTq_V4YbWc" />
 
-För att överföra din insats måste du följa dessa steg:
+To transfer your stake, you will need to complete the following steps:
 
-1.  Initiera insatsöverföring på Ethereum huvudnät
+1.  Initiate stake transfer on Ethereum mainnet
 
-2.  Vänta 20 minuter för bekräftelse
+2.  Wait 20 minutes for confirmation
 
-3.  Bekräfta insatsöverföring på Arbitrum
+3.  Confirm stake transfer on Arbitrum
 
-\*Observera att du måste bekräfta överföringen inom 7 dagar annars kan din insats gå förlorad. I de flesta fall kommer detta steg att köras automatiskt, men en manuell bekräftelse kan behövas om det är en gasprisspik på Arbitrum. Om det uppstår problem under processen finns det resurser för att hjälpa: kontakta support på support@thegraph.com eller på [Discord](https://discord.gg/graphprotocol).
+\*Note that you must confirm the transfer within 7 days otherwise your stake may be lost. In most cases, this step will run automatically, but a manual confirmation may be needed if there is a gas price spike on Arbitrum. If there are any issues during this process, there will be resources to help: contact support at support@thegraph.com or on [Discord](https://discord.gg/graphprotocol).
 
-### Kommer hela min insats att överföras?
+### Will all of my stake transfer?
 
-Du kan välja hur mycket av din insats du vill överföra. Om du väljer att överföra hela din insats på en gång måste du stänga alla öppna tilldelningar först.
+You can choose how much of your stake to transfer. If you choose to transfer all of your stake at once, you will need to close any open allocations first.
 
-Om du planerar att överföra delar av din insats över flera transaktioner måste du alltid ange samma förmånstagaradress.
+If you plan on transferring parts of your stake over multiple transactions, you must always specify the same beneficiary address.
 
-Observera: Du måste uppfylla minimikraven för insats på L2 första gången du använder överföringsverktyget. Indexers måste skicka minst 100 000 GRT (när de kallar på denna funktion första gången). Om du lämnar en del av insatsen på L1 måste den också överstiga det minimibelopp på 100 000 GRT och vara tillräcklig (tillsammans med dina delegationer) för att täcka dina öppna tilldelningar.
+Note: You must meet the minimum stake requirements on L2 the first time you use the transfer tool. Indexers must send the minimum 100k GRT (when calling this function the first time). If leaving a portion of stake on L1, it must also be over the 100k GRT minimum and be sufficient (together with your delegations) to cover your open allocations.
 
-### Hur lång tid har jag att bekräfta min insatsöverföring till Arbitrum?
+### How much time do I have to confirm my stake transfer to Arbitrum?
 
-\*\*\* Du måste bekräfta din transaktion för att slutföra insatsöverföringen på Arbitrum. Detta steg måste slutföras inom 7 dagar annars kan insatsen gå förlorad.
+\*\*\* You must confirm your transaction to complete the stake transfer on Arbitrum. This step must be completed within 7 days or stake could be lost.
 
-### Vad händer om jag har öppna tilldelningar?
+### What if I have open allocations?
 
-Om du inte skickar hela din insats kommer L2-överföringsverktyget att validera att minst 100 000 GRT finns kvar på Ethereum huvudnät och att din återstående insats och delegation är tillräcklig för att täcka öppna tilldelningar. Du kan behöva stänga öppna tilldelningar om din GRT-balans inte täcker minimierna + öppna tilldelningar.
+If you are not sending all of your stake, the L2 transfer tool will validate that at least the minimum 100k GRT remains in Ethereum mainnet and your remaining stake and delegation is enough to cover any open allocations. You may need to close open allocations if your GRT balance does not cover the minimums + open allocations.
 
-### Måste jag vänta 28 dagar innan jag kan avsluta min insats på Ethereum huvudnät innan jag överför?
+### Using the transfer tools, is it necessary to wait 28 days to unstake on Ethereum mainnet before transferring?
 
-Nej, du kan överföra din insats till L2 omedelbart, det är ingen nödvändighet att avsluta och vänta innan du använder överföringsverktyget. Väntetiden på 28 dagar gäller endast om du vill ta tillbaka insatsen till din plånbok, på Ethereum huvudnät eller L2.
+No, you can transfer your stake to L2 immediately, there's no need to unstake and wait before using the transfer tool. The 28-day wait only applies if you'd like to withdraw the stake back to your wallet, on Ethereum mainnet or L2.
 
-### Hur lång tid tar det att överföra min insats?
+### How long will it take to transfer my stake?
 
-Det tar cirka 20 minuter för L2-överföringsverktyget att slutföra överföringen av din insats.
+It will take approximately 20 minutes for the L2 transfer tool to complete transferring your stake.
 
-### Måste jag indexera på Arbitrum innan jag överför min insats?
+### Do I have to index on Arbitrum before I transfer my stake?
 
-Du kan effektivt överföra din insats först innan du sätter upp indexering, men du kommer inte att kunna hämta några belöningar på L2 förrän du allokerar till subgrapher på L2, indexerar dem och presenterar POI.
+You can effectively transfer your stake first before setting up indexing, but you will not be able to claim any rewards on L2 until you allocate to subgraphs on L2, index them, and present POIs.
 
-### Kan Delegators flytta sin delegation innan jag flyttar min indexinsats?
+### Can Delegators move their delegation before I move my indexing stake?
 
-Nej, för att Delegators ska kunna överföra sina delegerade GRT till Arbitrum måste Indexern de delegerar till vara aktiv på L2.
+No, in order for Delegators to transfer their delegated GRT to Arbitrum, the Indexer they are delegating to must be active on L2.
 
-### Kan jag överföra min insats om jag använder en GRT-vestingkontrakt / tokenspärrplånbok?
+### Can I transfer my stake if I'm using a GRT vesting contract / token lock wallet?
 
-Ja! Processen är något annorlunda, eftersom vestingkontrakt inte kan vidarebefordra ETH som behövs för att betala för L2-gasen, så du måste sätta in det i förväg. Om ditt vestingkontrakt inte är fullt utdelat måste du också först initialisera ett motsvarande vestingkontrakt på L2 och kommer endast att kunna överföra insatsen till detta L2-vestingkontrakt. UI på Explorer kan vägleda dig genom denna process när du har anslutit till Explorer med hjälp av vestingplånboken.
+Yes! The process is a bit different, because vesting contracts can't forward the ETH needed to pay for the L2 gas, so you need to deposit it beforehand. If your vesting contract is not fully vested, you will also have to first initialize a counterpart vesting contract on L2 and will only be able to transfer the stake to this L2 vesting contract. The UI on Explorer can guide you through this process when you've connected to Explorer using the vesting lock wallet.
 
-### Jag har redan en insats på L2. Måste jag fortfarande skicka 100k GRT när jag använder överföringsverktygen första gången?
+### I already have stake on L2. Do I still need to send 100k GRT when I use the transfer tools the first time?
 
-​Ja. L1-smartkontrakten kommer inte att vara medvetna om din L2-insats, så de kommer att kräva att du överför minst 100k GRT när du överför första gången. ​
+​Yes. The L1 smart contracts will not be aware of your L2 stake, so they will require you to transfer at least 100k GRT when you transfer for the first time. ​
 
-### Kan jag överföra min insats till L2 om jag är mitt i processen att avsätta GRT?
+### Can I transfer my stake to L2 if I am in the process of unstaking GRT?
 
-​Nej. Om någon del av din insats är på väg att tina måste du vänta 28 dagar och ta tillbaka den innan du kan överföra insatsen. De tokens som är insatta är "låsta" och kommer att förhindra alla överföringar eller insatser till L2.
+​No. If any fraction of your stake is thawing, you have to wait the 28 days and withdraw it before you can transfer stake. The tokens that are being staked are "locked" and will prevent any transfers or stake to L2.
 
-## Överföring av vestingkontrakt
+## Vesting Contract Transfer
 
-### Hur överför jag mitt vestingkontrakt?
+### How do I transfer my vesting contract?
 
-För att överföra ditt vestingkontrakt måste du följa dessa steg:
+To transfer your vesting, you will need to complete the following steps:
 
-1.  Initiera överföringen av vesting på Ethereum huvudnät
+1.  Initiate the vesting transfer on Ethereum mainnet
 
-2.  Vänta 20 minuter för bekräftelse
+2.  Wait 20 minutes for confirmation
 
-3.  Bekräfta överföringen av vesting på Arbitrum
+3.  Confirm vesting transfer on Arbitrum
 
-### Hur överför jag mitt vestingkontrakt om jag bara är delvis utdelad?
+### How do I transfer my vesting contract if I am only partially vested?
 
 <VideoEmbed youtube="URPOb2c6o2Y" />
 
-1.  Sätt in lite ETH i överföringsverktygskontraktet (UI kan hjälpa till att uppskatta en rimlig summa)
+1.  Deposit some ETH into the transfer tool contract (UI can help estimate a reasonable amount)
 
-2.  Skicka lite låst GRT genom överföringsverktygskontraktet till L2 för att initialisera låsningsmekanismen för L2. Detta kommer också att ange deras L2-förmånstagareadress.
+2.  Send some locked GRT through the transfer tool contract, to L2 to initialize the L2 vesting lock. This will also set their L2 beneficiary address.
 
-3.  Skicka deras insats/delegering till L2 genom "låsta" överföringsverktygsfunktioner i L1Staking-kontraktet.
+3.  Send their stake/delegation to L2 through the "locked" transfer tool functions in the L1Staking contract.
 
-4.  Ta ut eventuell kvarvarande ETH från överföringsverktygskontraktet
+4.  Withdraw any remaining ETH from the transfer tool contract
 
-### Hur överför jag mitt vestingkontrakt om jag är fullständigt utdelad?
+### How do I transfer my vesting contract if I am fully vested?
 
 <VideoEmbed youtube="DuZNYPNe1S0" />
 
-För de som är fullständigt utdelade är processen liknande:
+For those that are fully vested, the process is similar:
 
-1.  Sätt in lite ETH i överföringsverktygskontraktet (UI kan hjälpa till att uppskatta en rimlig summa)
+1.  Deposit some ETH into the transfer tool contract (UI can help estimate a reasonable amount)
 
-2.  Ange din L2-adress med ett anrop till överföringsverktygskontraktet
+2.  Set your L2 address with a call to the transfer tool contract
 
-3.  Skicka din insats/delegering till L2 genom "låsta" överföringsverktygsfunktioner i L1-stake-kontraktet.
+3.  Send your stake/delegation to L2 through the "locked" transfer tool functions in the L1 Staking contract.
 
-4.  Ta ut eventuell kvarvarande ETH från överföringsverktygskontraktet
+4.  Withdraw any remaining ETH from the transfer tool contract
 
-### Kan jag överföra mitt vestingkontrakt till Arbitrum?
+### Can I transfer my vesting contract to Arbitrum?
 
-Du kan överföra ditt vestingkontrakt GRT-saldo till ett vestingkontrakt i L2. Detta är en förutsättning för att överföra insats eller delegering från ditt vestingkontrakt till L2. Vestingkontraktet måste innehålla en icke-noll mängd GRT (du kan överföra en liten mängd som 1 GRT om det behövs).
+You can transfer your vesting contract's GRT balance to a vesting contract in L2. This is a prerequisite for transferring stake or delegation from your vesting contract to L2. The vesting contract must hold a nonzero amount of GRT (you can transfer a small amount like 1 GRT to it if needed).
 
-När du överför GRT från ditt L1-vestingkontrakt till L2 kan du välja beloppet att skicka och du kan göra detta så många gånger du vill. L2-vestingkontraktet initialiseras första gången du överför GRT.
+When you transfer GRT from your L1 vesting contract to L2, you can choose the amount to send and you can do this as many times as you like. The L2 vesting contract will be initialized the first time you transfer GRT.
 
-Överföringarna utförs med hjälp av ett överföringsverktyg som kommer att vara synligt på din Explorer-profil när du ansluter med vestingkontraktkontot.
+The transfers are done using a Transfer Tool that will be visible on your Explorer profile when you connect with the vesting contract account.
 
-Observera att du inte kommer att kunna släppa/tillbakadra GRT från L2-vestingkontraktet förrän vid slutet av din utdelningstid när ditt kontrakt är fullständigt utdelat. Om du behöver släppa GRT före det kan du överföra GRT tillbaka till L1-vestingkontraktet med ett annat överföringsverktyg som är tillgängligt för detta ändamål.
+Please note that you will not be able to release/withdraw GRT from the L2 vesting contract until the end of your vesting timeline when your contract is fully vested. If you need to release GRT before then, you can transfer the GRT back to the L1 vesting contract using another transfer tool that is available for that purpose.
 
-Om du inte har överfört något vestingkontraktsaldo till L2 och ditt vestingkontrakt är fullständigt utdelat bör du inte överföra ditt vestingkontrakt till L2. Istället kan du använda överföringsverktygen för att ange en L2-plånboksadress och direkt överföra din insats eller delegering till denna vanliga plånbok på L2.
+If you haven't transferred any vesting contract balance to L2, and your vesting contract is fully vested, you should not transfer your vesting contract to L2. Instead, you can use the transfer tools to set an L2 wallet address, and directly transfer your stake or delegation to this regular wallet on L2.
 
-### Jag använder mitt vestingkontrakt för att satsa på huvudnätet. Kan jag överföra min insats till Arbitrum?
+### I'm using my vesting contract to stake on mainnet. Can I transfer my stake to Arbitrum?
 
-Ja, men om ditt kontrakt fortfarande är utdelat kan du bara överföra insatsen så att den ägs av ditt L2-vestingkontrakt. Du måste först initialisera detta L2-kontrakt genom att överföra en viss GRT-saldo med hjälp av vestingkontraktoverföringsverktyget på Explorer. Om ditt kontrakt är fullständigt utdelat kan du överföra din insats till valfri adress i L2, men du måste ställa in den i förväg och sätta in lite ETH för överföringsverktyget på L2 för att betala för L2-gasen.
+Yes, but if your contract is still vesting, you can only transfer the stake so that it is owned by your L2 vesting contract. You must first initialize this L2 contract by transferring some GRT balance using the vesting contract transfer tool on Explorer. If your contract is fully vested, you can transfer your stake to any address in L2, but you must set it beforehand and deposit some ETH for the L2 transfer tool to pay for L2 gas.
 
-### Jag använder mitt vestingkontrakt för att delegera på huvudnätet. Kan jag överföra mina delegationer till Arbitrum?
+### I'm using my vesting contract to delegate on mainnet. Can I transfer my delegations to Arbitrum?
 
-Ja, men om ditt kontrakt fortfarande är utdelat kan du bara överföra delegationen så att den ägs av ditt L2-vestingkontrakt. Du måste först initialisera detta L2-kontrakt genom att överföra en viss GRT-saldo med hjälp av vestingkontraktoverföringsverktyget på Explorer. Om ditt kontrakt är fullständigt utdelat kan du överföra din delegation till valfri adress i L2, men du måste ställa in den i förväg och sätta in lite ETH för överföringsverktyget på L2 för att betala för L2-gasen.
+Yes, but if your contract is still vesting, you can only transfer the delegation so that it is owned by your L2 vesting contract. You must first initialize this L2 contract by transferring some GRT balance using the vesting contract transfer tool on Explorer. If your contract is fully vested, you can transfer your delegation to any address in L2, but you must set it beforehand and deposit some ETH for the L2 transfer tool to pay for L2 gas.
 
-### Kan jag ange en annan förmånstagare för mitt vestingkontrakt på L2?
+### Can I specify a different beneficiary for my vesting contract on L2?
 
-Ja, första gången du överför ett saldo och konfigurerar ditt L2-vestingkontrakt kan du ange en L2-förmånstagare. Se till att denna förmånstagare är en plånbok som kan utföra transaktioner på Arbitrum One, dvs. den måste vara en EOA eller en multisig som är distribuerad till Arbitrum One.
+Yes, the first time you transfer a balance and set up your L2 vesting contract, you can specify an L2 beneficiary. Make sure this beneficiary is a wallet that can perform transactions on Arbitrum One, i.e. it must be an EOA or a multisig deployed to Arbitrum One.
 
-Om ditt kontrakt är fullständigt utdelat kommer du inte att konfigurera ett vestingkontrakt på L2; istället kommer du att ställa in en L2-plånboksadress och detta kommer att vara den mottagande plånboken för din insats eller delegering på Arbitrum.
+If your contract is fully vested, you will not set up a vesting contract on L2; instead, you will set an L2 wallet address and this will be the receiving wallet for your stake or delegation on Arbitrum.
 
-### Mitt kontrakt är fullständigt utdelat. Kan jag överföra min insats eller delegering till en annan adress som inte är ett L2-vestingkontrakt?
+### My contract is fully vested. Can I transfer my stake or delegation to another address that is not an L2 vesting contract?
 
-Ja. Om du inte har överfört något saldo från vestingkontraktet till L2 och ditt vestingkontrakt är fullständigt utdelat bör du inte överföra ditt vestingkontrakt till L2. Istället kan du använda överföringsverktygen för att ange en L2-plånboksadress och direkt överföra din insats eller delegering till denna vanliga plånbok på L2.
+Yes. If you haven't transferred any vesting contract balance to L2, and your vesting contract is fully vested, you should not transfer your vesting contract to L2. Instead, you can use the transfer tools to set an L2 wallet address, and directly transfer your stake or delegation to this regular wallet on L2.
 
-Detta gör att du kan överföra din insats eller delegering till valfri L2-adress.
+This allows you to transfer your stake or delegation to any L2 address.
 
-### Mitt vestingkontrakt är fortfarande utdelat. Hur överför jag mitt vestingkontrakts saldo till L2?
+### My vesting contract is still vesting. How do I transfer my vesting contract balance to L2?
 
-Dessa steg gäller endast om ditt kontrakt fortfarande är utdelat eller om du har använt denna process tidigare när ditt kontrakt fortfarande var utdelat.
+These steps only apply if your contract is still vesting, or if you've used this process before when your contract was still vesting.
 
-För att överföra ditt vestingkontrakt till L2 kommer du att skicka en viss GRT-saldo till L2 med hjälp av överföringsverktygen, vilket kommer att initialisera ditt L2-vestingkontrakt:
+To transfer your vesting contract to L2, you will send any GRT balance to L2 using the transfer tools, which will initialize your L2 vesting contract:
 
-1.  Sätt in lite ETH i överföringsverktygskontraktet (detta kommer att användas för att betala för L2-gas)
+1.  Deposit some ETH into the transfer tool contract (this will be used to pay for L2 gas)
 
-2.  Återkalla protokollåtkomst till vestingkontraktet (nödvändigt för nästa steg)
+2.  Revoke protocol access to the vesting contract (needed for the next step)
 
-3.  Ge protokollåtkomst till vestingkontraktet (möjliggör för ditt kontrakt att interagera med överföringsverktyget)
+3.  Give protocol access to the vesting contract (will allow your contract to interact with the transfer tool)
 
-4.  Ange en L2-förmånstagareadress\* och initiera saldöverföringen på Ethereum huvudnät
+4.  Specify an L2 beneficiary address\* and initiate the balance transfer on Ethereum mainnet
 
-5.  Vänta 20 minuter på bekräftelse
+5.  Wait 20 minutes for confirmation
 
-6.  Bekräfta saldöverföringen på L2
+6.  Confirm the balance transfer on L2
 
-\*Om det behövs - dvs. du använder en kontraktadress.
+\*If necessary - i.e. you are using a contract address.
 
-\*\*\*\* Du måste bekräfta din transaktion för att slutföra saldöverföringen på Arbitrum. Detta steg måste slutföras inom 7 dagar eller saldot kan gå förlorat. I de flesta fall kommer detta steg att köras automatiskt, men manuell bekräftelse kan behövas om det finns en gasprisökning på Arbitrum. Om det uppstår några problem under denna process kommer det att finnas resurser att hjälpa till: kontakta supporten på support@thegraph.com eller på [Discord](https://discord.gg/graphprotocol).
+\*\*\*\*You must confirm your transaction to complete the balance transfer on Arbitrum. This step must be completed within 7 days or the balance could be lost. In most cases, this step will run automatically, but a manual confirmation may be needed if there is a gas price spike on Arbitrum. If there are any issues during this process, there will be resources to help: contact support at support@thegraph.com or on [Discord](https://discord.gg/graphprotocol).
 
-### Mitt vestingkontrakt visar 0 GRT så jag kan inte överföra det, varför är det här och hur fixar jag det?
+### My vesting contract shows 0 GRT so I cannot transfer it, why is this and how do I fix it?
 
-För att initialisera ditt L2-vestingkontrakt måste du överföra en icke-noll mängd GRT till L2. Detta krävs av Arbitrum GRT-broen som används av L2 Transfer Tools. GRT måste komma från vestingkontraktets saldo, så det inkluderar inte stakade eller delegerade GRT.
+​To initialize your L2 vesting contract, you need to transfer a nonzero amount of GRT to L2. This is required by the Arbitrum GRT bridge that is used by the L2 Transfer Tools. The GRT must come from the vesting contract's balance, so it does not include staked or delegated GRT.
 
-Om du har stakat eller delegerat all din GRT från vestingkontraktet kan du manuellt skicka en liten mängd som 1 GRT till vestingkontraktadressen från någon annanstans (t.ex. från en annan plånbok eller en börs).
+If you've staked or delegated all your GRT from the vesting contract, you can manually send a small amount like 1 GRT to the vesting contract address from anywhere else (e.g. from another wallet, or an exchange). ​
 
-### Jag använder ett vestingkontrakt för att satsa eller delegera, men jag ser inte någon knapp för att överföra min insats eller delegering till L2, vad gör jag?
+### I am using a vesting contract to stake or delegate, but I don't see a button to transfer my stake or delegation to L2, what do I do?
 
-Om ditt vestingkontrakt inte har avslutat utdelningen måste du först skapa ett L2-vestingkontrakt som kommer att ta emot din insats eller delegering på L2. Detta vestingkontrakt tillåter inte utgivning av token på L2 förrän i slutet av utdelningstiden, men kommer att tillåta dig att överföra GRT tillbaka till L1-vestingkontraktet för att släppas där.
+​If your vesting contract hasn't finished vesting, you need to first create an L2 vesting contract that will receive your stake or delegation on L2. This vesting contract will not allow releasing tokens in L2 until the end of the vesting timeline, but will allow you to transfer GRT back to the L1 vesting contract to be released there.
 
-När du är ansluten till vestingkontraktet på Explorer bör du se en knapp för att initialisera ditt L2-vestingkontrakt. Följ den processen först, och du kommer sedan att se knapparna för att överföra din insats eller delegering i din profil.
+When connected with the vesting contract on Explorer, you should see a button to initialize your L2 vesting contract. Follow that process first, and you will then see the buttons to transfer your stake or delegation in your profile. ​
 
-### Om jag initierar mitt L2-vestingkontrakt, kommer detta också att överföra min delegering till L2 automatiskt?
+### If I initialize my L2 vesting contract, will this also transfer my delegation to L2 automatically?
 
-Nej, att initiera ditt L2-vestingkontrakt är en förutsättning för att överföra insats eller delegering från vestingkontraktet, men du måste fortfarande överföra dessa separat.
+​No, initializing your L2 vesting contract is a prerequisite for transferring stake or delegation from the vesting contract, but you still need to transfer these separately.
 
-Du kommer att se en banner på din profil som uppmanar dig att överföra din insats eller delegering efter att du har initierat ditt L2-vestingkontrakt.
+You will see a banner on your profile prompting you to transfer your stake or delegation after you have initialized your L2 vesting contract.
 
-### Kan jag flytta mitt vestingkontrakt tillbaka till L1?
+### Can I move my vesting contract back to L1?
 
-Det finns ingen anledning att göra det eftersom ditt vestingkontrakt fortfarande finns i L1. När du använder överföringsverktygen skapar du bara ett nytt kontrakt i L2 som är anslutet till ditt L1-vestingkontrakt, och du kan skicka GRT fram och tillbaka mellan de två.
+There is no need to do so because your vesting contract is still in L1. When you use the transfer tools, you just create a new contract in L2 that is connected with your L1 vesting contract, and you can send GRT back and forth between the two.
 
-### Varför måste jag flytta mitt vestingkontrakt överhuvudtaget?
+### Why do I need to move my vesting contract to begin with?
 
-Du måste konfigurera ett L2-vestingkontrakt så att detta konto kan äga din insats eller delegering på L2. Annars skulle det inte finnas något sätt för dig att överföra insatsen/delegeringen till L2 utan att "fly" vestingkontraktet.
+You need to set up an L2 vesting contract so that this account can own your stake or delegation on L2. Otherwise, there'd be no way for you to transfer the stake/delegation to L2 without "escaping" the vesting contract.
 
-### Vad händer om jag försöker ta ut mitt kontrakt när det bara är delvis utdelat? Är det möjligt?
+### What happens if I try to cash out my contract when it is only partially vested? Is this possible?
 
-Detta är inte möjligt. Du kan flytta pengar tillbaka till L1 och ta ut dem där.
+This is not a possibility. You can move funds back to L1 and withdraw them there.
 
-### Vad händer om jag inte vill flytta mitt vestingkontrakt till L2?
+### What if I don't want to move my vesting contract to L2?
 
-Du kan fortsätta satsa/delegera på L1. Över tid kan du överväga att flytta till L2 för att möjliggöra belöningar där när protokollet skalar på Arbitrum. Observera att dessa överföringsverktyg är för vestingkontrakt som får satsa och delegera i protokollet. Om ditt kontrakt inte tillåter satsning eller delegering eller om det är återkallbart finns det inget överföringsverktyg tillgängligt. Du kommer fortfarande att kunna ta ut din GRT från L1 när det är tillgängligt.
+You can keep staking/delegating on L1. Over time, you may want to consider moving to L2 to enable rewards there as the protocol scales on Arbitrum. Note that these transfer tools are for vesting contracts that are allowed to stake and delegate in the protocol. If your contract does not allow staking or delegating, or is revocable, then there is no transfer tool available. You will still be able to withdraw your GRT from L1 when available.
