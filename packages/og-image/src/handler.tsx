@@ -21,7 +21,7 @@ export async function handler(request: Request): Promise<Response> {
             {title}
           </span>
         )}
-      </div>
+      </div>,
     )
 
     const buffer = toImage(rawSvg)
