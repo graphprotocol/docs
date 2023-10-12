@@ -1,0 +1,259 @@
+---
+title: Building Subgraphs on Cosmos
+---
+
+This guide is an introduction on building subgraphs indexing [Cosmos](https://docs.cosmos.network/) based blockchains.
+
+## What are Cosmos subgraphs?
+
+The Graph allows developers to process blockchain events and make the resulting data easily available via an open GraphQL API, known as a subgraph. [Graph Node](https://github.com/graphprotocol/graph-node) is now able to process Cosmos events, which means Cosmos developers can now build subgraphs to easily index on-chain events.
+
+There are four types of handlers supported in Cosmos subgraphs:
+
+- **Block handlers** run whenever a new block is appended to the chain.
+- **Event handlers** run when a specific event is emitted.
+- **Transaction handlers** run when a transaction occurs.
+- **Message handlers** run when a specific message occurs.
+
+Based on the [official Cosmos documentation](https://docs.cosmos.network/):
+
+> [Events](https://docs.cosmos.network/main/core/events) are objects that contain information about the execution of the application. They are mainly used by service providers like block explorers and wallets to track the execution of various messages and index transactions.
+
+> [Transactions](https://docs.cosmos.network/main/core/transactions) are objects created by end-users to trigger state changes in the application.
+
+> [Messages](https://docs.cosmos.network/main/core/transactions#messages) are module-specific objects that trigger state transitions within the scope of the module they belong to.
+
+Even though all data can be accessed with a block handler, other handlers enable subgraph developers to process data in a much more granular way.
+
+## Building a Cosmos subgraph
+
+### Subgraph Dependencies
+
+[graph-cli](https://github.com/graphprotocol/graph-cli) is a CLI tool to build and deploy subgraphs, version `>=0.30.0` is required in order to work with Cosmos subgraphs.
+
+[graph-ts](https://github.com/graphprotocol/graph-ts) is a library of subgraph-specific types, version `>=0.27.0` is required in order to work with Cosmos subgraphs.
+
+### Subgraph Main Components
+
+There are three key parts when it comes to defining a subgraph:
+
+**subgraph.yaml**: a YAML file containing the subgraph manifest, which identifies which events to track and how to process them.
+
+**schema.graphql**: a GraphQL schema that defines what data is stored for your subgraph, and how to query it via GraphQL.
+
+**AssemblyScript Mappings**: [AssemblyScript](https://github.com/AssemblyScript/assemblyscript) code that translates from blockchain data to the entities defined in your schema.
+
+### Subgraph Manifest Definition
+
+The subgraph manifest (`subgraph.yaml`) identifies the data sources for the subgraph, the triggers of interest, and the functions (`handlers`) that should be run in response to those triggers. See below for an example subgraph manifest for a Cosmos subgraph:
+
+```yaml
+specVersion: 0.0.5
+description: Cosmos Subgraph Example
+schema:
+  file: ./schema.graphql # link to the schema file
+dataSources:
+  - kind: cosmos
+    name: CosmosHub
+    network: cosmoshub-4 # This will change for each cosmos-based blockchain. In this case, the example uses the Cosmos Hub mainnet.
+    source:
+      startBlock: 0 # Required for Cosmos, set this to 0 to start indexing from chain genesis
+    mapping:
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      blockHandlers:
+        - handler: handleNewBlock # the function name in the mapping file
+      eventHandlers:
+        - event: rewards # the type of the event that will be handled
+          handler: handleReward # the function name in the mapping file
+      transactionHandlers:
+        - handler: handleTransaction # the function name in the mapping file
+      messageHandlers:
+        - message: /cosmos.staking.v1beta1.MsgDelegate # the type of a message
+          handler: handleMsgDelegate # the function name in the mapping file
+      file: ./src/mapping.ts # link to the file with the Assemblyscript mappings
+```
+
+- Cosmos subgraphs introduce a new `kind` of data source (`cosmos`).
+- The `network` should correspond to a chain in the Cosmos ecosystem. In the example, the Cosmos Hub mainnet is used.
+
+### Schema Definition
+
+Schema definition describes the structure of the resulting subgraph database and the relationships between entities. This is agnostic of the original data source. There are more details on subgraph schema definition [here](/developing/creating-a-subgraph/#the-graph-ql-schema).
+
+### AssemblyScript Mappings
+
+The handlers for processing events are written in [AssemblyScript](https://www.assemblyscript.org/).
+
+Cosmos indexing introduces Cosmos-specific data types to the [AssemblyScript API](/developing/assemblyscript-api/).
+
+```tsx
+class Block {
+  header: Header
+  evidence: EvidenceList
+  resultBeginBlock: ResponseBeginBlock
+  resultEndBlock: ResponseEndBlock
+  transactions: Array<TxResult>
+  validatorUpdates: Array<Validator>
+}
+
+class EventData {
+  event: Event
+  block: HeaderOnlyBlock
+  tx: TransactionContext
+}
+
+class TransactionData {
+  tx: TxResult
+  block: HeaderOnlyBlock
+}
+
+class MessageData {
+  message: Any
+  block: HeaderOnlyBlock
+  tx: TransactionContext
+}
+
+class TransactionContext {
+  hash: Bytes
+  index: u32
+  code: u32
+  gasWanted: i64
+  gasUsed: i64
+}
+
+class HeaderOnlyBlock {
+  header: Header
+}
+
+class Header {
+  version: Consensus
+  chainId: string
+  height: u64
+  time: Timestamp
+  lastBlockId: BlockID
+  lastCommitHash: Bytes
+  dataHash: Bytes
+  validatorsHash: Bytes
+  nextValidatorsHash: Bytes
+  consensusHash: Bytes
+  appHash: Bytes
+  lastResultsHash: Bytes
+  evidenceHash: Bytes
+  proposerAddress: Bytes
+  hash: Bytes
+}
+
+class TxResult {
+  height: u64
+  index: u32
+  tx: Tx
+  result: ResponseDeliverTx
+  hash: Bytes
+}
+
+class Event {
+  eventType: string
+  attributes: Array<EventAttribute>
+}
+
+class Any {
+  typeUrl: string
+  value: Bytes
+}
+```
+
+Each handler type comes with its own data structure that is passed as an argument to a mapping function.
+
+- Block handlers receive the `Block` type.
+- Event handlers receive the `EventData` type.
+- Transaction handlers receive the `TransactionData` type.
+- Message handlers receive the `MessageData` type.
+
+As a part of `MessageData` the message handler receives a transaction context, which contains the most important information about a transaction that encompasses a message. The transaction context is also available in the `EventData` type, but only when the corresponding event is associated with a transaction. Additionally, all handlers receive a reference to a block (`HeaderOnlyBlock`).
+
+You can find the full list of types for the Cosmos integration [here](https://github.com/graphprotocol/graph-ts/blob/4c064a8118dff43b110de22c7756e5d47fcbc8df/chain/cosmos.ts).
+
+### Message decoding
+
+It's important to note that Cosmos messages are chain-specific and they are passed to a subgraph in the form of a serialized [Protocol Buffers](https://developers.google.com/protocol-buffers/) payload. As a result, the message data needs to be decoded in a mapping function before it can be processed.
+
+An example of how to decode message data in a subgraph can be found [here](https://github.com/graphprotocol/graph-tooling/blob/main/examples/cosmos-validator-delegations/src/decoding.ts).
+
+## Creating and building a Cosmos subgraph
+
+The first step before starting to write the subgraph mappings is to generate the type bindings based on the entities that have been defined in the subgraph schema file (`schema.graphql`). This will allow the mapping functions to create new objects of those types and save them to the store. This is done by using the `codegen` CLI command:
+
+```bash
+$ graph codegen
+```
+
+Once the mappings are ready, the subgraph needs to be built. This step will highlight any errors the manifest or the mappings might have. A subgraph needs to build successfully in order to be deployed to the Graph Node. It can be done using the `build` CLI command:
+
+```bash
+$ graph build
+```
+
+## Deploying a Cosmos subgraph
+
+Once your subgraph has been created, you can deploy your subgraph by using the `graph deploy` CLI command after running the `graph create` CLI command:
+
+**Hosted Service**
+
+```bash
+graph create account/subgraph-name --product hosted-service
+```
+
+```bash
+graph deploy account/subgraph-name --product hosted-service
+```
+
+**Local Graph Node (based on default configuration):**
+
+```bash
+graph create subgraph-name --node http://localhost:8020
+```
+
+```bash
+graph deploy subgraph-name --node http://localhost:8020/ --ipfs http://localhost:5001
+```
+
+## Querying a Cosmos subgraph
+
+The GraphQL endpoint for Cosmos subgraphs is determined by the schema definition, with the existing API interface. Please visit the [GraphQL API documentation](/querying/graphql-api/) for more information.
+
+## Supported Cosmos Blockchains
+
+### Cosmos Hub
+
+#### What is Cosmos Hub?
+
+The [Cosmos Hub blockchain](https://hub.cosmos.network/) is the first blockchain in the [Cosmos](https://cosmos.network/) ecosystem. You can visit the [official documentation](https://docs.cosmos.network/) for more information.
+
+#### Networks
+
+Cosmos Hub mainnet is `cosmoshub-4`. Cosmos Hub current testnet is `theta-testnet-001`. <br/>Other Cosmos Hub networks, i.e. `cosmoshub-3`, are halted, therefore no data is provided for them.
+
+### Osmosis
+
+> Osmosis support in Graph Node and on the Hosted Service is in beta: please contact the graph team with any questions about building Osmosis subgraphs!
+
+#### What is Osmosis?
+
+[Osmosis](https://osmosis.zone/) is a decentralized, cross-chain automated market maker (AMM) protocol built on top of the Cosmos SDK. It allows users to create custom liquidity pools and trade IBC-enabled tokens. You can visit the [official documentation](https://docs.osmosis.zone/) for more information.
+
+#### Networks
+
+Osmosis mainnet is `osmosis-1`. Osmosis current testnet is `osmo-test-4`.
+
+## Example Subgraphs
+
+Here are some example subgraphs for reference:
+
+[Block Filtering Example](https://github.com/graphprotocol/graph-tooling/tree/main/examples/cosmos-block-filtering)
+
+[Validator Rewards Example](https://github.com/graphprotocol/graph-tooling/tree/main/examples/cosmos-validator-rewards)
+
+[Validator Delegations Example](https://github.com/graphprotocol/graph-tooling/tree/main/examples/cosmos-validator-delegations)
+
+[Osmosis Token Swaps Example](https://github.com/graphprotocol/graph-tooling/tree/main/examples/cosmos-osmosis-token-swaps)

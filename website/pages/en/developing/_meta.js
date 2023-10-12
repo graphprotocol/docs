@@ -4,4 +4,5 @@ export default {
   'assemblyscript-api': '',
   'unit-testing-framework': '',
   'developer-faqs': '',
+  'substreams-powered-subgraphs-faq': '',
 }

@@ -1,3 +1,5 @@
+import meta from '../../en/arbitrum/_meta.js'
+
 export default {
-  'arbitrum-faq': '',
+  ...meta,
 }

@@ -17,12 +17,14 @@ export default {
     type: 'heading',
     title: 'Subgraphs',
   },
+  'quick-start': '',
   developing: 'Developing',
   deploying: 'Deploying',
   publishing: 'Publishing',
   managing: 'Managing',
   querying: 'Querying',
   cookbook: 'Cookbook',
+  'release-notes': 'Release Notes & Upgrade Guides',
   '---3': {
     type: 'separator',
   },
@@ -30,9 +32,7 @@ export default {
     type: 'heading',
     title: 'Substreams',
   },
-  substreams: {
-    type: 'children',
-  },
+  substreams: '',
   '---4': {
     type: 'separator',
   },
@@ -41,9 +41,9 @@ export default {
     title: 'Indexing',
   },
   'operating-graph-node': '',
-  firehose: 'Firehose',
-  '---5': {
-    type: 'separator',
-  },
-  'release-notes': 'Release Notes & Upgrade Guides',
+  'chain-integration-overview': '',
+  'new-chain-integration': 'Integrating New Networks',
+  firehose: '',
+  graphcast: '',
+  'mips-faqs': '',
 }

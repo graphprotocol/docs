@@ -2,8 +2,8 @@ import { HTMLAttributes, useContext } from 'react'
 
 import {
   BorderRadius,
-  buildShadow,
   buildTransition,
+  ButtonOrLink,
   Flex,
   Icon,
   Opacity,
@@ -12,7 +12,6 @@ import {
   useI18n,
 } from '@edgeandnode/gds'
 
-import { Link } from '@/components'
 import { NavContext } from '@/layout/NavContext'
 
 export type EditPageLinkProps = {
@@ -28,17 +27,17 @@ export const EditPageLink = ({ mobile = false, ...props }: EditPageLinkProps) =>
   const path = filePath.startsWith('https')
     ? filePath
     : `https://github.com/graphprotocol/docs/blob/main/website/pages/${
-        ['en', '[locale]'].includes(fileLocale) ? fileLocale : 'en'
+        fileLocale && ['en', '[locale]'].includes(fileLocale) ? fileLocale : 'en'
       }/${filePathSegments.join('/')}`
   return (
-    <Link
+    <ButtonOrLink
       href={path}
       target="_blank"
       sx={{
         display: 'block',
         py: Spacing['4px'],
         borderRadius: BorderRadius.S,
-        '&:hover': { color: 'White', textShadow: buildShadow('M') },
+        '&:hover': { color: 'White' },
         transition: buildTransition(),
       }}
       {...props}
@@ -56,6 +55,6 @@ export const EditPageLink = ({ mobile = false, ...props }: EditPageLinkProps) =>
           }}
         />
       </Flex.Row>
-    </Link>
+    </ButtonOrLink>
   )
 }

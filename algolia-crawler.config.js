@@ -19,21 +19,30 @@ new Crawler({
       indexName: 'thegraph-docs',
       pathsToMatch: ['https://thegraph.com/docs/**'],
       recordExtractor: ({ helpers }) => {
-        return helpers.docsearch({
+        const data = helpers.docsearch({
           recordProps: {
             lvl0: {
               selectors: '.graph-docs-current-group',
               defaultValue: 'The Graph Docs',
             },
-            lvl1: '.graph-docs-content h1 > span:first-of-type',
-            lvl2: '.graph-docs-content h2 > span:first-of-type',
-            lvl3: '.graph-docs-content h3 > span:first-of-type',
-            lvl4: '.graph-docs-content h4 > span:first-of-type',
-            lvl5: '.graph-docs-content h5 > span:first-of-type',
-            lvl6: '.graph-docs-content h6 > span:first-of-type',
+            lvl1: '.graph-docs-content h1',
+            lvl2: '.graph-docs-content h2',
+            lvl3: '.graph-docs-content h3',
+            lvl4: '.graph-docs-content h4',
+            lvl5: '.graph-docs-content h5',
+            lvl6: '.graph-docs-content h6',
             content: '.graph-docs-content p, .graph-docs-content li',
           },
         })
+        // See https://github.com/algolia/docsearch/issues/1723
+        data.forEach((record) => {
+          Object.entries(record.hierarchy)
+            .filter(([_level, content]) => content)
+            .forEach(([level, content]) => {
+              record.hierarchy[level] = content.replaceAll('&lt;', '<').replaceAll('&gt;', '>').replaceAll('&amp;', '&')
+            })
+        })
+        return data
       },
     },
   ],
