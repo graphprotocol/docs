@@ -134,7 +134,7 @@ export default function NextraLayout({ children, pageOpts, pageProps }: NextraTh
       title,
       images: frontMatter.socialImage
         ? [{ url: frontMatter.socialImage }]
-        : [{ url: `https://thegraph-docs-opengraph-image.the-guild.dev?title=${title}` }],
+        : [{ url: `https://thegraph-docs-opengraph-image.the-guild.dev?title=${encodeURI(title)}` }],
     },
   }
   if (frontMatter.seo) {
