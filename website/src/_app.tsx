@@ -39,7 +39,7 @@ function MyAppWithLocale({ Component, pageProps, router }: AppProps) {
           siteName: 'The Graph',
           images: [
             {
-              url: 'https://storage.googleapis.com/graph-website/seo/graph-website.jpg',
+              url: 'https://thegraph-docs-opengraph-image.the-guild.dev',
               alt: 'The Graph',
             },
           ],
