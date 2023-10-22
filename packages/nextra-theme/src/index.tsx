@@ -132,9 +132,12 @@ export default function NextraLayout({ children, pageOpts, pageProps }: NextraTh
     description: frontMatter.description,
     openGraph: {
       title,
-      images: frontMatter.socialImage
-        ? [{ url: frontMatter.socialImage }]
-        : [{ url: `https://thegraph-docs-opengraph-image.the-guild.dev?title=${encodeURI(title)}` }],
+      images: [
+        {
+          url:
+            frontMatter.socialImage || `https://thegraph-docs-opengraph-image.the-guild.dev?title=${encodeURI(title)}`,
+        },
+      ],
     },
   }
   if (frontMatter.seo) {
