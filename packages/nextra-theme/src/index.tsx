@@ -70,6 +70,17 @@ export default function NextraLayout({ children, pageOpts, pageProps }: NextraTh
   const { locale, defaultLocale } = useI18n<any>()
   const fsPath = useFSRoute()
 
+  const gitDate = new Date(pageOpts.timestamp!)
+  const lastUpdatedAt = gitDate.toLocaleDateString(locale, {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  })
+  const dateEl = <time dateTime={gitDate.toISOString()}>{lastUpdatedAt}</time>
+
+  console.log('timestamp', lastUpdatedAt)
+  console.log('reading time', pageOpts.readingTime!.minutes > 0 && pageOpts.readingTime!.text)
+
   const args = useMemo(() => {
     const result = normalizePages({
       list: pageMap,
