@@ -653,7 +653,7 @@ fonction d'exportation handleNewExchange (événement : NewExchange) : void {
 
 ### Data Source Context
 
-Data source contexts allow passing extra configuration when instantiating a template. In our example, let's say exchanges are associated with a particular trading pair, which is included in the `NewExchange` event. That information can be passed into the instantiated data source, like so:
+Les contextes de source de données permettent de transmettre une configuration supplémentaire lors de l'instanciation d'un modèle. Dans notre exemple, disons que les échanges sont associés à une paire de transactions particulière, qui est incluse dans l'événement `NewExchange`. Ces informations peuvent être transmises à la source de données instanciée, comme suit :
 
 ```typescript
 import { Exchange } from '../generated/templates'
@@ -668,153 +668,153 @@ export function handleNewExchange(event: NewExchange): void {
 Inside a mapping of the `Exchange` template, the context can then be accessed:
 
 ```typescript
-import { dataSource } from '@graphprotocol/graph-ts'
+importer { dataSource } depuis '@graphprotocol/graph-ts'
 
-let context = dataSource.context()
-let tradingPair = context.getString('tradingPair')
+laissez contexte = dataSource.context()
+laissez tradingPair = context.getString('tradingPair')
 ```
 
-There are setters and getters like `setString` and `getString` for all value types.
+Il existe des setters et des getters comme `setString` et `getString` pour tous les types de valeur.
 
-## Start Blocks
+## Blocs de démarrage
 
-The `startBlock` is an optional setting that allows you to define from which block in the chain the data source will start indexing. Setting the start block allows the data source to skip potentially millions of blocks that are irrelevant. Typically, a subgraph developer will set `startBlock` to the block in which the smart contract of the data source was created.
+Le `startBlock` est un paramètre facultatif qui vous permet de définir à partir de quel bloc de la chaîne la source de données commencera l'indexation. La définition du bloc de départ permet à la source de données d'ignorer potentiellement des millions de blocs non pertinents. En règle générale, un développeur de subgraphs définira `startBlock` sur le bloc dans lequel le contrat intelligent de la source de données a été créé.
 
 ```yaml
-dataSources:
-  - kind: ethereum/contract
-    name: ExampleSource
-    network: mainnet
-    source:
-      address: '0xc0a47dFe034B400B47bDaD5FecDa2621de6c4d95'
-      abi: ExampleContract
-      startBlock: 6627917
-    mapping:
-      kind: ethereum/events
-      apiVersion: 0.0.6
-      language: wasm/assemblyscript
-      file: ./src/mappings/factory.ts
-      entities:
-        - User
-      abis:
-        - name: ExampleContract
-          file: ./abis/ExampleContract.json
-      eventHandlers:
-        - event: NewEvent(address,address)
-          handler: handleNewEvent
+les sources de données:
+   - genre : ethereum/contrat
+     nom : ExempleSource
+     réseau : réseau principal
+     source:
+       adresse : '0xc0a47dFe034B400B47bDaD5FecDa2621de6c4d95'
+       abi : Exemple de contrat
+       bloc de démarrage : 6627917
+     cartographie :
+       genre : ethereum/événements
+       Version api : 0.0.6
+       langage : wasm/assemblyscript
+       fichier : ./src/mappings/factory.ts
+       entités :
+         - Utilisateur
+       abis :
+         - nom : ExempleContrat
+           fichier : ./abis/ExampleContract.json
+       Gestionnaires d'événements :
+         - événement : NewEvent(adresse,adresse)
+           gestionnaire : handleNewEvent
 ```
 
-> **Note:** The contract creation block can be quickly looked up on Etherscan:
+> **Remarque :** Le bloc de création de contrat peut être rapidement consulté sur Etherscan :
 > 
-> 1. Search for the contract by entering its address in the search bar.
-> 2. Click on the creation transaction hash in the `Contract Creator` section.
+> 1. Recherchez le contrat en saisissant son adresse dans la barre de recherche.
+> 2. Cliquez sur le hachage de la transaction de création dans la section `Contract Creator`.
 > 3. Load the transaction details page where you'll find the start block for that contract.
 
 ## Call Handlers
 
 While events provide an effective way to collect relevant changes to the state of a contract, many contracts avoid generating logs to optimize gas costs. In these cases, a subgraph can subscribe to calls made to the data source contract. This is achieved by defining call handlers referencing the function signature and the mapping handler that will process calls to this function. To process these calls, the mapping handler will receive an `ethereum.Call` as an argument with the typed inputs to and outputs from the call. Calls made at any depth in a transaction's call chain will trigger the mapping, allowing activity with the data source contract through proxy contracts to be captured.
 
-Call handlers will only trigger in one of two cases: when the function specified is called by an account other than the contract itself or when it is marked as external in Solidity and called as part of another function in the same contract.
+Les gestionnaires d'appels ne se déclencheront que dans l'un des deux cas suivants : lorsque la fonction spécifiée est appelée par un compte autre que le contrat lui-même ou lorsqu'elle est marquée comme externe dans Solidity et appelée dans le cadre d'une autre fonction du même contrat.
 
-> **Note:** Call handlers currently depend on the Parity tracing API. Certain networks, such as BNB chain and Arbitrum, does not support this API. If a subgraph indexing one of these networks contain one or more call handlers, it will not start syncing. Subgraph developers should instead use event handlers. These are far more performant than call handlers, and are supported on every evm network.
+> **Remarque :** Les gestionnaires d'appels dépendent actuellement de l'API de suivi de parité. Certains réseaux, tels que la chaîne BNB et Arbitrum, ne prennent pas en charge cette API. Si un subgraph indexant l’un de ces réseaux contient un ou plusieurs gestionnaires d’appels, il ne démarrera pas la synchronisation. Les développeurs de subgraphs devraient plutôt utiliser des gestionnaires d'événements. Ceux-ci sont bien plus performants que les gestionnaires d'appels et sont pris en charge sur tous les réseaux evm.
 
-### Defining a Call Handler
+### Définir un gestionnaire d'appels
 
-To define a call handler in your manifest, simply add a `callHandlers` array under the data source you would like to subscribe to.
+Pour définir un gestionnaire d'appels dans votre manifeste, ajoutez simplement un tableau `callHandlers` sous la source de données à laquelle vous souhaitez vous abonner.
 
 ```yaml
-dataSources:
-  - kind: ethereum/contract
-    name: Gravity
-    network: mainnet
-    source:
-      address: '0x731a10897d267e19b34503ad902d0a29173ba4b1'
-      abi: Gravity
-    mapping:
-      kind: ethereum/events
-      apiVersion: 0.0.6
-      language: wasm/assemblyscript
-      entities:
-        - Gravatar
-        - Transaction
-      abis:
-        - name: Gravity
-          file: ./abis/Gravity.json
-      callHandlers:
-        - function: createGravatar(string,string)
-          handler: handleCreateGravatar
+les sources de données:
+   - genre : ethereum/contrat
+     nom: Gravité
+     réseau : réseau principal
+     source:
+       adresse : '0x731a10897d267e19b34503ad902d0a29173ba4b1'
+       abi : Gravité
+     cartographie :
+       genre : ethereum/événements
+       Version api : 0.0.6
+       langage : wasm/assemblyscript
+       entités :
+         -Gravatar
+         - Transaction
+       abis :
+         - nom : Gravité
+           fichier : ./abis/Gravity.json
+       Gestionnaires d'appels :
+         - fonction : createGravatar(string,string)
+           gestionnaire : handleCreateGravatar
 ```
 
-The `function` is the normalized function signature to filter calls by. The `handler` property is the name of the function in your mapping you would like to execute when the target function is called in the data source contract.
+La `fonction` est la signature de fonction normalisée permettant de filtrer les appels. La propriété `handler` est le nom de la fonction de votre mappage que vous souhaitez exécuter lorsque la fonction cible est appelée dans le contrat de source de données.
 
-### Mapping Function
+### Fonction de cartographie
 
-Each call handler takes a single parameter that has a type corresponding to the name of the called function. In the example subgraph above, the mapping contains a handler for when the `createGravatar` function is called and receives a `CreateGravatarCall` parameter as an argument:
+Chaque gestionnaire d'appel prend un seul paramètre dont le type correspond au nom de la fonction appelée. Dans l'exemple de subgraph ci-dessus, le mappage contient un gestionnaire lorsque la fonction `createGravatar` est appelée et reçoit un paramètre `CreateGravatarCall` comme argument :
 
 ```typescript
-import { CreateGravatarCall } from '../generated/Gravity/Gravity'
-import { Transaction } from '../generated/schema'
+importer { CreateGravatarCall } depuis '../generated/Gravity/Gravity'
+importer { Transaction } depuis '../generated/schema'
 
-export function handleCreateGravatar(call: CreateGravatarCall): void {
-  let id = call.transaction.hash
-  let transaction = new Transaction(id)
-  transaction.displayName = call.inputs._displayName
-  transaction.imageUrl = call.inputs._imageUrl
-  transaction.save()
+fonction d'exportation handleCreateGravatar (appel : CreateGravatarCall) : void {
+   laissez id = call.transaction.hash
+   let transaction = nouvelle transaction (id)
+   transaction.displayName = call.inputs._displayName
+   transaction.imageUrl = call.inputs._imageUrl
+   transaction.save()
 }
 ```
 
-The `handleCreateGravatar` function takes a new `CreateGravatarCall` which is a subclass of `ethereum.Call`, provided by `@graphprotocol/graph-ts`, that includes the typed inputs and outputs of the call. The `CreateGravatarCall` type is generated for you when you run `graph codegen`.
+La fonction `handleCreateGravatar` prend un nouveau `CreateGravatarCall` qui est une sous-classe de `ethereum. Call`, fournie par `@graphprotocol/graph-ts`, qui inclut les entrées et sorties saisies de l’appel. Le type `CreateGravatarCall` est généré pour vous lorsque vous exécutez `graph codegen`.
 
 ## Block Handlers
 
-In addition to subscribing to contract events or function calls, a subgraph may want to update its data as new blocks are appended to the chain. To achieve this a subgraph can run a function after every block or after blocks that match a pre-defined filter.
+En plus de s'abonner à des événements de contrat ou à des appels de fonction, un subgraph peut souhaiter mettre à jour ses données à mesure que de nouveaux blocs sont ajoutés à la chaîne. Pour y parvenir, un subgraph peut exécuter une fonction après chaque bloc ou après des blocs correspondant à un filtre prédéfini.
 
 ### Supported Filters
 
 #### Call Filter
 
 ```yaml
-filter:
-  kind: call
+filtre:
+   genre : appeler
 ```
 
-_The defined handler will be called once for every block which contains a call to the contract (data source) the handler is defined under._
+_Le gestionnaire défini sera appelé une fois pour chaque bloc contenant un appel au contrat (source de données) sous lequel le gestionnaire est défini._
 
-> **Note:** The `call` filter currently depend on the Parity tracing API. Certain networks, such as BNB chain and Arbitrum, does not support this API. If a subgraph indexing one of these networks contain one or more block handlers with a `call` filter, it will not start syncing.
+> **Remarque :** Le filtre `call` dépend actuellement de l'API de traçage de parité. Certains réseaux, tels que la chaîne BNB et Arbitrum, ne prennent pas en charge cette API. Si un subgraph indexant l'un de ces réseaux contient un ou plusieurs gestionnaires de blocs avec un filtre `call`, il ne démarrera pas la synchronisation.
 
-The absence of a filter for a block handler will ensure that the handler is called every block. A data source can only contain one block handler for each filter type.
+L'absence de filtre pour un gestionnaire de bloc garantira que le gestionnaire est appelé à chaque bloc. Une source de données ne peut contenir qu'un seul gestionnaire de bloc pour chaque type de filtre.
 
 ```yaml
-dataSources:
-  - kind: ethereum/contract
-    name: Gravity
-    network: dev
-    source:
-      address: '0x731a10897d267e19b34503ad902d0a29173ba4b1'
-      abi: Gravity
-    mapping:
-      kind: ethereum/events
-      apiVersion: 0.0.6
-      language: wasm/assemblyscript
-      entities:
-        - Gravatar
-        - Transaction
-      abis:
-        - name: Gravity
-          file: ./abis/Gravity.json
-      blockHandlers:
-        - handler: handleBlock
-        - handler: handleBlockWithCallToContract
-          filter:
-            kind: call
+les sources de données:
+   - genre : ethereum/contrat
+     nom: Gravité
+     réseau : développeur
+     source:
+       adresse : '0x731a10897d267e19b34503ad902d0a29173ba4b1'
+       abi : Gravité
+     cartographie :
+       genre : ethereum/événements
+       Version api : 0.0.6
+       langage : wasm/assemblyscript
+       entités :
+         -Gravatar
+         - Transaction
+       abis :
+         - nom : Gravité
+           fichier : ./abis/Gravity.json
+       gestionnaires de blocs :
+         - gestionnaire : handleBlock
+         - gestionnaire : handleBlockWithCallToContract
+           filtre:
+             genre : appele
 ```
 
-#### Polling Filter
+#### Filtre d'interrogation
 
-> **Requires `specVersion` >= 0.0.8**
+> **Nécessite `specVersion` >= 0.0.8**
 
-> **Note:** Polling filters are only available on dataSources of `kind: ethereum`.
+> **Remarque :** Les filtres d'interrogation ne sont disponibles que sur les sources de données de `genre : ethereum`.
 
 ```yaml
 blockHandlers:
@@ -824,13 +824,13 @@ blockHandlers:
       every: 10
 ```
 
-The defined handler will be called once for every `n` blocks, where `n` is the value provided in the `every` field. This configuration allows the subgraph to perform specific operations at regular block intervals.
+Le gestionnaire défini sera appelé une fois pour tous les blocs `n`, où `n` est la valeur fournie dans le champ `every`. Cette configuration permet au sugraph d'effectuer des opérations spécifiques à intervalles réguliers.
 
 #### Once Filter
 
-> **Requires `specVersion` >= 0.0.8**
+> **Nécessite `specVersion` >= 0.0.8**
 
-> **Note:** Once filters are only available on dataSources of `kind: ethereum`.
+> **Remarque :** Les filtres Once ne sont disponibles que sur les sources de données de `genre : Ethereum`.
 
 ```yaml
 blockHandlers:
@@ -842,30 +842,30 @@ blockHandlers:
 The defined handler with the once filter will be called only once before all other handlers run. This configuration allows the subgraph to use the handler as an initialization handler, performing specific tasks at the start of indexing.
 
 ```ts
-export function handleOnce(block: ethereum.Block): void {
-  let data = new InitialData(Bytes.fromUTF8('initial'))
-  data.data = 'Setup data here'
-  data.save()
+fonction d'exportation handleOnce (bloc : ethereum.Block) : void {
+   laissez data = new InitialData(Bytes.fromUTF8('initial'))
+   data.data = 'Configurer les données ici'
+   data.save()
 }
 ```
 
-### Mapping Function
+### Fonction de cartographie
 
-The mapping function will receive an `ethereum.Block` as its only argument. Like mapping functions for events, this function can access existing subgraph entities in the store, call smart contracts and create or update entities.
+La fonction de mappage recevra un `ethereum.Block` comme seul argument. Comme les fonctions de mappage pour les événements, cette fonction peut accéder aux entités de subgraphs existantes dans le magasin, appeler des contrats intelligents et créer ou mettre à jour des entités.
 
 ```typescript
-import { ethereum } from '@graphprotocol/graph-ts'
+importer { ethereum } depuis '@graphprotocol/graph-ts'
 
-export function handleBlock(block: ethereum.Block): void {
-  let id = block.hash
-  let entity = new Block(id)
-  entity.save()
+fonction d'exportation handleBlock (bloc : ethereum.Block) : void {
+   laissez l'identifiant = block.hash
+   laisser l'entité = nouveau bloc (id)
+   entité.save()
 }
 ```
 
-## Anonymous Events
+## Événements anonymes
 
-If you need to process anonymous events in Solidity, that can be achieved by providing the topic 0 of the event, as in the example:
+Si vous devez traiter des événements anonymes dans Solidity, cela peut être réalisé en fournissant le sujet 0 de l'événement, comme dans l'exemple :
 
 ```yaml
 eventHandlers:
@@ -874,35 +874,35 @@ eventHandlers:
     handler: handleGive
 ```
 
-An event will only be triggered when both the signature and topic 0 match. By default, `topic0` is equal to the hash of the event signature.
+Un événement ne sera déclenché que lorsque la signature et le sujet 0 correspondent. Par défaut, `topic0` est égal au hachage de la signature de l'événement.
 
-## Transaction Receipts in Event Handlers
+## Reçus de transaction dans les gestionnaires d'événements
 
-Starting from `specVersion` `0.0.5` and `apiVersion` `0.0.7`, event handlers can have access to the receipt for the transaction which emitted them.
+À partir de `specVersion` `0.0.5` et `apiVersion` `0.0.7`, les gestionnaires d'événements peuvent avoir accès au reçu du transaction qui les a émis.
 
-To do so, event handlers must be declared in the subgraph manifest with the new `receipt: true` key, which is optional and defaults to false.
+Pour ce faire, les gestionnaires d'événements doivent être déclarés dans le manifeste du subgraph avec la nouvelle clé `receipt: true`, qui est facultative et vaut par défaut false.
 
 ```yaml
-eventHandlers:
-  - event: NewGravatar(uint256,address,string,string)
-    handler: handleNewGravatar
-    receipt: true
+gestionnaires d'événements :
+   - événement : NewGravatar(uint256,adresse,chaîne,chaîne)
+     gestionnaire : handleNewGravatar
+     reçu : vrai
 ```
 
-Inside the handler function, the receipt can be accessed in the `Event.receipt` field. When the `receipt` key is set to `false` or omitted in the manifest, a `null` value will be returned instead.
+Dans la fonction de gestionnaire, le reçu est accessible dans le champ `Event.receipt`. Lorsque la clé `receipt` est définie sur `false` ou omise dans le manifeste, une valeur `null` sera renvoyée à la place.
 
-## Experimental features
+## Fonctionnalités expérimentales
 
-Starting from `specVersion` `0.0.4`, subgraph features must be explicitly declared in the `features` section at the top level of the manifest file, using their `camelCase` name, as listed in the table below:
+À partir de `specVersion` `0.0.4`, les fonctionnalités de subgraph doivent être explicitement déclarées dans la section `features` au niveau supérieur du fichier manifeste, en utilisant leur `camelCase`, comme indiqué dans le tableau ci-dessous :
 
-| Feature                                                   | Name                                                |
-| --------------------------------------------------------- | --------------------------------------------------- |
-| [Erreurs non fatales](#non-fatal-errors)                  | `nonFatalErrors`                                    |
-| [Full-text Search](#defining-fulltext-search-fields)      | `fullTextSearch`                                    |
-| [Greffage](#grafting-onto-existing-subgraphs)             | `grafting`                                          |
-| [IPFS on Ethereum Contracts](#ipfs-on-ethereum-contracts) | `ipfsOnEthereumContracts` or `nonDeterministicIpfs` |
+| Fonctionnalité                                                  | Name                                                |
+| --------------------------------------------------------------- | --------------------------------------------------- |
+| [Erreurs non fatales](#non-fatal-errors)                        | `erreursnonfatales`                                 |
+| [Recherche en texte intégral](#defining-fulltext-search-fields) | `recherche en texte intégral`                       |
+| [Grafting](#grafting-onto-existing-subgraphs)                   | `greffage`                                          |
+| [IPFS sur les contrats Ethereum](#ipfs-on-ethereum-contracts)   | `ipfsOnEthereumContracts` or `nonDeterministicIpfs` |
 
-For instance, if a subgraph uses the **Full-Text Search** and the **Non-fatal Errors** features, the `features` field in the manifest should be:
+Par exemple, si un subgraph utilise les fonctionnalités **Recherche en texte intégral** et **Erreurs non fatales** features, le `features` dans le manifeste doit être :
 
 ```yaml
 specVersion: 0.0.4
@@ -913,37 +913,33 @@ features:
 dataSources: ...
 ```
 
-Note that using a feature without declaring it will incur a **validation error** during subgraph deployment, but no errors will occur if a feature is declared but not used.
+Notez que l'utilisation d'une fonctionnalité sans la déclarer entraînera une **erreur de validation** lors du déploiement du sous-graphe, mais aucune erreur ne se produira si une fonctionnalité est déclarée mais n'est pas utilisée.
 
-### IPFS on Ethereum Contracts
+### IPFS sur les contrats Ethereum
 
-A common use case for combining IPFS with Ethereum is to store data on IPFS that would be too expensive to maintain on-chain, and reference the IPFS hash in Ethereum contracts.
+Un cas d'utilisation courant pour combiner IPFS avec Ethereum est de stocker des données sur IPFS qui seraient trop coûteuses à maintenir en chaîne et de référencer le hachage IPFS dans les contrats Ethereum.
 
-Given such IPFS hashes, subgraphs can read the corresponding files from IPFS using `ipfs.cat` and `ipfs.map`. To do this reliably, it is required that these files are pinned to an IPFS node with high availability, so that the [hosted service](https://thegraph.com/hosted-service) IPFS node can find them during indexing.
+Compte tenu de ces hachages IPFS, les subgraphs peuvent lire les fichiers correspondants depuis IPFS en utilisant `ipfs.cat` et `ipfs.map`. Pour ce faire de manière fiable, il est nécessaire que ces fichiers soient épinglés sur un nœud IPFS à haute disponibilité, afin que le [service hébergé](https://thegraph.com/hosted-service) nœud IPFS peut les retrouver lors de l'indexation.
 
-> **Note:** The Graph Network does not yet support `ipfs.cat` and `ipfs.map`, and developers should not deploy subgraphs using that functionality to the network via the Studio.
+> **Remarque :** Le réseau Graph ne prend pas encore en charge `ipfs.cat` et `ipfs.map`, et les développeurs ne doivent pas déployer subgraphs utilisant cette fonctionnalité au réseau via le Studio.
 
-> **[Feature Management](#experimental-features):** `ipfsOnEthereumContracts` must be declared under `features` in the subgraph manifest. For non EVM chains, the `nonDeterministicIpfs` alias can also be used for the same purpose.
+> **[Gestion des fonctionnalités](#experimental-features) :** `ipfsOnEthereumContracts` doit être déclaré sous `features</ ` dans le manifeste du subgraph. Pour les chaînes non EVM, l'alias `nonDeterministicIpfs` peut également être utilisé pour le même.
 
 When running a local Graph Node, the `GRAPH_ALLOW_NON_DETERMINISTIC_IPFS` environment variable must be set in order to index subgraphs using this experimental functionality.
 
 ### Erreurs non fatales
 
-Indexing errors on already synced subgraphs will, by default, cause the subgraph to fail and stop syncing. Subgraphs can alternatively be configured to continue syncing in the presence of errors, by ignoring the changes made by the handler which provoked the error. This gives subgraph authors time to correct their subgraphs while queries continue to be served against the latest block, though the results might be inconsistent due to the bug that caused the error. Note that some errors are still always fatal. To be non-fatal, the error must be known to be deterministic.
+Les erreurs d'indexation sur les subgraphs déjà synchronisés entraîneront, par défaut, l'échec du subgraph et l'arrêt de la synchronisation. Les subgraphs peuvent également être configurés pour continuer la synchronisation en présence d'erreurs, en ignorant les modifications apportées par le gestionnaire qui a provoqué l'erreur. Cela donne aux auteurs de subgraphs le temps de corriger leurs subgraphs pendant que les requêtes continuent d'être traitées sur le dernier bloc, bien que les résultats puissent être incohérents en raison du bogue à l'origine de l'erreur. Notez que certaines erreurs sont toujours fatales. Pour être non fatale, l'erreur doit être connue pour être déterministe.
 
 > **Note:** The Graph Network does not yet support non-fatal errors, and developers should not deploy subgraphs using that functionality to the network via the Studio.
 
-Enabling non-fatal errors requires setting the following feature flag on the subgraph manifest:
+L'activation des erreurs non fatales nécessite la définition de l'indicateur de fonctionnalité suivant sur le manifeste du subgraph :
 
 ```yaml
-specVersion: 0.0.4
-description: Gravatar for Ethereum
-features:
-    - nonFatalErrors
-    ...
+l'activation des erreurs non fatales nécessite la définition de l'indicateur de fonctionnalité suivant sur le manifeste du subgraph ...
 ```
 
-The query must also opt-in to querying data with potential inconsistencies through the `subgraphError` argument. It is also recommended to query `_meta` to check if the subgraph has skipped over errors, as in the example:
+La requête doit également choisir d'interroger les données présentant des incohérences potentielles via l'argument `subgraphError`. Il est également recommandé d'interroger `_meta` pour vérifier si le subgraph a ignoré des erreurs, comme dans l'exemple :
 
 ```graphql
 foos(first: 100, subgraphError: allow) {
@@ -955,58 +951,58 @@ _meta {
 }
 ```
 
-If the subgraph encounters an error, that query will return both the data and a graphql error with the message `"indexing_error"`, as in this example response:
+Si le subgraph rencontre une erreur, cette requête renverra à la fois les données et une erreur graphql avec le message `"indexing_error"`, comme dans cet exemple de réponse :
 
 ```graphql
-"data": {
-    "foos": [
-        {
-          "id": "0xdead"
-        }
-    ],
-    "_meta": {
-        "hasIndexingErrors": true
-    }
+"données": {
+     "foos": [
+         {
+           "identifiant": "0xdead"
+         }
+     ],
+     "_meta": {
+         "hasIndexingErrors": vrai
+     }
 },
-"errors": [
-    {
-        "message": "indexing_error"
-    }
+"les erreurs": [
+     {
+         "message": "erreur_indexation"
+     }
 ]
 ```
 
-### Grafting onto Existing Subgraphs
+### Greffe sur des subgraphs existants
 
-> **Note:** it is not recommended to use grafting when initially upgrading to The Graph Network. Learn more [here](/cookbook/grafting/#important-note-on-grafting-when-upgrading-to-the-network).
+> **Remarque :** il n'est pas recommandé d'utiliser le greffage lors de la mise à niveau initiale vers The Graph Network. Apprenez-en plus [ici](/cookbook/grafting/#important-note-on-grafting-when-upgrading-to-the-network).
 
-When a subgraph is first deployed, it starts indexing events at the genesis block of the corresponding chain (or at the `startBlock` defined with each data source) In some circumstances; it is beneficial to reuse the data from an existing subgraph and start indexing at a much later block. This mode of indexing is called _Grafting_. Grafting is, for example, useful during development to get past simple errors in the mappings quickly or to temporarily get an existing subgraph working again after it has failed.
+Lorsqu'un subgraph est déployé pour la première fois, il commence à indexer les événements au niveau du bloc Genesis de la chaîne correspondante (ou au `startBlock` défini avec chaque source de données). Dans certaines circonstances ; il est avantageux de réutiliser les données d'un subgraph existant et de commencer l'indexation à un bloc beaucoup plus tard. Ce mode d'indexation est appelé _Grafting_. Le greffage est, par exemple, utile pendant le développement pour surmonter rapidement de simples erreurs dans les mappages ou pour faire fonctionner à nouveau temporairement un subgraph existant après son échec.
 
-A subgraph is grafted onto a base subgraph when the subgraph manifest in `subgraph.yaml` contains a `graft` block at the top-level:
+Un subgraph est greffé sur un subgraph de base lorsque le manifeste du soubgraph dans `subgraph.yaml` contient un bloc `graft` au niveau supérieur :
 
 ```yaml
 description: ...
-graft:
-  base: Qm... # Subgraph ID of base subgraph
-  block: 7345624 # Block number
+greffer:
+   base: Qm... # ID de subgraph du subgraph de base
+   bloc : 7345624 # Numéro de bloc
 ```
 
-When a subgraph whose manifest contains a `graft` block is deployed, Graph Node will copy the data of the `base` subgraph up to and including the given `block` and then continue indexing the new subgraph from that block on. The base subgraph must exist on the target Graph Node instance and must have indexed up to at least the given block. Because of this restriction, grafting should only be used during development or during an emergency to speed up producing an equivalent non-grafted subgraph.
+Lorsqu'un subgraph dont le manifeste contient un bloc `graft` est déployé, Graph Node copiera les données du subgraph `base` jusqu'au `bloc` donné inclus. puis continuez à indexer le nouveau subgraph à partir de ce bloc. Le subgraph de base doit exister sur l'instance Graph Node cible et doit avoir été indexé jusqu'au moins au bloc donné. En raison de cette restriction, le greffage ne doit être utilisé que pendant le développement ou en cas d'urgence pour accélérer la production d'un subgraph équivalent non greffé.
 
-Because grafting copies rather than indexes base data, it is much quicker to get the subgraph to the desired block than indexing from scratch, though the initial data copy can still take several hours for very large subgraphs. While the grafted subgraph is being initialized, the Graph Node will log information about the entity types that have already been copied.
+Étant donné que le greffage copie plutôt que l'indexation des données de base, il est beaucoup plus rapide d'amener le susgraph dans le bloc souhaité que l'indexation à partir de zéro, bien que la copie initiale des données puisse encore prendre plusieurs heures pour de très gros subgraphs. Pendant l'initialisation du subgraph greffé, le nœud graphique enregistrera des informations sur les types d'entités qui ont déjà été copiés.
 
-The grafted subgraph can use a GraphQL schema that is not identical to the one of the base subgraph, but merely compatible with it. It has to be a valid subgraph schema in its own right, but may deviate from the base subgraph's schema in the following ways:
+Le subgraph greffé peut utiliser un schéma GraphQL qui n'est pas identique à celui du subgraph de base, mais simplement compatible avec celui-ci. Il doit s'agir d'un schéma de subgraph valide à part entière, mais il peut s'écarter du schéma du subgraph de base des manières suivantes :
 
-- It adds or removes entity types
+- Il ajoute ou supprime des types d'entités
 - It removes attributes from entity types
-- It adds nullable attributes to entity types
-- It turns non-nullable attributes into nullable attributes
-- It adds values to enums
+- Il ajoute des attributs nullables aux types d'entités
+- Il transforme les attributs non nullables en attributs nullables
+- Il ajoute des valeurs aux énumérations
 - It adds or removes interfaces
-- It changes for which entity types an interface is implemented
+- Cela change pour quels types d'entités une interface est implémentée
 
-> **[Feature Management](#experimental-features):** `grafting` must be declared under `features` in the subgraph manifest.
+> **[Gestion des fonctionnalités](#experimental-features) :** le `greffage` doit être déclaré sous `features`dans le manifeste du subgraph.
 
-## File Data Sources
+## Sources de données de fichiers
 
 File data sources are a new subgraph functionality for accessing off-chain data during indexing in a robust, extendable way. File data sources support fetching files from IPFS and from Arweave.
 
@@ -1014,94 +1010,94 @@ File data sources are a new subgraph functionality for accessing off-chain data 
 
 ### Vue d'ensemble
 
-Rather than fetching files "in line" during handler exectuion, this introduces templates which can be spawned as new data sources for a given file identifier. These new data sources fetch the files, retrying if they are unsuccessful, running a dedicated handler when the file is found.
+Plutôt que de récupérer les fichiers "en ligne" pendant l'exécution du gestionnaire, cela introduit des modèles qui peuvent être générés en tant que nouvelles sources de données pour un identifiant de fichier donné. Ces nouvelles sources de données récupèrent les fichiers, réessayent en cas d'échec et exécutent un gestionnaire dédié lorsque le fichier est trouvé.
 
 This is similar to the [existing data source templates](https://thegraph.com/docs/en/developing/creating-a-subgraph/#data-source-templates), which are used to dynamically create new chain-based data sources.
 
-> This replaces the existing `ipfs.cat` API
+> Cela remplace l'API `ipfs.cat` existante
 
-### Upgrade guide
+### Guide de mise à niveau
 
-#### Update `graph-ts` and `graph-cli`
+#### Mettre à jour `graph-ts` et `graph-cli`
 
-File data sources requires graph-ts >=0.29.0 and graph-cli >=0.33.1
+Les sources de données de fichiers nécessitent graph-ts >=0.29.0 et graph-cli >=0.33.1
 
-#### Add a new entity type which will be updated when files are found
+#### Ajouter un nouveau type d'entité qui sera mis à jour lorsque des fichiers seront trouvés
 
 File data sources cannot access or update chain-based entities, but must update file specific entities.
 
-This may mean splitting out fields from existing entities into separate entities, linked together.
+Cela peut impliquer de diviser les champs des entités existantes en entités distinctes, liées entre elles.
 
-Original combined entity:
+Entité combinée d'origine :
 
 ```graphql
-type Token @entity {
-  id: ID!
-  tokenID: BigInt!
-  tokenURI: String!
-  externalURL: String!
-  ipfsURI: String!
-  image: String!
-  name: String!
-  description: String!
-  type: String!
-  updatedAtTimestamp: BigInt
-  owner: User!
+tapez Jeton @entité {
+   je l'ai fait!
+   ID de jeton : BigInt !
+   tokenURI : chaîne !
+   externalURL : chaîne !
+   ipfsURI : chaîne !
+   image : Ficelle !
+   nom : Chaîne !
+   description : Ficelle !
+   tapez : chaîne !
+   updateAtTimestamp : BigInt
+   propriétaire : Utilisateur !
 }
 ```
 
-New, split entity:
+Nouvelle entité scindée :
 
 ```graphql
-type Token @entity {
-  id: ID!
-  tokenID: BigInt!
-  tokenURI: String!
-  ipfsURI: TokenMetadata
-  updatedAtTimestamp: BigInt
-  owner: String!
+tapez Jeton @entité {
+   je l'ai fait!
+   ID de jeton : BigInt !
+   tokenURI : chaîne !
+   ipfsURI : TokenMetadata
+   updateAtTimestamp : BigInt
+   propriétaire : Chaîne !
 }
 
-type TokenMetadata @entity {
-  id: ID!
-  image: String!
-  externalURL: String!
-  name: String!
-  description: String!
+tapez TokenMetadata @entity {
+   je l'ai fait!
+   image : Ficelle !
+   externalURL : chaîne !
+   nom : Chaîne !
+   description : Ficelle !
 }
 ```
 
-If the relationship is 1:1 between the parent entity and the resulting file data source entity, the simplest pattern is to link the parent entity to a resulting file entity by using the IPFS CID as the lookup. Get in touch on Discord if you are having difficulty modelling your new file-based entities!
+Si la relation est 1:1 entre l'entité parent et l'entité de source de données de fichier résultante, le modèle le plus simple consiste à lier l'entité parent à une entité de fichier résultante en utilisant le CID IPFS comme recherche. Contactez Discord si vous rencontrez des difficultés pour modéliser vos nouvelles entités basées sur des fichiers !
 
-> You can use [nested filters](https://thegraph.com/docs/en/querying/graphql-api/#example-for-nested-entity-filtering) to filter parent entities on the basis of these nested entities.
+> Vous pouvez utiliser des [filtres imbriqués](https://thegraph.com/docs/en/querying/graphql-api/#example-for-nested-entity-filtering) pour filtrer les entités parent sur le base de ces entités imbriquées.
 
-#### Add a new templated data source with `kind: file/ipfs` or `kind: file/arweave`
+#### Ajoutez une nouvelle source de données modélisée avec `kind: file/ipfs` ou `kind: file/arweave`
 
-This is the data source which will be spawned when a file of interest is identified.
+Il s'agit de la source de données qui sera générée lorsqu'un fichier d'intérêt est identifié.
 
 ```yaml
-templates:
-  - name: TokenMetadata
-    kind: file/ipfs
-    mapping:
-      apiVersion: 0.0.7
-      language: wasm/assemblyscript
-      file: ./src/mapping.ts
-      handler: handleMetadata
-      entities:
-        - TokenMetadata
-      abis:
-        - name: Token
-          file: ./abis/Token.json
+modèles :
+   - nom : TokenMetadata
+     genre : fichier/ipfs
+     cartographie :
+       Version api : 0.0.7
+       langage : wasm/assemblyscript
+       fichier : ./src/mapping.ts
+       gestionnaire : handleMetadata
+       entités :
+         - TokenMétadonnées
+       abis :
+         - nom : Jeton
+           fichier : ./abis/Token.json
 ```
 
-> Currently `abis` are required, though it is not possible to call contracts from within file data sources
+> Actuellement, les `abis` sont requis, bien qu'il ne soit pas possible d'appeler des contrats à partir de sources de données de fichiers
 
 The file data source must specifically mention all the entity types which it will interact with under `entities`. See [limitations](#Limitations) for more details.
 
-#### Create a new handler to process files
+#### Créer un nouveau gestionnaire pour traiter les fichiers
 
-This handler should accept one `Bytes` parameter, which will be the contents of the file, when it is found, which can then be processed. This will often be a JSON file, which can be processed with `graph-ts` helpers ([documentation](https://thegraph.com/docs/en/developing/assemblyscript-api/#json-api)).
+Ce gestionnaire doit accepter un paramètre `Bytes`, qui sera le contenu du fichier, lorsqu'il sera trouvé, qui pourra ensuite être traité. Il s'agira souvent d'un fichier JSON, qui peut être traité avec les assistants `graph-ts` ([documentation](https://thegraph.com/docs/en/developing/assemblyscript-api/#json -api)).
 
 The CID of the file as a readable string can be accessed via the `dataSource` as follows:
 
@@ -1136,11 +1132,11 @@ export function handleMetadata(content: Bytes): void {
 }
 ```
 
-#### Spawn file data sources when required
+#### Générer des sources de données de fichiers si nécessaire
 
-You can now create file data sources during execution of chain-based handlers:
+Vous pouvez désormais créer des sources de données de fichiers lors de l'exécution de gestionnaires basés sur une chaîne :
 
-- Import the template from the auto-generated `templates`
+- Importez le modèle à partir des `modèles` générés automatiquement
 - call `TemplateName.create(cid: string)` from within a mapping, where the cid is a valid content identifier for IPFS or Arweave
 
 For IPFS, Graph Node supports [v0 and v1 content identifiers](https://docs.ipfs.tech/concepts/content-addressing/), and content identifers with directories (e.g. `bafyreighykzv2we26wfrbzkcdw37sbrby4upq7ae3aqobbq7i4er3tnxci/metadata.json`).
