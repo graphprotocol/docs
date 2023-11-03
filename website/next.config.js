@@ -9,7 +9,7 @@ const env = {
       ? process.env.ENVIRONMENT === 'production'
         ? 'cfeac8baf33c9b4d255f28d57f3c9148' // production
         : 'e57a9892339b2acfd02943c86b746d32' // staging
-      : null, // local dev (no tracking)
+      : '', // local dev (no tracking)
 }
 
 const withNextra = nextra({
