@@ -404,8 +404,6 @@ export function SupportedNetworks() {
             )
           })}
         </ul>
-          <Text.P14 color="White64" sx={{ mt: '32px' }}>
-        </Text.P14>
       </div>
     </>
   )
