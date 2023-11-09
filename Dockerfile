@@ -6,7 +6,7 @@ ENV ENVIRONMENT=$ENVIRONMENT
 ENV PNPM_HOME="/usr/bin"
 
 RUN apk add --no-cache git
-RUN npm install -g pnpm@8.7.0
+RUN npm install -g pnpm@8.10.0
 
 WORKDIR /app
 

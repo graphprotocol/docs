@@ -38,7 +38,7 @@ function MyAppWithLocale({ Component, pageProps, router }: AppProps) {
           siteName: 'The Graph',
           images: [
             {
-              url: 'https://storage.googleapis.com/graph-website/seo/graph-website.jpg',
+              url: 'https://thegraph-docs-opengraph-image.the-guild.dev',
               alt: 'The Graph',
             },
           ],
@@ -82,7 +82,7 @@ function MyAppWithLocale({ Component, pageProps, router }: AppProps) {
           clientRouter={router}
           mixpanel={{
             sdk: mixpanel,
-            token: process.env.MIXPANEL_TOKEN ?? null,
+            token: process.env.MIXPANEL_TOKEN || null,
           }}
         >
           <div sx={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, overflow: 'hidden' }}>
