@@ -66,6 +66,16 @@ export default withNextra({
       destination: '/en/developing/graph-ts/README/',
       permanent: false,
     },
+    {
+      source: '/en/developer/assemblyscript-api/',
+      destination: '/en/developing/graph-ts/api/',
+      permanent: true,
+    },
+    {
+      source: '/en/developing/assemblyscript-api/',
+      destination: '/en/developing/graph-ts/api/',
+      permanent: true,
+    },
   ],
   images: {
     unoptimized: true,
