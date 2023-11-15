@@ -86,3 +86,11 @@ await fetchRemoteFilePaths({
   docsPath: 'docs/',
   outputPath: path.join(process.cwd(), 'remote-files', 'graph-client.json'),
 })
+
+await fetchRemoteFilePaths({
+  user: 'graphprotocol',
+  repo: 'graph-tooling',
+  branch: 'main',
+  docsPath: 'packages/ts/',
+  outputPath: path.join(process.cwd(), 'remote-files', 'graph-ts.json'),
+})

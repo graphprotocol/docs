@@ -61,6 +61,11 @@ export default withNextra({
       destination: '/en/querying/graph-client/README/',
       permanent: false,
     },
+    {
+      source: '/en/developing/graph-ts/',
+      destination: '/en/developing/graph-ts/README/',
+      permanent: false,
+    },
   ],
   images: {
     unoptimized: true,
