@@ -22,7 +22,7 @@ import '@docsearch/css'
 const internalAbsoluteHrefRegex = /^(((https?:)?\/\/((www|staging)\.)?thegraph\.com)?\/docs\/|\/(?!\/))/i
 const externalHrefRegex = /^(?!(https?:)?\/\/((www|staging)\.)?thegraph\.com)([a-zA-Z0-9+.-]+:)?\/\//i
 
-function MyAppWithLocale({ Component, pageProps, router }: AppProps) {
+function MyAppWithLocale({ Component, router, pageProps }: AppProps) {
   const hideLocaleSwitcher = pageProps.hideLocaleSwitcher ?? false
   const { locale, extractLocaleFromPath } = useI18n()
 
