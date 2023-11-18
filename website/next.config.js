@@ -62,6 +62,21 @@ export default withNextra({
       destination: '/en/querying/graph-client/README/',
       permanent: false,
     },
+    {
+      source: '/en/developing/graph-ts/',
+      destination: '/en/developing/graph-ts/README/',
+      permanent: false,
+    },
+    {
+      source: '/en/developer/assemblyscript-api/',
+      destination: '/en/developing/graph-ts/api/',
+      permanent: true,
+    },
+    {
+      source: '/en/developing/assemblyscript-api/',
+      destination: '/en/developing/graph-ts/api/',
+      permanent: true,
+    },
   ],
   images: {
     unoptimized: true,
