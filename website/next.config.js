@@ -37,11 +37,12 @@ export const getStaticProps = async context => ({
 })
 
 export default withNextra({
+  env,
+  output: 'export',
   experimental: {
     // Fix scroll restoration (see https://github.com/vercel/next.js/issues/37893#issuecomment-1221335543)
     scrollRestoration: true,
   },
-  env,
   pageExtensions: ['tsx'],
   reactStrictMode: true,
   basePath: env.BASE_PATH,

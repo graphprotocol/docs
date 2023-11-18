@@ -16,7 +16,6 @@ COPY . .
 RUN pnpm install --frozen-lockfile --ignore-scripts
 
 RUN pnpm build
-RUN pnpm export
 
 ## production environment
 FROM nginx:1.16.0-alpine
