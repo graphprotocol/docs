@@ -137,7 +137,7 @@ Al centro dell'infrastruttura di un Indexer c'è the Graph Node, che monitora le
 
 - **Servizio di indicizzazione** - Gestisce tutte le comunicazioni esterne necessarie con la rete. Condivide i modelli di costo e gli stati di indicizzazione, passa le richieste di query dai gateway a un Graph Node e gestisce i pagamenti delle query tramite canali di stato con il gateway.
 
-- **Agente di indicizzazione** - Facilita le interazioni degli Indexer sulla chain, compresa la registrazione sulla rete, la gestione delle distribuzioni di subgraph ai Graph Node e la gestione delle allocazioni.
+- **Indexer agent** - Facilita le interazioni degli Indexer sulla chain, compresa la registrazione sulla rete, la gestione delle distribuzioni di subgraph ai Graph Node e la gestione delle allocazioni.
 
 - **Server di metriche Prometheus** - I componenti Graph Node e Indexer registrano le loro metriche sul server delle metriche.
 
@@ -164,7 +164,7 @@ Nota: Per supportare una scalabilità agile, si consiglia di separare le attivit
 | 7600  | GraphQL HTTP server<br />(per le query di subgraph a pagamento) | /subgraphs/id/...<br />/status<br />/channel-messages-inbox | --port         | `INDEXER_SERVICE_PORT` |
 | 7300  | Metriche di Prometheus                                                | /metrics                                                                | --metrics-port | -                      |
 
-#### Agente di indicizzazione
+#### Indexer Agent
 
 | Porta | Obiettivo                     | Routes | Argomento CLI             | Variabile d'ambiente                    |
 | ----- | ----------------------------- | ------ | ------------------------- | --------------------------------------- |
@@ -264,9 +264,9 @@ EOF
 
 #### Utilizzare Terraform per creare l'infrastruttura
 
-Before running any commands, read through [variables.tf](https://github.com/graphprotocol/indexer/blob/main/terraform/variables.tf) and create a file `terraform.tfvars` in this directory (or modify the one we created in the last step). For each variable where you want to override the default, or where you need to set a value, enter a setting into `terraform.tfvars`.
+Prima di eseguire qualsiasi comando, leggi [variables.tf](https://github.com/graphprotocol/indexer/blob/main/terraform/variables.tf) e crea un file `terraform.tfvars` in questa cartella (o modificare quella creata nell'ultimo passaggio). Per ogni variabile in cui si vuole sovrascrivere il valore predefinito o in cui è necessario impostare un valore, inserire un'impostazione in`terraform.tfvars`.
 
-- Run the following commands to create the infrastructure.
+- Eseguire i seguenti comandi per creare l'infrastruttura.
 
 ```sh
 # Install required plugins
@@ -279,7 +279,7 @@ terraform plan
 terraform apply
 ```
 
-Download credentials for the new cluster into `~/.kube/config` and set it as your default context.
+Scaricare le credenziali del nuovo cluster in `~/.kube/config` e impostarli come contesto predefinito.
 
 ```sh
 gcloud container clusters get-credentials $indexer
@@ -287,19 +287,19 @@ kubectl config use-context $(kubectl config get-contexts --output='name'
 | grep $indexer)
 ```
 
-#### Creating the Kubernetes components for the Indexer
+#### Creazione dei componenti Kubernetes per l'Indexer
 
-- Copy the directory `k8s/overlays` to a new directory `$dir,` and adjust the `bases` entry in `$dir/kustomization.yaml` so that it points to the directory `k8s/base`.
+- Copiare la directory `k8s/overlays` in una nuova directory `$dir,` e regola il `bases` d'ingresso in `$dir/kustomization.yaml` in modo da puntare alla directory `k8s/base`.
 
-- Read through all the files in `$dir` and adjust any values as indicated in the comments.
+- Leggi tutti i file in `$dir` e modificare i valori come indicato nei commenti.
 
-Deploy all resources with `kubectl apply -k $dir`.
+Distribuire tutte le risorse con `kubectl apply -k $dir`.
 
 ### Graph Node
 
-[Graph Node](https://github.com/graphprotocol/graph-node) is an open source Rust implementation that event sources the Ethereum blockchain to deterministically update a data store that can be queried via the GraphQL endpoint. Developers use subgraphs to define their schema, and a set of mappings for transforming the data sourced from the block chain and the Graph Node handles syncing the entire chain, monitoring for new blocks, and serving it via a GraphQL endpoint.
+[Graph Node](https://github.com/graphprotocol/graph-node) è un'implementazione open source di Rust che esegue l'event source della blockchain di Ethereum per aggiornare in modo deterministico un archivio di dati che può essere fatto query tramite l'endpoint GraphQL. Gli sviluppatori usano i subgraph per definire il loro schema e una serie di mappature per trasformare i dati provenienti dalla catena di blocchi e il Graph Node gestisce la sincronizzazione dell'intera catena, il monitoraggio dei nuovi blocchi e il servizio tramite un endpoint GraphQL.
 
-#### Getting started from source
+#### Iniziare dalla sorgente
 
 #### Installare i prerequisiti
 
@@ -357,25 +357,25 @@ cd graph-node/docker
 ./setup.sh
 ```
 
-3. Start a local Graph Node that will connect to your Ethereum endpoint:
+3. Avviare un Graph Node locale che si connetta all'endpoint di Ethereum:
 
 ```sh
 docker-compose up
 ```
 
-### Indexer components
+### Componenti dell'Indexer
 
-To successfully participate in the network requires almost constant monitoring and interaction, so we've built a suite of Typescript applications for facilitating an Indexers network participation. There are three Indexer components:
+Per partecipare con successo alla rete è necessario un monitoraggio e un'interazione quasi costante, quindi abbiamo costruito una suite di applicazioni Typescript per facilitare la partecipazione alla rete degli Indexer. I componenti di Indexer sono tre:
 
-- **Agente di indicizzazione** - L'agente monitora la rete e l'infrastruttura dell'Indexer e gestisce quali distribuzioni di subgraph vengono indicizzate e allocate sulla chain e quanto viene allocato su ciascuna di esse.
+- **Indexer agent** - L'agente monitora la rete e l'infrastruttura dell'Indexer e gestisce quali distribuzioni di subgraph vengono indicizzate e allocate sulla chain e quanto viene allocato su ciascuna di esse.
 
 - **Servizio di indicizzazione** - L'unico componente che deve essere esposto all'esterno, il servizio passa le query del subgraph al The Graph Node, gestisce i canali di stato per i pagamenti delle query, condivide importanti informazioni decisionali ai client come i gateway.
 
-- **Indexer CLI** - The command line interface for managing the Indexer agent. It allows Indexers to manage cost models, manual allocations, actions queue, and indexing rules.
+- **Indexer CLI** - L'interfaccia a riga di comando per la gestione del Indexer Agent. Consente agli Indexer di gestire i modelli di costo, le allocazioni manuali, la coda delle azioni e le regole di indicizzazione.
 
-#### Getting started
+#### Per cominciare
 
-The Indexer agent and Indexer service should be co-located with your Graph Node infrastructure. There are many ways to set up virtual execution environments for your Indexer components; here we'll explain how to run them on baremetal using NPM packages or source, or via kubernetes and docker on the Google Cloud Kubernetes Engine. If these setup examples do not translate well to your infrastructure there will likely be a community guide to reference, come say hi on [Discord](https://discord.gg/graphprotocol)! Remember to [stake in the protocol](/network/indexing#stake-in-the-protocol) before starting up your Indexer components!
+L'Indexer Agent ed il Servizio di indicizzazione devono essere collocati insieme all'infrastruttura di The Graph Node. Ci sono molti modi per impostare ambienti di esecuzione virtuali per i componenti di Indexer; qui spiegheremo come eseguirli su baremetal usando pacchetti NPM o sorgenti, oppure tramite kubernetes e docker su Google Cloud Kubernetes Engine. Se questi esempi di configurazione non si adattano bene alla vostra infrastruttura, è probabile che ci sia una community guide a cui fare riferimento; fate un salto su [Discord](https://discord.gg/graphprotocol)! Ricordatevi di fare [stake nel protocollo](/network/indexing#stake-in-the-protocol) prima di avviare i componenti dell'Indexer!
 
 #### Dai pacchetti NPM
 
@@ -461,7 +461,7 @@ Vedere la sezione [Setup Server Infrastructure Using Terraform on Google Cloud](
 
 > **NOTA**: Tutte le variabili di configurazione di runtime possono essere applicate come parametri al comando all'avvio o utilizzando variabili d'ambiente del formato `COMPONENT_NAME_VARIABLE_NAME`(ex. `INDEXER_AGENT_ETHEREUM`).
 
-#### Agente di indicizzazione
+#### Indexer agent
 
 ```sh
 graph-indexer-agent start \
@@ -518,36 +518,36 @@ graph-indexer-service start \
 
 #### Indexer CLI
 
-The Indexer CLI is a plugin for [`@graphprotocol/graph-cli`](https://www.npmjs.com/package/@graphprotocol/graph-cli) accessible in the terminal at `graph indexer`.
+L'Indexer CLI è un plugin per [`@graphprotocol/graph-cli`](https://www.npmjs.com/package/@graphprotocol/graph-cli) accessibile nel terminale a `graph indexer`.
 
 ```sh
 graph indexer connect http://localhost:18000
 graph indexer status
 ```
 
-#### Indexer management using Indexer CLI
+#### Gestione dell'Indexer tramite Indexer CLI
 
-The suggested tool for interacting with the **Indexer Management API** is the **Indexer CLI**, an extension to the **Graph CLI**. The Indexer agent needs input from an Indexer in order to autonomously interact with the network on the behalf of the Indexer. The mechanism for defining Indexer agent behavior are **allocation management** mode and **indexing rules**. Under auto mode, an Indexer can use **indexing rules** to apply their specific strategy for picking subgraphs to index and serve queries for. Rules are managed via a GraphQL API served by the agent and known as the Indexer Management API. Under manual mode, an Indexer can create allocation actions using **actions queue** and explicitly approve them before they get executed. Under oversight mode, **indexing rules** are used to populate **actions queue** and also require explicit approval for execution.
+Lo strumento suggerito per interagire con l'**Indexer Management API** è il **Indexer CLI**, un'estensione del **Graph CLI**. L'Indexer agent ha bisogno di input da un Indexer per interagire autonomamente con la rete per conto dell'Indexer. I meccanismi per definire il comportamento dell' Indexer agent sono modalità di **gestione dell'allocazione** e **regole di indicizzazione**. In modalità automatica, un Indexer può utilizzare le **regole di indicizzazione** per applicare la propria strategia specifica di selezione dei subgraph da indicizzare e per i quali servire le query. Le regole sono gestite tramite un' GraphQL API servito dall' agent e noto come Indexer Management API. In modalità manuale, un Indexer può creare azioni di allocation usando **actions queue** e approvarli esplicitamente prima che vengano eseguiti. In modalità di supervisione, le **regole di indicizzazione** sono utilizzate per popolare le **actions queue** e richiedono anche un'approvazione esplicita per l'esecuzione.
 
-#### Usage
+#### Utilizzo
 
-The **Indexer CLI** connects to the Indexer agent, typically through port-forwarding, so the CLI does not need to run on the same server or cluster. To help you get started, and to provide some context, the CLI will briefly be described here.
+Il **Indexer CLI** si connette all'Indexer Agent, in genere tramite port-forwarding, quindi non è necessario che la CLI venga eseguita sullo stesso server o cluster. Per aiutarvi a iniziare e per fornire un contesto, la CLI verrà descritta brevemente qui.
 
-- `graph indexer connect <url>` - Connect to the Indexer management API. Typically the connection to the server is opened via port forwarding, so the CLI can be easily operated remotely. (Example: `kubectl port-forward pod/<indexer-agent-pod> 8000:8000`)
+- `graph indexer connect <url>` - Connettersi all' Indexer management API. In genere la connessione al server viene aperta tramite il port forwarding, in modo che la CLI possa essere facilmente utilizzata in remoto. (Esempio: `kubectl port-forward pod/<indexer-agent-pod> 8000:8000`)
 
-- `graph indexer rules get [options] <deployment-id> [<key1> ...]` - Get one or more indexing rules using `all` as the `<deployment-id>` to get all rules, or `global` to get the global defaults. An additional argument `--merged` can be used to specify that deployment specific rules are merged with the global rule. This is how they are applied in the Indexer agent.
+- `graph indexer rules get [options] <deployment-id> [<key1> ...]` - Ottenere una o più regole di indicizzazione utilizzando `all` come `<deployment-id>` per ottenere tutte le regole, oppure `global` per ottenere i valori predefiniti globali. Un argomento aggiuntivo `--merged` può essere usato per specificare che le regole specifiche dell'implementazione vengono unite alla regola globale. Questo è il modo in cui vengono applicate nell' Indexer agent.
 
-- `graph indexer rules set [options] <deployment-id> <key1> <value1> ...` - Set one or more indexing rules.
+- `graph indexer rules set [options] <deployment-id> <key1> <value1> ...` - Impostare una o più regole di indicizzazione.
 
-- `graph indexer rules start [options] <deployment-id>` - Start indexing a subgraph deployment if available and set its `decisionBasis` to `always`, so the Indexer agent will always choose to index it. If the global rule is set to always then all available subgraphs on the network will be indexed.
+- `graph indexer rules start [options] <deployment-id>` - Avviare l'indicizzazione di una distribuzione di subgraph, se disponibile, e impostare il suo valore di `decisionBasis` per `always`, quindi l' Indexer agent sceglierà sempre di indicizzarlo. Se la regola globale è impostata su sempre, tutti i subgraph disponibili sulla rete saranno indicizzati.
 
-- `graph indexer rules stop [options] <deployment-id>` - Stop indexing a deployment and set its `decisionBasis` to never, so it will skip this deployment when deciding on deployments to index.
+- `graph indexer rules stop [options] <deployment-id>` - Interrompere l'indicizzazione di un'installazione e impostare il suo `decisionBasis` a mai, quindi salterà questa distribuzione quando deciderà le distribuzioni da indicizzare.
 
-- `graph indexer rules maybe [options] <deployment-id>` — Set the `decisionBasis` for a deployment to `rules`, so that the Indexer agent will use indexing rules to decide whether to index this deployment.
+- `graph indexer rules maybe [options] <deployment-id>` — Impostare il `decisionBasis` per una distribuzione a `rules`, in modo che l' Indexer agent utilizzi le regole di indicizzazione per decidere se indicizzare questa distribuzione.
 
-- `graph indexer actions get [options] <action-id>` - Fetch one or more actions using `all` or leave `action-id` empty to get all actions. An additonal argument `--status` can be used to print out all actions of a certain status.
+- `graph indexer actions get [options] <action-id>` - Recuperare una o più azioni utilizzando `all` oppure lasciare `action-id` vuoto per ottenere tutte le azioni. Un'argomento aggiuntivo `--status` può essere usato per stampare tutte le azioni di un certo stato.
 
-- `graph indexer action queue allocate <deployment-id> <allocation-amount>` - Queue allocation action
+- `graph indexer action queue allocate <deployment-id> <allocation-amount>` - Azione di allocation della coda
 
 - `graph indexer action queue reallocate <deployment-id> <allocation-id> <allocationAmount>` - Queue reallocate action
 
