@@ -1,37 +1,37 @@
 ---
-title: Distributed Systems
+title: Sistemi distribuiti
 ---
 
-The Graph is a protocol implemented as a distributed system.
+The Graph è un protocollo implementato come sistema distribuito.
 
-Connections fail. Requests arrive out of order. Different computers with out-of-sync clocks and states process related requests. Servers restart. Re-orgs happen between requests. These problems are inherent to all distributed systems but are exacerbated in systems operating at a global scale.
+Le connessioni falliscono. Le richieste arrivano in ordine sparso. Computer diversi con orologi e stati non sincronizzati elaborano richieste correlate. I server si riavviano. Tra una richiesta e l'altra si verificano delle riorganizzazioni. Questi problemi sono inerenti a tutti i sistemi distribuiti, ma sono esacerbati nei sistemi che operano su scala globale.
 
-Consider this example of what may occur if a client polls an Indexer for the latest data during a re-org.
+Si consideri questo esempio di ciò che può accadere se un cliente interroga un Indexer per ottenere i dati più recenti durante una riorganizzazione.
 
-1. Indexer ingests block 8
-2. Request served to the client for block 8
-3. Indexer ingests block 9
-4. Indexer ingests block 10A
-5. Request served to the client for block 10A
-6. Indexer detects reorg to 10B and rolls back 10A
-7. Request served to the client for block 9
-8. Indexer ingests block 10B
-9. Indexer ingests block 11
-10. Request served to the client for block 11
+1. L'Indexer inserisce il blocco 8
+2. Richiesta servita al cliente per il blocco 8
+3. L'Indexer inserisce il blocco 9
+4. L'Indexer inserisce il blocco 10A
+5. Richiesta servita al cliente per il blocco 10A
+6. L'Indexer rileva la riorganizzazione a 10B e fa rollback di 10A
+7. Richiesta servita al cliente per il blocco 9
+8. L'Indexer inserisce il blocco 10B
+9. L'Indexer inserisce il blocco 11
+10. Richiesta servita al cliente per il blocco 11
 
-From the point of view of the Indexer, things are progressing forward logically. Time is moving forward, though we did have to roll back an uncle block and play the block under consensus forward on top of it. Along the way, the Indexer serves requests using the latest state it knows about at that time.
+Dal punto di vista dell'Indexer, le cose stanno procedendo in modo logico. Il tempo sta avanzando, anche se abbiamo dovuto fare un rollback di un blocco sconosciuto e riprodurre il blocco sotto consenso in avanti sopra di esso. Lungo il percorso, l'Indexer serve le richieste utilizzando lo stato più recente che conosce in quel momento.
 
-From the point of view of the client, however, things appear chaotic. The client observes that the responses were for blocks 8, 10, 9, and 11 in that order. We call this the "block wobble" problem. When a client experiences block wobble, data may appear to contradict itself over time. The situation worsens when we consider that Indexers do not all ingest the latest blocks simultaneously, and your requests may be routed to multiple Indexers.
+Dal punto di vista del cliente, tuttavia, la situazione appare caotica. Il cliente osserva che le risposte sono state date per i blocchi 8, 10, 9 e 11 in questo ordine. Questo è il cosiddetto problema del "block wobble". Quando un cliente sperimenta il block wobble, i dati possono sembrare contraddirsi nel tempo. La situazione peggiora se si considera che gli Indexer non ingeriscono tutti i blocchi più recenti contemporaneamente e le richieste possono essere indirizzate a più Indexer.
 
-It is the responsibility of the client and server to work together to provide consistent data to the user. Different approaches must be used depending on the desired consistency as there is no one right program for every problem.
+È responsabilità del cliente e del server lavorare insieme per fornire dati coerenti all'utente. È necessario utilizzare approcci diversi a seconda della coerenza desiderata, poiché non esiste un unico programma giusto per ogni problema.
 
-Reasoning through the implications of distributed systems is hard, but the fix may not be! We've established APIs and patterns to help you navigate some common use-cases. The following examples illustrate those patterns but still elide details required by production code (like error handling and cancellation) to not obfuscate the main ideas.
+Ragionare sulle implicazioni dei sistemi distribuiti è difficile, ma la soluzione potrebbe non esserlo! Abbiamo creato delle API e dei modelli per aiutarvi a navigare in alcuni casi d'uso comuni. Gli esempi che seguono illustrano questi modelli, ma eludono i dettagli richiesti dal codice di produzione (come la gestione degli errori e la cancellazione) per non offuscare le idee principali.
 
-## Polling for updated data
+## Polling per i dati aggiornati
 
-The Graph provides the `block: { number_gte: $minBlock }` API, which ensures that the response is for a single block equal or higher to `$minBlock`. If the request is made to a `graph-node` instance and the min block is not yet synced, `graph-node` will return an error. If `graph-node` has synced min block, it will run the response for the latest block. If the request is made to an Edge & Node Gateway, the Gateway will filter out any Indexers that have not yet synced min block and make the request for the latest block the Indexer has synced.
+The Graph fornisce l'API di `blocco: { number_gte: $minBlock }` che assicura che la risposta sia per un singolo blocco uguale o superiore a `$minBlock`. Se la richiesta è fatta a un'istanza di `graph-node` e il blocco min non è ancora sincronizzato, `graph-node` restituirà un errore. Se `graph-node` ha sincronizzato il blocco min, eseguirà la risposta per il blocco più recente. Se la richiesta viene fatta a un Edge&Node Gateway, il Gateway filtrerà tutti gli Indexer che non hanno ancora sincronizzato il blocco min e farà la richiesta per l'ultimo blocco che l'Indexer ha sincronizzato.
 
-We can use `number_gte` to ensure that time never travels backward when polling for data in a loop. Here is an example:
+Possiamo usare `numero_gte` per assicurarci che il tempo non viaggi mai all'indietro durante il polling dei dati in un ciclo. Ecco un esempio:
 
 ```javascript
 /// Updates the protocol.paused variable to the latest
@@ -74,11 +74,11 @@ async function updateProtocolPaused() {
 }
 ```
 
-## Fetching a set of related items
+## Recuperare una serie di elementi correlati
 
-Another use-case is retrieving a large set or, more generally, retrieving related items across multiple requests. Unlike the polling case (where the desired consistency was to move forward in time), the desired consistency is for a single point in time.
+Un altro caso d'uso è il recupero di un grande serie oppure, più in generale, il recupero di elementi correlati tra più richieste. A differenza del caso del polling (in cui la consistenza desiderata era quella di andare avanti nel tempo), la consistenza desiderata riguarda un singolo punto nel tempo.
 
-Here we will use the `block: { hash: $blockHash }` argument to pin all of our results to the same block.
+Qui useremo l'argomento `block: { hash: $blockHash }` per fissare tutti i risultati allo stesso blocco.
 
 ```javascript
 /// Gets a list of domain names from a single block using pagination
@@ -131,4 +131,4 @@ async function getDomainNames() {
 }
 ```
 
-Note that in case of a re-org, the client will need to retry from the first request to update the block hash to a non-uncle block.
+Si noti che, in caso di riorganizzazione, il cliente dovrà riprovare a partire dalla prima richiesta di aggiornamento dell'hash del blocco a un blocco non-uncle.
