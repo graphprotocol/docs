@@ -39,7 +39,7 @@ export const getStaticProps = async context => ({
 export default withNextra({
   env,
   output: 'export',
-  distDir: '../out/docs',
+  distDir: process.env.NODE_ENV === 'production' ? '../out/docs' : undefined,
   experimental: {
     // Fix scroll restoration (see https://github.com/vercel/next.js/issues/37893#issuecomment-1221335543)
     scrollRestoration: true,
