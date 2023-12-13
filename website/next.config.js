@@ -1,6 +1,7 @@
 import nextra from 'nextra'
 
 const env = {
+  ENVIRONMENT: process.env.ENVIRONMENT,
   BASE_PATH: process.env.NODE_ENV === 'production' ? '/docs' : '',
   ALGOLIA_API_KEY: process.env.ALGOLIA_API_KEY,
   ALGOLIA_APP_ID: process.env.ALGOLIA_APP_ID,
@@ -36,11 +37,13 @@ export const getStaticProps = async context => ({
 })
 
 export default withNextra({
+  env,
+  output: 'export',
+  distDir: process.env.NODE_ENV === 'production' ? '../out/docs' : undefined,
   experimental: {
     // Fix scroll restoration (see https://github.com/vercel/next.js/issues/37893#issuecomment-1221335543)
     scrollRestoration: true,
   },
-  env,
   pageExtensions: ['tsx'],
   reactStrictMode: true,
   basePath: env.BASE_PATH,

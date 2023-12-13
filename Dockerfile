@@ -1,5 +1,8 @@
 FROM node:18-alpine as builder
 
+ARG ENVIRONMENT
+ENV ENVIRONMENT=$ENVIRONMENT
+
 ENV PNPM_HOME="/usr/bin"
 
 RUN apk add --no-cache git
@@ -13,7 +16,6 @@ COPY . .
 RUN pnpm install --frozen-lockfile --ignore-scripts
 
 RUN pnpm build
-RUN pnpm export
 
 ## production environment
 FROM nginx:1.16.0-alpine

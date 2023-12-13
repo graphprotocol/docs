@@ -80,9 +80,6 @@ export const translations = {
   ur,
   vi,
   zh,
-}
-
-// Make sure `translations` satisfies `AppTranslations` (see https://github.com/microsoft/TypeScript/issues/7481#issuecomment-1012592893)
-const _typecheck: AppTranslations = null! as typeof translations
+} satisfies AppTranslations
 
 export const useI18n = () => _useI18n<typeof translations>()

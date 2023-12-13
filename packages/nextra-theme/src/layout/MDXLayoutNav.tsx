@@ -45,23 +45,15 @@ const DesktopWrapper = ({ children }: PropsWithChildren<{}>) => {
       sx={{
         zIndex: 1,
         position: 'sticky',
-        top: 0,
-        maxHeight: '100vh',
+        top: 'var(--gds-header-height-visible)',
+        maxHeight: 'calc(100vh - var(--gds-header-height-visible))',
         paddingInlineEnd: Spacing['24px'],
         pt: Spacing['32px'],
         pb: Spacing['16px'],
         overflowY: 'auto',
-        transform: 'translateY(calc(var(--gds-header-height-visible) * var(--gds-header-fixed)))',
-        transition: enableTransition ? buildTransition('TRANSFORM', '400ms') : undefined,
       }}
     >
       {children}
-      <div
-        sx={{
-          height: 'var(--gds-header-height-visible)',
-          transition: enableTransition ? buildTransition('height', '400ms') : undefined,
-        }}
-      />
     </div>
   )
 }
