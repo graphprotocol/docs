@@ -46,5 +46,6 @@ export default {
   'new-chain-integration': 'Integrating New Networks',
   firehose: '',
   graphcast: '',
+  'ens-l2': 'ENS Domains on L2',
   'mips-faqs': '',
 }
