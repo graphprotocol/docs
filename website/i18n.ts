@@ -56,6 +56,8 @@ export type AppTranslations = Translations & {
   [key in AppLocale]: {
     global: NestedStrings
     index: NestedStrings
+    docsearch: NestedStrings
+    supportedNetworks: NestedStrings
   }
 }
 
