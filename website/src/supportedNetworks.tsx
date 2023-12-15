@@ -61,33 +61,35 @@ export const SupportedNetworksTable = () => {
   return (
     <>
       <Table>
-        <tr>
-          <th>{t('supportedNetworks.network')}</th>
-          <th>{t('supportedNetworks.cliName')}</th>
-          <th align="center">{t('supportedNetworks.chainId')}</th>
-          <th
-            align="center"
-            dangerouslySetInnerHTML={{
-              __html: t('supportedNetworks.studioAndHostedService').replace('Hosted Service', 'Hosted&nbsp;Service'),
-            }}
-          />
-          <th align="center">{t('supportedNetworks.decentralizedNetwork')}</th>
-        </tr>
-        {networks.map((network) => (
-          <tr key={network.cliName}>
-            <td>{network.name}</td>
-            <td>
-              <CodeInline>{network.cliName}</CodeInline>
-            </td>
-            <td align="center">{network.chainId}</td>
-            <td align="center">✓{network.substreams.includes('studio') ? <sup>†</sup> : null}</td>
-            <td align="center">
-              {network.fullySupportedOnNetwork ? '✓' : null}
-              {network.partiallySupportedOnNetwork ? '*' : null}
-              {network.substreams.includes('network') ? <sup>†</sup> : null}
-            </td>
+        <tbody>
+          <tr>
+            <th>{t('supportedNetworks.network')}</th>
+            <th>{t('supportedNetworks.cliName')}</th>
+            <th align="center">{t('supportedNetworks.chainId')}</th>
+            <th
+              align="center"
+              dangerouslySetInnerHTML={{
+                __html: t('supportedNetworks.studioAndHostedService').replace('Hosted Service', 'Hosted&nbsp;Service'),
+              }}
+            />
+            <th align="center">{t('supportedNetworks.decentralizedNetwork')}</th>
           </tr>
-        ))}
+          {networks.map((network) => (
+            <tr key={network.cliName}>
+              <td>{network.name}</td>
+              <td>
+                <CodeInline>{network.cliName}</CodeInline>
+              </td>
+              <td align="center">{network.chainId}</td>
+              <td align="center">✓{network.substreams.includes('studio') ? <sup>†</sup> : null}</td>
+              <td align="center">
+                {network.fullySupportedOnNetwork ? '✓' : null}
+                {network.partiallySupportedOnNetwork ? '*' : null}
+                {network.substreams.includes('network') ? <sup>†</sup> : null}
+              </td>
+            </tr>
+          ))}
+        </tbody>
       </Table>
       <Paragraph>
         *&nbsp;{t('supportedNetworks.supportedByUpgradeIndexer')}
