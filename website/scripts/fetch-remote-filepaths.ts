@@ -41,45 +41,6 @@ async function fetchRemoteFilePaths({ user, repo, branch, docsPath, outputPath, 
 }
 
 await fetchRemoteFilePaths({
-  user: 'streamingfast',
-  repo: 'substreams',
-  branch: 'develop',
-  docsPath: 'docs/',
-  outputPath: path.join(process.cwd(), 'remote-files', 'substreams.json'),
-  filterDocs: (filePath) =>
-    ![
-      'SUMMARY.md', // toc
-      'developers-guide/modules/README.md', // generated cards by gitbook
-    ].includes(filePath),
-})
-
-await fetchRemoteFilePaths({
-  user: 'streamingfast',
-  repo: 'firehose-docs',
-  branch: 'master',
-  docsPath: '',
-  outputPath: path.join(process.cwd(), 'remote-files', 'firehose.json'),
-  filterDocs: (filePath) =>
-    ![
-      'SUMMARY.md', // toc
-      // ---- empty placeholders ----
-      'intro/README.md',
-      'firehose-setup/overview.md',
-      'firehose-setup/near/README.md',
-      'integrate-new-chains/README.md',
-      'references/README.md',
-      'concepts/README.md',
-      // ----------------------------
-      // ---- not shown in the existing site ----
-      'setup/cosmos/README.md',
-      'setup/ethereum/README.md',
-      'setup/ethereum/reprocessing-history.md',
-      'setup/ethereum/synchronization.md',
-      // ----------------------------------------
-    ].includes(filePath),
-})
-
-await fetchRemoteFilePaths({
   user: 'graphprotocol',
   repo: 'graph-client',
   branch: 'main',
