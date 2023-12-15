@@ -28,18 +28,17 @@ export async function getSupportedNetworks() {
   return Array.from(SupportedNetworkMap.values()).flatMap((network) =>
     Array.from(network.chains)
       .map((chain) => {
-        if (!chain.graphCliName) {
-          return null as never // `as never` to work around the `.filter(Boolean)` below not narrowing the type
-        }
-
         const supportedOnStudioAndHostedService =
           chain.productDeployStatus.hostedService === ChainProductStatus.ALLOWED ||
           chain.productDeployStatus.studio === ChainProductStatus.ALLOWED
-        const fullySupportedOnNetwork = fullySupportedNetworkIds.includes(`eip155:${chain.chainId}`)
 
-        if (!supportedOnStudioAndHostedService && !fullySupportedOnNetwork) {
+        if (!chain.graphCliName || !supportedOnStudioAndHostedService) {
           return null as never // `as never` to work around the `.filter(Boolean)` below not narrowing the type
         }
+
+        const fullySupportedOnNetwork =
+          network.id === 'evm' && fullySupportedNetworkIds.includes(`eip155:${chain.chainId}`)
+        const partiallySupportedOnNetwork = network.id === 'evm' && !fullySupportedOnNetwork
 
         return {
           name: chain.name,
@@ -47,6 +46,7 @@ export async function getSupportedNetworks() {
           chainId: chain.chainId,
           supportedOnStudioAndHostedService,
           fullySupportedOnNetwork,
+          partiallySupportedOnNetwork,
           substreams: chain.substreams ?? [],
         }
       })
@@ -65,7 +65,12 @@ export const SupportedNetworksTable = () => {
           <th>{t('supportedNetworks.network')}</th>
           <th>{t('supportedNetworks.cliName')}</th>
           <th align="center">{t('supportedNetworks.chainId')}</th>
-          <th align="center">{t('supportedNetworks.studioAndHostedService')}</th>
+          <th
+            align="center"
+            dangerouslySetInnerHTML={{
+              __html: t('supportedNetworks.studioAndHostedService').replace('Hosted Service', 'Hosted&nbsp;Service'),
+            }}
+          />
           <th align="center">{t('supportedNetworks.decentralizedNetwork')}</th>
         </tr>
         {networks.map((network) => (
@@ -75,13 +80,10 @@ export const SupportedNetworksTable = () => {
               <CodeInline>{network.cliName}</CodeInline>
             </td>
             <td align="center">{network.chainId}</td>
+            <td align="center">✓{network.substreams.includes('studio') ? <sup>†</sup> : null}</td>
             <td align="center">
-              {network.supportedOnStudioAndHostedService ? (
-                <>✓{network.substreams.includes('studio') ? <sup>†</sup> : null}</>
-              ) : null}
-            </td>
-            <td align="center">
-              ✓{!network.fullySupportedOnNetwork ? '*' : null}
+              {network.fullySupportedOnNetwork ? '✓' : null}
+              {network.partiallySupportedOnNetwork ? '*' : null}
               {network.substreams.includes('network') ? <sup>†</sup> : null}
             </td>
           </tr>
