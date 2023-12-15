@@ -47,9 +47,17 @@ const mdxComponents = {
   ul: ListUnordered,
   p: Paragraph,
   table: Table,
+  Callout,
+  CodeBlock,
   CodeInline,
   Difficulty,
+  Heading,
+  Image,
+  LinkInline,
+  ListItem,
+  ListOrdered,
   ListUnordered,
+  Paragraph,
   Table,
   VideoEmbed,
 }
@@ -63,7 +71,21 @@ const mdxStyles: ThemeUICSSObject = {
   },
 }
 
-export { Heading, Image, LinkInline, Paragraph }
+export {
+  Callout,
+  CodeBlock,
+  CodeInline,
+  Difficulty,
+  Heading,
+  Image,
+  LinkInline,
+  ListItem,
+  ListOrdered,
+  ListUnordered,
+  Paragraph,
+  Table,
+  VideoEmbed,
+}
 
 export default function NextraLayout({ children, pageOpts, pageProps }: NextraThemeLayoutProps): ReactElement {
   const { frontMatter, filePath, pageMap, headings, title } = pageOpts
