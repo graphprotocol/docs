@@ -22,11 +22,12 @@ const withNextra = nextra({
   codeHighlight: false,
   defaultShowCopyCode: false,
   transform(result, { route }) {
-    let { locale } = extractLocaleFromPath(route)
-    locale = locale ?? defaultLocale
+    if (!route) return result
+
+    const { locale } = extractLocaleFromPath(route)
 
     result = `
-      globalThis.__graph_docs_locale = '${locale}'
+      globalThis.__graph_docs_locale = '${locale ?? defaultLocale}'
       ${result}
     `
 

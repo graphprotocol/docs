@@ -53,11 +53,7 @@ export async function getSupportedNetworks() {
   )
 }
 
-export const SupportedNetworksTable = ({
-  networks,
-}: {
-  networks: Awaited<ReturnType<typeof getSupportedNetworks>>
-}) => {
+export function SupportedNetworksTable({ networks }: { networks: Awaited<ReturnType<typeof getSupportedNetworks>> }) {
   const { t } = useI18n()
 
   return (
