@@ -1,5 +1,7 @@
 import nextra from 'nextra'
 
+import { defaultLocale, extractLocaleFromPath } from '@edgeandnode/gds'
+
 const env = {
   ENVIRONMENT: process.env.ENVIRONMENT,
   BASE_PATH: process.env.NODE_ENV === 'production' ? '/docs' : '',
@@ -20,16 +22,20 @@ const withNextra = nextra({
   codeHighlight: false,
   defaultShowCopyCode: false,
   transform(result, { route }) {
-    if (route && !result.includes('getStaticProps')) {
-      const banner = `
-import { getPageMap } from '@/src/getPageMap'
+    let { locale } = extractLocaleFromPath(route)
+    locale = locale ?? defaultLocale
 
-export const getStaticProps = async context => ({
-  props: {
-    __nextra_pageMap: await getPageMap('${route.split('/')[1]}')
-  }
-})`
-      result += banner
+    result = `
+      globalThis.__graph_docs_locale = '${locale}'
+      ${result}
+    `
+
+    if (!result.includes('getStaticProps')) {
+      result = `
+        import { buildGetStaticProps } from '@/src/buildGetStaticProps'
+        ${result}
+        export const getStaticProps = buildGetStaticProps()
+      `
     }
 
     return result
