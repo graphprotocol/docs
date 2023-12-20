@@ -1,5 +1,8 @@
 import nextra from 'nextra'
 
+// If you need to make a commit just to force a redeploy when creating a new release, increase this
+const _forceRedeploy = 1
+
 const env = {
   ENVIRONMENT: process.env.ENVIRONMENT,
   BASE_PATH: process.env.NODE_ENV === 'production' ? '/docs' : '',
