@@ -98,7 +98,7 @@ Options:
 ```yaml
 specVersion: 0.0.4
 description: Gravatar for Ethereum
-repository: https://github.com/graphprotocol/example-subgraphs
+repository: https://github.com/graphprotocol/graph-tooling
 schema:
   file: ./schema.graphql
 dataSources:
@@ -109,6 +109,14 @@ dataSources:
       address: '0x2E645469f354BB4F5c8a05B3b30A929361cf77eC'
       abi: Gravity
       startBlock: 6175244
+      endBlock: 7175245
+    context:
+      foo:
+        type: Bool
+        data: true
+      bar:
+        type: String
+        data: 'bar'
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.6
@@ -136,7 +144,7 @@ dataSources:
 
 清单中要更新的重要条目是：
 
-- `description`：关于子图是什么的人类可读的描述。 当子图部署到托管服务时，Graph 浏览器 会显示此描述。
+- `description`: a human-readable description of what the subgraph is. This description is displayed by the Graph Explorer when the subgraph is deployed to the hosted service.
 
 - `repository`：可以找到子图清单的存储库的 URL。 这也由 Graph 浏览器显示。
 
@@ -145,6 +153,10 @@ dataSources:
 - `dataSources.source`：智能合约子图源的地址，以及要使用的智能合约的ABI。 地址是可选的； 省略它允许索引来自所有合约的匹配事件。
 
 - `dataSources.source.startBlock`：数据源开始索引的区块的可选编号。 在大多数情况下，我们建议使用创建合约的区块。
+
+- `dataSources.source.endBlock`: The optional number of the block that the data source stops indexing at, including that block. Minimum spec version required: `0.0.9`.
+
+- `dataSources.context`: key-value pairs that can be used within subgraph mappings. Supports various data types like `Bool`, `String`, `Int`, `Int8`, `BigDecimal`, `Bytes`, `List`, and `BigInt`. Each variable needs to specify its `type` and `data`. These context variables are then accessible in the mapping files, offering more configurable options for subgraph development.
 
 - `dataSources.mapping.entities`：数据源写入存储的实体。 每个实体的模式在 schema.graphql 文件中定义。
 
@@ -242,6 +254,7 @@ Null value resolved for non-null field 'name'
 | `字符串` | `string` 值的标量。 不支持空字符，并会自动进行删除。 |
 | `Boolean` | `boolean` 值的标量。 |
 | `Int` | GraphQL 规范将 `Int` 定义为 32 字节的大小。 |
+| `Int8` | An 8-byte signed integer, also known as a 64-bit signed integer, can store values in the range from -9,223,372,036,854,775,808 to 9,223,372,036,854,775,807. Prefer using this to represent `i64` from ethereum. |
 | `BigInt` | 大整数。 用于以太坊的 `uint32`、`int64`、`uint64`、...、`uint256` 类型。 注意：`uint32`以下的所有类型，例如`int32`、`uint24`或`int8`都表示为`i32`。 |
 | `BigDecimal` | `BigDecimal` 表示为有效数字和指数的高精度小数。 指数范围是 -6143 到 +6144。 四舍五入到 34 位有效数字。 |
 
@@ -770,6 +783,8 @@ export function handleCreateGravatar(call: CreateGravatarCall): void {
 
 ### 支持的过滤器
 
+#### Call Filter
+
 ```yaml
 filter:
   kind: call
@@ -804,6 +819,45 @@ dataSources:
         - handler: handleBlockWithCallToContract
           filter:
             kind: call
+```
+
+#### Polling Filter
+
+> **Requires `specVersion` >= 0.0.8**
+
+> **Note:** Polling filters are only available on dataSources of `kind: ethereum`.
+
+```yaml
+blockHandlers:
+  - handler: handleBlock
+    filter:
+      kind: polling
+      every: 10
+```
+
+The defined handler will be called once for every `n` blocks, where `n` is the value provided in the `every` field. This configuration allows the subgraph to perform specific operations at regular block intervals.
+
+#### Once Filter
+
+> **Requires `specVersion` >= 0.0.8**
+
+> **Note:** Once filters are only available on dataSources of `kind: ethereum`.
+
+```yaml
+blockHandlers:
+  - handler: handleOnce
+    filter:
+      kind: once
+```
+
+The defined handler with the once filter will be called only once before all other handlers run. This configuration allows the subgraph to use the handler as an initialization handler, performing specific tasks at the start of indexing.
+
+```ts
+export function handleOnce(block: ethereum.Block): void {
+  let data = new InitialData(Bytes.fromUTF8('initial'))
+  data.data = 'Setup data here'
+  data.save()
+}
 ```
 
 ### 映射函数
@@ -934,6 +988,8 @@ _meta {
 
 ### 嫁接到现有子图
 
+> **Note:** it is not recommended to use grafting when initially upgrading to The Graph Network. Learn more [here](/cookbook/grafting/#important-note-on-grafting-when-upgrading-to-the-network).
+
 首次部署子图时，它会在相应链的启动区块（或每个数据源定义的 `startBlock` 处）开始索引事件。在某些情况下，可以使用现有子图已经索引的数据并在更晚的区块上开始索引。 这种索引模式称为*Grafting*。 例如，嫁接在开发过程中非常有用，可以快速克服映射中的简单错误，或者在现有子图失败后暂时恢复工作。
 
 当 `subgraph.yaml` 中的子图清单在顶层包含 `graft` 区块时，子图被嫁接到基础子图：
@@ -963,7 +1019,7 @@ graft:
 
 ## 文件数据源
 
-文件数据源是一种新的子图功能，用于在索引过程中以一种有力、可扩展的方式访问链外数据，从IPFS开始。
+File data sources are a new subgraph functionality for accessing off-chain data during indexing in a robust, extendable way. File data sources support fetching files from IPFS and from Arweave.
 
 > 这也为链外数据的确定性索引以及引入任意HTTP源数据奠定了基础。
 
@@ -975,7 +1031,7 @@ graft:
 
 > 这将替换现有的`ipfs.cat` API
 
-### Upgrade guide
+### 升级指南
 
 #### 更新`graph-ts`和`graph-cli`
 
@@ -1030,7 +1086,7 @@ type TokenMetadata @entity {
 
 > 可以使用[嵌套](https://thegraph.com/docs/en/querying/graphql-api/#example-for-nested-entity-filtering)过滤器根据这些嵌套实体过滤母实体。
 
-#### 添加新的模板化数据源，`类型为：file/ipfs`
+#### Add a new templated data source with `kind: file/ipfs` or `kind: file/arweave`
 
 这是在识别出感兴趣的文件时生成的数据源。
 
@@ -1096,9 +1152,11 @@ export function handleMetadata(content: Bytes): void {
 现在，您可以在执行基于链的处理程序期间创建文件数据源：
 
 - 从自动生成的`模板`导入模板
-- 从映射中调用`TemplateName.create（cid:string）`，其中cid是有效的IPFS内容标识符
+- call `TemplateName.create(cid: string)` from within a mapping, where the cid is a valid content identifier for IPFS or Arweave
 
-> 当前Graph Node支持[v0和v1内容标识符](https://docs.ipfs.tech/concepts/content-addressing/)，以及带有目录的内容标识符(例如`bafyreighykzv2we26wfrbzkcdw37sbrby4upq7ae3aqobbq7i4er3tnxci/metadata.json`)
+For IPFS, Graph Node supports [v0 and v1 content identifiers](https://docs.ipfs.tech/concepts/content-addressing/), and content identifers with directories (e.g. `bafyreighykzv2we26wfrbzkcdw37sbrby4upq7ae3aqobbq7i4er3tnxci/metadata.json`).
+
+For Arweave, as of version 0.33.0 Graph Node can fetch files stored on Arweave based on their [transaction ID](https://docs.arweave.org/developers/server/http-api#transactions) from an Arweave gateway ([example file](https://bdxujjl5ev5eerd5ouhhs6o4kjrs4g6hqstzlci5pf6vhxezkgaa.arweave.net/CO9EpX0lekJEfXUOeXncUmMuG8eEp5WJHXl9U9yZUYA)). Arweave supports transactions uploaded via Bundlr, and Graph Node can also fetch files based on [Bundlr manifests](https://docs.bundlr.network/learn/gateways#indexing).
 
 例子:
 
@@ -1129,7 +1187,7 @@ export function handleTransfer(event: TransferEvent): void {
 }
 ```
 
-这将创建一个新的文件数据源，该数据源将轮询 Graph节点配置的 IPFS 端点，如果找不到，则重试。找到文件后，将执行文件数据源处理程序。
+This will create a new file data source, which will poll Graph Node's configured IPFS or Arweave endpoint, retrying if it is not found. When the file is found, the file data source handler will be executed.
 
 此示例使用 CID 作为母 `Token` 实体和生成的 `TokenMetadata` 实体之间的查找。
 

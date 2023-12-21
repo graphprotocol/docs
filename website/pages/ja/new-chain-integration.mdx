@@ -1,39 +1,39 @@
 ---
-title: Integrating New Networks
+title: 新しいネットワークの統合
 ---
 
-Graph Node can currently index data from the following chain types:
+Graph Nodeは現在、以下のチェーンタイプからデータをインデックス化できます：
 
 - Ethereum, via EVM JSON-RPC and [Ethereum Firehose](https://github.com/streamingfast/firehose-ethereum)
 - NEAR, via a [NEAR Firehose](https://github.com/streamingfast/near-firehose-indexer)
 - Cosmos, via a [Cosmos Firehose](https://github.com/graphprotocol/firehose-cosmos)
 - Arweave, via an [Arweave Firehose](https://github.com/graphprotocol/firehose-arweave)
 
-If you are interested in any of those chains, integration is a matter of Graph Node configuration and testing.
+もしご興味があるチェーンがあれば、統合はGraph Nodeの設定とテストの問題です。
 
-If you are interested in a different chain type, you will need to build a new integration with Graph Node. Our recommended approach is development of a Firehose for the chain, and then integration of that Firehose with Graph Node.
+もしも異なるチェーンタイプに興味がある場合は、新しいGraph Nodeを構築する必要があります。私たちの推奨するアプローチは、まず対象のチェーン用の新しいFirehoseを開発し、それをGraph Nodeと統合することです。詳細は以下に記載しています。
 
-** 1. EVM JSON-RPC**
+**1. EVM JSON-RPC**
 
-If the blockchain is EVM equivalent and the client/node exposes the standard EVM JSON-RPC API, Graph Node should be able to index the new chain. For more information, refer to [Testing an EVM JSON-RPC](new-chain-integration#testing-an-evm-json-rpc).
+ブロックチェーンが EVM と同等であり、クライアント/ノードが標準の EVM JSON-RPC API を公開している場合、グラフ ノードは新しいチェーンのインデックスを作成できるはずです。 詳細については、「EVM JSON-RPC のテスト」(new-chain-integration#testing-an-evm-json-rpc) を参照してください。
 
 **2. Firehose**
 
-For non-EVM-based chains, Graph Node will need to ingest blockchain data via gRPC and known type definitions. This can be done via [Firehose](firehose/), a new technology developed by [StreamingFast](https://www.streamingfast.io/) that provides a highly-scalable indexing blockchain solution using a files-based and streaming-first approach.
+For non-EVM-based chains, Graph Node must ingest blockchain data via gRPC and known type definitions. This can be done via [Firehose](firehose/), a new technology developed by [StreamingFast](https://www.streamingfast.io/) that provides a highly-scalable indexing blockchain solution using a files-based and streaming-first approach. Reach out to the [StreamingFast team](mailto:integrations@streamingfast.io/) if you need help with Firehose development.
 
-## Difference between EVM JSON-RPC & Firehose
+## EVM JSON-RPC と Firehose の違い
 
-While the two are suitable for subgraphs, a Firehose is always required for developers wanting to build with [Substreams](substreams/), like building [Substreams-powered subgraphs](cookbook/substreams-powered-subgraphs/). In addition, Firehose allows for improved indexing speeds when compared to JSON-RPC.
+これらの2つの方法は、サブグラフに適していますが、[Substreams](substreams/), を使用して開発者がビルドする場合、常にFirehoseが必要です。これには、[Substreams-powered subgraphs](cookbook/substreams-powered-subgraphs/) のようなサブストリームを活用したサブグラフの構築が含まれます。さらに、FirehoseはJSON-RPCと比較して、改善されたインデックス化速度を提供します。
 
-New EVM chain integrators may also consider the Firehose-based approach, given the benefits of substreams and its massive parallelized indexing capabilities. Supporting both allows developers to choose between building substreams or subgraphs for the new chain.
+新しいEVMチェーンの統合者は、サブストリームの利点とその大規模な並列化されたインデックス化能力を考慮して、Firehoseベースのアプローチも検討することができます。両方をサポートすることで、開発者は新しいチェーンに対してサブストリームまたはサブグラフのどちらを構築するかを選択できるようになります。
 
-> **NOTE**: A Firehose-based integration for EVM chains will still require Indexers to run the chain's archive RPC node to properly index subgraphs. This is due to the Firehose's inability to provide smart contract state typically accessible by the `eth_call` RPC method. (It's worth reminding that eth_calls are [not a good practice for developers](https://thegraph.com/blog/improve-subgraph-performance-reduce-eth-calls/))
+> **注意**: EVM チェーンの Firehose ベースの統合では、インデクサーがチェーンのアーカイブ RPC ノードを実行してサブグラフに適切にインデックスを付ける必要があります。 これは、通常「eth_call」RPC メソッドによってアクセスできるスマート コントラクト状態を Firehose が提供できないためです。 (eth_calls は [開発者にとって良い習慣ではない](https://thegraph.com/blog/improve-subgraph-performance-reduce-eth-calls/) であることを思い出してください)
 
 ---
 
-## Testing an EVM JSON-RPC
+## EVM JSON-RPC のテスト
 
-For Graph Node to be able to ingest data from an EVM chain, the RPC node must expose the following EVM JSON RPC methods:
+Graph NodeがEVMチェーンからデータを取り込むためには、RPCノードは以下のEVM JSON RPCメソッドを公開する必要があります。
 
 - `eth_getLogs`
 - `eth_call` \_(for historical blocks, with EIP-1898 - requires archive node):
@@ -43,32 +43,32 @@ For Graph Node to be able to ingest data from an EVM chain, the RPC node must ex
 - `eth_getTransactionReceipt`, in a JSON-RPC batch request
 - _`trace_filter`_ _(optionally required for Graph Node to support call handlers)_
 
-### Graph Node Configuration
+### Graph Node の設定
 
-**Start by preparing your local environment**
+**ローカル環境を準備することから始めます**
 
 1.  [Clone Graph Node](https://github.com/graphprotocol/graph-node)
-2.  Modify [this line](https://github.com/graphprotocol/graph-node/blob/master/docker/docker-compose.yml#L22) to include the new network name and the EVM JSON RPC compliant URL
-    > Do not change the env var name itself. It must remain `ethereum` even if the network name is different.
-3.  Run an IPFS node or use the one used by The Graph: https://api.thegraph.com/ipfs/
+2.  [この行](https://github.com/graphprotocol/graph-node/blob/master/docker/docker-compose.yml#L22) を変更して、新しいネットワーク名と EVM JSON RPC 準拠の URL を含めます。
+    > 環境変数名自体は変更しないでください。ネットワーク名が異なる場合でも、「ethereum」という名前のままである必要があります。
+3.  IPFSノードを実行するか、The Graphが使用するものを使用してください: https://api.thegraph.com/ipfs/
 
-\*Test the integration by locally deploying a subgraph\*\*
+**サブグラフをローカルにデプロイして統合をテストします。**
 
 1.  Install [graph-cli](https://github.com/graphprotocol/graph-cli)
-2.  Create a simple example subgraph. Some options are below:
-    1.  The pre-packed [Gravitar](https://github.com/graphprotocol/example-subgraph/tree/f89bdd4628efa4badae7367d4919b3f648083323) smart contract and subgraph is a good starting point
-    2.  Bootstrap a local subgraph from any existing smart contract or solidity dev environment [using Hardhat with a Graph plugin](https://github.com/graphprotocol/hardhat-graph)
-3.  Adapt the resulting `subgraph.yaml` by changing [`dataSources.network`](http://dataSources.network) to the same name previously passed on to Graph Node.
-4.  Create your subgraph in Graph Node: `graph create $SUBGRAPH_NAME --node $GRAPH_NODE_ENDPOINT`
-5.  Publish your subgraph to Graph Node: `graph deploy $SUBGRAPH_NAME --ipfs $IPFS_ENDPOINT --node $GRAPH_NODE_ENDPOINT`
+2.  簡単なサブグラフの例を作成します。 いくつかのオプションを以下に示します。
+    1.  事前にパックされた [Gravitar](https://github.com/graphprotocol/example-subgraph/tree/f89bdd4628efa4badae7367d4919b3f648083323) スマート コントラクトとサブグラフは良い出発点です。
+    2.  既存のスマート コントラクトまたは Solidity 開発環境からローカル サブグラフをブートストラップする [グラフ プラグインで Hardhat を使用](https://github.com/graphprotocol/hardhat-graph)
+3.  [`dataSources.network`](http://dataSources.network) を以前にグラフ ノードに渡した同じ名前に変更して、結果の `subgraph.yaml` を調整します。
+4.  グラフ ノードでサブグラフを作成します: `graph create $SUBGRAPH_NAME --node $GRAPH_NODE_ENDPOINT`
+5.  サブグラフをGraph Nodeに公開するには、次のコマンドを使用します：graph deploy $SUBGRAPH_NAME --ipfs $IPFS_ENDPOINT --node $GRAPH_NODE_ENDPOINT
 
-Graph Node should be syncing the deployed subgraph if there are no errors. Give it time to sync, then send some GraphQL queries to the API endpoint printed in the logs.
+Graph Nodeはエラーがない場合、デプロイされたサブグラフを同期するはずです。同期が完了するのを待ってから、ログに表示されたAPIエンドポイントに対していくつかのGraphQLクエリを送信してください。
 
 ---
 
-## Integrating a new Firehose-enabled chain
+## 新しい Firehose 対応チェーンの統合
 
-Integrating a new chain is also possible using the Firehose approach. This is currently the best option for non-EVM chains and a requirement for substreams support. Additional documentation focuses on how Firehose works, adding Firehose support for a new chain and integrating it with Graph Node. Recommended docs for integrators:
+新しいチェーンを統合することは、Firehoseアプローチを使用しても可能です。これは、非EVMチェーン向けの現在の最良のオプションであり、サブストリームサポートの要件でもあります。追加のドキュメントでは、Firehoseの動作方法、新しいチェーンへのFirehoseサポートの追加、およびGraph Nodeとの統合に焦点を当てています。統合者に推奨されるドキュメント:
 
 1.  [General docs on Firehose](firehose/)
 2.  [Adding Firehose support for a new chain](https://firehose.streamingfast.io/integrate-new-chains/integration-overview)

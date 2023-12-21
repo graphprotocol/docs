@@ -1,0 +1,168 @@
+---
+title: Snabbstart
+---
+
+Den här guiden kommer snabbt att ta dig igenom hur du initierar, skapar och distribuerar din subgraf till Subgraf Studio eller [värdtjänst](#hosted-service).
+
+Se till att din subgraf kommer att indexera data från ett [nätverk som stöds] \(/developing/supported-networks).
+
+Den här guiden är skriven förutsatt att du har:
+
+- En smart kontraktsadress på det nätverk du väljer
+- GRT för att kurera din subgraf
+- En kryptoplånbok
+
+## 1. Skapa en subgraf på Subgraph Studio
+
+Gå till [Subgraph Studio](https://thegraph.com/studio/) och anslut din plånbok.
+
+När du är ansluten kan du börja med att klicka på "skapa en subgraf". Välj det nätverk du vill ha och klicka på fortsätt.
+
+## 2. Installera Graph CLI
+
+Graph CLI är skrivet i JavaScript och du måste ha antingen `npm` eller `yarn` installerat för att kunna använda det.
+
+Kör ett av följande kommandon på din lokala dator:
+
+Using [npm](https://www.npmjs.com/):
+
+```sh
+npm install -g @graphprotocol/graph-cli
+```
+
+Using [yarn](https://yarnpkg.com/):
+
+```sh
+yarn global add @graphprotocol/graph-cli
+```
+
+## 3. Initiera din subgraf
+
+> You can find commands for your specific subgraph on the subgraph page in [Subgraph Studio](https://thegraph.com/studio/).
+
+När du initierar din subgraf kommer CLI verktyget att be dig om följande information:
+
+- Protokoll: välj det protokoll som din subgraf ska indexera data från
+- Subgragh slug: skapa ett namn för din subgraf. Din subgraf snigel är en identifierare för din subgraf.
+- Katalog att skapa subgrafen i: välj din lokala katalog
+- Ethereum nätverk (valfritt): du kan behöva ange vilket EVM kompatibelt nätverk din subgraf kommer att indexera data från
+- Kontraktsadress: Leta upp den smarta kontraktsadress som du vill fråga data från
+- ABI: Om ABI inte fylls i automatiskt måste du mata in det manuellt som en JSON fil
+- Startblock: det föreslås att du matar in startblocket för att spara tid medan din subgraf indexerar blockkedjedata. Du kan hitta startblocket genom att hitta blocket där ditt kontrakt distribuerades.
+- Kontraktsnamn: ange namnet på ditt kontrakt
+- Indexera kontraktshändelser som entiteter: det föreslås att du ställer in detta till sant eftersom det automatiskt lägger till mappningar till din subgraf för varje emitterad händelse
+- Lägg till ett annat kontrakt (valfritt): du kan lägga till ett annat kontrakt
+
+Initiera din subgraf från ett befintligt kontrakt genom att köra följande kommando:
+
+```sh
+graph init --studio <SUBGRAPH_SLUG>
+```
+
+Se följande skärmdump för ett exempel för vad du kan förvänta dig när du initierar din subgraf:
+
+![Subgraph command](/img/subgraph-init-example.png)
+
+## 4. Skriv din subgraf
+
+De tidigare kommandona skapar en ställnings undergraf som du kan använda som utgångspunkt för att bygga din undergraf. När du gör ändringar i subgrafen kommer du huvudsakligen att arbeta med tre filer:
+
+- Manifest (subgraph.yaml) - Manifestet definierar vilka datakällor dina subgrafer kommer att indexera.
+- Schema (schema.graphql) - GraphQL schemat definierar vilken data du vill hämta från subgrafen.
+- AssemblyScript mappningar (mapping.ts) - Detta är koden som översätter data från dina datakällor till de enheter som definieras i schemat.
+
+För mer information om hur du skriver din subgraf, se [Skapa en subgraf](/developing/creating-a-subgraph).
+
+## 5. Distribuera till Subgraph Studio
+
+När din subgraf är skriven, kör följande kommandon:
+
+```sh
+$ graph codegen
+$ graph build
+```
+
+- Autentisera och distribuera din subgraf. Implementeringsnyckeln finns på Subgraph sidan i Subgraph Studio.
+
+```sh
+$ graph auth --studio <DEPLOY_KEY>
+$ graph deploy --studio <SUBGRAPH_SLUG>
+```
+
+You will be asked for a version label. It's strongly recommended to use [semver](https://semver.org/) for versioning like `0.0.1`. That said, you are free to choose any string as version such as:`v1`, `version1`, `asdf`.
+
+## 6. Testa din subgraf
+
+Du kan testa din subgraf genom att göra en exempelfråga i lekplatssektionen.
+
+Loggarna kommer att berätta om det finns några fel med din subgraf. Loggarna för en operativ subgraf kommer att se ut så här:
+
+![Subgraph logs](/img/subgraph-logs-image.png)
+
+If your subgraph is failing, you can query the subgraph health by using the GraphiQL Playground. Note that you can leverage the query below and input your deployment ID for your subgraph. In this case, `Qm...` is the deployment ID (which can be located on the Subgraph page under **Details**). The query below will tell you when a subgraph fails, so you can debug accordingly:
+
+```graphql
+{
+  indexingStatuses(subgraphs: ["Qm..."]) {
+    node
+    synced
+    health
+    fatalError {
+      message
+      block {
+        number
+        hash
+      }
+      handler
+    }
+    nonFatalErrors {
+      message
+      block {
+        number
+        hash
+      }
+      handler
+    }
+    chains {
+      network
+      chainHeadBlock {
+        number
+      }
+      earliestBlock {
+        number
+      }
+      latestBlock {
+        number
+      }
+      lastHealthyBlock {
+        number
+      }
+    }
+    entityCount
+  }
+}
+```
+
+## 7. Publicera din subgraf till The Graph's decentraliserade nätverk
+
+När din subgraf har distribuerats till Subgraph Studio, du har testat den och är redo att sätta den i produktion, du kan sedan publicera den till det decentraliserade nätverket.
+
+I Subgraph Studio klickar du på din undergraf. På subgrafens sida kan du klicka på publiceringsknappen längst upp till höger.
+
+Select the network you would like to publish your subgraph to. It is recommended to publish subgraphs to Arbitrum One to take advantage of the [faster transaction speeds and lower gas costs](/arbitrum/arbitrum-faq).
+
+Innan du kan fråga efter din subgraf måste indexerare börja skicka frågor på den. För att effektivisera denna process kan du kurera din egen subgraf med GRT.
+
+I skrivande stund rekommenderas det att du kurerar din egen subgraf med 10 000 GRT för att säkerställa att den är indexerad och tillgänglig för sökning så snart som möjligt.
+
+För att spara på gaskostnaderna kan du kurera din subgraf i samma transaktion som du publicerade den genom att välja den här knappen när du publicerar din subgraf till The Graphs decentraliserade nätverk:
+
+![Subgraph publish](/img/publish-and-signal-tx.png)
+
+## 8. Fråga din subgraf
+
+Nu kan du fråga din subgraf genom att skicka GraphQL frågor till din subgrafs fråge URL, som du kan hitta genom att klicka på frågeknappen.
+
+Du kan fråga från din dapp om du inte har din API nyckel via den kostnadsfria, hastighetsbegränsade tillfälliga sökadressen som kan användas för utveckling och iscensättning.
+
+For more information about querying data from your subgraph, read more [here](../querying/querying-the-graph/).
