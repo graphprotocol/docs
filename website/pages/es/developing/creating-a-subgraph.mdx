@@ -98,7 +98,7 @@ Para este subgrafo de ejemplo, `subgraph.yaml` es:
 ```yaml
 specVersion: 0.0.4
 description: Gravatar for Ethereum
-repository: https://github.com/graphprotocol/example-subgraph
+repository: https://github.com/graphprotocol/graph-tooling
 schema:
   file: ./schema.graphql
 dataSources:
@@ -109,6 +109,14 @@ dataSources:
       address: '0x2E645469f354BB4F5c8a05B3b30A929361cf77eC'
       abi: Gravity
       startBlock: 6175244
+      endBlock: 7175245
+    context:
+      foo:
+        type: Bool
+        data: true
+      bar:
+        type: String
+        data: 'bar'
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.6
@@ -136,7 +144,7 @@ dataSources:
 
 Las entradas importantes a actualizar para el manifiesto son:
 
-- `description`: una descripción legible para el ser humano de lo que es el subgrafo. Esta descripción es mostrada por The Graph Explorer cuando el subgrafo se deploya en el Servicio Alojado.
+- `description`: a human-readable description of what the subgraph is. This description is displayed by the Graph Explorer when the subgraph is deployed to the hosted service.
 
 - `repository`: la URL del repositorio donde se encuentra el manifiesto del subgrafo. También se muestra en The Graph Explorer.
 
@@ -145,6 +153,10 @@ Las entradas importantes a actualizar para el manifiesto son:
 - `dataSources.source`: la dirección del contrato inteligente del que procede el subgrafo, y la ABI del contrato inteligente a utilizar. La dirección es opcional; omitirla permite indexar eventos coincidentes de todos los contratos.
 
 - `dataSources.source.startBlock`: el número opcional del bloque desde el que la fuente de datos comienza a indexar. En la mayoría de los casos, sugerimos utilizar el bloque en el que se creó el contrato.
+
+- `dataSources.source.endBlock`: The optional number of the block that the data source stops indexing at, including that block. Minimum spec version required: `0.0.9`.
+
+- `dataSources.context`: key-value pairs that can be used within subgraph mappings. Supports various data types like `Bool`, `String`, `Int`, `Int8`, `BigDecimal`, `Bytes`, `List`, and `BigInt`. Each variable needs to specify its `type` and `data`. These context variables are then accessible in the mapping files, offering more configurable options for subgraph development.
 
 - `dataSources.mapping.entities`: las entidades que la fuente de datos escribe en el almacén. El esquema de cada entidad se define en el archivo schema.graphql.
 
@@ -236,14 +248,15 @@ Para algunos tipos de entidad, el `id` se construye a partir de los id de otras 
 
 Admitimos los siguientes escalares en nuestra API GraphQL:
 
-| Tipo | Descripción |
-| --- | --- |
-| `Bytes` | Byte array, representado como un string hexadecimal. Comúnmente utilizado para los hashes y direcciones de Ethereum. |
-| `String` | Escalar para valores `string`. Los caracteres nulos no son compatibles y se eliminan automáticamente. |
-| `Boolean` | Escalar para valores `boolean`. |
-| `Int` | La especificación GraphQL define `Int` con un tamaño de 32 bytes. |
-| `BigInt` | Números enteros grandes. Se utiliza para los tipos `uint32`, `int64`, `uint64`, ..., `uint256` de Ethereum. Nota: Todo por debajo de `uint32`, como `int32`, `uint24` o `int8` se representa como `i32`. |
-| `BigDecimal` | `BigDecimal` Decimales de alta precisión representados como un signo y un exponente. El rango de exponentes va de -6143 a +6144. Redondeado a 34 dígitos significativos. |
+| Tipo         | Descripción                                                                                                                                                                                                      |
+| ------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Bytes`      | Byte array, representado como un string hexadecimal. Comúnmente utilizado para los hashes y direcciones de Ethereum.                                                                                             |
+| `String`     | Escalar para valores `string`. Los caracteres nulos no son compatibles y se eliminan automáticamente.                                                                                                            |
+| `Boolean`    | Escalar para valores `boolean`.                                                                                                                                                                                  |
+| `Int`        | La especificación GraphQL define `Int` con un tamaño de 32 bytes.                                                                                                                                                |
+| `Int8`       | An 8-byte signed integer, also known as a 64-bit signed integer, can store values in the range from -9,223,372,036,854,775,808 to 9,223,372,036,854,775,807. Prefer using this to represent `i64` from ethereum. |
+| `BigInt`     | Números enteros grandes. Se utiliza para los tipos `uint32`, `int64`, `uint64`, ..., `uint256` de Ethereum. Nota: Todo por debajo de `uint32`, como `int32`, `uint24` o `int8` se representa como `i32`.         |
+| `BigDecimal` | `BigDecimal` Decimales de alta precisión representados como un signo y un exponente. El rango de exponentes va de -6143 a +6144. Redondeado a 34 dígitos significativos.                                         |
 
 #### Enums
 
@@ -468,10 +481,10 @@ Diccionarios de idiomas admitidos:
 
 Algoritmos admitidos para ordenar los resultados:
 
-| Algoritmos | Descripción |
-| --- | --- |
-| rango | Usa la calidad de coincidencia (0-1) de la consulta de texto completo para ordenar los resultados. |
-| rango de proximidad | Similar al rango, pero también incluye la proximidad de los matches. |
+| Algoritmos          | Descripción                                                                                        |
+| ------------------- | -------------------------------------------------------------------------------------------------- |
+| rango               | Usa la calidad de coincidencia (0-1) de la consulta de texto completo para ordenar los resultados. |
+| rango de proximidad | Similar al rango, pero también incluye la proximidad de los matches.                               |
 
 ## Escribir Mappings
 
@@ -646,7 +659,7 @@ export function handleNewExchange(event: NewExchange): void {
 ```
 
 > **Nota:** Un nuevo origen de datos sólo procesará las llamadas y los eventos del bloque en el que fue creado y todos los bloques siguientes, pero no procesará los datos históricos, es decir, los datos que están contenidos en bloques anteriores.
->
+> 
 > Si los bloques anteriores contienen datos relevantes para la nueva fuente de datos, lo mejor es indexar esos datos leyendo el estado actual del contrato y creando entidades que representen ese estado en el momento de crear la nueva fuente de datos.
 
 ### Contexto de la fuente de datos
@@ -703,7 +716,7 @@ dataSources:
 ```
 
 > **Nota:** El bloque de creación del contrato se puede buscar rápidamente en Etherscan:
->
+> 
 > 1. Busca el contrato introduciendo su dirección en la barra de búsqueda.
 > 2. Haz clic en el hash de la transacción de creación en la sección `Contract Creator`.
 > 3. Carga la página de detalles de la transacción, donde encontrarás el bloque inicial de ese contrato.
@@ -770,6 +783,8 @@ Además de suscribirse a eventos del contracto o calls de funciones, un subgrafo
 
 ### Filtros admitidos
 
+#### Call Filter
+
 ```yaml
 filter:
   kind: call
@@ -804,6 +819,45 @@ dataSources:
         - handler: handleBlockWithCallToContract
           filter:
             kind: call
+```
+
+#### Polling Filter
+
+> **Requires `specVersion` >= 0.0.8**
+
+> **Note:** Polling filters are only available on dataSources of `kind: ethereum`.
+
+```yaml
+blockHandlers:
+  - handler: handleBlock
+    filter:
+      kind: polling
+      every: 10
+```
+
+The defined handler will be called once for every `n` blocks, where `n` is the value provided in the `every` field. This configuration allows the subgraph to perform specific operations at regular block intervals.
+
+#### Once Filter
+
+> **Requires `specVersion` >= 0.0.8**
+
+> **Note:** Once filters are only available on dataSources of `kind: ethereum`.
+
+```yaml
+blockHandlers:
+  - handler: handleOnce
+    filter:
+      kind: once
+```
+
+The defined handler with the once filter will be called only once before all other handlers run. This configuration allows the subgraph to use the handler as an initialization handler, performing specific tasks at the start of indexing.
+
+```ts
+export function handleOnce(block: ethereum.Block): void {
+  let data = new InitialData(Bytes.fromUTF8('initial'))
+  data.data = 'Setup data here'
+  data.save()
+}
 ```
 
 ### Función mapeo
@@ -934,6 +988,8 @@ Si el subgrafo encuentra un error esa consulta devolverá tanto los datos como u
 
 ### Grafting sobre subgrafos existentes
 
+> **Note:** it is not recommended to use grafting when initially upgrading to The Graph Network. Learn more [here](/cookbook/grafting/#important-note-on-grafting-when-upgrading-to-the-network).
+
 Cuando un subgrafo es deployado por primera vez, comienza a indexar eventos en el bloque génesis de la cadena correspondiente (o en el `startBlock` definido con cada fuente de datos) En algunas circunstancias, es beneficioso reutilizar los datos de un subgrafo existente y comenzar a indexar en un bloque mucho más tardío. Este modo de indexación se denomina _Grafting_. El Grafting es, por ejemplo, útil durante el desarrollo para superar rápidamente errores simples en los mappings, o para hacer funcionar temporalmente un subgrafo existente después de que haya fallado.
 
 Un subgrafo se graftea en un subgrafo base cuando el manifiesto de subgrafo `subgraph.yaml` contiene un bloque `graft` en el nivel superior:
@@ -963,7 +1019,7 @@ El subgrafo grafteado puede utilizar un esquema GraphQL que no es idéntico al d
 
 ## File Data Source
 
-Las fuentes de datos de archivos son una nueva funcionalidad de los subgrafos para acceder a datos off-chain durante la indexación de una forma robusta y ampliable, a partir de IPFS.
+File data sources are a new subgraph functionality for accessing off-chain data during indexing in a robust, extendable way. File data sources support fetching files from IPFS and from Arweave.
 
 > Esto también establece las bases para la indexación determinista de datos off-chain, así como la posible introducción de datos arbitrarios procedentes de HTTP.
 
@@ -1030,7 +1086,7 @@ Si la relación es 1:1 entre la entidad padre y la entidad fuente de datos de ar
 
 > Puedes utilizar [nested filters](https://thegraph.com/docs/en/querying/graphql-api/#example-for-nested-entity-filtering) para filtrar entidades padre en función de estas entidades nested.
 
-#### Añadir una nueva fuente de datos con plantilla con `kind: file/ipfs`
+#### Add a new templated data source with `kind: file/ipfs` or `kind: file/arweave`
 
 Esta es la fuente de datos que se generará cuando se identifique un archivo de interés.
 
@@ -1096,9 +1152,11 @@ export function handleMetadata(content: Bytes): void {
 Ahora puedes crear fuentes de datos de archivos durante la ejecución de handlers basados en cadenas:
 
 - Importar la plantilla desde los `templates` autogenerados
-- llamar a `TemplateName.create(cid: string)` desde dentro de una asignación, donde cid es un identificador de contenido IPFS válido
+- call `TemplateName.create(cid: string)` from within a mapping, where the cid is a valid content identifier for IPFS or Arweave
 
-> Actualmente Graph Node soporta [v0 and v1 content identifiers](https://docs.ipfs.tech/concepts/content-addressing/), e identificadores de contenido con directorios (por ejemplo, `bafyreighykzv2we26wfrbzkcdw37sbrby4upq7ae3aqobbq7i4er3tnxci/metadata.json`)
+For IPFS, Graph Node supports [v0 and v1 content identifiers](https://docs.ipfs.tech/concepts/content-addressing/), and content identifers with directories (e.g. `bafyreighykzv2we26wfrbzkcdw37sbrby4upq7ae3aqobbq7i4er3tnxci/metadata.json`).
+
+For Arweave, as of version 0.33.0 Graph Node can fetch files stored on Arweave based on their [transaction ID](https://docs.arweave.org/developers/server/http-api#transactions) from an Arweave gateway ([example file](https://bdxujjl5ev5eerd5ouhhs6o4kjrs4g6hqstzlci5pf6vhxezkgaa.arweave.net/CO9EpX0lekJEfXUOeXncUmMuG8eEp5WJHXl9U9yZUYA)). Arweave supports transactions uploaded via Bundlr, and Graph Node can also fetch files based on [Bundlr manifests](https://docs.bundlr.network/learn/gateways#indexing).
 
 Ejemplo:
 
@@ -1129,7 +1187,7 @@ export function handleTransfer(event: TransferEvent): void {
 }
 ```
 
-Esto creará una nueva fuente de datos de archivo, que sondeará el punto final IPFS configurado del Graph Node, reintentando si no se encuentra. Cuando se encuentre el archivo, se ejecutará el handler de la fuente de datos del archivo.
+This will create a new file data source, which will poll Graph Node's configured IPFS or Arweave endpoint, retrying if it is not found. When the file is found, the file data source handler will be executed.
 
 En este ejemplo se utiliza el CID como búsqueda entre la entidad `Token` principal y la entidad `TokenMetadata` resultante.
 
