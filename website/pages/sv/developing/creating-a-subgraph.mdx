@@ -1,46 +1,46 @@
 ---
-title: Creating a Subgraph
+title: Skapa en Subgraph
 ---
 
-A subgraph extracts data from a blockchain, processing it and storing it so that it can be easily queried via GraphQL.
+En subgraph extraherar data från en blockchain, bearbetar den och lagrar den så att den kan frågas enkelt via GraphQL.
 
-![Defining a Subgraph](/img/defining-a-subgraph.png)
+![Definiera en Subgraph](/img/defining-a-subgraph.png)
 
-The subgraph definition consists of a few files:
+Subgraph-definitionen består av några filer:
 
-- `subgraph.yaml`: a YAML file containing the subgraph manifest
+- `subgraph.yaml`: en YAML-fil som innehåller subgraph-manifestet
 
-- `schema.graphql`: a GraphQL schema that defines what data is stored for your subgraph, and how to query it via GraphQL
+- `schema.graphql`: ett GraphQL-schema som definierar vilka data som lagras för din subgraph och hur man frågar efter det via GraphQL
 
-- `AssemblyScript Mappings`: [AssemblyScript](https://github.com/AssemblyScript/assemblyscript) code that translates from the event data to the entities defined in your schema (e.g. `mapping.ts` in this tutorial)
+- `AssemblyScript Mappings`: [AssemblyScript](https://github.com/AssemblyScript/assemblyscript) kod som översätter från händelsedata till de enheter som är definierade i ditt schema (t.ex. `mapping.ts` i den här handledningen)
 
-> In order to use your subgraph on The Graph's decentralized network, you will need to [create an API key](/deploying/subgraph-studio-faqs/#2-how-do-i-create-an-api-key). It is recommended that you [add signal](/network/curating/#how-to-signal) to your subgraph with at least [10,000 GRT](/network-transition-faq/#how-can-i-ensure-that-my-subgraph-will-be-picked-up-by-indexer-on-the-graph-network).
+> För att använda din subgraph på The Graphs decentraliserade nätverk måste du [skapa en API-nyckel](/deploying/subgraph-studio-faqs/#2-how-do-i-create-an-api-key). Det rekommenderas att du [lägger till signal](/network/curating/#how-to-signal) till din subgraph med minst [10 000 GRT](/network-transition-faq/#how-can-i-ensure-that-my-subgraph-will-be-picked-up-by-indexer-on-the-graph-network).
 
-Before you go into detail about the contents of the manifest file, you need to install the [Graph CLI](https://github.com/graphprotocol/graph-cli) which you will need to build and deploy a subgraph.
+Innan du går in på detaljer om manifest filens innehåll måste du installera [Graph CLI](https://github.com/graphprotocol/graph-cli), som du kommer att behöva för att bygga och distribuera en subgraph.
 
-## Install the Graph CLI
+## Installera Graph CLI
 
-The Graph CLI is written in JavaScript, and you will need to install either `yarn` or `npm` to use it; it is assumed that you have yarn in what follows.
+Graph CLI är skrivet i JavaScript, och du måste installera antingen `yarn` eller `npm` för att använda det; det antas att du har yarn i det följande.
 
-Once you have `yarn`, install the Graph CLI by running
+När du har `yarn`, installera Graph CLI genom att köra
 
-**Install with yarn:**
+**Installera med yarn:**
 
 ```bash
 yarn global add @graphprotocol/graph-cli
 ```
 
-**Install with npm:**
+**Installera med npm:**
 
 ```bash
 npm install -g @graphprotocol/graph-cli
 ```
 
-Once installed, the `graph init` command can be used to set up a new subgraph project, either from an existing contract or from an example subgraph. This command can be used to create a subgraph on the Subgraph Studio by passing in `graph init --product subgraph-studio`. If you already have a smart contract deployed to your preferred network, bootstrapping a new subgraph from that contract can be a good way to get started.
+Efter installationen kan kommandot `graph init` användas för att skapa ett nytt subgrafprojekt, antingen från ett befintligt kontrakt eller från en exempelsubgraf. Detta kommando kan användas för att skapa en subgraf på Subgraph Studio genom att skicka in `graph init --product subgraph-studio`. Om du redan har ett smart kontrakt distribuerat till ditt föredragna nätverk kan det vara ett bra sätt att komma igång med att starta en ny subgraf från det kontraktet.
 
-## From An Existing Contract
+## Från ett Befintligt kontrakt
 
-The following command creates a subgraph that indexes all events of an existing contract. It attempts to fetch the contract ABI from Etherscan and falls back to requesting a local file path. If any of the optional arguments are missing, it takes you through an interactive form.
+Följande kommando skapar en subgraf som indexerar alla händelser i ett befintligt kontrakt. Det försöker hämta kontraktets ABI från Etherscan och faller tillbaka till att begära en lokal filsökväg. Om något av de valfria argumenten saknas tar det dig genom ett interaktivt formulär.
 
 ```sh
 graph init \
@@ -51,49 +51,49 @@ graph init \
   <SUBGRAPH_SLUG> [<DIRECTORY>]
 ```
 
-The `<SUBGRAPH_SLUG>` is the ID of your subgraph in Subgraph Studio, it can be found on your subgraph details page.
+`<SUBGRAPH_SLUG>` är ID för din subgraf i Subgraf Studio, det kan hittas på din subgraf detaljsida.
 
-## From An Example Subgraph
+## Från ett Exempel Subgraph
 
-The second mode `graph init` supports is creating a new project from an example subgraph. The following command does this:
+Det andra läget som `graph init` stöder är att skapa ett nytt projekt från ett exempel på en undergraf. Följande kommando gör detta:
 
 ```sh
 graph init --studio <SUBGRAPH_SLUG>
 ```
 
-The example subgraph is based on the Gravity contract by Dani Grant that manages user avatars and emits `NewGravatar` or `UpdateGravatar` events whenever avatars are created or updated. The subgraph handles these events by writing `Gravatar` entities to the Graph Node store and ensuring these are updated according to the events. The following sections will go over the files that make up the subgraph manifest for this example.
+Exempelsubgrafen är baserad på Gravity-kontraktet av Dani Grant som hanterar användares avatarer och avger händelserna `NewGravatar` eller `UpdateGravatar` när avatarer skapas eller uppdateras. Subgrafen hanterar dessa händelser genom att skriva `Gravatar`-entiteter till Graph Node-förvaringen och säkerställer att dessa uppdateras enligt händelserna. Följande avsnitt kommer att gå igenom filerna som utgör subgrafens manifest för detta exempel.
 
-## Add New dataSources To An Existing Subgraph
+## Lägg till nya datakällor i en befintlig Subgraf
 
-Since `v0.31.0` the `graph-cli` supports adding new dataSources to an existing subgraph through the `graph add` command.
+Från och med `v0.31.0` stöder `graph-cli` att lägga till nya datakällor i en befintlig subgraf genom kommandot `graph add`.
 
 ```sh
 graph add <address> [<subgraph-manifest default: "./subgraph.yaml">]
 
 Options:
 
-      --abi <path>              Path to the contract ABI (default: download from Etherscan)
-      --contract-name           Name of the contract (default: Contract)
-      --merge-entities          Whether to merge entities with the same name (default: false)
-      --network-file <path>     Networks config file path (default: "./networks.json")
+      --abi <path>              Sökväg till kontraktets ABI (standard: nedladdning från Etherscan)
+      --contract-name           Kontraktets namn (standard: Kontrakt)
+      --merge-entities          Om enheter med samma namn ska slås samman (standard: false)
+      --network-file <path>     Sökväg till konfigurationsfil för nätverk (standard: "./networks.json")
 ```
 
-The `add` command will fetch the ABI from Etherscan (unless an ABI path is specified with the `--abi` option), and will create a new `dataSource` in the same way that `graph init` command creates a `dataSource` `--from-contract`, updating the schema and mappings accordingly.
+Kommandot `add` hämtar ABI: en från Etherscan (om inte en ABI-sökväg anges med alternativet `--abi`) och skapar en ny `dataSource` på samma sätt som kommandot `graph init` skapar en `dataSource` `--from-contract`, och uppdaterar schemat och mappningarna därefter.
 
-The `--merge-entities` option identifies how the developer would like to handle `entity` and `event` name conflicts:
+Alternativet `--merge-entities` identifierar hur utvecklaren vill hantera konflikter med `entity`- och `event`-namn:
 
-- If `true`: the new `dataSource` should use existing `eventHandlers` & `entities`.
-- If `false`: a new entity & event handler should be created with `${dataSourceName}{EventName}`.
+- Om `true`: den nya `dataSource` ska använda befintliga `eventHandlers` & `entities`.
+- Om `false`: en ny entitet och händelsehanterare ska skapas med `${dataSourceName}{EventName}`.
 
-The contract `address` will be written to the `networks.json` for the relevant network.
+Kontraktsadressen kommer att skrivas till `networks.json` för den relevanta nätverket.
 
-> **Note:** When using the interactive cli, after successfully running `graph init`, you'll be prompted to add a new `dataSource`.
+> **Obs:** När du använder det interaktiva kommandoraden, efter att ha kört `graph init` framgångsrikt, kommer du att bli ombedd att lägga till en ny `dataSource`.
 
-## The Subgraph Manifest
+## Subgrafens manifest
 
-The subgraph manifest `subgraph.yaml` defines the smart contracts your subgraph indexes, which events from these contracts to pay attention to, and how to map event data to entities that Graph Node stores and allows to query. The full specification for subgraph manifests can be found [here](https://github.com/graphprotocol/graph-node/blob/master/docs/subgraph-manifest.md).
+Subgrafens manifest `subgraph.yaml` definierar de smarta kontrakten som din subgraf indexerar, vilka händelser från dessa kontrakt som ska uppmärksammas och hur man kartlägger händelsedata till entiteter som Graph Node lagrar och tillåter att fråga. Den fullständiga specifikationen för subgrafens manifest finns [här](https://github.com/graphprotocol/graph-node/blob/master/docs/subgraph-manifest.md).
 
-For the example subgraph, `subgraph.yaml` is:
+För exempelsubgrafen är `subgraph.yaml`:
 
 ```yaml
 specVersion: 0.0.4
@@ -109,6 +109,14 @@ dataSources:
       address: '0x2E645469f354BB4F5c8a05B3b30A929361cf77eC'
       abi: Gravity
       startBlock: 6175244
+      endBlock: 7175245
+    context:
+      foo:
+        type: Bool
+        data: true
+      bar:
+        type: String
+        data: 'bar'
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.6
@@ -134,59 +142,63 @@ dataSources:
       file: ./src/mapping.ts
 ```
 
-The important entries to update for the manifest are:
+De viktiga posterna att uppdatera för manifestet är:
 
-- `description`: a human-readable description of what the subgraph is. This description is displayed by the Graph Explorer when the subgraph is deployed to the Hosted Service.
+- `description`: a human-readable description of what the subgraph is. This description is displayed by the Graph Explorer when the subgraph is deployed to the hosted service.
 
-- `repository`: the URL of the repository where the subgraph manifest can be found. This is also displayed by The Graph Explorer.
+- `repository`: URL till lagringsplatsen där subgrafens manifest kan hittas. Detta visas också av The Graph Explorer.
 
-- `features`: a list of all used [feature](#experimental-features) names.
+- `features`: en lista över alla använda [funktions](#experimentella-funktioner) namn.
 
-- `dataSources.source`: the address of the smart contract the subgraph sources, and the ABI of the smart contract to use. The address is optional; omitting it allows to index matching events from all contracts.
+- `dataSources.source`: adressen till det smarta kontraktet som subgrafen hämtar data från, och ABI för det smarta kontraktet att använda. Adressen är valfri; att utelämna den gör det möjligt att indexera matchande händelser från alla kontrakt.
 
-- `dataSources.source.startBlock`: the optional number of the block that the data source starts indexing from. In most cases, we suggest using the block in which the contract was created.
+- `dataSources.source.startBlock`: det valfria blocknummer som datakällan börjar indexera från. I de flesta fall föreslår vi att du använder det block där kontraktet skapades.
 
-- `dataSources.mapping.entities`: the entities that the data source writes to the store. The schema for each entity is defined in the schema.graphql file.
+- `dataSources.source.endBlock`: The optional number of the block that the data source stops indexing at, including that block. Minimum spec version required: `0.0.9`.
 
-- `dataSources.mapping.abis`: one or more named ABI files for the source contract as well as any other smart contracts that you interact with from within the mappings.
+- `dataSources.context`: key-value pairs that can be used within subgraph mappings. Supports various data types like `Bool`, `String`, `Int`, `Int8`, `BigDecimal`, `Bytes`, `List`, and `BigInt`. Each variable needs to specify its `type` and `data`. These context variables are then accessible in the mapping files, offering more configurable options for subgraph development.
 
-- `dataSources.mapping.eventHandlers`: lists the smart contract events this subgraph reacts to and the handlers in the mapping—./src/mapping.ts in the example—that transform these events into entities in the store.
+- `dataSources.mapping.entities`: de entiteter som datakällan skriver till lagringsplatsen. Schemat för varje entitet definieras i filen schema.graphql.
 
-- `dataSources.mapping.callHandlers`: lists the smart contract functions this subgraph reacts to and handlers in the mapping that transform the inputs and outputs to function calls into entities in the store.
+- `dataSources.mapping.abis`: en eller flera namngivna ABI-filer för källkontraktet samt eventuella andra smarta kontrakt som du interagerar med från inom mappningarna.
 
-- `dataSources.mapping.blockHandlers`: lists the blocks this subgraph reacts to and handlers in the mapping to run when a block is appended to the chain. Without a filter, the block handler will be run every block. An optional call-filter can be provided by adding a `filter` field with `kind: call` to the handler. This will only run the handler if the block contains at least one call to the data source contract.
+- `dataSources.mapping.eventHandlers`: listar de smarta kontraktshändelser som denna subgraf reagerar på och hanterare i mappningen—./src/mapping.ts i exemplet - som omvandlar dessa händelser till entiteter i lagringsplatsen.
 
-A single subgraph can index data from multiple smart contracts. Add an entry for each contract from which data needs to be indexed to the `dataSources` array.
+- `dataSources.mapping.callHandlers`: listar de smarta kontraktsfunktioner som denna subgraf reagerar på och hanterare i mappningen som omvandlar in- och utdata till funktionsanrop till entiteter i lagringsplatsen.
 
-The triggers for a data source within a block are ordered using the following process:
+- `dataSources.mapping.blockHandlers`: listar de block som denna subgraf reagerar på och hanterare i mappningen som körs när ett block läggs till i kedjan. Utan ett filter körs blockhanteraren varje block. En valfri anropsfiltrering kan tillhandahållas genom att lägga till en `filter`-fält med `kind: call` till hanteraren. Detta körs bara om blocket innehåller minst ett anrop till datakällan.
 
-1. Event and call triggers are first ordered by transaction index within the block.
-2. Event and call triggers within the same transaction are ordered using a convention: event triggers first then call triggers, each type respecting the order they are defined in the manifest.
-3. Block triggers are run after event and call triggers, in the order they are defined in the manifest.
+En enskild subgraf kan indexera data från flera smarta kontrakt. Lägg till en post för varje kontrakt från vilket data behöver indexeras i `dataSources`-matrisen.
 
-These ordering rules are subject to change.
+Utlösarna för en datakälla inom ett block ordnas med hjälp av följande process:
 
-### Getting The ABIs
+1. Händelse- och anropsutlösare ordnas först efter transaktionsindex inom blocket.
+2. Händelse- och anropsutlösare inom samma transaktion ordnas med hjälp av en konvention: händelseutlösare först, sedan anropsutlösare, varje typ respekterar ordningen de definieras i manifestet.
+3. Blockutlösare körs efter händelse- och anropsutlösare, i den ordning de definieras i manifestet.
 
-The ABI file(s) must match your contract(s). There are a few ways to obtain ABI files:
+Dessa ordningsregler kan komma att ändras.
 
-- If you are building your own project, you will likely have access to your most current ABIs.
-- If you are building a subgraph for a public project, you can download that project to your computer and get the ABI by using [`truffle compile`](https://truffleframework.com/docs/truffle/overview) or using solc to compile.
-- You can also find the ABI on [Etherscan](https://etherscan.io/), but this isn't always reliable, as the ABI that is uploaded there may be out of date. Make sure you have the right ABI, otherwise running your subgraph will fail.
+### Hämta ABI: erna
 
-## The GraphQL Schema
+ABI-filerna måste matcha ditt/dina kontrakt. Det finns några olika sätt att få ABI-filer:
 
-The schema for your subgraph is in the file `schema.graphql`. GraphQL schemas are defined using the GraphQL interface definition language. If you've never written a GraphQL schema, it is recommended that you check out this primer on the GraphQL type system. Reference documentation for GraphQL schemas can be found in the [GraphQL API](/querying/graphql-api) section.
+- Om du bygger ditt eget projekt har du förmodligen tillgång till dina senaste ABIs.
+- Om du bygger en subgraf för ett offentligt projekt kan du ladda ner det projektet till din dator och få ABI:n genom att använda [`truffle compile`](https://truffleframework.com/docs/truffle/overview) eller använda solc för att kompilera.
+- Du kan också hitta ABI:n på [Etherscan](https://etherscan.io/), men detta är inte alltid pålitligt, eftersom ABI:n som laddas upp där kan vara föråldrad. Se till att du har rätt ABI, annars kommer din subgraf att misslyckas när den körs.
 
-## Defining Entities
+## GraphQL-schemat
 
-Before defining entities, it is important to take a step back and think about how your data is structured and linked. All queries will be made against the data model defined in the subgraph schema and the entities indexed by the subgraph. Because of this, it is good to define the subgraph schema in a way that matches the needs of your dapp. It may be useful to imagine entities as "objects containing data", rather than as events or functions.
+Schemat för din subgraf finns i filen `schema.graphql`. GraphQL-scheman definieras med hjälp av gränssnittsdefinitionsspråket för GraphQL. Om du aldrig har skrivit ett GraphQL-schema rekommenderas det att du kollar in denna introduktion till GraphQL-typsystemet. Referensdokumentation för GraphQL-scheman finns i avsnittet [GraphQL API](/querying/graphql-api).
 
-With The Graph, you simply define entity types in `schema.graphql`, and Graph Node will generate top level fields for querying single instances and collections of that entity type. Each type that should be an entity is required to be annotated with an `@entity` directive. By default, entities are mutable, meaning that mappings can load existing entities, modify them and store a new version of that entity. Mutability comes at a price, and for entity types for which it is known that they will never be modified, for example, because they simply contain data extracted verbatim from the chain, it is recommended to mark them as immutable with `@entity(immutable: true)`. Mappings can make changes to immutable entities as long as those changes happen in the same block in which the entity was created. Immutable entities are much faster to write and to query, and should therefore be used whenever possible.
+## Definition av entiteter
 
-### Good Example
+Innan du definierar entiteter är det viktigt att ta ett steg tillbaka och tänka på hur din data är strukturerad och länkad. Alla frågor kommer att göras mot datamodellen som definieras i subgrafens schema och de entiteter som indexerats av subgraf. Därför är det bra att definiera subgrafens schema på ett sätt som matchar din dapp's behov. Det kan vara användbart att tänka på entiteter som "objekt som innehåller data", snarare än som händelser eller funktioner.
 
-The `Gravatar` entity below is structured around a Gravatar object and is a good example of how an entity could be defined.
+Med The Graph definierar du helt enkelt entitetstyper i `schema.graphql`, och Graph Node kommer att generera toppnivåfält för att fråga enskilda instanser och samlingar av den entitetstypen. Varje typ som ska vara en entitet måste vara annoterad med en `@entity`-direktiv. Som standard är entiteter muterbara, vilket innebär att mappningar kan ladda befintliga entiteter, ändra dem och lagra en ny version av den entiteten. Mutabilitet har ett pris, och för entitetstyper där det är känt att de aldrig kommer att ändras, till exempel eftersom de helt enkelt innehåller data som extraherats ordagrant från kedjan, rekommenderas att markera dem som omutbara med `@entity(immutable: true)`. Mappningar kan göra ändringar i omutbara entiteter så länge dessa ändringar sker i samma block som entiteten skapades. Omutebara entiteter är mycket snabbare att skriva och att fråga, och bör därför användas när det är möjligt.
+
+### Bra exempel
+
+Entiteten `Gravatar` nedan är strukturerad kring ett Gravatar-objekt och är ett bra exempel på hur en entitet kan definieras.
 
 ```graphql
 type Gravatar @entity(immutable: true) {
@@ -198,9 +210,9 @@ type Gravatar @entity(immutable: true) {
 }
 ```
 
-### Bad Example
+### Dåligt exempel
 
-The example `GravatarAccepted` and `GravatarDeclined` entities below are based around events. It is not recommended to map events or function calls to entities 1:1.
+Exemplen `GravatarAccepted` och `GravatarDeclined` nedan är baserade på händelser. Det rekommenderas inte att mappa händelser eller funktionsanrop till entiteter 1:1.
 
 ```graphql
 type GravatarAccepted @entity {
@@ -218,36 +230,37 @@ type GravatarDeclined @entity {
 }
 ```
 
-### Optional and Required Fields
+### Valfria och obligatoriska fält
 
-Entity fields can be defined as required or optional. Required fields are indicated by the `!` in the schema. If a required field is not set in the mapping, you will receive this error when querying the field:
+Entitetsfält kan definieras som obligatoriska eller valfria. Obligatoriska fält anges med `!` i schemat. Om ett obligatoriskt fält inte har angetts i mappningen får du det här felmeddelandet när du frågar efter fältet:
 
 ```
 Null value resolved for non-null field 'name'
 ```
 
-Each entity must have an `id` field, which must be of type `Bytes!` or `String!`. It is generally recommended to use `Bytes!`, unless the `id` contains human-readable text, since entities with `Bytes!` id's will be faster to write and query as those with a `String!` `id`. The `id` field serves as the primary key, and needs to be unique among all entities of the same type. For historical reasons, the type `ID!` is also accepted and is a synonym for `String!`.
+Varje entitet måste ha ett `id`-fält, som måste vara av typen `Bytes!` eller `String!`. Det rekommenderas generellt att använda `Bytes!`, om inte `id` innehåller läsbar text, eftersom entiteter med `Bytes!`-id kommer att vara snabbare att skriva och fråga än de med ett `String!` `id`. `id`-fältet fungerar som primärnyckel och måste vara unikt bland alla entiteter av samma typ. Av historiska skäl accepteras också typen `ID!` och är en synonym för `String!`.
 
-For some entity types the `id` is constructed from the id's of two other entities; that is possible using `concat`, e.g., `let id = left.id.concat(right.id)` to form the id from the id's of `left` and `right`. Similarly, to construct an id from the id of an existing entity and a counter `count`, `let id = left.id.concatI32(count)` can be used. The concatenation is guaranteed to produce unique id's as long as the length of `left` is the same for all such entities, for example, because `left.id` is an `Address`.
+För vissa entitetstyper konstrueras `id` från id:erna hos två andra entiteter; det är möjligt med `concat`, t.ex. `let id = left.id.concat(right.id)` för att bilda id från id:erna hos `left` och `right`. På liknande sätt kan för att konstruera ett id från id:et hos en befintlig entitet och en räknare `count` användas `let id = left.id.concatI32(count)`. Konkatineringen garanterar att producera unika id:er så länge längden av `left` är densamma för alla sådana entiteter, till exempel eftersom `left.id` är en `Address`.
 
-### Built-In Scalar Types
+### Inbyggda Skalartyper
 
-#### GraphQL Supported Scalars
+#### GraphQL-Stödda Skalartyper
 
-We support the following scalars in our GraphQL API:
+Vi stödjer följande skalartyper i vår GraphQL API:
 
-| Type | Description |
-| --- | --- |
-| `Bytes` | Byte array, represented as a hexadecimal string. Commonly used for Ethereum hashes and addresses. |
-| `String` | Scalar for `string` values. Null characters are not supported and are automatically removed. |
-| `Boolean` | Scalar for `boolean` values. |
-| `Int` | The GraphQL spec defines `Int` to have a size of 32 bytes. |
-| `BigInt` | Large integers. Used for Ethereum's `uint32`, `int64`, `uint64`, ..., `uint256` types. Note: Everything below `uint32`, such as `int32`, `uint24` or `int8` is represented as `i32`. |
-| `BigDecimal` | `BigDecimal` High precision decimals represented as a significand and an exponent. The exponent range is from −6143 to +6144. Rounded to 34 significant digits. |
+| Typ          | Beskrivning                                                                                                                                                                                                      |
+| ------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Bytes`      | Bytematris, representerad som en hexadecimal sträng. Vanligt används för Ethereum-hashar och adresser.                                                                                                           |
+| `String`     | Skalär för `string`-värden. Nolltecken stöds inte och tas automatiskt bort.                                                                                                                                      |
+| `Boolean`    | Skalär för `boolean`-värden.                                                                                                                                                                                     |
+| `Int`        | Enligt GraphQL specifikationen har `Int` en storlek på 32 byte.                                                                                                                                                  |
+| `Int8`       | An 8-byte signed integer, also known as a 64-bit signed integer, can store values in the range from -9,223,372,036,854,775,808 to 9,223,372,036,854,775,807. Prefer using this to represent `i64` from ethereum. |
+| `BigInt`     | Stora heltal. Används för Ethereum's `uint32`, `int64`, `uint64`, ..., `uint256` typer. Observera: Allt under `uint32`, som `int32`, `uint24` eller `int8` representeras som `i32`.                              |
+| `BigDecimal` | `BigDecimal` Högprecisionsdecimaler representerade som en signifikant och en exponent. Exponentområdet är från −6143 till +6144. Avrundat till 34 signifikanta siffror.                                          |
 
 #### Enums
 
-You can also create enums within a schema. Enums have the following syntax:
+Du kan också skapa enums inom ett schema. Enums har följande syntax:
 
 ```graphql
 enum TokenStatus {
@@ -257,19 +270,19 @@ enum TokenStatus {
 }
 ```
 
-Once the enum is defined in the schema, you can use the string representation of the enum value to set an enum field on an entity. For example, you can set the `tokenStatus` to `SecondOwner` by first defining your entity and subsequently setting the field with `entity.tokenStatus = "SecondOwner"`. The example below demonstrates what the Token entity would look like with an enum field:
+När enumet är definierat i schemat kan du använda enumvärdenas strängrepresentation för att ställa in ett enumfält på en entitet. Till exempel kan du ställa in `tokenStatus` till `SecondOwner` genom att först definiera din entitet och sedan ställa in fältet med `entity.tokenStatus = "SecondOwner"`. Exemplet nedan visar hur Token-entiteten skulle se ut med ett enumfält:
 
-More detail on writing enums can be found in the [GraphQL documentation](https://graphql.org/learn/schema/).
+Mer detaljer om att skriva enums finns i [GraphQL-dokumentationen](https://graphql.org/learn/schema/).
 
-#### Entity Relationships
+#### Entitetsrelationer
 
-An entity may have a relationship to one or more other entities in your schema. These relationships may be traversed in your queries. Relationships in The Graph are unidirectional. It is possible to simulate bidirectional relationships by defining a unidirectional relationship on either "end" of the relationship.
+En entitet kan ha en relation till en eller flera andra entiteter i ditt schema. Dessa relationer kan traverseras i dina frågor. Relationer i The Graph är enriktade. Det är möjligt att simulera dubbelriktade relationer genom att definiera en enriktad relation på antingen den ena "änden" av relationen.
 
-Relationships are defined on entities just like any other field except that the type specified is that of another entity.
+Relationer definieras på entiteter precis som vilket annat fält som helst, förutom att den specificerade typen är en annan entitet.
 
-#### One-To-One Relationships
+#### En-till-en-relationer
 
-Define a `Transaction` entity type with an optional one-to-one relationship with a `TransactionReceipt` entity type:
+Definiera en entitetstyp `Transaction` med en valfri en-till-en-relation till en entitetstyp `TransactionReceipt`:
 
 ```graphql
 type Transaction @entity(immutable: true) {
@@ -283,9 +296,9 @@ type TransactionReceipt @entity(immutable: true) {
 }
 ```
 
-#### One-To-Many Relationships
+#### En-till-många-relationer
 
-Define a `TokenBalance` entity type with a required one-to-many relationship with a Token entity type:
+Definiera en entitetstyp `TokenBalance` med ett obligatoriskt en-till-many förhållande med en entitetstyp Token:
 
 ```graphql
 type Token @entity(immutable: true) {
@@ -299,15 +312,15 @@ type TokenBalance @entity {
 }
 ```
 
-#### Reverse Lookups
+#### Omvända sökningar
 
-Reverse lookups can be defined on an entity through the `@derivedFrom` field. This creates a virtual field on the entity that may be queried but cannot be set manually through the mappings API. Rather, it is derived from the relationship defined on the other entity. For such relationships, it rarely makes sense to store both sides of the relationship, and both indexing and query performance will be better when only one side is stored and the other is derived.
+Omvända sökningar kan definieras på en entitet genom fältet `@derivedFrom`. Det skapar ett virtuellt fält på entiteten som kan frågas, men som inte kan ställas in manuellt via mappings API. Istället härleds det från den relation som är definierad på den andra entiteten. För sådana relationer är det sällan meningsfullt att lagra båda sidor av relationen, och både indexering och frågeprestanda blir bättre när bara en sida lagras och den andra härleds.
 
-For one-to-many relationships, the relationship should always be stored on the 'one' side, and the 'many' side should always be derived. Storing the relationship this way, rather than storing an array of entities on the 'many' side, will result in dramatically better performance for both indexing and querying the subgraph. In general, storing arrays of entities should be avoided as much as is practical.
+För en-till-många-relationer bör relationen alltid lagras på 'en'-sidan, och 'många'-sidan bör alltid härledas. Att lagra relationen på detta sätt, istället för att lagra en array av entiteter på 'många'-sidan, kommer att resultera i dramatiskt bättre prestanda både för indexering och för frågning av subgraphen. Generellt sett bör lagring av arrayer av entiteter undvikas så mycket som är praktiskt möjligt.
 
-#### Example
+#### Exempel
 
-We can make the balances for a token accessible from the token by deriving a `tokenBalances` field:
+Vi kan göra balanserna för en token åtkomliga från token genom att härleda ett fält `tokenBalances`:
 
 ```graphql
 type Token @entity(immutable: true) {
@@ -322,13 +335,13 @@ type TokenBalance @entity {
 }
 ```
 
-#### Many-To-Many Relationships
+#### Många-till-många-relationer
 
-For many-to-many relationships, such as users that each may belong to any number of organizations, the most straightforward, but generally not the most performant, way to model the relationship is as an array in each of the two entities involved. If the relationship is symmetric, only one side of the relationship needs to be stored and the other side can be derived.
+För många-till-många-relationer, som till exempel användare som var och en kan tillhöra ett antal organisationer, är det mest raka, men generellt sett inte den mest prestanda-optimerade, sättet att modellera relationen som en array i vardera av de två entiteter som är involverade. Om relationen är symmetrisk behöver bara ena sidan av relationen lagras och den andra sidan kan härledas.
 
-#### Example
+#### Exempel
 
-Define a reverse lookup from a `User` entity type to an `Organization` entity type. In the example below, this is achieved by looking up the `members` attribute from within the `Organization` entity. In queries, the `organizations` field on `User` will be resolved by finding all `Organization` entities that include the user's ID.
+Definiera en omvänd sökning från en entitet av typen `Användare` till en entitet av typen `Organisation`. I exemplet nedan uppnås detta genom att söka upp attributet `medlemmar` inom entiteten `Organisation`. I frågor kommer fältet `organisationer` på `Användare` att lösas genom att hitta alla `Organisations`-entiteter som inkluderar användarens ID.
 
 ```graphql
 type Organization @entity {
@@ -344,7 +357,7 @@ type User @entity {
 }
 ```
 
-A more performant way to store this relationship is through a mapping table that has one entry for each `User` / `Organization` pair with a schema like
+Ett mer effektivt sätt att lagra denna relation är genom en mappningstabell som har en post för varje `User` / `Organization`-par med ett schema som
 
 ```graphql
 type Organization @entity {
@@ -366,7 +379,7 @@ type UserOrganization @entity {
 }
 ```
 
-This approach requires that queries descend into one additional level to retrieve, for example, the organizations for users:
+Detta tillvägagångssätt kräver att frågorna går ner till ytterligare en nivå för att hämta t. ex. organisationer för användare:
 
 ```graphql
 query usersWithOrganizations {
@@ -381,11 +394,11 @@ query usersWithOrganizations {
 }
 ```
 
-This more elaborate way of storing many-to-many relationships will result in less data stored for the subgraph, and therefore to a subgraph that is often dramatically faster to index and to query.
+Detta mer avancerade sätt att lagra många-till-många-relationer kommer att leda till att mindre data lagras för subgrafen, och därför till en subgraf som ofta är dramatiskt snabbare att indexera och att fråga.
 
-#### Adding comments to the schema
+#### Lägga till kommentarer i schemat
 
-As per GraphQL spec, comments can be added above schema entity attributes using double quotations `""`. This is illustrated in the example below:
+Enligt GraphQL-specifikationen kan kommentarer läggas till ovanför entitetsattribut i schemat med hjälp av dubbla citattecken `""`. Detta illustreras i exemplet nedan:
 
 ```graphql
 type MyFirstEntity @entity {
@@ -395,13 +408,13 @@ type MyFirstEntity @entity {
 }
 ```
 
-## Defining Fulltext Search Fields
+## Definiera fält för fulltextsökning
 
-Fulltext search queries filter and rank entities based on a text search input. Fulltext queries are able to return matches for similar words by processing the query text input into stems before comparing them to the indexed text data.
+Fulltextsökningar filtrerar och rangordnar entiteter baserat på en textinmatning för sökning. Fulltextförfrågningar kan returnera träffar för liknande ord genom att bearbeta söktexten till stammar innan de jämförs med den indexerade textdata.
 
-A fulltext query definition includes the query name, the language dictionary used to process the text fields, the ranking algorithm used to order the results, and the fields included in the search. Each fulltext query may span multiple fields, but all included fields must be from a single entity type.
+En fulltextförfrågningsdefinition inkluderar förfrågningsnamnet, ordboken som används för att bearbeta textfälten, rangordningsalgoritmen som används för att ordna resultaten och fälten som ingår i sökningen. Varje fulltextförfrågan kan omfatta flera fält, men alla inkluderade fält måste vara från en enda entitetstyp.
 
-To add a fulltext query, include a `_Schema_` type with a fulltext directive in the GraphQL schema.
+För att lägga till en fulltextförfrågan inkludera en typ `_Schema_` med en fulltextdirektiv i GraphQL-schemat.
 
 ```graphql
 type _Schema_
@@ -409,7 +422,12 @@ type _Schema_
     name: "bandSearch"
     language: en
     algorithm: rank
-    include: [{ entity: "Band", fields: [{ name: "name" }, { name: "description" }, { name: "bio" }] }]
+    include: [
+      {
+        entity: "Band"
+        fields: [{ name: "name" }, { name: "description" }, { name: "bio" }]
+      }
+    ]
   )
 
 type Band @entity {
@@ -424,7 +442,7 @@ type Band @entity {
 }
 ```
 
-The example `bandSearch` field can be used in queries to filter `Band` entities based on the text documents in the `name`, `description`, and `bio` fields. Jump to [GraphQL API - Queries](/querying/graphql-api#queries) for a description of the fulltext search API and more example usage.
+Exempelfältet `bandSearch` kan användas i frågor för att filtrera `Band`-entiteter baserat på textdokumenten i fälten `name`, `description` och `bio`. Gå till [GraphQL API - Frågor](/querying/graphql-api#queries) för en beskrivning av API:et för fulltextsökning och fler exempel på användning.
 
 ```graphql
 query {
@@ -437,100 +455,100 @@ query {
 }
 ```
 
-> **[Feature Management](#experimental-features):** From `specVersion` `0.0.4` and onwards, `fullTextSearch` must be declared under the `features` section in the subgraph manifest.
+> **[Funktionshantering](#experimental-features):** Från `specVersion` `0.0.4` och framåt måste `fullTextSearch` deklareras under avsnittet `features` i subgraph-manifestet.
 
-### Languages supported
+### Stödda språk
 
-Choosing a different language will have a definitive, though sometimes subtle, effect on the fulltext search API. Fields covered by a fulltext query field are examined in the context of the chosen language, so the lexemes produced by analysis and search queries vary from language to language. For example: when using the supported Turkish dictionary "token" is stemmed to "toke" while, of course, the English dictionary will stem it to "token".
+Att välja ett annat språk kommer att ha en definitiv, om än ibland subtil, effekt på fulltext-sök-API:en. Fält som omfattas av en fulltextförfrågningsfunktion granskas i kontexten av det valda språket, så lexem som produceras av analys och sökfrågor varierar från språk till språk. Till exempel: när det används det stödda turkiska ordboken "token" så avstamsas det till "toke", medan engelska ordboken självklart avstammar det till "token".
 
-Supported language dictionaries:
+Stödda språkordböcker:
 
-| Code   | Dictionary |
-| ------ | ---------- |
-| simple | General    |
-| da     | Danish     |
-| nl     | Dutch      |
-| en     | English    |
-| fi     | Finnish    |
-| fr     | French     |
-| de     | German     |
-| hu     | Hungarian  |
-| it     | Italian    |
-| no     | Norwegian  |
-| pt     | Portuguese |
-| ro     | Romanian   |
-| ru     | Russian    |
-| es     | Spanish    |
-| sv     | Swedish    |
-| tr     | Turkish    |
+| Kod   | Ordbok       |
+| ----- | ------------ |
+| enkel | Allmän       |
+| da    | Danska       |
+| nl    | Holländska   |
+| en    | Engelska     |
+| fi    | Finska       |
+| fr    | Franska      |
+| de    | Tyska        |
+| hu    | Ungerska     |
+| it    | Italienska   |
+| no    | Norska       |
+| pt    | Portugisiska |
+| ro    | Rumänska     |
+| ru    | Ryska        |
+| es    | Spanska      |
+| sv    | Svenska      |
+| tr    | Turkiska     |
 
-### Ranking Algorithms
+### Rankningsalgoritmer
 
-Supported algorithms for ordering results:
+Stödda algoritmer för att ordna resultat:
 
-| Algorithm     | Description                                                             |
-| ------------- | ----------------------------------------------------------------------- |
-| rank          | Use the match quality (0-1) of the fulltext query to order the results. |
-| proximityRank | Similar to rank but also includes the proximity of the matches.         |
+| Algoritm      | Beskrivning                                                                        |
+| ------------- | ---------------------------------------------------------------------------------- |
+| rank          | Använd matchningskvaliteten (0-1) från fulltextförfrågan för att ordna resultaten. |
+| proximityRank | Liknande rank, men inkluderar också närheten av träffarna.                         |
 
-## Writing Mappings
+## Skriv Mappningar
 
-The mappings take data from a particular source and transform it into entities that are defined within your schema. Mappings are written in a subset of [TypeScript](https://www.typescriptlang.org/docs/handbook/typescript-in-5-minutes.html) called [AssemblyScript](https://github.com/AssemblyScript/assemblyscript/wiki) which can be compiled to WASM ([WebAssembly](https://webassembly.org/)). AssemblyScript is stricter than normal TypeScript, yet provides a familiar syntax.
+Mappningar tar data från en specifik källa och omvandlar den till entiteter som är definierade i din schema. Mappningar skrivs i en delmängd av [TypeScript](https://www.typescriptlang.org/docs/handbook/typescript-in-5-minutes.html) som kallas [AssemblyScript](https://github.com/AssemblyScript/assemblyscript/wiki) som kan kompileras till WASM ([WebAssembly](https://webassembly.org/)). AssemblyScript är strängare än vanlig TypeScript, men erbjuder en bekant syntax.
 
-For each event handler that is defined in `subgraph.yaml` under `mapping.eventHandlers`, create an exported function of the same name. Each handler must accept a single parameter called `event` with a type corresponding to the name of the event which is being handled.
+För varje händelsehanterare som är definierad i `subgraph.yaml` under `mapping.eventHandlers`, skapa en exporterad funktion med samma namn. Varje hanterare måste acceptera en enda parameter med namnet `event` med en typ som motsvarar namnet på händelsen som hanteras.
 
-In the example subgraph, `src/mapping.ts` contains handlers for the `NewGravatar` and `UpdatedGravatar` events:
+I det här exempelsubgraphet innehåller `src/mapping.ts` hanterare för händelserna `NewGravatar` och `UpdatedGravatar`:
 
 ```javascript
-import { NewGravatar, UpdatedGravatar } from '../generated/Gravity/Gravity'
-import { Gravatar } from '../generated/schema'
+import { NewGravatar, UpdatedGravatar } from "../generated/Gravity/Gravity";
+import { Gravatar } from "../generated/schema";
 
 export function handleNewGravatar(event: NewGravatar): void {
-  let gravatar = new Gravatar(event.params.id)
-  gravatar.owner = event.params.owner
-  gravatar.displayName = event.params.displayName
-  gravatar.imageUrl = event.params.imageUrl
-  gravatar.save()
+  let gravatar = new Gravatar(event.params.id);
+  gravatar.owner = event.params.owner;
+  gravatar.displayName = event.params.displayName;
+  gravatar.imageUrl = event.params.imageUrl;
+  gravatar.save();
 }
 
 export function handleUpdatedGravatar(event: UpdatedGravatar): void {
-  let id = event.params.id
-  let gravatar = Gravatar.load(id)
+  let id = event.params.id;
+  let gravatar = Gravatar.load(id);
   if (gravatar == null) {
-    gravatar = new Gravatar(id)
+    gravatar = new Gravatar(id);
   }
-  gravatar.owner = event.params.owner
-  gravatar.displayName = event.params.displayName
-  gravatar.imageUrl = event.params.imageUrl
-  gravatar.save()
+  gravatar.owner = event.params.owner;
+  gravatar.displayName = event.params.displayName;
+  gravatar.imageUrl = event.params.imageUrl;
+  gravatar.save();
 }
 ```
 
-The first handler takes a `NewGravatar` event and creates a new `Gravatar` entity with `new Gravatar(event.params.id.toHex())`, populating the entity fields using the corresponding event parameters. This entity instance is represented by the variable `gravatar`, with an id value of `event.params.id.toHex()`.
+Den första hanteraren tar en `NewGravatar`-händelse och skapar en ny `Gravatar`-entitet med `new Gravatar(event.params.id.toHex())`, fyller i entitetsfälten med hjälp av motsvarande händelseparametrar. Denna entitetsinstans representeras av variabeln `gravatar`, med ett id-värde av `event.params.id.toHex()`.
 
-The second handler tries to load the existing `Gravatar` from the Graph Node store. If it does not exist yet, it is created on-demand. The entity is then updated to match the new event parameters before it is saved back to the store using `gravatar.save()`.
+Den andra hanteraren försöker ladda den befintliga `Gravatar` från Graph Node-lagringen. Om den inte finns ännu skapas den på begäran. Entiteten uppdateras sedan för att matcha de nya händelseparametrarna innan den sparas tillbaka till lagringen med `gravatar.save()`.
 
-### Recommended IDs for Creating New Entities
+### Rekommenderade ID:n för att skapa nya entiteter
 
-Every entity has to have an `id` that is unique among all entities of the same type. An entity's `id` value is set when the entity is created. Below are some recommended `id` values to consider when creating new entities. NOTE: The value of `id` must be a `string`.
+Varje entitet måste ha ett `id` som är unikt bland alla entiteter av samma typ. En entitets `id`-värde sätts när entiteten skapas. Nedan finns några rekommenderade `id`-värden att överväga när du skapar nya entiteter. OBS: Värdet på `id` måste vara en `string`.
 
 - `event.params.id.toHex()`
 - `event.transaction.from.toHex()`
 - `event.transaction.hash.toHex() + "-" + event.logIndex.toString()`
 
-We provide the [Graph Typescript Library](https://github.com/graphprotocol/graph-ts) which contains utilies for interacting with the Graph Node store and conveniences for handling smart contract data and entities. You can use this library in your mappings by importing `@graphprotocol/graph-ts` in `mapping.ts`.
+Vi tillhandahåller [Graph Typescript Library](https://github.com/graphprotocol/graph-ts) som innehåller verktyg för att interagera med Graph Node-lagringen och bekvämligheter för att hantera smart kontraktsdata och entiteter. Du kan använda denna bibliotek i dina mappningar genom att importera `@graphprotocol/graph-ts` i `mapping.ts`.
 
-## Code Generation
+## Kodgenerering
 
-In order to make it easy and type-safe to work with smart contracts, events and entities, the Graph CLI can generate AssemblyScript types from the subgraph's GraphQL schema and the contract ABIs included in the data sources.
+För att göra det enkelt och typsäkert att arbeta med smarta kontrakt, händelser och entiteter kan Graph CLI generera AssemblyScript-typer från subgrafens GraphQL-schema och kontrakts-ABIn som ingår i datakällorna.
 
-This is done with
+Detta görs med
 
 ```sh
 graph codegen [--output-dir <OUTPUT_DIR>] [<MANIFEST>]
 ```
 
-but in most cases, subgraphs are already preconfigured via `package.json` to allow you to simply run one of the following to achieve the same:
+men i de flesta fall är undergrafer redan förkonfigurerade via `package.json` så att du helt enkelt kan köra en av följande för att uppnå samma sak:
 
 ```sh
 # Yarn
@@ -540,7 +558,7 @@ yarn codegen
 npm run codegen
 ```
 
-This will generate an AssemblyScript class for every smart contract in the ABI files mentioned in `subgraph.yaml`, allowing you to bind these contracts to specific addresses in the mappings and call read-only contract methods against the block being processed. It will also generate a class for every contract event to provide easy access to event parameters, as well as the block and transaction the event originated from. All of these types are written to `<OUTPUT_DIR>/<DATA_SOURCE_NAME>/<ABI_NAME>.ts`. In the example subgraph, this would be `generated/Gravity/Gravity.ts`, allowing mappings to import these types with.
+Detta genererar en AssemblyScript-klass för varje smart kontrakt i ABI-filerna som nämns i `subgraph.yaml`, så att du kan binda dessa kontrakt till specifika adresser i mappningarna och anropa skrivskyddade kontraktsmetoder mot det block som bearbetas. Den kommer också att generera en klass för varje kontraktshändelse för att ge enkel åtkomst till händelseparametrar, samt blocket och transaktionen som händelsen härstammar från. Alla dessa typer skrivs till `<OUTPUT_DIR>/<DATA_SOURCE_NAME>/<ABI_NAME>.ts`. I undergrafen i exemplet skulle detta vara `generated/Gravity/Gravity.ts`, vilket gör att mappningar kan importera dessa typer med.
 
 ```javascript
 import {
@@ -549,28 +567,28 @@ import {
   // The events classes:
   NewGravatar,
   UpdatedGravatar,
-} from '../generated/Gravity/Gravity'
+} from "../generated/Gravity/Gravity";
 ```
 
-In addition to this, one class is generated for each entity type in the subgraph's GraphQL schema. These classes provide type-safe entity loading, read and write access to entity fields as well as a `save()` method to write entities to store. All entity classes are written to `<OUTPUT_DIR>/schema.ts`, allowing mappings to import them with
+Utöver detta genereras en klass för varje entitetstyp i subgrafens GraphQL-schema. Dessa klasser tillhandahåller typsäker entitetsladdning, läs- och skrivåtkomst till entitetsfält samt en `save()`-metod för att skriva entiteter till lagret. Alla entitetsklasser skrivs till `<OUTPUT_DIR>/schema.ts`, vilket gör att mappningar kan importera dem med
 
 ```javascript
-import { Gravatar } from '../generated/schema'
+import { Gravatar } from "../generated/schema"
 ```
 
-> **Note:** The code generation must be performed again after every change to the GraphQL schema or the ABIs included in the manifest. It must also be performed at least once before building or deploying the subgraph.
+> **Observera:** Kodgenerering måste utföras igen efter varje ändring av GraphQL-schemat eller ABIn som ingår i manifestet. Det måste också utföras minst en gång innan du bygger eller distribuerar subgrafet.
 
-Code generation does not check your mapping code in `src/mapping.ts`. If you want to check that before trying to deploy your subgraph to the Graph Explorer, you can run `yarn build` and fix any syntax errors that the TypeScript compiler might find.
+Kodgenerering kontrollerar inte din mappningskod i `src/mapping.ts`. Om du vill kontrollera det innan du försöker distribuera din subgraf till Graph Explorer kan du köra `yarn build` och åtgärda eventuella syntaxfel som TypeScript-kompilatorn kan hitta.
 
-## Data Source Templates
+## Datakällmallar
 
-A common pattern in EVM-compatible smart contracts is the use of registry or factory contracts, where one contract creates, manages, or references an arbitrary number of other contracts that each have their own state and events.
+En vanlig mönster i EVM-kompatibla smarta kontrakt är användningen av register- eller fabrikskontrakt, där ett kontrakt skapar, hanterar eller hänvisar till ett godtyckligt antal andra kontrakt som var och en har sin egen stat och händelser.
 
-The addresses of these sub-contracts may or may not be known upfront and many of these contracts may be created and/or added over time. This is why, in such cases, defining a single data source or a fixed number of data sources is impossible and a more dynamic approach is needed: _data source templates_.
+Adresserna till dessa underkontrakt kan eller kanske inte vara kända på förhand, och många av dessa kontrakt kan skapas och/eller läggas till över tid. Det är därför, i sådana fall, som det är omöjligt att definiera en enda datakälla eller ett fast antal datakällor och en mer dynamisk metod behövs: _datakällmallar_.
 
-### Data Source for the Main Contract
+### Datakälla för huvudkontraktet
 
-First, you define a regular data source for the main contract. The snippet below shows a simplified example data source for the [Uniswap](https://uniswap.org) exchange factory contract. Note the `NewExchange(address,address)` event handler. This is emitted when a new exchange contract is created on-chain by the factory contract.
+Först definierar du en vanlig datakälla för huvudkontraktet. Snutten nedan visar ett förenklat exempel på en datakälla för [Uniswap](https://uniswap.org) utbytesfabrikskontrakt. Observera `NewExchange(address,address)` händelsehanteraren. Denna händelse emitteras när en ny utbyteskontrakt skapas på kedjan av fabrikskontraktet.
 
 ```yaml
 dataSources:
@@ -578,7 +596,7 @@ dataSources:
     name: Factory
     network: mainnet
     source:
-      address: '0xc0a47dFe034B400B47bDaD5FecDa2621de6c4d95'
+      address: "0xc0a47dFe034B400B47bDaD5FecDa2621de6c4d95"
       abi: Factory
     mapping:
       kind: ethereum/events
@@ -595,9 +613,9 @@ dataSources:
           handler: handleNewExchange
 ```
 
-### Data Source Templates for Dynamically Created Contracts
+### Datakällmallar för dynamiskt skapade kontrakt
 
-Then, you add _data source templates_ to the manifest. These are identical to regular data sources, except that they lack a pre-defined contract address under `source`. Typically, you would define one template for each type of sub-contract managed or referenced by the parent contract.
+Sedan lägger du till _datakällmallar_ i manifestet. Dessa är identiska med vanliga datakällor, förutom att de saknar en fördefinierad avtalsadress under `source`. Vanligtvis definierar du en mall för varje typ av underkontrakt som hanteras eller refereras till av det överordnade kontraktet.
 
 ```yaml
 dataSources:
@@ -631,52 +649,52 @@ templates:
           handler: handleRemoveLiquidity
 ```
 
-### Instantiating a Data Source Template
+### Instansiering av en mall för datakälla
 
-In the final step, you update your main contract mapping to create a dynamic data source instance from one of the templates. In this example, you would change the main contract mapping to import the `Exchange` template and call the `Exchange.create(address)` method on it to start indexing the new exchange contract.
+I det sista steget uppdaterar du mappningen av huvudkontraktet för att skapa en dynamisk datakällinstans från en av mallarna. I det här exemplet ändrar du mappningen av huvudkontraktet för att importera mallen `Exchange` och anropar metoden `Exchange.create(address)` för att börja indexera det nya växlingskontraktet.
 
 ```typescript
-import { Exchange } from '../generated/templates'
+import { Exchange } from "../generated/templates";
 
 export function handleNewExchange(event: NewExchange): void {
   // Start indexing the exchange; `event.params.exchange` is the
   // address of the new exchange contract
-  Exchange.create(event.params.exchange)
+  Exchange.create(event.params.exchange);
 }
 ```
 
-> **Note:** A new data source will only process the calls and events for the block in which it was created and all following blocks, but will not process historical data, i.e., data that is contained in prior blocks.
->
-> If prior blocks contain data relevant to the new data source, it is best to index that data by reading the current state of the contract and creating entities representing that state at the time the new data source is created.
+> ** Notera:** En ny datakälla bearbetar endast anrop och händelser för det block där den skapades och alla efterföljande block, men bearbetar inte historiska data, dvs. data som finns i tidigare block.
+> 
+> Om tidigare block innehåller data som är relevanta för den nya datakällan, är det bäst att indexera dessa data genom att läsa kontraktets aktuella status och skapa enheter som representerar denna status vid den tidpunkt då den nya datakällan skapas.
 
-### Data Source Context
+### Kontext för datakälla
 
-Data source contexts allow passing extra configuration when instantiating a template. In our example, let's say exchanges are associated with a particular trading pair, which is included in the `NewExchange` event. That information can be passed into the instantiated data source, like so:
+Datakällans kontext gör det möjligt att skicka extra konfiguration när en mall instansieras. I vårt exempel kan vi säga att börser är associerade med ett visst handelspar, vilket ingår i händelsen `NewExchange`. Den informationen kan skickas till den instansierade datakällan, så här:
 
 ```typescript
-import { Exchange } from '../generated/templates'
+import { Exchange } from "../generated/templates";
 
 export function handleNewExchange(event: NewExchange): void {
-  let context = new DataSourceContext()
-  context.setString('tradingPair', event.params.tradingPair)
-  Exchange.createWithContext(event.params.exchange, context)
+  let context = new DataSourceContext();
+  context.setString("tradingPair", event.params.tradingPair);
+  Exchange.createWithContext(event.params.exchange, context);
 }
 ```
 
-Inside a mapping of the `Exchange` template, the context can then be accessed:
+Inuti en mappning av mallen `Exchange` kan kontexten sedan nås:
 
 ```typescript
-import { dataSource } from '@graphprotocol/graph-ts'
+import { dataSource } from "@graphprotocol/graph-ts";
 
-let context = dataSource.context()
-let tradingPair = context.getString('tradingPair')
+let context = dataSource.context();
+let tradingPair = context.getString("tradingPair")
 ```
 
-There are setters and getters like `setString` and `getString` for all value types.
+Det finns sättare och hämtare som `setString` och `getString` för alla värdestyper.
 
-## Start Blocks
+## Startblock
 
-The `startBlock` is an optional setting that allows you to define from which block in the chain the data source will start indexing. Setting the start block allows the data source to skip potentially millions of blocks that are irrelevant. Typically, a subgraph developer will set `startBlock` to the block in which the smart contract of the data source was created.
+`startBlock` är en valfri inställning som låter dig definiera från vilken block i kedjan datakällan ska börja indexera. Genom att ställa in startblocket kan datakällan hoppa över potentiellt miljontals block som är irrelevanta. Vanligtvis kommer en subgrafutvecklare att ställa in `startBlock` till blocket där datakällans smarta kontrakt skapades.
 
 ```yaml
 dataSources:
@@ -684,7 +702,7 @@ dataSources:
     name: ExampleSource
     network: mainnet
     source:
-      address: '0xc0a47dFe034B400B47bDaD5FecDa2621de6c4d95'
+      address: "0xc0a47dFe034B400B47bDaD5FecDa2621de6c4d95"
       abi: ExampleContract
       startBlock: 6627917
     mapping:
@@ -702,23 +720,23 @@ dataSources:
           handler: handleNewEvent
 ```
 
-> **Note:** The contract creation block can be quickly looked up on Etherscan:
->
-> 1. Search for the contract by entering its address in the search bar.
-> 2. Click on the creation transaction hash in the `Contract Creator` section.
-> 3. Load the transaction details page where you'll find the start block for that contract.
+> **Observera:** Blocket där kontraktet skapades kan snabbt sökas upp på Etherscan:
+> 
+> 1. Sök efter kontraktet genom att ange dess adress i sökfältet.
+> 2. Klicka på transaktionshashen för skapandet i avsnittet `Kontraktsskapare`.
+> 3. Ladda sidan med transaktionsdetaljer där du hittar startblocket för det kontraktet.
 
-## Call Handlers
+## Anropsbehandlare
 
-While events provide an effective way to collect relevant changes to the state of a contract, many contracts avoid generating logs to optimize gas costs. In these cases, a subgraph can subscribe to calls made to the data source contract. This is achieved by defining call handlers referencing the function signature and the mapping handler that will process calls to this function. To process these calls, the mapping handler will receive an `ethereum.Call` as an argument with the typed inputs to and outputs from the call. Calls made at any depth in a transaction's call chain will trigger the mapping, allowing activity with the data source contract through proxy contracts to be captured.
+Medan händelser ger ett effektivt sätt att samla in relevanta ändringar av ett kontrakts tillstånd, undviker många kontrakt att generera loggar för att optimera gasavgifterna. I dessa fall kan en subgraf prenumerera på anrop som görs till datakällans kontrakt. Detta uppnås genom att definiera anropsbehandlare som refererar till funktions signaturen och hanteraren som kommer att bearbeta anrop till denna funktion. För att bearbeta dessa anrop kommer hanteraren att ta emot ett `ethereum.Call` som ett argument med de typade in- och utdata från anropet. Anrop som görs på vilken djupnivå som helst i en transaktions anropskedja kommer att utlösa kartläggningen, vilket gör det möjligt att fånga aktivitet med datakällan genom proxykontrakt.
 
-Call handlers will only trigger in one of two cases: when the function specified is called by an account other than the contract itself or when it is marked as external in Solidity and called as part of another function in the same contract.
+Anropsbehandlare utlöses endast i ett av två fall: när den specificerade funktionen anropas av ett konto som inte är kontraktet självt eller när den är markerad som extern i Solidity och anropas som en del av en annan funktion i samma kontrakt.
 
-> **Note:** Call handlers currently depend on the Parity tracing API. Certain networks, such as BNB chain and Arbitrum, does not support this API. If a subgraph indexing one of these networks contain one or more call handlers, it will not start syncing. Subgraph developers should instead use event handlers. These are far more performant than call handlers, and are supported on every evm network.
+> **Observera:** Anropsbehandlare är för närvarande beroende av Paritys spårnings-API. Vissa nätverk, som BNB-kedjan och Arbitrum, stöder inte denna API. Om en subgraf som indexerar ett av dessa nätverk innehåller en eller flera anropsbehandlare kommer den inte att börja synkroniseras. Subgrafutvecklare bör istället använda händelsehanterare. Dessa är mycket mer prestandaoptimerade än anropsbehandlare och stöds på alla evm-nätverk.
 
-### Defining a Call Handler
+### Definiera en Anropsbehandlare
 
-To define a call handler in your manifest, simply add a `callHandlers` array under the data source you would like to subscribe to.
+För att definiera en anropsbehandlare i din manifest, lägg helt enkelt till en `callHandlers`-array under den datakälla du vill prenumerera på.
 
 ```yaml
 dataSources:
@@ -726,7 +744,7 @@ dataSources:
     name: Gravity
     network: mainnet
     source:
-      address: '0x731a10897d267e19b34503ad902d0a29173ba4b1'
+      address: "0x731a10897d267e19b34503ad902d0a29173ba4b1"
       abi: Gravity
     mapping:
       kind: ethereum/events
@@ -743,43 +761,45 @@ dataSources:
           handler: handleCreateGravatar
 ```
 
-The `function` is the normalized function signature to filter calls by. The `handler` property is the name of the function in your mapping you would like to execute when the target function is called in the data source contract.
+`function` är den normaliserade funktions signaturen för att filtrera anrop efter. Egenskapen `handler` är namnet på funktionen i din kartläggning som du vill utföra när målfunktionen anropas i datakällans kontrakt.
 
-### Mapping Function
+### Kartläggningsfunktion
 
-Each call handler takes a single parameter that has a type corresponding to the name of the called function. In the example subgraph above, the mapping contains a handler for when the `createGravatar` function is called and receives a `CreateGravatarCall` parameter as an argument:
+Varje anropsbehandlare tar en enda parameter med en typ som motsvarar namnet på den kallade funktionen. I det ovanstående exempelsubgrafet innehåller kartläggningen en hanterare för när funktionen `createGravatar` anropas och tar emot en `CreateGravatarCall`-parameter som ett argument:
 
 ```typescript
-import { CreateGravatarCall } from '../generated/Gravity/Gravity'
-import { Transaction } from '../generated/schema'
+import { CreateGravatarCall } from "../generated/Gravity/Gravity";
+import { Transaction } from "../generated/schema";
 
 export function handleCreateGravatar(call: CreateGravatarCall): void {
-  let id = call.transaction.hash
-  let transaction = new Transaction(id)
-  transaction.displayName = call.inputs._displayName
-  transaction.imageUrl = call.inputs._imageUrl
-  transaction.save()
+  let id = call.transaction.hash;
+  let transaction = new Transaction(id);
+  transaction.displayName = call.inputs._displayName;
+  transaction.imageUrl = call.inputs._imageUrl;
+  transaction.save();
 }
 ```
 
-The `handleCreateGravatar` function takes a new `CreateGravatarCall` which is a subclass of `ethereum.Call`, provided by `@graphprotocol/graph-ts`, that includes the typed inputs and outputs of the call. The `CreateGravatarCall` type is generated for you when you run `graph codegen`.
+Funktionen `handleCreateGravatar` tar emot ett nytt `CreateGravatarCall`, som är en underklass av `ethereum.Call`, tillhandahållen av `@graphprotocol/graph-ts`, som inkluderar de typade in- och utmatningarna från anropet. Typen `CreateGravatarCall` genereras för dig när du kör `graph codegen`.
 
-## Block Handlers
+## Blockbehandlare
 
-In addition to subscribing to contract events or function calls, a subgraph may want to update its data as new blocks are appended to the chain. To achieve this a subgraph can run a function after every block or after blocks that match a pre-defined filter.
+Förutom att prenumerera på kontrakts händelser eller funktionsanrop kan en subgraf vilja uppdatera sina data när nya block läggs till i kedjan. För att uppnå detta kan en subgraf köra en funktion efter varje block eller efter block som matchar en fördefinierad filter.
 
-### Supported Filters
+### Stödda filter
+
+#### Anropsfilter
 
 ```yaml
 filter:
   kind: call
 ```
 
-_The defined handler will be called once for every block which contains a call to the contract (data source) the handler is defined under._
+_Den definierade hanteraren kommer att anropas en gång för varje block som innehåller ett anrop till det kontrakt (datakälla) som hanteraren är definierad under._
 
-> **Note:** The `call` filter currently depend on the Parity tracing API. Certain networks, such as BNB chain and Arbitrum, does not support this API. If a subgraph indexing one of these networks contain one or more block handlers with a `call` filter, it will not start syncing.
+> **Observera:** `call`-filtret är för närvarande beroende av Parity-tracing-API: et. Vissa nätverk, som BNB-kedjan och Arbitrum, stöder inte detta API. Om en subgraf som indexerar ett av dessa nätverk innehåller en eller flera blockhanterare med ett `call`-filter, kommer den inte att börja synkronisera.
 
-The absence of a filter for a block handler will ensure that the handler is called every block. A data source can only contain one block handler for each filter type.
+Avsaknaden av ett filter för en blockhanterare kommer att säkerställa att hanteraren kallas för varje block. En datakälla kan endast innehålla en blockhanterare för varje filttyp.
 
 ```yaml
 dataSources:
@@ -787,7 +807,7 @@ dataSources:
     name: Gravity
     network: dev
     source:
-      address: '0x731a10897d267e19b34503ad902d0a29173ba4b1'
+      address: "0x731a10897d267e19b34503ad902d0a29173ba4b1"
       abi: Gravity
     mapping:
       kind: ethereum/events
@@ -806,23 +826,62 @@ dataSources:
             kind: call
 ```
 
-### Mapping Function
+#### Undersökningsfilter
 
-The mapping function will receive an `ethereum.Block` as its only argument. Like mapping functions for events, this function can access existing subgraph entities in the store, call smart contracts and create or update entities.
+> **Requires `specVersion` >= 0.0.8**
 
-```typescript
-import { ethereum } from '@graphprotocol/graph-ts'
+> **Observera:** Undersökningsfilter är endast tillgängliga på datakällor av typen `kind: ethereum`.
 
-export function handleBlock(block: ethereum.Block): void {
-  let id = block.hash
-  let entity = new Block(id)
-  entity.save()
+```yaml
+blockHandlers:
+  - handler: handleBlock
+    filter:
+      kind: polling
+      every: 10
+```
+
+Den definierade hanteraren kommer att kallas en gång för varje `n` block, där `n` är värdet som anges i fältet `every`. Denna konfiguration möjliggör för delgrafer att utföra specifika operationer med regelbundna blockintervall.
+
+#### En Gång Filter
+
+> **Requires `specVersion` >= 0.0.8**
+
+> **Observera:** En gång-filtrar är endast tillgängliga på datakällor av typen `kind: ethereum`.
+
+```yaml
+blockHandlers:
+  - handler: handleOnce
+    filter:
+      kind: once
+```
+
+Den definierade hanteraren med filtret once kommer att anropas endast en gång innan alla andra hanterare körs. Denna konfiguration gör det möjligt för subgrafen att använda hanteraren som en initialiseringshanterare, som utför specifika uppgifter i början av indexeringen.
+
+```ts
+export function handleOnce(block: ethereum.Block): void {
+  let data = new InitialData(Bytes.fromUTF8("initial"));
+  data.data = "Setup data here";
+  data.save();
 }
 ```
 
-## Anonymous Events
+### Kartläggningsfunktion
 
-If you need to process anonymous events in Solidity, that can be achieved by providing the topic 0 of the event, as in the example:
+Mappningsfunktionen tar emot ett `ethereum.Block` som sitt enda argument. Liksom mappningsfunktioner för händelser kan denna funktion komma åt befintliga subgrafiska enheter i lagret, anropa smarta kontrakt och skapa eller uppdatera enheter.
+
+```typescript
+import { ethereum } from "@graphprotocol/graph-ts";
+
+export function handleBlock(block: ethereum.Block): void {
+  let id = block.hash;
+  let entity = new Block(id);
+  entity.save();
+}
+```
+
+## Anonyma händelser
+
+Om du behöver behandla anonyma händelser i Solidity kan du göra det genom att ange händelsens ämne 0, som i exemplet:
 
 ```yaml
 eventHandlers:
@@ -831,13 +890,13 @@ eventHandlers:
     handler: handleGive
 ```
 
-An event will only be triggered when both the signature and topic 0 match. By default, `topic0` is equal to the hash of the event signature.
+En händelse utlöses endast när både signaturen och topic0 matchar. Som standard är `topic0` lika med hashtillståndet för händelsesignaturen.
 
-## Transaction Receipts in Event Handlers
+## Transaktionskvitton i Händelsehanterare
 
-Starting from `specVersion` `0.0.5` and `apiVersion` `0.0.7`, event handlers can have access to the receipt for the transaction which emitted them.
+Från och med `specVersion` `0.0.5` och `apiVersion` `0.0.7` kan händelsehanterare få tillgång till kvittot för den transaktion som emitterade dem.
 
-To do so, event handlers must be declared in the subgraph manifest with the new `receipt: true` key, which is optional and defaults to false.
+För att göra detta måste händelsehanterare deklareras i delgrafmanifestet med den nya nyckeln `receipt: true`, vilket är valfritt och som standard är falskt.
 
 ```yaml
 eventHandlers:
@@ -846,20 +905,20 @@ eventHandlers:
     receipt: true
 ```
 
-Inside the handler function, the receipt can be accessed in the `Event.receipt` field. When the `receipt` key is set to `false` or omitted in the manifest, a `null` value will be returned instead.
+Inuti hanterarfunktionen kan kvittot nås i fältet `Event.receipt`. När nyckeln `receipt` är inställd som `false` eller utelämnad i manifestet, kommer istället ett `null`-värde att returneras.
 
-## Experimental features
+## Experimentella funktioner
 
-Starting from `specVersion` `0.0.4`, subgraph features must be explicitly declared in the `features` section at the top level of the manifest file, using their `camelCase` name, as listed in the table below:
+Från och med `specVersion` `0.0.4` måste delgrafsfunktioner deklareras explicit i avsnittet `features` högst upp i manifestfilen, med deras `camelCase`-namn, som listas i tabellen nedan:
 
-| Feature                                                   | Name                                                |
-| --------------------------------------------------------- | --------------------------------------------------- |
-| [Non-fatal errors](#non-fatal-errors)                     | `nonFatalErrors`                                    |
-| [Full-text Search](#defining-fulltext-search-fields)      | `fullTextSearch`                                    |
-| [Grafting](#grafting-onto-existing-subgraphs)             | `grafting`                                          |
-| [IPFS on Ethereum Contracts](#ipfs-on-ethereum-contracts) | `ipfsOnEthereumContracts` or `nonDeterministicIpfs` |
+| Funktion                                                 | Namn                                                   |
+| -------------------------------------------------------- | ------------------------------------------------------ |
+| [Icke dödliga fel](#non-fatal-errors)                    | `nonFatalErrors`                                       |
+| [Fulltextssökning](#defining-fulltext-search-fields)     | `nonFatalErrors`                                       |
+| [Ympning](#grafting-onto-existing-subgraphs)             | `grafting`                                             |
+| [IPFS på Ethereum-kontrakt](#ipfs-on-ethereum-contracts) | `ipfsOnEthereumContracts` eller `nonDeterministicIpfs` |
 
-For instance, if a subgraph uses the **Full-Text Search** and the **Non-fatal Errors** features, the `features` field in the manifest should be:
+Till exempel, om en delgraf använder funktionerna **Fulltextssökning** och **Icke dödliga fel**, ska fältet `features` i manifestet vara:
 
 ```yaml
 specVersion: 0.0.4
@@ -870,27 +929,27 @@ features:
 dataSources: ...
 ```
 
-Note that using a feature without declaring it will incur a **validation error** during subgraph deployment, but no errors will occur if a feature is declared but not used.
+Observera att att använda en funktion utan att deklarera den kommer att resultera i en **valideringsfel** under delgrafens distribution, men inga fel uppstår om en funktion deklareras men inte används.
 
-### IPFS on Ethereum Contracts
+### IPFS på Ethereum-kontrakt
 
-A common use case for combining IPFS with Ethereum is to store data on IPFS that would be too expensive to maintain on-chain, and reference the IPFS hash in Ethereum contracts.
+En vanlig användning av att kombinera IPFS med Ethereum är att lagra data på IPFS som skulle vara för dyra att underhålla on-chain och referera till IPFS-hashen i Ethereum-kontrakt.
 
-Given such IPFS hashes, subgraphs can read the corresponding files from IPFS using `ipfs.cat` and `ipfs.map`. To do this reliably, it is required that these files are pinned to an IPFS node with high availability, so that the [hosted service](https://thegraph.com/hosted-service) IPFS node can find them during indexing.
+Med sådana IPFS-hashar kan delgrafer läsa de motsvarande filerna från IPFS med hjälp av `ipfs.cat` och `ipfs.map`. För att göra detta på ett pålitligt sätt krävs det att dessa filer är fastnålade till en IPFS-nod med hög tillgänglighet, så att [den värdtjänst](https://thegraph.com/hosted-service) som använder IPFS-noden kan hitta dem under indexeringen.
 
-> **Note:** The Graph Network does not yet support `ipfs.cat` and `ipfs.map`, and developers should not deploy subgraphs using that functionality to the network via the Studio.
+> **Observera:** The Graph Nätverk stöder ännu inte `ipfs.cat` och `ipfs.map`, och utvecklare bör inte distribuera delgrafer med den funktionaliteten till nätverket via Studio.
 
-> **[Feature Management](#experimental-features):** `ipfsOnEthereumContracts` must be declared under `features` in the subgraph manifest. For non EVM chains, the `nonDeterministicIpfs` alias can also be used for the same purpose.
+> **[Funktionshantering](#experimental-features):** `ipfsOnEthereumContracts` måste deklareras under `features` i delgrafens manifest. För icke-EVM-kedjor kan aliaset `nonDeterministicIpfs` också användas för samma ändamål.
 
-When running a local Graph Node, the `GRAPH_ALLOW_NON_DETERMINISTIC_IPFS` environment variable must be set in order to index subgraphs using this experimental functionality.
+När du kör en lokal Graph Node måste miljövariabeln `GRAPH_ALLOW_NON_DETERMINISTIC_IPFS` sättas för att indexera delgrafer med denna experimentella funktionalitet.
 
-### Non-fatal errors
+### Icke dödliga fel
 
-Indexing errors on already synced subgraphs will, by default, cause the subgraph to fail and stop syncing. Subgraphs can alternatively be configured to continue syncing in the presence of errors, by ignoring the changes made by the handler which provoked the error. This gives subgraph authors time to correct their subgraphs while queries continue to be served against the latest block, though the results might be inconsistent due to the bug that caused the error. Note that some errors are still always fatal. To be non-fatal, the error must be known to be deterministic.
+Indexeringsfel på redan synkroniserade delgrafer kommer, som standard, att få delgrafen att misslyckas och sluta synkronisera. Delgrafer kan istället konfigureras för att fortsätta synkroniseringen i närvaro av fel, genom att ignorera ändringarna som orsakades av hanteraren som provocerade felet. Det ger delgrafsförfattare tid att korrigera sina delgrafer medan förfrågningar fortsätter att behandlas mot det senaste blocket, även om resultaten kan vara inkonsekventa på grund av felet som orsakade felet. Observera att vissa fel alltid är dödliga. För att vara icke-dödliga måste felet vara känt för att vara deterministiskt.
 
-> **Note:** The Graph Network does not yet support non-fatal errors, and developers should not deploy subgraphs using that functionality to the network via the Studio.
+> **Observera:** The Graph Nätverk stöder ännu inte icke-dödliga fel, och utvecklare bör inte distribuera delgrafer med den funktionaliteten till nätverket via Studio.
 
-Enabling non-fatal errors requires setting the following feature flag on the subgraph manifest:
+Aktivering av icke-dödliga fel kräver att följande funktionsflagga sätts i delgrafens manifest:
 
 ```yaml
 specVersion: 0.0.4
@@ -900,7 +959,7 @@ features:
     ...
 ```
 
-The query must also opt-in to querying data with potential inconsistencies through the `subgraphError` argument. It is also recommended to query `_meta` to check if the subgraph has skipped over errors, as in the example:
+Frågan måste också välja att fråga efter data med potentiella inkonsekvenser genom argumentet `subgraphError`. Det rekommenderas också att fråga `_meta` för att kontrollera om subgrafen har hoppat över fel, som i exemplet:
 
 ```graphql
 foos(first: 100, subgraphError: allow) {
@@ -912,7 +971,7 @@ _meta {
 }
 ```
 
-If the subgraph encounters an error, that query will return both the data and a graphql error with the message `"indexing_error"`, as in this example response:
+Om subgrafen stöter på ett fel returnerar frågan både data och ett graphql-fel med meddelandet `"indexing_error"`, som i detta exempelsvar:
 
 ```graphql
 "data": {
@@ -932,11 +991,13 @@ If the subgraph encounters an error, that query will return both the data and a 
 ]
 ```
 
-### Grafting onto Existing Subgraphs
+### Ympning på befintliga delgrafer
 
-When a subgraph is first deployed, it starts indexing events at the genesis block of the corresponding chain (or at the `startBlock` defined with each data source) In some circumstances; it is beneficial to reuse the data from an existing subgraph and start indexing at a much later block. This mode of indexing is called _Grafting_. Grafting is, for example, useful during development to get past simple errors in the mappings quickly or to temporarily get an existing subgraph working again after it has failed.
+> **Observera:** Det rekommenderas inte att använda ympning vid initial uppgradering till The Graph Nätverk. Läs mer [här](/cookbook/grafting/#important-note-on-grafting-when-upgrading-to-the-network).
 
-A subgraph is grafted onto a base subgraph when the subgraph manifest in `subgraph.yaml` contains a `graft` block at the top-level:
+När en delgraf först distribueras börjar den indexera händelser från genesisblocket på den motsvarande kedjan (eller på `startBlock` som är definierat för varje datakälla). I vissa situationer kan det vara fördelaktigt att återanvända data från en befintlig delgraf och börja indexera vid en mycket senare block. Denna indexeringsläge kallas _Ympning_. Ympning är exempelvis användbart under utvecklingen för att snabbt komma förbi enkla fel i mappningarna eller tillfälligt få en befintlig delgraf att fungera igen efter att den har misslyckats.
+
+En delgraf ympas på en grunddelgraf när delgrafmanifestet i `subgraph.yaml` innehåller en `graft`-block högst upp:
 
 ```yaml
 description: ...
@@ -945,49 +1006,49 @@ graft:
   block: 7345624 # Block number
 ```
 
-When a subgraph whose manifest contains a `graft` block is deployed, Graph Node will copy the data of the `base` subgraph up to and including the given `block` and then continue indexing the new subgraph from that block on. The base subgraph must exist on the target Graph Node instance and must have indexed up to at least the given block. Because of this restriction, grafting should only be used during development or during an emergency to speed up producing an equivalent non-grafted subgraph.
+När en delgraf vars manifest innehåller en `graft`-sektion distribueras kommer Graph Node att kopiera data från den `base` delgrafen upp till och inklusive det angivna `block` och sedan fortsätta indexera den nya delgrafen från det blocket. Basdelgrafen måste finnas på målnoden Graph Node och måste ha indexerats upp till minst det angivna blocket. På grund av denna begränsning bör ympning endast användas under utveckling eller i en nödsituation för att snabba upp produktionen av en motsvarande icke-ympad delgraf.
 
-Because grafting copies rather than indexes base data, it is much quicker to get the subgraph to the desired block than indexing from scratch, though the initial data copy can still take several hours for very large subgraphs. While the grafted subgraph is being initialized, the Graph Node will log information about the entity types that have already been copied.
+Eftersom ympning kopierar data istället för att indexera basdata går det mycket snabbare att få delgrafen till det önskade blocket än att indexera från början, även om den initiala datorkopieringen fortfarande kan ta flera timmar för mycket stora delgrafer. Medan den ympade delgrafen initialiseras kommer Graph Node att logga information om de entitetstyper som redan har kopierats.
 
-The grafted subgraph can use a GraphQL schema that is not identical to the one of the base subgraph, but merely compatible with it. It has to be a valid subgraph schema in its own right, but may deviate from the base subgraph's schema in the following ways:
+Den ympade delgrafen kan använda ett GraphQL-schema som inte är identiskt med basdelgrafens, men bara kompatibelt med den. Det måste vara ett giltigt delgrafschema i sig själv, men kan avvika från basdelgrafens schema på följande sätt:
 
-- It adds or removes entity types
-- It removes attributes from entity types
-- It adds nullable attributes to entity types
-- It turns non-nullable attributes into nullable attributes
-- It adds values to enums
-- It adds or removes interfaces
-- It changes for which entity types an interface is implemented
+- Den lägger till eller tar bort entitetstyper
+- Den tar bort attribut från entitetstyper
+- Den lägger till nollställbara attribut till entitetstyper
+- Den gör icke-nollställbara attribut till nollställbara attribut
+- Den lägger till värden till enum
+- Den lägger till eller tar bort gränssnitt
+- Den ändrar vilka entitetstyper som ett gränssnitt är implementerat för
 
-> **[Feature Management](#experimental-features):** `grafting` must be declared under `features` in the subgraph manifest.
+> **[Funktionshantering](#experimental-features):** `grafting` måste deklareras under `features` i delgrafens manifest.
 
-## File Data Sources
+## Fildatakällor
 
-File data sources are a new subgraph functionality for accessing off-chain data during indexing in a robust, extendable way, starting with IPFS.
+Filbaserade datakällor är en ny delgrafsfunktion för att få tillgång till data utanför kedjan under indexering på ett robust, utökat sätt. Filbaserade datakällor stödjer hämtning av filer från IPFS och från Arweave.
 
-> This also lays the groundwork for deterministic indexing of off-chain data, as well as the potential introduction of arbitrary HTTP-sourced data.
+> Detta lägger också grunden för deterministisk indexering av data utanför kedjan, samt möjligheten att introducera godtycklig data som hämtas via HTTP.
 
-### Overview
+### Översikt
 
-Rather than fetching files "in line" during handler exectuion, this introduces templates which can be spawned as new data sources for a given file identifier. These new data sources fetch the files, retrying if they are unsuccessful, running a dedicated handler when the file is found.
+Istället för att hämta filer "i linje" under hanterarens exekvering introducerar detta mallar som kan skapas som nya datakällor för en given filidentifikator. Dessa nya datakällor hämtar filerna och försöker igen om de inte lyckas, och kör en dedikerad hanterare när filen hittas.
 
-This is similar to the [existing data source templates](https://thegraph.com/docs/en/developing/creating-a-subgraph/#data-source-templates), which are used to dynamically create new chain-based data sources.
+Detta liknar [befintliga datorkällmalar](https://thegraph.com/docs/en/developing/creating-a-subgraph/#data-source-templates), som används för att dynamiskt skapa nya kedjebaserade datakällor.
 
-> This replaces the existing `ipfs.cat` API
+> Detta ersätter den befintliga `ipfs.cat` API
 
-### Upgrade guide
+### Uppgraderingsguide
 
-#### Update `graph-ts` and `graph-cli`
+#### Uppdatera `graph-ts` och `graph-cli`
 
-File data sources requires graph-ts >=0.29.0 and graph-cli >=0.33.1
+Filbaserade datakällor kräver graph-ts >=0.29.0 och graph-cli >=0.33.1
 
-#### Add a new entity type which will be updated when files are found
+#### Lägg till en ny entitetstyp som kommer att uppdateras när filer hittas
 
-File data sources cannot access or update chain-based entities, but must update file specific entities.
+Filbaserade datakällor kan inte komma åt eller uppdatera kedjebaserade entiteter, utan måste uppdatera filspecifika entiteter.
 
-This may mean splitting out fields from existing entities into separate entities, linked together.
+Detta kan innebära att fält från befintliga entiteter separeras i separata entiteter som är kopplade ihop.
 
-Original combined entity:
+Ursprunglig kombinerad entitet:
 
 ```graphql
 type Token @entity {
@@ -1005,7 +1066,7 @@ type Token @entity {
 }
 ```
 
-New, split entity:
+Ny, delad enhet:
 
 ```graphql
 type Token @entity {
@@ -1026,13 +1087,13 @@ type TokenMetadata @entity {
 }
 ```
 
-If the relationship is 1:1 between the parent entity and the resulting file data source entity, the simplest pattern is to link the parent entity to a resulting file entity by using the IPFS CID as the lookup. Get in touch on Discord if you are having difficulty modelling your new file-based entities!
+Om relationen är 1:1 mellan föräldraentiteten och den resulterande filbaserade datakälla entiteten är det enklaste mönstret att länka föräldraentiteten till en resulterande filbaserad entitet genom att använda IPFS CID som söknyckel. Kontakta oss på Discord om du har svårt att modellera dina nya filbaserade entiteter!
 
-> You can use [nested filters](https://thegraph.com/docs/en/querying/graphql-api/#example-for-nested-entity-filtering) to filter parent entities on the basis of these nested entities.
+> Du kan använda [inbäddade filter](https://thegraph.com/docs/en/querying/graphql-api/#example-for-nested-entity-filtering) för att filtrera föräldraentiteter baserat på dessa inbäddade entiteter.
 
-#### Add a new templated data source with `kind: file/ipfs`
+#### Lägg till en ny mallbaserad datakälla med `kind: file/ipfs` eller `kind: file/arweave`
 
-This is the data source which will be spawned when a file of interest is identified.
+Detta är datakällan som skapas när en intressant fil identifieras.
 
 ```yaml
 templates:
@@ -1050,129 +1111,131 @@ templates:
           file: ./abis/Token.json
 ```
 
-> Currently `abis` are required, though it is not possible to call contracts from within file data sources
+> För närvarande krävs `abis`, även om det inte är möjligt att anropa kontrakt från filbaserade datakällor
 
-The file data source must specifically mention all the entity types which it will interact with under `entities`. See [limitations](#Limitations) for more details.
+Filbaserade datakällor måste specifikt nämna alla entitetstyper som de kommer att interagera med under `entities`. Se [begränsningar](#Begränsningar) för mer information.
 
-#### Create a new handler to process files
+#### Skapa en ny hanterare för att bearbeta filer
 
-This handler should accept one `Bytes` parameter, which will be the contents of the file, when it is found, which can then be processed. This will often be a JSON file, which can be processed with `graph-ts` helpers ([documentation](https://thegraph.com/docs/en/developing/assemblyscript-api/#json-api)).
+Denna hanterare bör acceptera en `Bytes`-parameter, som kommer att vara innehållet i filen när den hittas, och som sedan kan bearbetas. Detta är ofta en JSON-fil, som kan bearbetas med hjälp av `graph-ts` hjälpfunktioner ([dokumentation](https://thegraph.com/docs/en/developing/assemblyscript-api/#json-api)).
 
-The CID of the file as a readable string can be accessed via the `dataSource` as follows:
+CID för filen som en läsbar sträng kan nås via `dataSource` enligt följande:
 
 ```typescript
 const cid = dataSource.stringParam()
 ```
 
-Example handler:
+Exempel på hanterare:
 
 ```typescript
-import { json, Bytes, dataSource } from '@graphprotocol/graph-ts'
-import { TokenMetadata } from '../generated/schema'
+import { json, Bytes, dataSource } from "@graphprotocol/graph-ts";
+import { TokenMetadata } from "../generated/schema";
 
 export function handleMetadata(content: Bytes): void {
-  let tokenMetadata = new TokenMetadata(dataSource.stringParam())
-  const value = json.fromBytes(content).toObject()
+  let tokenMetadata = new TokenMetadata(dataSource.stringParam());
+  const value = json.fromBytes(content).toObject();
   if (value) {
-    const image = value.get('image')
-    const name = value.get('name')
-    const description = value.get('description')
-    const externalURL = value.get('external_url')
+    const image = value.get("image");
+    const name = value.get("name");
+    const description = value.get("description");
+    const externalURL = value.get("external_url");
 
     if (name && image && description && externalURL) {
-      tokenMetadata.name = name.toString()
-      tokenMetadata.image = image.toString()
-      tokenMetadata.externalURL = externalURL.toString()
-      tokenMetadata.description = description.toString()
+      tokenMetadata.name = name.toString();
+      tokenMetadata.image = image.toString();
+      tokenMetadata.externalURL = externalURL.toString();
+      tokenMetadata.description = description.toString();
     }
 
-    tokenMetadata.save()
+    tokenMetadata.save();
   }
 }
 ```
 
-#### Spawn file data sources when required
+#### Skapa filbaserade datakällor vid behov
 
-You can now create file data sources during execution of chain-based handlers:
+Nu kan du skapa filbaserade datakällor under utförandet av kedjebaserade hanterare:
 
-- Import the template from the auto-generated `templates`
-- call `TemplateName.create(cid: string)` from within a mapping, where the cid is a valid IPFS content identifier
+- Importera mallen från den automatiskt genererade `templates`
+- anropa `TemplateName.create(cid: string)` från en mappning, där cid är en giltig innehållsidentifierare för IPFS eller Arweave
 
-> Currently Graph Node supports [v0 and v1 content identifiers](https://docs.ipfs.tech/concepts/content-addressing/), and content identifers with directories (e.g. `bafyreighykzv2we26wfrbzkcdw37sbrby4upq7ae3aqobbq7i4er3tnxci/metadata.json`)
+För IPFS stöder Graph Node [v0 och v1 innehållsidentifierare](https://docs.ipfs.tech/concepts/content-addressing/), och innehållsidentifierare med kataloger (t.ex. `bafyreighykzv2we26wfrbzkcdw37sbrby4upq7ae3aqobbq7i4er3tnxci/metadata.json`).
 
-Example:
+För Arweave, från och med version 0.33.0 kan Graph Node hämta filer som är lagrade på Arweave baserat på deras [transaktions-ID](https://docs.arweave.org/developers/server/http-api#transactions) från en Arweave-gateway ([exempelfil](https://bdxujjl5ev5eerd5ouhhs6o4kjrs4g6hqstzlci5pf6vhxezkgaa.arweave.net/CO9EpX0lekJEfXUOeXncUmMuG8eEp5WJHXl9U9yZUYA)). Arweave stöder transaktioner som laddats upp via Bundlr, och Graph Node kan också hämta filer baserat på [Bundlr-manifest](https://docs.bundlr.network/learn/gateways#indexing).
+
+Exempel:
 
 ```typescript
-import { TokenMetadata as TokenMetadataTemplate } from '../generated/templates'
+import { TokenMetadata as TokenMetadataTemplate } from "../generated/templates";
 
-const ipfshash = 'QmaXzZhcYnsisuue5WRdQDH6FDvqkLQX1NckLqBYeYYEfm'
-//This example code is for a Crypto coven subgraph. The above ipfs hash is a directory with token metadata for all crypto coven NFTs.
+const ipfshash = "QmaXzZhcYnsisuue5WRdQDH6FDvqkLQX1NckLqBYeYYEfm";
+//Denna exempelkod är för en undergraf för kryptosamverkan. Ovanstående ipfs-hash är en katalog med tokenmetadata för alla kryptosamverkande NFT:er.
 
 export function handleTransfer(event: TransferEvent): void {
-  let token = Token.load(event.params.tokenId.toString())
+  let token = Token.load(event.params.tokenId.toString());
   if (!token) {
-    token = new Token(event.params.tokenId.toString())
-    token.tokenID = event.params.tokenId
+    token = new Token(event.params.tokenId.toString());
+    token.tokenID = event.params.tokenId;
 
-    token.tokenURI = '/' + event.params.tokenId.toString() + '.json'
-    const tokenIpfsHash = ipfshash + token.tokenURI
-    //This creates a path to the metadata for a single Crypto coven NFT. It concats the directory with "/" + filename + ".json"
+    token.tokenURI = "/" + event.params.tokenId.toString() + ".json";
+    const tokenIpfsHash = ipfshash + token.tokenURI;
+    //Detta skapar en sökväg till metadata för en enskild Crypto coven NFT. Den konkaterar katalogen med "/" + filnamn + ".json"
 
-    token.ipfsURI = tokenIpfsHash
+    token.ipfsURI = tokenIpfsHash;
 
-    TokenMetadataTemplate.create(tokenIpfsHash)
+    TokenMetadataTemplate.create(tokenIpfsHash);
   }
 
-  token.updatedAtTimestamp = event.block.timestamp
-  token.owner = event.params.to.toHexString()
-  token.save()
+  token.updatedAtTimestamp = event.block.timestamp;
+  token.owner = event.params.to.toHexString();
+  token.save();
 }
 ```
 
-This will create a new file data source, which will poll Graph Node's configured IPFS endpoint, retrying if it is not found. When the file is found, the file data source handler will be executed.
+Detta kommer att skapa en ny filbaserad datakälla som kommer att övervaka Graph Nodes konfigurerade IPFS- eller Arweave-slutpunkt och försöka igen om den inte hittas. När filen hittas kommer filbaserad datakälla hanteraren att köras.
 
-This example is using the CID as the lookup between the parent `Token` entity and the resulting `TokenMetadata` entity.
+I det här exemplet används CID som koppling mellan förälderentiteten `Token` och den resulterande entiteten `TokenMetadata`.
 
-> Previously, this is the point at which a subgraph developer would have called `ipfs.cat(CID)` to fetch the file
+> Tidigare är detta det punkt där en delgrafutvecklare skulle ha anropat `ipfs.cat(CID)` för att hämta filen
 
-Congratulations, you are using file data sources!
+Grattis, du använder filbaserade datakällor!
 
-#### Deploying your subgraphs
+#### Distribuera dina delgrafer
 
-You can now `build` and `deploy` your subgraph to any Graph Node >=v0.30.0-rc.0.
+Du kan nu `bygga` och `distribuera` dina delgrafer till en Graph Node >=v0.30.0-rc.0.
 
-#### Limitations
+#### Begränsningar
 
-File data source handlers and entities are isolated from other subgraph entities, ensuring that they are deterministic when executed, and ensuring no contamination of chain-based data sources. To be specific:
+Filbaserade datakällahanterare och entiteter är isolerade från andra delgrafentiteter, vilket säkerställer att de är deterministiska när de körs och att ingen förorening av kedjebaserade datakällor sker. För att vara specifik:
 
-- Entities created by File Data Sources are immutable, and cannot be updated
-- File Data Source handlers cannot access entities from other file data sources
-- Entities associated with File Data Sources cannot be accessed by chain-based handlers
+- Entiteter skapade av Filbaserade datakällor är oföränderliga och kan inte uppdateras
+- Filbaserade datakällahanterare kan inte komma åt entiteter från andra filbaserade datakällor
+- Entiteter associerade med filbaserade datakällor kan inte nås av kedjebaserade hanterare
 
-> While this constraint should not be problematic for most use-cases, it may introduce complexity for some. Please get in touch via Discord if you are having issues modelling your file-based data in a subgraph!
+> Även om denna begränsning inte bör vara problematisk för de flesta användningsfall kan den införa komplexitet för vissa. Var god kontakta oss via Discord om du har problem med att modellera din data baserad på fil i en delgraf!
 
-Additionally, it is not possible to create data sources from a file data source, be it an onchain data source or another file data source. This restriction may be lifted in the future.
+Dessutom är det inte möjligt att skapa datakällor från en filbaserad datakälla, vare sig det är en datakälla på kedjan eller en annan filbaserad datakälla. Denna begränsning kan komma att hävas i framtiden.
 
-#### Best practices
+#### Bästa praxis
 
-If you are linking NFT metadata to corresponding tokens, use the metadata's IPFS hash to reference a Metadata entity from the Token entity. Save the Metadata entity using the IPFS hash as an ID.
+Om du länkar NFT-metadata till motsvarande token, använd metadata IPFS-hash för att referera till en Metadata-entitet från Token-entiteten. Spara Metadata-entiteten med IPFS-hash som ID.
 
-You can use [DataSource context](https://thegraph.com/docs/en/developing/assemblyscript-api/#entity-and-data-source-context) when creating File Data Sources to pass extra information which will be available to the File Data Source handler.
+Du kan använda [DataSource context](https://thegraph.com/docs/en/developing/assemblyscript-api/#entity-and-data-source-context) när du skapar Filbaserade datakällor för att skicka extra information som kommer att vara tillgänglig för Filbaserade datakälla hanteraren.
 
-If you have entities which are refreshed multiple times, create unique file-based entities using the IPFS hash & the entity ID, and reference them using a derived field in the chain-based entity.
+Om du har entiteter som uppdateras flera gånger, skapa unika filbaserade entiteter med IPFS-hash & entitets-ID, och referera till dem med hjälp av ett härlett fält i kedjebaserade entiteten.
 
-> We are working to improve the above recommendation, so queries only return the "most recent" version
+> Vi arbetar med att förbättra rekommendationen ovan så att förfrågningar endast returnerar den "senaste" versionen
 
-#### Known issues
+#### Kända problem
 
-File data sources currently require ABIs, even though ABIs are not used ([issue](https://github.com/graphprotocol/graph-cli/issues/961)). Workaround is to add any ABI.
+Filbaserade datakällor kräver för närvarande ABIs, även om ABIs inte används ([issue](https://github.com/graphprotocol/graph-cli/issues/961)). Ett arbetsområde är att lägga till en ABI.
 
-Handlers for File Data Sources cannot be in files which import `eth_call` contract bindings, failing with "unknown import: `ethereum::ethereum.call` has not been defined" ([issue](https://github.com/graphprotocol/graph-cli/issues/4309)). Workaround is to create file data source handlers in a dedicated file.
+Hanterare för Filbaserade datakällor kan inte finnas i filer som importerar `eth_call` kontraktsbindningar, vilket misslyckas med "okänd import: `ethereum::ethereum.call` har inte definierats" ([issue](https://github.com/graphprotocol/graph-cli/issues/4309)). Ett arbetsområde är att skapa filbaserade datakällahanterare i en dedikerad fil.
 
-#### Examples
+#### Exempel
 
-[Crypto Coven Subgraph migration](https://github.com/azf20/cryptocoven-api/tree/file-data-sources-refactor)
+[Crypto Coven Migration av undergrafer](https://github.com/azf20/cryptocoven-api/tree/file-data-sources-refactor)
 
-#### References
+#### Referenser
 
-[GIP File Data Sources](https://forum.thegraph.com/t/gip-file-data-sources/2721)
+[GIP Filbaserade datakällor](https://forum.thegraph.com/t/gip-file-data-sources/2721)
