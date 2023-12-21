@@ -60,15 +60,6 @@ export const supportedLocales = appLocales as Mutable<typeof appLocales>
 
 export type AppLocale = (typeof supportedLocales)[number]
 
-export type AppTranslations = Translations & {
-  [key in AppLocale]: {
-    global: NestedStrings
-    index: NestedStrings
-    docsearch: NestedStrings
-    supportedNetworks: NestedStrings
-  }
-}
-
 export const translations = {
   ar,
   cs,
@@ -94,6 +85,15 @@ export const translations = {
   vi,
   yo,
   zh,
-} satisfies AppTranslations
+} satisfies Translations & {
+  [key in AppLocale]: {
+    global: NestedStrings
+    index: NestedStrings
+    docsearch: NestedStrings
+    supportedNetworks: NestedStrings
+  }
+}
 
-export const useI18n = () => _useI18n<typeof translations>()
+export type AppTranslations = typeof translations
+
+export const useI18n = () => _useI18n<AppTranslations>()
