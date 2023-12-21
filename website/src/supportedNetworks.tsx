@@ -1,6 +1,5 @@
 import { CodeInline, Paragraph, Table } from '@graphprotocol/nextra-theme'
 import { ExecutionResult } from 'graphql'
-import { useSSG } from 'nextra/ssg'
 
 import { ChainProductStatus, SupportedNetworkMap } from '@edgeandnode/common'
 
@@ -54,8 +53,7 @@ export async function getSupportedNetworks() {
   )
 }
 
-export const SupportedNetworksTable = () => {
-  const { networks } = useSSG() as { networks: Awaited<ReturnType<typeof getSupportedNetworks>> }
+export function SupportedNetworksTable({ networks }: { networks: Awaited<ReturnType<typeof getSupportedNetworks>> }) {
   const { t } = useI18n()
 
   return (

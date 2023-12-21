@@ -1,7 +1,6 @@
 import nextra from 'nextra'
 
-// If you need to make a commit just to force a redeploy when creating a new release, increase this
-const _forceRedeploy = 1
+import { defaultLocale, extractLocaleFromPath } from '@edgeandnode/gds'
 
 const env = {
   ENVIRONMENT: process.env.ENVIRONMENT,
@@ -23,16 +22,21 @@ const withNextra = nextra({
   codeHighlight: false,
   defaultShowCopyCode: false,
   transform(result, { route }) {
-    if (route && !result.includes('getStaticProps')) {
-      const banner = `
-import { getPageMap } from '@/src/getPageMap'
+    if (!route) return result
 
-export const getStaticProps = async context => ({
-  props: {
-    __nextra_pageMap: await getPageMap('${route.split('/')[1]}')
-  }
-})`
-      result += banner
+    const { locale } = extractLocaleFromPath(route)
+
+    result = `
+      globalThis.__graph_docs_locale = '${locale ?? defaultLocale}'
+      ${result}
+    `
+
+    if (!result.includes('getStaticProps')) {
+      result = `
+        import { buildGetStaticProps } from '@/src/buildGetStaticProps'
+        ${result}
+        export const getStaticProps = buildGetStaticProps()
+      `
     }
 
     return result
