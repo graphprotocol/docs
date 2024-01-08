@@ -1,5 +1,5 @@
 ---
-title: Substreams-powered subgraphs
+title: Subgraphs alimentés par Substreams
 ---
 
 [Substreams](/substreams) est un nouveau framework de traitement des données blockchain, développé par StreamingFast pour The Graph Network. Un module de sous-flux peut générer des modifications d'entité, qui sont compatibles avec les entités Subgraph. Un subgraph peut utiliser un tel module Substreams comme source de données, apportant la vitesse d'indexation et les données supplémentaires des Substreams aux développeurs de subgraphs.
@@ -14,7 +14,7 @@ npm install -g @graphprotocol/graph-cli
 
 ## Obtenir le livre de cuisine
 
-> This cookbook uses this [Substreams-powered subgraph as a reference](https://github.com/graphprotocol/graph-tooling/tree/main/examples/substreams-powered-subgraph).
+> Ce guide utilise ce [subgraph alimenté par Substreams comme référence] \(https://github.com/graphprotocol/graph-tooling/tree/main/examples/substreams-powered-subgraph).
 
 ```
 graph init --from-example substreams-powered-subgraph
@@ -22,9 +22,9 @@ graph init --from-example substreams-powered-subgraph
 
 ## Définir un package Substreams
 
-A Substreams package is composed of types (defined as [Protocol Buffers](https://protobuf.dev/)), modules (written in Rust), and a `substreams.yaml` file which references the types, and specifies how modules are triggered. [Visit the Substreams documentation to learn more about Substreams development](/substreams), and check out [awesome-substreams](https://github.com/pinax-network/awesome-substreams) and the [Substreams cookbook](https://github.com/pinax-network/substreams-cookbook) for more examples.
+Un paquet Substreams est composé de types (définis comme [Protocol Buffers](https://protobuf.dev/)), de modules (écrits en Rust) et d'un fichier `substreams.yaml` qui référence les types et spécifie comment les modules sont déclenchés. [Visitez la documentation Substreams pour en savoir plus sur le développement de Substreams](/substreams), et consultez [awesome-substreams](https://github.com/pinax-network/awesome-substreams) et le [Substreams cookbook](https://github.com/pinax-network/substreams-cookbook) pour plus d'exemples.
 
-The Substreams package in question detects contract deployments on Mainnet Ethereum, tracking the creation block and timestamp for all newly deployed contracts. To do this, there is a dedicated `Contract` type in `/proto/example.proto` ([learn more about defining Protocol Buffers](https://protobuf.dev/programming-guides/proto3/#simple)):
+Le package Substreams en question détecte les déploiements de contrats sur Mainnet Ethereum, en suivant le bloc de création et l'horodatage de tous les contrats nouvellement déployés. Pour ce faire, il existe un type `Contract` dédié dans `/proto/example.proto` ([en savoir plus sur la définition des tampons de protocole](https://protobuf.dev/programming-guides/proto3/#simple)) :
 
 ```proto
 syntax = "proto3";
@@ -43,63 +43,63 @@ message Contract {
 }
 ```
 
-The core logic of the Substreams package is a `map_contract` module in `lib.rs`, which processes every block, filtering for Create calls which did not revert, returning `Contracts`:
+La logique de base du paquet Substreams est un module `map_contract` dans `lib.rs`, qui traite chaque bloc, filtrant les appels Create qui n'ont pas été réversibles, et retournant des `Contrats` :
 
 ```
 #[substreams::handlers::map]
-fn map_contract(block: eth::v2::Block) -> Résultat<Contracts, substreams::errors::Error> {
-     laisser les contrats = bloquer
-         .transactions()
-         .flat_map(|tx| {
-             tx.appels
-                 .iter()
-                 .filter(|call| !call.state_reverted)
-                 .filter(|call| call.call_type == eth::v2::CallType::Create as i32)
-                 .map(|appel| Contrat {
-                     adresse : format!("0x{}", Hex(&call.address)),
-                     numéro_bloc : bloc.numéro,
-                     horodatage : block.timestamp_seconds().to_string(),
-                     ordinal : tx.begin_ordinal,
-                 })
-         })
-         .collecter();
-     Ok(Contrats { contrats })
+fn map_contract(block: eth::v2::Block) -> Result<Contracts, substreams::errors::Error> {
+    let contracts = block
+        .transactions()
+        .flat_map(|tx| {
+            tx.calls
+                .iter()
+                .filter(|call| !call.state_reverted)
+                .filter(|call| call.call_type == eth::v2::CallType::Create as i32)
+                .map(|call| Contract {
+                    address: format!("0x{}", Hex(&call.address)),
+                    block_number: block.number,
+                    timestamp: block.timestamp_seconds().to_string(),
+                    ordinal: tx.begin_ordinal,
+                })
+        })
+        .collect();
+    Ok(Contracts { contracts })
 }
 ```
 
 Un package Substreams peut être utilisé par un subgraph tant qu'il possède un module qui produit des changements d'entité compatibles. Le paquet Substreams de l'exemple a un module supplémentaire `graph_out` dans `lib.rs` qui renvoie une sortie `substreams_entity_change::pb::entity::EntityChanges`, qui peut être traitée par Graph Node.
 
-> The `substreams_entity_change` crate also has a dedicated `Tables` function for simply generating entity changes ([documentation](https://docs.rs/substreams-entity-change/1.2.2/substreams_entity_change/tables/index.html)). The Entity Changes generated must be compatible with the `schema.graphql` entities defined in the `subgraph.graphql` of the corresponding subgraph.
+> Le crate `substreams_entity_change` a aussi une fonction `Tables` dédiée pour générer simplement des changements d'entités ([documentation](https://docs.rs/substreams-entity-change/1.2.2/substreams_entity_change/tables/index.html)). Les changements d'entités générés doivent être compatibles avec les entités `schema.graphql` définies dans le `subgraph.graphql` du subgraph correspondant.
 
 ```
 #[substreams::handlers::map]
-pub fn graph_out (contrats : contrats) -> Résultat<EntityChanges, substreams::errors::Error> {
-     // Carte de hachage du nom vers une table
-     laissez mut tables = Tables::new();
+pub fn graph_out(contracts: Contracts) -> Result<EntityChanges, substreams::errors::Error> {
+    // hash map of name to a table
+    let mut tables = Tables::new();
 
-     pour le contrat dans contracts.contracts.into_iter() {
-         les tables
-             .create_row("Contrat", contrat.adresse)
-             .set("horodatage", contrat.timestamp)
-             .set("blockNumber", contrat.block_number);
-     }
+    for contract in contracts.contracts.into_iter() {
+        tables
+            .create_row("Contract", contract.address)
+            .set("timestamp", contract.timestamp)
+            .set("blockNumber", contract.block_number);
+    }
 
-     Ok(tables.to_entity_changes())
+    Ok(tables.to_entity_changes())
 }
 ```
 
-These types and modules are pulled together in `substreams.yaml`:
+Ces types et modules sont regroupés dans `substreams.yaml` :
 
 ```
 specVersion: v0.1.0
 package:
-  name: 'substreams_test' # the name to be used in the .spkg
-  version: v1.0.1 # the version to use when creating the .spkg
+  name: 'substreams_test' # le nom à utiliser dans le .spkg
+  version: v1.0.1 # la version à utiliser lors de la création du .spkg
 
-imports: # dependencies
+imports: # dépendances
   entity: https://github.com/streamingfast/substreams-entity-change/releases/download/v0.2.1/substreams-entity-change-v0.2.1.spkg
 
-protobuf: # specifies custom types for use by Substreams modules
+protobuf: # spécifie les types personnalisés à utiliser par les modules Substreams
   files:
     - example.proto
   importPaths:
@@ -110,7 +110,7 @@ binaries:
     type: wasm/rust-v1
     file: ./target/wasm32-unknown-unknown/release/substreams.wasm
 
-modules: # specify modules with their inputs and outputs.
+modules: # spécifie les modules avec leurs entrées et sorties.
   - name: map_contract
     kind: map
     inputs:
@@ -123,11 +123,11 @@ modules: # specify modules with their inputs and outputs.
     inputs:
       - map: map_contract
     output:
-      type: proto:substreams.entity.v1.EntityChanges # this type can be consumed by Graph Node
+      type: proto:substreams.entity.v1.EntityChanges # ce type peut être consommé par Graph Node
 
 ```
 
-You can check the overall "flow" from a Block, to `map_contract` to `graph_out` by running `substreams graph`:
+Vous pouvez vérifier le « flux » global d'un bloc, vers « map_contract » et « graph_out » en exécutant « substreams graph » :
 
 ```mermaid
 graph TD;
@@ -137,7 +137,7 @@ graph TD;
   map_contract --> graph_out;
 ```
 
-To prepare this Substreams package for consumption by a subgraph, you must run the following commands:
+Pour préparer ce module Substreams à être utilisé par un subgraph, vous devez exécuter les commandes suivantes :
 
 ```bash
 yarn substreams:protogen # génère des types dans /src/pb
@@ -151,77 +151,77 @@ yarn substreams:package # empaquette les substreams dans un fichier .spkg
 
 Cela génère un fichier `spkg` basé sur le nom et la version du paquet provenant de `substreams.yaml`. Le fichier `spkg` contient toutes les informations dont Graph Node a besoin pour ingérer ce paquet Substreams.
 
-> If you update the Substreams package, depending on the changes you make, you may need to run some or all of the above commands so that the `spkg` is up to date.
+> Si vous mettez à jour le module Substreams, en fonction des modifications apportées, vous devrez peut-être exécuter tout ou partie des commandes ci-dessus pour que le paquet `spkg` soit à jour.
 
 ## Définition d'un subgraph alimenté par les courants de Substreams
 
-Substreams-powered subgraphs introduce a new `kind` of data source, "substreams". Such subgraphs can only have one data source.
+Les subgraphs alimentés par Substreams introduisent un nouveau type de source de données, "substreams". De tels subgraphs ne peuvent avoir qu'une seule source de données.
 
 Cette source de données doit spécifier le réseau indexé, le paquet Substreams (`spkg`) en tant qu'emplacement de fichier relatif, et le module au sein de ce paquet Substreams qui produit des changements d'entités compatibles avec le subgraph (dans ce cas, `map_entity_changes`, du paquet Substreams ci-dessus). Le mapping est spécifié, mais identifie simplement le type de mapping ("substreams/graph-entities") et l'apiVersion.
 
-> Currently the Subgraph Studio and The Graph Network support Substreams-powered subgraphs which index `mainnet` (Mainnet Ethereum).
+> Actuellement, le Subgraph Studio et The Graph Network prennent en charge les subgraphs alimentés par Substreams qui indexent `mainnet` (Mainnet Ethereum).
 
 ```yaml
-spécification de la version : 0.0.4
-description : Subgraph de suivi des contrats Ethereum (propulsé par Substreams)
-référentiel  : https://github.com/graphprotocol/graph-tooling
-schéma:
-    fichier : schéma.graphql
-les sources de données :
-    - genre  : sous-flux
-      nom : substream_test
-      réseau : réseau principal
-      source:
-        emballeur :
-          Nom du module : graph_out
-          fichier  : substreams-test-v1.0.1.spkg
-      cartographie :
-        genre : sous-flux/entités graphs
-        Api : 0.0.5
+specVersion: 0.0.4
+description: Ethereum Contract Tracking Subgraph (powered by Substreams)
+repository: https://github.com/graphprotocol/graph-tooling
+schema:
+  file: schema.graphql
+dataSources:
+  - kind: substreams
+    name: substream_test
+    network: mainnet
+    source:
+      package:
+        moduleName: graph_out
+        file: substreams-test-v1.0.1.spkg
+    mapping:
+      kind: substreams/graph-entities
+      apiVersion: 0.0.5
 ```
 
-The `subgraph.yaml` also references a schema file. The requirements for this file are unchanged, but the entities specified must be compatible with the entity changes produced by the Substreams module referenced in the `subgraph.yaml`.
+Le `subgraph.yaml` fait également référence à un fichier de schéma. Les exigences pour ce fichier sont inchangées, mais les entités spécifiées doivent être compatibles avec les changements d'entités produits par le module Substreams référencé dans le `subgraph.yaml`.
 
 ```graphql
-type Contract @entity {
+type Contrat @entity {
   id: ID!
 
-  "The timestamp when the contract was deployed"
-  timestamp: String!
+  "La date et l'heure de déploiement du contrat"
+  horodatage: String!
 
-  "The block number of the contract deployment"
-  blockNumber: BigInt!
+  "Le numéro de bloc du déploiement du contrat"
+  numéroDeBloc: BigInt!
 }
 ```
 
-Given the above, subgraph developers can use Graph CLI to deploy this Substreams-powered subgraph.
+Le `subgraph. yaml` fait également référence à un fichier de schéma. Les exigences pour ce fichier sont inchangées, mais les entités spécifiées doivent être compatibles avec les changements d'entités produits par le module Substreams référencé dans `subgraph. yaml`.
 
-> Substreams-powered subgraphs indexing mainnet Ethereum can be deployed to the [Subgraph Studio](https://thegraph.com/studio/).
+> Les subgraphs alimentés par Substreams indexant le mainnet Ethereum peuvent être déployés sur le [Subgraph Studio] \(https://thegraph.com/studio/).
 
 ```bash
-yarn install # install graph-cli
-yarn subgraph:build # build the subgraph
-yarn subgraph:deploy # deploy the subgraph
+yarn install # installe graph-cli
+yarn subgraph:build # construit le subgraph
+yarn subgraph:deploy # déploie le subgraph
 ```
 
-That's it! You have built and deployed a Substreams-powered subgraph.
+Voilà, c'est fait ! Vous avez construit et déployé un subgraph alimenté par Substreams.
 
-## Serving Substreams-powered subgraphs
+## Servir des subgraphs alimentés par Substreams
 
-In order to serve Substreams-powered subgraphs, Graph Node must be configured with a Substreams provider for the relevant network, as well as a Firehose or RPC to track the chain head. These providers can be configured via a `config.toml` file:
+Afin de servir des subgraphs alimentés par Substreams, Graph Node doit être configuré avec un fournisseur Substreams pour le réseau concerné, ainsi qu'un Firehose ou un RPC pour suivre la tête de chaîne. Ces fournisseurs peuvent être configurés via un fichier `config.toml` :
 
 ```toml
 [chains.mainnet]
 shard = "main"
 protocol = "ethereum"
 provider = [
-  { label = "substreams-provider-mainnet",
+  { label = "fournisseur-substreams-mainnet",
     details = { type = "substreams",
     url = "https://mainnet-substreams-url.grpc.substreams.io/",
-    token = "exampletokenhere" }},
-  { label = "firehose-provider-mainnet",
+    token = "exempletokenici" }},
+  { label = "fournisseur-firehose-mainnet",
     details = { type = "firehose",
     url = "https://mainnet-firehose-url.grpc.firehose.io/",
-    token = "exampletokenhere" }},
+    token = "exempletokenici" }},
 ]
 ```
