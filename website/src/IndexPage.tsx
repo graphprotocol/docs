@@ -1,6 +1,6 @@
 import { Heading, Image, LinkInline } from '@graphprotocol/nextra-theme'
 
-import { BorderRadius, buildBorder, buildTransition, ButtonOrLink, Flex, Icon, Spacing, Text } from '@edgeandnode/gds'
+import { BorderRadius, buildBorder, buildTransition, Flex, Icon, Link, Spacing, Text } from '@edgeandnode/gds'
 
 import { useI18n } from '@/i18n'
 
@@ -51,7 +51,7 @@ export function Intro() {
         },
       ].map((card) => (
         <li key={card.href} sx={{ aspectRatio: '258/136' }}>
-          <ButtonOrLink
+          <Link.Unstyled
             href={card.href}
             sx={{
               display: 'flex',
@@ -78,7 +78,7 @@ export function Intro() {
             <Text as="small" size="16px" color="White64">
               {card.description}
             </Text>
-          </ButtonOrLink>
+          </Link.Unstyled>
         </li>
       ))}
     </ul>
@@ -254,7 +254,7 @@ export function SupportedNetworks() {
             return (
               <Flex.Column as="li" key={index}>
                 <Text as="div" size="14px" color="White64" sx={{ textAlign: 'center' }}>
-                  <ButtonOrLink
+                  <Link.Unstyled
                     href={network.href}
                     target="_blank"
                     sx={{
@@ -275,7 +275,7 @@ export function SupportedNetworks() {
                     />
                     {network.title}
                     {network.beta ? '*' : ''}
-                  </ButtonOrLink>
+                  </Link.Unstyled>
                 </Text>
               </Flex.Column>
             )
@@ -377,7 +377,7 @@ export function SupportedNetworks() {
             return (
               <Flex.Column as="li" key={network.href}>
                 <Text as="div" size="14px" color="White64" sx={{ textAlign: 'center' }}>
-                  <ButtonOrLink
+                  <Link.Unstyled
                     href={network.href}
                     target="_blank"
                     sx={{
@@ -398,7 +398,7 @@ export function SupportedNetworks() {
                     />
                     {network.title}
                     {network.beta ? '*' : ''}
-                  </ButtonOrLink>
+                  </Link.Unstyled>
                 </Text>
               </Flex.Column>
             )

@@ -8,9 +8,9 @@ import { Fragment, PropsWithChildren, useContext, useEffect, useState } from 're
 import {
   BorderRadius,
   buildTransition,
-  ButtonOrLink,
   Flex,
   Icon,
+  Link,
   NestedStrings,
   Spacing,
   Text,
@@ -99,8 +99,11 @@ const MobileWrapper = ({ title, children }: PropsWithChildren<{ title?: string }
             as="span"
             sx={{
               flexShrink: 0,
-              transform: open ? 'rotate(90deg)' : 'rotate(0deg)',
               transition: buildTransition('TRANSFORM'),
+              transform: open ? 'rotate(90deg)' : 'rotate(0deg)',
+              '&:dir(rtl)': {
+                transform: open ? 'rotate(-90deg)' : 'rotate(0deg)',
+              },
             }}
           >
             <Icon.CaretRight title={open ? t('global.collapse') : t('global.expand')} />
@@ -127,7 +130,7 @@ const MobileWrapper = ({ title, children }: PropsWithChildren<{ title?: string }
 }
 
 const DocSearchHit = ({ hit, children }: PropsWithChildren<{ hit: { url: string } }>) => (
-  <ButtonOrLink href={removeBasePathFromUrl(hit.url)}>{children}</ButtonOrLink>
+  <Link.Unstyled href={removeBasePathFromUrl(hit.url)}>{children}</Link.Unstyled>
 )
 
 export const MDXLayoutNav = ({ mobile = false }: { mobile?: boolean }) => {

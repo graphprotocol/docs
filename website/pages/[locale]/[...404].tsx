@@ -10,7 +10,7 @@ export const getStaticPaths: GetStaticPaths = () => {
     paths: supportedLocales.map((locale) => ({
       params: { locale, '404': ['404'] },
     })),
-    fallback: true,
+    fallback: false,
   }
 }
 

@@ -5,12 +5,11 @@ import { SxProp } from 'theme-ui'
 
 import {
   buildTransition,
-  ButtonOrLink,
-  ButtonOrLinkProps,
   Divider,
   Flex,
   Icon,
   IconProps,
+  Link,
   Spacing,
   Text,
   TextProps,
@@ -30,12 +29,13 @@ const animationCollapse = keyframes({
 export type NavTreeProps = HTMLAttributes<HTMLElement> & {
   textProps?: TextProps
 }
-export type NavTreeItemProps = HTMLAttributes<HTMLElement> &
-  Pick<AnchorHTMLAttributes<HTMLAnchorElement>, 'href' | 'target'> & {
-    active?: boolean
-    linkProps?: HTMLAttributes<HTMLElement> & SxProp
-    diamondProps?: Partial<IconProps> & SxProp
-  }
+export type NavTreeItemProps = HTMLAttributes<HTMLElement> & {
+  href: NonNullable<AnchorHTMLAttributes<HTMLAnchorElement>['href']>
+  target?: AnchorHTMLAttributes<HTMLAnchorElement>['target']
+  active?: boolean
+  linkProps?: HTMLAttributes<HTMLElement> & SxProp
+  diamondProps?: Partial<IconProps> & SxProp
+}
 export type NavTreeGroupProps = HTMLAttributes<HTMLElement> & {
   active?: boolean
 }
@@ -69,7 +69,7 @@ const NavTreeItem = ({
   const { sx: diamondSx, ...diamondOtherProps } = diamondProps
   return (
     <li {...props}>
-      <ButtonOrLink
+      <Link.Unstyled
         href={href}
         target={target}
         sx={{
@@ -100,7 +100,7 @@ const NavTreeItem = ({
             {...diamondOtherProps}
           />
         ) : null}
-      </ButtonOrLink>
+      </Link.Unstyled>
     </li>
   )
 }
@@ -125,7 +125,7 @@ const NavTreeGroup = ({ active = false, children, ...props }: NavTreeGroupProps)
 
 const NavTreeGroupHeading = ({ children, buttonProps = {}, ...props }: NavTreeGroupHeadingProps) => {
   const { sx: buttonSx, ...buttonOtherProps } = buttonProps
-  const context = useContext(NavTreeGroupContext)
+  const { open, active } = useContext(NavTreeGroupContext)
   const { t } = useI18n<any>()
 
   return (
@@ -135,7 +135,7 @@ const NavTreeGroupHeading = ({ children, buttonProps = {}, ...props }: NavTreeGr
           width: '100%',
           paddingInline: Spacing['24px'],
           py: Spacing['12px'],
-          color: context.open || context.active ? 'White88' : 'White64',
+          color: open || active ? 'White88' : 'White64',
           '&:hover': { color: 'White' },
           transition: buildTransition('COLORS'),
           ...buttonSx,
@@ -148,12 +148,15 @@ const NavTreeGroupHeading = ({ children, buttonProps = {}, ...props }: NavTreeGr
             as="span"
             sx={{
               flexShrink: 0,
-              transform: context.open ? 'rotate(90deg)' : 'rotate(0deg)',
               transition: buildTransition('TRANSFORM'),
+              transform: open ? 'rotate(90deg)' : 'rotate(0deg)',
+              '&:dir(rtl)': {
+                transform: open ? 'rotate(-90deg)' : 'rotate(0deg)',
+              },
             }}
           >
             <Icon.CaretRight
-              title={context.open ? t('global.collapse') : t('global.expand')}
+              title={open ? t('global.collapse') : t('global.expand')}
               size={['16px', null, null, '14px']}
             />
           </Flex.Column>
