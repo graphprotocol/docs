@@ -1,6 +1,6 @@
 import { useContext } from 'react'
 
-import { buildTransition, ButtonOrLink, Divider, Flex, Icon, Spacing, Text, useI18n } from '@edgeandnode/gds'
+import { buildTransition, Divider, Flex, Icon, Link, Spacing, Text, useI18n } from '@edgeandnode/gds'
 
 import { NavContext } from '@/layout'
 
@@ -19,7 +19,7 @@ export const MDXLayoutPagination = () => {
       <Flex.Row justify="space-between" sx={{ my: Spacing['32px'] }}>
         <div>
           {prev ? (
-            <ButtonOrLink
+            <Link.Unstyled
               href={prev.route}
               sx={{
                 display: 'block',
@@ -52,12 +52,12 @@ export const MDXLayoutPagination = () => {
                   {prev.title}
                 </Text>
               </Flex.Column>
-            </ButtonOrLink>
+            </Link.Unstyled>
           ) : null}
         </div>
         <div>
           {next ? (
-            <ButtonOrLink
+            <Link.Unstyled
               href={next.route}
               sx={{
                 display: 'block',
@@ -90,7 +90,7 @@ export const MDXLayoutPagination = () => {
                   {next.title}
                 </Text>
               </Flex.Column>
-            </ButtonOrLink>
+            </Link.Unstyled>
           ) : null}
         </div>
       </Flex.Row>

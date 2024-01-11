@@ -1,6 +1,6 @@
 import { useContext, useEffect, useState } from 'react'
 
-import { buildTransition, ButtonOrLink, Divider, Flex, Spacing, Text, useI18n } from '@edgeandnode/gds'
+import { buildTransition, Divider, Flex, Link, Spacing, Text, useI18n } from '@edgeandnode/gds'
 
 import { EditPageLink } from '@/components'
 import { DocumentContext } from '@/layout'
@@ -44,7 +44,7 @@ export const MDXLayoutOutline = () => {
                 }
                 return (
                   <li key={outlineItemIndex}>
-                    <ButtonOrLink
+                    <Link.Unstyled
                       href={`#${heading.id}`}
                       sx={{
                         display: 'block',
@@ -56,7 +56,7 @@ export const MDXLayoutOutline = () => {
                       }}
                     >
                       {heading.value}
-                    </ButtonOrLink>
+                    </Link.Unstyled>
                   </li>
                 )
               })}

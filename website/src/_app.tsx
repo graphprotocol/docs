@@ -3,16 +3,8 @@ import { AppProps } from 'next/app'
 import NextLink from 'next/link'
 import { DefaultSeo } from 'next-seo'
 
-import {
-  AnalyticsProvider,
-  ButtonOrLinkProps,
-  Footer,
-  GDSProvider,
-  I18nProvider,
-  Layout,
-  LocaleSwitcher,
-} from '@edgeandnode/gds'
-import { GlobalHeader } from '@edgeandnode/go'
+import { AnalyticsProvider, ButtonOrLinkProps, GDSProvider, I18nProvider, Layout } from '@edgeandnode/gds'
+import { GlobalFooter, GlobalHeader } from '@edgeandnode/go'
 
 import { supportedLocales, translations, useI18n } from '@/i18n'
 
@@ -107,8 +99,7 @@ function MyAppWithLocale({ Component, router, pageProps }: AppProps) {
               <GlobalHeader activeProduct="THE_GRAPH" basePath="/docs" showLocaleSwitcher={!hideLocaleSwitcher} />
             }
             headerSticky
-            mainContainer
-            footer={<Footer localeSwitcher={!hideLocaleSwitcher ? <LocaleSwitcher /> : null} />}
+            footer={<GlobalFooter showLogo={true} showLocaleSwitcher={!hideLocaleSwitcher} />}
           >
             <Component {...pageProps} />
           </Layout>
