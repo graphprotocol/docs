@@ -2,9 +2,10 @@ import mixpanel from 'mixpanel-browser'
 import { AppProps } from 'next/app'
 import NextLink from 'next/link'
 import { DefaultSeo } from 'next-seo'
+import googleAnalytics from 'react-ga4'
 
 import { AnalyticsProvider, ButtonOrLinkProps, GDSProvider, I18nProvider, Layout } from '@edgeandnode/gds'
-import { GlobalFooter, GlobalHeader } from '@edgeandnode/go'
+import { CookieBanner, GlobalFooter, GlobalHeader } from '@edgeandnode/go'
 
 import { supportedLocales, translations, useI18n } from '@/i18n'
 
@@ -74,7 +75,11 @@ function MyAppWithLocale({ Component, router, pageProps }: AppProps) {
           clientRouter={router}
           mixpanel={{
             sdk: mixpanel,
-            token: process.env.MIXPANEL_TOKEN || null,
+            token: process.env.MIXPANEL_TOKEN ?? null,
+          }}
+          googleAnalytics={{
+            sdk: googleAnalytics,
+            measurementId: process.env.GOOGLE_ANALYTICS_MEASUREMENT_ID ?? null,
           }}
         >
           <div sx={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, overflow: 'hidden' }}>
@@ -101,6 +106,7 @@ function MyAppWithLocale({ Component, router, pageProps }: AppProps) {
             headerSticky
             footer={<GlobalFooter showLogo={true} showLocaleSwitcher={!hideLocaleSwitcher} />}
           >
+            <CookieBanner />
             <Component {...pageProps} />
           </Layout>
         </AnalyticsProvider>

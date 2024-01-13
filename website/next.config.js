@@ -13,6 +13,7 @@ const env = {
         ? 'cfeac8baf33c9b4d255f28d57f3c9148' // production
         : 'e57a9892339b2acfd02943c86b746d32' // staging
       : '', // local dev (no tracking)
+  GOOGLE_ANALYTICS_MEASUREMENT_ID: process.env.NODE_ENV === 'production' ? 'G-5MK48LFNKY' : '',
 }
 
 const withNextra = nextra({
