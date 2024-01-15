@@ -23,23 +23,17 @@ const withNextra = nextra({
   codeHighlight: false,
   defaultShowCopyCode: false,
   transform(result, { route }) {
-    if (!route) return result
+    if (route && !result.includes('getStaticProps')) {
+      const banner = `
+import { getPageMap } from '@/src/getPageMap'
 
-    const { locale } = extractLocaleFromPath(route)
-
-    result = `
-      globalThis.__graph_docs_locale = '${locale ?? defaultLocale}'
-      ${result}
-    `
-
-    if (!result.includes('getStaticProps')) {
-      result = `
-        import { buildGetStaticProps } from '@/src/buildGetStaticProps'
-        ${result}
-        export const getStaticProps = buildGetStaticProps()
-      `
+export const getStaticProps = async context => ({
+  props: {
+    __nextra_pageMap: await getPageMap('${route.split('/')[1]}')
+  }
+})`
+      result += banner
     }
-
     return result
   },
 })
