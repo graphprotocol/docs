@@ -1,7 +1,5 @@
 import nextra from 'nextra'
 
-import { defaultLocale, extractLocaleFromPath } from '@edgeandnode/gds'
-
 const env = {
   ENVIRONMENT: process.env.ENVIRONMENT,
   BASE_PATH: process.env.NODE_ENV === 'production' ? '/docs' : '',
@@ -38,6 +36,9 @@ export const getStaticProps = async context => ({
   },
 })
 
+/**
+ * @type {import('next').NextConfig}
+ */
 export default withNextra({
   env,
   output: 'export',
