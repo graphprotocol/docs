@@ -96,30 +96,15 @@ export default function NextraLayout({ children, pageOpts, pageProps }: NextraTh
     const result = normalizePages({
       list: pageMap,
       locale,
-      defaultLocale: defaultLocale,
+      defaultLocale,
       route: fsPath,
     })
-
-    function removeNonExistedRoutes(items: Item[]): Item[] {
-      return items.reduce<Item[]>((acc, curr) => {
-        if (curr.route || curr.type === 'heading' || curr.type === 'separator') {
-          if (curr.children) {
-            curr.children = removeNonExistedRoutes(curr.children)
-          }
-          acc.push(curr)
-        }
-        return acc
-      }, [])
+    for (const item of result.flatDocsDirectories) {
+      if (!item.route) {
+        throw new Error(`Route "${item.name}" is not exist. Remove this field from _meta.js file`)
+      }
     }
-
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-return -- i don't know why it's complain
-    return {
-      ...result,
-      directories: removeNonExistedRoutes(result.directories),
-      flatDirectories: result.flatDirectories.filter(
-        (item) => item.type !== 'separator' && item.type !== 'heading' && item.route !== '',
-      ),
-    }
+    return result
   }, [defaultLocale, fsPath, locale, pageMap])
 
   // Provide `markOutlineItem` to the `DocumentContext` so child `Heading` components can mark outline items as "in or above view" or not
