@@ -5,11 +5,11 @@ import { buildTransition, Divider, Flex, Icon, Link, Spacing, Text, useI18n } fr
 import { NavContext } from '@/layout'
 
 export const MDXLayoutPagination = () => {
-  const { flatDirectories, activeIndex } = useContext(NavContext)!
+  const { flatDocsDirectories, activeIndex } = useContext(NavContext)!
   const { t } = useI18n<any>()
 
-  const prev = flatDirectories[activeIndex - 1]
-  const next = flatDirectories[activeIndex + 1]
+  const prev = flatDocsDirectories[activeIndex - 1]
+  const next = flatDocsDirectories[activeIndex + 1]
 
   if (!prev && !next) return null
 

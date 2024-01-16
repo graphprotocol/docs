@@ -7,7 +7,6 @@ export default {
   network: 'The Graph Network',
   sunrise: 'Sunrise FAQ',
   billing: '',
-  'network-transition-faq': '',
   glossary: '',
   tokenomics: 'Tokenomics',
   arbitrum: 'Scaling with Arbitrum',
