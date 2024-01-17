@@ -99,9 +99,12 @@ export default function NextraLayout({ children, pageOpts, pageProps }: NextraTh
       defaultLocale,
       route: fsPath,
     })
-    for (const item of result.flatDocsDirectories) {
-      if (!item.route) {
-        throw new Error(`Route "${item.name}" is not exist. Remove this field from _meta.js file`)
+    if (typeof window === 'undefined') {
+      // Execute this check for sidebar links only on server, will be stripped from client build
+      for (const item of result.flatDocsDirectories) {
+        if (!item.route) {
+          throw new Error(`Route "${item.name}" is not exist. Remove this field from _meta.js file`)
+        }
       }
     }
     return result
