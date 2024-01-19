@@ -1,5 +1,3 @@
-/* eslint-disable import/no-default-export */
-/* eslint react/no-unknown-property: ['error', { ignore: ['tw'] }] */
 import { handler } from './handler'
 
 const hour = 3600
