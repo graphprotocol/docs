@@ -1,26 +1,12 @@
-import { DocSearchHit } from '@docsearch/react/dist/esm/types'
 import { keyframes } from '@emotion/react'
 import * as Collapsible from '@radix-ui/react-collapsible'
-import { useRouter } from 'next/router'
 import { Item } from 'nextra/normalize-pages'
 import { Fragment, PropsWithChildren, useContext, useEffect, useState } from 'react'
 
-import {
-  BorderRadius,
-  buildTransition,
-  Flex,
-  Icon,
-  Link,
-  NestedStrings,
-  Spacing,
-  Text,
-  useI18n,
-} from '@edgeandnode/gds'
+import { BorderRadius, buildTransition, Flex, Icon, Spacing, Text, useI18n } from '@edgeandnode/gds'
 
-import { DocSearch, NavTree } from '@/components'
+import { NavTree } from '@/components'
 import { NavContext } from '@/layout'
-
-const removeBasePathFromUrl = (url: string) => url.substring((process.env.BASE_PATH ?? '').length)
 
 const animationExpand = keyframes({
   from: { height: 0 },
@@ -48,8 +34,7 @@ const DesktopWrapper = ({ children }: PropsWithChildren<{}>) => {
         top: 'var(--gds-header-height-visible)',
         maxHeight: 'calc(100vh - var(--gds-header-height-visible))',
         paddingInlineEnd: Spacing['24px'],
-        pt: Spacing['32px'],
-        pb: Spacing['16px'],
+        py: Spacing['16px'],
         overflowY: 'auto',
       }}
     >
@@ -129,55 +114,13 @@ const MobileWrapper = ({ title, children }: PropsWithChildren<{ title?: string }
   )
 }
 
-const DocSearchHit = ({ hit, children }: PropsWithChildren<{ hit: { url: string } }>) => (
-  <Link.Unstyled href={removeBasePathFromUrl(hit.url)}>{children}</Link.Unstyled>
-)
-
 export const MDXLayoutNav = ({ mobile = false }: { mobile?: boolean }) => {
-  const router = useRouter()
   const { activePath, directories } = useContext(NavContext)!
-  const { t, translations, locale } = useI18n<any>()
-
   const Wrapper = mobile ? MobileWrapper : DesktopWrapper
-
   const activePage = activePath.at(-1) || { route: '', title: '' }
 
   return (
     <Wrapper {...(mobile ? { title: activePage.title } : {})}>
-      <div sx={{ mb: Spacing['16px'] }}>
-        <DocSearch
-          apiKey={process.env.ALGOLIA_API_KEY ?? ''}
-          appId={process.env.ALGOLIA_APP_ID ?? ''}
-          indexName="thegraph-docs"
-          searchParameters={{
-            facetFilters: [`language:${locale}`],
-          }}
-          disableUserPersonalization={true}
-          transformItems={(items: DocSearchHit[]) =>
-            items.map((item) => ({
-              ...item,
-              url: item.url.replace('https://thegraph.com/docs', process.env.BASE_PATH ?? ''),
-            }))
-          }
-          hitComponent={DocSearchHit}
-          navigator={{
-            navigate({ itemUrl }) {
-              void router.push(removeBasePathFromUrl(itemUrl))
-            },
-            navigateNewTab({ itemUrl }) {
-              const windowReference = window.open(itemUrl, '_blank', 'noopener')
-              if (windowReference) {
-                windowReference.focus()
-              }
-            },
-            navigateNewWindow({ itemUrl }) {
-              window.open(itemUrl, '_blank', 'noopener')
-            },
-          }}
-          translations={translations.docsearch as NestedStrings}
-          placeholder={t('docsearch.button.buttonText')}
-        />
-      </div>
       <NavTree textProps={mobile ? { weight: 'REGULAR', size: '16px' } : undefined}>
         {directories.map((pageItem) =>
           (function renderSidebar(pageItem: Item) {

@@ -30,7 +30,6 @@ export async function handler(request: Request): Promise<Response> {
       headers: { 'Content-Type': 'image/png' },
     })
   } catch (e) {
-    // eslint-disable-next-line no-console -- to debug
     console.error(e)
     return new Response(`Failed to generate the image.\n\nError: ${(e as Error).message}`, {
       status: 500,
