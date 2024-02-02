@@ -27,8 +27,8 @@ export async function getSupportedNetworks() {
   return Array.from(SupportedNetworkMap.values()).flatMap((network) =>
     Array.from(network.chains)
       .map((chain) => {
-        const supportedOnStudio = chain.productDeployStatus.hostedService === ChainProductStatus.ALLOWED
-        const supportedOnHostedService = chain.productDeployStatus.studio === ChainProductStatus.ALLOWED
+        const supportedOnHostedService = chain.productDeployStatus.hostedService === ChainProductStatus.ALLOWED
+        const supportedOnStudio = chain.productDeployStatus.studio === ChainProductStatus.ALLOWED
 
         if (!chain.graphCliName || (!supportedOnStudio && !supportedOnHostedService)) {
           return null as never // `as never` to work around the `.filter(Boolean)` below not narrowing the type
@@ -42,8 +42,8 @@ export async function getSupportedNetworks() {
           name: chain.name,
           cliName: chain.graphCliName,
           chainId: chain.chainId,
-          supportedOnStudio,
           supportedOnHostedService,
+          supportedOnStudio,
           fullySupportedOnNetwork,
           partiallySupportedOnNetwork,
           substreams: chain.substreams ?? [],
