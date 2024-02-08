@@ -22,7 +22,7 @@ import {
   useTheme,
 } from '@edgeandnode/gds'
 
-const animationFade = keyframes({
+const animationFadeIn = keyframes({
   from: { opacity: 0 },
   to: { opacity: 1 },
 })
@@ -171,7 +171,7 @@ export function DocSearch(props: DocSearchProps) {
                 '--docsearch-highlight-color': `${theme.colors!.Purple} !important`,
               },
               '.DocSearch-Container': {
-                animation: `${animationFade} 150ms ease-in-out`,
+                animation: `${animationFadeIn} 150ms ease-in-out`,
               },
               '.DocSearch-Modal': {
                 m: [null, null, '96px auto auto'],
