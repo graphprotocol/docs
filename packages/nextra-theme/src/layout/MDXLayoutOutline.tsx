@@ -30,7 +30,7 @@ export const MDXLayoutOutline = () => {
       <EditPageLink sx={{ mt: Spacing['4px'] }} />
       {headings.length > 0 ? (
         <>
-          <Divider sx={{ my: Spacing['24px'] }} />
+          <Divider sx={{ mt: '20px', mb: Spacing['24px'] }} />
           <nav sx={{ paddingInlineEnd: '16px' }}>
             <Text.C10 as="header" color="White64" sx={{ mb: Spacing['12px'] }}>
               {t('global.pageSections')}

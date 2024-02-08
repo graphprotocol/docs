@@ -39,9 +39,11 @@ export async function getSupportedNetworks() {
         const partiallySupportedOnNetwork = network.id === 'evm' && !fullySupportedOnNetwork
 
         return {
+          uid: chain.uid,
           name: chain.name,
           cliName: chain.graphCliName,
           chainId: chain.chainId,
+          testnet: chain.testnet,
           supportedOnHostedService,
           supportedOnStudio,
           fullySupportedOnNetwork,
