@@ -6,5 +6,8 @@ export default {
   'distributed-systems': '',
   'graphql-api': '',
   'querying-the-hosted-service': '',
+  'querying-by-subgraph-id-vs-deployment-id': '',
   'graph-client': 'Graph Client',
+  'querying-with-no-code': '',
+  'querying-with-python': '',
 }
