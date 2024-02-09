@@ -1,10 +1,20 @@
+import { DocSearch } from '@graphprotocol/nextra-theme'
 import mixpanel from 'mixpanel-browser'
 import { AppProps } from 'next/app'
 import NextLink from 'next/link'
 import { DefaultSeo } from 'next-seo'
+import { PropsWithChildren } from 'react'
 import googleAnalytics from 'react-ga4'
 
-import { AnalyticsProvider, ButtonOrLinkProps, GDSProvider, I18nProvider, Layout } from '@edgeandnode/gds'
+import {
+  AnalyticsProvider,
+  ButtonOrLinkProps,
+  GDSProvider,
+  I18nProvider,
+  Layout,
+  Link,
+  NestedStrings,
+} from '@edgeandnode/gds'
 import { CookieBanner, GlobalFooter, GlobalHeader } from '@edgeandnode/go'
 
 import { supportedLocales, translations, useI18n } from '@/i18n'
@@ -15,9 +25,50 @@ import '@docsearch/css'
 const internalAbsoluteHrefRegex = /^(((https?:)?\/\/((www|staging)\.)?thegraph\.com)?\/docs\/|\/(?!\/))/i
 const externalHrefRegex = /^(?!(https?:)?\/\/((www|staging)\.)?thegraph\.com)([a-zA-Z0-9+.-]+:)?\/\//i
 
+const removeBasePathFromUrl = (url: string) => url.substring((process.env.BASE_PATH ?? '').length)
+
+const DocSearchHit = ({ hit, children }: PropsWithChildren<{ hit: { url: string } }>) => (
+  <Link.Unstyled href={removeBasePathFromUrl(hit.url)}>{children}</Link.Unstyled>
+)
+
 function MyAppWithLocale({ Component, router, pageProps }: AppProps) {
   const hideLocaleSwitcher = pageProps.hideLocaleSwitcher ?? false
-  const { locale, extractLocaleFromPath } = useI18n()
+  const { t, translations, locale, extractLocaleFromPath } = useI18n()
+
+  const docSearch = (
+    <DocSearch
+      apiKey={process.env.ALGOLIA_API_KEY ?? ''}
+      appId={process.env.ALGOLIA_APP_ID ?? ''}
+      indexName="thegraph-docs"
+      searchParameters={{
+        facetFilters: [`language:${locale}`],
+      }}
+      disableUserPersonalization={true}
+      transformItems={(items) =>
+        items.map((item) => ({
+          ...item,
+          url: item.url.replace('https://thegraph.com/docs', process.env.BASE_PATH ?? ''),
+        }))
+      }
+      hitComponent={DocSearchHit}
+      navigator={{
+        navigate({ itemUrl }) {
+          void router.push(removeBasePathFromUrl(itemUrl))
+        },
+        navigateNewTab({ itemUrl }) {
+          const windowReference = window.open(itemUrl, '_blank', 'noopener')
+          if (windowReference) {
+            windowReference.focus()
+          }
+        },
+        navigateNewWindow({ itemUrl }) {
+          window.open(itemUrl, '_blank', 'noopener')
+        },
+      }}
+      translations={translations.docsearch as NestedStrings}
+      placeholder={t('docsearch.button.buttonText')}
+    />
+  )
 
   return (
     <>
@@ -101,7 +152,27 @@ function MyAppWithLocale({ Component, router, pageProps }: AppProps) {
           </div>
           <Layout
             header={
-              <GlobalHeader activeProduct="THE_GRAPH" basePath="/docs" showLocaleSwitcher={!hideLocaleSwitcher} />
+              <GlobalHeader
+                activeProduct="THE_GRAPH"
+                basePath="/docs"
+                showLocaleSwitcher={!hideLocaleSwitcher}
+                leftContent={(defaultContent) => [
+                  defaultContent,
+                  null,
+                  <>
+                    {defaultContent}
+                    {docSearch}
+                  </>,
+                ]}
+                rightContent={(defaultContent) => [
+                  <>
+                    {defaultContent}
+                    {docSearch}
+                  </>,
+                  null,
+                  defaultContent,
+                ]}
+              />
             }
             headerSticky
             footer={<GlobalFooter showLogo={true} showLocaleSwitcher={!hideLocaleSwitcher} />}

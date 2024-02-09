@@ -1,13 +1,13 @@
 import { useContext, useEffect, useState } from 'react'
 
-import { buildTransition, Divider, Flex, Link, Spacing, Text, useI18n } from '@edgeandnode/gds'
+import { buildTransition, Divider, Link, Spacing, Text, useI18n } from '@edgeandnode/gds'
 
 import { EditPageLink } from '@/components'
 import { DocumentContext } from '@/layout'
 
 export const MDXLayoutOutline = () => {
   const { headings, highlightedOutlineItemId } = useContext(DocumentContext)!
-  const [enableTransition, setEnableTransition] = useState(false)
+  const [_enableTransition, setEnableTransition] = useState(false)
   const { t } = useI18n<any>()
 
   // Fix issue where the `translateY` is animated on initial load
@@ -23,16 +23,14 @@ export const MDXLayoutOutline = () => {
         top: 'var(--gds-header-height-visible)',
         maxHeight: 'calc(100vh - var(--gds-header-height-visible))',
         px: Spacing['8px'],
-        py: Spacing['32px'],
+        py: Spacing['24px'],
         overflowY: 'auto',
       }}
     >
-      <Flex.Row>
-        <EditPageLink />
-      </Flex.Row>
+      <EditPageLink sx={{ mt: Spacing['4px'] }} />
       {headings.length > 0 ? (
         <>
-          <Divider sx={{ my: Spacing['32px'] }} />
+          <Divider sx={{ mt: '20px', mb: Spacing['24px'] }} />
           <nav sx={{ paddingInlineEnd: '16px' }}>
             <Text.C10 as="header" color="White64" sx={{ mb: Spacing['12px'] }}>
               {t('global.pageSections')}

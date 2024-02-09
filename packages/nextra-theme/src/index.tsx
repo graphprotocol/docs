@@ -3,7 +3,7 @@ import { NextSeo, NextSeoProps } from 'next-seo'
 import { NextraThemeLayoutProps } from 'nextra'
 import { useFSRoute } from 'nextra/hooks'
 import { MDXProvider } from 'nextra/mdx'
-import { Item, normalizePages } from 'nextra/normalize-pages'
+import { normalizePages } from 'nextra/normalize-pages'
 import { ReactElement, useCallback, useMemo } from 'react'
 import { useSet } from 'react-use'
 import { ThemeUICSSObject } from 'theme-ui'
@@ -16,6 +16,7 @@ import {
   CodeBlock,
   CodeInline,
   Difficulty,
+  DocSearch,
   EditPageLink,
   Heading,
   Image,
@@ -76,6 +77,7 @@ export {
   CodeBlock,
   CodeInline,
   Difficulty,
+  DocSearch,
   Heading,
   Image,
   LinkInline,
@@ -176,7 +178,7 @@ export default function NextraLayout({ children, pageOpts, pageProps }: NextraTh
             <MDXLayoutNav />
           </div>
 
-          <div sx={{ pt: [null, null, null, Spacing['32px']] }}>
+          <div sx={{ pt: [null, null, null, Spacing['24px']] }}>
             <div sx={{ display: [null, null, null, 'none'], mb: Spacing['32px'] }}>
               <MDXLayoutNav mobile />
             </div>
@@ -184,7 +186,6 @@ export default function NextraLayout({ children, pageOpts, pageProps }: NextraTh
             <article className="graph-docs-content" sx={mdxStyles}>
               {args.activePath.length > 1 ? (
                 <div className="graph-docs-current-group" sx={{ display: 'none' }}>
-                  {/* eslint-disable-next-line @typescript-eslint/no-unsafe-return -- i don't know why it's complain */}
                   {args.activePath.map((item) => item.title).join(' > ')}
                 </div>
               ) : null}
