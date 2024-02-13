@@ -105,7 +105,7 @@ export default function NextraLayout({ children, pageOpts, pageProps }: NextraTh
       // Execute this check for sidebar links only on server, will be stripped from client build
       for (const item of result.flatDocsDirectories) {
         if (!item.route) {
-          throw new Error(`Route "${item.name}" is not exist. Remove this field from _meta.js file`)
+          throw new Error(`Route "${item.name}" does not exist. Remove this field from _meta.js file`)
         }
       }
     }
