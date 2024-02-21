@@ -59,38 +59,36 @@ export function SupportedNetworksTable({ networks }: { networks: Awaited<ReturnT
   const { t } = useI18n()
 
   return (
-    <>
-      <Table>
-        <tbody>
-          <tr>
-            <th>{t('supportedNetworks.network')}</th>
-            <th>{t('supportedNetworks.cliName')}</th>
-            <th align="center">{t('supportedNetworks.chainId')}</th>
-            <th align="center">{t('supportedNetworks.hostedService')}</th>
-            <th align="center">{t('supportedNetworks.subgraphStudio')}</th>
-            <th align="center">{t('supportedNetworks.decentralizedNetwork')}</th>
+    <Table>
+      <tbody>
+        <tr>
+          <th>{t('supportedNetworks.network')}</th>
+          <th>{t('supportedNetworks.cliName')}</th>
+          <th align="center">{t('supportedNetworks.chainId')}</th>
+          <th align="center">{t('supportedNetworks.hostedService')}</th>
+          <th align="center">{t('supportedNetworks.subgraphStudio')}</th>
+          <th align="center">{t('supportedNetworks.decentralizedNetwork')}</th>
+        </tr>
+        {networks.map((network) => (
+          <tr key={network.cliName}>
+            <td>{network.name}</td>
+            <td>
+              <CodeInline>{network.cliName}</CodeInline>
+            </td>
+            <td align="center">{network.chainId}</td>
+            <td align="center">{network.supportedOnHostedService ? '✓' : null}</td>
+            <td align="center">
+              {network.supportedOnStudio ? '✓' : null}
+              {network.substreams.includes('studio') ? <sup>†</sup> : null}
+            </td>
+            <td align="center">
+              {network.fullySupportedOnNetwork ? '✓' : null}
+              {network.partiallySupportedOnNetwork ? '*' : null}
+              {network.substreams.includes('network') ? <sup>†</sup> : null}
+            </td>
           </tr>
-          {networks.map((network) => (
-            <tr key={network.cliName}>
-              <td>{network.name}</td>
-              <td>
-                <CodeInline>{network.cliName}</CodeInline>
-              </td>
-              <td align="center">{network.chainId}</td>
-              <td align="center">{network.supportedOnHostedService ? '✓' : null}</td>
-              <td align="center">
-                {network.supportedOnStudio ? '✓' : null}
-                {network.substreams.includes('studio') ? <sup>†</sup> : null}
-              </td>
-              <td align="center">
-                {network.fullySupportedOnNetwork ? '✓' : null}
-                {network.partiallySupportedOnNetwork ? '*' : null}
-                {network.substreams.includes('network') ? <sup>†</sup> : null}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </Table>
-    </>
+        ))}
+      </tbody>
+    </Table>
   )
 }
