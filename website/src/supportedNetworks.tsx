@@ -91,11 +91,6 @@ export function SupportedNetworksTable({ networks }: { networks: Awaited<ReturnT
           ))}
         </tbody>
       </Table>
-      <Paragraph>
-        *&nbsp;{t('supportedNetworks.supportedByUpgradeIndexer')}
-        <br />
-        <sup>†</sup>&nbsp;{t('supportedNetworks.supportsSubstreams')}
-      </Paragraph>
     </>
   )
 }
