@@ -527,13 +527,37 @@ The first handler takes a `NewGravatar` event and creates a new `Gravatar` entit
 
 The second handler tries to load the existing `Gravatar` from the Graph Node store. If it does not exist yet, it is created on-demand. The entity is then updated to match the new event parameters before it is saved back to the store using `gravatar.save()`.
 
-### Recommended IDs for Creating New Entities
+### Using Bytes as IDs
 
-Every entity has to have an `id` that is unique among all entities of the same type. An entity's `id` value is set when the entity is created. Below are some recommended `id` values to consider when creating new entities. NOTE: The value of `id` must be a `string`.
+You can use `Bytes` as the type for the `id` field of entities, and it is highly recommended to use `Bytes` wherever possible, and only use `String` for attributes that truly contain human-readable text, like the name of a token.
 
-- `event.params.id.toHex()`
-- `event.transaction.from.toHex()`
-- `event.transaction.hash.toHex() + "-" + event.logIndex.toString()`
+- Remove unnecessary toHexString() calls. Instead of `transfer.id = event.transaction.hash.toHexString()`,
+ use `transfer.id = event.transaction.hash`
+
+- For entities whose id consists of the concatenation of a byte array with some counter, concatenate byte arrays directly so here instead of
+```typrescript
+let id = event.transaction.hash
+  .toHexString()
+  .concat('-')
+  .concat(BigInt.fromI32(counter).toString())
+```
+
+use `let id = event.transaction.hash.concatI32(counter)`
+
+For entities that store aggregated data, for example, daily trade volumes and the like, the id usually contains the day number. Here, too, using a byte string as the id is beneficial. Determining the id would look like
+
+let dayID = event.block.timestamp.toI32() / 86400
+let id = Bytes.fromI32(dayID)
+
+- Use Bytes for day numbers in aggregated data IDs.
+e.g. 
+```typescript
+let dayID = event.block.timestamp.toI32() / 86400
+let id = Bytes.fromI32(dayID)
+```
+
+- Convert constant addresses to `Bytes`. Here, instead of `const BEEF_ADDRESS = '0xdead...beef'`
+use `const BEEF_ADDRESS = Bytes.fromHexString('0xdead...beef')`
 
 We provide the [Graph Typescript Library](https://github.com/graphprotocol/graph-ts) which contains utilities for interacting with the Graph Node store and conveniences for handling smart contract data and entities. You can use this library in your mappings by importing `@graphprotocol/graph-ts` in `mapping.ts`.
 
