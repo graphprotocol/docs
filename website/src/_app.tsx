@@ -19,7 +19,7 @@ import { CookieBanner, GlobalFooter, GlobalHeader } from '@edgeandnode/go'
 
 import { supportedLocales, translations, useI18n } from '@/i18n'
 
-import '@edgeandnode/gds/dist/style.css'
+import '@edgeandnode/gds/style.css'
 import '@docsearch/css'
 
 const internalAbsoluteHrefRegex = /^(((https?:)?\/\/((www|staging)\.)?thegraph\.com)?\/docs\/|\/(?!\/))/i
