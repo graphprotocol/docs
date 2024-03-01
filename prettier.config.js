@@ -4,6 +4,8 @@ module.exports = {
   semi: false,
   printWidth: 120,
   proseWrap: 'never',
+  plugins: ['prettier-plugin-tailwindcss'],
+  tailwindConfig: './website/tailwind.config.ts',
   overrides: [
     {
       files: ['**/tsconfig.json'],
