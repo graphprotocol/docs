@@ -62,7 +62,7 @@ export function DocSearch(props: DocSearchProps) {
       <Link.Area
         ref={searchButtonRef}
         onClick={onOpen}
-        innerFocus
+        innerFocusRing
         sx={{
           borderRadius: [BorderRadius.FULL, null, BorderRadius.S],
           '&:focus-visible': { outline: ['none', null, `${BorderWidth['4px']} solid ${theme.colors!.Purple16}`] },
