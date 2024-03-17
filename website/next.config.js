@@ -20,6 +20,7 @@ const withNextra = nextra({
   flexsearch: false,
   codeHighlight: false,
   defaultShowCopyCode: false,
+  readingTime: true,
   transform(result, { route }) {
     if (route && !result.includes('getStaticProps')) {
       const banner = `
