@@ -1,4 +1,4 @@
-FROM node:18-alpine as builder
+FROM node:20-alpine as builder
 
 ARG ENVIRONMENT
 ENV ENVIRONMENT=$ENVIRONMENT
@@ -6,7 +6,7 @@ ENV ENVIRONMENT=$ENVIRONMENT
 ENV PNPM_HOME="/usr/bin"
 
 RUN apk add --no-cache git
-RUN npm install -g pnpm@8.10.0
+RUN npm install -g pnpm@8.15.5
 
 WORKDIR /app
 
