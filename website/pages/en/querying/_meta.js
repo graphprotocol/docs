@@ -8,5 +8,5 @@ export default {
   'querying-by-subgraph-id-vs-deployment-id': '',
   'graph-client': 'Graph Client',
   'querying-with-no-code': '',
-  'querying-with-python': '',
+  'querying-with-python': 'Python (Subgrounds)',
 }
