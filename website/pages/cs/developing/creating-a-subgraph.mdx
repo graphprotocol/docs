@@ -1,46 +1,46 @@
 ---
-title: Creating a Subgraph
+title: Vytvoření podgraf
 ---
 
-A subgraph extracts data from a blockchain, processing it and storing it so that it can be easily queried via GraphQL.
+Podgraf získává data z blockchain, zpracovává je a ukládá tak, aby se na ně dalo snadno dotazovat prostřednictvím jazyka GraphQL.
 
-![Defining a Subgraph](/img/defining-a-subgraph.png)
+![Definování podgrafu](/img/defining-a-subgraph.png)
 
-The subgraph definition consists of a few files:
+Definice podgraf se skládá z několika souborů:
 
-- `subgraph.yaml`: a YAML file containing the subgraph manifest
+- `subgraph.yaml`: soubor YAML obsahující manifest podgraf
 
-- `schema.graphql`: a GraphQL schema that defines what data is stored for your subgraph, and how to query it via GraphQL
+- `schema.graphql`: schéma GraphQL, které definuje, jaká data jsou uložena pro váš podgraf a jak se na ně dotazovat prostřednictvím jazyka GraphQL
 
-- `AssemblyScript Mappings`: [AssemblyScript](https://github.com/AssemblyScript/assemblyscript) code that translates from the event data to the entities defined in your schema (e.g. `mapping.ts` in this tutorial)
+- `Mapování skriptů sestavy`: [AssemblyScript](https://github.com/AssemblyScript/assemblyscript) kód, který převádí data událostí na entity definované ve vašem schématu (např. `mapping.ts` v tomto tutoriálu)
 
-> In order to use your subgraph on The Graph's decentralized network, you will need to [create an API key](/deploying/subgraph-studio-faqs/#2-how-do-i-create-an-api-key). It is recommended that you [add signal](/network/curating/#how-to-signal) to your subgraph with at least [10,000 GRT](/network-transition-faq/#how-can-i-ensure-that-my-subgraph-will-be-picked-up-by-indexer-on-the-graph-network).
+> Abyste mohli svůj podgraf používat v decentralizované síti The Graph, musíte si [vytvořit klíč API](/deploying/subgraph-studio-faqs/#2-how-do-i-create-an-api-key). Doporučujeme, abyste [přidali signál](/network/curating/#how-to-signal) do svého podgraf s minimálně [10,000 GRT](/network-transition-faq/#how-can-i-ensure-that-my-subgraph-will-be-picked-up-by-indexer-on-the-graph-network).
 
-Before you go into detail about the contents of the manifest file, you need to install the [Graph CLI](https://github.com/graphprotocol/graph-cli) which you will need to build and deploy a subgraph.
+Než se podrobněji seznámíte s obsahem souboru manifest, je třeba nainstalovat [Graph CLI](https://github.com/graphprotocol/graph-cli), které budete potřebovat k sestavení a nasazení podgraf.
 
-## Install the Graph CLI
+## Instalace Graf CLI
 
-The Graph CLI is written in JavaScript, and you will need to install either `yarn` or `npm` to use it; it is assumed that you have yarn in what follows.
+Graf CLI je napsáno v jazyce JavaScript a k jeho použití je třeba nainstalovat buď `yarn`, nebo `npm`; v následujícím se předpokládá, že máte yarn.
 
 Once you have `yarn`, install the Graph CLI by running
 
-**Install with yarn:**
+**Instalace pomocí yarn:**
 
 ```bash
 yarn global add @graphprotocol/graph-cli
 ```
 
-**Install with npm:**
+**Instalace pomocí npm:**
 
 ```bash
 npm install -g @graphprotocol/graph-cli
 ```
 
-Once installed, the `graph init` command can be used to set up a new subgraph project, either from an existing contract or from an example subgraph. This command can be used to create a subgraph on the Subgraph Studio by passing in `graph init --product subgraph-studio`. If you already have a smart contract deployed to your preferred network, bootstrapping a new subgraph from that contract can be a good way to get started.
+Po instalaci lze příkazem `graph init` nastavit nový projekt podgraf, a to buď z existující smlouvy, nebo z příkladu podgraf. Tento příkaz lze použít k vytvoření subgrafu v podgraf Studio předáním příkazu `graph init --product subgraph-studio`. Pokud již máte inteligentní kontrakt nasazený v preferované síti, může být zavedení nového podgraf z tohoto kontraktu dobrým způsobem, jak začít.
 
-## From An Existing Contract
+## Ze stávající smlouvy
 
-The following command creates a subgraph that indexes all events of an existing contract. It attempts to fetch the contract ABI from Etherscan and falls back to requesting a local file path. If any of the optional arguments are missing, it takes you through an interactive form.
+Následující příkaz vytvoří podgraf, který indexuje všechny události existující smlouvy. Pokusí se načíst ABI smlouvy z Etherscan a vrátí se k požadavku na cestu k místnímu souboru. Pokud některý z nepovinných argumentů chybí, projde příkaz interaktivním formulářem.
 
 ```sh
 graph init \
@@ -51,49 +51,49 @@ graph init \
   <SUBGRAPH_SLUG> [<DIRECTORY>]
 ```
 
-The `<SUBGRAPH_SLUG>` is the ID of your subgraph in Subgraph Studio, it can be found on your subgraph details page.
+`<SUBGRAPH_SLUG>` je ID vašeho podgraf ve Studio podgraph, najdete ho na stránce s podrobnostmi o podgrafu.
 
-## From An Example Subgraph
+## Z příkladu podgraf
 
-The second mode `graph init` supports is creating a new project from an example subgraph. The following command does this:
+Druhý režim `graf init` podporuje vytvoření nového projektu z příkladového podgraf. To provede následující příkaz:
 
 ```sh
 graph init --studio <SUBGRAPH_SLUG>
 ```
 
-The example subgraph is based on the Gravity contract by Dani Grant that manages user avatars and emits `NewGravatar` or `UpdateGravatar` events whenever avatars are created or updated. The subgraph handles these events by writing `Gravatar` entities to the Graph Node store and ensuring these are updated according to the events. The following sections will go over the files that make up the subgraph manifest for this example.
+Ukázkový podgraf je založen na smlouvě Gravity od Daniho Granta, která spravuje uživatelské avatary a vysílá události `NewGravatar` nebo `UpdateGravatar`, kdykoli jsou avatary vytvořeny nebo aktualizovány. Podgraf tyto události zpracovává tak, že zapisuje entity `Gravatar` do úložiště Graf Uzel a zajišťuje jejich aktualizaci podle událostí. V následujících částech budou rozebrány soubory, které tvoří manifest podgrafu pro tento příklad.
 
-## Add New dataSources To An Existing Subgraph
+## Přidání nových zdrojů dat do existujícího podgraf
 
-Since `v0.31.0` the `graph-cli` supports adding new dataSources to an existing subgraph through the `graph add` command.
+Od verze `v0.31.0` podporuje `graf-cli` přidávání nových zdrojů dat do existujícího podgrafu pomocí příkazu `graf add`.
 
 ```sh
 graph add <address> [<subgraph-manifest default: "./subgraph.yaml">]
 
-Options:
+Možnosti:
 
-      --abi <path>              Path to the contract ABI (default: download from Etherscan)
-      --contract-name           Name of the contract (default: Contract)
-      --merge-entities          Whether to merge entities with the same name (default: false)
-      --network-file <path>     Networks config file path (default: "./networks.json")
+      --abi <path> Cesta k ABI smlouvy (výchozí: stažení z Etherscan)
+      --contract-name Název kontraktu (výchozí: Contract)
+      --merge-entities Zda sloučit entity se stejným názvem (výchozí: false)
+      --network-file <path> Cesta ke konfiguračnímu souboru sítě (výchozí: "./networks.json")
 ```
 
-The `add` command will fetch the ABI from Etherscan (unless an ABI path is specified with the `--abi` option), and will create a new `dataSource` in the same way that `graph init` command creates a `dataSource` `--from-contract`, updating the schema and mappings accordingly.
+Příkaz `add` načte ABI z Etherscan (pokud není zadána cesta k ABI pomocí volby `--abi`) a vytvoří nový `dataSource` stejným způsobem jako příkaz `graph init` vytvoří `dataSource` `--from-contract`, přičemž odpovídajícím způsobem aktualizuje schéma a mapování.
 
-The `--merge-entities` option identifies how the developer would like to handle `entity` and `event` name conflicts:
+Volba `--merge-entities` určuje, jak chce vývojář řešit konflikty názvů `entity` a `event`:
 
-- If `true`: the new `dataSource` should use existing `eventHandlers` & `entities`.
-- If `false`: a new entity & event handler should be created with `${dataSourceName}{EventName}`.
+- Pokud `true`: nový `dataSource` by měl používat stávající `eventHandlers` & `entity`.
+- Pokud `false`: měla by být vytvořena nová entita & obsluha události s `${dataSourceName}{EventName}`.
 
-The contract `address` will be written to the `networks.json` for the relevant network.
+Smlouva `adresa` bude zapsána do souboru `networks.json` pro příslušnou síť.
 
-> **Note:** When using the interactive cli, after successfully running `graph init`, you'll be prompted to add a new `dataSource`.
+> **Poznámka:** Při použití interaktivního klienta budete po úspěšném spuštění `graf init` vyzváni k přidání nového `dataSource`.
 
-## The Subgraph Manifest
+## Manifest podgrafu
 
-The subgraph manifest `subgraph.yaml` defines the smart contracts your subgraph indexes, which events from these contracts to pay attention to, and how to map event data to entities that Graph Node stores and allows to query. The full specification for subgraph manifests can be found [here](https://github.com/graphprotocol/graph-node/blob/master/docs/subgraph-manifest.md).
+Manifest podgrafu `subgraph.yaml` definuje inteligentní smlouvy, které váš podgraf indexuje, kterým událostem z těchto smluv má věnovat pozornost a jak mapovat data událostí na entity, které Graf uzel ukládá a umožňuje dotazovat. Úplnou specifikaci manifestů podgrafu naleznete [zde](https://github.com/graphprotocol/graph-node/blob/master/docs/subgraph-manifest.md).
 
-For the example subgraph, `subgraph.yaml` is:
+Pro příklad podgraf `subgraph.yaml` je:
 
 ```yaml
 specVersion: 0.0.4
@@ -142,63 +142,63 @@ dataSources:
       file: ./src/mapping.ts
 ```
 
-The important entries to update for the manifest are:
+Důležité položky, které je třeba v manifestu aktualizovat, jsou:
 
-- `description`: a human-readable description of what the subgraph is. This description is displayed by the Graph Explorer when the subgraph is deployed to the hosted service.
+- `popis`: lidsky čitelný popis toho, co je podgraf. Tento popis zobrazí Průzkumník grafů při nasazení podgrafu do hostované služby.
 
-- `repository`: the URL of the repository where the subgraph manifest can be found. This is also displayed by The Graph Explorer.
+- `úložiště`: adresa URL úložiště, kde lze manifest podgrafů nalézt. Tento údaj zobrazuje také Průzkumník graf.
 
-- `features`: a list of all used [feature](#experimental-features) names.
+- `features`: seznam všech použitých názvů [feature](#experimental-features).
 
-- `dataSources.source`: the address of the smart contract the subgraph sources, and the ABI of the smart contract to use. The address is optional; omitting it allows to index matching events from all contracts.
+- `dataSources.source`: adresa inteligentní smlouvy, ze které podgraf pochází, a ABI inteligentní smlouvy, která se má použít. Adresa je nepovinná; její vynechání umožňuje indexovat odpovídající události ze všech smluv.
 
-- `dataSources.source.startBlock`: the optional number of the block that the data source starts indexing from. In most cases, we suggest using the block in which the contract was created.
+- `dataSources.source.startBlock`: nepovinné číslo bloku, od kterého zdroj dat začíná indexovat. Ve většině případů doporučujeme použít blok, ve kterém byl kontrakt vytvořen.
 
-- `dataSources.source.endBlock`: The optional number of the block that the data source stops indexing at, including that block. Minimum spec version required: `0.0.9`.
+- `dataSources.source.endBlock`: Nepovinné číslo bloku, ve kterém zdroj dat přestane indexovat, včetně tohoto bloku. Minimální požadovaná verze specifikace: `0.0.9`.
 
-- `dataSources.context`: key-value pairs that can be used within subgraph mappings. Supports various data types like `Bool`, `String`, `Int`, `Int8`, `BigDecimal`, `Bytes`, `List`, and `BigInt`. Each variable needs to specify its `type` and `data`. These context variables are then accessible in the mapping files, offering more configurable options for subgraph development.
+- `dataSources.context`: páry klíč-hodnota, které lze použít v rámci mapování podgrafů. Podporuje různé datové typy, například `Bool`, `String`, `Int`, `Int8`, `BigDecimal`, `Bytes`, `List` a `BigInt`. U každé proměnné je třeba uvést její `typ` a `údaj`. Tyto kontextové proměnné jsou pak přístupné v mapovacích souborech a nabízejí více konfigurovatelných možností pro vývoj podgrafů.
 
-- `dataSources.mapping.entities`: the entities that the data source writes to the store. The schema for each entity is defined in the schema.graphql file.
+- `dataSources.mapping.entities`: entity, které zdroj dat zapisuje do úložiště. Schéma pro každou entita je definováno v souboru schema.graphql.
 
-- `dataSources.mapping.abis`: one or more named ABI files for the source contract as well as any other smart contracts that you interact with from within the mappings.
+- `dataSources.mapping.abis`: jeden nebo více pojmenovaných souborů ABI pro zdrojový kontrakt a všechny ostatní chytré kontrakty, se kterými se pracuje v rámci mapování.
 
-- `dataSources.mapping.eventHandlers`: lists the smart contract events this subgraph reacts to and the handlers in the mapping—./src/mapping.ts in the example—that transform these events into entities in the store.
+- `dataSources.mapping.eventHandlers`: uvádí seznam událostí inteligentních smluv, na které tento podgraf reaguje, a obslužných programů v mapování - v příkladu./src/mapping.ts - které tyto události transformují na entity v úložišti.
 
-- `dataSources.mapping.callHandlers`: lists the smart contract functions this subgraph reacts to and handlers in the mapping that transform the inputs and outputs to function calls into entities in the store.
+- `dataSources.mapping.callHandlers`: obsahuje seznam funkcí inteligentních smluv, na které tento podgraf reaguje, a obsluhovače v mapování, které transformují vstupy a výstupy volání funkcí na entity v úložišti.
 
 - `dataSources.mapping.blockHandlers`: lists the blocks this subgraph reacts to and handlers in the mapping to run when a block is appended to the chain. Without a filter, the block handler will be run every block. An optional call-filter can be provided by adding a `filter` field with `kind: call` to the handler. This will only run the handler if the block contains at least one call to the data source contract.
 
-A single subgraph can index data from multiple smart contracts. Add an entry for each contract from which data needs to be indexed to the `dataSources` array.
+Jeden subgraf může indexovat data z více inteligentní smluv. Do pole `dataSources` přidejte položku pro každou smlouvu, ze které je třeba indexovat data.
 
-The triggers for a data source within a block are ordered using the following process:
+Spouštěče pro zdroj dat v rámci bloku jsou seřazeny podle následujícího postupu:
 
-1. Event and call triggers are first ordered by transaction index within the block.
-2. Event and call triggers within the same transaction are ordered using a convention: event triggers first then call triggers, each type respecting the order they are defined in the manifest.
-3. Block triggers are run after event and call triggers, in the order they are defined in the manifest.
+1. Spouštěče událostí a volání jsou nejprve seřazeny podle indexu transakce v rámci bloku.
+2. Spouštěče událostí a volání v rámci jedné transakce jsou seřazeny podle konvence: nejprve spouštěče událostí a poté spouštěče volání, přičemž každý typ dodržuje pořadí, v jakém jsou definovány v manifestu.
+3. Spouštěče bloků jsou spuštěny po spouštěčích událostí a volání, v pořadí, v jakém jsou definovány v manifestu.
 
-These ordering rules are subject to change.
+Tato pravidla objednávání se mohou změnit.
 
-### Getting The ABIs
+### Získání ABI
 
-The ABI file(s) must match your contract(s). There are a few ways to obtain ABI files:
+Soubor(y) ABI se musí shodovat s vaší smlouvou. Soubory ABI lze získat několika způsoby:
 
-- If you are building your own project, you will likely have access to your most current ABIs.
-- If you are building a subgraph for a public project, you can download that project to your computer and get the ABI by using [`truffle compile`](https://truffleframework.com/docs/truffle/overview) or using solc to compile.
-- You can also find the ABI on [Etherscan](https://etherscan.io/), but this isn't always reliable, as the ABI that is uploaded there may be out of date. Make sure you have the right ABI, otherwise running your subgraph will fail.
+- Pokud vytváříte vlastní projekt, budete mít pravděpodobně přístup k nejaktuálnějším ABI.
+- Pokud vytváříte podgraf pro veřejný projekt, můžete si tento projekt stáhnout do počítače a získat ABI pomocí [`truffle compile`](https://truffleframework.com/docs/truffle/overview) nebo pomocí solc pro kompilaci.
+- ABI můžete také najít na stránce [Etherscan](https://etherscan.io/), ale ta není vždy spolehlivá, protože ABI, které je tam nahráno, může být zastaralé. Ujistěte se, že máte správné ABI, jinak spuštění podgrafu selže.
 
-## The GraphQL Schema
+## Schéma GraphQL
 
-The schema for your subgraph is in the file `schema.graphql`. GraphQL schemas are defined using the GraphQL interface definition language. If you've never written a GraphQL schema, it is recommended that you check out this primer on the GraphQL type system. Reference documentation for GraphQL schemas can be found in the [GraphQL API](/querying/graphql-api) section.
+Schéma vašeho podgrafu je v souboru `schema.graphql`. Schémata GraphQL se definují pomocí jazyka pro definici rozhraní GraphQL. Pokud jste ještě nikdy schéma GraphQL nepsali, doporučujeme vám přečíst si tento úvodní článek o systému typů GraphQL. Referenční dokumentaci ke schématům GraphQL naleznete v části [GraphQL API](/querying/graphql-api).
 
-## Defining Entities
+## Definice entit
 
-Before defining entities, it is important to take a step back and think about how your data is structured and linked. All queries will be made against the data model defined in the subgraph schema and the entities indexed by the subgraph. Because of this, it is good to define the subgraph schema in a way that matches the needs of your dapp. It may be useful to imagine entities as "objects containing data", rather than as events or functions.
+Před definováním entit je důležité udělat krok zpět a zamyslet se nad tím, jak jsou vaše data strukturována a propojena. Všechny dotazy budou prováděny proti datovému modelu definovanému ve schématu podgrafu a entitám indexovaným podgrafem. Z tohoto důvodu je dobré definovat schéma podgrafu způsobem, který odpovídá potřebám vaší dapp. Může být užitečné představit si entity spíše jako "objekty obsahující data" než jako události nebo funkce.
 
-With The Graph, you simply define entity types in `schema.graphql`, and Graph Node will generate top level fields for querying single instances and collections of that entity type. Each type that should be an entity is required to be annotated with an `@entity` directive. By default, entities are mutable, meaning that mappings can load existing entities, modify them and store a new version of that entity. Mutability comes at a price, and for entity types for which it is known that they will never be modified, for example, because they simply contain data extracted verbatim from the chain, it is recommended to mark them as immutable with `@entity(immutable: true)`. Mappings can make changes to immutable entities as long as those changes happen in the same block in which the entity was created. Immutable entities are much faster to write and to query, and should therefore be used whenever possible.
+V nástroji The Graf stačí definovat typy entit v `schema.graphql` a Graf Uzel vygeneruje pole nejvyšší úrovně pro dotazování jednotlivých instancí a kolekcí daného typu entit. Každý typ, který má být entitou, je nutné anotovat direktivou `@entity`. Ve výchozím nastavení jsou entity mutovatelné, což znamená, že mapování může načíst existující entity, upravit je a uložit novou verzi dané entity. Mutabilita má svou cenu a u typů entit, u nichž je známo, že nebudou nikdy modifikovány, například proto, že jednoduše obsahují data doslovně extrahovaná z řetězce, se doporučuje označit je jako neměnné pomocí `@entity(immutable: true)`. Mapování může provádět změny v neměnných entitách, pokud k nim dojde ve stejném bloku, ve kterém byla entita vytvořena. Neměnné entity se mnohem rychleji zapisují a dotazují, a proto by se měly používat, kdykoli je to možné.
 
-### Good Example
+### Dobrý příklad
 
-The `Gravatar` entity below is structured around a Gravatar object and is a good example of how an entity could be defined.
+Níže uvedená entita `Gravatar` je strukturována kolem objektu Gravatar a je dobrým příkladem toho, jak lze entitu definovat.
 
 ```graphql
 type Gravatar @entity(immutable: true) {
@@ -210,9 +210,9 @@ type Gravatar @entity(immutable: true) {
 }
 ```
 
-### Bad Example
+### Špatný příklad
 
-The example `GravatarAccepted` and `GravatarDeclined` entities below are based around events. It is not recommended to map events or function calls to entities 1:1.
+Níže uvedené příklady entit `GravatarAccepted` a `GravatarDeclined` jsou založeny na událostech. Nedoporučuje se mapovat události nebo volání funkcí na entity 1:1.
 
 ```graphql
 type GravatarAccepted @entity {
@@ -230,37 +230,37 @@ type GravatarDeclined @entity {
 }
 ```
 
-### Optional and Required Fields
+### Nepovinná a povinná pole
 
-Entity fields can be defined as required or optional. Required fields are indicated by the `!` in the schema. If a required field is not set in the mapping, you will receive this error when querying the field:
+Pole entit lze definovat jako povinná nebo nepovinná. Povinná pole jsou ve schématu označena `!`. Pokud není povinné pole v mapování nastaveno, zobrazí se při dotazu na toto pole tato chyba:
 
 ```
-Null value resolved for non-null field 'name'
+Vyřešení nulové hodnoty pro pole 'name', které není nulové
 ```
 
-Each entity must have an `id` field, which must be of type `Bytes!` or `String!`. It is generally recommended to use `Bytes!`, unless the `id` contains human-readable text, since entities with `Bytes!` id's will be faster to write and query as those with a `String!` `id`. The `id` field serves as the primary key, and needs to be unique among all entities of the same type. For historical reasons, the type `ID!` is also accepted and is a synonym for `String!`.
+Každá entita musí mít pole `id`, které musí být typu `Bajty!` nebo `Řetězec!`. Obecně se doporučuje používat `Bytes!`, pokud `id` neobsahuje lidsky čitelný text, protože entity s `Bytes!` id se zapisují a dotazují rychleji než entity s `String!` `id`. Pole `id` slouží jako primární klíč a musí být jedinečné mezi všemi entitami stejného typu. Z historických důvodů je akceptován také typ `ID!`, který je synonymem pro `String!`.
 
-For some entity types the `id` is constructed from the id's of two other entities; that is possible using `concat`, e.g., `let id = left.id.concat(right.id)` to form the id from the id's of `left` and `right`. Similarly, to construct an id from the id of an existing entity and a counter `count`, `let id = left.id.concatI32(count)` can be used. The concatenation is guaranteed to produce unique id's as long as the length of `left` is the same for all such entities, for example, because `left.id` is an `Address`.
+U některých typů entit je `id` vytvořeno z id dvou jiných entit; to je možné pomocí `concat`, např. `let id = left.id.concat(right.id)` pro vytvoření id z id `left` a `right`. Podobně lze použít `let id = left.id.concatI32(count)` pro vytvoření id z id existující entity a čítače `count`. Konkatenace zaručeně vytvoří jedinečné id, pokud je délka `left` pro všechny takové entity stejná, například proto, že `left.id` je `Adresa`.
 
-### Built-In Scalar Types
+### Vestavěné typy skalárů
 
-#### GraphQL Supported Scalars
+#### Podporované skaláry GraphQL
 
-We support the following scalars in our GraphQL API:
+V našem GraphQL API podporujeme následující skaláry:
 
-| Type | Description |
-| --- | --- |
-| `Bytes` | Byte array, represented as a hexadecimal string. Commonly used for Ethereum hashes and addresses. |
-| `String` | Scalar for `string` values. Null characters are not supported and are automatically removed. |
-| `Boolean` | Scalar for `boolean` values. |
-| `Int` | The GraphQL spec defines `Int` to have a size of 32 bytes. |
-| `Int8` | An 8-byte signed integer, also known as a 64-bit signed integer, can store values in the range from -9,223,372,036,854,775,808 to 9,223,372,036,854,775,807. Prefer using this to represent `i64` from ethereum. |
-| `BigInt` | Large integers. Used for Ethereum's `uint32`, `int64`, `uint64`, ..., `uint256` types. Note: Everything below `uint32`, such as `int32`, `uint24` or `int8` is represented as `i32`. |
-| `BigDecimal` | `BigDecimal` High precision decimals represented as a significand and an exponent. The exponent range is from −6143 to +6144. Rounded to 34 significant digits. |
+| Typ          | Popis                                                                                                                                                                                                                                              |
+| ------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Bajtů`      | Pole bajtů reprezentované jako hexadecimální řetězec. Běžně se používá pro hashe a adresy Ethereum.                                                                                                                                                |
+| `Řetězec`    | Skalár pro hodnoty `řetězce`. Nulové znaky nejsou podporovány a jsou automaticky odstraněny.                                                                                                                                                       |
+| `Boolean`    | Skalár pro hodnoty `boolean`.                                                                                                                                                                                                                      |
+| `Int`        | Specifikace GraphQL definuje `Int` na velikost 32 bajtů.                                                                                                                                                                                           |
+| `Int8`       | Celé číslo se znaménkem o velikosti 8 bajtů, známé také jako 64bitové celé číslo se znaménkem, může uchovávat hodnoty v rozsahu od -9 223 372 036 854 775 808 do 9 223 372 036 854 775 807. Přednostně se používá k reprezentaci `i64` z ethereum. |
+| `BigInt`     | Velká celá čísla. Používá se pro typy `uint32`, `int64`, `uint64`, ..., `uint256` společnosti Ethereum. Poznámka: Vše pod `uint32`, jako například `int32`, `uint24` nebo `int8`, je reprezentováno jako `i32`.                                    |
+| `BigDecimal` | `BigDecimal` Desetinná čísla s vysokou přesností reprezentovaná jako signifikand a exponent. Rozsah exponentu je od -6143 do +6144. Zaokrouhleno na 34 významných číslic.                                                                          |
 
 #### Enums
 
-You can also create enums within a schema. Enums have the following syntax:
+Výčty můžete vytvářet také v rámci schématu. Syntaxe enumů je následující:
 
 ```graphql
 enum TokenStatus {
@@ -270,19 +270,19 @@ enum TokenStatus {
 }
 ```
 
-Once the enum is defined in the schema, you can use the string representation of the enum value to set an enum field on an entity. For example, you can set the `tokenStatus` to `SecondOwner` by first defining your entity and subsequently setting the field with `entity.tokenStatus = "SecondOwner"`. The example below demonstrates what the Token entity would look like with an enum field:
+Jakmile je enum definován ve schématu, můžete použít řetězcovou reprezentaci hodnoty výčtu k nastavení pole výčtu u entity. Například můžete nastavit `tokenStatus` na `SecondOwner` tak, že nejprve definujete svou entitu a následně nastavíte pole pomocí `entity.tokenStatus = "SecondOwner"`. Níže uvedený příklad ukazuje, jak by vypadala entita Token s výčtovým polem:
 
-More detail on writing enums can be found in the [GraphQL documentation](https://graphql.org/learn/schema/).
+Podrobnější informace o zápisu enum najdete v dokumentaci [GraphQL](https://graphql.org/learn/schema/).
 
-#### Entity Relationships
+#### Vztahy entit
 
-An entity may have a relationship to one or more other entities in your schema. These relationships may be traversed in your queries. Relationships in The Graph are unidirectional. It is possible to simulate bidirectional relationships by defining a unidirectional relationship on either "end" of the relationship.
+Entita může mít vztah k jedné nebo více jiným entitám ve vašem schématu. Tyto vztahy lze procházet v dotazech. Vztahy v Graf jsou jednosměrné. Obousměrné vztahy je možné simulovat definováním jednosměrného vztahu na obou "koncích" vztahu.
 
-Relationships are defined on entities just like any other field except that the type specified is that of another entity.
+Vztahy se definují u entit stejně jako u jiných polí s tím rozdílem, že zadaný typ je typ jiné entity.
 
-#### One-To-One Relationships
+#### Vztahy jeden na jednoho
 
-Define a `Transaction` entity type with an optional one-to-one relationship with a `TransactionReceipt` entity type:
+Definujte typ entity `Transaction` s volitelným vztahem jedna ku jedné s typemem entity `TransactionReceipt`:
 
 ```graphql
 type Transaction @entity(immutable: true) {
@@ -296,9 +296,9 @@ type TransactionReceipt @entity(immutable: true) {
 }
 ```
 
-#### One-To-Many Relationships
+#### Vztahy jeden k mnoha
 
-Define a `TokenBalance` entity type with a required one-to-many relationship with a Token entity type:
+Definujte typ entity `TokenBalance` s požadovaným vztahem one-to-many s typem entity Token:
 
 ```graphql
 type Token @entity(immutable: true) {
@@ -312,15 +312,15 @@ type TokenBalance @entity {
 }
 ```
 
-#### Reverse Lookups
+#### Zpětné vyhledávání
 
-Reverse lookups can be defined on an entity through the `@derivedFrom` field. This creates a virtual field on the entity that may be queried but cannot be set manually through the mappings API. Rather, it is derived from the relationship defined on the other entity. For such relationships, it rarely makes sense to store both sides of the relationship, and both indexing and query performance will be better when only one side is stored and the other is derived.
+Reverzní vyhledávání lze u entity definovat prostřednictvím pole `@derivedFrom`. Tím se na entitě vytvoří virtuální pole, na které se lze dotazovat, ale které nelze nastavit ručně prostřednictvím API mapování. Spíše je odvozeno ze vztahu definovaného na jiné entitě. U takových vztahů má zřídkakdy smysl ukládat obě strany vztahu a indexace i výkonnost dotazů budou lepší, když bude uložena pouze jedna strana a druhá bude odvozená.
 
-For one-to-many relationships, the relationship should always be stored on the 'one' side, and the 'many' side should always be derived. Storing the relationship this way, rather than storing an array of entities on the 'many' side, will result in dramatically better performance for both indexing and querying the subgraph. In general, storing arrays of entities should be avoided as much as is practical.
+U vztahů typu "jeden k mnoha" by měl být vztah vždy uložen na straně "jeden" a strana "mnoho" by měla být vždy odvozena. Uložení vztahu tímto způsobem namísto uložení pole entit na straně "mnoho" povede k výrazně lepšímu výkonu jak při indexování, tak při dotazování na podgraf. Obecně platí, že ukládání polí entit je třeba se vyhnout, pokud je to praktické.
 
-#### Example
+#### Příklad
 
-We can make the balances for a token accessible from the token by deriving a `tokenBalances` field:
+Zůstatky token můžeme zpřístupnit z token odvozením pole `tokenBalances`:
 
 ```graphql
 type Token @entity(immutable: true) {
@@ -335,13 +335,13 @@ type TokenBalance @entity {
 }
 ```
 
-#### Many-To-Many Relationships
+#### Vztahy mnoho k mnoha
 
-For many-to-many relationships, such as users that each may belong to any number of organizations, the most straightforward, but generally not the most performant, way to model the relationship is as an array in each of the two entities involved. If the relationship is symmetric, only one side of the relationship needs to be stored and the other side can be derived.
+Pro vztahy mnoho-více, jako jsou uživatelé, z nichž každý může patřit do libovolného počtu organizací, je nejjednodušší, ale obecně ne nejvýkonnější, modelovat vztah jako pole v každé z obou zúčastněných entit. Pokud je vztah symetrický, je třeba uložit pouze jednu stranu vztahu a druhou stranu lze odvodit.
 
-#### Example
+#### Příklad
 
-Define a reverse lookup from a `User` entity type to an `Organization` entity type. In the example below, this is achieved by looking up the `members` attribute from within the `Organization` entity. In queries, the `organizations` field on `User` will be resolved by finding all `Organization` entities that include the user's ID.
+Definujte zpětné vyhledávání z typu entity `User` na typ entity `Organization`. V příkladu níže je toho dosaženo vyhledáním atributu `members` z entity `Organization`. V dotazech bude pole `organizations` na `User` vyřešeno vyhledáním všech entit `Organization`, které obsahují ID uživatele.
 
 ```graphql
 type Organization @entity {
@@ -357,7 +357,7 @@ type User @entity {
 }
 ```
 
-A more performant way to store this relationship is through a mapping table that has one entry for each `User` / `Organization` pair with a schema like
+Výkonnějším způsobem uložení tohoto vztahu je mapovací tabulka, která má pro každou dvojici `Uživatel` / `Organizace` jeden záznam se schématem, jako je např
 
 ```graphql
 type Organization @entity {
@@ -379,7 +379,7 @@ type UserOrganization @entity {
 }
 ```
 
-This approach requires that queries descend into one additional level to retrieve, for example, the organizations for users:
+Tento přístup vyžaduje, aby dotazy sestupovaly do další úrovně, aby bylo možné získat například organizace pro uživatele:
 
 ```graphql
 query usersWithOrganizations {
@@ -394,11 +394,11 @@ query usersWithOrganizations {
 }
 ```
 
-This more elaborate way of storing many-to-many relationships will result in less data stored for the subgraph, and therefore to a subgraph that is often dramatically faster to index and to query.
+Tento propracovanější způsob ukládání vztahů mnoho-více vede k menšímu množství dat uložených pro podgraf, a tedy k podgrafu, který je často výrazně rychlejší při indexování a dotazování.
 
-#### Adding comments to the schema
+#### Přidání komentářů do schématu
 
-As per GraphQL spec, comments can be added above schema entity attributes using double quotations `""`. This is illustrated in the example below:
+Podle specifikace GraphQL lze komentáře přidávat nad atributy entit schématu pomocí dvojitých uvozovek `""`. To je znázorněno v příkladu níže:
 
 ```graphql
 type MyFirstEntity @entity {
@@ -408,13 +408,13 @@ type MyFirstEntity @entity {
 }
 ```
 
-## Defining Fulltext Search Fields
+## Definování polí fulltextového vyhledávání
 
-Fulltext search queries filter and rank entities based on a text search input. Fulltext queries are able to return matches for similar words by processing the query text input into stems before comparing them to the indexed text data.
+Fulltextové vyhledávací dotazy filtrují a řadí entity na základě textového vyhledávacího vstupu. Fulltextové dotazy jsou schopny vracet shody podobných slov tím, že zpracovávají vstupní text dotazu do kmenů před jejich porovnáním s indexovanými textovými daty.
 
-A fulltext query definition includes the query name, the language dictionary used to process the text fields, the ranking algorithm used to order the results, and the fields included in the search. Each fulltext query may span multiple fields, but all included fields must be from a single entity type.
+Definice fulltextového dotazu obsahuje název dotazu, jazykový slovník použitý ke zpracování textových polí, algoritmus řazení použitý k seřazení výsledků a pole zahrnutá do vyhledávání. Každý fulltextový dotaz může zahrnovat více polí, ale všechna zahrnutá pole musí být z jednoho typu entity.
 
-To add a fulltext query, include a `_Schema_` type with a fulltext directive in the GraphQL schema.
+Chcete-li přidat fulltextový dotaz, zahrňte do schématu GraphQL typ `_Schema_` s direktivou fulltext.
 
 ```graphql
 type _Schema_
@@ -437,7 +437,7 @@ type Band @entity {
 }
 ```
 
-The example `bandSearch` field can be used in queries to filter `Band` entities based on the text documents in the `name`, `description`, and `bio` fields. Jump to [GraphQL API - Queries](/querying/graphql-api#queries) for a description of the fulltext search API and more example usage.
+Příklad pole `bandSearch` lze použít v dotazech k filtrování entit `Band` na základě textových dokumentů v polích `name`, `description` a `bio`. Přejděte na [GraphQL API - dotazy](/querying/graphql-api#queries), kde najdete popis API pro fulltextové vyhledávání a další příklady použití.
 
 ```graphql
 query {
@@ -450,49 +450,49 @@ query {
 }
 ```
 
-> **[Feature Management](#experimental-features):** From `specVersion` `0.0.4` and onwards, `fullTextSearch` must be declared under the `features` section in the subgraph manifest.
+> **[Správa funkcí](#experimental-features):** Od `specVersion` `0.0.4` musí být `fullTextSearch` deklarováno v sekci `features` v manifestu podgrafů.
 
-### Languages supported
+### Podporované jazyky
 
-Choosing a different language will have a definitive, though sometimes subtle, effect on the fulltext search API. Fields covered by a fulltext query field are examined in the context of the chosen language, so the lexemes produced by analysis and search queries vary from language to language. For example: when using the supported Turkish dictionary "token" is stemmed to "toke" while, of course, the English dictionary will stem it to "token".
+Výběr jiného jazyka bude mít na rozhraní API fulltextového vyhledávání rozhodující, i když někdy nenápadný vliv. Pole zahrnutá do pole fulltextového dotazu jsou zkoumána v kontextu zvoleného jazyka, takže lexémy vytvořené analýzou a vyhledávacími dotazy se v jednotlivých jazycích liší. Například: při použití podporovaného tureckého slovníku je "token" odvozeno od "toke", zatímco anglický slovník jej samozřejmě odvozuje od "token".
 
-Supported language dictionaries:
+Podporované jazykové slovníky:
 
-| Code   | Dictionary |
-| ------ | ---------- |
-| simple | General    |
-| da     | Danish     |
-| nl     | Dutch      |
-| en     | English    |
-| fi     | Finnish    |
-| fr     | French     |
-| de     | German     |
-| hu     | Hungarian  |
-| it     | Italian    |
-| no     | Norwegian  |
-| pt     | Portuguese |
-| ro     | Romanian   |
-| ru     | Russian    |
-| es     | Spanish    |
-| sv     | Swedish    |
-| tr     | Turkish    |
+| Kód        | Slovník    |
+| ---------- | ---------- |
+| jednoduchý | Obecné     |
+| da         | Danish     |
+| nl         | Dutch      |
+| en         | English    |
+| fi         | Finnish    |
+| fr         | French     |
+| de         | German     |
+| hu         | Hungarian  |
+| it         | Italian    |
+| no         | Norwegian  |
+| pt         | Portuguese |
+| ro         | Romanian   |
+| ru         | Russian    |
+| es         | Spanish    |
+| sv         | Swedish    |
+| tr         | Turkish    |
 
-### Ranking Algorithms
+### Algoritmy řazení
 
-Supported algorithms for ordering results:
+Podporované algoritmy pro řazení výsledků:
 
-| Algorithm     | Description                                                             |
-| ------------- | ----------------------------------------------------------------------- |
-| rank          | Use the match quality (0-1) of the fulltext query to order the results. |
-| proximityRank | Similar to rank but also includes the proximity of the matches.         |
+| Algoritmus    | Popis                                                                    |
+| ------------- | ------------------------------------------------------------------------ |
+| hodnost       | Pro seřazení výsledků použijte kvalitu shody (0-1) fulltextového dotazu. |
+| proximityRank | Podobně jako pořadí, ale zahrnuje také blízkost zápasů.                  |
 
-## Writing Mappings
+## Psát mapování
 
-The mappings take data from a particular source and transform it into entities that are defined within your schema. Mappings are written in a subset of [TypeScript](https://www.typescriptlang.org/docs/handbook/typescript-in-5-minutes.html) called [AssemblyScript](https://github.com/AssemblyScript/assemblyscript/wiki) which can be compiled to WASM ([WebAssembly](https://webassembly.org/)). AssemblyScript is stricter than normal TypeScript, yet provides a familiar syntax.
+Mapování přebírá data z určitého zdroje a transformuje je na entity definované ve vašem schématu. Mapování jsou zapsána v podmnožině jazyka [TypeScript](https://www.typescriptlang.org/docs/handbook/typescript-in-5-minutes.html) nazvané [AssemblyScript](https://github.com/AssemblyScript/assemblyscript/wiki), kterou lze zkompilovat do jazyka WASM ([WebAssembly](https://webassembly.org/)). AssemblyScript je přísnější než běžný TypeScript, přesto poskytuje známou syntaxi.
 
-For each event handler that is defined in `subgraph.yaml` under `mapping.eventHandlers`, create an exported function of the same name. Each handler must accept a single parameter called `event` with a type corresponding to the name of the event which is being handled.
+Pro každou obsluhu události definovanou v souboru `subgraph.yaml` v části `mapping.eventHandlers` vytvořte exportovanou funkci stejného jména. Každá obslužná funkce musí přijímat jeden parametr nazvaný `událost` s typem odpovídajícím názvu události, která je obsluhována.
 
-In the example subgraph, `src/mapping.ts` contains handlers for the `NewGravatar` and `UpdatedGravatar` events:
+V příkladovém podgrafu `src/mapping.ts` obsahuje obsluhy událostí `NewGravatar` a `UpdatedGravatar`:
 
 ```javascript
 import { NewGravatar, UpdatedGravatar } from '../generated/Gravity/Gravity'
@@ -519,31 +519,31 @@ export function handleUpdatedGravatar(event: UpdatedGravatar): void {
 }
 ```
 
-The first handler takes a `NewGravatar` event and creates a new `Gravatar` entity with `new Gravatar(event.params.id.toHex())`, populating the entity fields using the corresponding event parameters. This entity instance is represented by the variable `gravatar`, with an id value of `event.params.id.toHex()`.
+První obslužný program přijme událost `NewGravatar` a vytvoří novou entitu `Gravatar` s `new Gravatar(event.params.id.toHex())`, přičemž pole entity vyplní pomocí odpovídajících parametrů události. Tato instance entity je reprezentována proměnnou `gravatar` s hodnotou id `event.params.id.toHex()`.
 
-The second handler tries to load the existing `Gravatar` from the Graph Node store. If it does not exist yet, it is created on-demand. The entity is then updated to match the new event parameters before it is saved back to the store using `gravatar.save()`.
+Druhá obslužná rutina se pokusí načíst existující `Gravatar` z úložiště Graf Uzel. Pokud ještě neexistuje, je vytvořen na vyžádání. Entita je poté aktualizována tak, aby odpovídala novým parametrům události, a poté je uložena zpět do úložiště pomocí `gravatar.save()`.
 
-### Recommended IDs for Creating New Entities
+### Doporučené IDa pro vytváření nových Entity
 
-Every entity has to have an `id` that is unique among all entities of the same type. An entity's `id` value is set when the entity is created. Below are some recommended `id` values to consider when creating new entities. NOTE: The value of `id` must be a `string`.
+Každá entita musí mít `id`, které je jedinečné mezi všemi entitami stejného typu. Hodnota `id` entity je nastavena při jejím vytvoření. Níže jsou uvedeny některé doporučené hodnoty `id`, které je třeba vzít v úvahu při vytváření nových entit. POZNÁMKA: Hodnota `id` musí být `řetězec`.
 
 - `event.params.id.toHex()`
 - `event.transaction.from.toHex()`
 - `event.transaction.hash.toHex() + "-" + event.logIndex.toString()`
 
-We provide the [Graph Typescript Library](https://github.com/graphprotocol/graph-ts) which contains utilies for interacting with the Graph Node store and conveniences for handling smart contract data and entities. You can use this library in your mappings by importing `@graphprotocol/graph-ts` in `mapping.ts`.
+Poskytujeme knihovnu [Graf Typescript Library](https://github.com/graphprotocol/graph-ts), která obsahuje nástroje pro interakci s úložištěm Graf Uzel a usnadnění pro práci s daty a entitami chytrých smluv. Tuto knihovnu můžete používat ve svých mapováních importem `@graphprotocol/graph-ts` v souboru `mapping.ts`.
 
-## Code Generation
+## Generování kódu
 
-In order to make it easy and type-safe to work with smart contracts, events and entities, the Graph CLI can generate AssemblyScript types from the subgraph's GraphQL schema and the contract ABIs included in the data sources.
+Aby byla práce s inteligentními smlouvami, událostmi a entitami snadná a typově bezpečná, může Graf CLI generovat typy AssemblyScript ze schématu GraphQL podgrafu a ABI smluv obsažených ve zdrojích dat.
 
-This is done with
+To se provádí pomocí
 
 ```sh
 graph codegen [--output-dir <OUTPUT_DIR>] [<MANIFEST>]
 ```
 
-but in most cases, subgraphs are already preconfigured via `package.json` to allow you to simply run one of the following to achieve the same:
+ale ve většině případů jsou podgrafy již předkonfigurovány prostřednictvím souboru `package.json`, takže pro dosažení téhož stačí spustit jeden z následujících příkazů:
 
 ```sh
 # Yarn
@@ -553,7 +553,7 @@ yarn codegen
 npm run codegen
 ```
 
-This will generate an AssemblyScript class for every smart contract in the ABI files mentioned in `subgraph.yaml`, allowing you to bind these contracts to specific addresses in the mappings and call read-only contract methods against the block being processed. It will also generate a class for every contract event to provide easy access to event parameters, as well as the block and transaction the event originated from. All of these types are written to `<OUTPUT_DIR>/<DATA_SOURCE_NAME>/<ABI_NAME>.ts`. In the example subgraph, this would be `generated/Gravity/Gravity.ts`, allowing mappings to import these types with.
+Tím se vygeneruje třída AssemblyScript pro každou chytrou smlouvu v souborech ABI uvedených v `subgraph.yaml`, což vám umožní svázat tyto smlouvy s konkrétními adresami v mapování a volat metody smlouvy pouze pro čtení proti zpracovávanému bloku. Pro každou událost kontraktu také vygeneruje třídu, která umožní snadný přístup k parametrům události a také k bloku a transakci, ze které událost pochází. Všechny tyto typy se zapisují do souboru `<OUTPUT_DIR>/<DATA_SOURCE_NAME>/<ABI_NAME>.ts`. V příkladovém podgrafu by to bylo `generated/Gravity/Gravity.ts`, což umožňuje mapování, kterým lze tyto typy importovat.
 
 ```javascript
 import {
@@ -565,25 +565,25 @@ import {
 } from '../generated/Gravity/Gravity'
 ```
 
-In addition to this, one class is generated for each entity type in the subgraph's GraphQL schema. These classes provide type-safe entity loading, read and write access to entity fields as well as a `save()` method to write entities to store. All entity classes are written to `<OUTPUT_DIR>/schema.ts`, allowing mappings to import them with
+Kromě toho je pro každý typ entity ve schématu GraphQL podgrafu vygenerována jedna třída. Tyto třídy zajišťují typově bezpečné načítání entit, přístup k polím entit pro čtení a zápis a také metodu `save()` pro zápis entit do úložiště. Všechny třídy entit jsou zapsány do souboru `<OUTPUT_DIR>/schema.ts`, což umožňuje mapování importovat je pomocí funkce
 
 ```javascript
 import { Gravatar } from '../generated/schema'
 ```
 
-> **Note:** The code generation must be performed again after every change to the GraphQL schema or the ABIs included in the manifest. It must also be performed at least once before building or deploying the subgraph.
+> **Poznámka:** Po každé změně schématu jazyka GraphQL nebo ABI obsažených v manifestu je nutné provést generování kódu znovu. Musí být také provedeno alespoň jednou před sestavením nebo nasazením podgrafu.
 
-Code generation does not check your mapping code in `src/mapping.ts`. If you want to check that before trying to deploy your subgraph to the Graph Explorer, you can run `yarn build` and fix any syntax errors that the TypeScript compiler might find.
+Generování kódu nekontroluje váš mapovací kód v souboru `src/mapping.ts`. Pokud jej chcete zkontrolovat před pokusem o nasazení podgrafu do Graf Explorer, můžete spustit `yarn build` a opravit případné syntaktické chyby, které by kompilátor jazyka TypeScript mohl najít.
 
-## Data Source Templates
+## Šablony zdrojů dat
 
-A common pattern in EVM-compatible smart contracts is the use of registry or factory contracts, where one contract creates, manages, or references an arbitrary number of other contracts that each have their own state and events.
+Běžným vzorem v inteligentních smlouvách kompatibilních s EVM je používání registrů nebo továrních smluv, kdy jedna smlouva vytváří, spravuje nebo odkazuje na libovolný počet dalších smluv, z nichž každá má svůj vlastní stav a události.
 
-The addresses of these sub-contracts may or may not be known upfront and many of these contracts may be created and/or added over time. This is why, in such cases, defining a single data source or a fixed number of data sources is impossible and a more dynamic approach is needed: _data source templates_.
+Adresy těchto dílčích smluv mohou, ale nemusí být známy předem a mnoho z těchto smluv může být vytvořeno a/nebo přidáno v průběhu času. Proto v takových případech není možné definovat jediný zdroj dat nebo pevný počet zdrojů dat a je zapotřebí dynamičtější přístup: _šablony zdrojů dat_.
 
-### Data Source for the Main Contract
+### Zdroj dat pro hlavní smlouvu
 
-First, you define a regular data source for the main contract. The snippet below shows a simplified example data source for the [Uniswap](https://uniswap.org) exchange factory contract. Note the `NewExchange(address,address)` event handler. This is emitted when a new exchange contract is created on-chain by the factory contract.
+Nejprve definujete běžný zdroj dat pro hlavní smlouvu. Níže uvedený úryvek ukazuje zjednodušený příklad zdroje dat pro smlouvu [Uniswap](https://uniswap.org) exchange factory. Všimněte si obsluhy události `NewExchange(address,address)`. Ta je emitována, když je v řetězci vytvořena nová směnná smlouva tovární smlouvou.
 
 ```yaml
 dataSources:
@@ -608,9 +608,9 @@ dataSources:
           handler: handleNewExchange
 ```
 
-### Data Source Templates for Dynamically Created Contracts
+### Šablony zdrojů dat pro dynamicky vytvářené smlouvy
 
-Then, you add _data source templates_ to the manifest. These are identical to regular data sources, except that they lack a pre-defined contract address under `source`. Typically, you would define one template for each type of sub-contract managed or referenced by the parent contract.
+Poté do manifestu přidáte _šablony datových zdrojů_. Ty jsou totožné s běžnými zdroji dat, pouze postrádají předdefinovanou adresu smlouvy v položce `zdroj`. Obvykle byste definovali jednu šablonu pro každý typ dílčí smlouvy spravované nebo odkazované nadřazenou smlouvou.
 
 ```yaml
 dataSources:
@@ -644,9 +644,9 @@ templates:
           handler: handleRemoveLiquidity
 ```
 
-### Instantiating a Data Source Template
+### Instancování šablony zdroje dat
 
-In the final step, you update your main contract mapping to create a dynamic data source instance from one of the templates. In this example, you would change the main contract mapping to import the `Exchange` template and call the `Exchange.create(address)` method on it to start indexing the new exchange contract.
+V posledním kroku aktualizujete mapování hlavní smlouvy a vytvoříte dynamickou instanci zdroje dat z jedné ze šablon. V tomto příkladu byste změnili mapování hlavní smlouvy tak, abyste importovali šablonu `Exchange` a zavolali na ní metodu `Exchange.create(address)`, abyste zahájili indexování nové smlouvy exchange.
 
 ```typescript
 import { Exchange } from '../generated/templates'
@@ -658,13 +658,13 @@ export function handleNewExchange(event: NewExchange): void {
 }
 ```
 
-> **Note:** A new data source will only process the calls and events for the block in which it was created and all following blocks, but will not process historical data, i.e., data that is contained in prior blocks.
->
-> If prior blocks contain data relevant to the new data source, it is best to index that data by reading the current state of the contract and creating entities representing that state at the time the new data source is created.
+> **Poznámka:** Nový zdroj dat bude zpracovávat pouze volání a události pro blok, ve kterém byl vytvořen, a všechny následující bloky, ale nebude zpracovávat historická data, tj. data obsažená v předchozích blocích.
+> 
+> Pokud předchozí bloky obsahují data relevantní pro nový zdroj dat, je nejlepší tato data indexovat načtením aktuálního stavu smlouvy a vytvořením entit reprezentujících tento stav v době vytvoření nového zdroje dat.
 
-### Data Source Context
+### Kontext zdroje dat
 
-Data source contexts allow passing extra configuration when instantiating a template. In our example, let's say exchanges are associated with a particular trading pair, which is included in the `NewExchange` event. That information can be passed into the instantiated data source, like so:
+Kontexty zdrojů dat umožňují předávat další konfiguraci při instanci šablony. V našem příkladu řekněme, že burzy jsou spojeny s konkrétním obchodním párem, který je obsažen v události `NewExchange`. Tuto informaci lze předat do instancovaného zdroje dat takto:
 
 ```typescript
 import { Exchange } from '../generated/templates'
@@ -676,7 +676,7 @@ export function handleNewExchange(event: NewExchange): void {
 }
 ```
 
-Inside a mapping of the `Exchange` template, the context can then be accessed:
+Uvnitř mapování šablony `výměna` lze pak přistupovat ke kontextu:
 
 ```typescript
 import { dataSource } from '@graphprotocol/graph-ts'
@@ -685,11 +685,11 @@ let context = dataSource.context()
 let tradingPair = context.getString('tradingPair')
 ```
 
-There are setters and getters like `setString` and `getString` for all value types.
+Pro všechny typy hodnot existují setter a getter jako `setString` a `getString`.
 
-## Start Blocks
+## Výchozí bloky
 
-The `startBlock` is an optional setting that allows you to define from which block in the chain the data source will start indexing. Setting the start block allows the data source to skip potentially millions of blocks that are irrelevant. Typically, a subgraph developer will set `startBlock` to the block in which the smart contract of the data source was created.
+`startBlock` je volitelné nastavení, které umožňuje určit, od kterého bloku v řetězci začne zdroj dat indexovat. Nastavení počátečního bloku umožňuje zdroji dat přeskočit potenciálně miliony bloků, které jsou irelevantní. Typicky vývojář podgrafu nastaví `startBlock` na blok, ve kterém byl vytvořen inteligentní kontrakt zdroje dat.
 
 ```yaml
 dataSources:
@@ -715,23 +715,23 @@ dataSources:
           handler: handleNewEvent
 ```
 
-> **Note:** The contract creation block can be quickly looked up on Etherscan:
->
-> 1. Search for the contract by entering its address in the search bar.
-> 2. Click on the creation transaction hash in the `Contract Creator` section.
-> 3. Load the transaction details page where you'll find the start block for that contract.
+> **Poznámka:** Blok pro vytvoření smlouvy lze rychle vyhledat v Etherscan:
+> 
+> 1. Vyhledejte smlouvu zadáním její adresy do vyhledávacího řádku.
+> 2. Klikněte na hash transakce vytvoření v sekci `Tvůrce smlouvy`.
+> 3. Načtěte stránku s podrobnostmi o transakci, kde najdete počáteční blok pro danou smlouvu.
 
-## Call Handlers
+## Zpracovatelé hovorů
 
-While events provide an effective way to collect relevant changes to the state of a contract, many contracts avoid generating logs to optimize gas costs. In these cases, a subgraph can subscribe to calls made to the data source contract. This is achieved by defining call handlers referencing the function signature and the mapping handler that will process calls to this function. To process these calls, the mapping handler will receive an `ethereum.Call` as an argument with the typed inputs to and outputs from the call. Calls made at any depth in a transaction's call chain will trigger the mapping, allowing activity with the data source contract through proxy contracts to be captured.
+Události sice představují účinný způsob, jak shromažďovat relevantní změny stavu smlouvy, ale mnoho smluv se vyhýbá generování protokolů, aby se optimalizovaly náklady na plyn. V těchto případech se dílčí graf může přihlásit k odběru volání provedených na smlouvu se zdrojem dat. Toho lze dosáhnout definováním obsluhy volání odkazující na signaturu funkce a obsluhu mapování, která bude zpracovávat volání této funkce. Pro zpracování těchto volání obdrží mapovací obsluha jako argument `ethereum.Call` s typizovanými vstupy do volání a výstupy z volání. Volání uskutečněná v libovolné hloubce řetězce volání transakce spustí mapování, což umožní zachytit aktivitu se smlouvou zdroje dat prostřednictvím proxy smluv.
 
-Call handlers will only trigger in one of two cases: when the function specified is called by an account other than the contract itself or when it is marked as external in Solidity and called as part of another function in the same contract.
+Obsluhy volání se spustí pouze v jednom ze dvou případů: když je zadaná funkce volána jiným účtem než samotnou smlouvou nebo když je v Solidity označena jako externí a volána jako součást jiné funkce ve stejné smlouvě.
 
-> **Note:** Call handlers currently depend on the Parity tracing API. Certain networks, such as BNB chain and Arbitrum, does not support this API. If a subgraph indexing one of these networks contain one or more call handlers, it will not start syncing. Subgraph developers should instead use event handlers. These are far more performant than call handlers, and are supported on every evm network.
+> **Poznámka:** Zpracovatelé volání jsou v současné době závislí na API pro sledování parity. Některé sítě, například řetězec BNB a Arbitrum, toto API nepodporují. Pokud podgraf indexující některou z těchto sítí obsahuje jeden nebo více zpracovatelů volání, nezačne se synchronizovat. Vývojáři podgrafů by místo toho měli používat obsluhy událostí. Ty jsou mnohem výkonnější než obsluhy volání a jsou podporovány v každé síti evm.
 
-### Defining a Call Handler
+### Definice obsluhy volání
 
-To define a call handler in your manifest, simply add a `callHandlers` array under the data source you would like to subscribe to.
+Chcete-li v manifestu definovat obsluhu volání, jednoduše přidejte pole `callHandlers` pod zdroj dat, ke kterému se chcete přihlásit.
 
 ```yaml
 dataSources:
@@ -756,11 +756,11 @@ dataSources:
           handler: handleCreateGravatar
 ```
 
-The `function` is the normalized function signature to filter calls by. The `handler` property is the name of the function in your mapping you would like to execute when the target function is called in the data source contract.
+`funkce` je normalizovaná signatura funkce, podle které se filtrují volání. Vlastnost `handler` je název funkce ve vašem mapování, kterou chcete spustit při volání cílové funkce v kontraktu zdroje dat.
 
-### Mapping Function
+### Funkce mapování
 
-Each call handler takes a single parameter that has a type corresponding to the name of the called function. In the example subgraph above, the mapping contains a handler for when the `createGravatar` function is called and receives a `CreateGravatarCall` parameter as an argument:
+Každá obslužná funkce volání přijímá jeden parametr, který má typ odpovídající názvu volané funkce. Ve výše uvedeném příkladu podgraf obsahuje mapování obslužnou rutinu pro případ, kdy je volána funkce `createGravatar` a jako argument přijímá parametr `CreateGravatarCall`:
 
 ```typescript
 import { CreateGravatarCall } from '../generated/Gravity/Gravity'
@@ -775,26 +775,26 @@ export function handleCreateGravatar(call: CreateGravatarCall): void {
 }
 ```
 
-The `handleCreateGravatar` function takes a new `CreateGravatarCall` which is a subclass of `ethereum.Call`, provided by `@graphprotocol/graph-ts`, that includes the typed inputs and outputs of the call. The `CreateGravatarCall` type is generated for you when you run `graph codegen`.
+Funkce `handleCreateGravatar` přebírá novou `CreateGravatarCall`, což je podtřída `ethereum.Call`, kterou poskytuje `@graphprotocol/graph-ts`, která obsahuje typizované vstupy a výstupy volání. Typ `CreateGravatarCall` je pro vás vygenerován při spuštění `graph codegen`.
 
-## Block Handlers
+## Obsluha bloků
 
-In addition to subscribing to contract events or function calls, a subgraph may want to update its data as new blocks are appended to the chain. To achieve this a subgraph can run a function after every block or after blocks that match a pre-defined filter.
+Kromě přihlášení k událostem smlouvy nebo volání funkcí může podgraf chtít aktualizovat svá data, když jsou do řetězce přidány nové bloky. Za tímto účelem může podgraf spustit funkci po každém bloku nebo po blocích, které odpovídají předem definovanému filtru.
 
-### Supported Filters
+### Podporované filtry
 
-#### Call Filter
+#### Filtr volání
 
 ```yaml
 filter:
   kind: call
 ```
 
-_The defined handler will be called once for every block which contains a call to the contract (data source) the handler is defined under._
+_Definovat obslužná rutina bude zavolána jednou pro každý blok, který obsahuje volání smlouvy (zdroje dat), pod kterou je rutina definovát._
 
-> **Note:** The `call` filter currently depend on the Parity tracing API. Certain networks, such as BNB chain and Arbitrum, does not support this API. If a subgraph indexing one of these networks contain one or more block handlers with a `call` filter, it will not start syncing.
+> **Poznámka:** Filtr `call` v současné době závisí na API pro sledování parity. Některé sítě, například řetězec BNB a Arbitrum, toto API nepodporují. Pokud podgraf indexující jednu z těchto sítí obsahuje jeden nebo více blokových manipulátorů s filtrem `call`, nezačne se synchronizovat.
 
-The absence of a filter for a block handler will ensure that the handler is called every block. A data source can only contain one block handler for each filter type.
+Protože pro obsluhu bloku neexistuje žádný filtr, zajistí, že obsluha bude volána každý blok. Zdroj dat může obsahovat pouze jednu blokovou obsluhu pro každý typ filtru.
 
 ```yaml
 dataSources:
@@ -821,11 +821,11 @@ dataSources:
             kind: call
 ```
 
-#### Polling Filter
+#### Filtr dotazování
 
-> **Requires `specVersion` >= 0.0.8**
+> **Vyžaduje `specVersion`&#062 >= 0.0.8**
 
-> **Note:** Polling filters are only available on dataSources of `kind: ethereum`.
+> **Poznámka:** Filtry zdroj dat jsou k dispozici pouze pro zdroje dat `druhu: ethereum`.
 
 ```yaml
 blockHandlers:
@@ -835,13 +835,13 @@ blockHandlers:
       every: 10
 ```
 
-The defined handler will be called once for every `n` blocks, where `n` is the value provided in the `every` field. This configuration allows the subgraph to perform specific operations at regular block intervals.
+Definovaný obslužná rutina bude zavolána jednou pro každých `n` bloků, kde `n` je hodnota uvedená v poli `every`. Tato konfigurace umožňuje dílčímu graf provádět specifické operace v pravidelných intervalech bloků.
 
-#### Once Filter
+#### Jednou Filtr
 
-> **Requires `specVersion` >= 0.0.8**
+> **Vyžaduje `specVersion`&#062 >= 0.0.8**
 
-> **Note:** Once filters are only available on dataSources of `kind: ethereum`.
+> **Poznámka:** Jednou použité filtry jsou dostupné pouze pro zdroje dat `druhu: ethereum`.
 
 ```yaml
 blockHandlers:
@@ -850,7 +850,7 @@ blockHandlers:
       kind: once
 ```
 
-The defined handler with the once filter will be called only once before all other handlers run. This configuration allows the subgraph to use the handler as an initialization handler, performing specific tasks at the start of indexing.
+Definovaný obslužná rutina s filtrem once bude zavolána pouze jednou před spuštěním všech ostatních rutin. Tato konfigurace umožňuje, aby podgraf používal obslužný program jako inicializační obslužný, který provádí specifické úlohy na začátku indexování.
 
 ```ts
 export function handleOnce(block: ethereum.Block): void {
@@ -860,9 +860,9 @@ export function handleOnce(block: ethereum.Block): void {
 }
 ```
 
-### Mapping Function
+### Funkce mapování
 
-The mapping function will receive an `ethereum.Block` as its only argument. Like mapping functions for events, this function can access existing subgraph entities in the store, call smart contracts and create or update entities.
+Funkce mapování obdrží jako jediný argument `ethereum.Block`. Stejně jako mapovací funkce pro události může tato funkce přistupovat k existujícím entitám subgrafu v úložišti, volat chytré kontrakty a vytvářet nebo aktualizovat entity.
 
 ```typescript
 import { ethereum } from '@graphprotocol/graph-ts'
@@ -874,9 +874,9 @@ export function handleBlock(block: ethereum.Block): void {
 }
 ```
 
-## Anonymous Events
+## Anonymní události
 
-If you need to process anonymous events in Solidity, that can be achieved by providing the topic 0 of the event, as in the example:
+Pokud potřebujete v Solidity zpracovávat anonymní události, lze toho dosáhnout zadáním tématu 0 události, jak je uvedeno v příkladu:
 
 ```yaml
 eventHandlers:
@@ -885,13 +885,13 @@ eventHandlers:
     handler: handleGive
 ```
 
-An event will only be triggered when both the signature and topic 0 match. By default, `topic0` is equal to the hash of the event signature.
+Událost se spustí pouze tehdy, když se shoduje signatura i téma 0. Ve výchozím nastavení se `téma0` rovná hash signatury události.
 
-## Transaction Receipts in Event Handlers
+## Potvrzení transakcí v obslužných rutinách událostí
 
-Starting from `specVersion` `0.0.5` and `apiVersion` `0.0.7`, event handlers can have access to the receipt for the transaction which emitted them.
+Počínaje `specVersion` `0.0.5` a `apiVersion` `0.0.7` mohou mít obsluhy událostí přístup k potvrzení transakce, která je vyvolala.
 
-To do so, event handlers must be declared in the subgraph manifest with the new `receipt: true` key, which is optional and defaults to false.
+Za tímto účelem musí být obsluhy událostí deklarovány v manifestu podgrafů pomocí nového klíče `receipt: true`, který je nepovinný a výchozí hodnota je není pravda.
 
 ```yaml
 eventHandlers:
@@ -900,17 +900,17 @@ eventHandlers:
     receipt: true
 ```
 
-Inside the handler function, the receipt can be accessed in the `Event.receipt` field. When the `receipt` key is set to `false` or omitted in the manifest, a `null` value will be returned instead.
+Uvnitř obslužné funkce je příjem přístupný v poli `Event.receipt`. Pokud je klíč `receipt` nastaven na `false` nebo je v manifestu vynechán, bude místo něj vrácena hodnota `null`.
 
-## Experimental features
+## Experimentální funkce
 
 Starting from `specVersion` `0.0.4`, subgraph features must be explicitly declared in the `features` section at the top level of the manifest file, using their `camelCase` name, as listed in the table below:
 
 | Feature                                                   | Name                                                |
 | --------------------------------------------------------- | --------------------------------------------------- |
-| [Non-fatal errors](#non-fatal-errors)                     | `nonFatalErrors`                                    |
+| [Nefatální](#non-fatal-errors)                            | `nonFatalErrors`                                    |
 | [Full-text Search](#defining-fulltext-search-fields)      | `fullTextSearch`                                    |
-| [Grafting](#grafting-onto-existing-subgraphs)             | `grafting`                                          |
+| [Roubování](#grafting-onto-existing-subgraphs)            | `grafting`                                          |
 | [IPFS on Ethereum Contracts](#ipfs-on-ethereum-contracts) | `ipfsOnEthereumContracts` or `nonDeterministicIpfs` |
 
 For instance, if a subgraph uses the **Full-Text Search** and the **Non-fatal Errors** features, the `features` field in the manifest should be:
@@ -938,7 +938,7 @@ Given such IPFS hashes, subgraphs can read the corresponding files from IPFS usi
 
 When running a local Graph Node, the `GRAPH_ALLOW_NON_DETERMINISTIC_IPFS` environment variable must be set in order to index subgraphs using this experimental functionality.
 
-### Non-fatal errors
+### Nefatální
 
 Indexing errors on already synced subgraphs will, by default, cause the subgraph to fail and stop syncing. Subgraphs can alternatively be configured to continue syncing in the presence of errors, by ignoring the changes made by the handler which provoked the error. This gives subgraph authors time to correct their subgraphs while queries continue to be served against the latest block, though the results might be inconsistent due to the bug that caused the error. Note that some errors are still always fatal. To be non-fatal, the error must be known to be deterministic.
 
@@ -1023,7 +1023,7 @@ File data sources are a new subgraph functionality for accessing off-chain data 
 
 > This also lays the groundwork for deterministic indexing of off-chain data, as well as the potential introduction of arbitrary HTTP-sourced data.
 
-### Overview
+### Přehled
 
 Rather than fetching files "in line" during handler exectuion, this introduces templates which can be spawned as new data sources for a given file identifier. These new data sources fetch the files, retrying if they are unsuccessful, running a dedicated handler when the file is found.
 
@@ -1158,7 +1158,7 @@ For IPFS, Graph Node supports [v0 and v1 content identifiers](https://docs.ipfs.
 
 For Arweave, as of version 0.33.0 Graph Node can fetch files stored on Arweave based on their [transaction ID](https://docs.arweave.org/developers/server/http-api#transactions) from an Arweave gateway ([example file](https://bdxujjl5ev5eerd5ouhhs6o4kjrs4g6hqstzlci5pf6vhxezkgaa.arweave.net/CO9EpX0lekJEfXUOeXncUmMuG8eEp5WJHXl9U9yZUYA)). Arweave supports transactions uploaded via Bundlr, and Graph Node can also fetch files based on [Bundlr manifests](https://docs.bundlr.network/learn/gateways#indexing).
 
-Example:
+Příklad:
 
 ```typescript
 import { TokenMetadata as TokenMetadataTemplate } from '../generated/templates'
@@ -1231,6 +1231,6 @@ Handlers for File Data Sources cannot be in files which import `eth_call` contra
 
 [Crypto Coven Subgraph migration](https://github.com/azf20/cryptocoven-api/tree/file-data-sources-refactor)
 
-#### References
+#### Odkazy:
 
 [GIP File Data Sources](https://forum.thegraph.com/t/gip-file-data-sources/2721)
