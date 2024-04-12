@@ -1,14 +1,14 @@
 ---
-title: Distributed Systems
+title: Distribuované systémy
 ---
 
-The Graph is a protocol implemented as a distributed system.
+Graf je protokol implementovaný jako distribuovaný systém.
 
-Connections fail. Requests arrive out of order. Different computers with out-of-sync clocks and states process related requests. Servers restart. Re-orgs happen between requests. These problems are inherent to all distributed systems but are exacerbated in systems operating at a global scale.
+Připojení selhávají. Požadavky přicházejí mimo pořadí. Různé počítače s nesynchronizovanými hodinami a stavy zpracovávají související požadavky. Servery se restartují. Mezi požadavky dochází k opětovným Re-orgs. Tyto problémy jsou vlastní všem distribuovaným systémům, ale v systémech pracujících v globálním měřítku se ještě zhoršují.
 
-Consider this example of what may occur if a client polls an Indexer for the latest data during a re-org.
+Vezměme si tento příklad toho, co může nastat, pokud se klient dotazuje indexeru na nejnovější data během re-org.
 
-1. Indexer ingests block 8
+1. Indexer zpracovat blok 8
 2. Request served to the client for block 8
 3. Indexer ingests block 9
 4. Indexer ingests block 10A
@@ -19,19 +19,19 @@ Consider this example of what may occur if a client polls an Indexer for the lat
 9. Indexer ingests block 11
 10. Request served to the client for block 11
 
-From the point of view of the Indexer, things are progressing forward logically. Time is moving forward, though we did have to roll back an uncle block and play the block under consensus forward on top of it. Along the way, the Indexer serves requests using the latest state it knows about at that time.
+Z pohledu indexátora postupují věci logicky vpřed. Čas se posouvá vpřed, i když jsme museli vrátit blok strýce a přehrát na něj blok v rámci konsensu vpřed. Po cestě Indexer obsluhuje požadavky pomocí nejnovějšího stavu, o kterém v danou chvíli ví.
 
-From the point of view of the client, however, things appear chaotic. The client observes that the responses were for blocks 8, 10, 9, and 11 in that order. We call this the "block wobble" problem. When a client experiences block wobble, data may appear to contradict itself over time. The situation worsens when we consider that Indexers do not all ingest the latest blocks simultaneously, and your requests may be routed to multiple Indexers.
+Z pohledu klienta se však situace jeví jako chaotická. Klient si všimne, že odpovědi se týkaly bloků 8, 10, 9 a 11 v tomto pořadí. Tomu říkáme problém "kmitání bloků". Když klient zažije blokové kmitání, může se zdát, že si data v průběhu času odporují. Situace se ještě zhorší, když uvážíme, že všechny indexátory nepřijímají nejnovější bloky současně a vaše požadavky mohou být směrovány k více indexátorům.
 
-It is the responsibility of the client and server to work together to provide consistent data to the user. Different approaches must be used depending on the desired consistency as there is no one right program for every problem.
+Je odpovědností klienta a serveru, aby spolupracovali a poskytovali uživateli konzistentní data. V závislosti na požadované konzistenci je třeba použít různé přístupy, protože pro každý problém neexistuje jeden správný program.
 
-Reasoning through the implications of distributed systems is hard, but the fix may not be! We've established APIs and patterns to help you navigate some common use-cases. The following examples illustrate those patterns but still elide details required by production code (like error handling and cancellation) to not obfuscate the main ideas.
+Uvažovat o důsledcích distribuovaných systémů je těžké, ale náprava možná není! Vytvořili jsme API a vzory, které vám pomohou orientovat se v některých běžných případech použití. Následující příklady ilustrují tyto vzory, ale přesto opomíjejí detaily vyžadované produkčním kódem (jako je zpracování chyb a zrušení), aby nebyly zastřeny hlavní myšlenky.
 
 ## Polling for updated data
 
-The Graph provides the `block: { number_gte: $minBlock }` API, which ensures that the response is for a single block equal or higher to `$minBlock`. If the request is made to a `graph-node` instance and the min block is not yet synced, `graph-node` will return an error. If `graph-node` has synced min block, it will run the response for the latest block. If the request is made to an Edge & Node Gateway, the Gateway will filter out any Indexers that have not yet synced min block and make the request for the latest block the Indexer has synced.
+Graf poskytuje blok `: {Počet_gte:{ number_gte: $minBlock }}` API, které zajišťuje, že odpověď je pro jeden blok rovný nebo vyšší než `$minBlock`. Pokud je požadavek zadán instanci `graph-node` a min. blok ještě není synchronizován, `graph-node` vrátí chybu. Pokud `graph-node` má synchronizovaný minblok, spustí odpověď pro nejnovější blok. Pokud je požadavek zadán bráně Edge & Node, brána odfiltruje všechny indexery, které ještě nesynchronizovaly minblok, a provede požadavek na nejnovější blok, který indexer synchronizoval.
 
-We can use `number_gte` to ensure that time never travels backward when polling for data in a loop. Here is an example:
+Pomocí `number_gte` můžeme zajistit, aby se čas při dotazování na data ve smyčce nikdy nevracel zpět. Zde je příklad:
 
 ```javascript
 /// Updates the protocol.paused variable to the latest
@@ -76,9 +76,9 @@ async function updateProtocolPaused() {
 
 ## Fetching a set of related items
 
-Another use-case is retrieving a large set or, more generally, retrieving related items across multiple requests. Unlike the polling case (where the desired consistency was to move forward in time), the desired consistency is for a single point in time.
+Dalším případem použití je načítání velkého souboru nebo obecněji načítání souvisejících položek ve více požadavcích. Na rozdíl od případu dotazování (kde byla požadovaná konzistence pro posun v čase) je požadovaná konzistence pro jeden bod v čase.
 
-Here we will use the `block: { hash: $blockHash }` argument to pin all of our results to the same block.
+Zde použijeme blok `: { hash: $blockHash }`, abychom všechny naše výsledky připnuli ke stejnému bloku.
 
 ```javascript
 /// Gets a list of domain names from a single block using pagination
@@ -131,4 +131,4 @@ async function getDomainNames() {
 }
 ```
 
-Note that in case of a re-org, the client will need to retry from the first request to update the block hash to a non-uncle block.
+Všimněte si, že v případě reorganizace bude muset klient zopakovat první požadavek na aktualizaci hashe bloku na blok, který není strýčkem.
