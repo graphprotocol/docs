@@ -1,5 +1,5 @@
 ---
-title: Querying Best Practices
+title: Bonnes pratiques d'interrogation
 ---
 
 Le Graph fournit un moyen décentralisé d’interroger les données des blockchains.
@@ -102,7 +102,7 @@ async function main() {
 main()
 ```
 
-More GraphQL client alternatives are covered in ["Querying from an Application"](/querying/querying-from-an-application).
+D'autres alternatives client GraphQL sont couvertes dans ["Requête à partir d'une application"](/querying/querying-from-an-application).
 
 Maintenant que nous avons couvert les règles de base de la syntaxe des requêtes GraphQL, examinons maintenant les meilleures pratiques d'écriture de requêtes GraphQL.
 
@@ -159,9 +159,9 @@ const result = await execute(query, {
 
 Cela apporte de **de nombreux avantages** :
 
-- **Requêtes faciles à lire et à gérer**
-- The GraphQL **server handles variables sanitization**
-- **Variables can be cached** at server-level
+- Requêtes **faciles à lire et à maintenir**
+- Le serveur GraphQL **gère la désinfection des variables**
+- Les **variables peuvent être mises en cache** au niveau du serveur
 - **Les requêtes peuvent être analysées statiquement par des outils** (plus d'informations à ce sujet dans les sections suivantes)
 
 **Remarque : Comment inclure des champs de manière conditionnelle dans les requêtes statiques**
@@ -258,7 +258,7 @@ const [tokens, counters] = Promise.all(
 
 Bien que cette implémentation soit totalement valide, elle nécessitera deux allers-retours avec l'API GraphQL.
 
-Fortunately, it is also valid to send multiple queries in the same GraphQL request as follows:
+Heureusement, il est également possible d'envoyer plusieurs requêtes dans la même requête GraphQL comme suit :
 
 ```graphql
 import { execute } from "your-favorite-graphql-client"
@@ -279,13 +279,13 @@ query GetTokensandCounters {
 const  { result: { tokens, counters } } = execute(query)
 ```
 
-This approach will **improve the overall performance** by reducing the time spent on the network (saves you a round trip to the API) and will provide a **more concise implementation**.
+Cette approche **améliorera les performances globales** en réduisant le temps passé sur le réseau (vous évite un aller-retour vers l'API) et fournira un **implémentation plus concise**.
 
-### Leverage GraphQL Fragments
+### Tirer parti des fragments GraphQL
 
-A helpful feature to write GraphQL queries is GraphQL Fragment.
+Une fonctionnalité utile pour écrire des requêtes GraphQL est GraphQL Fragment.
 
-Looking at the following query, you will notice that some fields are repeated across multiple Selection-Sets (`{ ... }`):
+En regardant la requête suivante, vous remarquerez que certains champs sont répétés sur plusieurs ensembles de sélection (`{ ... }`) :
 
 ```graphql
 query {
@@ -305,12 +305,12 @@ query {
 }
 ```
 
-Such repeated fields (`id`, `active`, `status`) bring many issues:
+De tels champs répétés (`id`, `active`, `status`) posent de nombreux problèmes :
 
-- harder to read for more extensive queries
-- when using tools that generate TypeScript types based on queries (_more on that in the last section_), `newDelegate` and `oldDelegate` will result in two distinct inline interfaces.
+- plus difficile à lire pour des requêtes plus approfondies
+- lors de l'utilisation d'outils qui génèrent des types TypeScript basés sur des requêtes (_plus d'informations à ce sujet dans la dernière section_), `newDelegate` et `oldDelegate` entraînera deux interfaces en ligne distinctes.
 
-A refactored version of the query would be the following:
+Une version refactorisée de la requête serait la suivante :
 
 ```graphql
 query {
@@ -325,8 +325,8 @@ query {
   }
 }
 
-# we define a fragment (subtype) on Transcoder
-# to factorize repeated fields in the query
+# nous définissons un fragment (sous-type) sur Transcoder
+# pour factoriser les champs répétés dans la requête
 fragment DelegateItem on Transcoder {
   id
   active
@@ -334,15 +334,15 @@ fragment DelegateItem on Transcoder {
 }
 ```
 
-Using GraphQL `fragment` will improve readability (especially at scale) but also will result in better TypeScript types generation.
+L'utilisation de GraphQL `fragment` améliorera la lisibilité (en particulier à grande échelle) mais entraînera également une meilleure génération de types TypeScript.
 
-When using the types generation tool, the above query will generate a proper `DelegateItemFragment` type (_see last "Tools" section_).
+Lors de l'utilisation de l'outil de génération de types, la requête ci-dessus générera un type `DelegateItemFragment` approprié (_voir la dernière section "Outils"_).
 
-### GraphQL Fragment do's and don'ts
+### Bonnes pratiques et erreurs à éviter avec les fragments GraphQL
 
-**Fragment base must be a type**
+**La base du fragment doit être un type**
 
-A Fragment cannot be based on a non-applicable type, in short, **on type not having fields**:
+Un Fragment ne peut pas être basé sur un type non applicable, en bref, **sur un type n'ayant pas de champs** :
 
 ```graphql
 fragment MyFragment on BigInt {
@@ -350,11 +350,11 @@ fragment MyFragment on BigInt {
 }
 ```
 
-`BigInt` is a **scalar** (native "plain" type) that cannot be used as a fragment's base.
+`BigInt` est un **scalaire** (type natif "plain") qui ne peut pas être utilisé comme base d'un fragment.
 
-**How to spread a Fragment**
+**Comment diffuser un fragment**
 
-Fragments are defined on specific types and should be used accordingly in queries.
+Les fragments sont définis sur des types spécifiques et doivent être utilisés en conséquence dans les requêtes.
 
 L'exemple:
 
@@ -363,7 +363,7 @@ query {
   bondEvents {
     id
     newDelegate {
-      ...VoteItem # Error! `VoteItem` cannot be spread on `Transcoder` type
+      ...VoteItem # Erreur ! `VoteItem` ne peut pas être étendu sur le type `Transcoder`
     }
     oldDelegate {
       ...VoteItem
@@ -377,29 +377,29 @@ fragment VoteItem on Vote {
 }
 ```
 
-`newDelegate` and `oldDelegate` are of type `Transcoder`.
+`newDelegate` et `oldDelegate` sont de type `Transcoder`.
 
-It is not possible to spread a fragment of type `Vote` here.
+Il n'est pas possible de diffuser ici un fragment de type `Vote`.
 
-**Define Fragment as an atomic business unit of data**
+**Définir Fragment comme une unité commerciale atomique de données**
 
-GraphQL Fragment must be defined based on their usage.
+Le fragment GraphQL doit être défini en fonction de son utilisation.
 
-For most use-case, defining one fragment per type (in the case of repeated fields usage or type generation) is sufficient.
+Pour la plupart des cas d'utilisation, définir un fragment par type (en cas d'utilisation répétée de champs ou de génération de type) est suffisant.
 
-Here is a rule of thumb for using Fragment:
+Voici une règle générale pour utiliser Fragment :
 
-- when fields of the same type are repeated in a query, group them in a Fragment
-- when similar but not the same fields are repeated, create multiple fragments, ex:
+- lorsque des champs du même type sont répétés dans une requête, regroupez-les dans un Fragment
+- lorsque des champs similaires mais différents sont répétés, créez plusieurs fragments, ex  :
 
 ```graphql
-# base fragment (mostly used in listing)
+# fragment de base (utilisé principalement pour les listes)
 fragment Voter on Vote {
   id
   voter
 }
 
-# extended fragment (when querying a detailed view of a vote)
+# fragment étendu (lors de l'interrogation d'une vue détaillée d'un vote)
 fragment VoteWithPoll on Vote {
   id
   voter
@@ -413,38 +413,38 @@ fragment VoteWithPoll on Vote {
 
 ---
 
-## The essential tools
+## Les outils indispensables
 
-### GraphQL web-based explorers
+### Explorateurs Web GraphQL
 
-Iterating over queries by running them in your application can be cumbersome. For this reason, don't hesitate to use [The Graph Explorer](https://thegraph.com/explorer) to test your queries before adding them to your application. The Graph Explorer will provide you a preconfigured GraphQL playground to test your queries.
+Itérer sur des requêtes en les exécutant dans votre application peut s'avérer fastidieux. Pour cette raison, n'hésitez pas à utiliser [The Graph Explorer](https://thegraph.com/explorer) pour tester vos requêtes avant de les ajouter à votre application. Le Graph Explorer vous fournira un terrain de jeu GraphQL préconfiguré pour tester vos requêtes.
 
-If you are looking for a more flexible way to debug/test your queries, other similar web-based tools are available such as [Altair](https://altair.sirmuel.design/) and [GraphiQL](https://graphiql-online.com/graphiql).
+Si vous recherchez un moyen plus flexible de déboguer/tester vos requêtes, d'autres outils Web similaires sont disponibles tels que [Altair](https://altair.sirmuel.design/) et [GraphiQL](https://graphiql-online.com/graphiql).
 
-### GraphQL Linting
+### Linting GraphQL
 
-In order to keep up with the mentioned above best practices and syntactic rules, it is highly recommended to use the following workflow and IDE tools.
+Afin de suivre les meilleures pratiques et les règles syntaxiques mentionnées ci-dessus, il est fortement recommandé d'utiliser le flux de travail et les outils IDE suivants.
 
 **GraphQL ESLint**
 
-[GraphQL ESLint](https://github.com/dotansimha/graphql-eslint) will help you stay on top of GraphQL best practices with zero effort.
+[GraphQL ESLint](https://github.com/dotansimha/graphql-eslint) vous aidera à respecter les meilleures pratiques de GraphQL sans aucun effort.
 
-[Setup the "operations-recommended"](https://github.com/dotansimha/graphql-eslint#available-configs) config will enforce essential rules such as:
+[Configurer la configuration "opérations recommandées"](https://github.com/dotansimha/graphql-eslint#available-configs) appliquera des règles essentielles telles que :
 
-- `@graphql-eslint/fields-on-correct-type`: is a field used on a proper type?
-- `@graphql-eslint/no-unused variables`: should a given variable stay unused?
-- and more!
+- `@graphql-eslint/fields-on-correct-type`: un champ est-il utilisé sur un type approprié ?
+- `@graphql-eslint/no-unused variables`: une variable donnée doit-elle rester inutilisée ?
+- et plus !
 
-This will allow you to **catch errors without even testing queries** on the playground or running them in production!
+Cela vous permettra de **détecter les erreurs sans même tester les requêtes** sur le playground ni les exécuter en production!
 
-### IDE plugins
+### Plugins IDE
 
 **VSCode et GraphQL**
 
 L'[extension GraphQL VSCode](https://marketplace.visualstudio.com/items?itemName=GraphQL.vscode-graphql) est un excellent ajout à votre flux de travail de développement pour obtenir :
 
-- syntax highlighting
-- autocomplete suggestions
+- coloration syntaxique
+- suggestions d'autocomplétion
 - validation par rapport au schéma
 - snippets
 - aller à la définition des fragments et des types d'entrée
@@ -455,8 +455,8 @@ Si vous utilisez `graphql-eslint`, l'[extension ESLint VSCode](https://marketpla
 
 Le [plug-in JS GraphQL](https://plugins.jetbrains.com/plugin/8097-graphql/) améliorera considérablement votre expérience lorsque vous travaillez avec GraphQL en fournissant :
 
-- syntax highlighting
-- autocomplete suggestions
+- coloration syntaxique
+- suggestions d'autocomplétion
 - validation par rapport au schéma
 - snippets
 
