@@ -14,7 +14,7 @@ La definición del subgrafo consta de unos cuantos archivos:
 
 - `AssemblyScript Mappings`: [AssemblyScript](https://github.com/AssemblyScript/assemblyscript) codigo que traduce de los datos del evento a las entidades definidas en su esquema (por ejemplo `mapping.ts` en este tutorial)
 
-> Para poder utilizar tu subgrafo en la red descentralizada de The Graph, necesitarás [crear una clave API](/deploying/subgraph-studio-faqs/#2-how-do-i-create-an-api-key). Se recomienda que [añadas señal](/network/curating/#how-to-signal) a tu subgrafo con al menos [10.000 GRT](/network-transition-faq/#how-can-i-ensure-that-my-subgraph-will-be-picked-up-by-indexer-on-the-graph-network).
+> In order to use your subgraph on The Graph's decentralized network, you will need to [create an API key](/deploying/subgraph-studio-faqs/#2-how-do-i-create-an-api-key). It is recommended that you [add signal](/network/curating/#how-to-signal) to your subgraph with at least [3,000 GRT](/network-transition-faq/#how-can-i-ensure-that-my-subgraph-will-be-picked-up-by-indexer-on-the-graph-network).
 
 Antes de entrar en detalles sobre el contenido del archivo de manifiesto, es necesario instalar el [Graph CLI](https://github.com/graphprotocol/graph-cli) que necesitarás para construir y deployar un subgrafo.
 
@@ -101,6 +101,8 @@ description: Gravatar for Ethereum
 repository: https://github.com/graphprotocol/graph-tooling
 schema:
   file: ./schema.graphql
+indexerHints:
+  prune: auto
 dataSources:
   - kind: ethereum/contract
     name: Gravity
@@ -150,6 +152,8 @@ Las entradas importantes a actualizar para el manifiesto son:
 
 - `features`: una lista de todos los nombres de las [feature](#experimental-features) usadas.
 
+- `indexerHints.prune`: Defines the retention of historical block data for a subgraph. See [prune](#prune) in [indexerHints](#indexer-hints) section.
+
 - `dataSources.source`: la dirección del contrato inteligente del que procede el subgrafo, y la ABI del contrato inteligente a utilizar. La dirección es opcional; omitirla permite indexar eventos coincidentes de todos los contratos.
 
 - `dataSources.source.startBlock`: el número opcional del bloque desde el que la fuente de datos comienza a indexar. En la mayoría de los casos, sugerimos utilizar el bloque en el que se creó el contrato.
@@ -177,6 +181,8 @@ Las triggers de una fuente de datos dentro de un bloque se ordenan mediante el s
 3. Las triggers de bloques se ejecutan después de las triggers de eventos y calls, en el orden en que están definidos en el manifiesto.
 
 Estas normas de orden están sujetas a cambios.
+
+> **Note:** When new [dynamic data source](#data-source-templates-for-dynamically-created-contracts) are created, the handlers defined for dynamic data sources will only start processing after all existing data source handlers are processed, and will repeat in the same sequence whenever triggered.
 
 ### Obtención de ABIs
 
@@ -248,15 +254,15 @@ Para algunos tipos de entidad, el `id` se construye a partir de los id de otras 
 
 Admitimos los siguientes escalares en nuestra API GraphQL:
 
-| Tipo | Descripción |
-| --- | --- |
-| `Bytes` | Byte array, representado como un string hexadecimal. Comúnmente utilizado para los hashes y direcciones de Ethereum. |
-| `String` | Escalar para valores `string`. Los caracteres nulos no son compatibles y se eliminan automáticamente. |
-| `Boolean` | Escalar para valores `boolean`. |
-| `Int` | La especificación GraphQL define `Int` con un tamaño de 32 bytes. |
-| `Int8` | An 8-byte signed integer, also known as a 64-bit signed integer, can store values in the range from -9,223,372,036,854,775,808 to 9,223,372,036,854,775,807. Prefer using this to represent `i64` from ethereum. |
-| `BigInt` | Números enteros grandes. Se utiliza para los tipos `uint32`, `int64`, `uint64`, ..., `uint256` de Ethereum. Nota: Todo por debajo de `uint32`, como `int32`, `uint24` o `int8` se representa como `i32`. |
-| `BigDecimal` | `BigDecimal` Decimales de alta precisión representados como un signo y un exponente. El rango de exponentes va de -6143 a +6144. Redondeado a 34 dígitos significativos. |
+| Tipo         | Descripción                                                                                                                                                                                                      |
+| ------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Bytes`      | Byte array, representado como un string hexadecimal. Comúnmente utilizado para los hashes y direcciones de Ethereum.                                                                                             |
+| `String`     | Escalar para valores `string`. Los caracteres nulos no son compatibles y se eliminan automáticamente.                                                                                                            |
+| `Boolean`    | Escalar para valores `boolean`.                                                                                                                                                                                  |
+| `Int`        | La especificación GraphQL define `Int` con un tamaño de 32 bytes.                                                                                                                                                |
+| `Int8`       | An 8-byte signed integer, also known as a 64-bit signed integer, can store values in the range from -9,223,372,036,854,775,808 to 9,223,372,036,854,775,807. Prefer using this to represent `i64` from ethereum. |
+| `BigInt`     | Números enteros grandes. Se utiliza para los tipos `uint32`, `int64`, `uint64`, ..., `uint256` de Ethereum. Nota: Todo por debajo de `uint32`, como `int32`, `uint24` o `int8` se representa como `i32`.         |
+| `BigDecimal` | `BigDecimal` Decimales de alta precisión representados como un signo y un exponente. El rango de exponentes va de -6143 a +6144. Redondeado a 34 dígitos significativos.                                         |
 
 #### Enums
 
@@ -481,10 +487,10 @@ Diccionarios de idiomas admitidos:
 
 Algoritmos admitidos para ordenar los resultados:
 
-| Algoritmos | Descripción |
-| --- | --- |
-| rango | Usa la calidad de coincidencia (0-1) de la consulta de texto completo para ordenar los resultados. |
-| rango de proximidad | Similar al rango, pero también incluye la proximidad de los matches. |
+| Algoritmos          | Descripción                                                                                        |
+| ------------------- | -------------------------------------------------------------------------------------------------- |
+| rango               | Usa la calidad de coincidencia (0-1) de la consulta de texto completo para ordenar los resultados. |
+| rango de proximidad | Similar al rango, pero también incluye la proximidad de los matches.                               |
 
 ## Escribir Mappings
 
@@ -525,13 +531,32 @@ El segundo handler intenta cargar el `Gravatar` existente desde el almacén de T
 
 ### ID recomendados para la creación de nuevas entidades
 
-Cada entidad tiene que tener un `id` que es único entre todas las entidades del mismo tipo. El valor del `id` de una entidad se establece cuando se crea la entidad. A continuación se muestran algunos valores de `id` recomendados a tener en cuenta al crear nuevas entidades. NOTA: El valor de `id` debe ser un `string`.
+It is highly recommended to use `Bytes` as the type for `id` fields, and only use `String` for attributes that truly contain human-readable text, like the name of a token. Below are some recommended `id` values to consider when creating new entities.
 
-- `event.params.id.toHex()`
-- `event.transaction.from.toHex()`
-- `event.transaction.hash.toHex() + "-" + event.logIndex.toString()`
+- `transfer.id = event.transaction.hash`
 
-We provide the [Graph Typescript Library](https://github.com/graphprotocol/graph-ts) which contains utilities for interacting with the Graph Node store and conveniences for handling smart contract data and entities. You can use this library in your mappings by importing `@graphprotocol/graph-ts` in `mapping.ts`.
+- `let id = event.transaction.hash.concatI32(event.logIndex.toI32())`
+
+- For entities that store aggregated data, for e.g, daily trade volumes, the `id` usually contains the day number. Here, using a `Bytes` as the `id` is beneficial. Determining the `id` would look like
+
+```typescript
+let dayID = event.block.timestamp.toI32() / 86400
+let id = Bytes.fromI32(dayID)
+```
+
+- Convert constant addresses to `Bytes`.
+
+`const id = Bytes.fromHexString('0xdead...beef')`
+
+There is a [Graph Typescript Library](https://github.com/graphprotocol/graph-ts) which contains utilities for interacting with the Graph Node store and conveniences for handling smart contract data and entities. It can be imported into `mapping.ts` from `@graphprotocol/graph-ts`.
+
+### Handling of entities with identical IDs
+
+When creating and saving a new entity, if an entity with the same ID already exists, the properties of the new entity are always preferred during the merge process. This means that the existing entity will be updated with the values from the new entity.
+
+If a null value is intentionally set for a field in the new entity with the same ID, the existing entity will be updated with the null value.
+
+If no value is set for a field in the new entity with the same ID, the field will result in null as well.
 
 ## Generación de código
 
@@ -659,7 +684,7 @@ export function handleNewExchange(event: NewExchange): void {
 ```
 
 > **Nota:** Un nuevo origen de datos sólo procesará las llamadas y los eventos del bloque en el que fue creado y todos los bloques siguientes, pero no procesará los datos históricos, es decir, los datos que están contenidos en bloques anteriores.
->
+> 
 > Si los bloques anteriores contienen datos relevantes para la nueva fuente de datos, lo mejor es indexar esos datos leyendo el estado actual del contrato y creando entidades que representen ese estado en el momento de crear la nueva fuente de datos.
 
 ### Contexto de la fuente de datos
@@ -716,10 +741,47 @@ dataSources:
 ```
 
 > **Nota:** El bloque de creación del contrato se puede buscar rápidamente en Etherscan:
->
+> 
 > 1. Busca el contrato introduciendo su dirección en la barra de búsqueda.
 > 2. Haz clic en el hash de la transacción de creación en la sección `Contract Creator`.
 > 3. Carga la página de detalles de la transacción, donde encontrarás el bloque inicial de ese contrato.
+
+## Indexer Hints
+
+The `indexerHints` setting in a subgraph's manifest provides directives for indexers on processing and managing a subgraph. It influences operational decisions across data handling, indexing strategies, and optimizations. Presently, it features the `prune` option for managing historical data retention or pruning.
+
+### Prune
+
+`indexerHints.prune`: Defines the retention of historical block data for a subgraph. Options include:
+
+1. `"never"`: No pruning of historical data; retains the entire history.
+2. `"auto"`: Retains the minimum necessary history as set by the indexer, optimizing query performance.
+3. A specific number: Sets a custom limit on the number of historical blocks to retain.
+
+```
+ indexerHints:
+  prune: auto
+```
+
+> The term "history" in this context of subgraphs is about storing data that reflects the old states of mutable entities. This capability is essential for [time travel queries](/querying/graphql-api/#time-travel-queries), This feature enables querying the past states of these entities at specific blocks throughout the blockchain's history.
+
+Using `"auto"` is generally recommended as it maximizes query performance and is sufficient for most users who do not require access to extensive historical data.
+
+For subgraphs leveraging [time travel queries](/querying/graphql-api/#time-travel-queries), it's advisable to either set a specific number of blocks for historical data retention or use `prune: never` to keep all historical entity states. Below are examples of how to configure both options in your subgraph's settings:
+
+To retain a specific amount of historical data:
+
+```
+ indexerHints:
+  prune: 1000 # Replace 1000 with the desired number of blocks to retain
+```
+
+To preserve the complete history of entity states:
+
+```
+indexerHints:
+  prune: never
+```
 
 ## Call Handlers
 
