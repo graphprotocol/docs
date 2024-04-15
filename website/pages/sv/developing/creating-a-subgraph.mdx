@@ -14,7 +14,7 @@ Subgraph-definitionen består av några filer:
 
 - `AssemblyScript Mappings`: [AssemblyScript](https://github.com/AssemblyScript/assemblyscript) kod som översätter från händelsedata till de enheter som är definierade i ditt schema (t.ex. `mapping.ts` i den här handledningen)
 
-> För att använda din subgraph på The Graphs decentraliserade nätverk måste du [skapa en API-nyckel](/deploying/subgraph-studio-faqs/#2-how-do-i-create-an-api-key). Det rekommenderas att du [lägger till signal](/network/curating/#how-to-signal) till din subgraph med minst [10 000 GRT](/network-transition-faq/#how-can-i-ensure-that-my-subgraph-will-be-picked-up-by-indexer-on-the-graph-network).
+> In order to use your subgraph on The Graph's decentralized network, you will need to [create an API key](/deploying/subgraph-studio-faqs/#2-how-do-i-create-an-api-key). It is recommended that you [add signal](/network/curating/#how-to-signal) to your subgraph with at least [3,000 GRT](/network-transition-faq/#how-can-i-ensure-that-my-subgraph-will-be-picked-up-by-indexer-on-the-graph-network).
 
 Innan du går in på detaljer om manifest filens innehåll måste du installera [Graph CLI](https://github.com/graphprotocol/graph-cli), som du kommer att behöva för att bygga och distribuera en subgraph.
 
@@ -101,6 +101,8 @@ description: Gravatar for Ethereum
 repository: https://github.com/graphprotocol/graph-tooling
 schema:
   file: ./schema.graphql
+indexerHints:
+  prune: auto
 dataSources:
   - kind: ethereum/contract
     name: Gravity
@@ -150,6 +152,8 @@ De viktiga posterna att uppdatera för manifestet är:
 
 - `features`: en lista över alla använda [funktions](#experimentella-funktioner) namn.
 
+- `indexerHints.prune`: Defines the retention of historical block data for a subgraph. See [prune](#prune) in [indexerHints](#indexer-hints) section.
+
 - `dataSources.source`: adressen till det smarta kontraktet som subgrafen hämtar data från, och ABI för det smarta kontraktet att använda. Adressen är valfri; att utelämna den gör det möjligt att indexera matchande händelser från alla kontrakt.
 
 - `dataSources.source.startBlock`: det valfria blocknummer som datakällan börjar indexera från. I de flesta fall föreslår vi att du använder det block där kontraktet skapades.
@@ -177,6 +181,8 @@ Utlösarna för en datakälla inom ett block ordnas med hjälp av följande proc
 3. Blockutlösare körs efter händelse- och anropsutlösare, i den ordning de definieras i manifestet.
 
 Dessa ordningsregler kan komma att ändras.
+
+> **Note:** When new [dynamic data source](#data-source-templates-for-dynamically-created-contracts) are created, the handlers defined for dynamic data sources will only start processing after all existing data source handlers are processed, and will repeat in the same sequence whenever triggered.
 
 ### Hämta ABI: erna
 
@@ -248,15 +254,15 @@ För vissa entitetstyper konstrueras `id` från id:erna hos två andra entiteter
 
 Vi stödjer följande skalartyper i vår GraphQL API:
 
-| Typ | Beskrivning |
-| --- | --- |
-| `Bytes` | Bytematris, representerad som en hexadecimal sträng. Vanligt används för Ethereum-hashar och adresser. |
-| `String` | Skalär för `string`-värden. Nolltecken stöds inte och tas automatiskt bort. |
-| `Boolean` | Skalär för `boolean`-värden. |
-| `Int` | Enligt GraphQL specifikationen har `Int` en storlek på 32 byte. |
-| `Int8` | An 8-byte signed integer, also known as a 64-bit signed integer, can store values in the range from -9,223,372,036,854,775,808 to 9,223,372,036,854,775,807. Prefer using this to represent `i64` from ethereum. |
-| `BigInt` | Stora heltal. Används för Ethereum's `uint32`, `int64`, `uint64`, ..., `uint256` typer. Observera: Allt under `uint32`, som `int32`, `uint24` eller `int8` representeras som `i32`. |
-| `BigDecimal` | `BigDecimal` Högprecisionsdecimaler representerade som en signifikant och en exponent. Exponentområdet är från −6143 till +6144. Avrundat till 34 signifikanta siffror. |
+| Typ          | Beskrivning                                                                                                                                                                                                      |
+| ------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Bytes`      | Bytematris, representerad som en hexadecimal sträng. Vanligt används för Ethereum-hashar och adresser.                                                                                                           |
+| `String`     | Skalär för `string`-värden. Nolltecken stöds inte och tas automatiskt bort.                                                                                                                                      |
+| `Boolean`    | Skalär för `boolean`-värden.                                                                                                                                                                                     |
+| `Int`        | Enligt GraphQL specifikationen har `Int` en storlek på 32 byte.                                                                                                                                                  |
+| `Int8`       | An 8-byte signed integer, also known as a 64-bit signed integer, can store values in the range from -9,223,372,036,854,775,808 to 9,223,372,036,854,775,807. Prefer using this to represent `i64` from ethereum. |
+| `BigInt`     | Stora heltal. Används för Ethereum's `uint32`, `int64`, `uint64`, ..., `uint256` typer. Observera: Allt under `uint32`, som `int32`, `uint24` eller `int8` representeras som `i32`.                              |
+| `BigDecimal` | `BigDecimal` Högprecisionsdecimaler representerade som en signifikant och en exponent. Exponentområdet är från −6143 till +6144. Avrundat till 34 signifikanta siffror.                                          |
 
 #### Enums
 
@@ -422,7 +428,12 @@ type _Schema_
     name: "bandSearch"
     language: en
     algorithm: rank
-    include: [{ entity: "Band", fields: [{ name: "name" }, { name: "description" }, { name: "bio" }] }]
+    include: [
+      {
+        entity: "Band"
+        fields: [{ name: "name" }, { name: "description" }, { name: "bio" }]
+      }
+    ]
   )
 
 type Band @entity {
@@ -525,13 +536,32 @@ Den andra hanteraren försöker ladda den befintliga `Gravatar` från Graph Node
 
 ### Rekommenderade ID:n för att skapa nya entiteter
 
-Varje entitet måste ha ett `id` som är unikt bland alla entiteter av samma typ. En entitets `id`-värde sätts när entiteten skapas. Nedan finns några rekommenderade `id`-värden att överväga när du skapar nya entiteter. OBS: Värdet på `id` måste vara en `string`.
+It is highly recommended to use `Bytes` as the type for `id` fields, and only use `String` for attributes that truly contain human-readable text, like the name of a token. Below are some recommended `id` values to consider when creating new entities.
 
-- `event.params.id.toHex()`
-- `event.transaction.from.toHex()`
-- `event.transaction.hash.toHex() + "-" + event.logIndex.toString()`
+- `transfer.id = event.transaction.hash`
 
-We provide the [Graph Typescript Library](https://github.com/graphprotocol/graph-ts) which contains utilities for interacting with the Graph Node store and conveniences for handling smart contract data and entities. You can use this library in your mappings by importing `@graphprotocol/graph-ts` in `mapping.ts`.
+- `let id = event.transaction.hash.concatI32(event.logIndex.toI32())`
+
+- For entities that store aggregated data, for e.g, daily trade volumes, the `id` usually contains the day number. Here, using a `Bytes` as the `id` is beneficial. Determining the `id` would look like
+
+```typescript
+let dayID = event.block.timestamp.toI32() / 86400
+let id = Bytes.fromI32(dayID)
+```
+
+- Convert constant addresses to `Bytes`.
+
+`const id = Bytes.fromHexString('0xdead...beef')`
+
+There is a [Graph Typescript Library](https://github.com/graphprotocol/graph-ts) which contains utilities for interacting with the Graph Node store and conveniences for handling smart contract data and entities. It can be imported into `mapping.ts` from `@graphprotocol/graph-ts`.
+
+### Handling of entities with identical IDs
+
+When creating and saving a new entity, if an entity with the same ID already exists, the properties of the new entity are always preferred during the merge process. This means that the existing entity will be updated with the values from the new entity.
+
+If a null value is intentionally set for a field in the new entity with the same ID, the existing entity will be updated with the null value.
+
+If no value is set for a field in the new entity with the same ID, the field will result in null as well.
 
 ## Kodgenerering
 
@@ -562,13 +592,13 @@ import {
   // The events classes:
   NewGravatar,
   UpdatedGravatar,
-} from '../generated/Gravity/Gravity'
+} from "../generated/Gravity/Gravity";
 ```
 
 Utöver detta genereras en klass för varje entitetstyp i subgrafens GraphQL-schema. Dessa klasser tillhandahåller typsäker entitetsladdning, läs- och skrivåtkomst till entitetsfält samt en `save()`-metod för att skriva entiteter till lagret. Alla entitetsklasser skrivs till `<OUTPUT_DIR>/schema.ts`, vilket gör att mappningar kan importera dem med
 
 ```javascript
-import { Gravatar } from '../generated/schema'
+import { Gravatar } from "../generated/schema"
 ```
 
 > **Observera:** Kodgenerering måste utföras igen efter varje ändring av GraphQL-schemat eller ABIn som ingår i manifestet. Det måste också utföras minst en gång innan du bygger eller distribuerar subgrafet.
@@ -591,7 +621,7 @@ dataSources:
     name: Factory
     network: mainnet
     source:
-      address: '0xc0a47dFe034B400B47bDaD5FecDa2621de6c4d95'
+      address: "0xc0a47dFe034B400B47bDaD5FecDa2621de6c4d95"
       abi: Factory
     mapping:
       kind: ethereum/events
@@ -649,17 +679,17 @@ templates:
 I det sista steget uppdaterar du mappningen av huvudkontraktet för att skapa en dynamisk datakällinstans från en av mallarna. I det här exemplet ändrar du mappningen av huvudkontraktet för att importera mallen `Exchange` och anropar metoden `Exchange.create(address)` för att börja indexera det nya växlingskontraktet.
 
 ```typescript
-import { Exchange } from '../generated/templates'
+import { Exchange } from "../generated/templates";
 
 export function handleNewExchange(event: NewExchange): void {
   // Start indexing the exchange; `event.params.exchange` is the
   // address of the new exchange contract
-  Exchange.create(event.params.exchange)
+  Exchange.create(event.params.exchange);
 }
 ```
 
 > ** Notera:** En ny datakälla bearbetar endast anrop och händelser för det block där den skapades och alla efterföljande block, men bearbetar inte historiska data, dvs. data som finns i tidigare block.
->
+> 
 > Om tidigare block innehåller data som är relevanta för den nya datakällan, är det bäst att indexera dessa data genom att läsa kontraktets aktuella status och skapa enheter som representerar denna status vid den tidpunkt då den nya datakällan skapas.
 
 ### Kontext för datakälla
@@ -667,22 +697,22 @@ export function handleNewExchange(event: NewExchange): void {
 Datakällans kontext gör det möjligt att skicka extra konfiguration när en mall instansieras. I vårt exempel kan vi säga att börser är associerade med ett visst handelspar, vilket ingår i händelsen `NewExchange`. Den informationen kan skickas till den instansierade datakällan, så här:
 
 ```typescript
-import { Exchange } from '../generated/templates'
+import { Exchange } from "../generated/templates";
 
 export function handleNewExchange(event: NewExchange): void {
-  let context = new DataSourceContext()
-  context.setString('tradingPair', event.params.tradingPair)
-  Exchange.createWithContext(event.params.exchange, context)
+  let context = new DataSourceContext();
+  context.setString("tradingPair", event.params.tradingPair);
+  Exchange.createWithContext(event.params.exchange, context);
 }
 ```
 
 Inuti en mappning av mallen `Exchange` kan kontexten sedan nås:
 
 ```typescript
-import { dataSource } from '@graphprotocol/graph-ts'
+import { dataSource } from "@graphprotocol/graph-ts";
 
-let context = dataSource.context()
-let tradingPair = context.getString('tradingPair')
+let context = dataSource.context();
+let tradingPair = context.getString("tradingPair")
 ```
 
 Det finns sättare och hämtare som `setString` och `getString` för alla värdestyper.
@@ -697,7 +727,7 @@ dataSources:
     name: ExampleSource
     network: mainnet
     source:
-      address: '0xc0a47dFe034B400B47bDaD5FecDa2621de6c4d95'
+      address: "0xc0a47dFe034B400B47bDaD5FecDa2621de6c4d95"
       abi: ExampleContract
       startBlock: 6627917
     mapping:
@@ -716,10 +746,47 @@ dataSources:
 ```
 
 > **Observera:** Blocket där kontraktet skapades kan snabbt sökas upp på Etherscan:
->
+> 
 > 1. Sök efter kontraktet genom att ange dess adress i sökfältet.
 > 2. Klicka på transaktionshashen för skapandet i avsnittet `Kontraktsskapare`.
 > 3. Ladda sidan med transaktionsdetaljer där du hittar startblocket för det kontraktet.
+
+## Indexer Hints
+
+The `indexerHints` setting in a subgraph's manifest provides directives for indexers on processing and managing a subgraph. It influences operational decisions across data handling, indexing strategies, and optimizations. Presently, it features the `prune` option for managing historical data retention or pruning.
+
+### Prune
+
+`indexerHints.prune`: Defines the retention of historical block data for a subgraph. Options include:
+
+1. `"never"`: No pruning of historical data; retains the entire history.
+2. `"auto"`: Retains the minimum necessary history as set by the indexer, optimizing query performance.
+3. A specific number: Sets a custom limit on the number of historical blocks to retain.
+
+```
+ indexerHints:
+  prune: auto
+```
+
+> The term "history" in this context of subgraphs is about storing data that reflects the old states of mutable entities. This capability is essential for [time travel queries](/querying/graphql-api/#time-travel-queries), This feature enables querying the past states of these entities at specific blocks throughout the blockchain's history.
+
+Using `"auto"` is generally recommended as it maximizes query performance and is sufficient for most users who do not require access to extensive historical data.
+
+For subgraphs leveraging [time travel queries](/querying/graphql-api/#time-travel-queries), it's advisable to either set a specific number of blocks for historical data retention or use `prune: never` to keep all historical entity states. Below are examples of how to configure both options in your subgraph's settings:
+
+To retain a specific amount of historical data:
+
+```
+ indexerHints:
+  prune: 1000 # Replace 1000 with the desired number of blocks to retain
+```
+
+To preserve the complete history of entity states:
+
+```
+indexerHints:
+  prune: never
+```
 
 ## Anropsbehandlare
 
@@ -739,7 +806,7 @@ dataSources:
     name: Gravity
     network: mainnet
     source:
-      address: '0x731a10897d267e19b34503ad902d0a29173ba4b1'
+      address: "0x731a10897d267e19b34503ad902d0a29173ba4b1"
       abi: Gravity
     mapping:
       kind: ethereum/events
@@ -763,15 +830,15 @@ dataSources:
 Varje anropsbehandlare tar en enda parameter med en typ som motsvarar namnet på den kallade funktionen. I det ovanstående exempelsubgrafet innehåller kartläggningen en hanterare för när funktionen `createGravatar` anropas och tar emot en `CreateGravatarCall`-parameter som ett argument:
 
 ```typescript
-import { CreateGravatarCall } from '../generated/Gravity/Gravity'
-import { Transaction } from '../generated/schema'
+import { CreateGravatarCall } from "../generated/Gravity/Gravity";
+import { Transaction } from "../generated/schema";
 
 export function handleCreateGravatar(call: CreateGravatarCall): void {
-  let id = call.transaction.hash
-  let transaction = new Transaction(id)
-  transaction.displayName = call.inputs._displayName
-  transaction.imageUrl = call.inputs._imageUrl
-  transaction.save()
+  let id = call.transaction.hash;
+  let transaction = new Transaction(id);
+  transaction.displayName = call.inputs._displayName;
+  transaction.imageUrl = call.inputs._imageUrl;
+  transaction.save();
 }
 ```
 
@@ -802,7 +869,7 @@ dataSources:
     name: Gravity
     network: dev
     source:
-      address: '0x731a10897d267e19b34503ad902d0a29173ba4b1'
+      address: "0x731a10897d267e19b34503ad902d0a29173ba4b1"
       abi: Gravity
     mapping:
       kind: ethereum/events
@@ -854,9 +921,9 @@ Den definierade hanteraren med filtret once kommer att anropas endast en gång i
 
 ```ts
 export function handleOnce(block: ethereum.Block): void {
-  let data = new InitialData(Bytes.fromUTF8('initial'))
-  data.data = 'Setup data here'
-  data.save()
+  let data = new InitialData(Bytes.fromUTF8("initial"));
+  data.data = "Setup data here";
+  data.save();
 }
 ```
 
@@ -865,12 +932,12 @@ export function handleOnce(block: ethereum.Block): void {
 Mappningsfunktionen tar emot ett `ethereum.Block` som sitt enda argument. Liksom mappningsfunktioner för händelser kan denna funktion komma åt befintliga subgrafiska enheter i lagret, anropa smarta kontrakt och skapa eller uppdatera enheter.
 
 ```typescript
-import { ethereum } from '@graphprotocol/graph-ts'
+import { ethereum } from "@graphprotocol/graph-ts";
 
 export function handleBlock(block: ethereum.Block): void {
-  let id = block.hash
-  let entity = new Block(id)
-  entity.save()
+  let id = block.hash;
+  let entity = new Block(id);
+  entity.save();
 }
 ```
 
@@ -1123,26 +1190,26 @@ const cid = dataSource.stringParam()
 Exempel på hanterare:
 
 ```typescript
-import { json, Bytes, dataSource } from '@graphprotocol/graph-ts'
-import { TokenMetadata } from '../generated/schema'
+import { json, Bytes, dataSource } from "@graphprotocol/graph-ts";
+import { TokenMetadata } from "../generated/schema";
 
 export function handleMetadata(content: Bytes): void {
-  let tokenMetadata = new TokenMetadata(dataSource.stringParam())
-  const value = json.fromBytes(content).toObject()
+  let tokenMetadata = new TokenMetadata(dataSource.stringParam());
+  const value = json.fromBytes(content).toObject();
   if (value) {
-    const image = value.get('image')
-    const name = value.get('name')
-    const description = value.get('description')
-    const externalURL = value.get('external_url')
+    const image = value.get("image");
+    const name = value.get("name");
+    const description = value.get("description");
+    const externalURL = value.get("external_url");
 
     if (name && image && description && externalURL) {
-      tokenMetadata.name = name.toString()
-      tokenMetadata.image = image.toString()
-      tokenMetadata.externalURL = externalURL.toString()
-      tokenMetadata.description = description.toString()
+      tokenMetadata.name = name.toString();
+      tokenMetadata.image = image.toString();
+      tokenMetadata.externalURL = externalURL.toString();
+      tokenMetadata.description = description.toString();
     }
 
-    tokenMetadata.save()
+    tokenMetadata.save();
   }
 }
 ```
@@ -1161,29 +1228,29 @@ För Arweave, från och med version 0.33.0 kan Graph Node hämta filer som är l
 Exempel:
 
 ```typescript
-import { TokenMetadata as TokenMetadataTemplate } from '../generated/templates'
+import { TokenMetadata as TokenMetadataTemplate } from "../generated/templates";
 
-const ipfshash = 'QmaXzZhcYnsisuue5WRdQDH6FDvqkLQX1NckLqBYeYYEfm'
+const ipfshash = "QmaXzZhcYnsisuue5WRdQDH6FDvqkLQX1NckLqBYeYYEfm";
 //Denna exempelkod är för en undergraf för kryptosamverkan. Ovanstående ipfs-hash är en katalog med tokenmetadata för alla kryptosamverkande NFT:er.
 
 export function handleTransfer(event: TransferEvent): void {
-  let token = Token.load(event.params.tokenId.toString())
+  let token = Token.load(event.params.tokenId.toString());
   if (!token) {
-    token = new Token(event.params.tokenId.toString())
-    token.tokenID = event.params.tokenId
+    token = new Token(event.params.tokenId.toString());
+    token.tokenID = event.params.tokenId;
 
-    token.tokenURI = '/' + event.params.tokenId.toString() + '.json'
-    const tokenIpfsHash = ipfshash + token.tokenURI
+    token.tokenURI = "/" + event.params.tokenId.toString() + ".json";
+    const tokenIpfsHash = ipfshash + token.tokenURI;
     //Detta skapar en sökväg till metadata för en enskild Crypto coven NFT. Den konkaterar katalogen med "/" + filnamn + ".json"
 
-    token.ipfsURI = tokenIpfsHash
+    token.ipfsURI = tokenIpfsHash;
 
-    TokenMetadataTemplate.create(tokenIpfsHash)
+    TokenMetadataTemplate.create(tokenIpfsHash);
   }
 
-  token.updatedAtTimestamp = event.block.timestamp
-  token.owner = event.params.to.toHexString()
-  token.save()
+  token.updatedAtTimestamp = event.block.timestamp;
+  token.owner = event.params.to.toHexString();
+  token.save();
 }
 ```
 
