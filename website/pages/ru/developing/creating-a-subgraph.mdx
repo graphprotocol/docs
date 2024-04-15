@@ -14,7 +14,7 @@ title: Создание субграфа
 
 - `AssemblyScript Mappings`: [AssemblyScript](https://github.com/AssemblyScript/assemblyscript), который преобразует данные события в объекты, определенные в Вашей схеме (например, `mapping.ts` в этом руководстве)
 
-> Чтобы использовать свой субграф в децентрализованной сети The Graph, Вам необходимо [создать API-ключ](/deploying/subgraph-studio-faqs/#2-how-do-i-create-an-api-key). Рекомендуется [добавить сигнал](/network/curating/#how-to-signal) в свой субграф как минимум с [10,000 GRT](/network-transition-faq/#how-can-i-ensure-that-my-subgraph-will-be-picked-up-by-indexer-on-the-graph-network).
+> In order to use your subgraph on The Graph's decentralized network, you will need to [create an API key](/deploying/subgraph-studio-faqs/#2-how-do-i-create-an-api-key). It is recommended that you [add signal](/network/curating/#how-to-signal) to your subgraph with at least [3,000 GRT](/network-transition-faq/#how-can-i-ensure-that-my-subgraph-will-be-picked-up-by-indexer-on-the-graph-network).
 
 Прежде чем Вы перейдете к подробному описанию содержимого файла манифеста, Вам необходимо установить[Graph CLI](https://github.com/graphprotocol/graph-cli), который понадобится для создания и развертывания субграфа.
 
@@ -82,7 +82,7 @@ graph add <address> [<subgraph-manifest default: "./subgraph.yaml">]
 
 Параметр `--merge-entities` определяет, как разработчик хотел бы обрабатывать конфликты имен `entity` и `event`:
 
-- Если `true`: новый `dataSource` должен использовать существующие ` eventHandlers` & `entities`.
+- Если `true`: новый ` dataSource ` должен использовать существующие ` eventHandlers` & `entities`.
 - Если `false`: следует создать новую сущность и обработчик событий с помощью `${dataSourceName}{EventName}`.
 
 Контракт `address` будет записан в `networks.json` для соответствующей сети.
@@ -101,6 +101,8 @@ description: Gravatar for Ethereum
 repository: https://github.com/graphprotocol/graph-tooling
 schema:
   file: ./schema.graphql
+indexerHints:
+  prune: auto
 dataSources:
   - kind: ethereum/contract
     name: Gravity
@@ -146,9 +148,11 @@ dataSources:
 
 - `description`: понятное описание того, что представляет собой субграф. Это описание отображается в Graph Explorer при развертывании субграфа в хостинговом сервисе.
 
-- `repository`: URL-адрес репозитория, в котором можно найти манифест субграфа. Это также отображается в The Graph Explorer.
+- ` repository `: URL-адрес репозитория, в котором можно найти манифест субграфа. Это также отображается в The Graph Explorer.
 
 - `features`: список всех используемых имен [функций](#experimental-features).
+
+- `indexerHints.prune`: Defines the retention of historical block data for a subgraph. See [prune](#prune) in [indexerHints](#indexer-hints) section.
 
 - `dataSources.source`: адрес смарт-контракта, источники субграфа и ABI смарт-контракта для использования. Адрес необязателен; отсутствие этого параметра позволяет индексировать совпадающие события из всех контрактов.
 
@@ -177,6 +181,8 @@ dataSources:
 3. Триггеры блоков запускаются после триггеров событий и вызовов в том порядке, в котором они определены в манифесте.
 
 Эти правила оформления заказа могут быть изменены.
+
+> **Note:** When new [dynamic data source](#data-source-templates-for-dynamically-created-contracts) are created, the handlers defined for dynamic data sources will only start processing after all existing data source handlers are processed, and will repeat in the same sequence whenever triggered.
 
 ### Получение ABIs
 
@@ -248,15 +254,15 @@ Null value resolved for non-null field 'name'
 
 Мы поддерживаем следующие скаляры в нашем GraphQL API:
 
-| Тип | Описание |
-| --- | --- |
-| `Bytes` | Массив байтов, представленный в виде шестнадцатеричной строки. Обычно используется для хэшей и адресов Ethereum. |
-| `String` | Скаляр для значений `string`. Нулевые символы не поддерживаются и автоматически удаляются. |
-| `Boolean` | Скаляр для значений `boolean`. |
-| `Int` | Спецификация GraphQL определяет `Int` как имеющий размер 32 байта. |
-| `Int8` | 8-байтовое целое число со знаком, также называемое 64-битным целым числом со знаком, может хранить значения в диапазоне от -9 223 372 036 854 775 808 до 9 223 372 036 854 775 807. Предпочтительно использовать это для представления `i64` из Ethereum. |
-| `BigInt` | Большие целые числа. Используются для типов Ethereum `uint32`, `int64`, `uint64`, ..., `uint256`. Примечание: Все, что находится ниже `uint32`, например, `int32`, `uint24` или `int8`, представлено как `i32`. |
-| `BigDecimal` | `BigDecimal` Десятичные дроби высокой точности, представленные в виде значащего числа и экспоненты. Диапазон значений экспоненты от -6143 до +6144. Округляется до 34 значащих цифр. |
+| Тип          | Описание                                                                                                                                                                                                                                                  |
+| ------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Bytes`      | Массив байтов, представленный в виде шестнадцатеричной строки. Обычно используется для хэшей и адресов Ethereum.                                                                                                                                          |
+| `String`     | Скаляр для значений `string`. Нулевые символы не поддерживаются и автоматически удаляются.                                                                                                                                                                |
+| `Boolean`    | Скаляр для значений `boolean`.                                                                                                                                                                                                                            |
+| `Int`        | Спецификация GraphQL определяет `Int` как имеющий размер 32 байта.                                                                                                                                                                                        |
+| `Int8`       | 8-байтовое целое число со знаком, также называемое 64-битным целым числом со знаком, может хранить значения в диапазоне от -9 223 372 036 854 775 808 до 9 223 372 036 854 775 807. Предпочтительно использовать это для представления `i64` из Ethereum. |
+| `BigInt`     | Большие целые числа. Используются для типов Ethereum `uint32`, `int64`, `uint64`, ..., `uint256`. Примечание: Все, что находится ниже `uint32`, например, `int32`, `uint24` или `int8`, представлено как `i32`.                                           |
+| `BigDecimal` | `BigDecimal` Десятичные дроби высокой точности, представленные в виде значащего числа и экспоненты. Диапазон значений экспоненты от -6143 до +6144. Округляется до 34 значащих цифр.                                                                      |
 
 #### Перечисления
 
@@ -450,7 +456,7 @@ query {
 }
 ```
 
-> **[Управление функциями](#experimental-features):** Начиная с `specVersion` `0.0.4` и далее, `fullTextSearch` должно быть объявлено в разделе `features` в манифесте субграфа.
+> **[Управление функциями](#experimental-features):** Начиная с `specVersion` `0.0.4` и далее, ` fullTextSearch ` должно быть объявлено в разделе `features` в манифесте субграфа.
 
 ### Поддерживаемые языки
 
@@ -525,13 +531,32 @@ export function handleUpdatedGravatar(event: UpdatedGravatar): void {
 
 ### Рекомендуемые идентификаторы для создания новых объектов
 
-Каждый объект должен иметь `id`, который является уникальным среди всех объектов одного типа. Значение объекта `id` устанавливается при создании этого объекта. Ниже приведены некоторые рекомендуемые значения `id`, которые следует учитывать при создании новых объектов. ПРИМЕЧАНИЕ: Значение `id` должно быть `string`.
+It is highly recommended to use `Bytes` as the type for `id` fields, and only use `String` for attributes that truly contain human-readable text, like the name of a token. Below are some recommended `id` values to consider when creating new entities.
 
-- `event.params.id.toHex()`
-- `event.transaction.from.toHex()`
-- `event.transaction.hash.toHex() + "-" + event.logIndex.toString()`
+- `transfer.id = event.transaction.hash`
 
-Мы предоставляем [Библиотеку Graph Typescript](https://github.com/graphprotocol/graph-ts), которая содержит утилиты для взаимодействия с хранилищем узлов The Graph и удобства для обработки данных смарт-контрактов и объектов. Вы можете использовать эту библиотеку в своих мэппингах, импортировав `@graphprotocol/graph-ts` в `mapping.ts`.
+- `let id = event.transaction.hash.concatI32(event.logIndex.toI32())`
+
+- For entities that store aggregated data, for e.g, daily trade volumes, the `id` usually contains the day number. Here, using a `Bytes` as the `id` is beneficial. Determining the `id` would look like
+
+```typescript
+let dayID = event.block.timestamp.toI32() / 86400
+let id = Bytes.fromI32(dayID)
+```
+
+- Convert constant addresses to `Bytes`.
+
+`const id = Bytes.fromHexString('0xdead...beef')`
+
+There is a [Graph Typescript Library](https://github.com/graphprotocol/graph-ts) which contains utilities for interacting with the Graph Node store and conveniences for handling smart contract data and entities. It can be imported into `mapping.ts` from `@graphprotocol/graph-ts`.
+
+### Handling of entities with identical IDs
+
+When creating and saving a new entity, if an entity with the same ID already exists, the properties of the new entity are always preferred during the merge process. This means that the existing entity will be updated with the values from the new entity.
+
+If a null value is intentionally set for a field in the new entity with the same ID, the existing entity will be updated with the null value.
+
+If no value is set for a field in the new entity with the same ID, the field will result in null as well.
 
 ## Генерация кода
 
@@ -659,7 +684,7 @@ export function handleNewExchange(event: NewExchange): void {
 ```
 
 > **Примечание:** Новый источник данных будет обрабатывать только вызовы и события для блока, в котором он был создан, и всех последующих блоков, но не будет обрабатывать исторические данные, т.е. данные, которые содержатся в предыдущих блоках.
->
+> 
 > Если предыдущие блоки содержат данные, относящиеся к новому источнику данных, лучше всего проиндексировать эти данные, считывая текущее состояние контракта и создавая сущности, представляющие это состояние на момент создания нового источника данных.
 
 ### Контекст источника данных
@@ -716,10 +741,47 @@ dataSources:
 ```
 
 > **Примечание:** Блок создания контракта можно быстро найти в Etherscan:
->
+> 
 > 1. Найдите контракт, введя его адрес в строке поиска.
 > 2. Нажмите на хэш транзакции создания в разделе `Contract Creator`.
 > 3. Загрузите страницу сведений о транзакции, где вы найдете начальный блок для этого контракта.
+
+## Indexer Hints
+
+The `indexerHints` setting in a subgraph's manifest provides directives for indexers on processing and managing a subgraph. It influences operational decisions across data handling, indexing strategies, and optimizations. Presently, it features the `prune` option for managing historical data retention or pruning.
+
+### Prune
+
+`indexerHints.prune`: Defines the retention of historical block data for a subgraph. Options include:
+
+1. `"never"`: No pruning of historical data; retains the entire history.
+2. `"auto"`: Retains the minimum necessary history as set by the indexer, optimizing query performance.
+3. A specific number: Sets a custom limit on the number of historical blocks to retain.
+
+```
+ indexerHints:
+  prune: auto
+```
+
+> The term "history" in this context of subgraphs is about storing data that reflects the old states of mutable entities. This capability is essential for [time travel queries](/querying/graphql-api/#time-travel-queries), This feature enables querying the past states of these entities at specific blocks throughout the blockchain's history.
+
+Using `"auto"` is generally recommended as it maximizes query performance and is sufficient for most users who do not require access to extensive historical data.
+
+For subgraphs leveraging [time travel queries](/querying/graphql-api/#time-travel-queries), it's advisable to either set a specific number of blocks for historical data retention or use `prune: never` to keep all historical entity states. Below are examples of how to configure both options in your subgraph's settings:
+
+To retain a specific amount of historical data:
+
+```
+ indexerHints:
+  prune: 1000 # Replace 1000 with the desired number of blocks to retain
+```
+
+To preserve the complete history of entity states:
+
+```
+indexerHints:
+  prune: never
+```
 
 ## Обработчики вызовов
 
@@ -756,7 +818,7 @@ dataSources:
           handler: handleCreateGravatar
 ```
 
-`function` - это нормализованная сигнатура функции, по которой можно фильтровать вызовы. Свойство `handler` - это имя функции в вашем мэппинге, которую вы хотели бы выполнить при вызове целевой функции в контракте источника данных.
+` function ` - это нормализованная сигнатура функции, по которой можно фильтровать вызовы. Свойство `handler` - это имя функции в вашем мэппинге, которую вы хотели бы выполнить при вызове целевой функции в контракте источника данных.
 
 ### Функция мэппинга
 
@@ -792,7 +854,7 @@ filter:
 
 _Определенный обработчик будет вызван один раз для каждого блока, содержащего обращение к контракту (источнику данных), в соответствии с которым определен обработчик._
 
-> **Примечание:** Фильтр `call` в настоящее время зависит от Parity tracing API. Некоторые сети, такие как BNB chain и Arbitrium, не поддерживают этот API. Если субграф, индексирующий одну из этих сетей, содержит один или несколько обработчиков блоков с фильтром `call`, синхронизация не начнется.
+> **Примечание:** Фильтр ` call ` в настоящее время зависит от Parity tracing API. Некоторые сети, такие как BNB chain и Arbitrium, не поддерживают этот API. Если субграф, индексирующий одну из этих сетей, содержит один или несколько обработчиков блоков с фильтром `call`, синхронизация не начнется.
 
 Отсутствие фильтра для обработчика блоков гарантирует, что обработчик вызывается для каждого блока. Источник данных может содержать только один обработчик блоков для каждого типа фильтра.
 
