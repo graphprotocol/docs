@@ -14,7 +14,7 @@ title: सबग्राफ बनाना
 
 - `AssemblyScript मैपिंग`: [AssemblyScript](https://github.com/AssemblyScript/assemblyscript) कोड जो इवेंट डेटा से आपके स्कीमा में परिभाषित इकाइयों में अनुवाद करता है (उदाहरण के लिए `mapping.ts` इस ट्यूटोरियल में)
 
-> ग्राफ़ के विकेन्द्रीकृत नेटवर्क पर अपने सबग्राफ का उपयोग करने के लिए, आपको [एक बनाना होगा एपीआई कुंजी](/deploying/subgraph-studio-faqs/#2-how-do-i-create-an-api-key)। यह अनुशंसा की जाती है कि आप कम से कम [10,000 GRT](/network-transition-faq/#how-can-i-ensure-that-my-subgraph-will-be-picked-up-by-indexer-on-the-graph-network) के साथ [सिग्नल जोड़ें](/network/curating/#how-to-signal)
+> In order to use your subgraph on The Graph's decentralized network, you will need to [create an API key](/deploying/subgraph-studio-faqs/#2-how-do-i-create-an-api-key). It is recommended that you [add signal](/network/curating/#how-to-signal) to your subgraph with at least [3,000 GRT](/network-transition-faq/#how-can-i-ensure-that-my-subgraph-will-be-picked-up-by-indexer-on-the-graph-network).
 
 मेनिफ़ेस्ट फ़ाइल की सामग्री के बारे में विस्तार से जाने से पहले, आपको [ग्राफ़ CLI](https://github.com/graphprotocol/graph-cli) इंस्टॉल करना होगा जिसे आपको बनाना होगा और एक सबग्राफ तैनात करें।
 
@@ -101,6 +101,8 @@ description: Gravatar for Ethereum
 repository: https://github.com/graphprotocol/graph-tooling
 schema:
   file: ./schema.graphql
+indexerHints:
+  prune: auto
 dataSources:
   - kind: ethereum/contract
     name: Gravity
@@ -150,6 +152,8 @@ dataSources:
 
 - `विशेषताएं`: सभी प्रयुक्त [विशेषता](#experimental-features) नामों की सूची।
 
+- `indexerHints.prune`: Defines the retention of historical block data for a subgraph. See [prune](#prune) in [indexerHints](#indexer-hints) section.
+
 - `dataSources.source`: स्मार्ट अनुबंध का पता सबग्राफ स्रोत, और उपयोग करने के लिए स्मार्ट अनुबंध का ABI। पता वैकल्पिक है; इसे छोड़ने से सभी अनुबंधों से मिलान करने वाले ईवेंट को अनुक्रमित करने की अनुमति मिलती है।
 
 - `dataSources.source.startBlock`: उस ब्लॉक की वैकल्पिक संख्या जिससे डेटा स्रोत इंडेक्स करना शुरू करता है। ज्यादातर मामलों में, हम उस ब्लॉक का उपयोग करने का सुझाव देते हैं जिसमें अनुबंध बनाया गया था।
@@ -177,6 +181,8 @@ dataSources:
 3. ब्लॉक ट्रिगर इवेंट और कॉल ट्रिगर के बाद चलाए जाते हैं, जिस क्रम में उन्हें मेनिफेस्ट में परिभाषित किया गया है।
 
 ये आदेश नियम परिवर्तन के अधीन हैं।
+
+> **Note:** When new [dynamic data source](#data-source-templates-for-dynamically-created-contracts) are created, the handlers defined for dynamic data sources will only start processing after all existing data source handlers are processed, and will repeat in the same sequence whenever triggered.
 
 ### एबीआई प्राप्त करना
 
@@ -248,15 +254,15 @@ type GravatarDeclined @entity {
 
 हम अपने ग्राफक्यूएल एपीआई में निम्नलिखित स्केलर्स का समर्थन करते हैं:
 
-| प्रकार | विवरण |
-| --- | --- |
-| `Bytes` | बाइट सरणी, एक हेक्साडेसिमल स्ट्रिंग के रूप में दर्शाया गया है। आमतौर पर एथेरियम हैश और पतों के लिए उपयोग किया जाता है। |
-| `String` | `स्ट्रिंग` मानों के लिए स्केलर। अशक्त वर्ण समर्थित नहीं हैं और स्वचालित रूप से हटा दिए जाते हैं। |
-| `Boolean` | `boolean` मानों के लिए स्केलर। |
-| `Int` | ग्राफक्लाइन स्पेक `Int` को 32 बाइट्स के आकार के रूप में परिभाषित करता है। |
-| `Int8` | An 8-byte signed integer, also known as a 64-bit signed integer, can store values in the range from -9,223,372,036,854,775,808 to 9,223,372,036,854,775,807. Prefer using this to represent `i64` from ethereum. |
-| `BigInt` | बड़े पूर्णांक। एथेरियम के `uint32`, `int64`, `uint64`, ..., `uint256` प्रकारों के लिए उपयोग किया जाता है। नोट: `uint32` के नीचे सब कुछ, जैसे `int32`, `uint24` या `int8` को `i32` के रूप में दर्शाया गया है। |
-| `BigDecimal` | `BigDecimal` उच्च परिशुद्धता दशमलव एक महत्व और एक प्रतिपादक के रूप में दर्शाया गया है। एक्सपोनेंट रेंज -6143 से +6144 तक है। 34 महत्वपूर्ण अंकों तक गोल। |
+| प्रकार       | विवरण                                                                                                                                                                                                            |
+| ------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Bytes`      | बाइट सरणी, एक हेक्साडेसिमल स्ट्रिंग के रूप में दर्शाया गया है। आमतौर पर एथेरियम हैश और पतों के लिए उपयोग किया जाता है।                                                                                           |
+| `String`     | `स्ट्रिंग` मानों के लिए स्केलर। अशक्त वर्ण समर्थित नहीं हैं और स्वचालित रूप से हटा दिए जाते हैं।                                                                                                                 |
+| `Boolean`    | `boolean` मानों के लिए स्केलर।                                                                                                                                                                                   |
+| `Int`        | ग्राफक्लाइन स्पेक `Int` को 32 बाइट्स के आकार के रूप में परिभाषित करता है।                                                                                                                                        |
+| `Int8`       | An 8-byte signed integer, also known as a 64-bit signed integer, can store values in the range from -9,223,372,036,854,775,808 to 9,223,372,036,854,775,807. Prefer using this to represent `i64` from ethereum. |
+| `BigInt`     | बड़े पूर्णांक। एथेरियम के `uint32`, `int64`, `uint64`, ..., `uint256` प्रकारों के लिए उपयोग किया जाता है। नोट: `uint32` के नीचे सब कुछ, जैसे `int32`, `uint24` या `int8` को `i32` के रूप में दर्शाया गया है।     |
+| `BigDecimal` | `BigDecimal` उच्च परिशुद्धता दशमलव एक महत्व और एक प्रतिपादक के रूप में दर्शाया गया है। एक्सपोनेंट रेंज -6143 से +6144 तक है। 34 महत्वपूर्ण अंकों तक गोल।                                                         |
 
 #### Enums
 
@@ -525,13 +531,32 @@ export function handleUpdatedGravatar(event: UpdatedGravatar): void {
 
 ### नई संस्थाओं को बनाने के लिए अनुशंसित आईडी
 
-प्रत्येक इकाई के पास एक `id` होना चाहिए जो एक ही प्रकार की सभी संस्थाओं के बीच अद्वितीय हो। किसी इकाई का `आईडी` मान तब सेट किया जाता है जब इकाई बनाई जाती है। नीचे कुछ सुझाए गए `आईडी` मान दिए गए हैं जिन पर नई इकाइयां बनाते समय विचार किया जाना चाहिए। नोट: `आईडी` का मान एक `स्ट्रिंग` होना चाहिए।
+It is highly recommended to use `Bytes` as the type for `id` fields, and only use `String` for attributes that truly contain human-readable text, like the name of a token. Below are some recommended `id` values to consider when creating new entities.
 
-- `event.params.id.toHex()`
-- `event.transaction.from.toHex()`
-- `event.transaction.hash.toHex() + "-" + event.logIndex.toString()`
+- `transfer.id = event.transaction.hash`
 
-We provide the [Graph Typescript Library](https://github.com/graphprotocol/graph-ts) which contains utilities for interacting with the Graph Node store and conveniences for handling smart contract data and entities. You can use this library in your mappings by importing `@graphprotocol/graph-ts` in `mapping.ts`.
+- `let id = event.transaction.hash.concatI32(event.logIndex.toI32())`
+
+- For entities that store aggregated data, for e.g, daily trade volumes, the `id` usually contains the day number. Here, using a `Bytes` as the `id` is beneficial. Determining the `id` would look like
+
+```typescript
+let dayID = event.block.timestamp.toI32() / 86400
+let id = Bytes.fromI32(dayID)
+```
+
+- Convert constant addresses to `Bytes`.
+
+`const id = Bytes.fromHexString('0xdead...beef')`
+
+There is a [Graph Typescript Library](https://github.com/graphprotocol/graph-ts) which contains utilities for interacting with the Graph Node store and conveniences for handling smart contract data and entities. It can be imported into `mapping.ts` from `@graphprotocol/graph-ts`.
+
+### Handling of entities with identical IDs
+
+When creating and saving a new entity, if an entity with the same ID already exists, the properties of the new entity are always preferred during the merge process. This means that the existing entity will be updated with the values from the new entity.
+
+If a null value is intentionally set for a field in the new entity with the same ID, the existing entity will be updated with the null value.
+
+If no value is set for a field in the new entity with the same ID, the field will result in null as well.
 
 ## कोड जनरेशन
 
@@ -659,7 +684,7 @@ export function handleNewExchange(event: NewExchange): void {
 ```
 
 > **ध्यान दें:** एक नया डेटा स्रोत केवल उस ब्लॉक के लिए कॉल और ईवेंट को प्रोसेस करेगा जिसमें इसे बनाया गया था और सभी बाद के ब्लॉक, लेकिन ऐतिहासिक डेटा, यानी डेटा को प्रोसेस नहीं करेगा जो पिछले ब्लॉकों में निहित है।
->
+> 
 > यदि पिछले ब्लॉक में नए डेटा स्रोत के लिए प्रासंगिक डेटा है, तो उस डेटा को अनुबंध की वर्तमान स्थिति को पढ़कर और नए डेटा स्रोत के निर्माण के समय उस स्थिति का प्रतिनिधित्व करने वाली संस्थाओं का निर्माण करना सबसे अच्छा है।
 
 ### डेटा स्रोत प्रसंग
@@ -716,10 +741,47 @@ dataSources:
 ```
 
 > **ध्यान दें:** इथरस्कैन पर अनुबंध निर्माण ब्लॉक को जल्दी से देखा जा सकता है:
->
+> 
 > 1. खोज बार में उसका पता दर्ज करके अनुबंध की खोज करें।
 > 2. `अनुबंध निर्माता` अनुभाग में निर्माण लेनदेन हैश पर क्लिक करें।
 > 3. लेन-देन विवरण पृष्ठ लोड करें जहां आपको उस अनुबंध के लिए प्रारंभ ब्लॉक मिलेगा।
+
+## Indexer Hints
+
+The `indexerHints` setting in a subgraph's manifest provides directives for indexers on processing and managing a subgraph. It influences operational decisions across data handling, indexing strategies, and optimizations. Presently, it features the `prune` option for managing historical data retention or pruning.
+
+### Prune
+
+`indexerHints.prune`: Defines the retention of historical block data for a subgraph. Options include:
+
+1. `"never"`: No pruning of historical data; retains the entire history.
+2. `"auto"`: Retains the minimum necessary history as set by the indexer, optimizing query performance.
+3. A specific number: Sets a custom limit on the number of historical blocks to retain.
+
+```
+ indexerHints:
+  prune: auto
+```
+
+> The term "history" in this context of subgraphs is about storing data that reflects the old states of mutable entities. This capability is essential for [time travel queries](/querying/graphql-api/#time-travel-queries), This feature enables querying the past states of these entities at specific blocks throughout the blockchain's history.
+
+Using `"auto"` is generally recommended as it maximizes query performance and is sufficient for most users who do not require access to extensive historical data.
+
+For subgraphs leveraging [time travel queries](/querying/graphql-api/#time-travel-queries), it's advisable to either set a specific number of blocks for historical data retention or use `prune: never` to keep all historical entity states. Below are examples of how to configure both options in your subgraph's settings:
+
+To retain a specific amount of historical data:
+
+```
+ indexerHints:
+  prune: 1000 # Replace 1000 with the desired number of blocks to retain
+```
+
+To preserve the complete history of entity states:
+
+```
+indexerHints:
+  prune: never
+```
 
 ## कॉल हैंडलर्स
 
