@@ -14,7 +14,7 @@ title: 创建子图
 
 - `AssemblyScript映射`: 将事件数据转换为模式中定义的实体(例如本教程中的`mapping.ts`)的 [AssemblyScript](https://github.com/AssemblyScript/assemblyscript) 代码
 
-> 为了在Graph的去中心化网络上使用子图，您需要[创建一个API密钥](/deploying/subgraph-studio-faqs/#2-how-do-i-create-an-api-key)。建议您将至少[10000 GRT](/network-transition-faq/#how-can-i-ensure-that-my-subgraph-will-be-picked-up-by-indexer-on-the-graph-network)的[信号添加](/network/curating/#how-to-signal)到子图中。
+> In order to use your subgraph on The Graph's decentralized network, you will need to [create an API key](/deploying/subgraph-studio-faqs/#2-how-do-i-create-an-api-key). It is recommended that you [add signal](/network/curating/#how-to-signal) to your subgraph with at least [3,000 GRT](/network-transition-faq/#how-can-i-ensure-that-my-subgraph-will-be-picked-up-by-indexer-on-the-graph-network).
 
 在详细了解清单文件的内容之前，您需要安装[Graph CLI](https://github.com/graphprotocol/graph-cli)，以构建和部署子图。
 
@@ -101,6 +101,8 @@ description: Gravatar for Ethereum
 repository: https://github.com/graphprotocol/graph-tooling
 schema:
   file: ./schema.graphql
+indexerHints:
+  prune: auto
 dataSources:
   - kind: ethereum/contract
     name: Gravity
@@ -150,6 +152,8 @@ dataSources:
 
 - `features`：所有使用的 [功能](#experimental-features) 名称的列表。
 
+- `indexerHints.prune`: Defines the retention of historical block data for a subgraph. See [prune](#prune) in [indexerHints](#indexer-hints) section.
+
 - `dataSources.source`：智能合约子图源的地址，以及要使用的智能合约的ABI。 地址是可选的； 省略它允许索引来自所有合约的匹配事件。
 
 - `dataSources.source.startBlock`：数据源开始索引的区块的可选编号。 在大多数情况下，我们建议使用创建合约的区块。
@@ -177,6 +181,8 @@ dataSources:
 3. 区块触发器按照它们在清单中定义的顺序，在事件和调用触发器之后运行。
 
 这些排序规则可能会发生变化。
+
+> **Note:** When new [dynamic data source](#data-source-templates-for-dynamically-created-contracts) are created, the handlers defined for dynamic data sources will only start processing after all existing data source handlers are processed, and will repeat in the same sequence whenever triggered.
 
 ### 获取 ABI
 
@@ -248,15 +254,15 @@ Null value resolved for non-null field 'name'
 
 我们在 GraphQL API 中支持以下标量：
 
-| 类型 | 描述 |
-| --- | --- |
-| `字节` | 字节数组，表示为十六进制字符串。 通常用于以太坊hash和地址。 |
-| `字符串` | `string` 值的标量。 不支持空字符，并会自动进行删除。 |
-| `Boolean` | `boolean` 值的标量。 |
-| `Int` | GraphQL 规范将 `Int` 定义为 32 字节的大小。 |
-| `Int8` | An 8-byte signed integer, also known as a 64-bit signed integer, can store values in the range from -9,223,372,036,854,775,808 to 9,223,372,036,854,775,807. Prefer using this to represent `i64` from ethereum. |
-| `BigInt` | 大整数。 用于以太坊的 `uint32`、`int64`、`uint64`、...、`uint256` 类型。 注意：`uint32`以下的所有类型，例如`int32`、`uint24`或`int8`都表示为`i32`。 |
-| `BigDecimal` | `BigDecimal` 表示为有效数字和指数的高精度小数。 指数范围是 -6143 到 +6144。 四舍五入到 34 位有效数字。 |
+| 类型           | 描述                                                                                                                                                                                                               |
+| ------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `字节`         | 字节数组，表示为十六进制字符串。 通常用于以太坊hash和地址。                                                                                                                                                                                 |
+| `字符串`        | `string` 值的标量。 不支持空字符，并会自动进行删除。                                                                                                                                                                                  |
+| `Boolean`    | `boolean` 值的标量。                                                                                                                                                                                                  |
+| `Int`        | GraphQL 规范将 `Int` 定义为 32 字节的大小。                                                                                                                                                                                  |
+| `Int8`       | An 8-byte signed integer, also known as a 64-bit signed integer, can store values in the range from -9,223,372,036,854,775,808 to 9,223,372,036,854,775,807. Prefer using this to represent `i64` from ethereum. |
+| `BigInt`     | 大整数。 用于以太坊的 `uint32`、`int64`、`uint64`、...、`uint256` 类型。 注意：`uint32`以下的所有类型，例如`int32`、`uint24`或`int8`都表示为`i32`。                                                                                                   |
+| `BigDecimal` | `BigDecimal` 表示为有效数字和指数的高精度小数。 指数范围是 -6143 到 +6144。 四舍五入到 34 位有效数字。                                                                                                                                              |
 
 #### 枚举类型
 
@@ -458,33 +464,33 @@ query {
 
 支持的语言词典：
 
-| 代码   | 词典       |
-| ------ | ---------- |
-| simple | 通用       |
-| da     | 丹麦语     |
-| nl     | 荷兰语     |
-| en     | 英语       |
-| fi     | 芬兰语     |
-| fr     | 法语       |
-| de     | 德语       |
-| hu     | 匈牙利语   |
-| it     | 意大利语   |
-| no     | 挪威语     |
-| pt     | 葡萄牙语   |
+| 代码     | 词典    |
+| ------ | ----- |
+| simple | 通用    |
+| da     | 丹麦语   |
+| nl     | 荷兰语   |
+| en     | 英语    |
+| fi     | 芬兰语   |
+| fr     | 法语    |
+| de     | 德语    |
+| hu     | 匈牙利语  |
+| it     | 意大利语  |
+| no     | 挪威语   |
+| pt     | 葡萄牙语  |
 | ro     | 罗马尼亚语 |
-| ru     | 俄语       |
-| es     | 西班牙语   |
-| sv     | 瑞典语     |
-| tr     | 土耳其语   |
+| ru     | 俄语    |
+| es     | 西班牙语  |
+| sv     | 瑞典语   |
+| tr     | 土耳其语  |
 
 ### 排序算法
 
 支持的排序结果算法：
 
-| 算法          | 描述                                          |
-| ------------- | --------------------------------------------- |
+| 算法            | 描述                         |
+| ------------- | -------------------------- |
 | rank          | 使用全文查询的匹配质量 (0-1) 对结果进行排序。 |
-| proximityRank | 与 rank 类似，但也包括匹配的接近程度。        |
+| proximityRank | 与 rank 类似，但也包括匹配的接近程度。     |
 
 ## 编写映射
 
@@ -525,13 +531,32 @@ export function handleUpdatedGravatar(event: UpdatedGravatar): void {
 
 ### 用于创建新实体的推荐 ID
 
-每个实体都必须有一个在所有相同类型的实体中唯一的 `id`。 实体的 `id` 值在创建实体时设置。 以下是创建新实体时要考虑的一些推荐 `id` 值。 注意：`id` 的值必须是 `string`。
+It is highly recommended to use `Bytes` as the type for `id` fields, and only use `String` for attributes that truly contain human-readable text, like the name of a token. Below are some recommended `id` values to consider when creating new entities.
 
-- `event.params.id.toHex()`
-- `event.transaction.from.toHex()`
-- `event.transaction.hash.toHex() + "-" + event.logIndex.toString()`
+- `transfer.id = event.transaction.hash`
 
-We provide the [Graph Typescript Library](https://github.com/graphprotocol/graph-ts) which contains utilities for interacting with the Graph Node store and conveniences for handling smart contract data and entities. You can use this library in your mappings by importing `@graphprotocol/graph-ts` in `mapping.ts`.
+- `let id = event.transaction.hash.concatI32(event.logIndex.toI32())`
+
+- For entities that store aggregated data, for e.g, daily trade volumes, the `id` usually contains the day number. Here, using a `Bytes` as the `id` is beneficial. Determining the `id` would look like
+
+```typescript
+let dayID = event.block.timestamp.toI32() / 86400
+let id = Bytes.fromI32(dayID)
+```
+
+- Convert constant addresses to `Bytes`.
+
+`const id = Bytes.fromHexString('0xdead...beef')`
+
+There is a [Graph Typescript Library](https://github.com/graphprotocol/graph-ts) which contains utilities for interacting with the Graph Node store and conveniences for handling smart contract data and entities. It can be imported into `mapping.ts` from `@graphprotocol/graph-ts`.
+
+### Handling of entities with identical IDs
+
+When creating and saving a new entity, if an entity with the same ID already exists, the properties of the new entity are always preferred during the merge process. This means that the existing entity will be updated with the values from the new entity.
+
+If a null value is intentionally set for a field in the new entity with the same ID, the existing entity will be updated with the null value.
+
+If no value is set for a field in the new entity with the same ID, the field will result in null as well.
 
 ## 代码生成
 
@@ -659,7 +684,7 @@ export function handleNewExchange(event: NewExchange): void {
 ```
 
 > **注意：** 新的数据源只会处理创建它的区块和所有后续区块的调用和事件，而不会处理历史数据，也就是包含在先前区块中的数据。
->
+> 
 > 如果先前的区块包含与新数据源相关的数据，最好通过读取合约的当前状态，并在创建新数据源时创建表示该状态的实体来索引该数据。
 
 ### 数据源背景
@@ -716,10 +741,47 @@ dataSources:
 ```
 
 > **注意：** 合约创建区块可以在 Etherscan 上快速查找：
->
+> 
 > 1. 通过在搜索栏中输入合约地址来搜索合约。
 > 2. 单击 `Contract Creator` 部分中的创建交易hash。
 > 3. 加载交易详情页面，您将在其中找到该合约的起始区块。
+
+## Indexer Hints
+
+The `indexerHints` setting in a subgraph's manifest provides directives for indexers on processing and managing a subgraph. It influences operational decisions across data handling, indexing strategies, and optimizations. Presently, it features the `prune` option for managing historical data retention or pruning.
+
+### Prune
+
+`indexerHints.prune`: Defines the retention of historical block data for a subgraph. Options include:
+
+1. `"never"`: No pruning of historical data; retains the entire history.
+2. `"auto"`: Retains the minimum necessary history as set by the indexer, optimizing query performance.
+3. A specific number: Sets a custom limit on the number of historical blocks to retain.
+
+```
+ indexerHints:
+  prune: auto
+```
+
+> The term "history" in this context of subgraphs is about storing data that reflects the old states of mutable entities. This capability is essential for [time travel queries](/querying/graphql-api/#time-travel-queries), This feature enables querying the past states of these entities at specific blocks throughout the blockchain's history.
+
+Using `"auto"` is generally recommended as it maximizes query performance and is sufficient for most users who do not require access to extensive historical data.
+
+For subgraphs leveraging [time travel queries](/querying/graphql-api/#time-travel-queries), it's advisable to either set a specific number of blocks for historical data retention or use `prune: never` to keep all historical entity states. Below are examples of how to configure both options in your subgraph's settings:
+
+To retain a specific amount of historical data:
+
+```
+ indexerHints:
+  prune: 1000 # Replace 1000 with the desired number of blocks to retain
+```
+
+To preserve the complete history of entity states:
+
+```
+indexerHints:
+  prune: never
+```
 
 ## 调用处理程序
 
@@ -906,11 +968,11 @@ eventHandlers:
 
 从 `specVersion` `0.0.4` 开始，子图特征必须使用它们的 `camelCase` 名称，在清单文件顶层的 `features` 部分中显式声明，如下表所列：
 
-| 特征                                      | 名称                                                |
-| ----------------------------------------- | --------------------------------------------------- |
-| [非致命错误](#非致命错误)                 | `nonFatalErrors`                                    |
-| [全文搜索](#定义全文搜索字段)             | `fullTextSearch`                                    |
-| [嫁接](#嫁接到现有子图)                   | `grafting`                                          |
+| 特征                          | 名称                                                  |
+| --------------------------- | --------------------------------------------------- |
+| [非致命错误](#非致命错误)             | `nonFatalErrors`                                    |
+| [全文搜索](#定义全文搜索字段)           | `fullTextSearch`                                    |
+| [嫁接](#嫁接到现有子图)              | `grafting`                                          |
 | [以太坊合约上的IPFS](#以太坊合约上的IPFS) | `ipfsOnEthereumContracts` or `nonDeterministicIpfs` |
 
 例如，如果子图使用 **Full-Text Search** 和 **Non-fatal Errors** 功能，则清单中的 `features` 字段应为：
@@ -990,7 +1052,7 @@ _meta {
 
 > **注意：** 在初次升级到The Graph Network时，不建议使用grafting。可以在[这里](/cookbook/grafting/#important-note-on-grafting-when-upgrading-to-the-network)了解更多信息。
 
-首次部署子图时，它会在相应链的启动区块（或每个数据源定义的 `startBlock` 处）开始索引事件。在某些情况下，可以使用现有子图已经索引的数据并在更晚的区块上开始索引。 这种索引模式称为*Grafting*。 例如，嫁接在开发过程中非常有用，可以快速克服映射中的简单错误，或者在现有子图失败后暂时恢复工作。
+首次部署子图时，它会在相应链的启动区块（或每个数据源定义的 `startBlock` 处）开始索引事件。在某些情况下，可以使用现有子图已经索引的数据并在更晚的区块上开始索引。 这种索引模式称为_Grafting_。 例如，嫁接在开发过程中非常有用，可以快速克服映射中的简单错误，或者在现有子图失败后暂时恢复工作。
 
 当 `subgraph.yaml` 中的子图清单在顶层包含 `graft` 区块时，子图被嫁接到基础子图：
 
@@ -1163,7 +1225,7 @@ For Arweave, as of version 0.33.0 Graph Node can fetch files stored on Arweave b
 ```typescript
 import { TokenMetadata as TokenMetadataTemplate } from '../generated/templates'
 
-const ipfshash = 'QmaXzZhcYnsisuue5WRdQDH6FDvqkLQX1NckLqBYeYYEfm'
+const ipfshash = "QmaXzZhcYnsisuue5WRdQDH6FDvqkLQX1NckLqBYeYYEfm"
 //This example code is for a Crypto coven subgraph. The above ipfs hash is a directory with token metadata for all crypto coven NFTs.
 
 export function handleTransfer(event: TransferEvent): void {
