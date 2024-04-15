@@ -14,7 +14,7 @@ Subgraph tanımı birkaç dosyadan oluşmaktadır:
 
 - `AssemblyScript Mappings`: Olay verilerinden şemanızda tanımlanan varlıklara çeviri yapan [AssemblyScript](https://github.com/AssemblyScript/assemblyscript) kodu (örneğin bu öğretici içerikte `mapping.ts`)
 
-> Subgraph'ınızı Graph'ın merkeziyetsiz ağında kullanmak için [API anahtarı oluşturmanız gerekir](/deploying/subgraph-studio-faqs/#2-how-do-i-create-an-api-key). Ayrıca subgraph'ınıza en az [10,000 GRT](/network-transition-faq/#how-can-i-ensure-that-my-subgraph-will-be-picked-up-by-indexer-on-the-graph-network) [sinyal eklemeniz](/network/curating/#how-to-signal) önerilir.
+> In order to use your subgraph on The Graph's decentralized network, you will need to [create an API key](/deploying/subgraph-studio-faqs/#2-how-do-i-create-an-api-key). It is recommended that you [add signal](/network/curating/#how-to-signal) to your subgraph with at least [3,000 GRT](/network-transition-faq/#how-can-i-ensure-that-my-subgraph-will-be-picked-up-by-indexer-on-the-graph-network).
 
 Manifest dosyasının içeriği hakkında detaylı bilgilere girmeden önce, bir subgraph oluşturmak ve dağıtmak için ihtiyacınız olan [Graph CLI](https://github.com/graphprotocol/graph-cli)'yi yüklemeniz gereklidir.
 
@@ -101,6 +101,8 @@ description: Gravatar for Ethereum
 repository: https://github.com/graphprotocol/graph-tooling
 schema:
   file: ./schema.graphql
+indexerHints:
+  prune: auto
 dataSources:
   - kind: ethereum/contract
     name: Gravity
@@ -150,6 +152,8 @@ Manifest için güncellenmesi gereken önemli girdiler şunlardır:
 
 - `features`: kullanılan tüm [özellik(feature)](#experimental-features) adlarının bir listesi.
 
+- `indexerHints.prune`: Defines the retention of historical block data for a subgraph. See [prune](#prune) in [indexerHints](#indexer-hints) section.
+
 - `dataSources.source`: Subgraph kaynaklarının olduğu akıllı sözleşmenin adresi ve kullanılacak akıllı sözleşmenin ABI'si. Adres isteğe bağlıdır; atlanması, tüm sözleşmelerden eşleşen olayları indekslemeyi sağlar.
 
 - `dataSources.source.startBlock`: veri kaynağının indekslemeye başladığı isteğe bağlı blok numarası. Çoğu durumda, sözleşmenin oluşturulduğu bloğun kullanılmasını öneririz.
@@ -177,6 +181,8 @@ Bir bloktaki veri kaynağı için tetikleyiciler şu işlemlerle sıralanır:
 3. Blok tetikleyicileri, olay ve çağrı tetikleyicilerinden sonra manifest'te tanımlandıkları sırada göre çalıştırılır.
 
 Bu sıralama kuralları değişebilir.
+
+> **Note:** When new [dynamic data source](#data-source-templates-for-dynamically-created-contracts) are created, the handlers defined for dynamic data sources will only start processing after all existing data source handlers are processed, and will repeat in the same sequence whenever triggered.
 
 ### ABI'leri Alma
 
@@ -248,15 +254,15 @@ Bazı varlık türleri için `id`, iki diğer varlığın id'lerinden oluşturul
 
 GraphQL API'mizde aşağıdaki skalerleri destekliyoruz:
 
-| Tür | Tanım |
-| --- | --- |
-| `Baytlar` | Byte dizisi, onaltılık bir dizgi olarak temsil edilir. Ethereum hash değerleri ve adresleri için yaygın olarak kullanılır. |
-| `Dizgi(String)` | `string` değerleri için skaler. Null karakterleri desteklenmez ve otomatik olarak kaldırılır. |
-| `Boolean` | `boolean` değerleri için skaler. |
-| `Int` | GraphQL özellikleri, `Int`'in 32 bayt boyutunda olduğunu tanımlar. |
-| `Int8` | 64 bitlik işaretli tam sayı olarak da bilinen 8 baytlık işaretli tam sayı, -9,223,372,036,854,775,808 ila 9,223,372,036,854,775,807 aralığındaki değerleri depolayabilir. Ethereum'dan `i64`'ü temsil etmek için bunu kullanmayı tercih edin. |
-| `BigInt` | Büyük tamsayılar. Ethereum'un `uint32`, `int64`, `uint64`, ..., `uint256` türleri için kullanılır. Not: `int32`, `uint24` veya `int8` gibi `uint32`'nin altındaki her şey `i32`olarak temsil edilir. |
-| `BigDecimal` | `BigDecimal` Yüksek hassasiyetli ondalık sayılar, bir anlamlı ve bir üsle temsil edilir. Üs aralığı -6143 ila +6144 arasındadır. 34 anlamlı rakama yuvarlanır. |
+| Tür             | Tanım                                                                                                                                                                                                                                         |
+| --------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Baytlar`       | Byte dizisi, onaltılık bir dizgi olarak temsil edilir. Ethereum hash değerleri ve adresleri için yaygın olarak kullanılır.                                                                                                                    |
+| `Dizgi(String)` | `string` değerleri için skaler. Null karakterleri desteklenmez ve otomatik olarak kaldırılır.                                                                                                                                                 |
+| `Boolean`       | `boolean` değerleri için skaler.                                                                                                                                                                                                              |
+| `Int`           | GraphQL özellikleri, `Int`'in 32 bayt boyutunda olduğunu tanımlar.                                                                                                                                                                            |
+| `Int8`          | 64 bitlik işaretli tam sayı olarak da bilinen 8 baytlık işaretli tam sayı, -9,223,372,036,854,775,808 ila 9,223,372,036,854,775,807 aralığındaki değerleri depolayabilir. Ethereum'dan `i64`'ü temsil etmek için bunu kullanmayı tercih edin. |
+| `BigInt`        | Büyük tamsayılar. Ethereum'un `uint32`, `int64`, `uint64`, ..., `uint256` türleri için kullanılır. Not: `int32`, `uint24` veya `int8` gibi `uint32`'nin altındaki her şey `i32`olarak temsil edilir.                                          |
+| `BigDecimal`    | `BigDecimal` Yüksek hassasiyetli ondalık sayılar, bir anlamlı ve bir üsle temsil edilir. Üs aralığı -6143 ila +6144 arasındadır. 34 anlamlı rakama yuvarlanır.                                                                                |
 
 #### Numaralandırmalar
 
@@ -525,13 +531,32 @@ export function handleUpdatedGravatar(event: UpdatedGravatar): void {
 
 ### Yeni Varlıklar Oluşturmak için Önerilen Kimlikler(IDs)
 
-Her varlığın aynı türdeki tüm varlıklar arasında benzersiz olan bir `id`'si olması gerekir. Bir varlığın `id` değeri, varlık oluşturulduğunda belirlenir. Aşağıda, yeni varlıklar oluştururken hesaba katılması gereken bazı önerilen `id` değerleri verilmiştir. NOT: `id` değeri bir `dizgi` olmalıdır.
+It is highly recommended to use `Bytes` as the type for `id` fields, and only use `String` for attributes that truly contain human-readable text, like the name of a token. Below are some recommended `id` values to consider when creating new entities.
 
-- `event.params.id.toHex()`
-- `event.transaction.from.toHex()`
-- `event.transaction.hash.toHex() + "-" + event.logIndex.toString()`
+- `transfer.id = event.transaction.hash`
 
-Graph Node'u mağazasıyla etkileşim kurmaya yönelik yardımcı programları ve akıllı sözleşme verilerini ve varlıklarını yönetmeye yönelik kolaylıkları içeren [Graph Yazı Tipi Kitaplığı](https://github.com/graphprotocol/graph-ts)'nı sağlıyoruz. `@graphprotocol/graph-ts`'i `mapping.ts`'ye aktararak bu kütüphaneyi eşlemelerinizde kullanabilirsiniz.
+- `let id = event.transaction.hash.concatI32(event.logIndex.toI32())`
+
+- For entities that store aggregated data, for e.g, daily trade volumes, the `id` usually contains the day number. Here, using a `Bytes` as the `id` is beneficial. Determining the `id` would look like
+
+```typescript
+let dayID = event.block.timestamp.toI32() / 86400
+let id = Bytes.fromI32(dayID)
+```
+
+- Convert constant addresses to `Bytes`.
+
+`const id = Bytes.fromHexString('0xdead...beef')`
+
+There is a [Graph Typescript Library](https://github.com/graphprotocol/graph-ts) which contains utilities for interacting with the Graph Node store and conveniences for handling smart contract data and entities. It can be imported into `mapping.ts` from `@graphprotocol/graph-ts`.
+
+### Handling of entities with identical IDs
+
+When creating and saving a new entity, if an entity with the same ID already exists, the properties of the new entity are always preferred during the merge process. This means that the existing entity will be updated with the values from the new entity.
+
+If a null value is intentionally set for a field in the new entity with the same ID, the existing entity will be updated with the null value.
+
+If no value is set for a field in the new entity with the same ID, the field will result in null as well.
 
 ## Kod Oluşturma
 
@@ -659,7 +684,7 @@ export function handleNewExchange(event: NewExchange): void {
 ```
 
 > **Not:** Yeni bir veri kaynağı, oluşturulduğu blok ve tüm takip eden bloklar için yalnızca çağrıları ve olayları işleyecektir, ancak önceki bloklarda bulunan geçmiş verileri işlemeyecektir.
->
+> 
 > Eğer önceki bloklar, yeni veri kaynağı için ilgili veri içeriyorsa, o veriyi indekslemek için sözleşmenin mevcut durumunu okuyarak ve yeni veri kaynağı oluşturulurken o zaman dilimindeki durumu temsil eden varlıklar oluşturarak yapmak en iyisidir.
 
 ### Veri Kaynağı Bağlamı
@@ -716,10 +741,47 @@ dataSources:
 ```
 
 > **Not:** Sözleşme oluşturma bloğu hızlı bir şekilde Etherscan'da aranabilir:
->
+> 
 > 1. Arama çubuğuna adresini girerek sözleşmeyi arayın.
 > 2. `Contract Creator` bölümünde oluşturma işlemi hash'ına tıklayın.
 > 3. İşlem detayları sayfasını yükleyin ve bu sözleşme için başlangıç bloğunu bulacaksınız.
+
+## Indexer Hints
+
+The `indexerHints` setting in a subgraph's manifest provides directives for indexers on processing and managing a subgraph. It influences operational decisions across data handling, indexing strategies, and optimizations. Presently, it features the `prune` option for managing historical data retention or pruning.
+
+### Prune
+
+`indexerHints.prune`: Defines the retention of historical block data for a subgraph. Options include:
+
+1. `"never"`: No pruning of historical data; retains the entire history.
+2. `"auto"`: Retains the minimum necessary history as set by the indexer, optimizing query performance.
+3. A specific number: Sets a custom limit on the number of historical blocks to retain.
+
+```
+ indexerHints:
+  prune: auto
+```
+
+> The term "history" in this context of subgraphs is about storing data that reflects the old states of mutable entities. This capability is essential for [time travel queries](/querying/graphql-api/#time-travel-queries), This feature enables querying the past states of these entities at specific blocks throughout the blockchain's history.
+
+Using `"auto"` is generally recommended as it maximizes query performance and is sufficient for most users who do not require access to extensive historical data.
+
+For subgraphs leveraging [time travel queries](/querying/graphql-api/#time-travel-queries), it's advisable to either set a specific number of blocks for historical data retention or use `prune: never` to keep all historical entity states. Below are examples of how to configure both options in your subgraph's settings:
+
+To retain a specific amount of historical data:
+
+```
+ indexerHints:
+  prune: 1000 # Replace 1000 with the desired number of blocks to retain
+```
+
+To preserve the complete history of entity states:
+
+```
+indexerHints:
+  prune: never
+```
 
 ## Çağrı İşleyicileri
 
