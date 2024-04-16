@@ -14,7 +14,7 @@ Definice podgraf se skládá z několika souborů:
 
 - `Mapování skriptů sestavy`: [AssemblyScript](https://github.com/AssemblyScript/assemblyscript) kód, který převádí data událostí na entity definované ve vašem schématu (např. `mapping.ts` v tomto tutoriálu)
 
-> Abyste mohli svůj podgraf používat v decentralizované síti The Graph, musíte si [vytvořit klíč API](/deploying/subgraph-studio-faqs/#2-how-do-i-create-an-api-key). Doporučujeme, abyste [přidali signál](/network/curating/#how-to-signal) do svého podgraf s minimálně [10,000 GRT](/network-transition-faq/#how-can-i-ensure-that-my-subgraph-will-be-picked-up-by-indexer-on-the-graph-network).
+> In order to use your subgraph on The Graph's decentralized network, you will need to [create an API key](/deploying/subgraph-studio-faqs/#2-how-do-i-create-an-api-key). It is recommended that you [add signal](/network/curating/#how-to-signal) to your subgraph with at least [3,000 GRT](/network-transition-faq/#how-can-i-ensure-that-my-subgraph-will-be-picked-up-by-indexer-on-the-graph-network).
 
 Než se podrobněji seznámíte s obsahem souboru manifest, je třeba nainstalovat [Graph CLI](https://github.com/graphprotocol/graph-cli), které budete potřebovat k sestavení a nasazení podgraf.
 
@@ -101,6 +101,8 @@ description: Gravatar for Ethereum
 repository: https://github.com/graphprotocol/graph-tooling
 schema:
   file: ./schema.graphql
+indexerHints:
+  prune: auto
 dataSources:
   - kind: ethereum/contract
     name: Gravity
@@ -150,6 +152,8 @@ Důležité položky, které je třeba v manifestu aktualizovat, jsou:
 
 - `features`: seznam všech použitých názvů [feature](#experimental-features).
 
+- `indexerHints.prune`: Defines the retention of historical block data for a subgraph. See [prune](#prune) in [indexerHints](#indexer-hints) section.
+
 - `dataSources.source`: adresa inteligentní smlouvy, ze které podgraf pochází, a ABI inteligentní smlouvy, která se má použít. Adresa je nepovinná; její vynechání umožňuje indexovat odpovídající události ze všech smluv.
 
 - `dataSources.source.startBlock`: nepovinné číslo bloku, od kterého zdroj dat začíná indexovat. Ve většině případů doporučujeme použít blok, ve kterém byl kontrakt vytvořen.
@@ -170,6 +174,8 @@ Důležité položky, které je třeba v manifestu aktualizovat, jsou:
 
 Jeden subgraf může indexovat data z více inteligentní smluv. Do pole `dataSources` přidejte položku pro každou smlouvu, ze které je třeba indexovat data.
 
+### Order of Triggering Handlers
+
 Spouštěče pro zdroj dat v rámci bloku jsou seřazeny podle následujícího postupu:
 
 1. Spouštěče událostí a volání jsou nejprve seřazeny podle indexu transakce v rámci bloku.
@@ -177,6 +183,8 @@ Spouštěče pro zdroj dat v rámci bloku jsou seřazeny podle následujícího 
 3. Spouštěče bloků jsou spuštěny po spouštěčích událostí a volání, v pořadí, v jakém jsou definovány v manifestu.
 
 Tato pravidla objednávání se mohou změnit.
+
+> **Note:** When new [dynamic data source](#data-source-templates-for-dynamically-created-contracts) are created, the handlers defined for dynamic data sources will only start processing after all existing data source handlers are processed, and will repeat in the same sequence whenever triggered.
 
 ### Získání ABI
 
@@ -248,15 +256,15 @@ U některých typů entit je `id` vytvořeno z id dvou jiných entit; to je mož
 
 V našem GraphQL API podporujeme následující skaláry:
 
-| Typ | Popis |
-| --- | --- |
-| `Bajtů` | Pole bajtů reprezentované jako hexadecimální řetězec. Běžně se používá pro hashe a adresy Ethereum. |
-| `Řetězec` | Skalár pro hodnoty `řetězce`. Nulové znaky nejsou podporovány a jsou automaticky odstraněny. |
-| `Boolean` | Skalár pro hodnoty `boolean`. |
-| `Int` | Specifikace GraphQL definuje `Int` na velikost 32 bajtů. |
-| `Int8` | Celé číslo se znaménkem o velikosti 8 bajtů, známé také jako 64bitové celé číslo se znaménkem, může uchovávat hodnoty v rozsahu od -9 223 372 036 854 775 808 do 9 223 372 036 854 775 807. Přednostně se používá k reprezentaci `i64` z ethereum. |
-| `BigInt` | Velká celá čísla. Používá se pro typy `uint32`, `int64`, `uint64`, ..., `uint256` společnosti Ethereum. Poznámka: Vše pod `uint32`, jako například `int32`, `uint24` nebo `int8`, je reprezentováno jako `i32`. |
-| `BigDecimal` | `BigDecimal` Desetinná čísla s vysokou přesností reprezentovaná jako signifikand a exponent. Rozsah exponentu je od -6143 do +6144. Zaokrouhleno na 34 významných číslic. |
+| Typ          | Popis                                                                                                                                                                                                                                              |
+| ------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Bajtů`      | Pole bajtů reprezentované jako hexadecimální řetězec. Běžně se používá pro hashe a adresy Ethereum.                                                                                                                                                |
+| `Řetězec`    | Skalár pro hodnoty `řetězce`. Nulové znaky nejsou podporovány a jsou automaticky odstraněny.                                                                                                                                                       |
+| `Boolean`    | Skalár pro hodnoty `boolean`.                                                                                                                                                                                                                      |
+| `Int`        | Specifikace GraphQL definuje `Int` na velikost 32 bajtů.                                                                                                                                                                                           |
+| `Int8`       | Celé číslo se znaménkem o velikosti 8 bajtů, známé také jako 64bitové celé číslo se znaménkem, může uchovávat hodnoty v rozsahu od -9 223 372 036 854 775 808 do 9 223 372 036 854 775 807. Přednostně se používá k reprezentaci `i64` z ethereum. |
+| `BigInt`     | Velká celá čísla. Používá se pro typy `uint32`, `int64`, `uint64`, ..., `uint256` společnosti Ethereum. Poznámka: Vše pod `uint32`, jako například `int32`, `uint24` nebo `int8`, je reprezentováno jako `i32`.                                    |
+| `BigDecimal` | `BigDecimal` Desetinná čísla s vysokou přesností reprezentovaná jako signifikand a exponent. Rozsah exponentu je od -6143 do +6144. Zaokrouhleno na 34 významných číslic.                                                                          |
 
 #### Enums
 
@@ -525,13 +533,32 @@ Druhá obslužná rutina se pokusí načíst existující `Gravatar` z úložiš
 
 ### Doporučené IDa pro vytváření nových Entity
 
-Každá entita musí mít `id`, které je jedinečné mezi všemi entitami stejného typu. Hodnota `id` entity je nastavena při jejím vytvoření. Níže jsou uvedeny některé doporučené hodnoty `id`, které je třeba vzít v úvahu při vytváření nových entit. POZNÁMKA: Hodnota `id` musí být `řetězec`.
+It is highly recommended to use `Bytes` as the type for `id` fields, and only use `String` for attributes that truly contain human-readable text, like the name of a token. Below are some recommended `id` values to consider when creating new entities.
 
-- `event.params.id.toHex()`
-- `event.transaction.from.toHex()`
-- `event.transaction.hash.toHex() + "-" + event.logIndex.toString()`
+- `transfer.id = event.transaction.hash`
 
-Poskytujeme knihovnu [Graf Typescript Library](https://github.com/graphprotocol/graph-ts), která obsahuje nástroje pro interakci s úložištěm Graf Uzel a usnadnění pro práci s daty a entitami chytrých smluv. Tuto knihovnu můžete používat ve svých mapováních importem `@graphprotocol/graph-ts` v souboru `mapping.ts`.
+- `let id = event.transaction.hash.concatI32(event.logIndex.toI32())`
+
+- For entities that store aggregated data, for e.g, daily trade volumes, the `id` usually contains the day number. Here, using a `Bytes` as the `id` is beneficial. Determining the `id` would look like
+
+```typescript
+let dayID = event.block.timestamp.toI32() / 86400
+let id = Bytes.fromI32(dayID)
+```
+
+- Convert constant addresses to `Bytes`.
+
+`const id = Bytes.fromHexString('0xdead...beef')`
+
+There is a [Graph Typescript Library](https://github.com/graphprotocol/graph-ts) which contains utilities for interacting with the Graph Node store and conveniences for handling smart contract data and entities. It can be imported into `mapping.ts` from `@graphprotocol/graph-ts`.
+
+### Handling of entities with identical IDs
+
+When creating and saving a new entity, if an entity with the same ID already exists, the properties of the new entity are always preferred during the merge process. This means that the existing entity will be updated with the values from the new entity.
+
+If a null value is intentionally set for a field in the new entity with the same ID, the existing entity will be updated with the null value.
+
+If no value is set for a field in the new entity with the same ID, the field will result in null as well.
 
 ## Generování kódu
 
@@ -659,7 +686,7 @@ export function handleNewExchange(event: NewExchange): void {
 ```
 
 > **Poznámka:** Nový zdroj dat bude zpracovávat pouze volání a události pro blok, ve kterém byl vytvořen, a všechny následující bloky, ale nebude zpracovávat historická data, tj. data obsažená v předchozích blocích.
->
+> 
 > Pokud předchozí bloky obsahují data relevantní pro nový zdroj dat, je nejlepší tato data indexovat načtením aktuálního stavu smlouvy a vytvořením entit reprezentujících tento stav v době vytvoření nového zdroje dat.
 
 ### Kontext zdroje dat
@@ -716,10 +743,47 @@ dataSources:
 ```
 
 > **Poznámka:** Blok pro vytvoření smlouvy lze rychle vyhledat v Etherscan:
->
+> 
 > 1. Vyhledejte smlouvu zadáním její adresy do vyhledávacího řádku.
 > 2. Klikněte na hash transakce vytvoření v sekci `Tvůrce smlouvy`.
 > 3. Načtěte stránku s podrobnostmi o transakci, kde najdete počáteční blok pro danou smlouvu.
+
+## Indexer Hints
+
+The `indexerHints` setting in a subgraph's manifest provides directives for indexers on processing and managing a subgraph. It influences operational decisions across data handling, indexing strategies, and optimizations. Presently, it features the `prune` option for managing historical data retention or pruning.
+
+### Prune
+
+`indexerHints.prune`: Defines the retention of historical block data for a subgraph. Options include:
+
+1. `"never"`: No pruning of historical data; retains the entire history.
+2. `"auto"`: Retains the minimum necessary history as set by the indexer, optimizing query performance.
+3. A specific number: Sets a custom limit on the number of historical blocks to retain.
+
+```
+ indexerHints:
+  prune: auto
+```
+
+> The term "history" in this context of subgraphs is about storing data that reflects the old states of mutable entities. This capability is essential for [time travel queries](/querying/graphql-api/#time-travel-queries), This feature enables querying the past states of these entities at specific blocks throughout the blockchain's history.
+
+Using `"auto"` is generally recommended as it maximizes query performance and is sufficient for most users who do not require access to extensive historical data.
+
+For subgraphs leveraging [time travel queries](/querying/graphql-api/#time-travel-queries), it's advisable to either set a specific number of blocks for historical data retention or use `prune: never` to keep all historical entity states. Below are examples of how to configure both options in your subgraph's settings:
+
+To retain a specific amount of historical data:
+
+```
+ indexerHints:
+  prune: 1000 # Replace 1000 with the desired number of blocks to retain
+```
+
+To preserve the complete history of entity states:
+
+```
+indexerHints:
+  prune: never
+```
 
 ## Zpracovatelé hovorů
 
