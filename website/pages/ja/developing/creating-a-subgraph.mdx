@@ -14,7 +14,7 @@ title: サブグラフの作成
 
 - `AssemblyScript Mappings`: イベントデータをスキーマで定義されたエンティティに変換する[AssemblyScript](https://github.com/AssemblyScript/assemblyscript)コード (例: このチュートリアルでは`mapping.ts`)
 
-> The Graphの分散型ネットワークでサブグラフを利用するためには、[API キーを作成する必要があります](/deploying/subgraph-studio-faqs/#2-how-do-i-create-an-api-key)。[シグナルを追加](/network/curating/#how-to-signal)し、少なくとも[10,000 GRT](/network-transition-faq/#how-can-i ensure-that-my-subgraph-will-pick-up-by-indexer-on-the-graph-network) をサブグラフに追加すると良いでしょう。
+> In order to use your subgraph on The Graph's decentralized network, you will need to [create an API key](/deploying/subgraph-studio-faqs/#2-how-do-i-create-an-api-key). It is recommended that you [add signal](/network/curating/#how-to-signal) to your subgraph with at least [3,000 GRT](/network-transition-faq/#how-can-i-ensure-that-my-subgraph-will-be-picked-up-by-indexer-on-the-graph-network).
 
 マニフェスト・ファイルの内容を詳しく説明する前に、サブグラフを構築してデプロイするために必要な [Graph CLI](https://github.com/graphprotocol/graph-cli)をインストールする必要があります。
 
@@ -101,6 +101,8 @@ description: Gravatar for Ethereum
 repository: https://github.com/graphprotocol/graph-tooling
 schema:
   file: ./schema.graphql
+indexerHints:
+  prune: auto
 dataSources:
   - kind: ethereum/contract
     name: Gravity
@@ -150,6 +152,8 @@ dataSources:
 
 - `features`: 使用されるすべての[feature](#experimental-features)名のリストです。
 
+- `indexerHints.prune`: Defines the retention of historical block data for a subgraph. See [prune](#prune) in [indexerHints](#indexer-hints) section.
+
 - `dataSources.source`: サブグラフのソースとなるスマートコントラクトのアドレスと、使用するスマートコントラクトの abi です。アドレスはオプションで、省略すると、すべてのコントラクトからのマッチングイベントにインデックスを付けることができます。
 
 - `dataSources.source.startBlock`: データソースがインデックス作成を開始するブロックの番号（オプション）です。ほとんどの場合、コントラクトが作成されたブロックの使用をお勧めします。
@@ -170,6 +174,8 @@ dataSources:
 
 単一のサブグラフは複数のスマートコントラクトからデータを索引化できます。`dataSources`配列に、索引化するデータが必要な各コントラクトのエントリを追加してください
 
+### Order of Triggering Handlers
+
 ブロック内のデータソースのトリガーは、以下のプロセスを使用して順序付けられます:
 
 1. イベントとコールのトリガーは、ブロック内のトランザクションインデックスで最初に並べられます。
@@ -177,6 +183,8 @@ dataSources:
 3. ブロックトリガーは、イベントトリガーとコールトリガーの後に、マニフェストで定義されている順番で実行されます。
 
 これらの順序規則は変更されることがあります。
+
+> **Note:** When new [dynamic data source](#data-source-templates-for-dynamically-created-contracts) are created, the handlers defined for dynamic data sources will only start processing after all existing data source handlers are processed, and will repeat in the same sequence whenever triggered.
 
 ### ABI を取得する
 
@@ -248,15 +256,15 @@ Null 以外のフィールド 'name' の null 値が解決されました
 
 GraphQL API では、以下の Scalar をサポートしています:
 
-| タイプ | 説明書き |
-| --- | --- |
-| `Bytes` | Byte 配列で、16 進数の文字列で表されます。Ethereum のハッシュやアドレスによく使われます。 |
-| `String` | `string`値の Scalar であり、Null 文字はサポートされておらず、自動的に削除されます。 |
-| `Boolean` | `boolean`値を表す Scalar。 |
-| `Int` | Int GraphQL の仕様では、`Int`のサイズは 32 バイトと定義されています。 |
-| `Int8` | An 8-byte signed integer, also known as a 64-bit signed integer, can store values in the range from -9,223,372,036,854,775,808 to 9,223,372,036,854,775,807. Prefer using this to represent `i64` from ethereum. |
-| `BigInt` | 大きな整数。Ethereum の`uint32`, `int64`, `uint64`, ..., `uint256` タイプに使用されます。注: `int32`, `uint24` `int8`など`uint32`以下のものは`i32`として表現されます。 |
-| `BigDecimal` | `BigDecimal`は、高精度の 10 進数を記号と指数で表します。指数の範囲は -6143 ～ +6144 です。有効数字 34 桁にまとめられます。 |
+| タイプ          | 説明書き                                                                                                                                                                                                             |
+| ------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Bytes`      | Byte 配列で、16 進数の文字列で表されます。Ethereum のハッシュやアドレスによく使われます。                                                                                                                                                            |
+| `String`     | `string`値の Scalar であり、Null 文字はサポートされておらず、自動的に削除されます。                                                                                                                                                             |
+| `Boolean`    | `boolean`値を表す Scalar。                                                                                                                                                                                            |
+| `Int`        | Int GraphQL の仕様では、`Int`のサイズは 32 バイトと定義されています。                                                                                                                                                                    |
+| `Int8`       | An 8-byte signed integer, also known as a 64-bit signed integer, can store values in the range from -9,223,372,036,854,775,808 to 9,223,372,036,854,775,807. Prefer using this to represent `i64` from ethereum. |
+| `BigInt`     | 大きな整数。Ethereum の`uint32`, `int64`, `uint64`, ..., `uint256` タイプに使用されます。注: `int32`, `uint24` `int8`など`uint32`以下のものは`i32`として表現されます。                                                                                |
+| `BigDecimal` | `BigDecimal`は、高精度の 10 進数を記号と指数で表します。指数の範囲は -6143 ～ +6144 です。有効数字 34 桁にまとめられます。                                                                                                                                   |
 
 #### Enums
 
@@ -458,33 +466,33 @@ query {
 
 サポートされている言語の辞書:
 
-| コード | 辞書         |
-| ------ | ------------ |
-| simple | General      |
-| da     | Danish       |
-| nl     | Dutch        |
-| en     | English      |
-| fi     | Finnish      |
-| fr     | French       |
-| de     | German       |
-| hu     | Hungarian    |
-| it     | Italian      |
-| no     | Norwegian    |
-| pt     | ポルトガル語 |
-| ro     | Romanian     |
-| ru     | Russian      |
-| es     | Spanish      |
-| sv     | Swedish      |
-| tr     | Turkish      |
+| コード    | 辞書        |
+| ------ | --------- |
+| simple | General   |
+| da     | Danish    |
+| nl     | Dutch     |
+| en     | English   |
+| fi     | Finnish   |
+| fr     | French    |
+| de     | German    |
+| hu     | Hungarian |
+| it     | Italian   |
+| no     | Norwegian |
+| pt     | ポルトガル語    |
+| ro     | Romanian  |
+| ru     | Russian   |
+| es     | Spanish   |
+| sv     | Swedish   |
+| tr     | Turkish   |
 
 ### ランキングアルゴリズム
 
 サポートされている結果の順序付けのアルゴリズム:
 
-| アルゴリズム  | 説明書き                                                            |
-| ------------- | ------------------------------------------------------------------- |
-| rank          | フルテキストクエリのマッチ品質 (0-1) を使用して結果を並べ替えます。 |
-| proximityRank | ProximityRank rank に似ていますが、マッチの近接性も含みます。       |
+| アルゴリズム        | 説明書き                                     |
+| ------------- | ---------------------------------------- |
+| rank          | フルテキストクエリのマッチ品質 (0-1) を使用して結果を並べ替えます。    |
+| proximityRank | ProximityRank rank に似ていますが、マッチの近接性も含みます。 |
 
 ## マッピングの記述
 
@@ -525,13 +533,32 @@ export function handleUpdatedGravatar(event: UpdatedGravatar): void {
 
 ### 新規エンティティ作成時の推奨 ID
 
-すべてのエンティティは、同じタイプのすべてのエンティティ間で一意の `id` を持つ必要があります。エンティティの `id` 値は、エンティティの作成時に設定されます。以下は、新しいエンティティを作成する際に考慮すべき、いくつかの推奨される `id` 値です。注: `id` の値は `string` でなければなりません。
+It is highly recommended to use `Bytes` as the type for `id` fields, and only use `String` for attributes that truly contain human-readable text, like the name of a token. Below are some recommended `id` values to consider when creating new entities.
 
-- `event.params.id.toHex()`
-- `event.transaction.from.toHex()`
-- `event.transaction.hash.toHex() + "-" + event.logIndex.toString()`
+- `transfer.id = event.transaction.hash`
 
-We provide the [Graph Typescript Library](https://github.com/graphprotocol/graph-ts) which contains utilities for interacting with the Graph Node store and conveniences for handling smart contract data and entities. You can use this library in your mappings by importing `@graphprotocol/graph-ts` in `mapping.ts`.
+- `let id = event.transaction.hash.concatI32(event.logIndex.toI32())`
+
+- For entities that store aggregated data, for e.g, daily trade volumes, the `id` usually contains the day number. Here, using a `Bytes` as the `id` is beneficial. Determining the `id` would look like
+
+```typescript
+let dayID = event.block.timestamp.toI32() / 86400
+let id = Bytes.fromI32(dayID)
+```
+
+- Convert constant addresses to `Bytes`.
+
+`const id = Bytes.fromHexString('0xdead...beef')`
+
+There is a [Graph Typescript Library](https://github.com/graphprotocol/graph-ts) which contains utilities for interacting with the Graph Node store and conveniences for handling smart contract data and entities. It can be imported into `mapping.ts` from `@graphprotocol/graph-ts`.
+
+### Handling of entities with identical IDs
+
+When creating and saving a new entity, if an entity with the same ID already exists, the properties of the new entity are always preferred during the merge process. This means that the existing entity will be updated with the values from the new entity.
+
+If a null value is intentionally set for a field in the new entity with the same ID, the existing entity will be updated with the null value.
+
+If no value is set for a field in the new entity with the same ID, the field will result in null as well.
 
 ## コード生成
 
@@ -580,7 +607,7 @@ import { Gravatar } from '../generated/schema'
 
 EVM 互換のスマート コントラクトの一般的なパターンは、レジストリ コントラクトまたはファクトリ コントラクトの使用です。1 つのコントラクトが、それぞれ独自の状態とイベントを持つ任意の数の他のコントラクトを作成、管理、または参照します。
 
-これらのサブコントラクトのアドレスは、事前にわかっている場合とわかっていない場合があり、これらのコントラクトの多くは、時間の経過とともに作成および/または追加される可能性があります。このような場合、単一のデータ ソースまたは固定数のデータ ソースを定義することは不可能であり、より動的なアプローチ、つまり *データ ソース テンプレート*が必要とされるのはこのためです。
+これらのサブコントラクトのアドレスは、事前にわかっている場合とわかっていない場合があり、これらのコントラクトの多くは、時間の経過とともに作成および/または追加される可能性があります。このような場合、単一のデータ ソースまたは固定数のデータ ソースを定義することは不可能であり、より動的なアプローチ、つまり _データ ソース テンプレート_が必要とされるのはこのためです。
 
 ### メインコントラクトのデータソース
 
@@ -660,7 +687,7 @@ export function handleNewExchange(event: NewExchange): void {
 ```
 
 > **注:** 新しいデータ ソースは、それが作成されたブロックとそれに続くすべてのブロックの呼び出しとイベントのみを処理しますが、履歴データ (データなど) は処理しません。それは前のブロックに含まれています。
->
+> 
 > 以前のブロックに新しいデータソースに関連するデータが含まれている場合は、コントラクトの現在の状態を読み取り、新しいデータソースが作成された時点でその状態を表すエンティティを作成することで、そのデータにインデックスを付けることが最善です。
 
 ### データソースコンテクスト
@@ -717,10 +744,47 @@ dataSources:
 ```
 
 > **注:** コントラクト作成ブロックは、Etherscan ですばやく検索できます。
->
+> 
 > 1. 検索バーにアドレスを入力してコントラクトを検索します。
 > 2. `Contract Creator` セクションの作成トランザクションハッシュをクリックします。
 > 3. トランザクションの詳細ページを読み込んで、そのコントラクトの開始ブロックを見つけます。
+
+## Indexer Hints
+
+The `indexerHints` setting in a subgraph's manifest provides directives for indexers on processing and managing a subgraph. It influences operational decisions across data handling, indexing strategies, and optimizations. Presently, it features the `prune` option for managing historical data retention or pruning.
+
+### Prune
+
+`indexerHints.prune`: Defines the retention of historical block data for a subgraph. Options include:
+
+1. `"never"`: No pruning of historical data; retains the entire history.
+2. `"auto"`: Retains the minimum necessary history as set by the indexer, optimizing query performance.
+3. A specific number: Sets a custom limit on the number of historical blocks to retain.
+
+```
+ indexerHints:
+  prune: auto
+```
+
+> The term "history" in this context of subgraphs is about storing data that reflects the old states of mutable entities. This capability is essential for [time travel queries](/querying/graphql-api/#time-travel-queries), This feature enables querying the past states of these entities at specific blocks throughout the blockchain's history.
+
+Using `"auto"` is generally recommended as it maximizes query performance and is sufficient for most users who do not require access to extensive historical data.
+
+For subgraphs leveraging [time travel queries](/querying/graphql-api/#time-travel-queries), it's advisable to either set a specific number of blocks for historical data retention or use `prune: never` to keep all historical entity states. Below are examples of how to configure both options in your subgraph's settings:
+
+To retain a specific amount of historical data:
+
+```
+ indexerHints:
+  prune: 1000 # Replace 1000 with the desired number of blocks to retain
+```
+
+To preserve the complete history of entity states:
+
+```
+indexerHints:
+  prune: never
+```
 
 ## コールハンドラー
 
@@ -907,9 +971,9 @@ eventHandlers:
 
 `specVersion` `0.0.4`以降、サブグラフ機能はマニフェストファイルのトップレベルにある`features`セクションで、以下の表のように`camelCase` の名前を使って明示的に宣言する必要があります:
 
-| 特徴                                                      | 名前                                                |
+| 特徴                                                        | 名前                                                  |
 | --------------------------------------------------------- | --------------------------------------------------- |
-| [致命的でないエラー](#non-fatal-errors)                   | `nonFatalErrors`                                    |
+| [致命的でないエラー](#non-fatal-errors)                            | `nonFatalErrors`                                    |
 | [Full-text Search](#defining-fulltext-search-fields)      | `fullTextSearch`                                    |
 | [Grafting](#grafting-onto-existing-subgraphs)             | `grafting`                                          |
 | [IPFS on Ethereum Contracts](#ipfs-on-ethereum-contracts) | `ipfsOnEthereumContracts` or `nonDeterministicIpfs` |
