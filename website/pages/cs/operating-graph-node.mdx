@@ -77,13 +77,13 @@ Kompletní příklad konfigurace Kubernetes naleznete v úložišti [indexer](ht
 
 Když je Graf Uzel spuštěn, zpřístupňuje následující ports:
 
-| Port | Účel | Trasy | CLI Argument | Proměnná prostředí |
-| --- | --- | --- | --- | --- |
-| 8000 | GraphQL HTTP server<br />(pro dotazy podgrafy) | /subgraphs/id/...<br />/subgraphs/name/.../... | --http-port | - |
-| 8001 | GraphQL WS<br />(pro odběry podgrafů) | /subgraphs/id/...<br />/subgraphs/name/.../... | --ws-port | - |
-| 8020 | JSON-RPC<br />(pro správu nasazení) | / | --admin-port | - |
-| 8030 | Stav indexování podgrafů API | /graphql | --index-node-port | - |
-| 8040 | Metriky Prometheus | /metrics | --metrics-port | - |
+| Port | Účel                                                 | Trasy                                                | CLI Argument      | Proměnná prostředí |
+| ---- | ---------------------------------------------------- | ---------------------------------------------------- | ----------------- | ------------------ |
+| 8000 | GraphQL HTTP server<br />(pro dotazy podgrafy) | /subgraphs/id/...<br />/subgraphs/name/.../... | --http-port       | -                  |
+| 8001 | GraphQL WS<br />(pro odběry podgrafů)          | /subgraphs/id/...<br />/subgraphs/name/.../... | --ws-port         | -                  |
+| 8020 | JSON-RPC<br />(pro správu nasazení)            | /                                                    | --admin-port      | -                  |
+| 8030 | Stav indexování podgrafů API                         | /graphql                                             | --index-node-port | -                  |
+| 8040 | Metriky Prometheus                                   | /metrics                                             | --metrics-port    | -                  |
 
 > **Důležité**: Dávejte pozor na veřejné vystavování portů - **administrační porty** by měly být uzamčeny. To se týká i koncového bodu JSON-RPC uzlu Graf.
 
@@ -314,32 +314,32 @@ Neexistuje jedna "stříbrná kulka", ale celá řada nástrojů pro prevenci, d
 
 Graf Uzel ve výchozím nastavení ukládá dotazy GraphQL do mezipaměti, což může výrazně snížit zatížení databáze. To lze dále konfigurovat pomocí nastavení `GRAPH_QUERY_CACHE_BLOCKS` a `GRAPH_QUERY_CACHE_MAX_MEM` - více informací [zde](https://github.com/graphprotocol/graph-node/blob/master/docs/environment-variables.md#graphql-caching).
 
-##### Analysing queries
+##### Analýza dotazů
 
-Problematic queries most often surface in one of two ways. In some cases, users themselves report that a given query is slow. In that case the challenge is to diagnose the reason for the slowness - whether it is a general issue, or specific to that subgraph or query. And then of course to resolve it, if possible.
+Problematické dotazy se nejčastěji objevují jedním ze dvou způsobů. V některých případech uživatelé sami hlásí, že daný dotaz je pomalý. V takovém případě je úkolem diagnostikovat příčinu pomalosti - zda se jedná o obecný problém, nebo o specifický problém daného podgrafu či dotazu. A pak ho samozřejmě vyřešit, pokud je to možné.
 
-In other cases, the trigger might be high memory usage on a query node, in which case the challenge is first to identify the query causing the issue.
+V jiných případech může být spouštěcím faktorem vysoké využití paměti v uzlu dotazu a v takovém případě je třeba nejprve identifikovat dotaz, který problém způsobuje.
 
-Indexers can use [qlog](https://github.com/graphprotocol/qlog/) to process and summarize Graph Node's query logs. `GRAPH_LOG_QUERY_TIMING` can also be enabled to help identify and debug slow queries.
+Indexery mohou používat [qlog](https://github.com/graphprotocol/qlog/) ke zpracování a shrnutí protokolů dotazů uzlu Graf. Lze také povolit funkci `GRAPH_LOG_QUERY_TIMING`, která pomáhá identifikovat a ladit pomalé dotazy.
 
-Given a slow query, indexers have a few options. Of course they can alter their cost model, to significantly increase the cost of sending the problematic query. This may result in a reduction in the frequency of that query. However this often doesn't resolve the root cause of the issue.
+Při pomalém dotazu mají indexátory několik možností. Samozřejmě mohou změnit svůj nákladový model a výrazně zvýšit náklady na odeslání problematického dotazu. To může vést ke snížení četnosti tohoto dotazu. To však často neřeší hlavní příčinu problému.
 
-##### Account-like optimisation
+##### Optimalizace podobná účtu
 
-Database tables that store entities seem to generally come in two varieties: 'transaction-like', where entities, once created, are never updated, i.e., they store something akin to a list of financial transactions, and 'account-like' where entities are updated very often, i.e., they store something like financial accounts that get modified every time a transaction is recorded. Account-like tables are characterized by the fact that they contain a large number of entity versions, but relatively few distinct entities. Often, in such tables the number of distinct entities is 1% of the total number of rows (entity versions)
+Zdá se, že databázové tabulky, které uchovávají entity, se obecně vyskytují ve dvou variantách: Jsou to tabulky "transakční", kde entity, jakmile jsou jednou vytvořeny, nejsou nikdy aktualizovány, tj. ukládají něco podobného seznamu finančních transakcí, a "účetní", kde jsou entity aktualizovány velmi často, tj. ukládají něco podobného finančním účtům, které se mění při každé zaznamenané transakci. Tabulky podobné účtům se vyznačují tím, že obsahují velké množství verzí entit, ale relativně málo odlišných entit. Často je v takových tabulkách počet odlišných entit 1 % z celkového počtu řádků (verzí entit)
 
-For account-like tables, `graph-node` can generate queries that take advantage of details of how Postgres ends up storing data with such a high rate of change, namely that all of the versions for recent blocks are in a small subsection of the overall storage for such a table.
+Pro tabulky podobné účtům může `graph-node` generovat dotazy, které využívají podrobnosti o tom, jak Postgres ukládá data s tak vysokou rychlostí změn, totiž že všechny verze pro poslední bloky jsou v malé podsekci celkového úložiště takové tabulky.
 
-The command `graphman stats show <sgdNNNN`> shows, for each entity type/table in a deployment, how many distinct entities, and how many entity versions each table contains. That data is based on Postgres-internal estimates, and is therefore necessarily imprecise, and can be off by an order of magnitude. A `-1` in the `entities` column means that Postgres believes that all rows contain a distinct entity.
+Příkaz `graphman stats show <sgdNNNN`> zobrazí pro každý typ entity/tabulku v nasazení, kolik různých entit a kolik verzí entit každá tabulka obsahuje. Tyto údaje jsou založeny na interních odhadech společnosti Postgres, a proto jsou nutně nepřesné a mohou se lišit o řád. Hodnota `-1` ve sloupci `entity` znamená, že Postgres se domnívá, že všechny řádky obsahují odlišnou entity.
 
-In general, tables where the number of distinct entities are less than 1% of the total number of rows/entity versions are good candidates for the account-like optimization. When the output of `graphman stats show` indicates that a table might benefit from this optimization, running `graphman stats show <sgdNNN> <table>` will perform a full count of the table - that can be slow, but gives a precise measure of the ratio of distinct entities to overall entity versions.
+Obecně platí, že tabulky, kde počet odlišných entit tvoří méně než 1 % celkového počtu řádků/verzí entit, jsou vhodnými kandidáty pro optimalizaci podobnou účtu. Pokud výstup `graphman stats show` naznačuje, že by tabulka mohla mít z této optimalizace prospěch, spuštění `graphman stats show <sgdNNN> <table>` provede úplné spočítání tabulky - to může být pomalé, ale poskytuje přesné měření poměru odlišných entit k celkovému počtu verzí entit.
 
-Once a table has been determined to be account-like, running `graphman stats account-like <sgdNNN>.<table>` will turn on the account-like optimization for queries against that table. The optimization can be turned off again with `graphman stats account-like --clear <sgdNNN>.<table>` It takes up to 5 minutes for query nodes to notice that the optimization has been turned on or off. After turning the optimization on, it is necessary to verify that the change does not in fact make queries slower for that table. If you have configured Grafana to monitor Postgres, slow queries would show up in `pg_stat_activity`in large numbers, taking several seconds. In that case, the optimization needs to be turned off again.
+Jakmile je tabulka určena jako tabulka typu account, spuštěním příkazu `graphman stats account-like <sgdNNN>.<table>` se zapne optimalizace typu account pro dotazy proti této tabulce. Optimalizaci lze opět vypnout příkazem `graphman stats account-like --clear <sgdNNN>.<table>` Trvá až 5 minut, než si uzly dotazů všimnou, že byla optimalizace zapnuta nebo vypnuta. Po zapnutí optimalizace je nutné ověřit, zda změna skutečně nezpůsobí zpomalení dotazů pro danou tabulku. Pokud jste nakonfigurovali Grafanu pro monitorování Postgresu, pomalé dotazy by se objevily v `pg_stat_activity` ve velkých číslech a trvaly by několik sekund. V takovém případě je třeba optimalizaci opět vypnout.
 
-For Uniswap-like subgraphs, the `pair` and `token` tables are prime candidates for this optimization, and can have a dramatic effect on database load.
+U podgrafů typu Uniswap jsou tabulky `pair` a `token` hlavními kandidáty na tuto optimalizaci a mohou mít výrazný vliv na zatížení databáze.
 
-#### Removing subgraphs
+#### Odstranění podgrafů
 
-> This is new functionality, which will be available in Graph Node 0.29.x
+> Jedná se o novou funkci, která bude k dispozici v uzlu Graf 0.29.x
 
-At some point an indexer might want to remove a given subgraph. This can be easily done via `graphman drop`, which deletes a deployment and all it's indexed data. The deployment can be specified as either a subgraph name, an IPFS hash `Qm..`, or the database namespace `sgdNNN`. Further documentation is available [here](https://github.com/graphprotocol/graph-node/blob/master/docs/graphman.md#-drop).
+V určitém okamžiku může indexátor chtít daný podgraf odstranit. To lze snadno provést pomocí `graphman drop`, který odstraní nasazení a všechna jeho indexovaná data. Nasazení lze zadat buď jako název podgrafu, nebo jako hash IPFS `Qm..`, nebo jako jmenný prostor databáze `sgdNNN`. Další dokumentace je k dispozici [zde](https://github.com/graphprotocol/graph-node/blob/master/docs/graphman.md#-drop).
