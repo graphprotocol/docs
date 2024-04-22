@@ -6,7 +6,7 @@ title: असेंबलीस्क्रिप्ट एपीआई
 
 यह पृष्ठ दस्तावेज करता है कि सबग्राफ मैपिंग लिखते समय किन अंतर्निहित एपीआई का उपयोग किया जा सकता है। बॉक्स से बाहर दो प्रकार के एपीआई उपलब्ध हैं:
 
-- the [Graph TypeScript library](https://github.com/graphprotocol/graph-ts) (`graph-ts`) and
+- the [Graph TypeScript library](https://github.com/graphprotocol/graph-tooling) (`graph-ts`) and
 - code generated from subgraph files by `graph codegen`.
 
 It is also possible to add other libraries as dependencies, as long as they are compatible with [AssemblyScript](https://github.com/AssemblyScript/assemblyscript). Since this is the language mappings are written in, the [AssemblyScript wiki](https://github.com/AssemblyScript/assemblyscript/wiki) is a good source for language and standard library features.
@@ -27,14 +27,16 @@ The `@graphprotocol/graph-ts` library provides the following APIs:
 
 The `apiVersion` in the subgraph manifest specifies the mapping API version which is run by Graph Node for a given subgraph.
 
-| संस्करण | रिलीज नोट्स |
-| :-: | --- |
-| 0.0.7 | Added `TransactionReceipt` and `Log` classes to the Ethereum types<br />Added `receipt` field to the Ethereum Event object |
-| 0.0.6 | Added `nonce` field to the Ethereum Transaction object<br />Added `baseFeePerGas` to the Ethereum Block object |
-| 0.0.5 | AssemblyScript upgraded to version 0.19.10 (this includes breaking changes, please see the [`Migration Guide`](/release-notes/assemblyscript-migration-guide))<br />`ethereum.transaction.gasUsed` renamed to `ethereum.transaction.gasLimit` |
-| 0.0.4 | Added `functionSignature` field to the Ethereum SmartContractCall object |
-| 0.0.3 | Added `from` field to the Ethereum Call object<br />`etherem.call.address` renamed to `ethereum.call.to` |
-| 0.0.2 | Added `input` field to the Ethereum Transaction object |
+| संस्करण | रिलीज नोट्स                                                                                                                                                                                                                                                      |
+| :-----: | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+|  0.0.9  | Adds new host function `eth_get_balance`                                                                                                                                                                                                                         |
+|  0.0.8  | Adds validation for existence of fields in the schema when saving an entity.                                                                                                                                                                                     |
+|  0.0.7  | Added `TransactionReceipt` and `Log` classes to the Ethereum types<br />Added `receipt` field to the Ethereum Event object                                                                                                                                       |
+|  0.0.6  | Added `nonce` field to the Ethereum Transaction object<br />Added `baseFeePerGas` to the Ethereum Block object                                                                                                                                                   |
+|  0.0.5  | AssemblyScript upgraded to version 0.19.10 (this includes breaking changes, please see the [`Migration Guide`](/release-notes/assemblyscript-migration-guide))<br />`ethereum.transaction.gasUsed` renamed to `ethereum.transaction.gasLimit` |
+|  0.0.4  | Added `functionSignature` field to the Ethereum SmartContractCall object                                                                                                                                                                                         |
+|  0.0.3  | Added `from` field to the Ethereum Call object<br />`etherem.call.address` renamed to `ethereum.call.to`                                                                                                                                                         |
+|  0.0.2  | Added `input` field to the Ethereum Transaction object                                                                                                                                                                                                           |
 
 ### अंतर्निहित प्रकार
 
@@ -540,6 +542,17 @@ let decoded = ethereum.decode('(address,uint256)', encoded)
 - Encoding/decoding [Rust library/CLI](https://github.com/rust-ethereum/ethabi)
 - More [complex example](https://github.com/graphprotocol/graph-node/blob/6a7806cc465949ebb9e5b8269eeb763857797efc/tests/integration-tests/host-exports/src/mapping.ts#L72).
 
+#### Balance of an Address
+
+The balance of an address can be retrieved using the `ethereum` module. This feature is available from `apiVersion: 0.0.9` defined `subgraph.yaml`. The `getBalance()` retrieves the balance of the specified address from the block currently being processed within the subgraph.
+
+```typescript
+import { ethereum } from '@graphprotocol/graph-ts'
+
+let address = Address.fromString('0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045')
+let balance = ethereum.getBalance(address) // returns balance in BigInt
+```
+
 ### लॉगिंग एपीआई
 
 ```typescript
@@ -559,11 +572,7 @@ The `log` API includes the following functions:
 The `log` API takes a format string and an array of string values. It then replaces placeholders with the string values from the array. The first `{}` placeholder gets replaced by the first value in the array, the second `{}` placeholder gets replaced by the second value and so on.
 
 ```typescript
-log.info('संदेश प्रदर्शित किया जाना है: {}, {}, {}', [
-  value.toString(),
-  OtherValue.toString(),
-  'पहले से ही एक स्ट्रिंग',
-])
+log.info ('संदेश प्रदर्शित किया जाना है: {}, {}, {}', [value.toString (), OtherValue.toString (), 'पहले से ही एक स्ट्रिंग'])
 ```
 
 #### एक या अधिक मान लॉग करना
@@ -738,44 +747,44 @@ When the type of a value is certain, it can be converted to a [built-in type](#b
 
 ### प्रकार रूपांतरण संदर्भ
 
-| Source(s)            | Destination          | Conversion function          |
-| -------------------- | -------------------- | ---------------------------- |
-| Address              | Bytes                | none                         |
-| Address              | String               | s.toHexString()              |
-| BigDecimal           | String               | s.toString()                 |
-| BigInt               | BigDecimal           | s.toBigDecimal()             |
-| BigInt               | String (hexadecimal) | s.toHexString() या s.toHex() |
-| BigInt               | String (unicode)     | s.toString()                 |
-| BigInt               | i32                  | s.toI32()                    |
-| Boolean              | Boolean              | none                         |
-| Bytes (signed)       | BigInt               | BigInt.fromSignedBytes(s)    |
-| Bytes (unsigned)     | BigInt               | BigInt.fromUnsignedBytes(s)  |
-| Bytes                | String (hexadecimal) | s.toHexString() या s.toHex() |
-| Bytes                | String (unicode)     | s.toString()                 |
-| Bytes                | String (base58)      | s.toBase58()                 |
-| Bytes                | i32                  | s.toI32()                    |
-| Bytes                | u32                  | s.toU32()                    |
-| Bytes                | JSON                 | json.fromBytes(s)            |
-| int8                 | i32                  | none                         |
-| int32                | i32                  | none                         |
-| int32                | BigInt               | BigInt.fromI32(s)            |
-| uint24               | i32                  | none                         |
-| int64 - int256       | BigInt               | none                         |
-| uint32 - uint256     | BigInt               | none                         |
-| JSON                 | boolean              | s.toBool()                   |
-| JSON                 | i64                  | s.toI64()                    |
-| JSON                 | u64                  | s.toU64()                    |
-| JSON                 | f64                  | s.toF64()                    |
-| JSON                 | BigInt               | s.toBigInt()                 |
-| JSON                 | string               | s.toString()                 |
-| JSON                 | Array                | s.toArray()                  |
-| JSON                 | Object               | s.toObject()                 |
-| String               | Address              | Address.fromString(s)        |
-| Bytes                | Address              | Address.fromBytes(s)         |
-| String               | BigInt               | BigInt.fromString(s)         |
-| String               | BigDecimal           | BigDecimal.fromString(s)     |
-| String (hexadecimal) | Bytes                | ByteArray.fromHexString(s)   |
-| String (UTF-8)       | Bytes                | ByteArray.fromUTF8(s)        |
+| Source(s)            | Destination                             | Conversion function                                                |
+| --------------------------------------- | --------------------------------------- | ------------------------------------------------------------------ |
+| Address                                 | Bytes                                   | none                                                               |
+| Address                                 | String                                  | s.toHexString()                                 |
+| BigDecimal                              | String                                  | s.toString()                                    |
+| BigInt                                  | BigDecimal                              | s.toBigDecimal()                                |
+| BigInt                                  | String (hexadecimal) | s.toHexString() या s.toHex() |
+| BigInt                                  | String (unicode)     | s.toString()                                    |
+| BigInt                                  | i32                                     | s.toI32()                                       |
+| Boolean                                 | Boolean                                 | none                                                               |
+| Bytes (signed)       | BigInt                                  | BigInt.fromSignedBytes(s)                       |
+| Bytes (unsigned)     | BigInt                                  | BigInt.fromUnsignedBytes(s)                     |
+| Bytes                                   | String (hexadecimal) | s.toHexString() या s.toHex() |
+| Bytes                                   | String (unicode)     | s.toString()                                    |
+| Bytes                                   | String (base58)      | s.toBase58()                                    |
+| Bytes                                   | i32                                     | s.toI32()                                       |
+| Bytes                                   | u32                                     | s.toU32()                                       |
+| Bytes                                   | JSON                                    | json.fromBytes(s)                               |
+| int8                                    | i32                                     | none                                                               |
+| int32                                   | i32                                     | none                                                               |
+| int32                                   | BigInt                                  | BigInt.fromI32(s)                               |
+| uint24                                  | i32                                     | none                                                               |
+| int64 - int256                          | BigInt                                  | none                                                               |
+| uint32 - uint256                        | BigInt                                  | none                                                               |
+| JSON                                    | boolean                                 | s.toBool()                                      |
+| JSON                                    | i64                                     | s.toI64()                                       |
+| JSON                                    | u64                                     | s.toU64()                                       |
+| JSON                                    | f64                                     | s.toF64()                                       |
+| JSON                                    | BigInt                                  | s.toBigInt()                                    |
+| JSON                                    | string                                  | s.toString()                                    |
+| JSON                                    | Array                                   | s.toArray()                                     |
+| JSON                                    | Object                                  | s.toObject()                                    |
+| String                                  | Address                                 | Address.fromString(s)                           |
+| Bytes                                   | Address                                 | Address.fromBytes(s)                            |
+| String                                  | BigInt                                  | BigInt.fromString(s)                            |
+| String                                  | BigDecimal                              | BigDecimal.fromString(s)                        |
+| String (hexadecimal) | Bytes                                   | ByteArray.fromHexString(s)                      |
+| String (UTF-8)       | Bytes                                   | ByteArray.fromUTF8(s)                           |
 
 ### डेटा स्रोत मेटाडेटा
 
