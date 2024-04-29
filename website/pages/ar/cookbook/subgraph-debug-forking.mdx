@@ -2,7 +2,7 @@
 title: Quick and Easy Subgraph Debugging Using Forks
 ---
 
-كما هو الحال مع العديد من الأنظمة التي تعالج كميات كبيرة من البيانات ، قد يستغرق مفهرسو The Graph أو (Graph nodes) بعض الوقت لمزامنة الـ subgraph الخاص بك مع blockchain المستهدف. التناقض بين التغييرات السريعة بغرض تصحيح الأخطاء وأوقات الانتظار الطويلة اللازمة للفهرسة يؤدي إلى نتائج عكسية للغاية ونحن ندرك ذلك جيدًا. ولهذا السبب نقدم **subgraph forking ** ، الذي تم تطويره بواسطة [ LimeChain ](https://limechain.tech/) ، وفي هذه المقالة سنوضح لكم كيف يمكن استخدام هذه الميزة لتسريع تصحيح أخطاء الـ subgraph بشكل كبير!
+As with many systems processing large amounts of data, The Graph's Indexers (Graph Nodes) may take quite some time to sync-up your subgraph with the target blockchain. The discrepancy between quick changes with the purpose of debugging and long wait times needed for indexing is extremely counterproductive and we are well aware of that. This is why we are introducing **subgraph forking**, developed by [LimeChain](https://limechain.tech/), and in this article I will show you how this feature can be used to substantially speed-up subgraph debugging!
 
 ## حسنا، ما هو؟
 
@@ -12,9 +12,9 @@ title: Quick and Easy Subgraph Debugging Using Forks
 
 ## ماذا؟! كيف؟
 
-عندما تنشر subgraph إلى Graph node بعيدة للقيام بالفهرسة ويفشل عند الكتلة _ X _ ، فإن الخبر الجيد هو أن Graph node ستظل تقدم استعلامات GraphQL باستخدام مخزنها(store)، والذي تمت مزامنته للكتلة(block) _ X _. هذا عظيم! هذا يعني أنه يمكننا الاستفادة من هذا المخزن "المحدث" لإصلاح الأخطاء التي تظهر عند فهرسة الكتلة _ X _.
+When you deploy a subgraph to a remote Graph Node for indexing and it fails at block _X_, the good news is that the Graph Node will still serve GraphQL queries using its store, which is synced-up to block _X_. That's great! This means we can take advantage of this "up-to-date" store to fix the bugs arising when indexing block _X_.
 
-باختصار ، سنقوم _ بتفريع (fork) الـ subgraph الفاشل _ من Graph node بعيدة والتي تضمن فهرسة الـ subgraph للكتلة * X * وذلك من أجل توفير الـ subgraph المنشور محليًا والذي يتم تصحيحه عندالكتلة_X_ مع عرض محدث لحالة الفهرسة.
+In a nutshell, we are going to _fork the failing subgraph_ from a remote Graph Node that is guaranteed to have the subgraph indexed up to block _X_ in order to provide the locally deployed subgraph being debugged at block _X_ an up-to-date view of the indexing state.
 
 ## من فضلك ، أرني بعض الأكواد!
 
@@ -44,12 +44,12 @@ export function handleUpdatedGravatar(event: UpdatedGravatar): void {
 }
 ```
 
-Oops, how unfortunate, when I deploy my perfect looking subgraph to the [Hosted Service](https://thegraph.com/hosted-service/) it fails with the _"Gravatar not found!"_ error.
+Oops, how unfortunate, when I deploy my perfect looking subgraph to [Subgraph Studio](https://thegraph.com/studio/) it fails with the _"Gravatar not found!"_ error.
 
 الطريقة المعتادة لمحاولة الإصلاح هي:
 
 1. إجراء تغيير في مصدر الـ mappings ، والذي تعتقد أنه سيحل المشكلة (وأنا أعلم أنه لن يحلها).
-2. Re-deploy the subgraph to the [Hosted Service](https://thegraph.com/hosted-service/) (or another remote Graph node).
+2. Re-deploy the subgraph to [Subgraph Studio](https://thegraph.com/studio/) (or another remote Graph Node).
 3. الانتظار حتى تتم المزامنة.
 4. إذا حدثت المشكلة مرة أخرى ، فارجع إلى 1!
 
@@ -57,9 +57,9 @@ Oops, how unfortunate, when I deploy my perfect looking subgraph to the [Hosted 
 
 باستخدام **subgraph forking** يمكننا التخلص من تلك الخطوة. إليك كيف يبدو:
 
-0. قم بتجهيز Graph node محلية بمجموعة **_fork-base_** مناسبة.
+0. Spin-up a local Graph Node with the **_appropriate fork-base_** set.
 1. قم بإجراء تغيير في مصدر الـ mappings ، والذي تعتقد أنه سيحل المشكلة.
-2. قم بالنشر إلى Graph node محلية ، **_وقم بتفريع الـ subgraph الفاشل_**و**_ البدء من الكتلة التي بها المشكلة_**.
+2. Deploy to the local Graph Node, **_forking the failing subgraph_** and **_starting from the problematic block_**.
 3. إذا حدثت المشكلة مرة أخرى ، فارجع إلى 1!
 
 الآن ، قد يكون لديك سؤالان:
@@ -80,7 +80,7 @@ $ graph deploy <subgraph-name> --debug-fork <subgraph-id> --ipfs http://localhos
 
 لذلك ، هذا ما أفعله:
 
-0. أقوم بتجهيز Graph Node محلية ([هنا كيف تقوم به](https://github.com/graphprotocol/graph-node#running-a-local-graph-node)) مع تعيين خيار `fork-base` إلى `https://api.thegraph.com/subgraphs/id/` ، نظرا لأنني سأقوم بتفريع(fork) الـ subgraph الذي به أخطاء والذي نشرته سابقا من الـ [HostedService](https://thegraph.com/hosted-service/).
+1. I spin-up a local Graph Node ([here is how to do it](https://github.com/graphprotocol/graph-node#running-a-local-graph-node)) with the `fork-base` option set to: `https://api.thegraph.com/subgraphs/id/`, since I will fork a subgraph, the buggy one I deployed earlier, from [Subgraph Studio](https://thegraph.com/studio/).
 
 ```
 $ cargo run -p graph-node --release -- \
@@ -90,13 +90,12 @@ $ cargo run -p graph-node --release -- \
     --fork-base https://api.thegraph.com/subgraphs/id/
 ```
 
-1. بعد فحص دقيق ، لاحظت أن هناك عدم تطابق في تمثيلات الـ ` id ` المستخدمة عند فهرسة ` Gravatar ` في المعالجين الخاصين بي. بينما ` handleNewGravatar ` يحول (`event.params.id.toHex()`) إلى سداسي ، `handleUpdatedGravatar` يستخدم int32 (`event.params.id.toI32()`) مما يجعل ` handleUpdatedGravatar ` قلقا من "Gravatar not found!". أنا أجعلهم كلاهما يحولان ` id ` إلى سداسي.
-2. بعد إجراء التغييرات ، قمت بنشر الـ subgraph الخاص بي على Graph node المحلية **_وتفريع الـsubgraph الفاشل_** وضبط `dataSources.source.startBlock` إلى `6190343` في `subgraph.yaml`:
+2. بعد فحص دقيق ، لاحظت أن هناك عدم تطابق في تمثيلات الـ ` id ` المستخدمة عند فهرسة ` Gravatar ` في المعالجين الخاصين بي. بينما ` handleNewGravatar ` يحول (`event.params.id.toHex()`) إلى سداسي ، `handleUpdatedGravatar` يستخدم int32 (`event.params.id.toI32()`) مما يجعل ` handleUpdatedGravatar ` قلقا من "Gravatar not found!". أنا أجعلهم كلاهما يحولان ` id ` إلى سداسي.
+3. After I made the changes I deploy my subgraph to the local Graph Node, **_forking the failing subgraph_** and setting `dataSources.source.startBlock` to `6190343` in `subgraph.yaml`:
 
 ```bash
 $ graph deploy gravity --debug-fork QmNp169tKvomnH3cPXTfGg4ZEhAHA6kEq5oy1XDqAxqHmW --ipfs http://localhost:5001 --node http://localhost:8020
 ```
 
-3. لقد قمت بفحص السجلات التي تنتجها Graph node المحلية ، ويبدو أن كل شيء يعمل بشكل جيد.
-4. أقوم بنشر الـ subgraph الخاص بي الخالي من الأخطاء لـ Graph node بعيدة وأعيش في سعادة دائمة
-5. النهاية...
+4. I inspect the logs produced by the local Graph Node and, Hooray!, everything seems to be working.
+5. I deploy my now bug-free subgraph to a remote Graph Node and live happily ever after! (no potatoes tho)
