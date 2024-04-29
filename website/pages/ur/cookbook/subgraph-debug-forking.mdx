@@ -2,7 +2,7 @@
 title: فورکس کا استعمال کرتے ہوۓ تیز اور آسان ڈیبگنگ
 ---
 
-جیسا کہ بہت سے سسٹمز بڑی مقدار میں ڈیٹا پر کارروائی کرتے ہیں، گراف کے انڈیکسرز (گراف نوڈس) کو آپ کے سب گراف کو ٹارگٹ بلاکچین کے ساتھ ہم آہنگ کرنے میں کافی وقت لگ سکتا ہے۔ ڈیبگنگ کے مقصد کے ساتھ فوری تبدیلیوں اور انڈیکسنگ کے لیے درکار طویل انتظار کے اوقات کے درمیان فرق انتہائی غیر نتیجہ خیز ہے اور ہم اس سے بخوبی واقف ہیں۔ یہی وجہ ہے کہ ہم **سب گراف فورکنگ** متعارف کروا رہے ہیں، جسے [LimeChain](https://limechain.tech/) نے تیار کیا ہے، اور اس مضمون میں میں آپ کو دکھاؤں گا کہ کس طرح اس خصوصیت کو سب گراف ڈیبگنگ کو تیز کرنے کے لیے استعمال کیا جا سکتا ہے!
+As with many systems processing large amounts of data, The Graph's Indexers (Graph Nodes) may take quite some time to sync-up your subgraph with the target blockchain. The discrepancy between quick changes with the purpose of debugging and long wait times needed for indexing is extremely counterproductive and we are well aware of that. This is why we are introducing **subgraph forking**, developed by [LimeChain](https://limechain.tech/), and in this article I will show you how this feature can be used to substantially speed-up subgraph debugging!
 
 ## ٹھیک ہے، یہ ہے کیا؟
 
@@ -12,9 +12,9 @@ title: فورکس کا استعمال کرتے ہوۓ تیز اور آسان ڈ�
 
 ## کیا؟! کیسے؟
 
-جب آپ انڈیکسنگ کے لیے ریموٹ گراف نوڈ پر سب گراف کو تعینات کرتے ہیں اور یہ بلاک _X_ پر ناکام ہوجاتا ہے، تو اچھی خبر یہ ہے کہ گراف نوڈ اب بھی اپنے اسٹور کا استعمال کرتے ہوئے GraphQL کیوریز پیش کرے گا، جو _X_ کو بلاک کرنے کے لیے مطابقت پذیر ہے۔ یہ بہت اچھا ہے! اس کا مطلب ہے کہ ہم بلاک _X_ کو انڈیکس کرتے وقت پیدا ہونے والے بگ کو ٹھیک کرنے کے لیے اس "تازہ ترین" اسٹور کا فائدہ اٹھا سکتے ہیں.
+When you deploy a subgraph to a remote Graph Node for indexing and it fails at block _X_, the good news is that the Graph Node will still serve GraphQL queries using its store, which is synced-up to block _X_. That's great! This means we can take advantage of this "up-to-date" store to fix the bugs arising when indexing block _X_.
 
-مختصر طور پر، ہم ریموٹ گراف نوڈ سے _ناکام سب گراف کو فورک کرنے جا رہے ہیں_ جس کی ضمانت دی گئی ہے کہ سب گراف کو بلاک کرنے کے لیے انڈیکس کیا جائے گا _X_ بلاک _X_ پر ڈی بگ کیے جانے والے مقامی طور پر تعینات سب گراف فراہم کرنے کے لیے انڈیکسنگ کی حالت کا تازہ ترین منظر.
+In a nutshell, we are going to _fork the failing subgraph_ from a remote Graph Node that is guaranteed to have the subgraph indexed up to block _X_ in order to provide the locally deployed subgraph being debugged at block _X_ an up-to-date view of the indexing state.
 
 ## براۓ مہربانی، مجہے کچھ کوڈ دکھائیں!
 
@@ -44,12 +44,12 @@ export function handleUpdatedGravatar(event: UpdatedGravatar): void {
 }
 ```
 
-افوہ، کتنی بدقسمتی کی بات ہے، جب میں اپنے بہترین نظر آنے والے سب گراف کو [ہوسٹڈ سروس](https://thegraph.com/hosted-service/) میں تعینات کرتا ہوں تو یہ *"گراوتار نہیں ملا!"* خرابی.
+Oops, how unfortunate, when I deploy my perfect looking subgraph to [Subgraph Studio](https://thegraph.com/studio/) it fails with the _"Gravatar not found!"_ error.
 
 درست کرنے کی کوشش کرنے کا معمول کا طریقہ یہ ہے:
 
 1. میپنگ کے ماخذ میں تبدیلی کریں، جس کے بارے میں آپ کو یقین ہے کہ مسئلہ حل ہو جائے گا (جبکہ میں جانتا ہوں کہ ایسا نہیں ہوگا).
-2. سب گراف کو [ہوسٹڈ سروس](https://thegraph.com/hosted-service/) (یا کسی اور ریموٹ گراف نوڈ) پر دوبارہ تعینات کریں.
+2. Re-deploy the subgraph to [Subgraph Studio](https://thegraph.com/studio/) (or another remote Graph Node).
 3. اس کے مطابقت پذیر ہونے کا انتظار کریں.
 4. اگر یہ دوبارہ ٹوٹ جاتا ہے تو 1 پر واپس جائیں، ورنہ: ہورے!
 
@@ -57,9 +57,9 @@ export function handleUpdatedGravatar(event: UpdatedGravatar): void {
 
 **سب گراف فورکنگ** کا استعمال کرتے ہوئے ہم بنیادی طور پر اس مرحلے کو ختم کر سکتے ہیں۔ یہاں یہ کیسا لگتا ہے:
 
-0. **_مناسب فورک بیس_** سیٹ کے ساتھ ایک مقامی گراف نوڈ کو اسپن اپ کریں.
+0. Spin-up a local Graph Node with the **_appropriate fork-base_** set.
 1. میپنگ کے ماخذ میں تبدیلی کریں، جس سے آپ کو یقین ہے کہ مسئلہ حل ہو جائے گا.
-2. مقامی گراف نوڈ پر تعینات کریں، **_ناکام سب گراف کو روکنا_** اور ** _مسائل والے بلاک سے شروع_**.
+2. Deploy to the local Graph Node, **_forking the failing subgraph_** and **_starting from the problematic block_**.
 3. اگر یہ دوبارہ ٹوٹ جاتا ہے، تو 1 پر واپس جائیں، ورنہ: ہورے!
 
 اب، آپ کے پاس 2 سوالات ہوسکتے ہیں:
@@ -80,7 +80,7 @@ $ graph deploy <subgraph-name> --debug-fork <subgraph-id> --ipfs http://localhos
 
 تو، یہاں میں کیا کرتا ہوں:
 
-0. میں ایک مقامی گراف نوڈ کو گھماتا ہوں ([یہ کیسے کرنا ہے](https://github.com/graphprotocol/graph-node#running-a-local-graph-node)) `fork-base` اختیار کے ساتھ اس پر سیٹ کیا گیا ہے: `https://api.thegraph.com/subgraphs/id/`، چونکہ میں ایک سب گراف کو فورک کروں گا، وہ چھوٹی چھوٹی جسے میں نے تعینات کیا ہے پہلے، [ہوسٹڈ سروس](https://thegraph.com/hosted-service/) سے.
+1. I spin-up a local Graph Node ([here is how to do it](https://github.com/graphprotocol/graph-node#running-a-local-graph-node)) with the `fork-base` option set to: `https://api.thegraph.com/subgraphs/id/`, since I will fork a subgraph, the buggy one I deployed earlier, from [Subgraph Studio](https://thegraph.com/studio/).
 
 ```
 $ cargo run -p graph-node --release -- \
@@ -90,13 +90,12 @@ $ cargo run -p graph-node --release -- \
     --fork-base https://api.thegraph.com/subgraphs/id/
 ```
 
-1. محتاط معائنے کے بعد میں نے محسوس کیا کہ میرے دو ہینڈلرز میں `Gravatar` کو انڈیکس کرتے وقت استعمال ہونے والی `id` نمائندگیوں میں کوئی مماثلت نہیں ہے۔ جب کہ `handleNewGravatar` اسے ہیکس میں تبدیل کرتا ہے (`()event.params.id.toHex`)، ` handleUpdatedGravatar` int32 استعمال کرتا ہے (`()event.params.id.toI32`) جس کی وجہ سے `handleUpdatedGravatar` "Gravatar نہیں ملا!" سے گھبراتا ہے۔ میں ان دونوں کو `id` کو ہیکس میں تبدیل کرتا ہوں.
-2. تبدیلیاں کرنے کے بعد میں اپنے سب گراف کو مقامی گراف نوڈ پر تعینات کرتا ہوں، **_ناکام سب گراف کو فورک کرنا_** اور ترتیب < `subgraph.yaml` میں `6190343` کو `dataSources.source.startBlock`:
+2. محتاط معائنے کے بعد میں نے محسوس کیا کہ میرے دو ہینڈلرز میں `Gravatar` کو انڈیکس کرتے وقت استعمال ہونے والی `id` نمائندگیوں میں کوئی مماثلت نہیں ہے۔ جب کہ `handleNewGravatar` اسے ہیکس میں تبدیل کرتا ہے (`()event.params.id.toHex`)، ` handleUpdatedGravatar` int32 استعمال کرتا ہے (`()event.params.id.toI32`) جس کی وجہ سے `handleUpdatedGravatar` "Gravatar نہیں ملا!" سے گھبراتا ہے۔ میں ان دونوں کو `id` کو ہیکس میں تبدیل کرتا ہوں.
+3. After I made the changes I deploy my subgraph to the local Graph Node, **_forking the failing subgraph_** and setting `dataSources.source.startBlock` to `6190343` in `subgraph.yaml`:
 
 ```bash
 $ graph deploy gravity --debug-fork QmNp169tKvomnH3cPXTfGg4ZEhAHA6kEq5oy1XDqAxqHmW --ipfs http://localhost:5001 --node http://localhost:8020
 ```
 
-3. میں مقامی گراف نوڈ کے ذریعہ تیار کردہ لاگز کا معائنہ کرتا ہوں اور ہورے!، ایسا لگتا ہے کہ سب کچھ کام کر رہا ہے.
-4. میں اپنے اب بگ فری سب گراف کو ریموٹ گراف نوڈ پر تعینات کرتا ہوں اور اس کے بعد ہمیشہ خوشی سے جیتا ہوں! (کوئی آلو نہیں)
-5. ختم شد...
+4. I inspect the logs produced by the local Graph Node and, Hooray!, everything seems to be working.
+5. I deploy my now bug-free subgraph to a remote Graph Node and live happily ever after! (no potatoes tho)
