@@ -2,7 +2,7 @@
 title: Debugging de Subgraphs Rápido e Fácil Com Forks
 ---
 
-Assim como vários sistemas que processam uma abundância de dados, os Indexadores do Graph (Graph nodes) podem levar um bom tempo para sincronizar o seu subgraph com a blockchain-alvo. A discrepância entre mudanças rápidas para fins de debugging e os longos tempos de espera necessários para o indexing é extremamente contraprodutiva, e nós sabemos muito bem disso. É por isso que introduzimos o **subgraph forking**, desenvolvido pela [LimeChain](https://limechain.tech/); neste artigo, veja como esta característica pode ser usada para acelerar consideravelmente o debugging de subgraphs!
+As with many systems processing large amounts of data, The Graph's Indexers (Graph Nodes) may take quite some time to sync-up your subgraph with the target blockchain. The discrepancy between quick changes with the purpose of debugging and long wait times needed for indexing is extremely counterproductive and we are well aware of that. This is why we are introducing **subgraph forking**, developed by [LimeChain](https://limechain.tech/), and in this article I will show you how this feature can be used to substantially speed-up subgraph debugging!
 
 ## Ok, o que é isso?
 
@@ -12,9 +12,9 @@ No contexto do debugging, o **subgraph forking** permite debugar o seu subgraph 
 
 ## O quê?! Como?!
 
-Quando lanças um subgraph a um node do The Graph remoto para o indexing e ele falha no bloco _X_, a boa notícia é que o node do The Graph ainda servirá queries GraphQL com seu armazenamento, que é sincronizado até o bloco _X_. Ótimo! Isto significa que podemos aproveitar este armazenamento "atualizado" para consertar os bugs que surgem ao indexar o bloco _X_.
+When you deploy a subgraph to a remote Graph Node for indexing and it fails at block _X_, the good news is that the Graph Node will still serve GraphQL queries using its store, which is synced-up to block _X_. That's great! This means we can take advantage of this "up-to-date" store to fix the bugs arising when indexing block _X_.
 
-Resumindo, iremos _fazer um fork do subgraph falho_ de um node remoto do The Graph para garantir que o subgraph seja indexado até o bloco _X_, para prover ao subgraph lançado localmente uma visão atualizada do estado do indexing, sendo debugado no bloco _X_.
+In a nutshell, we are going to _fork the failing subgraph_ from a remote Graph Node that is guaranteed to have the subgraph indexed up to block _X_ in order to provide the locally deployed subgraph being debugged at block _X_ an up-to-date view of the indexing state.
 
 ## Por favor, quero ver códigos!
 
@@ -44,12 +44,12 @@ export function handleUpdatedGravatar(event: UpdatedGravatar): void {
 }
 ```
 
-Ops, que pena! Quando eu lanço o meu subgraph lindinho ao [Serviço Hospedado](https://thegraph.com/hosted-service/), ele falha com o erro _"Gravatar not found"_ (Gravatar não encontrado).
+Oops, how unfortunate, when I deploy my perfect looking subgraph to [Subgraph Studio](https://thegraph.com/studio/) it fails with the _"Gravatar not found!"_ error.
 
 A tentativa de solução mais comum é:
 
 1. Fazer uma mudança na fonte dos mapeamentos, que talvez possa resolver o problema (mas é claro que não vai).
-2. Relançar o subgraph ao [Serviço Hospedado](https://thegraph.com/hosted-service/) (ou outro node remoto do The Graph).
+2. Re-deploy the subgraph to [Subgraph Studio](https://thegraph.com/studio/) (or another remote Graph Node).
 3. Esperar que ele se sincronize.
 4. Se quebrar novamente, volte ao passo 1. Se não: Eba!
 
@@ -57,9 +57,9 @@ A tentativa de solução mais comum é:
 
 Com o **subgraph forking**, podemos essencialmente eliminar este passo. Ele é algo assim:
 
-0. Crie um node do The Graph local com o conjunto de **_fork-base apropriado_**.
+0. Spin-up a local Graph Node with the **_appropriate fork-base_** set.
 1. Faça uma mudança na fonte dos mapeamentos, que talvez possa resolver o problema.
-2. Lance ao node local do The Graph, **_forkando o subgraph falho_** e **_começando do bloco problemático_**.
+2. Deploy to the local Graph Node, **_forking the failing subgraph_** and **_starting from the problematic block_**.
 3. Se quebrar novamente, volte ao passo 1. Se não: Eba!
 
 Agora, você deve ter duas perguntas:
@@ -80,7 +80,7 @@ Aliás, não esqueça de preencher o campo `dataSources.source.startBlock` no ma
 
 Aqui está o que eu faço:
 
-0. Eu crio um graph node local ([aqui está como fazê-lo](https://github.com/graphprotocol/graph-node#running-a-local-graph-node)) com a opção `fork-base` de `https://api.thegraph.com/subgraphs/id/`, já que eu vou forkar um subgraph, o bugado que eu lancei anteriormente, do [Serviço Hospedado](https://thegraph.com/hosted-service/).
+1. I spin-up a local Graph Node ([here is how to do it](https://github.com/graphprotocol/graph-node#running-a-local-graph-node)) with the `fork-base` option set to: `https://api.thegraph.com/subgraphs/id/`, since I will fork a subgraph, the buggy one I deployed earlier, from [Subgraph Studio](https://thegraph.com/studio/).
 
 ```
 $ cargo run -p graph-node --release -- \
@@ -90,13 +90,12 @@ $ cargo run -p graph-node --release -- \
     --fork-base https://api.thegraph.com/subgraphs/id/
 ```
 
-1. Após vistoriar com cuidado, percebo uma discrepância nas representações de `id` usadas ao indexar `Gravatars` nos meus dois handlers. Enquanto `handleNewGravatar` o converte a um hex (`event.params.id.toHex()`), o `handleUpdatedGravatar` usa um int32 (`event.params.id.toI32()`). Assim, o `handleUpdatedGravatar` entra em pânico com o "Gravatar não encontrado!". Eu faço os dois converterem o `id` em um hex.
-2. Após ter feito as mudanças, lanço o meu subgraph ao node local do The Graph, **_forkando o subgraph falho_** e programando o `dataSources.source.startBlock` em `6190343` no `subgraph.yaml`:
+2. Após vistoriar com cuidado, percebo uma discrepância nas representações de `id` usadas ao indexar `Gravatars` nos meus dois handlers. Enquanto `handleNewGravatar` o converte a um hex (`event.params.id.toHex()`), o `handleUpdatedGravatar` usa um int32 (`event.params.id.toI32()`). Assim, o `handleUpdatedGravatar` entra em pânico com o "Gravatar não encontrado!". Eu faço os dois converterem o `id` em um hex.
+3. After I made the changes I deploy my subgraph to the local Graph Node, **_forking the failing subgraph_** and setting `dataSources.source.startBlock` to `6190343` in `subgraph.yaml`:
 
 ```bash
 $ graph deploy gravity --debug-fork QmNp169tKvomnH3cPXTfGg4ZEhAHA6kEq5oy1XDqAxqHmW --ipfs http://localhost:5001 --node http://localhost:8020
 ```
 
-3. Eu inspeciono os logs produzidos pelo node The Graph local e... eba! Parece que deu tudo certo.
-4. Lanço o meu subgraph, agora livre de bugs, a um node The Graph remoto e vivo feliz para sempre! (mas sem batatas)
-5. Fim...
+4. I inspect the logs produced by the local Graph Node and, Hooray!, everything seems to be working.
+5. I deploy my now bug-free subgraph to a remote Graph Node and live happily ever after! (no potatoes tho)
