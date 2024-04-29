@@ -2,7 +2,7 @@
 title: Fork Kullanarak Hızlı ve Kolay Subgraph Hata Ayıklama
 ---
 
-Büyük miktarda veriyi işleyen birçok sistemde olduğu gibi, Graph'ın İndeksleyicilerinin (Graph düğümleri) hedef blok zinciri ile subgraphınızı senkronize etmesi oldukça uzun süreler gerektirebilir. Hata ayıklama amaçlı hızlı değişiklikler için gereken kısa bekleme sürelerine karşın indeksleme için gereken uzun bekleme süreleri arasındaki fark son derece verimsiz ve bunun farkındayız. Bu nedenle, [LimeChain](https://limechain.tech/) tarafından geliştirilen **subgraph forklamayı** tanıtıyoruz ve bu makaledeseiz bu özelliğin subgraph hata ayıklamasını önemli ölçüde hızlandırmak için nasıl kullanılabileceğini göstereceğim!
+As with many systems processing large amounts of data, The Graph's Indexers (Graph Nodes) may take quite some time to sync-up your subgraph with the target blockchain. The discrepancy between quick changes with the purpose of debugging and long wait times needed for indexing is extremely counterproductive and we are well aware of that. This is why we are introducing **subgraph forking**, developed by [LimeChain](https://limechain.tech/), and in this article I will show you how this feature can be used to substantially speed-up subgraph debugging!
 
 ## Peki, nedir bu Subgraph Forklama?
 
@@ -12,9 +12,9 @@ Hata ayıklama bağlamında, **subgraph forklama**, _X_ bloğunda başarısız o
 
 ## Ne?! Nasıl?
 
-İndekslemek için bir subgraph'ı uzak bir Graph düğümüne dağıttığınızda ve bu, _X_ bloğunda başarısız olduğunda, iyi haber şu ki Graph düğümü _X_ bloğuna kadar senkronize edilmiş deposunu kullanarak GraphQL sorgularını sunmaya devam edecektir. Bu harika! Bu, _X_ bloğunu indeksleme sırasında ortaya çıkan hataları düzeltmek için "güncel" depodan yararlanabileceğimiz anlamına geliyor.
+When you deploy a subgraph to a remote Graph Node for indexing and it fails at block _X_, the good news is that the Graph Node will still serve GraphQL queries using its store, which is synced-up to block _X_. That's great! This means we can take advantage of this "up-to-date" store to fix the bugs arising when indexing block _X_.
 
-Kısacası, _başarısız bir subgraph'ı_ _X_ bloğuna kadar indekslendiği garanti edilen başka uzaktaki bir Graph düğümünden, _X_ bloğunda hata ayıklanan yerel olarak dağıtılan subgraph'ın indeksleme durumundaki güncel bir görünümünü sağlamak adına _forklayacağız_.
+In a nutshell, we are going to _fork the failing subgraph_ from a remote Graph Node that is guaranteed to have the subgraph indexed up to block _X_ in order to provide the locally deployed subgraph being debugged at block _X_ an up-to-date view of the indexing state.
 
 ## Lütfen bana biraz kod göster!
 
@@ -44,12 +44,12 @@ export function handleUpdatedGravatar(event: UpdatedGravatar): void {
 }
 ```
 
-Ah, ne şanssızlık, mükemmel görünen subgraph'ımı [Barındırılan Hizmete](https://thegraph.com/hosted-service/) dağıttığımda _"Gravatar not found!"_ hatasıyla karşılaştım.
+Oops, how unfortunate, when I deploy my perfect looking subgraph to [Subgraph Studio](https://thegraph.com/studio/) it fails with the _"Gravatar not found!"_ error.
 
 Genellikle düzeltmeyi denemek için yol şudur:
 
 1. Eşleştirme kaynağında, sorunu çözeceğine inandığınız bir değişiklik yapın (ama ben çözmeyeceğini biliyorum).
-2. Subgraph'ı [Barındırılan Hizmet'e](https://thegraph.com/hosted-service/) tekrar dağıtın (yada başka uzaktaki Graph Düğümüne).
+2. Re-deploy the subgraph to [Subgraph Studio](https://thegraph.com/studio/) (or another remote Graph Node).
 3. Senkronize olması için bekleyin.
 4. Tekrar sorunla karşılaşırsanız 1. aşamaya geri dönün, aksi takdirde: Yaşasın!
 
@@ -57,9 +57,9 @@ Bu, sıradan bir hata ayıklama işlemine gerçekten oldukça benzerdir, fakat i
 
 Aslında **subgraph forklama** kullanarak bu adımı ortadan kaldırabiliriz. Nasıl göründüğüne bakalım:
 
-0. **_Uygun fork temelli _** küme ile yerel bir Graph düğümünü başlatın.
+0. Spin-up a local Graph Node with the **_appropriate fork-base_** set.
 1. Eşleştirme kaynağında, sorunu çözeceğine inandığınız bir değişiklik yapın.
-2. **_Başarısız subgraph'ı forklayarak_** ve **_sorunlu bloktan başlayarak_** yerel Graph düğümüne dağıtın.
+2. Deploy to the local Graph Node, **_forking the failing subgraph_** and **_starting from the problematic block_**.
 3. Tekrar sorunla karşılaşırsanız 1. aşamaya geri dönün, aksi takdirde: Yaşasın!
 
 Şimdi, 2 sorunuz olabilir:
@@ -80,7 +80,7 @@ Ayrıca, subgraph manifestindeki `dataSources.source.startBlock` alanını sorun
 
 İşte benim ne yaptığım:
 
-0. [Barındırılan Hizmette](https://thegraph.com/hosted-service/) daha önceden dağıttığım hatalı olan bir subgraph'ı forklayacağım için `fork temelli` seçeneği `https://api.thegraph.com/subgraphs/id/` şeklinde ayarlanmış olan yerel bir graph düğümü başlatıyorum ([nasıl yapılacağına dair bilgiyi buradan bulabilirsiniz](https://github.com/graphprotocol/graph-node#running-a-local-graph-node)).
+1. I spin-up a local Graph Node ([here is how to do it](https://github.com/graphprotocol/graph-node#running-a-local-graph-node)) with the `fork-base` option set to: `https://api.thegraph.com/subgraphs/id/`, since I will fork a subgraph, the buggy one I deployed earlier, from [Subgraph Studio](https://thegraph.com/studio/).
 
 ```
 $ cargo run -p graph-node --release -- \
@@ -90,13 +90,12 @@ $ cargo run -p graph-node --release -- \
     --fork-base https://api.thegraph.com/subgraphs/id/
 ```
 
-1. Dikkatli bir inceleme sonrasında, iki işleyicimdeki `Gravatar`ları indekslerken kullanılan `kimlik(id)` temsillerinde bir uyuşmazlık oldupunu fark ettim. `handleNewGravatar` onu bir 16'lık sisteme (`event.params.id.toHex()`) dönüştürürken, `handleUpdatedGravatar`, `handleUpdatedGravatar`'ın "Gravatar not found!" hatası vermesine neden olan bir int32 (`event.params.id.toI32()`) kullanır. Her ikisinde de `kimliğin` 16'lık sisteme dönüştürülmesini sağlarım.
-2. Değişiklikleri yaptıktan sonra **_başarısız olan subgraph'ı forklayarak_** ve `subgraph.yaml`'da `dataSources.source.startBlock`'u `6190343` olarak ayarlayarak subgraph'ımı yerel Graph düğümüne dağıtırım:
+2. Dikkatli bir inceleme sonrasında, iki işleyicimdeki `Gravatar`ları indekslerken kullanılan `kimlik(id)` temsillerinde bir uyuşmazlık oldupunu fark ettim. `handleNewGravatar` onu bir 16'lık sisteme (`event.params.id.toHex()`) dönüştürürken, `handleUpdatedGravatar`, `handleUpdatedGravatar`'ın "Gravatar not found!" hatası vermesine neden olan bir int32 (`event.params.id.toI32()`) kullanır. Her ikisinde de `kimliğin` 16'lık sisteme dönüştürülmesini sağlarım.
+3. After I made the changes I deploy my subgraph to the local Graph Node, **_forking the failing subgraph_** and setting `dataSources.source.startBlock` to `6190343` in `subgraph.yaml`:
 
 ```bash
 $ graph deploy gravity --debug-fork QmNp169tKvomnH3cPXTfGg4ZEhAHA6kEq5oy1XDqAxqHmW --ipfs http://localhost:5001 --node http://localhost:8020
 ```
 
-3. Yerel Graph düğümü tarafından sağlanan kayıtları incelerim ve Yaşasın! Her şey sorunsuz çalışıyor gibi.
-4. Artık hatasız subgraph'ımı uzaktaki bir Graph düğümüne dağıtıyorum ve bundan sonra mutlu bir şekilde yaşamaya devam edeceğim! (patates olmadan)
-5. Son...
+4. I inspect the logs produced by the local Graph Node and, Hooray!, everything seems to be working.
+5. I deploy my now bug-free subgraph to a remote Graph Node and live happily ever after! (no potatoes tho)
