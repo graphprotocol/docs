@@ -27,14 +27,14 @@ import zh from '@/pages/zh/translations'
 
 const appLocales = [
   Locale.ARABIC,
-  // Locale.CZECH,
+  Locale.CZECH,
   // Locale.GERMAN,
   Locale.ENGLISH,
   Locale.SPANISH,
-  // Locale.FRENCH,
+  Locale.FRENCH,
   // Locale.HAUSA,
   Locale.HINDI,
-  // Locale.ITALIAN,
+  Locale.ITALIAN,
   Locale.JAPANESE,
   // Locale.KOREAN,
   Locale.MARATHI,
