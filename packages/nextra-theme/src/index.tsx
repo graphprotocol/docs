@@ -3,7 +3,7 @@ import { NextSeo, NextSeoProps } from 'next-seo'
 import { NextraThemeLayoutProps } from 'nextra'
 import { useFSRoute } from 'nextra/hooks'
 import { MDXProvider } from 'nextra/mdx'
-import { Item, normalizePages } from 'nextra/normalize-pages'
+import { normalizePages } from 'nextra/normalize-pages'
 import { ReactElement, useCallback, useMemo } from 'react'
 import { useSet } from 'react-use'
 import { ThemeUICSSObject } from 'theme-ui'
@@ -16,6 +16,7 @@ import {
   CodeBlock,
   CodeInline,
   Difficulty,
+  DocSearch,
   EditPageLink,
   Heading,
   Image,
@@ -47,9 +48,17 @@ const mdxComponents = {
   ul: ListUnordered,
   p: Paragraph,
   table: Table,
+  Callout,
+  CodeBlock,
   CodeInline,
   Difficulty,
+  Heading,
+  Image,
+  LinkInline,
+  ListItem,
+  ListOrdered,
   ListUnordered,
+  Paragraph,
   Table,
   VideoEmbed,
 }
@@ -63,7 +72,22 @@ const mdxStyles: ThemeUICSSObject = {
   },
 }
 
-export { Heading, Image, LinkInline, Paragraph }
+export {
+  Callout,
+  CodeBlock,
+  CodeInline,
+  Difficulty,
+  DocSearch,
+  Heading,
+  Image,
+  LinkInline,
+  ListItem,
+  ListOrdered,
+  ListUnordered,
+  Paragraph,
+  Table,
+  VideoEmbed,
+}
 
 export default function NextraLayout({ children, pageOpts, pageProps }: NextraThemeLayoutProps): ReactElement {
   const { frontMatter, filePath, pageMap, headings, title } = pageOpts
@@ -85,30 +109,18 @@ export default function NextraLayout({ children, pageOpts, pageProps }: NextraTh
     const result = normalizePages({
       list: pageMap,
       locale,
-      defaultLocale: defaultLocale,
+      defaultLocale,
       route: fsPath,
     })
-
-    function removeNonExistedRoutes(items: Item[]): Item[] {
-      return items.reduce<Item[]>((acc, curr) => {
-        if (curr.route || curr.type === 'heading' || curr.type === 'separator') {
-          if (curr.children) {
-            curr.children = removeNonExistedRoutes(curr.children)
-          }
-          acc.push(curr)
+    if (typeof window === 'undefined') {
+      // Execute this check for sidebar links only on server, will be stripped from client build
+      for (const item of result.flatDocsDirectories) {
+        if (!item.route) {
+          throw new Error(`Route "${item.name}" does not exist. Remove this field from _meta.js file`)
         }
-        return acc
-      }, [])
+      }
     }
-
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-return -- i don't know why it's complain
-    return {
-      ...result,
-      directories: removeNonExistedRoutes(result.directories),
-      flatDirectories: result.flatDirectories.filter(
-        (item) => item.type !== 'separator' && item.type !== 'heading' && item.route !== '',
-      ),
-    }
+    return result
   }, [defaultLocale, fsPath, locale, pageMap])
 
   // Provide `markOutlineItem` to the `DocumentContext` so child `Heading` components can mark outline items as "in or above view" or not
@@ -170,7 +182,6 @@ export default function NextraLayout({ children, pageOpts, pageProps }: NextraTh
           <div
             sx={{
               display: ['none', null, null, 'block'],
-              mt: 'calc(-1 * var(--gds-header-height) * var(--gds-header-fixed))',
               marginInlineStart: '-8px',
               marginInlineEnd: '16px',
             }}
@@ -178,7 +189,7 @@ export default function NextraLayout({ children, pageOpts, pageProps }: NextraTh
             <MDXLayoutNav />
           </div>
 
-          <div sx={{ pt: [null, null, null, Spacing['32px']] }}>
+          <div sx={{ pt: [null, null, null, Spacing['24px']] }}>
             <div sx={{ display: [null, null, null, 'none'], mb: Spacing['32px'] }}>
               <MDXLayoutNav mobile />
             </div>
@@ -186,7 +197,6 @@ export default function NextraLayout({ children, pageOpts, pageProps }: NextraTh
             <article className="graph-docs-content" sx={mdxStyles}>
               {args.activePath.length > 1 ? (
                 <div className="graph-docs-current-group" sx={{ display: 'none' }}>
-                  {/* eslint-disable-next-line @typescript-eslint/no-unsafe-return -- i don't know why it's complain */}
                   {args.activePath.map((item) => item.title).join(' > ')}
                 </div>
               ) : null}
@@ -230,7 +240,6 @@ export default function NextraLayout({ children, pageOpts, pageProps }: NextraTh
           <div
             sx={{
               display: ['none', null, null, 'block'],
-              mt: 'calc(-1 * var(--gds-header-height) * var(--gds-header-fixed))',
               marginInlineStart: '32px',
               marginInlineEnd: '-8px',
             }}

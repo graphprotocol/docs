@@ -1,8 +1,12 @@
-import { Heading, Image, LinkInline } from '@graphprotocol/nextra-theme'
+import { Image, LinkInline } from '@graphprotocol/nextra-theme'
+import { useData } from 'nextra/data'
 
-import { BorderRadius, buildBorder, buildTransition, ButtonOrLink, Flex, Icon, Spacing, Text } from '@edgeandnode/gds'
+import { BorderRadius, buildBorder, buildTransition, Flex, Link, Spacing, Text } from '@edgeandnode/gds'
+import { NetworkIcon } from '@edgeandnode/go'
 
 import { useI18n } from '@/i18n'
+
+import { getSupportedNetworks } from './supportedNetworks'
 
 export function Intro() {
   const { t } = useI18n()
@@ -51,7 +55,7 @@ export function Intro() {
         },
       ].map((card) => (
         <li key={card.href} sx={{ aspectRatio: '258/136' }}>
-          <ButtonOrLink
+          <Link.Unstyled
             href={card.href}
             sx={{
               display: 'flex',
@@ -78,7 +82,7 @@ export function Intro() {
             <Text as="small" size="16px" color="White64">
               {card.description}
             </Text>
-          </ButtonOrLink>
+          </Link.Unstyled>
         </li>
       ))}
     </ul>
@@ -192,222 +196,30 @@ export function Products() {
 }
 
 export function SupportedNetworks() {
-  const { t } = useI18n()
+  const { supportedNetworks } = useData() as { supportedNetworks: Awaited<ReturnType<typeof getSupportedNetworks>> }
 
   return (
-    <>
-      <div sx={{ mt: Spacing['64px'] }}>
-        <Heading.H4>{t('index.supportedNetworks.graphNetworkAndHostedService')}</Heading.H4>
-        <ul
-          sx={{
-            mt: Spacing['24px'],
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(92px, 1fr))',
-            columnGap: Spacing['24px'],
-            rowGap: Spacing['32px'],
-          }}
-        >
-          {[
-            {
-              title: 'Ethereum',
-              logo: Icon.LogoEthereum,
-              href: 'https://ethereum.org/en/',
-            },
-            {
-              title: 'Polygon',
-              logo: Icon.LogoPolygon,
-              href: 'https://polygon.technology/',
-              beta: true,
-            },
-            {
-              title: 'Arbitrum One',
-              logo: Icon.LogoArbitrum,
-              href: 'https://arbitrum.io/',
-              beta: true,
-            },
-            {
-              title: 'Avalanche',
-              logo: Icon.LogoAvalanche,
-              href: 'https://www.avax.network/',
-              beta: true,
-            },
-            {
-              title: 'Fantom',
-              logo: Icon.LogoFantom,
-              href: 'https://fantom.foundation/',
-              beta: true,
-            },
-            {
-              title: 'Gnosis Chain',
-              logo: Icon.LogoGnosis,
-              href: 'https://docs.gnosischain.com/',
-              beta: true,
-            },
-            {
-              title: 'Celo',
-              logo: Icon.LogoCelo,
-              href: 'https://celo.org/',
-              beta: true,
-            },
-          ].map((network, index) => {
-            const Logo = network.logo
-            return (
-              <Flex.Column as="li" key={index}>
-                <Text as="div" size="14px" color="White64" sx={{ textAlign: 'center' }}>
-                  <ButtonOrLink
-                    href={network.href}
-                    target="_blank"
-                    sx={{
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      '&:hover': { color: 'White' },
-                      transition: buildTransition('COLORS'),
-                    }}
-                  >
-                    <Logo
-                      size="40px"
-                      sx={{
-                        mb: Spacing['8px'],
-                        'a:hover &': { transform: 'scale(1.1)' },
-                        transition: buildTransition('TRANSFORM'),
-                      }}
-                    />
-                    {network.title}
-                    {network.beta ? '*' : ''}
-                  </ButtonOrLink>
-                </Text>
-              </Flex.Column>
-            )
-          })}
-        </ul>
-      </div>
-      <div sx={{ mt: Spacing['64px'] }}>
-        <Heading.H4>{t('index.supportedNetworks.hostedService')}</Heading.H4>
-        <ul
-          sx={{
-            mt: Spacing['32px'],
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(92px, 1fr))',
-            columnGap: Spacing['24px'],
-            rowGap: Spacing['32px'],
-          }}
-        >
-          {[
-            {
-              title: 'Near',
-              logo: Icon.LogoNear,
-              href: 'https://near.org/',
-              beta: true,
-            },
-            {
-              title: 'BNB',
-              logo: Icon.LogoBNB,
-              href: 'https://www.binance.org/',
-              beta: true,
-            },
-            {
-              title: 'POA',
-              logo: Icon.LogoPOA,
-              href: 'https://www.poa.network/',
-              beta: true,
-            },
-            {
-              title: 'Fuse',
-              logo: Icon.LogoFuse,
-              href: 'https://fuse.io/',
-              beta: true,
-            },
-            {
-              title: 'Optimism',
-              logo: Icon.LogoOptimism,
-              href: 'https://www.optimism.io/',
-              beta: true,
-            },
-            {
-              title: 'Moonriver',
-              logo: Icon.LogoMoonriver,
-              href: 'https://moonbeam.network/networks/moonriver/',
-              beta: true,
-            },
-            {
-              title: 'Aurora',
-              logo: Icon.LogoAurora,
-              href: 'https://aurora.dev/',
-              beta: true,
-            },
-            {
-              title: 'Moonbeam',
-              logo: Icon.LogoMoonbeam,
-              href: 'https://moonbeam.network/',
-              beta: true,
-            },
-            {
-              title: 'Boba Network',
-              logo: Icon.LogoBoba,
-              href: 'https://boba.network/',
-              beta: true,
-            },
-            {
-              title: 'Harmony',
-              logo: Icon.LogoHarmony,
-              href: 'https://harmony.one/',
-              beta: true,
-            },
-            {
-              title: 'zkSync',
-              logo: Icon.LogoZkSync,
-              href: 'https://zksync.io/',
-              beta: true,
-            },
-            {
-              title: 'Cosmos Hub',
-              logo: Icon.LogoCosmosHub,
-              href: 'https://cosmos.network/',
-              beta: true,
-            },
-            {
-              title: 'Base',
-              logo: Icon.LogoBase,
-              href: 'https://base.org/',
-              beta: true,
-            },
-          ].map((network) => {
-            const Logo = network.logo
-            return (
-              <Flex.Column as="li" key={network.href}>
-                <Text as="div" size="14px" color="White64" sx={{ textAlign: 'center' }}>
-                  <ButtonOrLink
-                    href={network.href}
-                    target="_blank"
-                    sx={{
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      '&:hover': { color: 'White', '& > img': { transform: 'scale(1.1)' } },
-                      transition: buildTransition('COLORS'),
-                    }}
-                  >
-                    <Logo
-                      size="40px"
-                      sx={{
-                        mb: Spacing['8px'],
-                        'a:hover &': { transform: 'scale(1.1)' },
-                        transition: buildTransition('TRANSFORM'),
-                      }}
-                    />
-                    {network.title}
-                    {network.beta ? '*' : ''}
-                  </ButtonOrLink>
-                </Text>
-              </Flex.Column>
-            )
-          })}
-        </ul>
-        <Text.P14 color="White64" sx={{ mt: '32px' }}>
-          *{t('index.supportedNetworks.betaWarning')}
-        </Text.P14>
-      </div>
-    </>
+    <ul
+      sx={{
+        my: Spacing['48px'],
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fill, minmax(92px, 1fr))',
+        columnGap: Spacing['24px'],
+        rowGap: Spacing['32px'],
+      }}
+    >
+      {supportedNetworks
+        .filter((network) => !network.testnet)
+        .map((network) => (
+          <Flex.Column key={network.uid} as="li" align="center" gap={Spacing['8px']} sx={{ color: 'White64' }}>
+            <div sx={{ height: '40px' }}>
+              <NetworkIcon chain={network as any} size="40px" title="" />
+            </div>
+            <Text.P14 as="div" align="center">
+              {network.name}
+            </Text.P14>
+          </Flex.Column>
+        ))}
+    </ul>
   )
 }

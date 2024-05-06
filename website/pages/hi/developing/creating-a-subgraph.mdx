@@ -109,6 +109,14 @@ dataSources:
       address: '0x2E645469f354BB4F5c8a05B3b30A929361cf77eC'
       abi: Gravity
       startBlock: 6175244
+      endBlock: 7175245
+    context:
+      foo:
+        type: Bool
+        data: true
+      bar:
+        type: String
+        data: 'bar'
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.6
@@ -136,7 +144,7 @@ dataSources:
 
 मेनिफेस्ट के लिए अद्यतन करने के लिए महत्वपूर्ण प्रविष्टियां हैं:
 
-- `विवरण`: सबग्राफ क्या है, इसका मानव-पठनीय विवरण। यह विवरण ग्राफ़ एक्सप्लोरर द्वारा प्रदर्शित किया जाता है जब सबग्राफ को होस्ट की गई सेवा में तैनात किया जाता है।
+- `description`: a human-readable description of what the subgraph is. This description is displayed by the Graph Explorer when the subgraph is deployed to the hosted service.
 
 - `रिपॉजिटरी`: रिपॉजिटरी का URL जहां सबग्राफ मेनिफेस्ट पाया जा सकता है। यह द ग्राफ एक्सप्लोरर द्वारा भी प्रदर्शित किया गया है।
 
@@ -145,6 +153,10 @@ dataSources:
 - `dataSources.source`: स्मार्ट अनुबंध का पता सबग्राफ स्रोत, और उपयोग करने के लिए स्मार्ट अनुबंध का ABI। पता वैकल्पिक है; इसे छोड़ने से सभी अनुबंधों से मिलान करने वाले ईवेंट को अनुक्रमित करने की अनुमति मिलती है।
 
 - `dataSources.source.startBlock`: उस ब्लॉक की वैकल्पिक संख्या जिससे डेटा स्रोत इंडेक्स करना शुरू करता है। ज्यादातर मामलों में, हम उस ब्लॉक का उपयोग करने का सुझाव देते हैं जिसमें अनुबंध बनाया गया था।
+
+- `dataSources.source.endBlock`: The optional number of the block that the data source stops indexing at, including that block. Minimum spec version required: `0.0.9`.
+
+- `dataSources.context`: key-value pairs that can be used within subgraph mappings. Supports various data types like `Bool`, `String`, `Int`, `Int8`, `BigDecimal`, `Bytes`, `List`, and `BigInt`. Each variable needs to specify its `type` and `data`. These context variables are then accessible in the mapping files, offering more configurable options for subgraph development.
 
 - `dataSources.mapping.entities`: वे निकाय जो डेटा स्रोत स्टोर को लिखते हैं। प्रत्येक इकाई के लिए स्कीमा को schema.graphql फ़ाइल में परिभाषित किया गया है।
 
@@ -242,6 +254,7 @@ type GravatarDeclined @entity {
 | `String` | `स्ट्रिंग` मानों के लिए स्केलर। अशक्त वर्ण समर्थित नहीं हैं और स्वचालित रूप से हटा दिए जाते हैं। |
 | `Boolean` | `boolean` मानों के लिए स्केलर। |
 | `Int` | ग्राफक्लाइन स्पेक `Int` को 32 बाइट्स के आकार के रूप में परिभाषित करता है। |
+| `Int8` | An 8-byte signed integer, also known as a 64-bit signed integer, can store values in the range from -9,223,372,036,854,775,808 to 9,223,372,036,854,775,807. Prefer using this to represent `i64` from ethereum. |
 | `BigInt` | बड़े पूर्णांक। एथेरियम के `uint32`, `int64`, `uint64`, ..., `uint256` प्रकारों के लिए उपयोग किया जाता है। नोट: `uint32` के नीचे सब कुछ, जैसे `int32`, `uint24` या `int8` को `i32` के रूप में दर्शाया गया है। |
 | `BigDecimal` | `BigDecimal` उच्च परिशुद्धता दशमलव एक महत्व और एक प्रतिपादक के रूप में दर्शाया गया है। एक्सपोनेंट रेंज -6143 से +6144 तक है। 34 महत्वपूर्ण अंकों तक गोल। |
 
@@ -518,7 +531,7 @@ export function handleUpdatedGravatar(event: UpdatedGravatar): void {
 - `event.transaction.from.toHex()`
 - `event.transaction.hash.toHex() + "-" + event.logIndex.toString()`
 
-हम [ग्राफ़ टाइपस्क्रिप्ट लाइब्रेरी](https://github.com/graphprotocol/graph-ts) प्रदान करते हैं जिसमें ग्राफ़ नोड स्टोर के साथ सहभागिता करने के लिए उपयोगिताएँ और स्मार्ट अनुबंध डेटा और संस्थाओं को संभालने की सुविधा शामिल है। आप `mapping.ts` में `@graphprotocol/graph-ts` आयात करके अपने मैपिंग में इस लाइब्रेरी का उपयोग कर सकते हैं।
+We provide the [Graph Typescript Library](https://github.com/graphprotocol/graph-ts) which contains utilities for interacting with the Graph Node store and conveniences for handling smart contract data and entities. You can use this library in your mappings by importing `@graphprotocol/graph-ts` in `mapping.ts`.
 
 ## कोड जनरेशन
 
@@ -766,9 +779,11 @@ The `handleCreateGravatar` function takes a new `CreateGravatarCall` which is a 
 
 ## ब्लॉक हैंडलर
 
-अनुबंध की घटनाओं या फ़ंक्शन कॉल की सदस्यता लेने के अलावा, एक सबग्राफ अपने डेटा को अपडेट करना चाह सकता है क्योंकि श्रृंखला में नए ब्लॉक जोड़े जाते हैं। इसे प्राप्त करने के लिए एक सबग्राफ प्रत्येक ब्लॉक के बाद या पूर्व-निर्धारित फ़िल्टर से मेल खाने वाले ब्लॉक के बाद एक फ़ंक्शन चला सकता है।
+Contract events या function calls की सदस्यता लेने के अलावा, एक subgraph अपने data को update करना चाह सकता है क्योंकि chain में नए blocks जोड़े जाते हैं। इसे प्राप्त करने के लिए एक subgraph every block के बाद या pre-defined filter से match होन वाले block के बाद एक function चला सकता है।
 
 ### समर्थित फ़िल्टर
+
+#### Call Filter
 
 ```yaml
 filter:
@@ -806,9 +821,48 @@ dataSources:
             kind: call
 ```
 
+#### Polling Filter
+
+> **Requires `specVersion` >= 0.0.8**
+
+> **Note:** Polling filters are only available on dataSources of `kind: ethereum`.
+
+```yaml
+blockHandlers:
+  - handler: handleBlock
+    filter:
+      kind: polling
+      every: 10
+```
+
+The defined handler will be called once for every `n` blocks, where `n` is the value provided in the `every` field. This configuration allows the subgraph to perform specific operations at regular block intervals.
+
+#### Once Filter
+
+> **Requires `specVersion` >= 0.0.8**
+
+> **Note:** Once filters are only available on dataSources of `kind: ethereum`.
+
+```yaml
+blockHandlers:
+  - handler: handleOnce
+    filter:
+      kind: once
+```
+
+The defined handler with the once filter will be called only once before all other handlers run. This configuration allows the subgraph to use the handler as an initialization handler, performing specific tasks at the start of indexing.
+
+```ts
+export function handleOnce(block: ethereum.Block): void {
+  let data = new InitialData(Bytes.fromUTF8('initial'))
+  data.data = 'Setup data here'
+  data.save()
+}
+```
+
 ### मानचित्रण समारोह
 
-मैपिंग फ़ंक्शन को इसके एकमात्र तर्क के रूप में `etherium.Block` प्राप्त होगा। इवेंट के लिए मैपिंग फ़ंक्शन की तरह, यह फ़ंक्शन स्टोर में मौजूदा सबग्राफ इकाइयों तक पहुंच सकता है, स्मार्ट कॉन्ट्रैक्ट्स को कॉल कर सकता है और इकाइयां बना या अपडेट कर सकता है।
+The mapping function will receive an `ethereum.Block` as its only argument. Like mapping functions for events, this function can access existing subgraph entities in the store, call smart contracts and create or update entities.
 
 ```typescript
 import { ethereum } from '@graphprotocol/graph-ts'
@@ -934,6 +988,8 @@ _meta {
 
 ### मौजूदा सबग्राफ पर ग्राफ्टिंग
 
+> **Note:** it is not recommended to use grafting when initially upgrading to The Graph Network. Learn more [here](/cookbook/grafting/#important-note-on-grafting-when-upgrading-to-the-network).
+
 When a subgraph is first deployed, it starts indexing events at the genesis block of the corresponding chain (or at the `startBlock` defined with each data source) In some circumstances; it is beneficial to reuse the data from an existing subgraph and start indexing at a much later block. This mode of indexing is called _Grafting_. Grafting is, for example, useful during development to get past simple errors in the mappings quickly or to temporarily get an existing subgraph working again after it has failed.
 
 जब `subgraph.yaml` में सबग्राफ मेनिफेस्ट में `graft` ब्लॉक होता है तो एक सबग्राफ को बेस सबग्राफ पर ग्राफ्ट किया जाता है:
@@ -963,7 +1019,7 @@ graft:
 
 ## फ़ाइल डेटा स्रोत
 
-फ़ाइल डेटा स्रोत एक मजबूत, विस्तार योग्य तरीके से इंडेक्सिंग के दौरान ऑफ-चेन डेटा तक पहुँचने के लिए एक नई सबग्राफ कार्यक्षमता है, जो IPFS से शुरू होती है।
+File data sources are a new subgraph functionality for accessing off-chain data during indexing in a robust, extendable way. File data sources support fetching files from IPFS and from Arweave.
 
 > यह ऑफ-चेन डेटा के नियतात्मक अनुक्रमण के साथ-साथ स्वैच्छिक HTTP-स्रोत डेटा के संभावित परिचय के लिए आधार भी देता है।
 
@@ -1030,7 +1086,7 @@ type TokenMetadata @entity {
 
 > आप इन नेस्टेड इकाइयों के आधार पर पैरेंट इकाइयों को फ़िल्टर करने के लिए [नेस्टेड फ़िल्टर](https://thegraph.com/docs/en/querying/graphql-api/#example-for-nested-entity-filtering) का उपयोग कर सकते हैं।
 
-#### `kind: file/ipfs` के साथ एक नया टेम्पलेटेड डेटा स्रोत जोड़ें
+#### Add a new templated data source with `kind: file/ipfs` or `kind: file/arweave`
 
 यह वह डेटा स्रोत है जो ब्याज की फ़ाइल की पहचान होने पर उत्पन्न होगा।
 
@@ -1096,9 +1152,11 @@ export function handleMetadata(content: Bytes): void {
 अब आप चेन-आधारित हैंडलर के निष्पादन के दौरान फ़ाइल डेटा स्रोत बना सकते हैं:
 
 - ऑटो-जेनरेट किए गए `टेम्पलेट्स` से टेम्प्लेट आयात करें
-- call `TemplateName.create(cid: string)` from within a mapping, where the cid is a valid IPFS content identifier
+- call `TemplateName.create(cid: string)` from within a mapping, where the cid is a valid content identifier for IPFS or Arweave
 
-> वर्तमान में ग्राफ़ नोड [v0 और v1 सामग्री पहचानकर्ताओं](https://docs.ipfs.tech/concepts/content-addressing/) का समर्थन करता है, और निर्देशिकाओं के साथ सामग्री पहचानकर्ता (जैसे `bafyreighykzv2we26wfrbzkcdw37sbrby4upq7ae3aqobbq7i4er3tnxci/metadata).json`)
+For IPFS, Graph Node supports [v0 and v1 content identifiers](https://docs.ipfs.tech/concepts/content-addressing/), and content identifers with directories (e.g. `bafyreighykzv2we26wfrbzkcdw37sbrby4upq7ae3aqobbq7i4er3tnxci/metadata.json`).
+
+For Arweave, as of version 0.33.0 Graph Node can fetch files stored on Arweave based on their [transaction ID](https://docs.arweave.org/developers/server/http-api#transactions) from an Arweave gateway ([example file](https://bdxujjl5ev5eerd5ouhhs6o4kjrs4g6hqstzlci5pf6vhxezkgaa.arweave.net/CO9EpX0lekJEfXUOeXncUmMuG8eEp5WJHXl9U9yZUYA)). Arweave supports transactions uploaded via Bundlr, and Graph Node can also fetch files based on [Bundlr manifests](https://docs.bundlr.network/learn/gateways#indexing).
 
 उदाहरण:
 
@@ -1129,7 +1187,7 @@ export function handleTransfer(event: TransferEvent): void {
 }
 ```
 
-यह एक नया फ़ाइल डेटा स्रोत बनाएगा, जो ग्राफ़ नोड के कॉन्फ़िगर किए गए IPFS एंडपॉइंट को पोल करेगा, अगर यह नहीं मिला तो पुनः प्रयास करेगा। जब फ़ाइल मिल जाती है, फ़ाइल डेटा स्रोत हैंडलर निष्पादित किया जाएगा।
+This will create a new file data source, which will poll Graph Node's configured IPFS or Arweave endpoint, retrying if it is not found. When the file is found, the file data source handler will be executed.
 
 यह उदाहरण CID का उपयोग पैरेंट `Token` इकाई और परिणामी `TokenMetadata` इकाई के बीच लुकअप के रूप में कर रहा है।
 

@@ -1,13 +1,13 @@
 import { useContext, useEffect, useState } from 'react'
 
-import { buildTransition, ButtonOrLink, Divider, Flex, Spacing, Text, useI18n } from '@edgeandnode/gds'
+import { buildTransition, Divider, Link, Spacing, Text, useI18n } from '@edgeandnode/gds'
 
 import { EditPageLink } from '@/components'
 import { DocumentContext } from '@/layout'
 
 export const MDXLayoutOutline = () => {
   const { headings, highlightedOutlineItemId } = useContext(DocumentContext)!
-  const [enableTransition, setEnableTransition] = useState(false)
+  const [_enableTransition, setEnableTransition] = useState(false)
   const { t } = useI18n<any>()
 
   // Fix issue where the `translateY` is animated on initial load
@@ -20,21 +20,17 @@ export const MDXLayoutOutline = () => {
       sx={{
         zIndex: 1,
         position: 'sticky',
-        top: 0,
-        maxHeight: '100vh',
+        top: 'var(--gds-header-height-visible)',
+        maxHeight: 'calc(100vh - var(--gds-header-height-visible))',
         px: Spacing['8px'],
-        py: Spacing['32px'],
+        py: Spacing['24px'],
         overflowY: 'auto',
-        transform: 'translateY(calc(var(--gds-header-height-visible) * var(--gds-header-fixed)))',
-        transition: enableTransition ? buildTransition('TRANSFORM', '400ms') : undefined,
       }}
     >
-      <Flex.Row>
-        <EditPageLink />
-      </Flex.Row>
+      <EditPageLink sx={{ mt: Spacing['4px'] }} />
       {headings.length > 0 ? (
         <>
-          <Divider sx={{ my: Spacing['32px'] }} />
+          <Divider sx={{ mt: '20px', mb: Spacing['24px'] }} />
           <nav sx={{ paddingInlineEnd: '16px' }}>
             <Text.C10 as="header" color="White64" sx={{ mb: Spacing['12px'] }}>
               {t('global.pageSections')}
@@ -46,7 +42,7 @@ export const MDXLayoutOutline = () => {
                 }
                 return (
                   <li key={outlineItemIndex}>
-                    <ButtonOrLink
+                    <Link.Unstyled
                       href={`#${heading.id}`}
                       sx={{
                         display: 'block',
@@ -58,7 +54,7 @@ export const MDXLayoutOutline = () => {
                       }}
                     >
                       {heading.value}
-                    </ButtonOrLink>
+                    </Link.Unstyled>
                   </li>
                 )
               })}
@@ -66,12 +62,6 @@ export const MDXLayoutOutline = () => {
           </nav>
         </>
       ) : null}
-      <div
-        sx={{
-          height: 'var(--gds-header-height-visible)',
-          transition: enableTransition ? buildTransition('height', '400ms') : undefined,
-        }}
-      />
     </div>
   )
 }

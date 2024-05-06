@@ -24,13 +24,13 @@ Graph CLI は JavaScript で書かれており、使用するには`yarn`また�
 
 `yarn`をインストールしたら、次のコマンドを実行して Graph CLI をインストールする。
 
-**yarn でインストールします:**
+**Install with yarn:**
 
 ```bash
 yarn global add @graphprotocol/graph-cli
 ```
 
-**npm でインストールします:**
+**Install with npm:**
 
 ```bash
 npm install -g @graphprotocol/graph-cli
@@ -109,6 +109,14 @@ dataSources:
       address: '0x2E645469f354BB4F5c8a05B3b30A929361cf77eC'
       abi: Gravity
       startBlock: 6175244
+      endBlock: 7175245
+    context:
+      foo:
+        type: Bool
+        data: true
+      bar:
+        type: String
+        data: 'bar'
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.6
@@ -136,7 +144,7 @@ dataSources:
 
 マニフェストを更新する重要な項目は以下の通りです:
 
-- `description`: サブグラフが何であるかについての人間が読める説明です。この説明は、サブグラフがホステッドサービスにデプロイされたときに、グラフエクスプローラーによって表示されます。
+- `description`：サブグラフが何であるかの人間が読める説明。この説明は、サブグラフがホストされたサービスにデプロイされると、グラフ・エクスプローラによって表示されます。
 
 - `repository`: サブグラフのマニフェストが存在するリポジトリの URL です。これは、グラフエクスプローラでも表示されます。
 
@@ -145,6 +153,10 @@ dataSources:
 - `dataSources.source`: サブグラフのソースとなるスマートコントラクトのアドレスと、使用するスマートコントラクトの abi です。アドレスはオプションで、省略すると、すべてのコントラクトからのマッチングイベントにインデックスを付けることができます。
 
 - `dataSources.source.startBlock`: データソースがインデックス作成を開始するブロックの番号（オプション）です。ほとんどの場合、コントラクトが作成されたブロックの使用をお勧めします。
+
+- `dataSources.source.endBlock`：データ ソースがインデックス作成を停止するブロックのオプション番号 (そのブロックを含む)。必要な最小仕様バージョン： `0.0.9`
+
+- `dataSources.context`：サブグラフマッピング内で使用できるキーと値のペア。`Bool`、`String`、`Int`、`Int8`、`BigDecimal`、`Bytes`、`List`、`BigInt`のような様々なデータ型をサポートしています。各変数は`type`と`data`を指定する必要がある。これらのコンテキスト変数は、マッピング・ファイルからアクセスすることができ、サブグラフ開発のためのより多くの設定可能なオプションを提供します。
 
 - `dataSources.mapping.entities`: データソースがストアに書き込むエンティティです。各エンティティのスキーマは、schema.graphql ファイルで定義されます。
 
@@ -242,6 +254,7 @@ GraphQL API では、以下の Scalar をサポートしています:
 | `String` | `string`値の Scalar であり、Null 文字はサポートされておらず、自動的に削除されます。 |
 | `Boolean` | `boolean`値を表す Scalar。 |
 | `Int` | Int GraphQL の仕様では、`Int`のサイズは 32 バイトと定義されています。 |
+| `Int8` | An 8-byte signed integer, also known as a 64-bit signed integer, can store values in the range from -9,223,372,036,854,775,808 to 9,223,372,036,854,775,807. Prefer using this to represent `i64` from ethereum. |
 | `BigInt` | 大きな整数。Ethereum の`uint32`, `int64`, `uint64`, ..., `uint256` タイプに使用されます。注: `int32`, `uint24` `int8`など`uint32`以下のものは`i32`として表現されます。 |
 | `BigDecimal` | `BigDecimal`は、高精度の 10 進数を記号と指数で表します。指数の範囲は -6143 ～ +6144 です。有効数字 34 桁にまとめられます。 |
 
@@ -518,7 +531,7 @@ export function handleUpdatedGravatar(event: UpdatedGravatar): void {
 - `event.transaction.from.toHex()`
 - `event.transaction.hash.toHex() + "-" + event.logIndex.toString()`
 
-[Graph Typescript Library](https://github.com/graphprotocol/graph-ts)は、Graph Node Store とのやりとりや、スマートコントラクトのデータやエンティティを扱うための便利な機能を備えています。`mapping.ts`で`@graphprotocol/graph-ts` をインポートすることで、マッピングでこのライブラリを使用することができます。
+We provide the [Graph Typescript Library](https://github.com/graphprotocol/graph-ts) which contains utilities for interacting with the Graph Node store and conveniences for handling smart contract data and entities. You can use this library in your mappings by importing `@graphprotocol/graph-ts` in `mapping.ts`.
 
 ## コード生成
 
@@ -771,6 +784,8 @@ export function handleCreateGravatar(call: CreateGravatarCall): void {
 
 ### 対応フィルター
 
+#### 通話フィルター
+
 ```yaml
 filter:
   kind: call
@@ -805,6 +820,45 @@ dataSources:
         - handler: handleBlockWithCallToContract
           filter:
             kind: call
+```
+
+#### ポーリングフィルター
+
+> **`specVersion` >= 0.0.8 が必要です。**
+
+> **注:** ポーリング フィルタは、`kind: ethereum` の dataSource でのみ使用できます。
+
+```yaml
+blockHandlers:
+  - handler: handleBlock
+    filter:
+      kind: polling
+      every: 10
+```
+
+定義されたハンドラーは、`n` ブロックごとに 1 回呼び出されます。`n` は、`every` フィールドで指定された値です。 この構成により、サブグラフが定期的なブロック間隔で特定の操作を実行できるようになります。
+
+#### ワンスフィルター
+
+> **`specVersion` >= 0.0.8 が必要です。**
+
+> **注:** Once フィルタは、`kind: ethereum` の dataSource でのみ使用できます。
+
+```yaml
+blockHandlers:
+  - handler: handleOnce
+    filter:
+      kind: once
+```
+
+Once フィルターを使用して定義されたハンドラーは、他のすべてのハンドラーが実行される前に 1 回だけ呼び出されます。 この構成により、サブグラフはハンドラーを初期化ハンドラーとして使用し、インデックス作成の開始時に特定のタスクを実行できるようになります。
+
+```ts
+export function handleOnce(block: ethereum.Block): void {
+  let data = new InitialData(Bytes.fromUTF8('initial'))
+  data.data = 'Setup data here'
+  data.save()
+}
 ```
 
 ### マッピング関数
@@ -935,6 +989,8 @@ _meta {
 
 ### 既存のサブグラフへのグラフト
 
+> **注:** 最初に Graph Network にアップグレードするときにグラフティングを使用することはお勧めしません。 詳細については[こちら](/cookbook/grafting/#important-note-on-grafting-when-upgrading-to-the-network)をご覧ください。
+
 サブグラフが最初にデプロイされると、対応するチェーンのジェネシス ブロック (または各データ ソースで定義された `startBlock`) でイベントのインデックス作成が開始されます。既存のサブグラフのデータを再利用し、かなり後のブロックからインデックス作成を開始することは有益です。このインデックス作成モードは _グラフティング_ と呼ばれます。失敗した既存のサブグラフを迅速に、または一時的に再び機能させることができます。
 
 `subgraph.yaml`のサブグラフマニフェストのトップレベルに`graft`ブロックがある場合、サブグラフはベースサブグラフにグラフトされます:
@@ -964,7 +1020,7 @@ graft:
 
 ## ファイルデータソース
 
-ファイルデータソースは、IPFSを皮切りに、インデックス作成時にオフチェーンデータに堅牢かつ拡張可能な方法でアクセスするための新しいサブグラフ機能です。
+ファイルデータソースは、堅牢で拡張可能な方法でインデックス作成中にオフチェーンデータにアクセスするための新しいサブグラフ機能です。ファイルデータソースは、IPFS および Arweave からのファイルのフェッチをサポートしています。
 
 > また、オフチェーンデータの決定論的なインデックス作成、および任意のHTTPソースデータの導入の可能性についても基礎ができました。
 
@@ -976,7 +1032,7 @@ graft:
 
 > 既存の`ipfs.cat` APIを置き換えるものです。
 
-### Upgrade guide
+### アップグレードガイド
 
 #### `graph-ts` および `graph-cli` を更新しました。
 
@@ -1031,7 +1087,7 @@ type TokenMetadata @entity {
 
 > [入れ子フィルター](https://thegraph.com/docs/en/querying/graphql-api/#example-for-nested-entity-filtering)を使用すると、これらの入れ子エンティティに基づいて、親エンティティをフィルタリングすることができます。
 
-#### `kind: file/ipfs` で新しいテンプレート化されたデータソースを追加します。
+#### `種類: ファイル/ipfs` または `種類: ファイル/arweave` の新しいテンプレートデータソースを追加します>
 
 目的のファイルが特定されたときに生成されるデータソースです。
 
@@ -1097,9 +1153,11 @@ export function handleMetadata(content: Bytes): void {
 チェーンベースハンドラーの実行中に、ファイルデータソースを作成できるようになりました：
 
 - 自動生成された`templates`からテンプレートをインポートする。
-- マッピング内から`TemplateName.create(cid: string)` を呼び出し、cidを有効なIPFSコンテンツ識別子とする。
+- マッピング内から `TemplateName.create(cid: string)` を呼び出します。この場合、cid は IPFS または Arweave の有効なコンテンツ識別子です
 
-> 現在、Graph Nodeは[v0とv1のコンテンツ識別子](https://docs.ipfs.tech/concepts/content-addressing/)、およびディレクトリを持つコンテンツ識別子（例：`bafyreighykzv2we26wfrbzkcdw37sbrby4upq7ae3qobbq7i4er3tnxci/metadata.json`）をサポートしています。
+IPFS の場合、グラフノードは [v0 および v1 コンテンツ識別子、および](https://docs.ipfs.tech/concepts/content-addressing/)ディレクトリを持つコンテンツ識別子 (例: `bafyreighykzv2we26wfrbzkcdw37sbrby4upq7ae3aqobbq7i4er3tnxci/metadata.json`) をサポートします。
+
+Arweave の場合、バージョン 0.33.0 以降、グラフ ノードは Arweave ゲートウェイからの[transaction ID](https://docs.arweave.org/developers/server/http-api#transactions) に基づいて Arweave に保存されているファイルをフェッチできます ([example file](https://bdxujjl5ev5eerd5ouhhs6o4kjrs4g6hqstzlci5pf6vhxezkgaa.arweave.net/CO9EpX0lekJEfXUOeXncUmMuG8eEp5WJHXl9U9yZUYA)). Arweave は Bundlr 経由でアップロードされたトランザクションをサポートしており、Graph Node は[Bundlr manifests](https://docs.bundlr.network/learn/gateways#indexing)に基づいてファイルをフェッチすることもできます。
 
 例：
 
@@ -1130,7 +1188,7 @@ export function handleTransfer(event: TransferEvent): void {
 }
 ```
 
-これは新しいファイルデータソースを作成し、Graph Nodeの設定されたIPFSエンドポイントをポーリングし、見つからない場合はリトライします。ファイルが見つかると、ファイルデータソースハンドラが実行されます。
+これにより、新しいファイル データ ソースが作成され、グラフ ノードの構成済み IPFS または Arweave エンドポイントがポーリングされ、見つからない場合は再試行されます。ファイルが見つかると、ファイルデータソースハンドラが実行されます。
 
 この例では、親 `Token` エンティティと結果の `TokenMetadata` エンティティの間のルックアップとして CID を使用しています。
 
@@ -1170,7 +1228,7 @@ NFT メタデータを対応するトークンにリンクする場合、メタ�
 
 ファイルデータソースのハンドラーは、`eth_call`コントラクトバインディングをインポートするファイルには存在できず、「unknown import」で失敗しました。`ethereum::ethereum.call` has not been defined" ([issue](https://github.com/graphprotocol/graph-cli/issues/4309)) で失敗します。回避策としては、ファイルデータソースハンドラーを専用ファイルに作成することです。
 
-#### Examples
+#### 例
 
 [クリプトコヴェン・サブグラフの移動](https://github.com/azf20/cryptocoven-api/tree/file-data-sources-refactor)
 

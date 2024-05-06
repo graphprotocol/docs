@@ -5,7 +5,7 @@ import { visit } from 'unist-util-visit'
 export const remarkReplaceImages: Plugin<[{ assetsBasePath: string }], Root> = ({ assetsBasePath }) => {
   if (!assetsBasePath) throw new Error('remarkReplaceImages: assetsBasePath is required')
 
-  return (tree, _file, done) => {
+  return (tree, _file) => {
     visit(
       tree,
       [
@@ -28,6 +28,5 @@ export const remarkReplaceImages: Plugin<[{ assetsBasePath: string }], Root> = (
         node.url = node.url.replace(/.*\.\.\/assets\//, `https://raw.githubusercontent.com/${assetsBasePath}assets/`)
       }
     })
-    done()
   }
 }

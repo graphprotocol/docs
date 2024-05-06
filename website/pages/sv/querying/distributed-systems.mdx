@@ -1,50 +1,50 @@
 ---
-title: Distributed Systems
+title: Distribuerade System
 ---
 
-The Graph is a protocol implemented as a distributed system.
+The Graph är ett protokoll implementerat som ett distribuerat system.
 
-Connections fail. Requests arrive out of order. Different computers with out-of-sync clocks and states process related requests. Servers restart. Re-orgs happen between requests. These problems are inherent to all distributed systems but are exacerbated in systems operating at a global scale.
+Anslutningar misslyckas. Förfrågningar anländer i fel ordning. Olika datorer med osynkroniserade klockor och tillstånd bearbetar relaterade förfrågningar. Servrar startar om. Omorganiseringar inträffar mellan förfrågningar. Dessa problem är inneboende för alla distribuerade system men förvärras i system som opererar globalt.
 
-Consider this example of what may occur if a client polls an Indexer for the latest data during a re-org.
+Betrakta detta exempel på vad som kan inträffa om en klient undersöker en Indexer för den senaste datan under en omorganiseringar.
 
-1. Indexer ingests block 8
-2. Request served to the client for block 8
-3. Indexer ingests block 9
-4. Indexer ingests block 10A
-5. Request served to the client for block 10A
-6. Indexer detects reorg to 10B and rolls back 10A
-7. Request served to the client for block 9
-8. Indexer ingests block 10B
-9. Indexer ingests block 11
-10. Request served to the client for block 11
+1. Indexer bearbetar block 8
+2. Förfrågan serveras till klienten för block 8
+3. Indexer bearbetar block 9
+4. Indexer bearbetar block 10A
+5. Förfrågan serveras till klienten för block 10A
+6. Indexer upptäcker omorganiseringar till 10B och rullar tillbaka 10A
+7. Förfrågan serveras till klienten för block 9
+8. Indexer bearbetar block 10B
+9. Indexer bearbetar block 11
+10. Förfrågan serveras till klienten för block 11
 
-From the point of view of the Indexer, things are progressing forward logically. Time is moving forward, though we did have to roll back an uncle block and play the block under consensus forward on top of it. Along the way, the Indexer serves requests using the latest state it knows about at that time.
+Ur Indexerns synvinkel fortskrider saker logiskt framåt. Tiden går framåt, även om vi var tvungna att rulla tillbaka ett uncle-block och spela in blocket under konsensus framåt ovanpå det. Under vägen serverar Indexern förfrågningar med den senaste informationen den känner till vid den tiden.
 
-From the point of view of the client, however, things appear chaotic. The client observes that the responses were for blocks 8, 10, 9, and 11 in that order. We call this the "block wobble" problem. When a client experiences block wobble, data may appear to contradict itself over time. The situation worsens when we consider that Indexers do not all ingest the latest blocks simultaneously, and your requests may be routed to multiple Indexers.
+Ur klientens synvinkel verkar dock saker kaotiska. Klienten observerar att svaren var för block 8, 10, 9 och 11 i den ordningen. Vi kallar detta "block wobble"-problemet. När en klient upplever block wobble kan data verka motsäga sig över tiden. Situationen förvärras när vi tänker på att Indexers inte alla bearbetar de senaste blocken samtidigt, och dina förfrågningar kan routas till flera Indexers.
 
-It is the responsibility of the client and server to work together to provide consistent data to the user. Different approaches must be used depending on the desired consistency as there is no one right program for every problem.
+Det är klientens och serverns ansvar att samarbeta för att ge användaren konsekvent data. Olika metoder måste användas beroende på önskad konsekvens, eftersom det inte finns ett rätt program för varje problem.
 
-Reasoning through the implications of distributed systems is hard, but the fix may not be! We've established APIs and patterns to help you navigate some common use-cases. The following examples illustrate those patterns but still elide details required by production code (like error handling and cancellation) to not obfuscate the main ideas.
+Att resonera kring följderna av distribuerade system är svårt, men lösningen behöver inte vara det! Vi har etablerat API:er och mönster för att hjälpa dig hantera några vanliga användningsfall. Följande exempel illustrerar dessa mönster, men utesluter fortfarande detaljer som krävs av produktionskod (som felhantering och avbokning) för att inte försvåra huvudidéerna.
 
-## Polling for updated data
+## Polla efter uppdaterad data
 
-The Graph provides the `block: { number_gte: $minBlock }` API, which ensures that the response is for a single block equal or higher to `$minBlock`. If the request is made to a `graph-node` instance and the min block is not yet synced, `graph-node` will return an error. If `graph-node` has synced min block, it will run the response for the latest block. If the request is made to an Edge & Node Gateway, the Gateway will filter out any Indexers that have not yet synced min block and make the request for the latest block the Indexer has synced.
+The Graph tillhandahåller API`block: { number_gte: $minBlock }`, vilket säkerställer att svaret gäller ett enskilt block som är lika med eller högre än `$minBlock`. Om förfrågan görs till en instans av `graph-node` och det minsta blocket ännu inte har synkroniserats, kommer `graph-node` att returnera ett fel. Om `graph-node` har synkroniserat det minsta blocket kommer det att köra svaret för det senaste blocket. Om förfrågan görs till en Edge & Node Gateway kommer Gatewayen att filtrera bort Indexers som ännu inte har synkroniserat det minsta blocket och göra förfrågan för det senaste blocket som Indexern har synkroniserat.
 
-We can use `number_gte` to ensure that time never travels backward when polling for data in a loop. Here is an example:
+Vi kan använda `number_gte` för att säkerställa att tiden aldrig går bakåt när vi pollar efter data i en loop. Här är ett exempel:
 
 ```javascript
-/// Updates the protocol.paused variable to the latest
-/// known value in a loop by fetching it using The Graph.
+/// Uppdaterar variabeln protocol.paused till det senaste
+/// kända värdet i en loop genom att hämta det med The Graph.
 async function updateProtocolPaused() {
-  // It's ok to start with minBlock at 0. The query will be served
-  // using the latest block available. Setting minBlock to 0 is the
-  // same as leaving out that argument.
+  // Det är okej att börja med minBlock på 0. Förfrågan kommer att serveras
+  // med den senaste tillgängliga blocket. Att sätta minBlock till 0 är detsamma som
+  // att utelämna det argumentet.
   let minBlock = 0
 
   for (;;) {
-    // Schedule a promise that will be ready once
-    // the next Ethereum block will likely be available.
+    // Schemalägg ett löfte som kommer vara redo så snart
+    // nästa Ethereum-block sannolikt kommer att vara tillgängligt.
     const nextBlock = new Promise((f) => {
       setTimeout(f, 14000)
     })
@@ -65,20 +65,20 @@ async function updateProtocolPaused() {
     const response = await graphql(query, variables)
     minBlock = response._meta.block.number
 
-    // TODO: Do something with the response data here instead of logging it.
+    // TODO: Gör något med svarsdatan här istället för att logga den.
     console.log(response.protocol.paused)
 
-    // Sleep to wait for the next block
+    // Vänta för att nästa block ska behandlas
     await nextBlock
   }
 }
 ```
 
-## Fetching a set of related items
+## Hämta en uppsättning relaterade objekt
 
-Another use-case is retrieving a large set or, more generally, retrieving related items across multiple requests. Unlike the polling case (where the desired consistency was to move forward in time), the desired consistency is for a single point in time.
+Ett annat användningsfall är att hämta en stor uppsättning eller mer generellt att hämta relaterade objekt över flera förfrågningar. Till skillnad från fallet med att hämta uppdaterade data (där önskad konsekvens var att gå framåt i tiden), är önskad konsekvens här att få data från en enda tidpunkt.
 
-Here we will use the `block: { hash: $blockHash }` argument to pin all of our results to the same block.
+Här kommer vi att använda argumentet `block: { hash: $blockHash }` för att binda alla våra resultat till samma block.
 
 ```javascript
 /// Gets a list of domain names from a single block using pagination
@@ -131,4 +131,4 @@ async function getDomainNames() {
 }
 ```
 
-Note that in case of a re-org, the client will need to retry from the first request to update the block hash to a non-uncle block.
+Observera att i händelse av en omorganisation måste klienten försöka igen från den första begäran för att uppdatera blockhashen till ett icke-farbrorblock.

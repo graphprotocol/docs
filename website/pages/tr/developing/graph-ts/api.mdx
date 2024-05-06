@@ -1,0 +1,855 @@
+---
+title: AssemblyScript API'si
+---
+
+> Not: `graph-cli`/`graph-ts` `0.22.0` sürümünden önce bir subgraph oluşturduysanız, AssemblyScript'in daha eski bir sürümünü kullanıyorsanız, [`MigrationXGuide`](/release-notes/assemblyscript-migration-guide) dosyasına göz atmanızı öneririz.
+
+Bu sayfa subgraph eşleştirmelerini yazarken bullanılabilen yerleşik API'leri belgelemektedir. Hazır olarak iki çeşit API mevcuttur:
+
+- [Graph TypeScript library](https://github.com/graphprotocol/graph-ts) (`graph-ts`) ve
+- `graph codegen` tarafından subgraph dosyalarından oluşturulan kod.
+
+[AssemblyScript](https://github.com/AssemblyScript/assemblyscript) ile uyumlu oldukları sürece diğer kütüphaneleri bağımlılık olarak eklemek de mümkündür. Dil eşlemelerinin yazıldığı dil bu olduğundan, [AssemblyScript wiki](https://github.com/AssemblyScript/assemblyscript/wiki), dil ve standart kütüphane özellikleri için iyi bir kaynaktır.
+
+## API Referansı
+
+`@graphprotocol/graph-ts` kütüphanesi aşağıdaki API'leri sağlar:
+
+- Ethereum akıllı sözleşmeleri, etkinlikleri, blokları, işlemleri ve Ethereum değerleriyle çalışmak için bir `ethereum` API'si.
+- Varlıkları Graph Node deposuna yüklemek ve kaydetmek için bir `store` API.
+- Mesajları Graph Node'u çıkışına ve Graph Gezginine kaydetmek için bir `log` API.
+- IPFS'den dosya yüklemek için bir `ipfs` API'ı.
+- JSON verilerini ayrıştırmak için bir `json` API.
+- Şifreleme işlevlerini kullanmak için bir `crypto` API.
+- Ethereum, JSON, GraphQL ve AssemblyScript gibi farklı tip sistemler arası çeviri yapmak için düşük seviyeli yazılımlar.
+
+### Sürümler
+
+Subgraph bildirimindeki `apiVersion`, belirli bir subgraph için Graph Node'u tarafından çalıştırılan eşleme API sürümünü belirtir.
+
+| Sürüm | Sürüm Notları |
+| :-: | --- |
+| 0.0.7 | Ethereum Event nesnesindeki Ethereum types<br />Added `receipt` alanına `TransactionReceipt` ve `Log` sınıfları eklendi |
+| 0.0.6 | Ethereum İşlemine `nonce` alanı eklendi. object<br />Added `baseFeePerGas` Ethereum Block nesnesine eklendi |
+| 0.0.5 | AssemblyScript 0.19.10 sürümüne yükseltildi (buna son değişiklikler dahildir, lütfen [`Migration Guide`](/release-notes/assemblyscript-migration-guide))<br />`ethereum.transaction.gasUsed`'in `ethereum.transaction.gasLimit` olarak yeniden adlandırılmasına bakın |
+| 0.0.4 | Ethereum SmartContractCall nesnesine `functionSignature` alanı eklendi |
+| 0.0.3 | `ethereum.call.to` olarak yeniden adlandırılan object<br />`etherem.call.address` Ethereum Çağrısına `from` alanı eklendi |
+| 0.0.2 | Ethereum İşlem nesnesine `input` alanı eklendi |
+
+### Dahili Türler
+
+AssemblyScript'te yerleşik temel türlere ilişkin belgeler [AssemblyScript wiki](https://github.com/AssemblyScript/assemblyscript/wiki/Types)'te bulunabilir.
+
+Aşağıdaki ek türler `@graphprotocol/graph-ts` tarafından sağlanmaktadır.
+
+#### ByteArray
+
+```typescript
+{ ByteArray }'i '@graphprotocol/graph-ts' den içe aktar
+```
+
+`ByteArray` bir `u8` dizisini temsil eder.
+
+_Construction_
+
+- `fromI32(x: i32): ByteArray` - `x` 'yi baytlara ayrıştırır.
+- `fromHexString(hex: string): ByteArray` - Giriş uzunluğu eşit olmalıdır. `0x` ile önek eklemek isteğe bağlıdır.
+
+_Type conversions_
+
+- `toHexString(): string` - Ön eki `0x` olan onaltılık bir dizeye dönüştürür.
+- `toString(): string` - Baytları UTF-8 dizesi olarak yorumlar.
+- `toBase58(): string` - Baytları bir base58 dizesine kodlar.
+- `toU32(): u32` - Baytları küçük endian `u32` olarak yorumlar. Taşma durumunda atar.
+- `toI32(): i32` - Bayt dizisini küçük endian `i32` olarak yorumlar. Taşma durumunda atar.
+
+_Operators_
+
+- `equals(y: ByteArray): bool` – `x == y` olarak yazılabilir.
+- `concat(other: ByteArray) : ByteArray` - doğrudan `this` 'den ve ardından `other` 'dan oluşan yeni bir `ByteArray` döndürün.
+- `concatI32(other: i32) : ByteArray` - doğrudan `this` 'den ve ardından `other` 'nin bayt temsilinden oluşan yeni bir `ByteArray` döndürür.
+
+#### BigDecimal
+
+```typescript
+import { BigDecimal } from '@graphprotocol/graph-ts'
+```
+
+`BigDecimal`, rastgele hassas ondalık sayıları temsil etmek için kullanılır.
+
+> Not: [Internally](https://github.com/graphprotocol/graph-node/blob/master/graph/src/data/store/scalar.rs) `BigDecimal`, anlamlının 34 ondalık basamağını destekleyen [IEEE-754 decimal128 floating-point format](https://en.wikipedia.org/wiki/Decimal128_floating-point_format)'de saklanır. Bu, `BigDecimal`'ı, Solidity [`ufixed256x18`](https://docs.soliditylang.org/en/latest/types.html#fixed-point-numbers) veya eşdeğeri gibi 34 basamaktan daha geniş bir alana yayılabilen sabit nokta türlerini temsil etmek için uygunsuz hale getirir.
+
+_Construction_
+
+- `constructor(bigInt: BigInt)` – `BigInt` 'den bir `BigDecimal` oluşturur.
+- `static fromString(s: string): BigDecimal` – ondalık bir dizeden ayrıştırır.
+
+_Type conversions_
+
+- `toString(): string` – ondalık dizgeye yazdırır.
+
+_Math_
+
+- `plus(y: BigDecimal): BigDecimal` - `x + y` şeklinde yazılabilir.
+- `minus(y: BigDecimal): BigDecimal` - `x - y` şeklinde yazılabilir.
+- `times(y: BigDecimal): BigDecimal` - `x * y` şeklinde yazılabilir.
+- `div(y: BigDecimal): BigDecimal` - `x / y` şeklinde yazılabilir.
+- `equals(y: BigDecimal): bool` - `x == y` şeklinde yazılabilir.
+- `notEqual(y: BigDecimal): bool` - `x != y` şeklinde yazılabilir.
+- `lt(y: BigDecimal): bool` - `x < y` şeklinde yazılabilir.
+- `le(y: BigDecimal): bool` - `x <= y` şeklinde yazılabilir.
+- `gt(y: BigDecimal): bool` - `x > y` şeklinde yazılabilir.
+- `ge(y: BigDecimal): bool` - `x >= y` şeklinde yazılabilir.
+- `neg(): BigDecimal` - `-x` olarak yazılabilir.
+
+#### BigInt
+
+```typescript
+import { BigInt } from '@graphprotocol/graph-ts'
+```
+
+`BigInt` büyük tamsayıları temsil etmek için kullanılır. Bu, `uint32` ila `uint256` ve `int64` ila `int256` türündeki Ethereum değerlerini içerir. Uint32`nin altındaki `int32`, `uint24`veya`int8`gibi her şey`i32\` olarak temsil edilir.
+
+'BigInt' sınıfı aşağıdaki API'ye sahiptir:
+
+_Construction_
+
+- `BigInt.fromI32(x: i32): BigInt` - bir `i32`den bir `BigInt` oluşturur.
+
+- `BigInt.fromString(s: string): BigInt`- Bir dizgeden bir `BigInt` ayrıştırır.
+
+- `BigInt.fromUnsignedBytes(x: Bytes): BigInt` - `bytes`ı işaretsiz, little-endian bir tamsayı olarak yorumlar. Eğer girdiniz big-endian ise, önce `.reverse()` fonksiyonunu çağırın.
+
+- `BigInt.fromSignedBytes(x: Bytes): BigInt` - `bytes`ı işaretli, little-endian tamsayı olarak yorumlar. Eğer girdiniz big-endian ise, önce `.reverse()` fonksiyonunu çağırın.
+
+  _Type conversions_
+
+- `x.toHex(): string` - `BigInt` öğesini onaltılık karakterlerden oluşan bir dizeye dönüştürür.
+
+- `x.toString(): string` - `BigInt` öğesini ondalık sayı dizesine dönüştürür.
+
+- `x.toI32(): i32` - `BigInt` değerini bir `i32` olarak döndürür; değer `i32` içine sığmazsa başarısız olur. Önce `x.isI32()` öğesini kontrol etmek iyi bir fikirdir.
+
+- `x.toBigDecimal(): BigDecimal` - kesirli kısmı olmayan bir ondalık sayıya dönüştürür.
+
+_Math_
+
+- `x.plus(y: BigInt): BigInt` - `x + y` şeklinde yazılabilir.
+- `x.minus(y: BigInt): BigInt` - `x - y` şeklinde yazılabilir.
+- `x.times(y: BigInt): BigInt` - `x * y` şeklinde yazılabilir.
+- `x.div(y: BigInt): BigInt` - `x / y` şeklinde yazılabilir.
+- `x.mod(y: BigInt): BigInt` - `x % y` şeklinde yazılabilir.
+- `x.equals(y: BigInt): bool` - `x == y` şeklinde yazılabilir.
+- `x.notEqual(y: BigInt): bool` - `x != y` şeklinde yazılabilir.
+- `x.lt(y: BigInt): bool` - `x < y` şeklinde yazılabilir.
+- `x.le(y: BigInt): bool` - `x <= y` şeklinde yazılabilir.
+- `x.gt(y: BigInt): bool` - `x > y` şeklinde yazılabilir.
+- `x.ge(y: BigInt): bool` - `x >= y` şeklinde yazılabilir.
+- `x.neg(): BigInt` - `-x` olarak yazılabilir.
+- `x.divDecimal(y: BigDecimal): BigDecimal` - ondalık bir sonuç vererek bir ondalık sayıya böler.
+- `x.isZero(): bool` - Sayının sıfır olup olmadığını kontrol etmek için kolaylık.
+- `x.isI32(): bool` - Sayının bir `i32` ye uyup uymadığını kontrol eder.
+- `x.abs(): BigInt` - Mutlak değer.
+- `x.pow(exp: u8): BigInt` - Üs alma.
+- `bitOr(x: BigInt, y: BigInt): BigInt` - `x | y` şeklinde yazılabilir.
+- `bitAnd(x: BigInt, y: BigInt): BigInt` - `x & y` şeklinde yazılabilir.
+- `leftShift(x: BigInt, bits: u8): BigInt` - `x << y` şeklinde yazılabilir.
+- `rightShift(x: BigInt, bits: u8): BigInt` - `x >> y` şeklinde yazılabilir.
+
+#### TypedMap
+
+```typescript
+import { TypedMap } from '@graphprotocol/graph-ts'
+```
+
+`TypedMap` anahtar-değer çiftlerini saklamak için kullanılabilir. Bkz. [bu örneğe] (https://github.com/graphprotocol/aragon-subgraph/blob/29dd38680c5e5104d9fdc2f90e740298c67e4a31/individual-dao-subgraph/mappings/constants.ts#L51).
+
+`TypedMap` sınıfı aşağıdaki API'ye sahiptir:
+
+- `new TypedMap<K, V>()` - `K` türünde anahtarları ve `V` türünde değerleri olan boş bir harita oluşturur
+- `map.set(key: K, value: V): void` - `key` değerini `value` değerine ayarlar
+- `map.getEntry(key: K): TypedMapEntry<K, V> | null` - bir `key` için anahtar-değer çiftini veya `key` haritada mevcut değilse `null` değerini döndürür
+- `map.get(anahtar: K): V | null` - bir `anahtar` için değeri veya `anahtar` haritada mevcut değilse `null` değerini döndürür
+- `map.isSet(anahtar: K): bool` - `anahtar` haritada varsa `true`, yoksa `false` döndürür
+
+#### Baytlar
+
+```typescript
+import { Bytes } from '@graphprotocol/graph-ts'
+```
+
+`Bytes` rastgele uzunluktaki bayt dizilerini temsil etmek için kullanılır. Bu, `bytes`, `bytes32` vb. türdeki Ethereum değerlerini içerir.
+
+`Bytes` sınıfı AssemblyScript'in [Uint8Array](https://github.com/AssemblyScript/assemblyscript/blob/3b1852bc376ae799d9ebca888e6413afac7b572f/std/assembly/typedarray.ts#L64) sınıfını genişletir ve bu, tüm `Uint8Array` işlevselliğinin yanı sıra aşağıdaki yeni yöntemleri de destekler:
+
+_Construction_
+
+- `fromHexString(hex: string) : Bytes` - Çift sayıda onaltılık basamaktan oluşması gereken `hex` dizesini bir `ByteArray` dizisine dönüştürür. hex`dizesi isteğe bağlı olarak`0x\` ile başlayabilir
+- `fromI32(i: i32) : Bytes` - `i`yi bir bayt dizisine dönüştürür
+
+_Type conversions_
+
+- `b.toHex()` – returns a hexadecimal string representing the bytes in the array
+- `b.toString()` - dizideki baytları unicode karakterlerden oluşan bir dizeye dönüştürür
+- `b.toBase58()` - bir Ethereum Bayt değerini base58 kodlamasına dönüştürür (IPFS karmaları için kullanılır)
+
+_Operators_
+
+- `b.concat(diğer: Bytes) : Bytes` - - doğrudan `this` ve ardından `other` öğelerinden oluşan yeni `Bytes` döndürür
+- `b.concatI32(other: i32) : ByteArray` - doğrudan `this` ve ardından `other` bayt gösteriminden oluşan yeni `Bytes` döndürür
+
+#### Adres(Address)
+
+```typescript
+import { Address } from '@graphprotocol/graph-ts'
+```
+
+`Address`, Ethereum `adres` değerlerini temsil etmek için `Bytes`ı genişletir.
+
+Bu, `Bytes` API'sinin üzerine aşağıdaki yöntemi ekler:
+
+- `Address.fromString(s: string): Address` - onaltılık dizeden bir `Address` oluşturur
+- `Address.fromBytes(b: Bytes): Address` - `b` den tam olarak 20 bayt uzunluğunda olması gereken bir `Address` oluşturur. Daha az veya daha fazla bayt içeren bir değer iletmek hataya neden olur
+
+### Store API
+
+```typescript
+import { store } from '@graphprotocol/graph-ts'
+```
+
+The `store` API allows to load, save and remove entities from and to the Graph Node store.
+
+Depoya yazılan varlıklar, subgraph'in GraphQL şemasında tanımlanan `@entity` tipleriyle bire bir eşleşir. Bu varlıklarla çalışmayı kolaylaştırmak için, [Graph CLI] (https://github.com/graphprotocol/graph-cli) tarafından sağlanan `graph codegen` komutu, yerleşik `Entity` türünün alt sınıfları olan varlık sınıflarını, şemadaki alanlar için özellik alıcıları ve ayarlayıcıları ile bu varlıkları yüklemek ve kaydetmek için yöntemler oluşturur.
+
+#### Unsurların Oluşturulması
+
+Aşağıdaki, Ethereum olaylarından varlıklar oluşturmak için yaygın bir modeldir.
+
+```typescript
+// ERC20 ABI'dan oluşturulan Transfer olay sınıfını içe aktarın
+import { Transfer as TransferEvent } from '../generated/ERC20/ERC20'
+
+// GraphQL şemasından oluşturulan Transfer varlık türünü içe aktarın
+import { Transfer } from '../generated/schema'
+
+// Transfer olayı işleyicisi
+export function handleTransfer(event: TransferEvent): void {
+  // İşlem hash'ını olay kimliği olarak kullanarak bir Transfer varlığı oluşturun
+  let id = event.transaction.hash
+  let transfer = new Transfer(id)
+
+  // Olay parametrelerini kullanarak varlığın özelliklerini ayarlayın
+  transfer.from = event.params.from
+  transfer.to = event.params.to
+  transfer.amount = event.params.amount
+
+  // Varlığı depoya kaydedin
+  transfer.save()
+}
+```
+
+Zincir işlenirken bir `Transfer` olayıyla karşılaşıldığında, oluşturulan `Transfer` türü (varlık türüyle adlandırma çakışmasını önlemek için burada `TransferEvent` olarak adlandırılmıştır) kullanılarak `handleTransfer` olay işleyicisine aktarılır. Bu tür, olayın ana işlemi ve parametreleri gibi verilere erişilmesini sağlar.
+
+Çakışmaları önlemek için her varlık benzersiz bir kimliğe sahip olmalıdır. Genellikle olay parametreleri, kullanılabilecek benzersiz bir tanımlayıcı içerir. Not: Kimlik olarak işlem hash'ını kullanmak aynı işlemdeki başka hiçbir olayın bu hash'ı kullanarak kimlik olarak varlık oluşturmayacağını varsayar.
+
+#### Depodan varlık yükleme
+
+Bir varlık mevcutsa aiağıdaki kod kullanılarak depodan yüklenebilir:
+
+```typescript
+let id = event.transaction.hash // veya kimlik(ID) nasıl oluşturulmuşsa
+let transfer = Transfer.load(id)
+if (transfer == null) {
+  transfer = new Transfer(id)
+}
+
+// Transfer varlığı önceki gibi kullanılır
+```
+
+Varlık henüz depoda mevcut olmayabileceğinden, `load` yöntemi `Transfer | null` türünde bir değer döndürür. Bu nedenle, değeri kullanmadan önce `null` durumunu kontrol etmek gerekebilir.
+
+> **Not:** Varlıkların yüklenmesi yalnızca eşlemede yapılan değişiklikler bir varlığın önceki verilerine bağlıysa gereklidir. Mevcut varlıkları güncellemenin iki yolu için bir sonraki bölüme bakın.
+
+#### Bir blok içinde oluşturulan varlıkları arama
+
+As of `graph-node` v0.31.0, `@graphprotocol/graph-ts` v0.30.0 and `@graphprotocol/graph-cli` v0.49.0 the `loadInBlock` method is available on all entity types.
+
+Store API, mevcut blokta oluşturulan veya güncellenen varlıkların alınmasını kolaylaştırır. Bunun için tipik bir durum, bir işleyicinin zincir üzerindeki bir etkinlikten bir İşlem oluşturması ve daha sonraki bir işleyicinin varsa bu işleme erişmek istemesidir. İşlemin mevcut olmadığı durumda, subgraph sadece varlığın mevcut olmadığını öğrenmek için veritabanına gitmek zorunda kalacaktır; eğer subgraph yazarı varlığın aynı blokta yaratılmış olması gerektiğini zaten biliyorsa, loadInBlock kullanmak bu veritabanı gidiş gelişini önler. Bazı subgraphlar için, bu kaçırılan aramalar indeksleme süresine önemli ölçüde katkıda bulunabilir.
+
+```typescript
+let id = event.transaction.hash // veya ID nasıl oluşturulurmuşsa
+let transfer = Transfer.loadInBlock(id)
+if (transfer == null) {
+  transfer = new Transfer(id)
+}
+
+// Transfer varlığını daha önce olduğu gibi kullanın
+```
+
+> Not: Verilen blokta oluşturulmuş bir varlık yoksa, depoda verilen ID'ye sahip bir varlık olsa bile `loadInBlock` `null` değerini döndürecektir.
+
+#### Türetilmiş varlıkları arama
+
+As of `graph-node` v0.31.0, `@graphprotocol/graph-ts` v0.31.0 and `@graphprotocol/graph-cli` v0.51.0 the `loadRelated` method is available.
+
+Bu, türetilmiş varlık alanlarının bir olay işleyicisi içinden yüklenmesini sağlar. Örneğin, aşağıdaki şema göz önüne alındığında:
+
+```graphql
+type Token @entity {
+  id: ID!
+  holder: Holder!
+  color: String
+}
+
+type Holder @entity {
+  id: ID!
+  tokens: [Token!]! @derivedFrom(field: "holder")
+}
+```
+
+Aşağıdaki kod, `Holder` varlığının türetildiği `Token` varlığını yükleyecektir:
+
+```typescript
+let holder = Holder.load('test-id')
+// Belirli bir sahiple ilişkili Token unsurlarını yükleyin
+let tokens = holder.tokens.load()
+```
+
+#### Mevcut varlıkları güncelleme
+
+Mevcut bir varlığı güncellemenin iki yolu vardır:
+
+1. Varlığı örneğin `Transfer.load(id)` ile yükleyin, varlık üzerindeki özellikleri ayarlayın ve ardından `.save()` ile depoya geri kaydedin.
+2. Varlığı örneğin `new Transfer(id)` ile oluşturun, varlık üzerindeki özellikleri ayarlayın ve ardından `.save()` ile depoya kaydedin. Varlık zaten mevcutsa, değişiklikler onunla birleştirilir.
+
+Oluşturulan özellik ayarlayıcılar sayesinde çoğu durumda özellikerin değiştirilmesi kolaydır:
+
+```typescript
+let transfer = new Transfer(id)
+transfer.from = ...
+transfer.to = ...
+transfer.amount = ...
+```
+
+Ayrıca aşağıdaki iki talimattan biriyle özellikleri kaldırmakta mümkündür:
+
+```typescript
+transfer.from.unset()
+transfer.from = null
+```
+
+Bu yalnızca isteğe bağlı özelliklerle, yani GraphQL'de `!` olmadan bildirilen özelliklerle çalışır. İki örnek `owner: Bytes` veya `amount: BigInt` olabilir.
+
+Bir varlıktan bir dizi almak o dizinin bir kopyasını oluşturduğundan, dizi özelliklerini güncellemek biraz daha karmaşıktır. Bu, dizi değiştirildikten sonra dizi özelliklerinin açıkça yeniden ayarlanması gerektiği anlamına gelir. Aşağıda `entity`nin bir `numbers: [BigInt!]!` alanına sahip olduğunu varsayar.
+
+```typescript
+// Bu işe yaramaz
+entity.numbers.push(BigInt.fromI32(1))
+entity.save()
+
+// Bu çalışır
+let numbers = entity.numbers
+numbers.push(BigInt.fromI32(1))
+entity.numbers = numbers
+entity.save()
+```
+
+#### Depodan varlık kaldırma
+
+Şu anda oluşturulan türler aracılığıyla bir varlığı kaldırmanın bir yolu yoktur. Bunun yerine, bir varlığı kaldırmak için varlık türünün adını ve varlık kimliğini `store.remove` dosyasına aktarmak gerekir:
+
+```typescript
+import { store } from '@graphprotocol/graph-ts'
+...
+let id = event.transaction.hash
+store.remove('Transfer', id)
+```
+
+### Ethereum API
+
+Ethereum API'si, akıllı sözleşmelere, genel durum değişkenlerine, sözleşme fonksiyonlarına, olaylara, işlemlere, bloklara ve Ethereum verilerinin kodlama/çözme işlemlerine erişim sağlar.
+
+#### Ethereum Türleri İçin Destek
+
+Varlıklarda olduğu gibi, `graph codegen` bir subgraph'te kullanılan tüm akıllı sözleşmeler ve olaylar için sınıflar üretir. Bunun için, sözleşme ABI'lerinin subgraph bildirimindeki veri kaynağının bir parçası olması gerekir. Tipik olarak, ABI dosyaları bir `abis/` klasöründe saklanır.
+
+Oluşturulan sınıflarla, Ethereum türleri ve [built-in types](#built-in-types) arasındaki dönüşümler perde arkasında gerçekleşir, böylece subgraph yazarlarının bunlar hakkında endişelenmesine gerek kalmaz.
+
+Aşağıdaki örnek bunu açıklar. Aşağıdaki gibi bir subgraph şeması verildiğinde
+
+```graphql
+type Transfer @entity {
+  id: Bytes!
+  from: Bytes!
+  to: Bytes!
+  amount: BigInt!
+}
+```
+
+ve Ethereum'daki bir `Transfer(address,address,uint256)` olay imzası, `adress`, `address` ve `uint256` türündeki `from`, `to` ve `amount` değerleri `Address` ve `BigInt` değerlerine dönüştürülerek `Transfer` varlığının `Bytes!` ve `BigInt!` özelliklerine aktarılmalarına olanak tanır:
+
+```typescript
+let id = event.transaction.hash
+let transfer = new Transfer(id)
+transfer.from = event.params.from
+transfer.to = event.params.to
+transfer.amount = event.params.amount
+transfer.save()
+```
+
+#### Olaylar ve Blok/İşlem Verileri
+
+Önceki örneklerdeki `Transfer` olayı gibi olay işleyicilerine aktarılan Ethereum olayları, yalnızca olay parametrelerine değil, aynı zamanda ana işlemlerine ve parçası oldukları bloğa da erişim sağlar. Aşağıdaki veriler `event` örneklerinden elde edilebilir (bu sınıflar `graph-ts` içindeki `ethereum` modülünün bir parçasıdır):
+
+```typescript
+class Event {
+  address: Address
+  logIndex: BigInt
+  transactionLogIndex: BigInt
+  logType: string | null
+  block: Block
+  transaction: Transaction
+  parameters: Array<EventParam>
+  receipt: TransactionReceipt | null
+}
+
+class Block {
+  hash: Bytes
+  parentHash: Bytes
+  unclesHash: Bytes
+  author: Address
+  stateRoot: Bytes
+  transactionsRoot: Bytes
+  receiptsRoot: Bytes
+  number: BigInt
+  gasUsed: BigInt
+  gasLimit: BigInt
+  timestamp: BigInt
+  difficulty: BigInt
+  totalDifficulty: BigInt
+  size: BigInt | null
+  baseFeePerGas: BigInt | null
+}
+
+class Transaction {
+  hash: Bytes
+  index: BigInt
+  from: Address
+  to: Address | null
+  value: BigInt
+  gasLimit: BigInt
+  gasPrice: BigInt
+  input: Bytes
+  nonce: BigInt
+}
+
+class TransactionReceipt {
+  transactionHash: Bytes
+  transactionIndex: BigInt
+  blockHash: Bytes
+  blockNumber: BigInt
+  cumulativeGasUsed: BigInt
+  gasUsed: BigInt
+  contractAddress: Address
+  logs: Array<Log>
+  status: BigInt
+  root: Bytes
+  logsBloom: Bytes
+}
+
+class Log {
+  address: Address
+  topics: Array<Bytes>
+  data: Bytes
+  blockHash: Bytes
+  blockNumber: Bytes
+  transactionHash: Bytes
+  transactionIndex: BigInt
+  logIndex: BigInt
+  transactionLogIndex: BigInt
+  logType: string
+  removed: bool | null
+}
+```
+
+#### Akıllı Sözleşme Durumuna Erişim
+
+`graph codegen` tarafından üretilen kod, subgraph'te kullanılan akıllı sözleşmeler için sınıflar da içerir. Bunlar, genel durum değişkenlerine erişmek ve mevcut bloktaki sözleşmenin işlevlerini çağırmak için kullanılabilir.
+
+Yaygın bir model, bir olayın kaynaklandığı sözleşmeye erişmektir. Bu, aşağıdaki kodla elde edilir:
+
+```typescript
+// Oluşturulan sözleşme sınıfı ve Transfer olayı sınıfını içe aktarın
+import { ERC20Contract, Transfer as TransferEvent } from '../generated/ERC20Contract/ERC20Contract'
+// Oluşturulan varlık sınıfını içe aktarın
+import { Transfer } from '../generated/schema'
+
+export function handleTransfer(event: TransferEvent) {
+  // Sözleşmeyi olayı yayınlayan adresle bağlayın
+  let contract = ERC20Contract.bind(event.address)
+
+  //  Durum değişkenlerine ve işlevlere erişmek için çağrı yapın
+  let erc20Symbol = contract.symbol()
+}
+```
+
+Varlık türü ile adlandırma çakışmasını önlemek için `Transfer` burada `TransferEvent` olarak adlandırılmıştır
+
+Ethereum üzerindeki `ERC20Contract`, `symbol` adında salt okunur bir genel fonksiyona sahip olduğu sürece, `.symbol()` ile çağrılabilir. Herkese açık durum değişkenleri için aynı ada sahip bir yöntem otomatik olarak oluşturulur.
+
+Subgraph parçası olan diğer tüm sözleşmelerde oluşturulan koddan içe aktarılabilir ve geçerli bir adrese bağlanabilir.
+
+#### Geri Dönen Çağrıları Yönetme
+
+Sözleşmenizin salt okunur yöntemleri geri dönebilirse, bunu `try_` ile ön eklenmiş oluşturulan sözleşme yöntemini çağırarak ele almalısınız. Örneğin, Gravity sözleşmesi `gravatarToOwner` yöntemini sunar. Bu kod, bu yöntemdeki bir geri dönüşü idare edebilecektir:
+
+```typescript
+let gravity = Gravity.bind(event.address)
+let callResult = gravity.try_gravatarToOwner(gravatar)
+if (callResult.reverted) {
+  log.info('getGravatar reverted', [])
+} else {
+  let owner = callResult.value
+}
+```
+
+Bir Geth veya Infura istemcisine bağlı bir Graph düğümünün tüm geri dönüşleri algılamayabileceğini unutmayın, bu durumda Parity istemcisine bağlı bir Graph düğümü kullanmanızı öneririz.
+
+#### ABI Kodlama/Çözme
+
+Veriler, `ethereum` modülündeki `encode` ve `decode` fonksiyonları kullanılarak Ethereum'un ABI kodlama formatına göre kodlanabilir ve çözülebilir.
+
+```typescript
+{ Address, BigInt, ethereum } 'i '@graphprotocol/graph-ts' 'den içe aktar
+
+let tupleArray: Array<ethereum.Value> = [
+  ethereum.Value.fromAddress(Address.fromString('0x0000000000000000000000000000000000000420')),
+  ethereum.Value.fromUnsignedBigInt(BigInt.fromI32(62)),
+]
+
+let tuple = tupleArray as ethereum.Tuple
+
+let encoded = ethereum.encode(ethereum.Value.fromTuple(tuple))!
+
+let decoded = ethereum.decode('(address,uint256)', encoded)
+```
+
+Daha fazla bilgi için:
+
+- [ABI Spec](https://docs.soliditylang.org/en/v0.7.4/abi-spec.html#types)
+- Encoding/decoding [Rust library/CLI](https://github.com/rust-ethereum/ethabi)
+- Daha fazlası [karmaşık örnek](https://github.com/graphprotocol/graph-node/blob/6a7806cc465949ebb9e5b8269eeb763857797efc/tests/integration-tests/host-exports/src/mapping.ts#L72).
+
+### Logging API
+
+```typescript
+import { log } from '@graphprotocol/graph-ts'
+```
+
+The `log` API allows subgraphs to log information to the Graph Node standard output as well as the Graph Explorer. Messages can be logged using different log levels. A basic format string syntax is provided to compose log messages from argument.
+
+`log` API'si aşağıdaki fonksiyonları içerir:
+
+- `log.debug(fmt: string, args: Array<string>): void` - bir hata ayıklama mesajını günlüğe kaydeder.
+- `log.info(fmt: string, args: Array<string>): void` - bir bilgilendirme mesajını günlüğe kaydeder.
+- `log.warning(fmt: string, args: Array<string>): void` - bir uyarıyı günlüğe kaydeder.
+- `log.error(fmt: string, args: Array<string>): void` - bir hata mesajını günlüğe kaydeder.
+- `log.critical(fmt: string, args: Array<string>): void` - kritik bir mesajı günlüğe kaydeder _and_ subgraph'i sonlandırır.
+
+`log` API'si bir format dizesi ve bir dizi dize değeri alır. Daha sonra yer tutucuları dizideki dize değerleriyle değiştirir. İlk `{}` yer tutucusu dizideki ilk değerle değiştirilir, ikinci `{}` yer tutucusu ikinci değerle değiştirilir ve bu böyle devam eder.
+
+```typescript
+log.info('Message to be displayed: {}, {}, {}', [value.toString(), anotherValue.toString(), 'already a string'])
+```
+
+#### Bir veya daha fazla değerin loglanması
+
+##### Tek bir değerin loglanması
+
+Aşağıdaki örnekte, "A" dize değeri günlüğe kaydedilmeden önce `['A']` haline gelmek üzere bir diziye aktarılır:
+
+```typescript
+let myValue = 'A'
+
+export function handleSomeEvent(event: SomeEvent): void {
+  // Görüntüler : "My value is: A"
+  log.info('My value is: {}', [myValue])
+}
+```
+
+##### Mevcut bir diziden tek bir girişi loglama
+
+Aşağıdaki örnekte, bağımsız değişken dizisi üç değer içermesine rağmen dizinin yalnızca ilk değeri loglanır.
+
+```typescript
+let myArray = ['A', 'B', 'C']
+
+export function handleSomeEvent(event: SomeEvent): void {
+  // Görüntüler: "My value is: A"  ('log.info'ya üç değer iletilmiş olsa da)
+  log.info('My value is: {}', myArray)
+}
+```
+
+#### Mevcut bir diziden birden çok girişi kaydetme
+
+Argümanlar dizisindeki her giriş, günlük mesajı dizesinde kendi yer tutucusunu `{}` gerektirir. Aşağıdaki örnek, günlük iletisinde üç yer tutucu `{}` içerir. Bu nedenle, `myArray` içindeki üç değer de günlüğe kaydedilir.
+
+```typescript
+let myArray = ['A', 'B', 'C']
+
+export function handleSomeEvent(event: SomeEvent): void {
+  // Görüntüler: "My first value is: A, second value is: B, third value is: C"
+  log.info('My first value is: {}, second value is: {}, third value is: {}', myArray)
+}
+```
+
+##### Mevcut bir diziden belirli bir girişi loglama
+
+Dizide belirli bir değeri görüntülemek için dizinlenmiş değer bulunmalıdır.
+
+```typescript
+export function handleSomeEvent(event: SomeEvent): void {
+  // Görüntüler : "My third value is C"
+  log.info('My third value is: {}', [myArray[2]])
+}
+```
+
+##### Olay bilgilerinin loglanması
+
+Aşağıdaki örnek, bir olaydan blok numarasını, blok hash'ını ve işlem hash'ını loglar:
+
+```typescript
+import { log } from '@graphprotocol/graph-ts'
+
+export function handleSomeEvent(event: SomeEvent): void {
+  log.debug('Block number: {}, block hash: {}, transaction hash: {}', [
+    event.block.number.toString(), // "47596000"
+    event.block.hash.toHexString(), // "0x..."
+    event.transaction.hash.toHexString(), // "0x..."
+  ])
+}
+```
+
+### IPFS API
+
+```typescript
+import { ipfs } from '@graphprotocol/graph-ts'
+```
+
+Akıllı sözleşmeler zaman zaman IPFS dosyalarını zincire bağlar. Bu, eşlemelerin sözleşmeden IPFS karmalarını almasına ve ilgili dosyaları IPFS'den okumasına olanak tanır. Dosya verileri "Bayt" olarak döndürülür; bu genellikle daha fazla işlem gerektirir; bu sayfada daha sonra belgelenen `json` API'si ile birlikte.
+
+IPFS hash'ı veya yolu verildiğinde, bir dosyayı IPFS'den okuma şu şekilde yapılır:
+
+```typescript
+// Bunu eşleştirmedeki bir olay işleyicinin içine koyun
+let hash = 'QmTkzDwWqPbnAh5YiV5VwcTLnGdwSNsNTn2aDxdXBFca7D'
+let data = ipfs.cat(hash)
+
+// `QmTkzDwWqPbnAh5YiV5VwcTLnGdwSNsNTn2aDxdXBFca7D/Makefile`
+gibi yollar
+// bu dizinlerdeki dosyaları içerenler de desteklenir
+let path = 'QmTkzDwWqPbnAh5YiV5VwcTLnGdwSNsNTn2aDxdXBFca7D/Makefile'
+let data = ipfs.cat(path)
+```
+
+**Not:** `ipfs.cat` şu anda deterministik değildir. Dosya, istek zaman aşımına uğramadan IPFS ağı üzerinden alınamazsa, `null` sonucunu döndürür. Bu nedenle, `null` sonucunu her zaman kontrol etmeye değer.
+
+`ipfs.map` ile daha büyük dosyaları akış tarzında işlemek de mümkündür. İşlev, bir IPFS dosyası için karma veya yol, bir geri çağırmanın adı ve davranışını değiştirmek için işaretler bekler:
+
+```typescript
+import { JSONValue, Value } from '@graphprotocol/graph-ts'
+
+export function processItem(value: JSONValue, userData: Value): void {
+  // İşlem yapmayla ilgili ayrıntılar için JSONValue belgelerine bakın
+  // JSON değerleri ile
+  let obj = value.toObject()
+  let id = obj.get('id')
+  let title = obj.get('title')
+
+  if (!id || !title) {
+    return
+  }
+
+  // Geri çağırmalar da varlık oluşturabilir
+  let newItem = new Item(id)
+  newItem.title = title.toString()
+  newitem.parent = userData.toString() // Set parent to "parentId"
+  newitem.save()
+}
+
+// Bunu eşleştirmedeki bir olay işleyicisinin içine koyun
+ipfs.map('Qm...', 'processItem', Value.fromString('parentId'), ['json'])
+
+// Alternatif olarak `ipfs.mapJSON` kullanın
+ipfs.mapJSON('Qm...', 'processItem', Value.fromString('parentId'))
+```
+
+Şu anda desteklenen tek bayrak `ipfs.map` dosyasına aktarılması gereken `json` bayrağıdır. json`bayrağı ile IPFS dosyası, her satırda bir değer olmak üzere bir dizi JSON değerinden oluşmalıdır.`ipfs.map`çağrısı dosyadaki her satırı okuyacak, bir`JSONValue`haline getirecek ve her biri için geri çağırmayı çağıracaktır. Geri arama daha sonra`JSONValue`dan veri depolamak için varlık işlemlerini kullanabilir. Varlık değişiklikleri yalnızca `ipfs.map`i çağıran işleyici başarıyla tamamlandığında saklanır; bu arada bellekte tutulurlar ve`ipfs.map\` in işleyebileceği dosyanın boyutu bu nedenle sınırlıdır.
+
+Başarı durumunda, `ipfs.map` `void` döndürür. Geri aramanın herhangi bir çağrısı bir hataya neden olursa, `ipfs.map` çağrısını yapan işleyici iptal edilir ve subgraph başarısız olarak işaretlenir.
+
+### Kripto(Crypto) API'si
+
+```typescript
+import { crypto } from '@graphprotocol/graph-ts'
+```
+
+`crypto` API, eşlemelerde kullanılmak üzere kriptografik işlevler sağlar. Şu anda sadece bir tane var:
+
+- `crypto.keccak256(input: ByteArray): ByteArray`
+
+### JSON API
+
+```typescript
+{ json, JSONValueKind }'i '@graphprotocol/graph-ts' 'den içe aktar
+```
+
+JSON verileri `json` API kullanılarak ayrıştırılabilir:
+
+- `json.fromBytes(data: Bytes): JSONValue` - JSON verilerini geçerli bir UTF-8 dizisi olarak yorumlanan bir `Bytes` dizisinden ayrıştırır
+- `json.try_fromBytes(data: Bytes): Result<JSONValue, boolean>` - `json.fromBytes` öğesinin güvenli sürümüdür, ayrıştırma başarısız olursa bir hata değişkeni döndürür
+- `json.fromString(data: string): JSONValue` - JSON verilerini geçerli bir UTF-8 `String`den ayrıştırır
+- `json.try_fromString(data: string): Result<JSONValue, boolean>` - `json.fromString`in güvenli sürümüdür, ayrıştırma başarısız olursa bir hata değişkeni döndürür
+
+`JSONValue` sınıfı, rastgele bir JSON belgesinden değerleri çekmenin bir yolunu sağlar. JSON değerleri booleanlar, sayılar, diziler ve daha fazlası olabileceğinden, `JSONValue` bir değerin türünü kontrol etmek için bir `kind` özelliği ile birlikte gelir:
+
+```typescript
+let value = json.fromBytes(...)
+if (value.kind == JSONValueKind.BOOL) {
+  ...
+}
+```
+
+Ek olarak, değerin `null` olup olmadığını kontrol etmek için bir yöntem vardır:
+
+- `value.isNull(): boolean`
+
+Bir değerin türü belli olduğunda, aşağıdaki yöntemlerden biri kullanılarak bir [built-in type](#built-in-types) 'a dönüştürülebilir:
+
+- `value.toBool(): boolean`
+- `value.toI64(): i64`
+- `value.toF64(): f64`
+- `value.toBigInt(): BigInt`
+- `value.toString(): string`
+- `value.toArray(): Array<JSONValue>` - (ve ardından `JSONValue` öğesini yukarıdaki 5 yöntemden biriyle dönüştürün)
+
+### Tip Dönüşümleri Referansı
+
+| Kaynak(lar)          | Hedef                | Dönüştürme işlevi            |
+| -------------------- | -------------------- | ---------------------------- |
+| Address              | Bytes                | none                         |
+| Address              | String               | s.toHexString()              |
+| BigDecimal           | String               | s.toString()                 |
+| BigInt               | BigDecimal           | s.toBigDecimal()             |
+| BigInt               | String (hexadecimal) | s.toHexString() or s.toHex() |
+| BigInt               | String (unicode)     | s.toString()                 |
+| BigInt               | i32                  | s.toI32()                    |
+| Boolean              | Boolean              | none                         |
+| Bytes (signed)       | BigInt               | BigInt.fromSignedBytes(s)    |
+| Bytes (unsigned)     | BigInt               | BigInt.fromUnsignedBytes(s)  |
+| Bytes                | String (hexadecimal) | s.toHexString() or s.toHex() |
+| Bytes                | String (unicode)     | s.toString()                 |
+| Bytes                | String (base58)      | s.toBase58()                 |
+| Bytes                | i32                  | s.toI32()                    |
+| Bytes                | u32                  | s.toU32()                    |
+| Bytes                | JSON                 | json.fromBytes(s)            |
+| int8                 | i32                  | none                         |
+| int32                | i32                  | none                         |
+| int32                | BigInt               | BigInt.fromI32(s)            |
+| uint24               | i32                  | none                         |
+| int64 - int256       | BigInt               | none                         |
+| uint32 - uint256     | BigInt               | none                         |
+| JSON                 | boolean              | s.toBool()                   |
+| JSON                 | i64                  | s.toI64()                    |
+| JSON                 | u64                  | s.toU64()                    |
+| JSON                 | f64                  | s.toF64()                    |
+| JSON                 | BigInt               | s.toBigInt()                 |
+| JSON                 | string               | s.toString()                 |
+| JSON                 | Array                | s.toArray()                  |
+| JSON                 | Object               | s.toObject()                 |
+| String               | Address              | Address.fromString(s)        |
+| Bytes                | Address              | Address.fromBytes(s)         |
+| String               | BigInt               | BigInt.fromString(s)         |
+| String               | BigDecimal           | BigDecimal.fromString(s)     |
+| String (hexadecimal) | Bytes                | ByteArray.fromHexString(s)   |
+| String (UTF-8)       | Bytes                | ByteArray.fromUTF8(s)        |
+
+### Veri Kaynağı Meta Verileri
+
+İşleyiciyi çağıran veri kaynağının sözleşme adresini, ağını ve bağlamını `dataSource` ad alanı aracılığıyla inceleyebilirsiniz:
+
+- `dataSource.address(): Address`
+- `dataSource.network(): string`
+- `dataSource.context(): DataSourceContext`
+
+### Varlık ve VeriKaynağıBağlamı
+
+Temel `Entity` sınıfı ve alt `DataSourceContext` sınıfı, alanları dinamik olarak ayarlamak ve almak için yardımcılara sahiptir:
+
+- `setString(key: string, value: string): void`
+- `setI32(key: string, value: i32): void`
+- `setBigInt(key: string, value: BigInt): void`
+- `setBytes(key: string, value: Bytes): void`
+- `setBoolean(key: string, value: bool): void`
+- `setBigDecimal(key, value: BigDecimal): void`
+- `getString(key: string): string`
+- `getI32(key: string): i32`
+- `getBigInt(key: string): BigInt`
+- `getBytes(key: string): Bytes`
+- `getBoolean(key: string): boolean`
+- `getBigDecimal(key: string): BigDecimal`
+
+### Manifest'teki DataSourceContext
+
+`dataSources` içindeki `context` bölümü, subgraph eşlemeleriniz içinde erişilebilen anahtar-değer çiftlerini tanımlamanıza olanak tanır. Kullanılabilir türler `Bool`, `String`, `Int`, `Int8`, `BigDecimal`, `Bytes`, `List` ve `BigInt` şeklindedir.
+
+İşte `context` bölümünde çeşitli türlerin kullanımını gösteren bir YAML örneği:
+
+```yaml
+dataSources:
+  - kind: ethereum/contract
+    name: ContractName
+    network: mainnet
+    context:
+      bool_example:
+        type: Bool
+        data: true
+      string_example:
+        type: String
+        data: 'hello'
+      int_example:
+        type: Int
+        data: 42
+      int8_example:
+        type: Int8
+        data: 127
+      big_decimal_example:
+        type: BigDecimal
+        data: '10.99'
+      bytes_example:
+        type: Bytes
+        data: '0x68656c6c6f'
+      list_example:
+        type: List
+        data:
+          - type: Int
+            data: 1
+          - type: Int
+            data: 2
+          - type: Int
+            data: 3
+      big_int_example:
+        type: BigInt
+        data: '1000000000000000000000000'
+```
+
+- `Bool`: Bir Boolean değeri belirtir (`true` veya `false`).
+- `String`: Bir String değeri belirtir.
+- `Int`: 32 bitlik bir tamsayı belirtir.
+- `Int8`: 8 bitlik bir tamsayı belirtir.
+- `BigDecimal`: Bir ondalık sayı belirtir. Tırnak içine alınmalıdır.
+- `Bytes`: Onaltılık bir dize belirtir.
+- `List`: Bir öğe listesi belirtir. Her öğenin türünü ve verilerini belirtmesi gerekir.
+- `BigInt`: Büyük bir tamsayı değeri belirtir. Büyük boyutu nedeniyle tırnak içine alınmalıdır.
+
+Bu bağlama daha sonra subgraph eşleştirme dosyalarınızdan erişilebilir ve böylece daha dinamik ve yapılandırılabilir subgraphlar elde edebilirsiniz.

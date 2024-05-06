@@ -4,8 +4,14 @@ module.exports = {
   semi: false,
   printWidth: 120,
   proseWrap: 'never',
-  plugins: [
-    // for sort fields in package.json
-    require('prettier-plugin-pkg'),
+  plugins: ['prettier-plugin-tailwindcss'],
+  tailwindConfig: './website/tailwind.config.ts',
+  overrides: [
+    {
+      files: ['**/tsconfig.json'],
+      options: {
+        trailingComma: 'none', // temporary fix for "JSON does not support trailing commas" errors on `nextra-theme` build
+      },
+    },
   ],
 }

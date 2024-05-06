@@ -11,7 +11,7 @@ export const remarkReplaceLinks: Plugin<[{ foundPath: string; basePath: string }
   if (!foundPath) throw new Error('remarkReplaceLinks: foundPath is required')
   if (!basePath) throw new Error('remarkReplaceLinks: basePath is required')
 
-  return (tree, _file, done) => {
+  return (tree, _file) => {
     // Rewrite relative links to ensure they work
     visit(tree, 'link', (node) => {
       // Skip external links and same-page anchor links
@@ -26,6 +26,5 @@ export const remarkReplaceLinks: Plugin<[{ foundPath: string; basePath: string }
         node.url = path.join(basePath + path.dirname(foundPath), node.url)
       }
     })
-    done()
   }
 }
