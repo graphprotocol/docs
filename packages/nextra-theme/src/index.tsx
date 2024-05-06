@@ -90,20 +90,9 @@ export {
 }
 
 export default function NextraLayout({ children, pageOpts, pageProps }: NextraThemeLayoutProps): ReactElement {
-  const { frontMatter, filePath, pageMap, headings, title } = pageOpts
+  const { frontMatter, filePath, pageMap, headings, title, timestamp, readingTime } = pageOpts
   const { locale, defaultLocale } = useI18n<any>()
   const fsPath = useFSRoute()
-
-  const gitDate = new Date(pageOpts.timestamp!)
-  const lastUpdatedAt = gitDate.toLocaleDateString(locale, {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-  })
-  const dateEl = <time dateTime={gitDate.toISOString()}>{lastUpdatedAt}</time>
-
-  console.log('timestamp', lastUpdatedAt)
-  console.log('reading time', pageOpts.readingTime!.minutes > 0 && pageOpts.readingTime!.text)
 
   const args = useMemo(() => {
     const result = normalizePages({
@@ -167,6 +156,8 @@ export default function NextraLayout({ children, pageOpts, pageProps }: NextraTh
     seo = merge(seo, frontMatter.seo)
   }
 
+  const lastUpdated = timestamp ? new Date(timestamp) : null
+
   return (
     <NavContext.Provider value={{ filePath: pageProps.remoteFilePath || filePath, ...args }}>
       <DocumentContext.Provider value={{ frontMatter, headings, markOutlineItem, highlightedOutlineItemId }}>
@@ -201,6 +192,40 @@ export default function NextraLayout({ children, pageOpts, pageProps }: NextraTh
                 </div>
               ) : null}
               {frontMatter.title ? <Heading.H1>{frontMatter.title}</Heading.H1> : null}
+              {lastUpdated || readingTime ? (
+                <Paragraph size="14px">
+                  {lastUpdated ? (
+                    <span>
+                      <span sx={{ color: 'White64' }}>Last updated:</span>{' '}
+                      <time dateTime={lastUpdated.toISOString()}>
+                        {lastUpdated.toLocaleDateString(locale, {
+                          month: 'long',
+                          day: 'numeric',
+                          year: 'numeric',
+                        })}
+                      </time>
+                    </span>
+                  ) : null}
+                  <span
+                    sx={{
+                      mx: Spacing['16px'],
+                      display: 'inline-block',
+                      verticalAlign: 'top',
+                      width: '1px',
+                      height: '20px',
+                      bg: 'White16',
+                      '&:not(span + span), &:not(:has(+ span))': {
+                        display: 'none',
+                      },
+                    }}
+                  />
+                  {(readingTime?.minutes ?? 0) > 0 ? (
+                    <span>
+                      <span sx={{ color: 'White64' }}>Reading time:</span> {Math.ceil(readingTime!.minutes)} min
+                    </span>
+                  ) : null}
+                </Paragraph>
+              ) : null}
               <MDXProvider components={mdxComponents}>{children}</MDXProvider>
             </article>
 
