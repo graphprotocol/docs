@@ -36,7 +36,7 @@ export async function getSupportedNetworks() {
 
         const fullySupportedOnNetwork =
           network.id === 'evm' && fullySupportedNetworkIds.includes(`eip155:${chain.chainId}`)
-        const partiallySupportedOnNetwork = network.id === 'evm' && !fullySupportedOnNetwork
+        const partiallySupportedOnNetwork = ['evm', 'near'].includes(network.id) && !fullySupportedOnNetwork
 
         return {
           uid: chain.uid,

@@ -6,7 +6,7 @@ title: AssemblyScript API
 
 This page documents what built-in APIs can be used when writing subgraph mappings. Two kinds of APIs are available out of the box:
 
-- the [Graph TypeScript library](https://github.com/graphprotocol/graph-ts) (`graph-ts`) and
+- the [Graph TypeScript library](https://github.com/graphprotocol/graph-tooling/tree/main/packages/ts) (`graph-ts`) and
 - code generated from subgraph files by `graph codegen`.
 
 It is also possible to add other libraries as dependencies, as long as they are compatible with [AssemblyScript](https://github.com/AssemblyScript/assemblyscript). Since this is the language mappings are written in, the [AssemblyScript wiki](https://github.com/AssemblyScript/assemblyscript/wiki) is a good source for language and standard library features.
@@ -17,7 +17,7 @@ The `@graphprotocol/graph-ts` library provides the following APIs:
 
 - An `ethereum` API for working with Ethereum smart contracts, events, blocks, transactions, and Ethereum values.
 - A `store` API to load and save entities from and to the Graph Node store.
-- A `log` API to log messages to the Graph Node output and the Graph Explorer.
+- A `log` API to log messages to the Graph Node output and Graph Explorer.
 - An `ipfs` API to load files from IPFS.
 - A `json` API to parse JSON data.
 - A `crypto` API to use cryptographic functions.
@@ -29,6 +29,8 @@ The `apiVersion` in the subgraph manifest specifies the mapping API version whic
 
 | Version | Release notes |
 | :-: | --- |
+| 0.0.9 | Adds new host functions [`eth_get_balance`](#balance-of-an-address) & [`hasCode`](#check-if-an-address-is-a-contract-or-eoa) |
+| 0.0.8 | Adds validation for existence of fields in the schema when saving an entity. |
 | 0.0.7 | Added `TransactionReceipt` and `Log` classes to the Ethereum types<br />Added `receipt` field to the Ethereum Event object |
 | 0.0.6 | Added `nonce` field to the Ethereum Transaction object<br />Added `baseFeePerGas` to the Ethereum Block object |
 | 0.0.5 | AssemblyScript upgraded to version 0.19.10 (this includes breaking changes, please see the [`Migration Guide`](/release-notes/assemblyscript-migration-guide))<br />`ethereum.transaction.gasUsed` renamed to `ethereum.transaction.gasLimit` |
@@ -38,7 +40,7 @@ The `apiVersion` in the subgraph manifest specifies the mapping API version whic
 
 ### Built-in Types
 
-Documentation on the base types built into AssemblyScript can be found in the [AssemblyScript wiki](https://github.com/AssemblyScript/assemblyscript/wiki/Types).
+Documentation on the base types built into AssemblyScript can be found in the [AssemblyScript wiki](https://www.assemblyscript.org/types.html).
 
 The following additional types are provided by `@graphprotocol/graph-ts`.
 
@@ -77,7 +79,7 @@ import { BigDecimal } from '@graphprotocol/graph-ts'
 
 `BigDecimal` is used to represent arbitrary precision decimals.
 
-> Note: [Internally](https://github.com/graphprotocol/graph-node/blob/master/graph/src/data/store/scalar.rs) `BigDecimal` is stored in [IEEE-754 decimal128 floating-point format](https://en.wikipedia.org/wiki/Decimal128_floating-point_format), which supports 34 decimal digits of significand. This makes `BigDecimal` unsuitable for representing fixed-point types that can span wider than 34 digits, such as a Solidity [`ufixed256x18`](https://docs.soliditylang.org/en/latest/types.html#fixed-point-numbers) or equivalent.
+> Note: [Internally](https://github.com/graphprotocol/graph-node/blob/master/graph/src/data/store/scalar/bigdecimal.rs) `BigDecimal` is stored in [IEEE-754 decimal128 floating-point format](https://en.wikipedia.org/wiki/Decimal128_floating-point_format), which supports 34 decimal digits of significand. This makes `BigDecimal` unsuitable for representing fixed-point types that can span wider than 34 digits, such as a Solidity [`ufixed256x18`](https://docs.soliditylang.org/en/latest/types.html#fixed-point-numbers) or equivalent.
 
 _Construction_
 
@@ -213,7 +215,7 @@ import { store } from '@graphprotocol/graph-ts'
 
 The `store` API allows to load, save and remove entities from and to the Graph Node store.
 
-Entities written to the store map one-to-one to the `@entity` types defined in the subgraph's GraphQL schema. To make working with these entities convenient, the `graph codegen` command provided by the [Graph CLI](https://github.com/graphprotocol/graph-cli) generates entity classes, which are subclasses of the built-in `Entity` type, with property getters and setters for the fields in the schema as well as methods to load and save these entities.
+Entities written to the store map one-to-one to the `@entity` types defined in the subgraph's GraphQL schema. To make working with these entities convenient, the `graph codegen` command provided by the [Graph CLI](https://github.com/graphprotocol/graph-tooling/tree/main/packages/cli) generates entity classes, which are subclasses of the built-in `Entity` type, with property getters and setters for the fields in the schema as well as methods to load and save these entities.
 
 #### Creating entities
 
@@ -534,13 +536,38 @@ For more information:
 - Encoding/decoding [Rust library/CLI](https://github.com/rust-ethereum/ethabi)
 - More [complex example](https://github.com/graphprotocol/graph-node/blob/6a7806cc465949ebb9e5b8269eeb763857797efc/tests/integration-tests/host-exports/src/mapping.ts#L72).
 
+#### Balance of an Address
+
+The native token balance of an address can be retrieved using the `ethereum` module. This feature is available from `apiVersion: 0.0.9` which is defined `subgraph.yaml`. The `getBalance()` retrieves the balance of the specified address as of the end of the block in which the event is triggered.
+
+```typescript
+import { ethereum } from '@graphprotocol/graph-ts'
+
+let address = Address.fromString('0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045')
+let balance = ethereum.getBalance(address) // returns balance in BigInt
+```
+
+#### Check if an Address is a Contract or EOA
+
+To check whether an address is a smart contract address or an externally owned address (EOA), use the `hasCode()` function from the `ethereum` module which will return `boolean`. This feature is available from `apiVersion: 0.0.9` which is defined `subgraph.yaml`.
+
+```typescript
+import { ethereum } from '@graphprotocol/graph-ts'
+
+let contractAddr = Address.fromString('0x2E645469f354BB4F5c8a05B3b30A929361cf77eC')
+let isContract = ethereum.hasCode(contractAddr).inner // returns true
+
+let eoa = Address.fromString('0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045')
+let isContract = ethereum.hasCode(eoa).inner // returns false
+```
+
 ### Logging API
 
 ```typescript
 import { log } from '@graphprotocol/graph-ts'
 ```
 
-The `log` API allows subgraphs to log information to the Graph Node standard output as well as the Graph Explorer. Messages can be logged using different log levels. A basic format string syntax is provided to compose log messages from argument.
+The `log` API allows subgraphs to log information to the Graph Node standard output as well as Graph Explorer. Messages can be logged using different log levels. A basic format string syntax is provided to compose log messages from argument.
 
 The `log` API includes the following functions:
 

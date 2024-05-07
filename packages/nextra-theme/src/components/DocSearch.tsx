@@ -62,13 +62,13 @@ export function DocSearch(props: DocSearchProps) {
       <Link.Area
         ref={searchButtonRef}
         onClick={onOpen}
-        innerFocus
+        innerFocusRing
         sx={{
           borderRadius: [BorderRadius.FULL, null, BorderRadius.S],
           '&:focus-visible': { outline: ['none', null, `${BorderWidth['4px']} solid ${theme.colors!.Purple16}`] },
         }}
       >
-        <Responsive.Multiple as="span" cases={['mobile', null, 'desktop']}>
+        <Responsive.Multiple as="span" cases={['mobile', null, null, 'desktop']}>
           {(caseName) => {
             switch (caseName) {
               case 'mobile':
