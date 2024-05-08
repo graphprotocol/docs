@@ -36,7 +36,7 @@ yarn global add @graphprotocol/graph-cli
 npm install -g @graphprotocol/graph-cli
 ```
 
-Una vez instalado, el comando `graph init` se puede utilizar para configurar un nuevo proyecto de subgrafo, ya sea a partir de un contrato existente o a partir de un subgrafo de ejemplo. Este comando se puede utilizar para crear un subgrafo en Subgraph Studio al pasar ` graph init --product subgraph-studio`. Si ya tienes un contrato inteligente deployado en tu red preferida, crear un nuevo subgrafo a partir de ese contrato puede ser una buena manera de empezar.
+Once installed, the `graph init` command can be used to set up a new subgraph project, either from an existing contract or from an example subgraph. This command can be used to create a subgraph in Subgraph Studio by passing in `graph init --product subgraph-studio`. If you already have a smart contract deployed to your preferred network, bootstrapping a new subgraph from that contract can be a good way to get started.
 
 ## Desde un Contrato Existente
 
@@ -146,9 +146,9 @@ dataSources:
 
 Las entradas importantes a actualizar para el manifiesto son:
 
-- `description`: a human-readable description of what the subgraph is. This description is displayed by the Graph Explorer when the subgraph is deployed to Subgraph Studio.
+- `description`: a human-readable description of what the subgraph is. This description is displayed in Graph Explorer when the subgraph is deployed to Subgraph Studio.
 
-- `repository`: la URL del repositorio donde se encuentra el manifiesto del subgrafo. También se muestra en The Graph Explorer.
+- `repository`: the URL of the repository where the subgraph manifest can be found. This is also displayed in Graph Explorer.
 
 - `features`: una lista de todos los nombres de las [feature](#experimental-features) usadas.
 
@@ -600,7 +600,7 @@ import { Gravatar } from '../generated/schema'
 
 > **Nota:** La generación de código debe realizarse de nuevo después de cada cambio en el esquema GraphQL o en las ABIs incluidas en el manifiesto. También debe realizarse al menos una vez antes de construir o deployar el subgrafo.
 
-La generación de código no comprueba tu código de mapping en `src/mapping.ts`. Si quieres comprobarlo antes de intentar deployar tu subgrafo en the Graph Explorer, puedes ejecutar `yarn build` y corregir cualquier error de sintaxis que el compilador de TypeScript pueda encontrar.
+Code generation does not check your mapping code in `src/mapping.ts`. If you want to check that before trying to deploy your subgraph to Graph Explorer, you can run `yarn build` and fix any syntax errors that the TypeScript compiler might find.
 
 ## Plantillas para fuentes de datos
 
@@ -1298,3 +1298,65 @@ Handlers for File Data Sources cannot be in files which import `eth_call` contra
 #### Referencias
 
 [GIP File Data Sources](https://forum.thegraph.com/t/gip-file-data-sources/2721)
+
+## Timeseries and Aggregations
+
+### Descripción
+
+Timeseries and aggregations enable your subgraph to track statistics like daily average price, hourly total transfers, etc.
+
+This feature introduces two new types of subgraph entity. Timeseries entities record data points with timestamps. Aggregation entities perform pre-declared calculations on the Timeseries data points on an hourly or daily basis, then store the results for easy access via GraphQL.
+
+#### Example Schema
+
+```graphql
+type Data @entity(timeseries: true) {
+  id: Int8!
+  timestamp: Timestamp!
+  price: BigDecimal!
+}
+
+type Stats @aggregation(intervals: ["hour", "day"], source: "Data") {
+  id: Int8!
+  timestamp: Timestamp!
+  sum: BigDecimal! @aggregate(fn: "sum", arg: "price")
+}
+```
+
+### Defining Timeseries and Aggregations
+
+Timeseries entities are defined with `@entity(timeseries: true)` in schema.graphql. Every timeseries entity must have a unique ID of the int8 type, a timestamp of the Timestamp type, and include data that will be used for calculation by aggregation entities. These Timeseries entities can be saved in regular trigger handlers, and act as the “raw data” for the Aggregation entities.
+
+Aggregation entities are defined with `@aggregation` in schema.graphql. Every aggregation entity defines the source from which it will gather data (which must be a Timeseries entity), sets the intervals (e.g., hour, day), and specifies the aggregation function it will use (e.g., sum, count, min, max, first, last). Aggregation entities are automatically calculated on the basis of the specified source at the end of the required interval.
+
+#### Available Aggregation Intervals
+
+- `hour`: sets the timeseries period every hour, on the hour.
+- `day`: sets the timeseries period every day, starting and ending at 00:00.
+
+#### Available Aggregation Functions
+
+- `sum`: Total of all values.
+- `count`: Number of values.
+- `min`: Minimum value.
+- `max`: Maximum value.
+- `first`: First value in the period.
+- `last`: Last value in the period.
+
+#### Example Aggregations Query
+
+```graphql
+{
+  stats(interval: "hour", where: { timestamp_gt: 1704085200 }) {
+    id
+    timestamp
+    sum
+  }
+}
+```
+
+Note:
+
+To use Timeseries and Aggregations, a subgraph must have a spec version ≥1.1.0. Note that this feature might undergo significant changes that could affect backward compatibility.
+
+[Read more](https://github.com/graphprotocol/graph-node/blob/master/docs/aggregations.md) about Timeseries and Aggregations.
