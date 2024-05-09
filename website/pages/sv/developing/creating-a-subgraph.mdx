@@ -790,6 +790,144 @@ indexerHints:
   prune: never
 ```
 
+## Event Handlers
+
+Event handlers in a subgraph react to specific events emitted by smart contracts on the blockchain and trigger handlers defined in the subgraph's manifest. This enables subgraphs to process and store event data according to defined logic.
+
+### Defining an Event Handler
+
+An event handler is declared within a data source in the subgraph's YAML configuration. It specifies which events to listen for and the corresponding function to execute when those events are detected.
+
+```yaml
+dataSources:
+  - kind: ethereum/contract
+    name: Gravity
+    network: dev
+    source:
+      address: '0x731a10897d267e19b34503ad902d0a29173ba4b1'
+      abi: Gravity
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.6
+      language: wasm/assemblyscript
+      entities:
+        - Gravatar
+        - Transaction
+      abis:
+        - name: Gravity
+          file: ./abis/Gravity.json
+      eventHandlers:
+        - event: Approval(address,address,uint256)
+          handler: handleApproval
+        - event: Transfer(address,address,uint256)
+          handler: handleTransfer
+          topic1: ['0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045', '0xc8dA6BF26964aF9D7eEd9e03E53415D37aA96325'] # Optional topic filter which filters only events with the specified topic.
+```
+
+### Indexed Argument Filters / Topic Filters
+
+> **Requires `specVersion` >= 1.2.0**
+
+Topic filters, also known as indexed argument filters, are a powerful feature in subgraphs that allow for precise filtering of blockchain events based on the values of their indexed arguments. These filters are particularly useful for isolating specific events of interest from the vast stream of events on the blockchain, enabling subgraphs to operate more efficiently by focusing only on relevant data. This can be incredibly useful for usecases like creating personal subgraphs that track specific addresses and their interactions with various smart contracts on the blockchain.
+
+#### How Topic Filters Work
+
+When a smart contract emits an event, any arguments that are marked as indexed can be used as filters in a subgraph's manifest. This allows the subgraph to listen selectively for events that match these indexed arguments. The event's first indexed argument corresponds to `topic1`, the second to `topic2`, and so on, up to `topic3`, since the Ethereum Virtual Machine (EVM) allows up to three indexed arguments per event.
+
+```solidity
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
+
+contract Token {
+    // Event declaration with indexed parameters for addresses
+    event Transfer(address indexed from, address indexed to, uint256 value);
+
+    // Function to simulate transferring tokens
+    function transfer(address to, uint256 value) public {
+        // Emitting the Transfer event with from, to, and value
+        emit Transfer(msg.sender, to, value);
+    }
+}
+```
+
+In this example:
+
+- The `Transfer` event is used to log transactions of tokens between addresses.
+- The `from` and `to` parameters are indexed, which allows event listeners to filter and monitor transfers involving specific addresses.
+- The `transfer` function is a simple representation of a token transfer action, emitting the Transfer event whenever it is called.
+
+#### Configuration in Subgraphs
+
+Topic filters are defined directly within the event handler configuration in the subgraph manifest. Here is how they are configured:
+
+```yaml
+eventHandlers:
+  - event: SomeEvent(indexed uint256, indexed address, indexed uint256)
+    handler: handleSomeEvent
+    topic1: ['0xValue1', '0xValue2']
+    topic2: ['0xAddress1', '0xAddress2']
+    topic3: ['0xValue3']
+```
+
+In this setup:
+
+- `topic1` corresponds to the first indexed argument of the event, `topic2` to the second, and `topic3` to the third.
+- Each topic can have one or more values, and an event is only processed if it matches one of the values in each specified topic.
+
+##### Filter Logic
+
+- Within a Single Topic: The logic functions as an OR condition. The event will be processed if it matches any one of the listed values in a given topic.
+- Between Different Topics: The logic functions as an AND condition. An event must satisfy all specified conditions across different topics to trigger the associated handler.
+
+### Example 1: Tracking a Single Address's Transfer Transactions
+
+```yaml
+eventHandlers:
+  - event: Transfer(indexed address,indexed address,uint256)
+    handler: handleTransfer
+    topic1: ['0xSpecificAddress']
+  - event: Transfer(indexed address,indexed address,uint256)
+    handler: handleTransfer
+    topic2: ['0xSpecificAddress']
+```
+
+In this configuration:
+
+- `topic1` filters Transfer events based on the from address, and `topic2` filters based on the to address.
+- The subgraph will index transactions where the specified address is involved either as a sender or a receiver.
+
+### Example 2: Tracking Direct Transfers from Address A to Address B
+
+```yaml
+eventHandlers:
+  - event: Transfer(indexed address,indexed address,uint256)
+    handler: handleDirectedTransfer
+    topic1: ['0xAddressA'] # Sender Address
+    topic2: ['0xAddressB'] # Receiver Address
+```
+
+In this configuration:
+
+- `topic1` is configured to filter `Transfer` events where `0xAddressA` is the sender.
+- `topic2` is configured to filter `Transfer` events where `0xAddressB` is the receiver.
+- The subgraph will only index transactions that occur directly from `0xAddressA` to `0xAddressB`.
+
+### Example 3: Tracking Transactions in Either Direction Between Two Addresses
+
+```
+eventHandlers:
+  - event: Transfer(indexed address,indexed address,uint256)
+    handler: handleTransferToOrFrom
+    topic1: ["0xAddressA"]  # Sender or Receiver Address
+    topic2: ["0xAddressB"]  # Sender or Receiver Address
+```
+
+In this configuration:
+
+- `topic1` is configured to filter `Transfer` events where `0xAddressA` is either the sender or the receiver.
+- `topic2` is configured to filter `Transfer` events where `0xAddressB` is either the sender or the receiver.
+- The subgraph will index transactions that occur in either direction between `0xAddressA` and `0xAddressB`, allowing for comprehensive monitoring of interactions involving both addresses.
+
 ## Anropsbehandlare
 
 Medan händelser ger ett effektivt sätt att samla in relevanta ändringar av ett kontrakts tillstånd, undviker många kontrakt att generera loggar för att optimera gasavgifterna. I dessa fall kan en subgraf prenumerera på anrop som görs till datakällans kontrakt. Detta uppnås genom att definiera anropsbehandlare som refererar till funktions signaturen och hanteraren som kommer att bearbeta anrop till denna funktion. För att bearbeta dessa anrop kommer hanteraren att ta emot ett `ethereum.Call` som ett argument med de typade in- och utdata från anropet. Anrop som görs på vilken djupnivå som helst i en transaktions anropskedja kommer att utlösa kartläggningen, vilket gör det möjligt att fånga aktivitet med datakällan genom proxykontrakt.
