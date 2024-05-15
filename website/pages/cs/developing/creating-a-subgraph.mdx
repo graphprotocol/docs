@@ -752,6 +752,8 @@ dataSources:
 
 Nastavení `indexerHints` v manifestu podgrafu poskytuje směrnice pro indexátory ohledně zpracování a správy podgrafu. Ovlivňuje provozní rozhodnutí v oblasti manipulace s daty, strategií indexace a optimalizací. V současné době obsahuje možnost `prune` pro správu uchovávání nebo odstraňování historických dat.
 
+> This feature is available from `specVersion: 1.0.0`
+
 ### Prořezávat
 
 `indexerHints.prune`: Definuje zachování historických blokových dat pro podgraf. Mezi možnosti patří:
@@ -765,9 +767,17 @@ Nastavení `indexerHints` v manifestu podgrafu poskytuje směrnice pro indexáto
   prune: auto
 ```
 
-> Pojem "historie" v tomto kontextu podgrafů znamená ukládání dat, která odrážejí staré stavy proměnlivých entit. Tato schopnost je nezbytná pro [dotazy na cestování v čase](/querying/graphql-api/#time-travel-queries), Tato funkce umožňuje dotazovat se na minulé stavy těchto entit v konkrétních blocích v celé historii blockchainu.
+> The term "history" in this context of subgraphs is about storing data that reflects the old states of mutable entities.
 
-Použití `"auto"` se obecně doporučuje, protože maximalizuje výkon dotazu a je dostačující pro většinu uživatelů, kteří nevyžadují přístup k rozsáhlým historickým datům.
+History as of a given block is required for:
+
+- [Time travel queries](/querying/graphql-api/#time-travel-queries), which enable querying the past states of these entities at specific blocks throughout the subgraph's history
+- Using the subgraph as a [graft base](/developing/creating-a-subgraph/#grafting-onto-existing-subgraphs) in another subgraph, at that block
+- Rewinding the subgraph back to that block
+
+If historical data as of the block has been pruned, the above capabilities will not be available.
+
+> Použití `"auto"` se obecně doporučuje, protože maximalizuje výkon dotazu a je dostačující pro většinu uživatelů, kteří nevyžadují přístup k rozsáhlým historickým datům.
 
 U podgrafů využívajících [dotazy na cestování v čase](/querying/graphql-api/#time-travel-queries) je vhodné buď nastavit určitý počet bloků pro uchovávání historických dat, nebo použít `prune: never` pro uchování všech historických stavů entit. Níže jsou uvedeny příklady, jak obě možnosti nakonfigurovat v nastavení podgrafu:
 
@@ -784,6 +794,29 @@ Zachování kompletní historie entitních států:
 indexerHints:
   prune: never
 ```
+
+You can check the earliest block (with historical state) for a given subgraph by querying the [Indexing Status API](/deploying/deploying-a-subgraph-to-hosted/#checking-subgraph-health):
+
+```
+{
+  indexingStatuses(subgraphs: ["Qm..."]) {
+    subgraph
+    synced
+    health
+    chains {
+      earliestBlock {
+        number
+      }
+      latestBlock {
+        number
+      }
+      chainHeadBlock { number }
+    }
+  }
+}
+```
+
+Note that the `earliestBlock` is the earliest block with historical data, which will be more recent than the `startBlock` specified in the manifest, if the subgraph has been pruned.
 
 ## Event Handlers
 
