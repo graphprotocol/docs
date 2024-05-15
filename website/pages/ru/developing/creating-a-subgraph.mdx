@@ -752,6 +752,8 @@ dataSources:
 
 Параметр `indexerHints` в манифесте субграфа содержит директивы для индексаторов по обработке и управлению субграфом. Это влияет на оперативные решения по обработке данных, стратегиям индексации и оптимизации. В настоящее время в нем предусмотрена опция `prune` для управления сохранением или сокращением исторических данных.
 
+> This feature is available from `specVersion: 1.0.0`
+
 ### Сокращение
 
 `indexerHints.prune`: определяет срок хранения исторических данных блока для субграфа. Опции включают в себя:
@@ -765,9 +767,17 @@ dataSources:
   prune: auto
 ```
 
-> Термин "history" в контексте субграфов означает хранение данных, отражающих старые состояния изменяемых объектов. Эта возможность необходима для [запросов о путешествиях во времени](/querying/graphql-api/#time-travel-queries). Эта функция позволяет запрашивать прошлые состояния этих объектов в определенных блоках на протяжении всей истории блокчейна.
+> The term "history" in this context of subgraphs is about storing data that reflects the old states of mutable entities.
 
-Обычно рекомендуется использовать `"auto"`, поскольку оно максимально увеличивает производительность запросов и достаточно для большинства пользователей, которым не требуется доступ к обширным историческим данным.
+History as of a given block is required for:
+
+- [Time travel queries](/querying/graphql-api/#time-travel-queries), which enable querying the past states of these entities at specific blocks throughout the subgraph's history
+- Using the subgraph as a [graft base](/developing/creating-a-subgraph/#grafting-onto-existing-subgraphs) in another subgraph, at that block
+- Rewinding the subgraph back to that block
+
+If historical data as of the block has been pruned, the above capabilities will not be available.
+
+> Обычно рекомендуется использовать `"auto"`, поскольку оно максимально увеличивает производительность запросов и достаточно для большинства пользователей, которым не требуется доступ к обширным историческим данным.
 
 Для субграфов, использующих [запросы о путешествиях во времени](/querying/graphql-api/#time-travel-queries), рекомендуется либо установить определенное количество блоков для хранения исторических данных, либо использовать `prune: never`, чтобы сохранить все исторические состояния объектов. Ниже приведены примеры того, как настроить оба параметра в настройках вашего субграфа:
 
@@ -784,6 +794,29 @@ dataSources:
 indexerHints:
   prune: never
 ```
+
+You can check the earliest block (with historical state) for a given subgraph by querying the [Indexing Status API](/deploying/deploying-a-subgraph-to-hosted/#checking-subgraph-health):
+
+```
+{
+  indexingStatuses(subgraphs: ["Qm..."]) {
+    subgraph
+    synced
+    health
+    chains {
+      earliestBlock {
+        number
+      }
+      latestBlock {
+        number
+      }
+      chainHeadBlock { number }
+    }
+  }
+}
+```
+
+Note that the `earliestBlock` is the earliest block with historical data, which will be more recent than the `startBlock` specified in the manifest, if the subgraph has been pruned.
 
 ## Обработчики событий
 
