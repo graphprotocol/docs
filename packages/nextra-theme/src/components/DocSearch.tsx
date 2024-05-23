@@ -64,8 +64,8 @@ export function DocSearch(props: DocSearchProps) {
         onClick={onOpen}
         innerFocusRing
         sx={{
-          borderRadius: [BorderRadius.FULL, null, BorderRadius.S],
-          '&:focus-visible': { outline: ['none', null, `${BorderWidth['4px']} solid ${theme.colors!.Purple16}`] },
+          borderRadius: [BorderRadius.FULL, null, null, BorderRadius.S],
+          '&:focus-visible': { outline: ['none', null, null, `${BorderWidth['4px']} solid ${theme.colors!.Purple16}`] },
         }}
       >
         <Responsive.Multiple as="span" cases={['mobile', null, null, 'desktop']}>
