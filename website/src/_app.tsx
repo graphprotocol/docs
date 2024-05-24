@@ -52,16 +52,16 @@ function MyAppWithLocale({ Component, router, pageProps }: AppProps) {
       }
       hitComponent={DocSearchHit}
       navigator={{
-        navigate({ itemUrl }) {
+        navigate({ itemUrl }: { itemUrl: string }) {
           void router.push(removeBasePathFromUrl(itemUrl))
         },
-        navigateNewTab({ itemUrl }) {
+        navigateNewTab({ itemUrl }: { itemUrl: string }) {
           const windowReference = window.open(itemUrl, '_blank', 'noopener')
           if (windowReference) {
             windowReference.focus()
           }
         },
-        navigateNewWindow({ itemUrl }) {
+        navigateNewWindow({ itemUrl }: { itemUrl: string }) {
           window.open(itemUrl, '_blank', 'noopener')
         },
       }}
