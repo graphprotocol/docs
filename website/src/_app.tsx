@@ -44,14 +44,12 @@ function MyAppWithLocale({ Component, router, pageProps }: AppProps) {
         facetFilters: [`language:${locale}`],
       }}
       disableUserPersonalization={true}
-      transformItems={(items) =>
-        items.map(
-          (item): typeof item =>
-            ({
-              ...item,
-              url: item.url.replace('https://thegraph.com/docs', process.env.BASE_PATH ?? ''),
-            }) as typeof item,
-        )
+      transformItems={(items: any) =>
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+        items.map((item: any) => ({
+          ...item,
+          url: item.url.replace('https://thegraph.com/docs', process.env.BASE_PATH ?? ''),
+        }))
       }
       hitComponent={DocSearchHit}
       navigator={{
