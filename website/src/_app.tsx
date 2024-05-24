@@ -45,10 +45,13 @@ function MyAppWithLocale({ Component, router, pageProps }: AppProps) {
       }}
       disableUserPersonalization={true}
       transformItems={(items) =>
-        items.map((item) => ({
-          ...item,
-          url: item.url.replace('https://thegraph.com/docs', process.env.BASE_PATH ?? ''),
-        }))
+        items.map(
+          (item): typeof item =>
+            ({
+              ...item,
+              url: item.url.replace('https://thegraph.com/docs', process.env.BASE_PATH ?? ''),
+            }) as typeof item,
+        )
       }
       hitComponent={DocSearchHit}
       navigator={{
