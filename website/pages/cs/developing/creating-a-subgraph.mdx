@@ -14,15 +14,15 @@ Definice podgraf se skládá z několika souborů:
 
 - `Mapování skriptů sestavy`: [AssemblyScript](https://github.com/AssemblyScript/assemblyscript) kód, který převádí data událostí na entity definované ve vašem schématu (např. `mapping.ts` v tomto tutoriálu)
 
-> Abyste mohli svůj podgraf používat v decentralizované síti The Graph, musíte si [vytvořit klíč API](/deploying/subgraph-studio-faqs/#2-how-do-i-create-an-api-key). Doporučujeme, abyste [přidali signál](/network/curating/#how-to-signal) do svého podgraf s minimálně [10,000 GRT](/network-transition-faq/#how-can-i-ensure-that-my-subgraph-will-be-picked-up-by-indexer-on-the-graph-network).
+> In order to use your subgraph on The Graph's decentralized network, you will need to [create an API key](/deploying/subgraph-studio-faqs/#2-how-do-i-create-an-api-key). It is recommended that you [add signal](/network/curating/#how-to-signal) to your subgraph with at least [3,000 GRT](/sunrise/#how-can-i-ensure-high-quality-of-service-and-redundancy-for-subgraphs-on-the-graph-network).
 
-Než se podrobněji seznámíte s obsahem souboru manifest, je třeba nainstalovat [Graph CLI](https://github.com/graphprotocol/graph-cli), které budete potřebovat k sestavení a nasazení podgraf.
+Before you go into detail about the contents of the manifest file, you need to install the [Graph CLI](https://github.com/graphprotocol/graph-tooling) which you will need to build and deploy a subgraph.
 
 ## Instalace Graf CLI
 
 Graf CLI je napsáno v jazyce JavaScript a k jeho použití je třeba nainstalovat buď `yarn`, nebo `npm`; v následujícím se předpokládá, že máte yarn.
 
-Once you have `yarn`, install the Graph CLI by running
+Jakmile budete mít `yarn`, nainstalujte Graf CLI spuštěním příkazu
 
 **Instalace pomocí yarn:**
 
@@ -36,7 +36,7 @@ yarn global add @graphprotocol/graph-cli
 npm install -g @graphprotocol/graph-cli
 ```
 
-Po instalaci lze příkazem `graph init` nastavit nový projekt podgraf, a to buď z existující smlouvy, nebo z příkladu podgraf. Tento příkaz lze použít k vytvoření subgrafu v podgraf Studio předáním příkazu `graph init --product subgraph-studio`. Pokud již máte inteligentní kontrakt nasazený v preferované síti, může být zavedení nového podgraf z tohoto kontraktu dobrým způsobem, jak začít.
+Once installed, the `graph init` command can be used to set up a new subgraph project, either from an existing contract or from an example subgraph. This command can be used to create a subgraph in Subgraph Studio by passing in `graph init --product subgraph-studio`. If you already have a smart contract deployed to your preferred network, bootstrapping a new subgraph from that contract can be a good way to get started.
 
 ## Ze stávající smlouvy
 
@@ -61,7 +61,7 @@ Druhý režim `graf init` podporuje vytvoření nového projektu z příkladové
 graph init --studio <SUBGRAPH_SLUG>
 ```
 
-Ukázkový podgraf je založen na smlouvě Gravity od Daniho Granta, která spravuje uživatelské avatary a vysílá události `NewGravatar` nebo `UpdateGravatar`, kdykoli jsou avatary vytvořeny nebo aktualizovány. Podgraf tyto události zpracovává tak, že zapisuje entity `Gravatar` do úložiště Graf Uzel a zajišťuje jejich aktualizaci podle událostí. V následujících částech budou rozebrány soubory, které tvoří manifest podgrafu pro tento příklad.
+The [example subgraph](https://github.com/graphprotocol/example-subgraph) is based on the Gravity contract by Dani Grant that manages user avatars and emits `NewGravatar` or `UpdateGravatar` events whenever avatars are created or updated. The subgraph handles these events by writing `Gravatar` entities to the Graph Node store and ensuring these are updated according to the events. The following sections will go over the files that make up the subgraph manifest for this example.
 
 ## Přidání nových zdrojů dat do existujícího podgraf
 
@@ -101,6 +101,8 @@ description: Gravatar for Ethereum
 repository: https://github.com/graphprotocol/graph-tooling
 schema:
   file: ./schema.graphql
+indexerHints:
+  prune: auto
 dataSources:
   - kind: ethereum/contract
     name: Gravity
@@ -144,11 +146,15 @@ dataSources:
 
 Důležité položky, které je třeba v manifestu aktualizovat, jsou:
 
-- `popis`: lidsky čitelný popis toho, co je podgraf. Tento popis zobrazí Průzkumník grafů při nasazení podgrafu do hostované služby.
+- `specVersion`: a semver version that identifies the supported manifest structure and functionality for the subgraph. The latest version is `1.2.0`. See [specVersion releases](#specversion-releases) section to see more details on features & releases.
 
-- `úložiště`: adresa URL úložiště, kde lze manifest podgrafů nalézt. Tento údaj zobrazuje také Průzkumník graf.
+- `description`: a human-readable description of what the subgraph is. This description is displayed in Graph Explorer when the subgraph is deployed to Subgraph Studio.
+
+- `repository`: the URL of the repository where the subgraph manifest can be found. This is also displayed in Graph Explorer.
 
 - `features`: seznam všech použitých názvů [feature](#experimental-features).
+
+- `indexerHints.prune`: Definuje uchovávání historických blokových dat pro podgraf. Viz [prune](#prune) v sekci [indexerHints](#indexer-hints).
 
 - `dataSources.source`: adresa inteligentní smlouvy, ze které podgraf pochází, a ABI inteligentní smlouvy, která se má použít. Adresa je nepovinná; její vynechání umožňuje indexovat odpovídající události ze všech smluv.
 
@@ -166,9 +172,11 @@ Důležité položky, které je třeba v manifestu aktualizovat, jsou:
 
 - `dataSources.mapping.callHandlers`: obsahuje seznam funkcí inteligentních smluv, na které tento podgraf reaguje, a obsluhovače v mapování, které transformují vstupy a výstupy volání funkcí na entity v úložišti.
 
-- `dataSources.mapping.blockHandlers`: lists the blocks this subgraph reacts to and handlers in the mapping to run when a block is appended to the chain. Without a filter, the block handler will be run every block. An optional call-filter can be provided by adding a `filter` field with `kind: call` to the handler. This will only run the handler if the block contains at least one call to the data source contract.
+- `dataSources.mapping.blockHandlers`: seznam bloků, na které tento podgraf reaguje, a obslužných v mapování, které se spustí, když je blok přidán do řetězce. Bez filtru se obsluha bloku spustí každý blok. Volitelný filtr volání lze zadat přidáním </code> field with `filter` druhem: volání</0> k obsluze. Tím se obslužná rutina spustí pouze tehdy, pokud blok obsahuje alespoň jedno volání smlouvy zdroje dat.
 
 Jeden subgraf může indexovat data z více inteligentní smluv. Do pole `dataSources` přidejte položku pro každou smlouvu, ze které je třeba indexovat data.
+
+### Pořadí spouštěcích Handlers
 
 Spouštěče pro zdroj dat v rámci bloku jsou seřazeny podle následujícího postupu:
 
@@ -177,6 +185,22 @@ Spouštěče pro zdroj dat v rámci bloku jsou seřazeny podle následujícího 
 3. Spouštěče bloků jsou spuštěny po spouštěčích událostí a volání, v pořadí, v jakém jsou definovány v manifestu.
 
 Tato pravidla objednávání se mohou změnit.
+
+> **Poznámka:** Při vytvoření nového [dynamického zdroje dat](#data-source-templates-for-dynamically-created-contracts) se zpracovatelé definovaní pro dynamické zdroje dat začnou zpracovávat až po zpracování všech existujících zpracovatelů zdrojů dat a budou se opakovat ve stejném pořadí, kdykoli budou spuštěny.
+
+### SpecVersion Releases
+
+| Verze | Poznámky vydání                                                                                                                                                        |
+|:-----:| ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1.2.0 | Added support for [Indexed Argument Filtering](/#indexed-argument-filters--topic-filters) & declared `eth_call`                                                        |
+| 1.1.0 | Supports [Timeseries & Aggregations](#timeseries-and-aggregations). Added support for type `Int8` for `id`.                                                            |
+| 1.0.0 | Supports [`indexerHints`](/developing/creating-a-subgraph/#indexer-hints) feature to prune subgraphs                                                                   |
+| 0.0.9 | Supports `endBlock` feature                                                                                                                                            |
+| 0.0.8 | Added support for polling [Block Handlers](developing/creating-a-subgraph/#polling-filter) and [Initialisation Handlers](developing/creating-a-subgraph/#once-filter). |
+| 0.0.7 | Added support for [File Data Sources](developing/creating-a-subgraph/#file-data-sources).                                                                              |
+| 0.0.6 | Supports fast [Proof of Indexing](/network/indexing/#what-is-a-proof-of-indexing-poi) calculation variant.                                                             |
+| 0.0.5 | Added support for event handlers having access to transaction receipts.                                                                                                |
+| 0.0.4 | Added support for managing subgraph features.                                                                                                                          |
 
 ### Získání ABI
 
@@ -248,15 +272,15 @@ U některých typů entit je `id` vytvořeno z id dvou jiných entit; to je mož
 
 V našem GraphQL API podporujeme následující skaláry:
 
-| Typ | Popis |
-| --- | --- |
-| `Bajtů` | Pole bajtů reprezentované jako hexadecimální řetězec. Běžně se používá pro hashe a adresy Ethereum. |
-| `Řetězec` | Skalár pro hodnoty `řetězce`. Nulové znaky nejsou podporovány a jsou automaticky odstraněny. |
-| `Boolean` | Skalár pro hodnoty `boolean`. |
-| `Int` | Specifikace GraphQL definuje `Int` na velikost 32 bajtů. |
-| `Int8` | Celé číslo se znaménkem o velikosti 8 bajtů, známé také jako 64bitové celé číslo se znaménkem, může uchovávat hodnoty v rozsahu od -9 223 372 036 854 775 808 do 9 223 372 036 854 775 807. Přednostně se používá k reprezentaci `i64` z ethereum. |
-| `BigInt` | Velká celá čísla. Používá se pro typy `uint32`, `int64`, `uint64`, ..., `uint256` společnosti Ethereum. Poznámka: Vše pod `uint32`, jako například `int32`, `uint24` nebo `int8`, je reprezentováno jako `i32`. |
-| `BigDecimal` | `BigDecimal` Desetinná čísla s vysokou přesností reprezentovaná jako signifikand a exponent. Rozsah exponentu je od -6143 do +6144. Zaokrouhleno na 34 významných číslic. |
+| Typ          | Popis                                                                                                                                                                                                                                              |
+| ------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Bajtů`      | Pole bajtů reprezentované jako hexadecimální řetězec. Běžně se používá pro hashe a adresy Ethereum.                                                                                                                                                |
+| `Řetězec`    | Skalár pro hodnoty `řetězce`. Nulové znaky nejsou podporovány a jsou automaticky odstraněny.                                                                                                                                                       |
+| `Boolean`    | Skalár pro hodnoty `boolean`.                                                                                                                                                                                                                      |
+| `Int`        | Specifikace GraphQL definuje `Int` na velikost 32 bajtů.                                                                                                                                                                                           |
+| `Int8`       | Celé číslo se znaménkem o velikosti 8 bajtů, známé také jako 64bitové celé číslo se znaménkem, může uchovávat hodnoty v rozsahu od -9 223 372 036 854 775 808 do 9 223 372 036 854 775 807. Přednostně se používá k reprezentaci `i64` z ethereum. |
+| `BigInt`     | Velká celá čísla. Používá se pro typy `uint32`, `int64`, `uint64`, ..., `uint256` společnosti Ethereum. Poznámka: Vše pod `uint32`, jako například `int32`, `uint24` nebo `int8`, je reprezentováno jako `i32`.                                    |
+| `BigDecimal` | `BigDecimal` Desetinná čísla s vysokou přesností reprezentovaná jako signifikand a exponent. Rozsah exponentu je od -6143 do +6144. Zaokrouhleno na 34 významných číslic.                                                                          |
 
 #### Enums
 
@@ -398,11 +422,11 @@ Tento propracovanější způsob ukládání vztahů mnoho-více vede k menším
 
 #### Přidání komentářů do schématu
 
-Podle specifikace GraphQL lze komentáře přidávat nad atributy entit schématu pomocí dvojitých uvozovek `""`. To je znázorněno v příkladu níže:
+As per GraphQL spec, comments can be added above schema entity attributes using the hash symble `#`. This is illustrated in the example below:
 
 ```graphql
 type MyFirstEntity @entity {
-  "unique identifier and primary key of the entity"
+  # unique identifier and primary key of the entity
   id: Bytes!
   address: Bytes!
 }
@@ -525,13 +549,32 @@ Druhá obslužná rutina se pokusí načíst existující `Gravatar` z úložiš
 
 ### Doporučené IDa pro vytváření nových Entity
 
-Každá entita musí mít `id`, které je jedinečné mezi všemi entitami stejného typu. Hodnota `id` entity je nastavena při jejím vytvoření. Níže jsou uvedeny některé doporučené hodnoty `id`, které je třeba vzít v úvahu při vytváření nových entit. POZNÁMKA: Hodnota `id` musí být `řetězec`.
+Důrazně se doporučuje používat typ `Bajtes` pro pole `id` a typ `String` používat pouze pro atributy, které skutečně obsahují lidsky čitelný text, například název tokenu. Níže jsou uvedeny některé doporučené hodnoty `id`, které je třeba zvážit při vytváření nových entit.
 
-- `event.params.id.toHex()`
-- `event.transaction.from.toHex()`
-- `event.transaction.hash.toHex() + "-" + event.logIndex.toString()`
+- `transfer.id = event.transaction.hash`
 
-Poskytujeme knihovnu [Graf Typescript Library](https://github.com/graphprotocol/graph-ts), která obsahuje nástroje pro interakci s úložištěm Graf Uzel a usnadnění pro práci s daty a entitami chytrých smluv. Tuto knihovnu můžete používat ve svých mapováních importem `@graphprotocol/graph-ts` v souboru `mapping.ts`.
+- `let id = event.transaction.hash.concatI32(event.logIndex.toI32())`
+
+- Pro entity, které ukládají agregovaná data, např. denní objemy obchodů, obvykle obsahuje `id` číslo dne, Zde je výhodné použít `Bytes` jako `id`. Určení `id` by vypadalo takto
+
+```typescript
+let dayID = event.block.timestamp.toI32() / 86400
+let id = Bytes.fromI32(dayID)
+```
+
+- Převod konstantních adres na `Bajty`.
+
+`const id = Bytes.fromHexString('0xdead...beef')`
+
+There is a [Graph Typescript Library](https://github.com/graphprotocol/graph-tooling/tree/main/packages/ts) which contains utilities for interacting with the Graph Node store and conveniences for handling smart contract data and entities. It can be imported into `mapping.ts` from `@graphprotocol/graph-ts`.
+
+### Zpracování entit se stejnými ID
+
+Pokud při vytváření a ukládání nové entity již existuje entita se stejným ID, jsou při slučování vždy upřednostněny vlastnosti nové entity. To znamená, že existující entita bude aktualizována hodnotami z nové entity.
+
+Pokud je pro pole v nové entitě se stejným ID záměrně nastavena nulová hodnota, bude stávající entita aktualizována s nulovou hodnotou.
+
+Pokud není pro pole v nové entitě se stejným ID nastavena žádná hodnota, bude pole rovněž nulové.
 
 ## Generování kódu
 
@@ -573,7 +616,7 @@ import { Gravatar } from '../generated/schema'
 
 > **Poznámka:** Po každé změně schématu jazyka GraphQL nebo ABI obsažených v manifestu je nutné provést generování kódu znovu. Musí být také provedeno alespoň jednou před sestavením nebo nasazením podgrafu.
 
-Generování kódu nekontroluje váš mapovací kód v souboru `src/mapping.ts`. Pokud jej chcete zkontrolovat před pokusem o nasazení podgrafu do Graf Explorer, můžete spustit `yarn build` a opravit případné syntaktické chyby, které by kompilátor jazyka TypeScript mohl najít.
+Code generation does not check your mapping code in `src/mapping.ts`. If you want to check that before trying to deploy your subgraph to Graph Explorer, you can run `yarn build` and fix any syntax errors that the TypeScript compiler might find.
 
 ## Šablony zdrojů dat
 
@@ -659,7 +702,7 @@ export function handleNewExchange(event: NewExchange): void {
 ```
 
 > **Poznámka:** Nový zdroj dat bude zpracovávat pouze volání a události pro blok, ve kterém byl vytvořen, a všechny následující bloky, ale nebude zpracovávat historická data, tj. data obsažená v předchozích blocích.
->
+> 
 > Pokud předchozí bloky obsahují data relevantní pro nový zdroj dat, je nejlepší tato data indexovat načtením aktuálního stavu smlouvy a vytvořením entit reprezentujících tento stav v době vytvoření nového zdroje dat.
 
 ### Kontext zdroje dat
@@ -716,10 +759,218 @@ dataSources:
 ```
 
 > **Poznámka:** Blok pro vytvoření smlouvy lze rychle vyhledat v Etherscan:
->
+> 
 > 1. Vyhledejte smlouvu zadáním její adresy do vyhledávacího řádku.
 > 2. Klikněte na hash transakce vytvoření v sekci `Tvůrce smlouvy`.
 > 3. Načtěte stránku s podrobnostmi o transakci, kde najdete počáteční blok pro danou smlouvu.
+
+## Tipy indexátor
+
+Nastavení `indexerHints` v manifestu podgrafu poskytuje směrnice pro indexátory ohledně zpracování a správy podgrafu. Ovlivňuje provozní rozhodnutí v oblasti manipulace s daty, strategií indexace a optimalizací. V současné době obsahuje možnost `prune` pro správu uchovávání nebo odstraňování historických dat.
+
+> This feature is available from `specVersion: 1.0.0`
+
+### Prořezávat
+
+`indexerHints.prune`: Definuje zachování historických blokových dat pro podgraf. Mezi možnosti patří:
+
+1. `"nikdy"`: Žádné ořezávání historických dat; zachovává celou historii.
+2. `"auto"`: Zachovává minimální potřebnou historii nastavenou indexátorem, čímž optimalizuje výkon dotazu.
+3. Konkrétní číslo: Nastaví vlastní limit počtu historických bloků, které se mají zachovat.
+
+```
+ indexerHints:
+  prune: auto
+```
+
+> The term "history" in this context of subgraphs is about storing data that reflects the old states of mutable entities.
+
+History as of a given block is required for:
+
+- [Time travel queries](/querying/graphql-api/#time-travel-queries), which enable querying the past states of these entities at specific blocks throughout the subgraph's history
+- Using the subgraph as a [graft base](/developing/creating-a-subgraph/#grafting-onto-existing-subgraphs) in another subgraph, at that block
+- Rewinding the subgraph back to that block
+
+If historical data as of the block has been pruned, the above capabilities will not be available.
+
+> Použití `"auto"` se obecně doporučuje, protože maximalizuje výkon dotazu a je dostačující pro většinu uživatelů, kteří nevyžadují přístup k rozsáhlým historickým datům.
+
+U podgrafů využívajících [dotazy na cestování v čase](/querying/graphql-api/#time-travel-queries) je vhodné buď nastavit určitý počet bloků pro uchovávání historických dat, nebo použít `prune: never` pro uchování všech historických stavů entit. Níže jsou uvedeny příklady, jak obě možnosti nakonfigurovat v nastavení podgrafu:
+
+Uchování určitého množství historických dat:
+
+```
+ indexerHints:
+  prune: 1000 # Nahraďte 1000 požadovaným počtem bloků, které chcete zachovat
+```
+
+Zachování kompletní historie entitních států:
+
+```
+indexerHints:
+  prune: never
+```
+
+You can check the earliest block (with historical state) for a given subgraph by querying the [Indexing Status API](/deploying/deploying-a-subgraph-to-hosted/#checking-subgraph-health):
+
+```
+{
+  indexingStatuses(subgraphs: ["Qm..."]) {
+    subgraph
+    synced
+    health
+    chains {
+      earliestBlock {
+        number
+      }
+      latestBlock {
+        number
+      }
+      chainHeadBlock { number }
+    }
+  }
+}
+```
+
+Note that the `earliestBlock` is the earliest block with historical data, which will be more recent than the `startBlock` specified in the manifest, if the subgraph has been pruned.
+
+## Event Handlers
+
+Event handlers in a subgraph react to specific events emitted by smart contracts on the blockchain and trigger handlers defined in the subgraph's manifest. This enables subgraphs to process and store event data according to defined logic.
+
+### Defining an Event Handler
+
+An event handler is declared within a data source in the subgraph's YAML configuration. It specifies which events to listen for and the corresponding function to execute when those events are detected.
+
+```yaml
+dataSources:
+  - kind: ethereum/contract
+    name: Gravity
+    network: dev
+    source:
+      address: '0x731a10897d267e19b34503ad902d0a29173ba4b1'
+      abi: Gravity
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.6
+      language: wasm/assemblyscript
+      entities:
+        - Gravatar
+        - Transaction
+      abis:
+        - name: Gravity
+          file: ./abis/Gravity.json
+      eventHandlers:
+        - event: Approval(address,address,uint256)
+          handler: handleApproval
+        - event: Transfer(address,address,uint256)
+          handler: handleTransfer
+          topic1: ['0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045', '0xc8dA6BF26964aF9D7eEd9e03E53415D37aA96325'] # Optional topic filter which filters only events with the specified topic.
+```
+
+### Indexed Argument Filters / Topic Filters
+
+> **Requires `specVersion` >= 1.2.0**
+
+Topic filters, also known as indexed argument filters, are a powerful feature in subgraphs that allow for precise filtering of blockchain events based on the values of their indexed arguments. These filters are particularly useful for isolating specific events of interest from the vast stream of events on the blockchain, enabling subgraphs to operate more efficiently by focusing only on relevant data. This can be incredibly useful for usecases like creating personal subgraphs that track specific addresses and their interactions with various smart contracts on the blockchain.
+
+#### How Topic Filters Work
+
+When a smart contract emits an event, any arguments that are marked as indexed can be used as filters in a subgraph's manifest. This allows the subgraph to listen selectively for events that match these indexed arguments. The event's first indexed argument corresponds to `topic1`, the second to `topic2`, and so on, up to `topic3`, since the Ethereum Virtual Machine (EVM) allows up to three indexed arguments per event.
+
+```solidity
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
+
+contract Token {
+    // Event declaration with indexed parameters for addresses
+    event Transfer(address indexed from, address indexed to, uint256 value);
+
+    // Function to simulate transferring tokens
+    function transfer(address to, uint256 value) public {
+        // Emitting the Transfer event with from, to, and value
+        emit Transfer(msg.sender, to, value);
+    }
+}
+```
+
+In this example:
+
+- The `Transfer` event is used to log transactions of tokens between addresses.
+- The `from` and `to` parameters are indexed, which allows event listeners to filter and monitor transfers involving specific addresses.
+- The `transfer` function is a simple representation of a token transfer action, emitting the Transfer event whenever it is called.
+
+#### Configuration in Subgraphs
+
+Topic filters are defined directly within the event handler configuration in the subgraph manifest. Here is how they are configured:
+
+```yaml
+eventHandlers:
+  - event: SomeEvent(indexed uint256, indexed address, indexed uint256)
+    handler: handleSomeEvent
+    topic1: ['0xValue1', '0xValue2']
+    topic2: ['0xAddress1', '0xAddress2']
+    topic3: ['0xValue3']
+```
+
+In this setup:
+
+- `topic1` corresponds to the first indexed argument of the event, `topic2` to the second, and `topic3` to the third.
+- Each topic can have one or more values, and an event is only processed if it matches one of the values in each specified topic.
+
+##### Filter Logic
+
+- Within a Single Topic: The logic functions as an OR condition. The event will be processed if it matches any one of the listed values in a given topic.
+- Between Different Topics: The logic functions as an AND condition. An event must satisfy all specified conditions across different topics to trigger the associated handler.
+
+### Example 1: Tracking a Single Address's Transfer Transactions
+
+```yaml
+eventHandlers:
+  - event: Transfer(indexed address,indexed address,uint256)
+    handler: handleTransfer
+    topic1: ['0xSpecificAddress']
+  - event: Transfer(indexed address,indexed address,uint256)
+    handler: handleTransfer
+    topic2: ['0xSpecificAddress']
+```
+
+In this configuration:
+
+- `topic1` filters Transfer events based on the from address, and `topic2` filters based on the to address.
+- The subgraph will index transactions where the specified address is involved either as a sender or a receiver.
+
+### Example 2: Tracking Direct Transfers from Address A to Address B
+
+```yaml
+eventHandlers:
+  - event: Transfer(indexed address,indexed address,uint256)
+    handler: handleDirectedTransfer
+    topic1: ['0xAddressA'] # Sender Address
+    topic2: ['0xAddressB'] # Receiver Address
+```
+
+In this configuration:
+
+- `topic1` is configured to filter `Transfer` events where `0xAddressA` is the sender.
+- `topic2` is configured to filter `Transfer` events where `0xAddressB` is the receiver.
+- The subgraph will only index transactions that occur directly from `0xAddressA` to `0xAddressB`.
+
+### Example 3: Tracking Transactions in Either Direction Between Two Addresses
+
+```
+eventHandlers:
+  - event: Transfer(indexed address,indexed address,uint256)
+    handler: handleTransferToOrFrom
+    topic1: ["0xAddressA"]  # Sender or Receiver Address
+    topic2: ["0xAddressB"]  # Sender or Receiver Address
+```
+
+In this configuration:
+
+- `topic1` is configured to filter `Transfer` events where `0xAddressA` is either the sender or the receiver.
+- `topic2` is configured to filter `Transfer` events where `0xAddressB` is either the sender or the receiver.
+- The subgraph will index transactions that occur in either direction between `0xAddressA` and `0xAddressB`, allowing for comprehensive monitoring of interactions involving both addresses.
 
 ## Zpracovatelé hovorů
 
@@ -904,16 +1155,16 @@ Uvnitř obslužné funkce je příjem přístupný v poli `Event.receipt`. Pokud
 
 ## Experimentální funkce
 
-Starting from `specVersion` `0.0.4`, subgraph features must be explicitly declared in the `features` section at the top level of the manifest file, using their `camelCase` name, as listed in the table below:
+Počínaje `specVersion` `0.0.4` musí být funkce podgrafů explicitně deklarovány v sekci `features` na nejvyšší úrovni souboru manifestu s použitím jejich názvu `camelCase`, jak je uvedeno v následující tabulce:
 
-| Feature                                                   | Name                                                |
-| --------------------------------------------------------- | --------------------------------------------------- |
-| [Nefatální](#non-fatal-errors)                            | `nonFatalErrors`                                    |
-| [Full-text Search](#defining-fulltext-search-fields)      | `fullTextSearch`                                    |
-| [Roubování](#grafting-onto-existing-subgraphs)            | `grafting`                                          |
-| [IPFS on Ethereum Contracts](#ipfs-on-ethereum-contracts) | `ipfsOnEthereumContracts` or `nonDeterministicIpfs` |
+| Vlastnosti                                                  | Název                                               |
+| ----------------------------------------------------------- | --------------------------------------------------- |
+| [Nefatální](#non-fatal-errors)                              | `nonFatalErrors`                                    |
+| [Fulltextové vyhledávání](#defining-fulltext-search-fields) | `fullTextSearch`                                    |
+| [Štěpování](#grafting-onto-existing-subgraphs)              | `štěpování`                                         |
+| [IPFS na smlouvách Ethereum](#ipfs-on-ethereum-contracts)   | `ipfsOnEthereumContracts` or `nonDeterministicIpfs` |
 
-For instance, if a subgraph uses the **Full-Text Search** and the **Non-fatal Errors** features, the `features` field in the manifest should be:
+Pokud například dílčí graf používá funkce **Plnotextové vyhledávání** a **Nefatální chyby**, pole ` Vlastnosti ` v manifestu by mělo být:
 
 ```yaml
 specVersion: 0.0.4
@@ -924,27 +1175,27 @@ features:
 dataSources: ...
 ```
 
-Note that using a feature without declaring it will incur a **validation error** during subgraph deployment, but no errors will occur if a feature is declared but not used.
+Všimněte si, že použití funkce bez její deklarace způsobí při nasazení podgraf chybu **validace**, ale pokud je funkce deklarována, ale není použita, k žádné chybě nedojde.
 
-### IPFS on Ethereum Contracts
+### IPFS na smlouvách Ethereum
 
-A common use case for combining IPFS with Ethereum is to store data on IPFS that would be too expensive to maintain on-chain, and reference the IPFS hash in Ethereum contracts.
+Běžným případem použití kombinace IPFS a Ethereum je ukládání dat na IPFS, jejichž údržba v řetězci by byla příliš nákladná, a odkazování na hash IPFS v kontrakty Ethereum.
 
-Given such IPFS hashes, subgraphs can read the corresponding files from IPFS using `ipfs.cat` and `ipfs.map`. To do this reliably, it is required that these files are pinned to an IPFS node with high availability, so that the [hosted service](https://thegraph.com/hosted-service) IPFS node can find them during indexing.
+Vzhledem k těmto hashům IPFS mohou dílčí grafy číst odpovídající soubory ze IPFS pomocí `ipfs.cat` a `ipfs.map`. Aby to bylo možné spolehlivě provést, je nutné, aby tyto soubory byly připnuty k uzlu IPFS s vysokou dostupností, aby je uzel [hostované služby](https://thegraph.com/hosted-service) IPFS mohl při indexování najít.
 
-> **Note:** The Graph Network does not yet support `ipfs.cat` and `ipfs.map`, and developers should not deploy subgraphs using that functionality to the network via the Studio.
+> **Poznámka:** Síť grafů zatím nepodporuje `ipfs.cat` a `ipfs.map` a vývojáři by neměli do sítě nasazovat podgrafy využívající tyto funkce prostřednictvím Studio.
 
-> **[Feature Management](#experimental-features):** `ipfsOnEthereumContracts` must be declared under `features` in the subgraph manifest. For non EVM chains, the `nonDeterministicIpfs` alias can also be used for the same purpose.
+> **[Správa funkcí](#experimental-features):** `ipfsOnEthereumContracts` musí být deklarováno v podgraf manifestu pod `funkcemi`. Pro řetězce, které nejsou EVM, lze ke stejnému účelu použít také alias `nonDeterministicIpfs`.
 
-When running a local Graph Node, the `GRAPH_ALLOW_NON_DETERMINISTIC_IPFS` environment variable must be set in order to index subgraphs using this experimental functionality.
+Při spuštění místního uzlu Graf Uzel musí být nastavena proměnná prostředí `GRAPH_ALLOW_NON_DETERMINISTIC_IPFS`, aby bylo možné indexovat podgrafy pomocí této í funkce.
 
 ### Nefatální
 
-Indexing errors on already synced subgraphs will, by default, cause the subgraph to fail and stop syncing. Subgraphs can alternatively be configured to continue syncing in the presence of errors, by ignoring the changes made by the handler which provoked the error. This gives subgraph authors time to correct their subgraphs while queries continue to be served against the latest block, though the results might be inconsistent due to the bug that caused the error. Note that some errors are still always fatal. To be non-fatal, the error must be known to be deterministic.
+Chyby indexování v již synchronizovaných podgrafech ve výchozím nastavení způsobí selhání podgrafy a zastavení synchronizace. Podgrafy lze alternativně nakonfigurovat tak, aby pokračovaly v synchronizaci i při přítomnosti chyb, a to ignorováním změn provedených obslužnou rutinou, která chybu vyvolala. To dává autorům podgrafů čas na opravu jejich podgrafů, zatímco dotazy jsou nadále obsluhovány proti poslednímu bloku, ačkoli výsledky mohou být nekonzistentní kvůli chybě, která chybu způsobila. Všimněte si, že některé chyby jsou stále fatální. Aby chyba nebyla fatální, musí být známo, že je deterministická.
 
-> **Note:** The Graph Network does not yet support non-fatal errors, and developers should not deploy subgraphs using that functionality to the network via the Studio.
+> **Poznámka:** Síť grafů zatím nepodporuje nefatální chyby a vývojáři by neměli do sítě nasazovat podgrafy využívající tuto funkci prostřednictvím Studio.
 
-Enabling non-fatal errors requires setting the following feature flag on the subgraph manifest:
+Povolení nefatálních chyb vyžaduje nastavení následujícího příznaku funkce v manifestu podgraf:
 
 ```yaml
 specVersion: 0.0.4
@@ -954,7 +1205,7 @@ features:
     ...
 ```
 
-The query must also opt-in to querying data with potential inconsistencies through the `subgraphError` argument. It is also recommended to query `_meta` to check if the subgraph has skipped over errors, as in the example:
+Dotaz se také musí přihlásit k dotazování na data s potenciálními nekonzistencemi prostřednictvím argumentu `subgraphError`. Doporučuje se také dotazovat se pomocí `_meta`, aby bylo možné zkontrolovat, zda podgraf nepřeskočil chyby, jako v příkladu:
 
 ```graphql
 foos(first: 100, subgraphError: allow) {
@@ -966,7 +1217,7 @@ _meta {
 }
 ```
 
-If the subgraph encounters an error, that query will return both the data and a graphql error with the message `"indexing_error"`, as in this example response:
+Pokud podgraf narazí na chybu, vrátí tento dotaz jak data, tak chybu graphql se zprávou `"indexing_error"`, jako v tomto příkladu odpovědi:
 
 ```graphql
 "data": {
@@ -986,13 +1237,13 @@ If the subgraph encounters an error, that query will return both the data and a 
 ]
 ```
 
-### Grafting onto Existing Subgraphs
+### Roubování na existující podgrafy
 
-> **Note:** it is not recommended to use grafting when initially upgrading to The Graph Network. Learn more [here](/cookbook/grafting/#important-note-on-grafting-when-upgrading-to-the-network).
+> **Poznámka:** při počátečním upgrade na Síť graf se nedoporučuje používat roubování. Více informací se dozvíte [zde](/cookbook/grafting/#important-note-on-grafting-when-upgrading-to-the-network).
 
-When a subgraph is first deployed, it starts indexing events at the genesis block of the corresponding chain (or at the `startBlock` defined with each data source) In some circumstances; it is beneficial to reuse the data from an existing subgraph and start indexing at a much later block. This mode of indexing is called _Grafting_. Grafting is, for example, useful during development to get past simple errors in the mappings quickly or to temporarily get an existing subgraph working again after it has failed.
+Při prvním nasazení podgrafu se události začnou indexovat v bloku geneze příslušného řetězce (nebo v bloku `startBlock` definovaném u každého zdroje dat). Za určitých okolností je výhodné znovu použít data z existujícího podgrafu a začít indexovat v mnohem pozdějším bloku. Tento způsob indexování se nazývá _roubování_. roubování je užitečné například během vývoje, abyste se rychle dostali přes jednoduché chyby v mapování nebo abyste dočasně znovu zprovoznili existující podgraf poté, co selhal.
 
-A subgraph is grafted onto a base subgraph when the subgraph manifest in `subgraph.yaml` contains a `graft` block at the top-level:
+Podgraf je naroubován na základní podgraf, pokud manifest podgrafu v souboru `subgraph.yaml` obsahuje blok `graft` na nejvyšší úrovni:
 
 ```yaml
 description: ...
@@ -1001,49 +1252,49 @@ graft:
   block: 7345624 # Block number
 ```
 
-When a subgraph whose manifest contains a `graft` block is deployed, Graph Node will copy the data of the `base` subgraph up to and including the given `block` and then continue indexing the new subgraph from that block on. The base subgraph must exist on the target Graph Node instance and must have indexed up to at least the given block. Because of this restriction, grafting should only be used during development or during an emergency to speed up producing an equivalent non-grafted subgraph.
+Když je nasazen podgraf, jehož manifest obsahuje blok `graft`, Graf Uzel zkopíruje data `základního` podgrafu až do daného `bloku` včetně a poté pokračujte v indexování nového podgrafu od tohoto bloku dále. Základní podgraf musí existovat v cílové instanci Graph Node a musí být indexován alespoň do daného bloku. Kvůli tomuto omezení by se roubování mělo používat pouze během vývoje nebo během nouzového stavu, aby se urychlila tvorba ekvivalentního neroubovaného podgrafu.
 
-Because grafting copies rather than indexes base data, it is much quicker to get the subgraph to the desired block than indexing from scratch, though the initial data copy can still take several hours for very large subgraphs. While the grafted subgraph is being initialized, the Graph Node will log information about the entity types that have already been copied.
+Protože se při roubování základní data spíše kopírují než indexují, je mnohem rychlejší dostat podgraf do požadovaného bloku než při indexování od nuly, i když počáteční kopírování dat může u velmi velkých podgrafů trvat i několik hodin. Během inicializace roubovaného podgrafu bude uzel Graf Uzel zaznamenávat informace o typů entit, které již byly zkopírovány.
 
-The grafted subgraph can use a GraphQL schema that is not identical to the one of the base subgraph, but merely compatible with it. It has to be a valid subgraph schema in its own right, but may deviate from the base subgraph's schema in the following ways:
+Roubované podgraf může používat schéma GraphQL, které není totožné se schématem základního podgrafu, ale je s ním pouze kompatibilní. Musí to být platné schéma podgrafu jako takové, ale může se od schématu základního podgrafu odchýlit následujícími způsoby:
 
-- It adds or removes entity types
-- It removes attributes from entity types
-- It adds nullable attributes to entity types
-- It turns non-nullable attributes into nullable attributes
-- It adds values to enums
-- It adds or removes interfaces
-- It changes for which entity types an interface is implemented
+- Přidává nebo odebírá typy entit
+- Odstraňuje atributy z typů entit
+- Přidává nulovatelné atributy k typům entit
+- Mění nenulovatelné atributy na nulovatelné atributy
+- Přidává hodnoty de enums
+- Přidává nebo odebírá rozhraní
+- Mění se, pro které typy entit je rozhraní implementováno
 
-> **[Feature Management](#experimental-features):** `grafting` must be declared under `features` in the subgraph manifest.
+> **[Feature Management](#experimental-features):** `grafting` musí být deklarováno v `features` v manifestu podgrafů.
 
-## File Data Sources
+## Zdroje dat souborů
 
-File data sources are a new subgraph functionality for accessing off-chain data during indexing in a robust, extendable way. File data sources support fetching files from IPFS and from Arweave.
+Zdroje dat souborů jsou novou funkcí podgrafu pro přístup k datům mimo řetězec během indexování robustním a rozšiřitelným způsobem. Zdroje souborových dat podporují načítání souborů ze systému IPFS a z Arweave.
 
-> This also lays the groundwork for deterministic indexing of off-chain data, as well as the potential introduction of arbitrary HTTP-sourced data.
+> To také vytváří základ pro deterministické indexování dat mimo řetězec a potenciální zavedení libovolných dat ze zdrojů HTTP.
 
 ### Přehled
 
-Rather than fetching files "in line" during handler exectuion, this introduces templates which can be spawned as new data sources for a given file identifier. These new data sources fetch the files, retrying if they are unsuccessful, running a dedicated handler when the file is found.
+Namísto načítání souborů "in line" během provádění obslužných rutin se zavádějí šablony, které lze spouštět jako nové zdroje dat pro daný identifikátor souboru. Tyto nové zdroje dat načítají soubory a v případě neúspěchu se pokoušejí o opětovné načtení a po nalezení souboru spustí vyhrazenou obslužnou rutinu.
 
-This is similar to the [existing data source templates](https://thegraph.com/docs/en/developing/creating-a-subgraph/#data-source-templates), which are used to dynamically create new chain-based data sources.
+This is similar to the [existing data source templates](/developing/creating-a-subgraph/#data-source-templates), which are used to dynamically create new chain-based data sources.
 
-> This replaces the existing `ipfs.cat` API
+> Nahrazuje stávající API `ipfs.cat`
 
-### Upgrade guide
+### Průvodce upgradem
 
-#### Update `graph-ts` and `graph-cli`
+#### Aktualizace `graph-ts` a `graph-cli`
 
-File data sources requires graph-ts >=0.29.0 and graph-cli >=0.33.1
+Souborové zdroje dat vyžadují graph-ts >=0.29.0 a graph-cli >=0.33.1
 
-#### Add a new entity type which will be updated when files are found
+#### Přidání nového typu entity, který bude aktualizován při nalezení souborů
 
-File data sources cannot access or update chain-based entities, but must update file specific entities.
+Zdroje dat souborů nemohou přistupovat k entitám založeným na řetězci ani je aktualizovat, ale musí aktualizovat entity specifické pro soubor.
 
-This may mean splitting out fields from existing entities into separate entities, linked together.
+To může znamenat rozdělení polí ze stávajících entit do samostatných entit, které budou vzájemně propojeny.
 
-Original combined entity:
+Původní kombinovaný entita:
 
 ```graphql
 type Token @entity {
@@ -1061,7 +1312,7 @@ type Token @entity {
 }
 ```
 
-New, split entity:
+Nové, rozdělená entit:
 
 ```graphql
 type Token @entity {
@@ -1082,13 +1333,13 @@ type TokenMetadata @entity {
 }
 ```
 
-If the relationship is 1:1 between the parent entity and the resulting file data source entity, the simplest pattern is to link the parent entity to a resulting file entity by using the IPFS CID as the lookup. Get in touch on Discord if you are having difficulty modelling your new file-based entities!
+Pokud je vztah mezi nadřazenou entitou a entitou výsledného zdroje dat souboru 1:1, je nejjednodušším vzorem propojení nadřazené entity s entitou výsledného souboru pomocí CID IPFS jako vyhledávacího prvku. Pokud máte potíže s modelováním nových entit založených na souborech, ozvěte se na Discord!
 
-> You can use [nested filters](https://thegraph.com/docs/en/querying/graphql-api/#example-for-nested-entity-filtering) to filter parent entities on the basis of these nested entities.
+> You can use [nested filters](/querying/graphql-api/#example-for-nested-entity-filtering) to filter parent entities on the basis of these nested entities.
 
-#### Add a new templated data source with `kind: file/ipfs` or `kind: file/arweave`
+#### Přidání nového šablony zdroje dat s `druhem: file/ipfs` nebo `druhem: file/arweave`
 
-This is the data source which will be spawned when a file of interest is identified.
+Jedná se o zdroj dat, který bude vytvořen při identifikaci souboru zájmu.
 
 ```yaml
 templates:
@@ -1106,21 +1357,21 @@ templates:
           file: ./abis/Token.json
 ```
 
-> Currently `abis` are required, though it is not possible to call contracts from within file data sources
+> V současné době jsou vyžadovány `abis`, ačkoli není možné volat smlouvy ze zdrojů dat souborů
 
-The file data source must specifically mention all the entity types which it will interact with under `entities`. See [limitations](#Limitations) for more details.
+The file data source must specifically mention all the entity types which it will interact with under `entities`. See [limitations](#limitations) for more details.
 
-#### Create a new handler to process files
+#### Vytvoření nové obslužné pro zpracování souborů
 
-This handler should accept one `Bytes` parameter, which will be the contents of the file, when it is found, which can then be processed. This will often be a JSON file, which can be processed with `graph-ts` helpers ([documentation](https://thegraph.com/docs/en/developing/assemblyscript-api/#json-api)).
+This handler should accept one `Bytes` parameter, which will be the contents of the file, when it is found, which can then be processed. This will often be a JSON file, which can be processed with `graph-ts` helpers ([documentation](/developing/assemblyscript-api/#json-api)).
 
-The CID of the file as a readable string can be accessed via the `dataSource` as follows:
+CID souboru jako čitelný řetězec lze získat prostřednictvím `dataSource` následujícím způsobem:
 
 ```typescript
 const cid = dataSource.stringParam()
 ```
 
-Example handler:
+Příklad
 
 ```typescript
 import { json, Bytes, dataSource } from '@graphprotocol/graph-ts'
@@ -1147,16 +1398,16 @@ export function handleMetadata(content: Bytes): void {
 }
 ```
 
-#### Spawn file data sources when required
+#### Spawn zdrojů dat souborů v případě potřeby
 
-You can now create file data sources during execution of chain-based handlers:
+Nyní můžete vytvářet zdroje dat souborů během provádění obslužných založených na řetězci:
 
-- Import the template from the auto-generated `templates`
-- call `TemplateName.create(cid: string)` from within a mapping, where the cid is a valid content identifier for IPFS or Arweave
+- Import šablony z automaticky generovaných `šablon`
+- volání `TemplateName.create(cid: string)` z mapování, kde cid je platný identifikátor obsahu pro IPFS nebo Arweave
 
-For IPFS, Graph Node supports [v0 and v1 content identifiers](https://docs.ipfs.tech/concepts/content-addressing/), and content identifers with directories (e.g. `bafyreighykzv2we26wfrbzkcdw37sbrby4upq7ae3aqobbq7i4er3tnxci/metadata.json`).
+Pro systém IPFS podporuje Graf Uzel identifikátory obsahu [v0 a v1](https://docs.ipfs.tech/concepts/content-addressing/) a identifikátory obsahu s adresáři (např. `bafyreighykzv2we26wfrbzkcdw37sbrby4upq7ae3aqobbq7i4er3tnxci/metadata.json`).
 
-For Arweave, as of version 0.33.0 Graph Node can fetch files stored on Arweave based on their [transaction ID](https://docs.arweave.org/developers/server/http-api#transactions) from an Arweave gateway ([example file](https://bdxujjl5ev5eerd5ouhhs6o4kjrs4g6hqstzlci5pf6vhxezkgaa.arweave.net/CO9EpX0lekJEfXUOeXncUmMuG8eEp5WJHXl9U9yZUYA)). Arweave supports transactions uploaded via Bundlr, and Graph Node can also fetch files based on [Bundlr manifests](https://docs.bundlr.network/learn/gateways#indexing).
+For Arweave, as of version 0.33.0 Graph Node can fetch files stored on Arweave based on their [transaction ID](https://docs.arweave.org/developers/arweave-node-server/http-api#transactions) from an Arweave gateway ([example file](https://bdxujjl5ev5eerd5ouhhs6o4kjrs4g6hqstzlci5pf6vhxezkgaa.arweave.net/CO9EpX0lekJEfXUOeXncUmMuG8eEp5WJHXl9U9yZUYA)). Arweave supports transactions uploaded via Irys (previously Bundlr), and Graph Node can also fetch files based on [Irys manifests](https://docs.irys.xyz/overview/gateways#indexing).
 
 Příklad:
 
@@ -1187,50 +1438,112 @@ export function handleTransfer(event: TransferEvent): void {
 }
 ```
 
-This will create a new file data source, which will poll Graph Node's configured IPFS or Arweave endpoint, retrying if it is not found. When the file is found, the file data source handler will be executed.
+Tím se vytvoří nový zdroj dat souborů, který bude dotazovat nakonfigurovaný koncový bod IPFS nebo Arweave grafického uzlu a v případě nenalezení se pokusí o opakování. Když je soubor nalezen, spustí se obslužná zdroje dat souboru.
 
-This example is using the CID as the lookup between the parent `Token` entity and the resulting `TokenMetadata` entity.
+Tento příklad používá CID jako vyhledávání mezi nadřazenou entitou `Token` a výslednou entitou `TokenMetadata`.
 
-> Previously, this is the point at which a subgraph developer would have called `ipfs.cat(CID)` to fetch the file
+> Dříve by vývojář podgrafu zavolal `ipfs.cat(CID)` a načetl by soubor
 
-Congratulations, you are using file data sources!
+Gratulujeme, používáte souborové zdroje dat!
 
-#### Deploying your subgraphs
+#### Nasazení podgrafů
 
-You can now `build` and `deploy` your subgraph to any Graph Node >=v0.30.0-rc.0.
+Nyní můžete `sestavit` a `rozšířit` svůj podgraf do libovolného uzlu Graf >=v0.30.0-rc.0.
 
-#### Limitations
+#### Omezení
 
-File data source handlers and entities are isolated from other subgraph entities, ensuring that they are deterministic when executed, and ensuring no contamination of chain-based data sources. To be specific:
+Zpracovatelé a entity zdrojů dat souborů jsou izolovány od ostatních entit podgrafů, což zajišťuje, že jsou při provádění deterministické a nedochází ke kontaminaci zdrojů dat založených na řetězci. Přesněji řečeno:
 
-- Entities created by File Data Sources are immutable, and cannot be updated
-- File Data Source handlers cannot access entities from other file data sources
-- Entities associated with File Data Sources cannot be accessed by chain-based handlers
+- Entity vytvořené souborovými zdroji dat jsou neměnné a nelze je aktualizovat
+- Obsluhy zdrojů dat souborů nemohou přistupovat k entita z jiných zdrojů dat souborů
+- K entita přidruženým k datovým zdrojům souborů nelze přistupovat pomocí zpracovatelů založených na řetězci
 
-> While this constraint should not be problematic for most use-cases, it may introduce complexity for some. Please get in touch via Discord if you are having issues modelling your file-based data in a subgraph!
+> Ačkoli by toto omezení nemělo být pro většinu případů použití problematické, pro některé může představovat složitost. Pokud máte problémy s modelováním dat založených na souborech v podgrafu, kontaktujte nás prosím prostřednictvím služby Discord!
 
-Additionally, it is not possible to create data sources from a file data source, be it an onchain data source or another file data source. This restriction may be lifted in the future.
+Kromě toho není možné vytvářet zdroje dat ze zdroje dat souborů, ať už se jedná o zdroj dat v řetězci nebo jiný zdroj dat souborů. Toto omezení může být v budoucnu zrušeno.
 
-#### Best practices
+#### Osvědčené postupy
 
-If you are linking NFT metadata to corresponding tokens, use the metadata's IPFS hash to reference a Metadata entity from the Token entity. Save the Metadata entity using the IPFS hash as an ID.
+Pokud propojovat metadata NFT s odpovídajícími tokeny, použijte hash IPFS metadat k odkazu na entita Metadata z entity Token. Uložte entitu Metadata s použitím hashe IPFS jako ID.
 
-You can use [DataSource context](https://thegraph.com/docs/en/developing/assemblyscript-api/#entity-and-data-source-context) when creating File Data Sources to pass extra information which will be available to the File Data Source handler.
+You can use [DataSource context](/developing/graph-ts/api/#entity-and-datasourcecontext) when creating File Data Sources to pass extra information which will be available to the File Data Source handler.
 
-If you have entities which are refreshed multiple times, create unique file-based entities using the IPFS hash & the entity ID, and reference them using a derived field in the chain-based entity.
+Pokud máte entity, které se obnovují vícekrát, vytvořte jedinečné entity založené na souborech pomocí hash & IPFS; ID entity a odkazujte na ně pomocí odvozeného pole v entitě založené na řetězci.
 
-> We are working to improve the above recommendation, so queries only return the "most recent" version
+> Pracujeme na zlepšení výše uvedeného doporučení, aby dotazy vracely pouze "nejnovější" verzi
 
-#### Known issues
+#### Známé problémy
 
-File data sources currently require ABIs, even though ABIs are not used ([issue](https://github.com/graphprotocol/graph-cli/issues/961)). Workaround is to add any ABI.
+Souborové zdroje dat v současné době vyžadují ABI, i když se ABI nepoužívá ([problém](https://github.com/graphprotocol/graph-cli/issues/961)). Řešením je přidání libovolného ABI.
 
-Handlers for File Data Sources cannot be in files which import `eth_call` contract bindings, failing with "unknown import: `ethereum::ethereum.call` has not been defined" ([issue](https://github.com/graphprotocol/graph-cli/issues/4309)). Workaround is to create file data source handlers in a dedicated file.
+Handlers for File Data Sources cannot be in files which import `eth_call` contract bindings, failing with "unknown import: `ethereum::ethereum.call` has not been defined" ([issue](https://github.com/graphprotocol/graph-node/issues/4309)). Workaround is to create file data source handlers in a dedicated file.
 
-#### Examples
+#### Příklady
 
-[Crypto Coven Subgraph migration](https://github.com/azf20/cryptocoven-api/tree/file-data-sources-refactor)
+[Migrace podgrafů Crypto Coven](https://github.com/azf20/cryptocoven-api/tree/file-data-sources-refactor)
 
 #### Odkazy:
 
-[GIP File Data Sources](https://forum.thegraph.com/t/gip-file-data-sources/2721)
+[Zdroje dat souborů GIP](https://forum.thegraph.com/t/gip-file-data-sources/2721)
+
+## Timeseries and Aggregations
+
+### Přehled
+
+Timeseries and aggregations enable your subgraph to track statistics like daily average price, hourly total transfers, etc.
+
+This feature introduces two new types of subgraph entity. Timeseries entities record data points with timestamps. Aggregation entities perform pre-declared calculations on the Timeseries data points on an hourly or daily basis, then store the results for easy access via GraphQL.
+
+#### Example Schema
+
+```graphql
+type Data @entity(timeseries: true) {
+  id: Int8!
+  timestamp: Timestamp!
+  price: BigDecimal!
+}
+
+type Stats @aggregation(intervals: ["hour", "day"], source: "Data") {
+  id: Int8!
+  timestamp: Timestamp!
+  sum: BigDecimal! @aggregate(fn: "sum", arg: "price")
+}
+```
+
+### Defining Timeseries and Aggregations
+
+Timeseries entities are defined with `@entity(timeseries: true)` in schema.graphql. Every timeseries entity must have a unique ID of the int8 type, a timestamp of the Timestamp type, and include data that will be used for calculation by aggregation entities. These Timeseries entities can be saved in regular trigger handlers, and act as the “raw data” for the Aggregation entities.
+
+Aggregation entities are defined with `@aggregation` in schema.graphql. Every aggregation entity defines the source from which it will gather data (which must be a Timeseries entity), sets the intervals (e.g., hour, day), and specifies the aggregation function it will use (e.g., sum, count, min, max, first, last). Aggregation entities are automatically calculated on the basis of the specified source at the end of the required interval.
+
+#### Available Aggregation Intervals
+
+- `hour`: sets the timeseries period every hour, on the hour.
+- `day`: sets the timeseries period every day, starting and ending at 00:00.
+
+#### Available Aggregation Functions
+
+- `sum`: Total of all values.
+- `count`: Number of values.
+- `min`: Minimum value.
+- `max`: Maximum value.
+- `first`: First value in the period.
+- `last`: Last value in the period.
+
+#### Example Aggregations Query
+
+```graphql
+{
+  stats(interval: "hour", where: { timestamp_gt: 1704085200 }) {
+    id
+    timestamp
+    sum
+  }
+}
+```
+
+Note:
+
+To use Timeseries and Aggregations, a subgraph must have a spec version ≥1.1.0. Note that this feature might undergo significant changes that could affect backward compatibility.
+
+[Read more](https://github.com/graphprotocol/graph-node/blob/master/docs/aggregations.md) about Timeseries and Aggregations.
