@@ -2,7 +2,7 @@
 title: Быстрая и простая отладка подграфа с использованием форков
 ---
 
-Как и во многих системах, обрабатывающих большие объемы данных, Индексаторам The Graph (Ноды Graph) может потребоваться довольно много времени для синхронизации вашего подграфа с целевой цепочкой блоков. Несоответствие между быстрыми изменениями с целью отладки и длительным временем ожидания, необходимым для индексации, крайне контрпродуктивное, и мы хорошо это осознаем. Вот почему мы представляем **subgraph forking**, разработанное [LimeChain](https://limechain.tech/), и в этой статье я покажу вам, как эту функцию можно использовать для существенного ускорения работы с отладкой подграфа!
+As with many systems processing large amounts of data, The Graph's Indexers (Graph Nodes) may take quite some time to sync-up your subgraph with the target blockchain. The discrepancy between quick changes with the purpose of debugging and long wait times needed for indexing is extremely counterproductive and we are well aware of that. This is why we are introducing **subgraph forking**, developed by [LimeChain](https://limechain.tech/), and in this article I will show you how this feature can be used to substantially speed-up subgraph debugging!
 
 ## И так, что это?
 
@@ -12,9 +12,9 @@ title: Быстрая и простая отладка подграфа с ис�
 
 ## Что? Как?
 
-Когда вы развертываете подграф на ноде Graph для индексации и происходит сбой в блоке _X_, хорошей новостью является то, что нода Graph по-прежнему будет обслуживать запросы GraphQL, используя свое хранилище, которое синхронизировано с блоком _X_. Это здорово! Это означает, что мы можем воспользоваться преимуществами этого "актуального" хранилища для исправления ошибок, возникающих при индексации блока _X_.
+When you deploy a subgraph to a remote Graph Node for indexing and it fails at block _X_, the good news is that the Graph Node will still serve GraphQL queries using its store, which is synced-up to block _X_. That's great! This means we can take advantage of this "up-to-date" store to fix the bugs arising when indexing block _X_.
 
-В двух словах, мы собираемся _ форкнуть неудачный подграф_ с удаленной ноды Graph, у которого гарантированно будет индексирован подграф до блока _X_ для того, чтобы предоставьте локально развернутому подграфу, отлаживаемому в блоке _X_ актуальное представление состояния индексации.
+In a nutshell, we are going to _fork the failing subgraph_ from a remote Graph Node that is guaranteed to have the subgraph indexed up to block _X_ in order to provide the locally deployed subgraph being debugged at block _X_ an up-to-date view of the indexing state.
 
 ## Пожалуйста, покажите мне какой-нибудь код!
 
@@ -44,12 +44,12 @@ export function handleUpdatedGravatar(event: UpdatedGravatar): void {
 }
 ```
 
-Упс, как неудачно, когда я разворачиваю свой идеально выглядящий подграф в [Hosted Service](https://thegraph.com/hosted-service/) все завершается ошибкой _"Gravatar not found!"_.
+Oops, how unfortunate, when I deploy my perfect looking subgraph to [Subgraph Studio](https://thegraph.com/studio/) it fails with the _"Gravatar not found!"_ error.
 
 Обычный способ попытаться исправить это:
 
 1. Внести изменения в источник сопоставлений, которые, по вашему мнению, решат проблему (в то время как я знаю, что это не так).
-2. Повторно развернуть сабграф в [Hosted Service](https://thegraph.com/hosted-service/) (или другую ноду Graph).
+2. Re-deploy the subgraph to [Subgraph Studio](https://thegraph.com/studio/) (or another remote Graph Node).
 3. Подождать, пока он синхронизируется.
 4. Если он снова сломается, вернуться к пункту 1, в противном случае: Ура!
 
@@ -57,9 +57,9 @@ export function handleUpdatedGravatar(event: UpdatedGravatar): void {
 
 Используя **форк подграфа**, мы можем существенно исключить этот шаг. Вот как это выглядит:
 
-0. Запустите локальную ноду Graph с помощью **_соответствующего набора fork-base_**.
+0. Spin-up a local Graph Node with the **_appropriate fork-base_** set.
 1. Внесите изменения в источник сопоставлений, которые, по вашему мнению, решат проблему.
-2. Разверните на локальной ноде Graph, **_форкнув неудачный подграф_** и **_начиная с проблемного блока_**.
+2. Deploy to the local Graph Node, **_forking the failing subgraph_** and **_starting from the problematic block_**.
 3. Если он снова сломается, вернитесь к пункту 1, в противном случае: Ура!
 
 Сейчас у вас может появиться 2 вопроса:
@@ -80,7 +80,7 @@ $ graph deploy <subgraph-name> --debug-fork <subgraph-id> --ipfs http://localhos
 
 Итак, вот что я делаю:
 
-0. Я запускаю локальную ноду Graph ([вот как это сделать](https://github.com/graphprotocol/graph-node#running-a-local-graph-node)) с параметром `fork-base`, установленным в значение: `https://api.thegraph.com/subgraphs/id /`, так как я буду форкать подграф, багнутый, который я развернул ранее, из [HostedService](https://thegraph.com/hosted-service/).
+1. I spin-up a local Graph Node ([here is how to do it](https://github.com/graphprotocol/graph-node#running-a-local-graph-node)) with the `fork-base` option set to: `https://api.thegraph.com/subgraphs/id/`, since I will fork a subgraph, the buggy one I deployed earlier, from [Subgraph Studio](https://thegraph.com/studio/).
 
 ```
 $ cargo run -p graph-node --release -- \
@@ -90,13 +90,12 @@ $ cargo run -p graph-node --release -- \
     --fork-base https://api.thegraph.com/subgraphs/id/
 ```
 
-1. После тщательной проверки я замечаю, что существует несоответствие в представлениях `id`, используемых при индексации `Gravatar`s в моих двух обработчиках. В то время как `handleNewGravatar` преобразует его в шестнадцатеричное значение (`event.params.id.toHex()`), `handleUpdatedGravatar` использует int32 (`event.params.id.toI32()`), который вызывает `handleUpdatedGravatar` панику с сообщением "Gravatar not found!". Я заставляю их обоих преобразовать `идентификатор` в шестнадцатеричное значение.
-2. После того как я внес изменения, я развертываю свой подграф на локальной ноде Graph, **_форкая неисправный подграф_** и устанавливая `DataSources.source.startBlock` значения `6190343` в `subgraph.yaml`:
+2. После тщательной проверки я замечаю, что существует несоответствие в представлениях `id`, используемых при индексации `Gravatar`s в моих двух обработчиках. В то время как `handleNewGravatar` преобразует его в шестнадцатеричное значение (`event.params.id.toHex()`), `handleUpdatedGravatar` использует int32 (`event.params.id.toI32()`), который вызывает `handleUpdatedGravatar` панику с сообщением "Gravatar not found!". Я заставляю их обоих преобразовать `идентификатор` в шестнадцатеричное значение.
+3. After I made the changes I deploy my subgraph to the local Graph Node, **_forking the failing subgraph_** and setting `dataSources.source.startBlock` to `6190343` in `subgraph.yaml`:
 
 ```bash
 $ graph deploy gravity --debug-fork QmNp169tKvomnH3cPXTfGg4ZEhAHA6kEq5oy1XDqAxqHmW --ipfs http://localhost:5001 --node http://localhost:8020
 ```
 
-3. Я проверяю логи, созданные локальной нодой Graph, и, ура!, кажется, все работает.
-4. Я развертываю свой теперь свободный от ошибок подграф на удаленной ноде Graph и живу долго и счастливо
-5. Конец...
+4. I inspect the logs produced by the local Graph Node and, Hooray!, everything seems to be working.
+5. I deploy my now bug-free subgraph to a remote Graph Node and live happily ever after! (no potatoes tho)
