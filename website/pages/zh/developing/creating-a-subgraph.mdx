@@ -14,9 +14,9 @@ title: 创建子图
 
 - `AssemblyScript映射`: 将事件数据转换为模式中定义的实体(例如本教程中的`mapping.ts`)的 [AssemblyScript](https://github.com/AssemblyScript/assemblyscript) 代码
 
-> 为了在Graph的去中心化网络上使用子图，您需要[创建一个API密钥](/deploying/subgraph-studio-faqs/#2-how-do-i-create-an-api-key)。建议您将至少[10000 GRT](/network-transition-faq/#how-can-i-ensure-that-my-subgraph-will-be-picked-up-by-indexer-on-the-graph-network)的[信号添加](/network/curating/#how-to-signal)到子图中。
+> In order to use your subgraph on The Graph's decentralized network, you will need to [create an API key](/deploying/subgraph-studio-faqs/#2-how-do-i-create-an-api-key). It is recommended that you [add signal](/network/curating/#how-to-signal) to your subgraph with at least [3,000 GRT](/sunrise/#how-can-i-ensure-high-quality-of-service-and-redundancy-for-subgraphs-on-the-graph-network).
 
-在详细了解清单文件的内容之前，您需要安装[Graph CLI](https://github.com/graphprotocol/graph-cli)，以构建和部署子图。
+Before you go into detail about the contents of the manifest file, you need to install the [Graph CLI](https://github.com/graphprotocol/graph-tooling) which you will need to build and deploy a subgraph.
 
 ## 安装 Graph CLI
 
@@ -36,7 +36,7 @@ yarn global add @graphprotocol/graph-cli
 npm install -g @graphprotocol/graph-cli
 ```
 
-`graph init` 命令可用于从任何公共以太坊网络上的现有合约或示例子图中设置新的子图项目。 此命令可用于通过 `graph init --product subgraph-studio` 命令在 Subgraph 工作室上创建子图。 如果你已经在你喜欢的网络上部署了一个智能合约，那么从该合约中引导一个新的子图可能是一个很好的开始方式。
+Once installed, the `graph init` command can be used to set up a new subgraph project, either from an existing contract or from an example subgraph. This command can be used to create a subgraph in Subgraph Studio by passing in `graph init --product subgraph-studio`. If you already have a smart contract deployed to your preferred network, bootstrapping a new subgraph from that contract can be a good way to get started.
 
 ## 基于现有合约
 
@@ -61,7 +61,7 @@ graph init \
 graph init --studio <SUBGRAPH_SLUG>
 ```
 
-示例子图基于 Dani Grant 的 Gravity 合约，该合约管理用户头像并在创建或更新头像时发出 `NewGravatar` 或 `UpdateGravatar` 事件。 子图通过将 `Gravatar` 实体写入 Graph Node存储并确保根据事件更新这些事件来处理这些事件。 以下部分将介绍构成此示例的子图清单的文件。
+The [example subgraph](https://github.com/graphprotocol/example-subgraph) is based on the Gravity contract by Dani Grant that manages user avatars and emits `NewGravatar` or `UpdateGravatar` events whenever avatars are created or updated. The subgraph handles these events by writing `Gravatar` entities to the Graph Node store and ensuring these are updated according to the events. The following sections will go over the files that make up the subgraph manifest for this example.
 
 ## 将新数据源添加到现有子图
 
@@ -101,6 +101,8 @@ description: Gravatar for Ethereum
 repository: https://github.com/graphprotocol/graph-tooling
 schema:
   file: ./schema.graphql
+indexerHints:
+  prune: auto
 dataSources:
   - kind: ethereum/contract
     name: Gravity
@@ -144,11 +146,15 @@ dataSources:
 
 清单中要更新的重要条目是：
 
-- `description`: a human-readable description of what the subgraph is. This description is displayed by the Graph Explorer when the subgraph is deployed to the hosted service.
+- `specVersion`: a semver version that identifies the supported manifest structure and functionality for the subgraph. The latest version is `1.2.0`. See [specVersion releases](#specversion-releases) section to see more details on features & releases.
 
-- `repository`：可以找到子图清单的存储库的 URL。 这也由 Graph 浏览器显示。
+- `description`: a human-readable description of what the subgraph is. This description is displayed in Graph Explorer when the subgraph is deployed to Subgraph Studio.
+
+- `repository`: the URL of the repository where the subgraph manifest can be found. This is also displayed in Graph Explorer.
 
 - `features`：所有使用的 [功能](#experimental-features) 名称的列表。
+
+- `indexerHints.prune`: Defines the retention of historical block data for a subgraph. See [prune](#prune) in [indexerHints](#indexer-hints) section.
 
 - `dataSources.source`：智能合约子图源的地址，以及要使用的智能合约的ABI。 地址是可选的； 省略它允许索引来自所有合约的匹配事件。
 
@@ -170,6 +176,8 @@ dataSources:
 
 通过为每个需要将数据索引到 `dataSources` 数组的合约添加一个条目，单个子图可以索引来自多个智能合约的数据。
 
+### Order of Triggering Handlers
+
 区块内数据源的触发器使用以下流程进行排序：
 
 1. 事件和调用触发器首先按区块内的交易索引排序。
@@ -177,6 +185,22 @@ dataSources:
 3. 区块触发器按照它们在清单中定义的顺序，在事件和调用触发器之后运行。
 
 这些排序规则可能会发生变化。
+
+> **Note:** When new [dynamic data source](#data-source-templates-for-dynamically-created-contracts) are created, the handlers defined for dynamic data sources will only start processing after all existing data source handlers are processed, and will repeat in the same sequence whenever triggered.
+
+### SpecVersion Releases
+
+|  版本   | Release 说明                                                                                                                                                             |
+|:-----:| ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1.2.0 | Added support for [Indexed Argument Filtering](/#indexed-argument-filters--topic-filters) & declared `eth_call`                                                        |
+| 1.1.0 | Supports [Timeseries & Aggregations](#timeseries-and-aggregations). Added support for type `Int8` for `id`.                                                            |
+| 1.0.0 | Supports [`indexerHints`](/developing/creating-a-subgraph/#indexer-hints) feature to prune subgraphs                                                                   |
+| 0.0.9 | Supports `endBlock` feature                                                                                                                                            |
+| 0.0.8 | Added support for polling [Block Handlers](developing/creating-a-subgraph/#polling-filter) and [Initialisation Handlers](developing/creating-a-subgraph/#once-filter). |
+| 0.0.7 | Added support for [File Data Sources](developing/creating-a-subgraph/#file-data-sources).                                                                              |
+| 0.0.6 | Supports fast [Proof of Indexing](/network/indexing/#what-is-a-proof-of-indexing-poi) calculation variant.                                                             |
+| 0.0.5 | Added support for event handlers having access to transaction receipts.                                                                                                |
+| 0.0.4 | Added support for managing subgraph features.                                                                                                                          |
 
 ### 获取 ABI
 
@@ -248,15 +272,15 @@ Null value resolved for non-null field 'name'
 
 我们在 GraphQL API 中支持以下标量：
 
-| 类型 | 描述 |
-| --- | --- |
-| `字节` | 字节数组，表示为十六进制字符串。 通常用于以太坊hash和地址。 |
-| `字符串` | `string` 值的标量。 不支持空字符，并会自动进行删除。 |
-| `Boolean` | `boolean` 值的标量。 |
-| `Int` | GraphQL 规范将 `Int` 定义为 32 字节的大小。 |
-| `Int8` | An 8-byte signed integer, also known as a 64-bit signed integer, can store values in the range from -9,223,372,036,854,775,808 to 9,223,372,036,854,775,807. Prefer using this to represent `i64` from ethereum. |
-| `BigInt` | 大整数。 用于以太坊的 `uint32`、`int64`、`uint64`、...、`uint256` 类型。 注意：`uint32`以下的所有类型，例如`int32`、`uint24`或`int8`都表示为`i32`。 |
-| `BigDecimal` | `BigDecimal` 表示为有效数字和指数的高精度小数。 指数范围是 -6143 到 +6144。 四舍五入到 34 位有效数字。 |
+| 类型           | 描述                                                                                                                                                                                                               |
+| ------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `字节`         | 字节数组，表示为十六进制字符串。 通常用于以太坊hash和地址。                                                                                                                                                                                 |
+| `字符串`        | `string` 值的标量。 不支持空字符，并会自动进行删除。                                                                                                                                                                                  |
+| `Boolean`    | `boolean` 值的标量。                                                                                                                                                                                                  |
+| `Int`        | GraphQL 规范将 `Int` 定义为 32 字节的大小。                                                                                                                                                                                  |
+| `Int8`       | An 8-byte signed integer, also known as a 64-bit signed integer, can store values in the range from -9,223,372,036,854,775,808 to 9,223,372,036,854,775,807. Prefer using this to represent `i64` from ethereum. |
+| `BigInt`     | 大整数。 用于以太坊的 `uint32`、`int64`、`uint64`、...、`uint256` 类型。 注意：`uint32`以下的所有类型，例如`int32`、`uint24`或`int8`都表示为`i32`。                                                                                                   |
+| `BigDecimal` | `BigDecimal` 表示为有效数字和指数的高精度小数。 指数范围是 -6143 到 +6144。 四舍五入到 34 位有效数字。                                                                                                                                              |
 
 #### 枚举类型
 
@@ -398,11 +422,11 @@ query usersWithOrganizations {
 
 #### 向模式添加注释
 
-根据 GraphQL 规范，可以使用双引号 `""` 在模式实体属性上方添加注释。 这在下面的示例中进行了说明：
+As per GraphQL spec, comments can be added above schema entity attributes using the hash symble `#`. This is illustrated in the example below:
 
 ```graphql
 type MyFirstEntity @entity {
-  "unique identifier and primary key of the entity"
+  # unique identifier and primary key of the entity
   id: Bytes!
   address: Bytes!
 }
@@ -458,33 +482,33 @@ query {
 
 支持的语言词典：
 
-| 代码   | 词典       |
-| ------ | ---------- |
-| simple | 通用       |
-| da     | 丹麦语     |
-| nl     | 荷兰语     |
-| en     | 英语       |
-| fi     | 芬兰语     |
-| fr     | 法语       |
-| de     | 德语       |
-| hu     | 匈牙利语   |
-| it     | 意大利语   |
-| no     | 挪威语     |
-| pt     | 葡萄牙语   |
+| 代码     | 词典    |
+| ------ | ----- |
+| simple | 通用    |
+| da     | 丹麦语   |
+| nl     | 荷兰语   |
+| en     | 英语    |
+| fi     | 芬兰语   |
+| fr     | 法语    |
+| de     | 德语    |
+| hu     | 匈牙利语  |
+| it     | 意大利语  |
+| no     | 挪威语   |
+| pt     | 葡萄牙语  |
 | ro     | 罗马尼亚语 |
-| ru     | 俄语       |
-| es     | 西班牙语   |
-| sv     | 瑞典语     |
-| tr     | 土耳其语   |
+| ru     | 俄语    |
+| es     | 西班牙语  |
+| sv     | 瑞典语   |
+| tr     | 土耳其语  |
 
 ### 排序算法
 
 支持的排序结果算法：
 
-| 算法          | 描述                                          |
-| ------------- | --------------------------------------------- |
+| 算法            | 描述                         |
+| ------------- | -------------------------- |
 | rank          | 使用全文查询的匹配质量 (0-1) 对结果进行排序。 |
-| proximityRank | 与 rank 类似，但也包括匹配的接近程度。        |
+| proximityRank | 与 rank 类似，但也包括匹配的接近程度。     |
 
 ## 编写映射
 
@@ -525,13 +549,32 @@ export function handleUpdatedGravatar(event: UpdatedGravatar): void {
 
 ### 用于创建新实体的推荐 ID
 
-每个实体都必须有一个在所有相同类型的实体中唯一的 `id`。 实体的 `id` 值在创建实体时设置。 以下是创建新实体时要考虑的一些推荐 `id` 值。 注意：`id` 的值必须是 `string`。
+It is highly recommended to use `Bytes` as the type for `id` fields, and only use `String` for attributes that truly contain human-readable text, like the name of a token. Below are some recommended `id` values to consider when creating new entities.
 
-- `event.params.id.toHex()`
-- `event.transaction.from.toHex()`
-- `event.transaction.hash.toHex() + "-" + event.logIndex.toString()`
+- `transfer.id = event.transaction.hash`
 
-We provide the [Graph Typescript Library](https://github.com/graphprotocol/graph-ts) which contains utilities for interacting with the Graph Node store and conveniences for handling smart contract data and entities. You can use this library in your mappings by importing `@graphprotocol/graph-ts` in `mapping.ts`.
+- `let id = event.transaction.hash.concatI32(event.logIndex.toI32())`
+
+- For entities that store aggregated data, for e.g, daily trade volumes, the `id` usually contains the day number. Here, using a `Bytes` as the `id` is beneficial. Determining the `id` would look like
+
+```typescript
+let dayID = event.block.timestamp.toI32() / 86400
+let id = Bytes.fromI32(dayID)
+```
+
+- Convert constant addresses to `Bytes`.
+
+`const id = Bytes.fromHexString('0xdead...beef')`
+
+There is a [Graph Typescript Library](https://github.com/graphprotocol/graph-tooling/tree/main/packages/ts) which contains utilities for interacting with the Graph Node store and conveniences for handling smart contract data and entities. It can be imported into `mapping.ts` from `@graphprotocol/graph-ts`.
+
+### Handling of entities with identical IDs
+
+When creating and saving a new entity, if an entity with the same ID already exists, the properties of the new entity are always preferred during the merge process. This means that the existing entity will be updated with the values from the new entity.
+
+If a null value is intentionally set for a field in the new entity with the same ID, the existing entity will be updated with the null value.
+
+If no value is set for a field in the new entity with the same ID, the field will result in null as well.
 
 ## 代码生成
 
@@ -573,7 +616,7 @@ import { Gravatar } from '../generated/schema'
 
 > **注意：** 每次更改 GraphQL 模式文件或清单中包含的 ABI 后，都必须再次执行代码生成。 在构建或部署子图之前，它还必须至少执行一次。
 
-代码生成不会检查 `src/mapping.ts` 中的映射代码。 如果您想在尝试将子图部署到 Graph Explorer 之前进行检查，您可以运行 `yarn build`，并修复 TypeScript 编译器可能发现的任何语法错误。
+Code generation does not check your mapping code in `src/mapping.ts`. If you want to check that before trying to deploy your subgraph to Graph Explorer, you can run `yarn build` and fix any syntax errors that the TypeScript compiler might find.
 
 ## 数据源模板
 
@@ -659,7 +702,7 @@ export function handleNewExchange(event: NewExchange): void {
 ```
 
 > **注意：** 新的数据源只会处理创建它的区块和所有后续区块的调用和事件，而不会处理历史数据，也就是包含在先前区块中的数据。
->
+> 
 > 如果先前的区块包含与新数据源相关的数据，最好通过读取合约的当前状态，并在创建新数据源时创建表示该状态的实体来索引该数据。
 
 ### 数据源背景
@@ -716,10 +759,218 @@ dataSources:
 ```
 
 > **注意：** 合约创建区块可以在 Etherscan 上快速查找：
->
+> 
 > 1. 通过在搜索栏中输入合约地址来搜索合约。
 > 2. 单击 `Contract Creator` 部分中的创建交易hash。
 > 3. 加载交易详情页面，您将在其中找到该合约的起始区块。
+
+## Indexer Hints
+
+The `indexerHints` setting in a subgraph's manifest provides directives for indexers on processing and managing a subgraph. It influences operational decisions across data handling, indexing strategies, and optimizations. Presently, it features the `prune` option for managing historical data retention or pruning.
+
+> This feature is available from `specVersion: 1.0.0`
+
+### Prune
+
+`indexerHints.prune`: Defines the retention of historical block data for a subgraph. Options include:
+
+1. `"never"`: No pruning of historical data; retains the entire history.
+2. `"auto"`: Retains the minimum necessary history as set by the indexer, optimizing query performance.
+3. A specific number: Sets a custom limit on the number of historical blocks to retain.
+
+```
+ indexerHints:
+  prune: auto
+```
+
+> The term "history" in this context of subgraphs is about storing data that reflects the old states of mutable entities.
+
+History as of a given block is required for:
+
+- [Time travel queries](/querying/graphql-api/#time-travel-queries), which enable querying the past states of these entities at specific blocks throughout the subgraph's history
+- Using the subgraph as a [graft base](/developing/creating-a-subgraph/#grafting-onto-existing-subgraphs) in another subgraph, at that block
+- Rewinding the subgraph back to that block
+
+If historical data as of the block has been pruned, the above capabilities will not be available.
+
+> Using `"auto"` is generally recommended as it maximizes query performance and is sufficient for most users who do not require access to extensive historical data.
+
+For subgraphs leveraging [time travel queries](/querying/graphql-api/#time-travel-queries), it's advisable to either set a specific number of blocks for historical data retention or use `prune: never` to keep all historical entity states. Below are examples of how to configure both options in your subgraph's settings:
+
+To retain a specific amount of historical data:
+
+```
+ indexerHints:
+  prune: 1000 # Replace 1000 with the desired number of blocks to retain
+```
+
+To preserve the complete history of entity states:
+
+```
+indexerHints:
+  prune: never
+```
+
+You can check the earliest block (with historical state) for a given subgraph by querying the [Indexing Status API](/deploying/deploying-a-subgraph-to-hosted/#checking-subgraph-health):
+
+```
+{
+  indexingStatuses(subgraphs: ["Qm..."]) {
+    subgraph
+    synced
+    health
+    chains {
+      earliestBlock {
+        number
+      }
+      latestBlock {
+        number
+      }
+      chainHeadBlock { number }
+    }
+  }
+}
+```
+
+Note that the `earliestBlock` is the earliest block with historical data, which will be more recent than the `startBlock` specified in the manifest, if the subgraph has been pruned.
+
+## Event Handlers
+
+Event handlers in a subgraph react to specific events emitted by smart contracts on the blockchain and trigger handlers defined in the subgraph's manifest. This enables subgraphs to process and store event data according to defined logic.
+
+### Defining an Event Handler
+
+An event handler is declared within a data source in the subgraph's YAML configuration. It specifies which events to listen for and the corresponding function to execute when those events are detected.
+
+```yaml
+dataSources:
+  - kind: ethereum/contract
+    name: Gravity
+    network: dev
+    source:
+      address: '0x731a10897d267e19b34503ad902d0a29173ba4b1'
+      abi: Gravity
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.6
+      language: wasm/assemblyscript
+      entities:
+        - Gravatar
+        - Transaction
+      abis:
+        - name: Gravity
+          file: ./abis/Gravity.json
+      eventHandlers:
+        - event: Approval(address,address,uint256)
+          handler: handleApproval
+        - event: Transfer(address,address,uint256)
+          handler: handleTransfer
+          topic1: ['0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045', '0xc8dA6BF26964aF9D7eEd9e03E53415D37aA96325'] # Optional topic filter which filters only events with the specified topic.
+```
+
+### Indexed Argument Filters / Topic Filters
+
+> **Requires `specVersion` >= 1.2.0**
+
+Topic filters, also known as indexed argument filters, are a powerful feature in subgraphs that allow for precise filtering of blockchain events based on the values of their indexed arguments. These filters are particularly useful for isolating specific events of interest from the vast stream of events on the blockchain, enabling subgraphs to operate more efficiently by focusing only on relevant data. This can be incredibly useful for usecases like creating personal subgraphs that track specific addresses and their interactions with various smart contracts on the blockchain.
+
+#### How Topic Filters Work
+
+When a smart contract emits an event, any arguments that are marked as indexed can be used as filters in a subgraph's manifest. This allows the subgraph to listen selectively for events that match these indexed arguments. The event's first indexed argument corresponds to `topic1`, the second to `topic2`, and so on, up to `topic3`, since the Ethereum Virtual Machine (EVM) allows up to three indexed arguments per event.
+
+```solidity
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
+
+contract Token {
+    // Event declaration with indexed parameters for addresses
+    event Transfer(address indexed from, address indexed to, uint256 value);
+
+    // Function to simulate transferring tokens
+    function transfer(address to, uint256 value) public {
+        // Emitting the Transfer event with from, to, and value
+        emit Transfer(msg.sender, to, value);
+    }
+}
+```
+
+In this example:
+
+- The `Transfer` event is used to log transactions of tokens between addresses.
+- The `from` and `to` parameters are indexed, which allows event listeners to filter and monitor transfers involving specific addresses.
+- The `transfer` function is a simple representation of a token transfer action, emitting the Transfer event whenever it is called.
+
+#### Configuration in Subgraphs
+
+Topic filters are defined directly within the event handler configuration in the subgraph manifest. Here is how they are configured:
+
+```yaml
+eventHandlers:
+  - event: SomeEvent(indexed uint256, indexed address, indexed uint256)
+    handler: handleSomeEvent
+    topic1: ['0xValue1', '0xValue2']
+    topic2: ['0xAddress1', '0xAddress2']
+    topic3: ['0xValue3']
+```
+
+In this setup:
+
+- `topic1` corresponds to the first indexed argument of the event, `topic2` to the second, and `topic3` to the third.
+- Each topic can have one or more values, and an event is only processed if it matches one of the values in each specified topic.
+
+##### Filter Logic
+
+- Within a Single Topic: The logic functions as an OR condition. The event will be processed if it matches any one of the listed values in a given topic.
+- Between Different Topics: The logic functions as an AND condition. An event must satisfy all specified conditions across different topics to trigger the associated handler.
+
+### Example 1: Tracking a Single Address's Transfer Transactions
+
+```yaml
+eventHandlers:
+  - event: Transfer(indexed address,indexed address,uint256)
+    handler: handleTransfer
+    topic1: ['0xSpecificAddress']
+  - event: Transfer(indexed address,indexed address,uint256)
+    handler: handleTransfer
+    topic2: ['0xSpecificAddress']
+```
+
+In this configuration:
+
+- `topic1` filters Transfer events based on the from address, and `topic2` filters based on the to address.
+- The subgraph will index transactions where the specified address is involved either as a sender or a receiver.
+
+### Example 2: Tracking Direct Transfers from Address A to Address B
+
+```yaml
+eventHandlers:
+  - event: Transfer(indexed address,indexed address,uint256)
+    handler: handleDirectedTransfer
+    topic1: ['0xAddressA'] # Sender Address
+    topic2: ['0xAddressB'] # Receiver Address
+```
+
+In this configuration:
+
+- `topic1` is configured to filter `Transfer` events where `0xAddressA` is the sender.
+- `topic2` is configured to filter `Transfer` events where `0xAddressB` is the receiver.
+- The subgraph will only index transactions that occur directly from `0xAddressA` to `0xAddressB`.
+
+### Example 3: Tracking Transactions in Either Direction Between Two Addresses
+
+```
+eventHandlers:
+  - event: Transfer(indexed address,indexed address,uint256)
+    handler: handleTransferToOrFrom
+    topic1: ["0xAddressA"]  # Sender or Receiver Address
+    topic2: ["0xAddressB"]  # Sender or Receiver Address
+```
+
+In this configuration:
+
+- `topic1` is configured to filter `Transfer` events where `0xAddressA` is either the sender or the receiver.
+- `topic2` is configured to filter `Transfer` events where `0xAddressB` is either the sender or the receiver.
+- The subgraph will index transactions that occur in either direction between `0xAddressA` and `0xAddressB`, allowing for comprehensive monitoring of interactions involving both addresses.
 
 ## 调用处理程序
 
@@ -906,11 +1157,11 @@ eventHandlers:
 
 从 `specVersion` `0.0.4` 开始，子图特征必须使用它们的 `camelCase` 名称，在清单文件顶层的 `features` 部分中显式声明，如下表所列：
 
-| 特征                                      | 名称                                                |
-| ----------------------------------------- | --------------------------------------------------- |
-| [非致命错误](#非致命错误)                 | `nonFatalErrors`                                    |
-| [全文搜索](#定义全文搜索字段)             | `fullTextSearch`                                    |
-| [嫁接](#嫁接到现有子图)                   | `grafting`                                          |
+| 特征                          | 名称                                                  |
+| --------------------------- | --------------------------------------------------- |
+| [非致命错误](#非致命错误)             | `nonFatalErrors`                                    |
+| [全文搜索](#定义全文搜索字段)           | `fullTextSearch`                                    |
+| [嫁接](#嫁接到现有子图)              | `grafting`                                          |
 | [以太坊合约上的IPFS](#以太坊合约上的IPFS) | `ipfsOnEthereumContracts` or `nonDeterministicIpfs` |
 
 例如，如果子图使用 **Full-Text Search** 和 **Non-fatal Errors** 功能，则清单中的 `features` 字段应为：
@@ -990,7 +1241,7 @@ _meta {
 
 > **注意：** 在初次升级到The Graph Network时，不建议使用grafting。可以在[这里](/cookbook/grafting/#important-note-on-grafting-when-upgrading-to-the-network)了解更多信息。
 
-首次部署子图时，它会在相应链的启动区块（或每个数据源定义的 `startBlock` 处）开始索引事件。在某些情况下，可以使用现有子图已经索引的数据并在更晚的区块上开始索引。 这种索引模式称为*Grafting*。 例如，嫁接在开发过程中非常有用，可以快速克服映射中的简单错误，或者在现有子图失败后暂时恢复工作。
+首次部署子图时，它会在相应链的启动区块（或每个数据源定义的 `startBlock` 处）开始索引事件。在某些情况下，可以使用现有子图已经索引的数据并在更晚的区块上开始索引。 这种索引模式称为_Grafting_。 例如，嫁接在开发过程中非常有用，可以快速克服映射中的简单错误，或者在现有子图失败后暂时恢复工作。
 
 当 `subgraph.yaml` 中的子图清单在顶层包含 `graft` 区块时，子图被嫁接到基础子图：
 
@@ -1027,7 +1278,7 @@ graft:
 
 这不是在处理程序执行期间“在线”获取文件，而是引入了可以作为给定文件标识符的新数据源生成的模板。这些新数据源获取文件，如果不成功则重试，找到文件后运行专用处理程序。
 
-这类似于现有的[数据源模板](https://thegraph.com/docs/en/developing/creating-a-subgraph/#data-source-templates)，用于动态创建新的基于链的数据源。
+This is similar to the [existing data source templates](/developing/creating-a-subgraph/#data-source-templates), which are used to dynamically create new chain-based data sources.
 
 > 这将替换现有的`ipfs.cat` API
 
@@ -1084,7 +1335,7 @@ type TokenMetadata @entity {
 
 如果母实体与生成的文件数据源实体之间的关系为1:1，则最简单的模式是通过使用IPFS CID作为查找将母实体链接到生成的文件实体。如果您在建模新的基于文件的实体时遇到困难，请联系Discord！
 
-> 可以使用[嵌套](https://thegraph.com/docs/en/querying/graphql-api/#example-for-nested-entity-filtering)过滤器根据这些嵌套实体过滤母实体。
+> You can use [nested filters](/querying/graphql-api/#example-for-nested-entity-filtering) to filter parent entities on the basis of these nested entities.
 
 #### 添加一个新的模板数据源，使用`kind: file/ipfs`或`kind: file/arweave`。
 
@@ -1108,11 +1359,11 @@ templates:
 
 > 目前需要`abis`，但无法从文件数据源中调用合同
 
-文件数据源必须特别提到它将在`实体`下与之交互的所有实体类型。有关详细信息，请参阅[限制](#Limitations)。
+The file data source must specifically mention all the entity types which it will interact with under `entities`. See [limitations](#limitations) for more details.
 
 #### 创建新处理程序以处理文件
 
-此处理程序应接受一个`Bytes`参数，当找到文件时，该参数将是文件的内容，然后可以对其进行处理。这通常是一个JSON文件，可以用`graph-ts` 助手([文件](https://thegraph.com/docs/en/developing/assemblyscript-api/#json-api)).处理。
+This handler should accept one `Bytes` parameter, which will be the contents of the file, when it is found, which can then be processed. This will often be a JSON file, which can be processed with `graph-ts` helpers ([documentation](/developing/assemblyscript-api/#json-api)).
 
 文件的CID作为可读字符串可通过`数据源访问`，如下所示：
 
@@ -1156,14 +1407,14 @@ export function handleMetadata(content: Bytes): void {
 
 对于IPFS，Graph Node支持[v0和v1内容标识符](https://docs.ipfs.tech/concepts/content-addressing/)，以及带有目录的内容标识符（例如`bafyreighykzv2we26wfrbzkcdw37sbrby4upq7ae3aqobbq7i4er3tnxci/metadata.json`）。
 
-For Arweave, as of version 0.33.0 Graph Node can fetch files stored on Arweave based on their [transaction ID](https://docs.arweave.org/developers/server/http-api#transactions) from an Arweave gateway ([example file](https://bdxujjl5ev5eerd5ouhhs6o4kjrs4g6hqstzlci5pf6vhxezkgaa.arweave.net/CO9EpX0lekJEfXUOeXncUmMuG8eEp5WJHXl9U9yZUYA)). Arweave supports transactions uploaded via Bundlr, and Graph Node can also fetch files based on [Bundlr manifests](https://docs.bundlr.network/learn/gateways#indexing).
+For Arweave, as of version 0.33.0 Graph Node can fetch files stored on Arweave based on their [transaction ID](https://docs.arweave.org/developers/arweave-node-server/http-api#transactions) from an Arweave gateway ([example file](https://bdxujjl5ev5eerd5ouhhs6o4kjrs4g6hqstzlci5pf6vhxezkgaa.arweave.net/CO9EpX0lekJEfXUOeXncUmMuG8eEp5WJHXl9U9yZUYA)). Arweave supports transactions uploaded via Irys (previously Bundlr), and Graph Node can also fetch files based on [Irys manifests](https://docs.irys.xyz/overview/gateways#indexing).
 
 例子:
 
 ```typescript
 import { TokenMetadata as TokenMetadataTemplate } from '../generated/templates'
 
-const ipfshash = 'QmaXzZhcYnsisuue5WRdQDH6FDvqkLQX1NckLqBYeYYEfm'
+const ipfshash = "QmaXzZhcYnsisuue5WRdQDH6FDvqkLQX1NckLqBYeYYEfm"
 //This example code is for a Crypto coven subgraph. The above ipfs hash is a directory with token metadata for all crypto coven NFTs.
 
 export function handleTransfer(event: TransferEvent): void {
@@ -1215,7 +1466,7 @@ export function handleTransfer(event: TransferEvent): void {
 
 如果要将 NFT 元数据链接到相应的代币，请使用元数据的 IPFS hash从代币实体引用元数据实体。使用 IPFS hash作为 ID 保存元数据实体。
 
-在创建文件数据源时，可以使用 [DataSource context](https://thegraph.com/docs/en/developing/assemblyscript-api/#entity-and-data-source-context)来传递文件数据源处理程序可以使用的额外信息。
+You can use [DataSource context](/developing/graph-ts/api/#entity-and-datasourcecontext) when creating File Data Sources to pass extra information which will be available to the File Data Source handler.
 
 如果您有多次刷新的实体，请使用 IPFS & 一的基于文件的实体。实体 ID，并使用基于链的实体中的派生字段引用它们
 
@@ -1225,7 +1476,7 @@ export function handleTransfer(event: TransferEvent): void {
 
 文件数据源目前需要 ABI，即使没有使用 ABI ([问题](https://github.com/graphprotocol/graph-cli/issues/961))。解决方法是添加任何 ABI。
 
-文件数据源的处理程序不能在导入 `eth _ call` 契约绑定的文件中，如果“未知导入: `etherum:: etherum.call` 尚未定义”([问题](https://github.com/graphprotocol/graph-cli/issues/4309)) 则失败。解决办法是在专用文件中创建文件数据源处理程序。
+Handlers for File Data Sources cannot be in files which import `eth_call` contract bindings, failing with "unknown import: `ethereum::ethereum.call` has not been defined" ([issue](https://github.com/graphprotocol/graph-node/issues/4309)). Workaround is to create file data source handlers in a dedicated file.
 
 #### 例子
 
@@ -1234,3 +1485,65 @@ export function handleTransfer(event: TransferEvent): void {
 #### 参考
 
 [GIP文件数据源](https://forum.thegraph.com/t/gip-file-data-sources/2721)
+
+## Timeseries and Aggregations
+
+### 概述
+
+Timeseries and aggregations enable your subgraph to track statistics like daily average price, hourly total transfers, etc.
+
+This feature introduces two new types of subgraph entity. Timeseries entities record data points with timestamps. Aggregation entities perform pre-declared calculations on the Timeseries data points on an hourly or daily basis, then store the results for easy access via GraphQL.
+
+#### Example Schema
+
+```graphql
+type Data @entity(timeseries: true) {
+  id: Int8!
+  timestamp: Timestamp!
+  price: BigDecimal!
+}
+
+type Stats @aggregation(intervals: ["hour", "day"], source: "Data") {
+  id: Int8!
+  timestamp: Timestamp!
+  sum: BigDecimal! @aggregate(fn: "sum", arg: "price")
+}
+```
+
+### Defining Timeseries and Aggregations
+
+Timeseries entities are defined with `@entity(timeseries: true)` in schema.graphql. Every timeseries entity must have a unique ID of the int8 type, a timestamp of the Timestamp type, and include data that will be used for calculation by aggregation entities. These Timeseries entities can be saved in regular trigger handlers, and act as the “raw data” for the Aggregation entities.
+
+Aggregation entities are defined with `@aggregation` in schema.graphql. Every aggregation entity defines the source from which it will gather data (which must be a Timeseries entity), sets the intervals (e.g., hour, day), and specifies the aggregation function it will use (e.g., sum, count, min, max, first, last). Aggregation entities are automatically calculated on the basis of the specified source at the end of the required interval.
+
+#### Available Aggregation Intervals
+
+- `hour`: sets the timeseries period every hour, on the hour.
+- `day`: sets the timeseries period every day, starting and ending at 00:00.
+
+#### Available Aggregation Functions
+
+- `sum`: Total of all values.
+- `count`: Number of values.
+- `min`: Minimum value.
+- `max`: Maximum value.
+- `first`: First value in the period.
+- `last`: Last value in the period.
+
+#### Example Aggregations Query
+
+```graphql
+{
+  stats(interval: "hour", where: { timestamp_gt: 1704085200 }) {
+    id
+    timestamp
+    sum
+  }
+}
+```
+
+Note:
+
+To use Timeseries and Aggregations, a subgraph must have a spec version ≥1.1.0. Note that this feature might undergo significant changes that could affect backward compatibility.
+
+[Read more](https://github.com/graphprotocol/graph-node/blob/master/docs/aggregations.md) about Timeseries and Aggregations.
