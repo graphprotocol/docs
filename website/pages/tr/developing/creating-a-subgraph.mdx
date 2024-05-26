@@ -14,9 +14,9 @@ Subgraph tanımı birkaç dosyadan oluşmaktadır:
 
 - `AssemblyScript Mappings`: Olay verilerinden şemanızda tanımlanan varlıklara çeviri yapan [AssemblyScript](https://github.com/AssemblyScript/assemblyscript) kodu (örneğin bu öğretici içerikte `mapping.ts`)
 
-> Subgraph'ınızı Graph'ın merkeziyetsiz ağında kullanmak için [API anahtarı oluşturmanız gerekir](/deploying/subgraph-studio-faqs/#2-how-do-i-create-an-api-key). Ayrıca subgraph'ınıza en az [10,000 GRT](/network-transition-faq/#how-can-i-ensure-that-my-subgraph-will-be-picked-up-by-indexer-on-the-graph-network) [sinyal eklemeniz](/network/curating/#how-to-signal) önerilir.
+> In order to use your subgraph on The Graph's decentralized network, you will need to [create an API key](/deploying/subgraph-studio-faqs/#2-how-do-i-create-an-api-key). It is recommended that you [add signal](/network/curating/#how-to-signal) to your subgraph with at least [3,000 GRT](/sunrise/#how-can-i-ensure-high-quality-of-service-and-redundancy-for-subgraphs-on-the-graph-network).
 
-Manifest dosyasının içeriği hakkında detaylı bilgilere girmeden önce, bir subgraph oluşturmak ve dağıtmak için ihtiyacınız olan [Graph CLI](https://github.com/graphprotocol/graph-cli)'yi yüklemeniz gereklidir.
+Before you go into detail about the contents of the manifest file, you need to install the [Graph CLI](https://github.com/graphprotocol/graph-tooling) which you will need to build and deploy a subgraph.
 
 ## Graph CLI'ı Yükleyin
 
@@ -36,7 +36,7 @@ yarn global add @graphprotocol/graph-cli
 npm install -g @graphprotocol/graph-cli
 ```
 
-Kurulduktan sonra `graph init` komutu, mevcut bir sözleşmeden veya örnek bir subgraph'ten yeni bir subgraph projesi oluşturmak için kullanılabilir. Bu komut, `graph init --product subgraph-studio`'yi geçerek Subgraph Stüdyo'da bir subgraph oluşturmak için kullanılabilir. Halihazırda tercih ettiğiniz ağa konuşlandırılmış bir akıllı sözleşmeniz varsa, bu sözleşmeden yeni bir subgraph'i önyüklemek başlamak için iyi bir yol olabilir.
+Once installed, the `graph init` command can be used to set up a new subgraph project, either from an existing contract or from an example subgraph. This command can be used to create a subgraph in Subgraph Studio by passing in `graph init --product subgraph-studio`. If you already have a smart contract deployed to your preferred network, bootstrapping a new subgraph from that contract can be a good way to get started.
 
 ## Mevcut Bir Sözleşmeden
 
@@ -61,7 +61,7 @@ graph init \
 graph init --studio <SUBGRAPH_SLUG>
 ```
 
-Örnek subgraph, kullanıcı avatarlarını yöneten ve avatarlar oluşturulduğunda veya güncellendiğinde `NewGravatar` veya `UpdateGravatar` olaylarını yayınlayan Dani Grant'in Gravity sözleşmesine dayanmaktadır. Subgraph, bu olayları `Gravatar` varlıklarını Graph Node depolama alanına yazarak ve bunların olaylara göre güncellenmesini sağlayarak işler. Aşağıdaki bölümlerde, bu örnek için subgraph manifest'ini oluşturan dosyaların üzerinden geçilecektir.
+The [example subgraph](https://github.com/graphprotocol/example-subgraph) is based on the Gravity contract by Dani Grant that manages user avatars and emits `NewGravatar` or `UpdateGravatar` events whenever avatars are created or updated. The subgraph handles these events by writing `Gravatar` entities to the Graph Node store and ensuring these are updated according to the events. The following sections will go over the files that make up the subgraph manifest for this example.
 
 ## Mevcut Bir Subgraph'a Yeni veriKaynakları(dataSources) Ekleme
 
@@ -101,6 +101,8 @@ description: Gravatar for Ethereum
 repository: https://github.com/graphprotocol/graph-tooling
 schema:
   file: ./schema.graphql
+indexerHints:
+  prune: auto
 dataSources:
   - kind: ethereum/contract
     name: Gravity
@@ -144,17 +146,21 @@ dataSources:
 
 Manifest için güncellenmesi gereken önemli girdiler şunlardır:
 
-- `description`: Subgraph'in ne olduğuna dair insan tarafından okunabilen bir açıklama. Bu açıklama, subgraph barındırılan hizmete deploy edildiğinde Graph Gezgini tarafından görüntülenir.
+- `specVersion`: a semver version that identifies the supported manifest structure and functionality for the subgraph. The latest version is `1.2.0`. See [specVersion releases](#specversion-releases) section to see more details on features & releases.
 
-- `repository`: Subgraph manifest'inin bulunabileceği havuz URL'si. Ayrıca Graph Gezgini tarafından da görüntülenir.
+- `description`: a human-readable description of what the subgraph is. This description is displayed in Graph Explorer when the subgraph is deployed to Subgraph Studio.
+
+- `repository`: the URL of the repository where the subgraph manifest can be found. This is also displayed in Graph Explorer.
 
 - `features`: kullanılan tüm [özellik(feature)](#experimental-features) adlarının bir listesi.
+
+- `indexerHints.prune`: Defines the retention of historical block data for a subgraph. See [prune](#prune) in [indexerHints](#indexer-hints) section.
 
 - `dataSources.source`: Subgraph kaynaklarının olduğu akıllı sözleşmenin adresi ve kullanılacak akıllı sözleşmenin ABI'si. Adres isteğe bağlıdır; atlanması, tüm sözleşmelerden eşleşen olayları indekslemeyi sağlar.
 
 - `dataSources.source.startBlock`: veri kaynağının indekslemeye başladığı isteğe bağlı blok numarası. Çoğu durumda, sözleşmenin oluşturulduğu bloğun kullanılmasını öneririz.
 
-- `dataSources.source.endBlock`: Veri kaynağının indekslemeyi durdurduğu bloğun isteğe bağlı numarası (bu blok da dahil). Gereken minimum spesifikasyon sürümü: `0.0.9`.
+- `dataSources.source.endBlock`: The optional number of the block that the data source stops indexing at, including that block. Minimum spec version required: `0.0.9`.
 
 - `dataSources.context`: subgraph eşleştirmelerinde kullanılabilen anahtar-değer çiftleridir. `Bool`, `String`, `Int`, `Int8`, `BigDecimal`, `Bytes`, `List` ve `BigInt` gibi çeşitli veri tipleri desteklenir. Her değişkenin `type` ve `data` özelliklerinin belirtilmesi gerekir. Bu bağlam değişkenlerine daha sonra eşleştirme dosyalarından erişilebilir ve böylece subgraph geliştirme için daha yapılandırılabilir seçenekler sunulmuş olur.
 
@@ -170,6 +176,8 @@ Manifest için güncellenmesi gereken önemli girdiler şunlardır:
 
 Bir subgraph birden fazla akıllı sözleşmeden veri indeksleyebilir. `dataSources` dizisine indekslenmesi gereken veriden her kontrata bir giriş ekleyin.
 
+### Order of Triggering Handlers
+
 Bir bloktaki veri kaynağı için tetikleyiciler şu işlemlerle sıralanır:
 
 1. Olay ve çağrı tetikleyicileri, öncelikle bloktaki işlem indeksine göre sıralanır.
@@ -177,6 +185,22 @@ Bir bloktaki veri kaynağı için tetikleyiciler şu işlemlerle sıralanır:
 3. Blok tetikleyicileri, olay ve çağrı tetikleyicilerinden sonra manifest'te tanımlandıkları sırada göre çalıştırılır.
 
 Bu sıralama kuralları değişebilir.
+
+> **Note:** When new [dynamic data source](#data-source-templates-for-dynamically-created-contracts) are created, the handlers defined for dynamic data sources will only start processing after all existing data source handlers are processed, and will repeat in the same sequence whenever triggered.
+
+### SpecVersion Releases
+
+| Sürüm | Sürüm Notları                                                                                                                                                          |
+|:-----:| ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1.2.0 | Added support for [Indexed Argument Filtering](/#indexed-argument-filters--topic-filters) & declared `eth_call`                                                        |
+| 1.1.0 | Supports [Timeseries & Aggregations](#timeseries-and-aggregations). Added support for type `Int8` for `id`.                                                            |
+| 1.0.0 | Supports [`indexerHints`](/developing/creating-a-subgraph/#indexer-hints) feature to prune subgraphs                                                                   |
+| 0.0.9 | Supports `endBlock` feature                                                                                                                                            |
+| 0.0.8 | Added support for polling [Block Handlers](developing/creating-a-subgraph/#polling-filter) and [Initialisation Handlers](developing/creating-a-subgraph/#once-filter). |
+| 0.0.7 | Added support for [File Data Sources](developing/creating-a-subgraph/#file-data-sources).                                                                              |
+| 0.0.6 | Supports fast [Proof of Indexing](/network/indexing/#what-is-a-proof-of-indexing-poi) calculation variant.                                                             |
+| 0.0.5 | Added support for event handlers having access to transaction receipts.                                                                                                |
+| 0.0.4 | Added support for managing subgraph features.                                                                                                                          |
 
 ### ABI'leri Alma
 
@@ -248,15 +272,15 @@ Bazı varlık türleri için `id`, iki diğer varlığın id'lerinden oluşturul
 
 GraphQL API'mizde aşağıdaki skalerleri destekliyoruz:
 
-| Tür | Tanım |
-| --- | --- |
-| `Baytlar` | Byte dizisi, onaltılık bir dizgi olarak temsil edilir. Ethereum hash değerleri ve adresleri için yaygın olarak kullanılır. |
-| `Dizgi(String)` | `string` değerleri için skaler. Null karakterleri desteklenmez ve otomatik olarak kaldırılır. |
-| `Boolean` | `boolean` değerleri için skaler. |
-| `Int` | GraphQL özellikleri, `Int`'in 32 bayt boyutunda olduğunu tanımlar. |
-| `Int8` | 64 bitlik işaretli tam sayı olarak da bilinen 8 baytlık işaretli tam sayı, -9,223,372,036,854,775,808 ila 9,223,372,036,854,775,807 aralığındaki değerleri depolayabilir. Ethereum'dan `i64`'ü temsil etmek için bunu kullanmayı tercih edin. |
-| `BigInt` | Büyük tamsayılar. Ethereum'un `uint32`, `int64`, `uint64`, ..., `uint256` türleri için kullanılır. Not: `int32`, `uint24` veya `int8` gibi `uint32`'nin altındaki her şey `i32`olarak temsil edilir. |
-| `BigDecimal` | `BigDecimal` Yüksek hassasiyetli ondalık sayılar, bir anlamlı ve bir üsle temsil edilir. Üs aralığı -6143 ila +6144 arasındadır. 34 anlamlı rakama yuvarlanır. |
+| Tür             | Tanım                                                                                                                                                                                                            |
+| --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Baytlar`       | Byte dizisi, onaltılık bir dizgi olarak temsil edilir. Ethereum hash değerleri ve adresleri için yaygın olarak kullanılır.                                                                                       |
+| `Dizgi(String)` | `string` değerleri için skaler. Null karakterleri desteklenmez ve otomatik olarak kaldırılır.                                                                                                                    |
+| `Boolean`       | `boolean` değerleri için skaler.                                                                                                                                                                                 |
+| `Int`           | GraphQL özellikleri, `Int`'in 32 bayt boyutunda olduğunu tanımlar.                                                                                                                                               |
+| `Int8`          | An 8-byte signed integer, also known as a 64-bit signed integer, can store values in the range from -9,223,372,036,854,775,808 to 9,223,372,036,854,775,807. Prefer using this to represent `i64` from ethereum. |
+| `BigInt`        | Büyük tamsayılar. Ethereum'un `uint32`, `int64`, `uint64`, ..., `uint256` türleri için kullanılır. Not: `int32`, `uint24` veya `int8` gibi `uint32`'nin altındaki her şey `i32`olarak temsil edilir.             |
+| `BigDecimal`    | `BigDecimal` Yüksek hassasiyetli ondalık sayılar, bir anlamlı ve bir üsle temsil edilir. Üs aralığı -6143 ila +6144 arasındadır. 34 anlamlı rakama yuvarlanır.                                                   |
 
 #### Numaralandırmalar
 
@@ -398,11 +422,11 @@ query usersWithOrganizations {
 
 #### Şemaya notlar/yorumlar ekleme
 
-GraphQL spesifikasyonuna göre, şema varlık özniteliklerinin üzerinde çift tırnak işaretleri `""` kullanarak yorumlar eklenebilir. Bu aşağıdaki örnekte gösterilmiştir:
+As per GraphQL spec, comments can be added above schema entity attributes using the hash symble `#`. This is illustrated in the example below:
 
 ```graphql
 type MyFirstEntity @entity {
-  "unique identifier and primary key of the entity"
+  # unique identifier and primary key of the entity
   id: Bytes!
   address: Bytes!
 }
@@ -488,7 +512,7 @@ Sonuçları sıralamak için desteklenen algoritmalar:
 
 ## Eşleştirmeleri Yazma
 
-Eşlemeler, verileri belirli bir kaynaktan alır ve şemanızda tanımlanan varlıklara dönüştürür. Eşlemeler, WASM ([WebAssembly](https://webassembly.org/))'ye derlenebilen [AssemblyScript](https://github.com/AssemblyScript/assemblyscript/wiki) adlı bir [TypeScript](https://www.typescriptlang.org/docs/handbook/typescript-in-5-minutes.html) alt kümesinde yazılır. AssemblyScript, normal TypeScript'ten daha katıdır, ancak yine de tanıdık bir sözdizimi sağlar.
+The mappings take data from a particular source and transform it into entities that are defined within your schema. Mappings are written in a subset of [TypeScript](https://www.typescriptlang.org/docs/handbook/typescript-in-5-minutes.html) called [AssemblyScript](https://github.com/AssemblyScript/assemblyscript/wiki) which can be compiled to WASM ([WebAssembly](https://webassembly.org/)). AssemblyScript is stricter than normal TypeScript, yet provides a familiar syntax.
 
 `subgraph.yaml`'da `mapping.eventHandlers` altında tanımlanan her olay işleyicisi için, aynı isimde dışa aktarılmış bir fonksiyon oluşturun. Her işleyici, işlenen olayın adına karşılık gelen bir türde `event` adında tek bir parametre kabul etmelidir.
 
@@ -525,13 +549,32 @@ export function handleUpdatedGravatar(event: UpdatedGravatar): void {
 
 ### Yeni Varlıklar Oluşturmak için Önerilen Kimlikler(IDs)
 
-Her varlığın aynı türdeki tüm varlıklar arasında benzersiz olan bir `id`'si olması gerekir. Bir varlığın `id` değeri, varlık oluşturulduğunda belirlenir. Aşağıda, yeni varlıklar oluştururken hesaba katılması gereken bazı önerilen `id` değerleri verilmiştir. NOT: `id` değeri bir `dizgi` olmalıdır.
+It is highly recommended to use `Bytes` as the type for `id` fields, and only use `String` for attributes that truly contain human-readable text, like the name of a token. Below are some recommended `id` values to consider when creating new entities.
 
-- `event.params.id.toHex()`
-- `event.transaction.from.toHex()`
-- `event.transaction.hash.toHex() + "-" + event.logIndex.toString()`
+- `transfer.id = event.transaction.hash`
 
-Graph Node'u mağazasıyla etkileşim kurmaya yönelik yardımcı programları ve akıllı sözleşme verilerini ve varlıklarını yönetmeye yönelik kolaylıkları içeren [Graph Yazı Tipi Kitaplığı](https://github.com/graphprotocol/graph-ts)'nı sağlıyoruz. `@graphprotocol/graph-ts`'i `mapping.ts`'ye aktararak bu kütüphaneyi eşlemelerinizde kullanabilirsiniz.
+- `let id = event.transaction.hash.concatI32(event.logIndex.toI32())`
+
+- For entities that store aggregated data, for e.g, daily trade volumes, the `id` usually contains the day number. Here, using a `Bytes` as the `id` is beneficial. Determining the `id` would look like
+
+```typescript
+let dayID = event.block.timestamp.toI32() / 86400
+let id = Bytes.fromI32(dayID)
+```
+
+- Convert constant addresses to `Bytes`.
+
+`const id = Bytes.fromHexString('0xdead...beef')`
+
+There is a [Graph Typescript Library](https://github.com/graphprotocol/graph-tooling/tree/main/packages/ts) which contains utilities for interacting with the Graph Node store and conveniences for handling smart contract data and entities. It can be imported into `mapping.ts` from `@graphprotocol/graph-ts`.
+
+### Handling of entities with identical IDs
+
+When creating and saving a new entity, if an entity with the same ID already exists, the properties of the new entity are always preferred during the merge process. This means that the existing entity will be updated with the values from the new entity.
+
+If a null value is intentionally set for a field in the new entity with the same ID, the existing entity will be updated with the null value.
+
+If no value is set for a field in the new entity with the same ID, the field will result in null as well.
 
 ## Kod Oluşturma
 
@@ -573,13 +616,13 @@ import { Gravatar } from '../generated/schema'
 
 > **Not:** Kod oluşturma, GraphQL şemasındaki veya manifeste dahil edilen ABI'lerdeki her değişiklikten sonra tekrar yapılmalıdır. Ayrıca, subgraph oluşturulmadan önce en az bir kez yapılmalıdır.
 
-Kod oluşturma, `src/mapping.ts`'deki eşleştirme kodunuzu kontrol etmez. Subgraph'ınızı Graph Gezginine dağıtmadan önce bunu kontrol etmek isterseniz, `yarn build` çalıştırabilir ve TypeScript derleyicisinin bulabileceği herhangi bir sözdizimi hatasını düzeltebilirsiniz.
+Code generation does not check your mapping code in `src/mapping.ts`. If you want to check that before trying to deploy your subgraph to Graph Explorer, you can run `yarn build` and fix any syntax errors that the TypeScript compiler might find.
 
 ## Veri Kaynağı Şablonları
 
-EVM uyumlu akıllı sözleşmelerdeki yaygın bir model, bir sözleşmenin her birinin kendi durumu ve olayı olan rastgele sayıda başka sözleşmeler oluşturduğu, yönettiği veya bunlara atıfta bulunduğu kayıt defteri veya fabrika sözleşmelerinin kullanılmasıdır.
+A common pattern in EVM-compatible smart contracts is the use of registry or factory contracts, where one contract creates, manages, or references an arbitrary number of other contracts that each have their own state and events.
 
-Bu alt sözleşmelerin adresleri önceden bilinebilir veya bilinmeyebilir ve bu sözleşmelerin çoğu zaman içinde oluşturulabilir ve/veya eklenebilir. Bu nedenle, bu gibi durumlarda tek bir veri kaynağı veya sabit sayıda veri kaynağı tanımlamak imkansızdır ve daha dinamik bir yaklaşıma ihtiyaç vardır: _data source templates_.
+The addresses of these sub-contracts may or may not be known upfront and many of these contracts may be created and/or added over time. This is why, in such cases, defining a single data source or a fixed number of data sources is impossible and a more dynamic approach is needed: _data source templates_.
 
 ### Ana Sözleşme için Veri Kaynağı
 
@@ -659,7 +702,7 @@ export function handleNewExchange(event: NewExchange): void {
 ```
 
 > **Not:** Yeni bir veri kaynağı, oluşturulduğu blok ve tüm takip eden bloklar için yalnızca çağrıları ve olayları işleyecektir, ancak önceki bloklarda bulunan geçmiş verileri işlemeyecektir.
->
+> 
 > Eğer önceki bloklar, yeni veri kaynağı için ilgili veri içeriyorsa, o veriyi indekslemek için sözleşmenin mevcut durumunu okuyarak ve yeni veri kaynağı oluşturulurken o zaman dilimindeki durumu temsil eden varlıklar oluşturarak yapmak en iyisidir.
 
 ### Veri Kaynağı Bağlamı
@@ -716,10 +759,218 @@ dataSources:
 ```
 
 > **Not:** Sözleşme oluşturma bloğu hızlı bir şekilde Etherscan'da aranabilir:
->
+> 
 > 1. Arama çubuğuna adresini girerek sözleşmeyi arayın.
 > 2. `Contract Creator` bölümünde oluşturma işlemi hash'ına tıklayın.
 > 3. İşlem detayları sayfasını yükleyin ve bu sözleşme için başlangıç bloğunu bulacaksınız.
+
+## Indexer Hints
+
+The `indexerHints` setting in a subgraph's manifest provides directives for indexers on processing and managing a subgraph. It influences operational decisions across data handling, indexing strategies, and optimizations. Presently, it features the `prune` option for managing historical data retention or pruning.
+
+> This feature is available from `specVersion: 1.0.0`
+
+### Prune
+
+`indexerHints.prune`: Defines the retention of historical block data for a subgraph. Options include:
+
+1. `"never"`: No pruning of historical data; retains the entire history.
+2. `"auto"`: Retains the minimum necessary history as set by the indexer, optimizing query performance.
+3. A specific number: Sets a custom limit on the number of historical blocks to retain.
+
+```
+ indexerHints:
+  prune: auto
+```
+
+> The term "history" in this context of subgraphs is about storing data that reflects the old states of mutable entities.
+
+History as of a given block is required for:
+
+- [Time travel queries](/querying/graphql-api/#time-travel-queries), which enable querying the past states of these entities at specific blocks throughout the subgraph's history
+- Using the subgraph as a [graft base](/developing/creating-a-subgraph/#grafting-onto-existing-subgraphs) in another subgraph, at that block
+- Rewinding the subgraph back to that block
+
+If historical data as of the block has been pruned, the above capabilities will not be available.
+
+> Using `"auto"` is generally recommended as it maximizes query performance and is sufficient for most users who do not require access to extensive historical data.
+
+For subgraphs leveraging [time travel queries](/querying/graphql-api/#time-travel-queries), it's advisable to either set a specific number of blocks for historical data retention or use `prune: never` to keep all historical entity states. Below are examples of how to configure both options in your subgraph's settings:
+
+To retain a specific amount of historical data:
+
+```
+ indexerHints:
+  prune: 1000 # Replace 1000 with the desired number of blocks to retain
+```
+
+To preserve the complete history of entity states:
+
+```
+indexerHints:
+  prune: never
+```
+
+You can check the earliest block (with historical state) for a given subgraph by querying the [Indexing Status API](/deploying/deploying-a-subgraph-to-hosted/#checking-subgraph-health):
+
+```
+{
+  indexingStatuses(subgraphs: ["Qm..."]) {
+    subgraph
+    synced
+    health
+    chains {
+      earliestBlock {
+        number
+      }
+      latestBlock {
+        number
+      }
+      chainHeadBlock { number }
+    }
+  }
+}
+```
+
+Note that the `earliestBlock` is the earliest block with historical data, which will be more recent than the `startBlock` specified in the manifest, if the subgraph has been pruned.
+
+## Event Handlers
+
+Event handlers in a subgraph react to specific events emitted by smart contracts on the blockchain and trigger handlers defined in the subgraph's manifest. This enables subgraphs to process and store event data according to defined logic.
+
+### Defining an Event Handler
+
+An event handler is declared within a data source in the subgraph's YAML configuration. It specifies which events to listen for and the corresponding function to execute when those events are detected.
+
+```yaml
+dataSources:
+  - kind: ethereum/contract
+    name: Gravity
+    network: dev
+    source:
+      address: '0x731a10897d267e19b34503ad902d0a29173ba4b1'
+      abi: Gravity
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.6
+      language: wasm/assemblyscript
+      entities:
+        - Gravatar
+        - Transaction
+      abis:
+        - name: Gravity
+          file: ./abis/Gravity.json
+      eventHandlers:
+        - event: Approval(address,address,uint256)
+          handler: handleApproval
+        - event: Transfer(address,address,uint256)
+          handler: handleTransfer
+          topic1: ['0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045', '0xc8dA6BF26964aF9D7eEd9e03E53415D37aA96325'] # Optional topic filter which filters only events with the specified topic.
+```
+
+### Indexed Argument Filters / Topic Filters
+
+> **Requires `specVersion` >= 1.2.0**
+
+Topic filters, also known as indexed argument filters, are a powerful feature in subgraphs that allow for precise filtering of blockchain events based on the values of their indexed arguments. These filters are particularly useful for isolating specific events of interest from the vast stream of events on the blockchain, enabling subgraphs to operate more efficiently by focusing only on relevant data. This can be incredibly useful for usecases like creating personal subgraphs that track specific addresses and their interactions with various smart contracts on the blockchain.
+
+#### How Topic Filters Work
+
+When a smart contract emits an event, any arguments that are marked as indexed can be used as filters in a subgraph's manifest. This allows the subgraph to listen selectively for events that match these indexed arguments. The event's first indexed argument corresponds to `topic1`, the second to `topic2`, and so on, up to `topic3`, since the Ethereum Virtual Machine (EVM) allows up to three indexed arguments per event.
+
+```solidity
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
+
+contract Token {
+    // Event declaration with indexed parameters for addresses
+    event Transfer(address indexed from, address indexed to, uint256 value);
+
+    // Function to simulate transferring tokens
+    function transfer(address to, uint256 value) public {
+        // Emitting the Transfer event with from, to, and value
+        emit Transfer(msg.sender, to, value);
+    }
+}
+```
+
+In this example:
+
+- The `Transfer` event is used to log transactions of tokens between addresses.
+- The `from` and `to` parameters are indexed, which allows event listeners to filter and monitor transfers involving specific addresses.
+- The `transfer` function is a simple representation of a token transfer action, emitting the Transfer event whenever it is called.
+
+#### Configuration in Subgraphs
+
+Topic filters are defined directly within the event handler configuration in the subgraph manifest. Here is how they are configured:
+
+```yaml
+eventHandlers:
+  - event: SomeEvent(indexed uint256, indexed address, indexed uint256)
+    handler: handleSomeEvent
+    topic1: ['0xValue1', '0xValue2']
+    topic2: ['0xAddress1', '0xAddress2']
+    topic3: ['0xValue3']
+```
+
+In this setup:
+
+- `topic1` corresponds to the first indexed argument of the event, `topic2` to the second, and `topic3` to the third.
+- Each topic can have one or more values, and an event is only processed if it matches one of the values in each specified topic.
+
+##### Filter Logic
+
+- Within a Single Topic: The logic functions as an OR condition. The event will be processed if it matches any one of the listed values in a given topic.
+- Between Different Topics: The logic functions as an AND condition. An event must satisfy all specified conditions across different topics to trigger the associated handler.
+
+### Example 1: Tracking a Single Address's Transfer Transactions
+
+```yaml
+eventHandlers:
+  - event: Transfer(indexed address,indexed address,uint256)
+    handler: handleTransfer
+    topic1: ['0xSpecificAddress']
+  - event: Transfer(indexed address,indexed address,uint256)
+    handler: handleTransfer
+    topic2: ['0xSpecificAddress']
+```
+
+In this configuration:
+
+- `topic1` filters Transfer events based on the from address, and `topic2` filters based on the to address.
+- The subgraph will index transactions where the specified address is involved either as a sender or a receiver.
+
+### Example 2: Tracking Direct Transfers from Address A to Address B
+
+```yaml
+eventHandlers:
+  - event: Transfer(indexed address,indexed address,uint256)
+    handler: handleDirectedTransfer
+    topic1: ['0xAddressA'] # Sender Address
+    topic2: ['0xAddressB'] # Receiver Address
+```
+
+In this configuration:
+
+- `topic1` is configured to filter `Transfer` events where `0xAddressA` is the sender.
+- `topic2` is configured to filter `Transfer` events where `0xAddressB` is the receiver.
+- The subgraph will only index transactions that occur directly from `0xAddressA` to `0xAddressB`.
+
+### Example 3: Tracking Transactions in Either Direction Between Two Addresses
+
+```
+eventHandlers:
+  - event: Transfer(indexed address,indexed address,uint256)
+    handler: handleTransferToOrFrom
+    topic1: ["0xAddressA"]  # Sender or Receiver Address
+    topic2: ["0xAddressB"]  # Sender or Receiver Address
+```
+
+In this configuration:
+
+- `topic1` is configured to filter `Transfer` events where `0xAddressA` is either the sender or the receiver.
+- `topic2` is configured to filter `Transfer` events where `0xAddressB` is either the sender or the receiver.
+- The subgraph will index transactions that occur in either direction between `0xAddressA` and `0xAddressB`, allowing for comprehensive monitoring of interactions involving both addresses.
 
 ## Çağrı İşleyicileri
 
@@ -783,7 +1034,7 @@ Bir subgraph, sözleşme olaylarına veya işlev çağrılarına abone olmanın 
 
 ### Desteklenen Filtreler
 
-#### Arama Filtresi
+#### Call Filter
 
 ```yaml
 filter:
@@ -1027,7 +1278,7 @@ Dosya veri kaynakları, indeksleme sırasında zincir dışı verilere sağlam v
 
 İşleyici yürütme sırasında dosyaları "sıralı" olarak getirmek yerine bu, belirli bir dosya tanımlayıcısı için yeni veri kaynakları olarak üretilebilecek şablonları sunar. Bu yeni veri kaynakları dosyaları alır, başarısız olursa yeniden denener ve dosya bulunduğunda ayrılmış bir işleyici çalıştırır.
 
-Bu, yeni zincir tabanlı veri kaynaklarını dinamik olarak oluşturmak için kullanılan [mevcut veri kaynağı şablonlarına](https://thegraph.com/docs/en/developing/creating-a-subgraph/#data-source-templates) benzer.
+This is similar to the [existing data source templates](/developing/creating-a-subgraph/#data-source-templates), which are used to dynamically create new chain-based data sources.
 
 > Bu, mevcut `ipfs.cat` API'sinin yerini alır
 
@@ -1084,7 +1335,7 @@ type TokenMetadata @entity {
 
 Ana varlık ve sonuç dosya veri kaynak varlığı arasındaki ilişki bire bir ise, en basit kalıp, IPFS CID'yi arama anahtarı olarak kullanarak ana varlığını sonuç dosya varlığına bağlamaktır. Yeni dosya tabanlı varlıklarınızın modellemesiyle ilgili sorun yaşarsanız Discord üzerinden iletişime geçin!
 
-> Ana varlıkları bu iç içe geçmiş varlıklar temelinde filtrelemek için [iç içe filtreleri](https://thegraph.com/docs/en/querying/graphql-api/#example-for-nested-entity-filtering) kullanabilirsiniz.
+> You can use [nested filters](/querying/graphql-api/#example-for-nested-entity-filtering) to filter parent entities on the basis of these nested entities.
 
 #### `kind: file/ipfs` veya `kind: file/arweave` ile yeni bir şablonlu veri kaynağı ekleyin
 
@@ -1108,11 +1359,11 @@ templates:
 
 > Şu anda `abis` gerekli olsa da, dosya veri kaynaklarından sözleşmeleri çağırmak mümkün değildir
 
-Dosya veri kaynağı, varlıklar(`entities`) altında etkileşimde bulunacağı tüm varlık türlerini özellikle belirtmelidir. Daha fazla ayrıntı için sınırlamalara([limitations](#Limitations)) bakın.
+The file data source must specifically mention all the entity types which it will interact with under `entities`. See [limitations](#limitations) for more details.
 
 #### Dosyaları işlemek için yeni bir işleyici oluşturun
 
-Bu işleyici, bulunduğunda dosyanın içeriği olacak ve daha sonra işlenebilecek bir `Bytes` parametresini kabul etmelidir. Bu genellikle, `graph-ts` yardımcıları ([dökümantasyon](https://thegraph.com/docs/en/developing/assemblyscript-api/#json-api)) ile işlenebilen bir JSON dosyası olacaktır.
+This handler should accept one `Bytes` parameter, which will be the contents of the file, when it is found, which can then be processed. This will often be a JSON file, which can be processed with `graph-ts` helpers ([documentation](/developing/assemblyscript-api/#json-api)).
 
 Dosyanın okunabilir bir dize olarak CID'sine `dataSource` aracılığıyla şu şekilde erişilebilir:
 
@@ -1156,7 +1407,7 @@ Artık zincir tabanlı işleyicilerin yürütülmesi sırasında dosya veri kayn
 
 Graph Düğümü, IPFS için [v0 ve v1 içerik tanımlayıcılarını](https://docs.ipfs.tech/concepts/content-addressing/), ve dizinli içerik tanımlayıcılarını desteklemektedir. (örneğin `bafyreighykzv2we26wfrbzkcdw37sbrby4upq7ae3aqobbq7i4er3tnxci/metadata.json`)
 
-Arweave için, 0.33.0 sürümünden itibaren Graph Düğümü, bir Arweave ağ geçidinden [transaction ID](https://docs.arweave.org/developers/server/http-api#transactions) öğelerine göre Arweave'de depolanan dosyaları getirebilir ([örnek dosya](https://bdxujjl5ev5eerd5ouhhs6o4kjrs4g6hqstzlci5pf6vhxezkgaa.arweave.net/CO9EpX0lekJEfXUOeXncUmMuG8eEp5WJHXl9U9yZUYA)). Arweave, Bundlr aracılığıyla yüklenen işlemleri destekler ve Graph Düğümü, [Bundlr manifestlerine](https://docs.bundlr.network/learn/gateways#indexing) dayalı olarak dosyaları da getirebilir.
+For Arweave, as of version 0.33.0 Graph Node can fetch files stored on Arweave based on their [transaction ID](https://docs.arweave.org/developers/arweave-node-server/http-api#transactions) from an Arweave gateway ([example file](https://bdxujjl5ev5eerd5ouhhs6o4kjrs4g6hqstzlci5pf6vhxezkgaa.arweave.net/CO9EpX0lekJEfXUOeXncUmMuG8eEp5WJHXl9U9yZUYA)). Arweave supports transactions uploaded via Irys (previously Bundlr), and Graph Node can also fetch files based on [Irys manifests](https://docs.irys.xyz/overview/gateways#indexing).
 
 Örnek:
 
@@ -1215,7 +1466,7 @@ Ek olarak, zincir üstü bir veri kaynağı veya başka bir dosya veri kaynağı
 
 NFT meta verilerini ilgili tokenleri bağlarken, Üst veri varlığına Token varlığından başvurmak için üst verinin IPFS hash değerini kullanın. Üst veri varlığını IPFS hash değerini bir kimlik olarak kullanarak kaydedin.
 
-Dosya Veri Kaynakları oluştururken, File Data Source işleyicisine kullanılabilir olan ekstra bilgileri geçmek için [DataSource context](https://thegraph.com/docs/en/developing/assemblyscript-api/#entity-and-data-source-context)'i kullanabilirsiniz.
+You can use [DataSource context](/developing/graph-ts/api/#entity-and-datasourcecontext) when creating File Data Sources to pass extra information which will be available to the File Data Source handler.
 
 Birden çok kez yenilenen varlıklarınız varsa, IPFS hash değeri & varlık kimliğini kullanarak benzersiz dosya tabanlı varlıklar oluşturun ve bunları zincir tabanlı bir varlıkta türetilmiş alanda referans gösterin.
 
@@ -1225,7 +1476,7 @@ Birden çok kez yenilenen varlıklarınız varsa, IPFS hash değeri & varlık ki
 
 Dosya veri kaynakları şu anda ABI'leri gerektirir, ancak ABI'ler kullanılmaz ([github issue](https://github.com/graphprotocol/graph-cli/issues/961)). Geçici çözüm, herhangi bir ABI eklemektir.
 
-Dosya Veri Kaynakları için işleyiciler, "unknown import: `ethereum::ethereum.call` has not been defined" ([github issue](https://github.com/graphprotocol/graph-cli/issues/4309)) ile başarısız olan `eth_call` sözleşme bağlamlarını içe aktaran dosyalarda olamaz. Geçici çözüm yolu, dosya veri kaynağı işleyicilerini ayrılmış bir dosyada oluşturmaktır.
+Handlers for File Data Sources cannot be in files which import `eth_call` contract bindings, failing with "unknown import: `ethereum::ethereum.call` has not been defined" ([issue](https://github.com/graphprotocol/graph-node/issues/4309)). Workaround is to create file data source handlers in a dedicated file.
 
 #### Örnekler
 
@@ -1234,3 +1485,65 @@ Dosya Veri Kaynakları için işleyiciler, "unknown import: `ethereum::ethereum.
 #### Referanslar
 
 [GIP Dosyası Veri Kaynakları](https://forum.thegraph.com/t/gip-file-data-sources/2721)
+
+## Timeseries and Aggregations
+
+### Overview
+
+Timeseries and aggregations enable your subgraph to track statistics like daily average price, hourly total transfers, etc.
+
+This feature introduces two new types of subgraph entity. Timeseries entities record data points with timestamps. Aggregation entities perform pre-declared calculations on the Timeseries data points on an hourly or daily basis, then store the results for easy access via GraphQL.
+
+#### Example Schema
+
+```graphql
+type Data @entity(timeseries: true) {
+  id: Int8!
+  timestamp: Timestamp!
+  price: BigDecimal!
+}
+
+type Stats @aggregation(intervals: ["hour", "day"], source: "Data") {
+  id: Int8!
+  timestamp: Timestamp!
+  sum: BigDecimal! @aggregate(fn: "sum", arg: "price")
+}
+```
+
+### Defining Timeseries and Aggregations
+
+Timeseries entities are defined with `@entity(timeseries: true)` in schema.graphql. Every timeseries entity must have a unique ID of the int8 type, a timestamp of the Timestamp type, and include data that will be used for calculation by aggregation entities. These Timeseries entities can be saved in regular trigger handlers, and act as the “raw data” for the Aggregation entities.
+
+Aggregation entities are defined with `@aggregation` in schema.graphql. Every aggregation entity defines the source from which it will gather data (which must be a Timeseries entity), sets the intervals (e.g., hour, day), and specifies the aggregation function it will use (e.g., sum, count, min, max, first, last). Aggregation entities are automatically calculated on the basis of the specified source at the end of the required interval.
+
+#### Available Aggregation Intervals
+
+- `hour`: sets the timeseries period every hour, on the hour.
+- `day`: sets the timeseries period every day, starting and ending at 00:00.
+
+#### Available Aggregation Functions
+
+- `sum`: Total of all values.
+- `count`: Number of values.
+- `min`: Minimum value.
+- `max`: Maximum value.
+- `first`: First value in the period.
+- `last`: Last value in the period.
+
+#### Example Aggregations Query
+
+```graphql
+{
+  stats(interval: "hour", where: { timestamp_gt: 1704085200 }) {
+    id
+    timestamp
+    sum
+  }
+}
+```
+
+Note:
+
+To use Timeseries and Aggregations, a subgraph must have a spec version ≥1.1.0. Note that this feature might undergo significant changes that could affect backward compatibility.
+
+[Read more](https://github.com/graphprotocol/graph-node/blob/master/docs/aggregations.md) about Timeseries and Aggregations.
