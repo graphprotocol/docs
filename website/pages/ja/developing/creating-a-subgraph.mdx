@@ -14,9 +14,9 @@ title: サブグラフの作成
 
 - `AssemblyScript Mappings`: イベントデータをスキーマで定義されたエンティティに変換する[AssemblyScript](https://github.com/AssemblyScript/assemblyscript)コード (例: このチュートリアルでは`mapping.ts`)
 
-> The Graphの分散型ネットワークでサブグラフを利用するためには、[API キーを作成する必要があります](/deploying/subgraph-studio-faqs/#2-how-do-i-create-an-api-key)。[シグナルを追加](/network/curating/#how-to-signal)し、少なくとも[10,000 GRT](/network-transition-faq/#how-can-i ensure-that-my-subgraph-will-pick-up-by-indexer-on-the-graph-network) をサブグラフに追加すると良いでしょう。
+> In order to use your subgraph on The Graph's decentralized network, you will need to [create an API key](/deploying/subgraph-studio-faqs/#2-how-do-i-create-an-api-key). It is recommended that you [add signal](/network/curating/#how-to-signal) to your subgraph with at least [3,000 GRT](/sunrise/#how-can-i-ensure-high-quality-of-service-and-redundancy-for-subgraphs-on-the-graph-network).
 
-マニフェスト・ファイルの内容を詳しく説明する前に、サブグラフを構築してデプロイするために必要な [Graph CLI](https://github.com/graphprotocol/graph-cli)をインストールする必要があります。
+Before you go into detail about the contents of the manifest file, you need to install the [Graph CLI](https://github.com/graphprotocol/graph-tooling) which you will need to build and deploy a subgraph.
 
 ## Graph CLI のインストール
 
@@ -36,7 +36,7 @@ yarn global add @graphprotocol/graph-cli
 npm install -g @graphprotocol/graph-cli
 ```
 
-インストールが完了すると、`graph init` コマンドを使用して、既存のコントラクトまたはサンプル サブグラフから新しいサブグラフ プロジェクトをセットアップできます。このコマンドを使用して、`graph init --product subgraph-studio` を渡すことにより、Subgraph Studio でサブグラフを作成できます。優先ネットワークに既にスマート コントラクトをデプロイしている場合、そのコントラクトから新しいサブグラフをブートストラップすることは、開始するのに適した方法です。
+Once installed, the `graph init` command can be used to set up a new subgraph project, either from an existing contract or from an example subgraph. This command can be used to create a subgraph in Subgraph Studio by passing in `graph init --product subgraph-studio`. If you already have a smart contract deployed to your preferred network, bootstrapping a new subgraph from that contract can be a good way to get started.
 
 ## 既存のコントラクトから
 
@@ -61,7 +61,7 @@ graph init \
 graph init --studio <SUBGRAPH_SLUG>
 ```
 
-例のサブグラフは、Dani Grant による Gravity コントラクトに基づいており、ユーザーのアバターを管理し、アバターが作成または更新されるたびに `NewGravatar` または`UpdateGravatar`イベントを発行します。このサブグラフは、`Gravatar`エンティティを Graph Node ストアに書き込み、イベントに応じてこれらが更新されるようにすることで、これらのイベントを処理します。以下では、この例のサブグラフのマニフェストを構成するファイルについて説明します。
+The [example subgraph](https://github.com/graphprotocol/example-subgraph) is based on the Gravity contract by Dani Grant that manages user avatars and emits `NewGravatar` or `UpdateGravatar` events whenever avatars are created or updated. The subgraph handles these events by writing `Gravatar` entities to the Graph Node store and ensuring these are updated according to the events. The following sections will go over the files that make up the subgraph manifest for this example.
 
 ## 既存のサブグラフに新しいデータソースを追加する
 
@@ -101,6 +101,8 @@ description: Gravatar for Ethereum
 repository: https://github.com/graphprotocol/graph-tooling
 schema:
   file: ./schema.graphql
+indexerHints:
+  prune: auto
 dataSources:
   - kind: ethereum/contract
     name: Gravity
@@ -144,11 +146,15 @@ dataSources:
 
 マニフェストを更新する重要な項目は以下の通りです:
 
-- `description`：サブグラフが何であるかの人間が読める説明。この説明は、サブグラフがホストされたサービスにデプロイされると、グラフ・エクスプローラによって表示されます。
+- `specVersion`: a semver version that identifies the supported manifest structure and functionality for the subgraph. The latest version is `1.2.0`. See [specVersion releases](#specversion-releases) section to see more details on features & releases.
 
-- `repository`: サブグラフのマニフェストが存在するリポジトリの URL です。これは、グラフエクスプローラでも表示されます。
+- `description`: a human-readable description of what the subgraph is. This description is displayed in Graph Explorer when the subgraph is deployed to Subgraph Studio.
+
+- `repository`: the URL of the repository where the subgraph manifest can be found. This is also displayed in Graph Explorer.
 
 - `features`: 使用されるすべての[feature](#experimental-features)名のリストです。
+
+- `indexerHints.prune`: Defines the retention of historical block data for a subgraph. See [prune](#prune) in [indexerHints](#indexer-hints) section.
 
 - `dataSources.source`: サブグラフのソースとなるスマートコントラクトのアドレスと、使用するスマートコントラクトの abi です。アドレスはオプションで、省略すると、すべてのコントラクトからのマッチングイベントにインデックスを付けることができます。
 
@@ -170,6 +176,8 @@ dataSources:
 
 単一のサブグラフは複数のスマートコントラクトからデータを索引化できます。`dataSources`配列に、索引化するデータが必要な各コントラクトのエントリを追加してください
 
+### Order of Triggering Handlers
+
 ブロック内のデータソースのトリガーは、以下のプロセスを使用して順序付けられます:
 
 1. イベントとコールのトリガーは、ブロック内のトランザクションインデックスで最初に並べられます。
@@ -177,6 +185,22 @@ dataSources:
 3. ブロックトリガーは、イベントトリガーとコールトリガーの後に、マニフェストで定義されている順番で実行されます。
 
 これらの順序規則は変更されることがあります。
+
+> **Note:** When new [dynamic data source](#data-source-templates-for-dynamically-created-contracts) are created, the handlers defined for dynamic data sources will only start processing after all existing data source handlers are processed, and will repeat in the same sequence whenever triggered.
+
+### SpecVersion Releases
+
+| バージョン | リリースノート                                                                                                                                                                |
+|:-----:| ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1.2.0 | Added support for [Indexed Argument Filtering](/#indexed-argument-filters--topic-filters) & declared `eth_call`                                                        |
+| 1.1.0 | Supports [Timeseries & Aggregations](#timeseries-and-aggregations). Added support for type `Int8` for `id`.                                                            |
+| 1.0.0 | Supports [`indexerHints`](/developing/creating-a-subgraph/#indexer-hints) feature to prune subgraphs                                                                   |
+| 0.0.9 | Supports `endBlock` feature                                                                                                                                            |
+| 0.0.8 | Added support for polling [Block Handlers](developing/creating-a-subgraph/#polling-filter) and [Initialisation Handlers](developing/creating-a-subgraph/#once-filter). |
+| 0.0.7 | Added support for [File Data Sources](developing/creating-a-subgraph/#file-data-sources).                                                                              |
+| 0.0.6 | Supports fast [Proof of Indexing](/network/indexing/#what-is-a-proof-of-indexing-poi) calculation variant.                                                             |
+| 0.0.5 | Added support for event handlers having access to transaction receipts.                                                                                                |
+| 0.0.4 | Added support for managing subgraph features.                                                                                                                          |
 
 ### ABI を取得する
 
@@ -248,15 +272,15 @@ Null 以外のフィールド 'name' の null 値が解決されました
 
 GraphQL API では、以下の Scalar をサポートしています:
 
-| タイプ | 説明書き |
-| --- | --- |
-| `Bytes` | Byte 配列で、16 進数の文字列で表されます。Ethereum のハッシュやアドレスによく使われます。 |
-| `String` | `string`値の Scalar であり、Null 文字はサポートされておらず、自動的に削除されます。 |
-| `Boolean` | `boolean`値を表す Scalar。 |
-| `Int` | Int GraphQL の仕様では、`Int`のサイズは 32 バイトと定義されています。 |
-| `Int8` | An 8-byte signed integer, also known as a 64-bit signed integer, can store values in the range from -9,223,372,036,854,775,808 to 9,223,372,036,854,775,807. Prefer using this to represent `i64` from ethereum. |
-| `BigInt` | 大きな整数。Ethereum の`uint32`, `int64`, `uint64`, ..., `uint256` タイプに使用されます。注: `int32`, `uint24` `int8`など`uint32`以下のものは`i32`として表現されます。 |
-| `BigDecimal` | `BigDecimal`は、高精度の 10 進数を記号と指数で表します。指数の範囲は -6143 ～ +6144 です。有効数字 34 桁にまとめられます。 |
+| タイプ          | 説明書き                                                                                                                                                                                                             |
+| ------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Bytes`      | Byte 配列で、16 進数の文字列で表されます。Ethereum のハッシュやアドレスによく使われます。                                                                                                                                                            |
+| `String`     | `string`値の Scalar であり、Null 文字はサポートされておらず、自動的に削除されます。                                                                                                                                                             |
+| `Boolean`    | `boolean`値を表す Scalar。                                                                                                                                                                                            |
+| `Int`        | Int GraphQL の仕様では、`Int`のサイズは 32 バイトと定義されています。                                                                                                                                                                    |
+| `Int8`       | An 8-byte signed integer, also known as a 64-bit signed integer, can store values in the range from -9,223,372,036,854,775,808 to 9,223,372,036,854,775,807. Prefer using this to represent `i64` from ethereum. |
+| `BigInt`     | 大きな整数。Ethereum の`uint32`, `int64`, `uint64`, ..., `uint256` タイプに使用されます。注: `int32`, `uint24` `int8`など`uint32`以下のものは`i32`として表現されます。                                                                                |
+| `BigDecimal` | `BigDecimal`は、高精度の 10 進数を記号と指数で表します。指数の範囲は -6143 ～ +6144 です。有効数字 34 桁にまとめられます。                                                                                                                                   |
 
 #### Enums
 
@@ -398,12 +422,12 @@ query usersWithOrganizations {
 
 #### スキーマへのコメントの追加
 
-GraphQL の仕様では、スキーマのエンティティ属性の上にダブルクォーテーション`""`を使ってコメントを追加できます。これを以下の例で説明します:
+As per GraphQL spec, comments can be added above schema entity attributes using the hash symble `#`. This is illustrated in the example below:
 
 ```graphql
 type MyFirstEntity @entity {
-  "unique identifier and primary key of the entity"
-  id: ID!
+  # unique identifier and primary key of the entity
+  id: Bytes!
   address: Bytes!
 }
 ```
@@ -458,33 +482,33 @@ query {
 
 サポートされている言語の辞書:
 
-| コード | 辞書         |
-| ------ | ------------ |
-| simple | General      |
-| da     | Danish       |
-| nl     | Dutch        |
-| en     | English      |
-| fi     | Finnish      |
-| fr     | French       |
-| de     | German       |
-| hu     | Hungarian    |
-| it     | Italian      |
-| no     | Norwegian    |
-| pt     | ポルトガル語 |
-| ro     | Romanian     |
-| ru     | Russian      |
-| es     | Spanish      |
-| sv     | Swedish      |
-| tr     | Turkish      |
+| コード    | 辞書        |
+| ------ | --------- |
+| simple | General   |
+| da     | Danish    |
+| nl     | Dutch     |
+| en     | English   |
+| fi     | Finnish   |
+| fr     | French    |
+| de     | German    |
+| hu     | Hungarian |
+| it     | Italian   |
+| no     | Norwegian |
+| pt     | ポルトガル語    |
+| ro     | Romanian  |
+| ru     | Russian   |
+| es     | Spanish   |
+| sv     | Swedish   |
+| tr     | Turkish   |
 
 ### ランキングアルゴリズム
 
 サポートされている結果の順序付けのアルゴリズム:
 
-| アルゴリズム  | 説明書き                                                            |
-| ------------- | ------------------------------------------------------------------- |
-| rank          | フルテキストクエリのマッチ品質 (0-1) を使用して結果を並べ替えます。 |
-| proximityRank | ProximityRank rank に似ていますが、マッチの近接性も含みます。       |
+| アルゴリズム        | 説明書き                                     |
+| ------------- | ---------------------------------------- |
+| rank          | フルテキストクエリのマッチ品質 (0-1) を使用して結果を並べ替えます。    |
+| proximityRank | ProximityRank rank に似ていますが、マッチの近接性も含みます。 |
 
 ## マッピングの記述
 
@@ -525,13 +549,32 @@ export function handleUpdatedGravatar(event: UpdatedGravatar): void {
 
 ### 新規エンティティ作成時の推奨 ID
 
-すべてのエンティティは、同じタイプのすべてのエンティティ間で一意の `id` を持つ必要があります。エンティティの `id` 値は、エンティティの作成時に設定されます。以下は、新しいエンティティを作成する際に考慮すべき、いくつかの推奨される `id` 値です。注: `id` の値は `string` でなければなりません。
+It is highly recommended to use `Bytes` as the type for `id` fields, and only use `String` for attributes that truly contain human-readable text, like the name of a token. Below are some recommended `id` values to consider when creating new entities.
 
-- `event.params.id.toHex()`
-- `event.transaction.from.toHex()`
-- `event.transaction.hash.toHex() + "-" + event.logIndex.toString()`
+- `transfer.id = event.transaction.hash`
 
-We provide the [Graph Typescript Library](https://github.com/graphprotocol/graph-ts) which contains utilities for interacting with the Graph Node store and conveniences for handling smart contract data and entities. You can use this library in your mappings by importing `@graphprotocol/graph-ts` in `mapping.ts`.
+- `let id = event.transaction.hash.concatI32(event.logIndex.toI32())`
+
+- For entities that store aggregated data, for e.g, daily trade volumes, the `id` usually contains the day number. Here, using a `Bytes` as the `id` is beneficial. Determining the `id` would look like
+
+```typescript
+let dayID = event.block.timestamp.toI32() / 86400
+let id = Bytes.fromI32(dayID)
+```
+
+- Convert constant addresses to `Bytes`.
+
+`const id = Bytes.fromHexString('0xdead...beef')`
+
+There is a [Graph Typescript Library](https://github.com/graphprotocol/graph-tooling/tree/main/packages/ts) which contains utilities for interacting with the Graph Node store and conveniences for handling smart contract data and entities. It can be imported into `mapping.ts` from `@graphprotocol/graph-ts`.
+
+### Handling of entities with identical IDs
+
+When creating and saving a new entity, if an entity with the same ID already exists, the properties of the new entity are always preferred during the merge process. This means that the existing entity will be updated with the values from the new entity.
+
+If a null value is intentionally set for a field in the new entity with the same ID, the existing entity will be updated with the null value.
+
+If no value is set for a field in the new entity with the same ID, the field will result in null as well.
 
 ## コード生成
 
@@ -574,13 +617,13 @@ import { Gravatar } from '../generated/schema'
 
 > **注:** GraphQL スキーマやマニフェストに含まれる ABI を変更するたびに、コード生成を再実行する必要があります。また、サブグラフをビルドまたはディプロイする前に、少なくとも一度は実行する必要があります。
 
-コード生成では、`src/mapping.ts`のマッピングコードはチェックされません。サブグラフをグラフ・エクスプローラーに配置する前にチェックしたい場合は、`yarn build`を実行して、TypeScript コンパイラが検出する可能性のある構文エラーを修正することができます。
+Code generation does not check your mapping code in `src/mapping.ts`. If you want to check that before trying to deploy your subgraph to Graph Explorer, you can run `yarn build` and fix any syntax errors that the TypeScript compiler might find.
 
 ## データソーステンプレート
 
 EVM 互換のスマート コントラクトの一般的なパターンは、レジストリ コントラクトまたはファクトリ コントラクトの使用です。1 つのコントラクトが、それぞれ独自の状態とイベントを持つ任意の数の他のコントラクトを作成、管理、または参照します。
 
-これらのサブコントラクトのアドレスは、事前にわかっている場合とわかっていない場合があり、これらのコントラクトの多くは、時間の経過とともに作成および/または追加される可能性があります。このような場合、単一のデータ ソースまたは固定数のデータ ソースを定義することは不可能であり、より動的なアプローチ、つまり *データ ソース テンプレート*が必要とされるのはこのためです。
+これらのサブコントラクトのアドレスは、事前にわかっている場合とわかっていない場合があり、これらのコントラクトの多くは、時間の経過とともに作成および/または追加される可能性があります。このような場合、単一のデータ ソースまたは固定数のデータ ソースを定義することは不可能であり、より動的なアプローチ、つまり _データ ソース テンプレート_が必要とされるのはこのためです。
 
 ### メインコントラクトのデータソース
 
@@ -660,7 +703,7 @@ export function handleNewExchange(event: NewExchange): void {
 ```
 
 > **注:** 新しいデータ ソースは、それが作成されたブロックとそれに続くすべてのブロックの呼び出しとイベントのみを処理しますが、履歴データ (データなど) は処理しません。それは前のブロックに含まれています。
->
+> 
 > 以前のブロックに新しいデータソースに関連するデータが含まれている場合は、コントラクトの現在の状態を読み取り、新しいデータソースが作成された時点でその状態を表すエンティティを作成することで、そのデータにインデックスを付けることが最善です。
 
 ### データソースコンテクスト
@@ -717,10 +760,218 @@ dataSources:
 ```
 
 > **注:** コントラクト作成ブロックは、Etherscan ですばやく検索できます。
->
+> 
 > 1. 検索バーにアドレスを入力してコントラクトを検索します。
 > 2. `Contract Creator` セクションの作成トランザクションハッシュをクリックします。
 > 3. トランザクションの詳細ページを読み込んで、そのコントラクトの開始ブロックを見つけます。
+
+## Indexer Hints
+
+The `indexerHints` setting in a subgraph's manifest provides directives for indexers on processing and managing a subgraph. It influences operational decisions across data handling, indexing strategies, and optimizations. Presently, it features the `prune` option for managing historical data retention or pruning.
+
+> This feature is available from `specVersion: 1.0.0`
+
+### Prune
+
+`indexerHints.prune`: Defines the retention of historical block data for a subgraph. Options include:
+
+1. `"never"`: No pruning of historical data; retains the entire history.
+2. `"auto"`: Retains the minimum necessary history as set by the indexer, optimizing query performance.
+3. A specific number: Sets a custom limit on the number of historical blocks to retain.
+
+```
+ indexerHints:
+  prune: auto
+```
+
+> The term "history" in this context of subgraphs is about storing data that reflects the old states of mutable entities.
+
+History as of a given block is required for:
+
+- [Time travel queries](/querying/graphql-api/#time-travel-queries), which enable querying the past states of these entities at specific blocks throughout the subgraph's history
+- Using the subgraph as a [graft base](/developing/creating-a-subgraph/#grafting-onto-existing-subgraphs) in another subgraph, at that block
+- Rewinding the subgraph back to that block
+
+If historical data as of the block has been pruned, the above capabilities will not be available.
+
+> Using `"auto"` is generally recommended as it maximizes query performance and is sufficient for most users who do not require access to extensive historical data.
+
+For subgraphs leveraging [time travel queries](/querying/graphql-api/#time-travel-queries), it's advisable to either set a specific number of blocks for historical data retention or use `prune: never` to keep all historical entity states. Below are examples of how to configure both options in your subgraph's settings:
+
+To retain a specific amount of historical data:
+
+```
+ indexerHints:
+  prune: 1000 # Replace 1000 with the desired number of blocks to retain
+```
+
+To preserve the complete history of entity states:
+
+```
+indexerHints:
+  prune: never
+```
+
+You can check the earliest block (with historical state) for a given subgraph by querying the [Indexing Status API](/deploying/deploying-a-subgraph-to-hosted/#checking-subgraph-health):
+
+```
+{
+  indexingStatuses(subgraphs: ["Qm..."]) {
+    subgraph
+    synced
+    health
+    chains {
+      earliestBlock {
+        number
+      }
+      latestBlock {
+        number
+      }
+      chainHeadBlock { number }
+    }
+  }
+}
+```
+
+Note that the `earliestBlock` is the earliest block with historical data, which will be more recent than the `startBlock` specified in the manifest, if the subgraph has been pruned.
+
+## Event Handlers
+
+Event handlers in a subgraph react to specific events emitted by smart contracts on the blockchain and trigger handlers defined in the subgraph's manifest. This enables subgraphs to process and store event data according to defined logic.
+
+### Defining an Event Handler
+
+An event handler is declared within a data source in the subgraph's YAML configuration. It specifies which events to listen for and the corresponding function to execute when those events are detected.
+
+```yaml
+dataSources:
+  - kind: ethereum/contract
+    name: Gravity
+    network: dev
+    source:
+      address: '0x731a10897d267e19b34503ad902d0a29173ba4b1'
+      abi: Gravity
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.6
+      language: wasm/assemblyscript
+      entities:
+        - Gravatar
+        - Transaction
+      abis:
+        - name: Gravity
+          file: ./abis/Gravity.json
+      eventHandlers:
+        - event: Approval(address,address,uint256)
+          handler: handleApproval
+        - event: Transfer(address,address,uint256)
+          handler: handleTransfer
+          topic1: ['0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045', '0xc8dA6BF26964aF9D7eEd9e03E53415D37aA96325'] # Optional topic filter which filters only events with the specified topic.
+```
+
+### Indexed Argument Filters / Topic Filters
+
+> **Requires `specVersion` >= 1.2.0**
+
+Topic filters, also known as indexed argument filters, are a powerful feature in subgraphs that allow for precise filtering of blockchain events based on the values of their indexed arguments. These filters are particularly useful for isolating specific events of interest from the vast stream of events on the blockchain, enabling subgraphs to operate more efficiently by focusing only on relevant data. This can be incredibly useful for usecases like creating personal subgraphs that track specific addresses and their interactions with various smart contracts on the blockchain.
+
+#### How Topic Filters Work
+
+When a smart contract emits an event, any arguments that are marked as indexed can be used as filters in a subgraph's manifest. This allows the subgraph to listen selectively for events that match these indexed arguments. The event's first indexed argument corresponds to `topic1`, the second to `topic2`, and so on, up to `topic3`, since the Ethereum Virtual Machine (EVM) allows up to three indexed arguments per event.
+
+```solidity
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
+
+contract Token {
+    // Event declaration with indexed parameters for addresses
+    event Transfer(address indexed from, address indexed to, uint256 value);
+
+    // Function to simulate transferring tokens
+    function transfer(address to, uint256 value) public {
+        // Emitting the Transfer event with from, to, and value
+        emit Transfer(msg.sender, to, value);
+    }
+}
+```
+
+In this example:
+
+- The `Transfer` event is used to log transactions of tokens between addresses.
+- The `from` and `to` parameters are indexed, which allows event listeners to filter and monitor transfers involving specific addresses.
+- The `transfer` function is a simple representation of a token transfer action, emitting the Transfer event whenever it is called.
+
+#### Configuration in Subgraphs
+
+Topic filters are defined directly within the event handler configuration in the subgraph manifest. Here is how they are configured:
+
+```yaml
+eventHandlers:
+  - event: SomeEvent(indexed uint256, indexed address, indexed uint256)
+    handler: handleSomeEvent
+    topic1: ['0xValue1', '0xValue2']
+    topic2: ['0xAddress1', '0xAddress2']
+    topic3: ['0xValue3']
+```
+
+In this setup:
+
+- `topic1` corresponds to the first indexed argument of the event, `topic2` to the second, and `topic3` to the third.
+- Each topic can have one or more values, and an event is only processed if it matches one of the values in each specified topic.
+
+##### Filter Logic
+
+- Within a Single Topic: The logic functions as an OR condition. The event will be processed if it matches any one of the listed values in a given topic.
+- Between Different Topics: The logic functions as an AND condition. An event must satisfy all specified conditions across different topics to trigger the associated handler.
+
+### Example 1: Tracking a Single Address's Transfer Transactions
+
+```yaml
+eventHandlers:
+  - event: Transfer(indexed address,indexed address,uint256)
+    handler: handleTransfer
+    topic1: ['0xSpecificAddress']
+  - event: Transfer(indexed address,indexed address,uint256)
+    handler: handleTransfer
+    topic2: ['0xSpecificAddress']
+```
+
+In this configuration:
+
+- `topic1` filters Transfer events based on the from address, and `topic2` filters based on the to address.
+- The subgraph will index transactions where the specified address is involved either as a sender or a receiver.
+
+### Example 2: Tracking Direct Transfers from Address A to Address B
+
+```yaml
+eventHandlers:
+  - event: Transfer(indexed address,indexed address,uint256)
+    handler: handleDirectedTransfer
+    topic1: ['0xAddressA'] # Sender Address
+    topic2: ['0xAddressB'] # Receiver Address
+```
+
+In this configuration:
+
+- `topic1` is configured to filter `Transfer` events where `0xAddressA` is the sender.
+- `topic2` is configured to filter `Transfer` events where `0xAddressB` is the receiver.
+- The subgraph will only index transactions that occur directly from `0xAddressA` to `0xAddressB`.
+
+### Example 3: Tracking Transactions in Either Direction Between Two Addresses
+
+```
+eventHandlers:
+  - event: Transfer(indexed address,indexed address,uint256)
+    handler: handleTransferToOrFrom
+    topic1: ["0xAddressA"]  # Sender or Receiver Address
+    topic2: ["0xAddressB"]  # Sender or Receiver Address
+```
+
+In this configuration:
+
+- `topic1` is configured to filter `Transfer` events where `0xAddressA` is either the sender or the receiver.
+- `topic2` is configured to filter `Transfer` events where `0xAddressB` is either the sender or the receiver.
+- The subgraph will index transactions that occur in either direction between `0xAddressA` and `0xAddressB`, allowing for comprehensive monitoring of interactions involving both addresses.
 
 ## コールハンドラー
 
@@ -907,9 +1158,9 @@ eventHandlers:
 
 `specVersion` `0.0.4`以降、サブグラフ機能はマニフェストファイルのトップレベルにある`features`セクションで、以下の表のように`camelCase` の名前を使って明示的に宣言する必要があります:
 
-| 特徴                                                      | 名前                                                |
+| 特徴                                                        | 名前                                                  |
 | --------------------------------------------------------- | --------------------------------------------------- |
-| [致命的でないエラー](#non-fatal-errors)                   | `nonFatalErrors`                                    |
+| [致命的でないエラー](#non-fatal-errors)                            | `nonFatalErrors`                                    |
 | [Full-text Search](#defining-fulltext-search-fields)      | `fullTextSearch`                                    |
 | [Grafting](#grafting-onto-existing-subgraphs)             | `grafting`                                          |
 | [IPFS on Ethereum Contracts](#ipfs-on-ethereum-contracts) | `ipfsOnEthereumContracts` or `nonDeterministicIpfs` |
@@ -1028,7 +1279,7 @@ graft:
 
 ハンドラーの実行中に「インライン」でファイルを取得するのではなく、与えられたファイル識別子に対して新しいデータソースとして生成されるテンプレートを導入しています。これらの新しいデータソースはファイルを取得し、失敗した場合は再試行し、ファイルが見つかった場合は専用のハンドラーを実行します。
 
-これは、[既存のデータソーステンプレート](https://thegraph.com/docs/en/developing/creating-a-subgraph/#data-source-templates)と同様で、新しいチェーンベースのデータソースを動的に作成するために使用します。
+This is similar to the [existing data source templates](/developing/creating-a-subgraph/#data-source-templates), which are used to dynamically create new chain-based data sources.
 
 > 既存の`ipfs.cat` APIを置き換えるものです。
 
@@ -1085,7 +1336,7 @@ type TokenMetadata @entity {
 
 親エンティティと結果のファイルデータソースエンティティの間の関係が1：1である場合、最も単純なパターンは、IPFS CIDをルックアップとして使用して、親エンティティを結果のファイルエンティティにリンクすることです。新しいファイルベースのエンティティのモデリングに問題がある場合は、Discordに連絡してください。
 
-> [入れ子フィルター](https://thegraph.com/docs/en/querying/graphql-api/#example-for-nested-entity-filtering)を使用すると、これらの入れ子エンティティに基づいて、親エンティティをフィルタリングすることができます。
+> You can use [nested filters](/querying/graphql-api/#example-for-nested-entity-filtering) to filter parent entities on the basis of these nested entities.
 
 #### `種類: ファイル/ipfs` または `種類: ファイル/arweave` の新しいテンプレートデータソースを追加します>
 
@@ -1109,11 +1360,11 @@ templates:
 
 > 現在、`abis`が必要ですが、ファイル・データ・ソース内からコントラクトを呼び出すことはできません。
 
-ファイルデータソースは、`entities`の下で相互作用するすべてのエンティティタイプについて具体的に言及しなければなりません。詳しくは[limitations](#Limitations)を参照してください。
+The file data source must specifically mention all the entity types which it will interact with under `entities`. See [limitations](#limitations) for more details.
 
 #### ファイルを処理するハンドラーを新規に作成
 
-このハンドラは、1つの`Bytes`パラメータを受け入れなければなりませんが、これは、ファイルが見つかったときに、その内容を処理することができます。これは多くの場合JSONファイルであり、`graph-ts`ヘルパー（[ドキュメント](https://thegraph.com/docs/en/developing/assemblyscript-api/#json-api)）で処理することができます。
+This handler should accept one `Bytes` parameter, which will be the contents of the file, when it is found, which can then be processed. This will often be a JSON file, which can be processed with `graph-ts` helpers ([documentation](/developing/assemblyscript-api/#json-api)).
 
 読みやすい文字列としてのファイルのCIDは、`dataSource`を介して次のようにアクセスできます：
 
@@ -1157,7 +1408,7 @@ export function handleMetadata(content: Bytes): void {
 
 IPFS の場合、グラフノードは [v0 および v1 コンテンツ識別子、および](https://docs.ipfs.tech/concepts/content-addressing/)ディレクトリを持つコンテンツ識別子 (例: `bafyreighykzv2we26wfrbzkcdw37sbrby4upq7ae3aqobbq7i4er3tnxci/metadata.json`) をサポートします。
 
-Arweave の場合、バージョン 0.33.0 以降、グラフ ノードは Arweave ゲートウェイからの[transaction ID](https://docs.arweave.org/developers/server/http-api#transactions) に基づいて Arweave に保存されているファイルをフェッチできます ([example file](https://bdxujjl5ev5eerd5ouhhs6o4kjrs4g6hqstzlci5pf6vhxezkgaa.arweave.net/CO9EpX0lekJEfXUOeXncUmMuG8eEp5WJHXl9U9yZUYA)). Arweave は Bundlr 経由でアップロードされたトランザクションをサポートしており、Graph Node は[Bundlr manifests](https://docs.bundlr.network/learn/gateways#indexing)に基づいてファイルをフェッチすることもできます。
+For Arweave, as of version 0.33.0 Graph Node can fetch files stored on Arweave based on their [transaction ID](https://docs.arweave.org/developers/arweave-node-server/http-api#transactions) from an Arweave gateway ([example file](https://bdxujjl5ev5eerd5ouhhs6o4kjrs4g6hqstzlci5pf6vhxezkgaa.arweave.net/CO9EpX0lekJEfXUOeXncUmMuG8eEp5WJHXl9U9yZUYA)). Arweave supports transactions uploaded via Irys (previously Bundlr), and Graph Node can also fetch files based on [Irys manifests](https://docs.irys.xyz/overview/gateways#indexing).
 
 例：
 
@@ -1216,7 +1467,7 @@ export function handleTransfer(event: TransferEvent): void {
 
 NFT メタデータを対応するトークンにリンクする場合、メタデータの IPFS ハッシュを使用して、トークン エンティティから Metadata エンティティを参照します。IPFSハッシュをIDとして使用してMetadataエンティティを保存します。
 
-ファイル データ ソースの作成時に [DataSource context](https://thegraph.com/docs/en/developing/assemblyscript-api/#entity-and-data-source-context) を使用すると、ファイル データ ソース ハンドラーで利用できるようになる追加情報を渡すことができます。
+You can use [DataSource context](/developing/graph-ts/api/#entity-and-datasourcecontext) when creating File Data Sources to pass extra information which will be available to the File Data Source handler.
 
 複数回リフレッシュされるエンティティがある場合は、IPFSハッシュ＆スタンプとエンティティIDを使用して一意のファイルベースのエンティティを作成し、チェーンベースのエンティティ内の派生フィールドを使用してそれらを参照します。
 
@@ -1226,7 +1477,7 @@ NFT メタデータを対応するトークンにリンクする場合、メタ�
 
 ファイル データ ソースは現在、ABI が使用されていないにもかかわらず、ABI を必要とします ([issue](https://github.com/graphprotocol/graph-cli/issues/961))。回避策は、任意のABIを追加することです。
 
-ファイルデータソースのハンドラーは、`eth_call`コントラクトバインディングをインポートするファイルには存在できず、「unknown import」で失敗しました。`ethereum::ethereum.call` has not been defined" ([issue](https://github.com/graphprotocol/graph-cli/issues/4309)) で失敗します。回避策としては、ファイルデータソースハンドラーを専用ファイルに作成することです。
+Handlers for File Data Sources cannot be in files which import `eth_call` contract bindings, failing with "unknown import: `ethereum::ethereum.call` has not been defined" ([issue](https://github.com/graphprotocol/graph-node/issues/4309)). Workaround is to create file data source handlers in a dedicated file.
 
 #### 例
 
@@ -1235,3 +1486,65 @@ NFT メタデータを対応するトークンにリンクする場合、メタ�
 #### 参考文献
 
 [GIPファイルデータソース](https://forum.thegraph.com/t/gip-file-data-sources/2721)
+
+## Timeseries and Aggregations
+
+### 概要
+
+Timeseries and aggregations enable your subgraph to track statistics like daily average price, hourly total transfers, etc.
+
+This feature introduces two new types of subgraph entity. Timeseries entities record data points with timestamps. Aggregation entities perform pre-declared calculations on the Timeseries data points on an hourly or daily basis, then store the results for easy access via GraphQL.
+
+#### Example Schema
+
+```graphql
+type Data @entity(timeseries: true) {
+  id: Int8!
+  timestamp: Timestamp!
+  price: BigDecimal!
+}
+
+type Stats @aggregation(intervals: ["hour", "day"], source: "Data") {
+  id: Int8!
+  timestamp: Timestamp!
+  sum: BigDecimal! @aggregate(fn: "sum", arg: "price")
+}
+```
+
+### Defining Timeseries and Aggregations
+
+Timeseries entities are defined with `@entity(timeseries: true)` in schema.graphql. Every timeseries entity must have a unique ID of the int8 type, a timestamp of the Timestamp type, and include data that will be used for calculation by aggregation entities. These Timeseries entities can be saved in regular trigger handlers, and act as the “raw data” for the Aggregation entities.
+
+Aggregation entities are defined with `@aggregation` in schema.graphql. Every aggregation entity defines the source from which it will gather data (which must be a Timeseries entity), sets the intervals (e.g., hour, day), and specifies the aggregation function it will use (e.g., sum, count, min, max, first, last). Aggregation entities are automatically calculated on the basis of the specified source at the end of the required interval.
+
+#### Available Aggregation Intervals
+
+- `hour`: sets the timeseries period every hour, on the hour.
+- `day`: sets the timeseries period every day, starting and ending at 00:00.
+
+#### Available Aggregation Functions
+
+- `sum`: Total of all values.
+- `count`: Number of values.
+- `min`: Minimum value.
+- `max`: Maximum value.
+- `first`: First value in the period.
+- `last`: Last value in the period.
+
+#### Example Aggregations Query
+
+```graphql
+{
+  stats(interval: "hour", where: { timestamp_gt: 1704085200 }) {
+    id
+    timestamp
+    sum
+  }
+}
+```
+
+Note:
+
+To use Timeseries and Aggregations, a subgraph must have a spec version ≥1.1.0. Note that this feature might undergo significant changes that could affect backward compatibility.
+
+[Read more](https://github.com/graphprotocol/graph-node/blob/master/docs/aggregations.md) about Timeseries and Aggregations.
