@@ -1,4 +1,4 @@
-import { HTMLAttributes, useContext } from 'react'
+import { type HTMLAttributes, useContext } from 'react'
 
 import { Icon, Link, useI18n } from '@edgeandnode/gds'
 
