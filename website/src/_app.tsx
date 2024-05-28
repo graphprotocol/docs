@@ -44,24 +44,25 @@ function MyAppWithLocale({ Component, router, pageProps }: AppProps) {
         facetFilters: [`language:${locale}`],
       }}
       disableUserPersonalization={true}
-      transformItems={(items) =>
-        items.map((item) => ({
+      transformItems={(items: any) =>
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+        items.map((item: any) => ({
           ...item,
           url: item.url.replace('https://thegraph.com/docs', process.env.BASE_PATH ?? ''),
         }))
       }
       hitComponent={DocSearchHit}
       navigator={{
-        navigate({ itemUrl }) {
+        navigate({ itemUrl }: { itemUrl: string }) {
           void router.push(removeBasePathFromUrl(itemUrl))
         },
-        navigateNewTab({ itemUrl }) {
+        navigateNewTab({ itemUrl }: { itemUrl: string }) {
           const windowReference = window.open(itemUrl, '_blank', 'noopener')
           if (windowReference) {
             windowReference.focus()
           }
         },
-        navigateNewWindow({ itemUrl }) {
+        navigateNewWindow({ itemUrl }: { itemUrl: string }) {
           window.open(itemUrl, '_blank', 'noopener')
         },
       }}
