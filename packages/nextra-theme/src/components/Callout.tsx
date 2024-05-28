@@ -1,4 +1,4 @@
-import { buildBorder, Spacing, Text, TextProps } from '@edgeandnode/gds'
+import { buildBorder, Spacing, Text, type TextProps } from '@edgeandnode/gds'
 
 export type CalloutProps = Omit<TextProps, 'color'>
 

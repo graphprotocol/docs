@@ -1,9 +1,9 @@
 import * as VisuallyHidden from '@radix-ui/react-visually-hidden'
-import { ElementType, useContext } from 'react'
+import { type ElementType, useContext } from 'react'
 import { useInView } from 'react-intersection-observer'
 import { useDebounce } from 'react-use'
 
-import { buildTransition, Opacity, Spacing, Text, TextProps, useI18n } from '@edgeandnode/gds'
+import { buildTransition, Opacity, Spacing, Text, type TextProps, useI18n } from '@edgeandnode/gds'
 
 import { LinkInline } from '@/components'
 import { DocumentContext } from '@/layout/DocumentContext'

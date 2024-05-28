@@ -1,7 +1,7 @@
 import path from 'path'
 
-import { Root } from 'mdast'
-import { Plugin } from 'unified'
+import type { Root } from 'mdast'
+import type { Plugin } from 'unified'
 import { visit } from 'unist-util-visit'
 
 export const remarkReplaceLinks: Plugin<[{ foundPath: string; basePath: string }], Root> = ({
