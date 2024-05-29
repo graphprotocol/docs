@@ -1,4 +1,4 @@
-import { Locale, NestedStrings, Translations, useI18n as _useI18n } from '@edgeandnode/gds'
+import { Locale, type NestedStrings, type Translations, useI18n as _useI18n } from '@edgeandnode/gds'
 
 import ar from '@/pages/ar/translations'
 import cs from '@/pages/cs/translations'

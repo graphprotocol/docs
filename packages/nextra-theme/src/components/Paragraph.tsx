@@ -1,4 +1,4 @@
-import { Spacing, Text, TextProps } from '@edgeandnode/gds'
+import { Spacing, Text, type TextProps } from '@edgeandnode/gds'
 
 export type ParagraphProps = Omit<TextProps, 'color'>
 

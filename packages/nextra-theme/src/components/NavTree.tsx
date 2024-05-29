@@ -1,18 +1,18 @@
 import { keyframes } from '@emotion/react'
 import * as Collapsible from '@radix-ui/react-collapsible'
-import { AnchorHTMLAttributes, createContext, HTMLAttributes, useContext, useState } from 'react'
-import { SxProp } from 'theme-ui'
+import { type AnchorHTMLAttributes, createContext, type HTMLAttributes, useContext, useState } from 'react'
+import type { SxProp } from 'theme-ui'
 
 import {
   buildTransition,
   Divider,
   Flex,
   Icon,
-  IconProps,
+  type IconProps,
   Link,
   Spacing,
   Text,
-  TextProps,
+  type TextProps,
   useI18n,
 } from '@edgeandnode/gds'
 
