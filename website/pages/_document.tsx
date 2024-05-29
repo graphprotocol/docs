@@ -1,4 +1,4 @@
-import Document, { DocumentContext, DocumentInitialProps, Head, Html, Main, NextScript } from 'next/document'
+import Document, { type DocumentContext, type DocumentInitialProps, Head, Html, Main, NextScript } from 'next/document'
 
 import { defaultLocale, extractLocaleFromRouter, getHtmlAttributesForLocale, Locale } from '@edgeandnode/gds'
 
@@ -7,7 +7,7 @@ type MyDocumentProps = DocumentInitialProps & {
 }
 
 export default class MyDocument extends Document<MyDocumentProps> {
-  static async getInitialProps(context: DocumentContext) {
+  static override async getInitialProps(context: DocumentContext) {
     const { locale } = extractLocaleFromRouter(context)
     const initialProps = await Document.getInitialProps(context)
     return {
@@ -16,7 +16,7 @@ export default class MyDocument extends Document<MyDocumentProps> {
     }
   }
 
-  render() {
+  override render() {
     const { locale } = this.props
 
     return (

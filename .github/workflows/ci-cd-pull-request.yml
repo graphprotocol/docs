@@ -6,7 +6,7 @@ env:
   BASE_IMAGE: ghcr.io/graphprotocol/graph-docs-staging
 
 jobs:
-  build:
+  lint:
     if: contains(github.head_ref, 'crowdin') == false
     runs-on: ubuntu-latest
     steps:
@@ -27,8 +27,78 @@ jobs:
       - name: Install dependencies
         run: pnpm install
 
-      - name: Lint and typecheck
-        run: pnpm check
+      - name: Lint
+        run: pnpm lint
+
+  format:
+    if: contains(github.head_ref, 'crowdin') == false
+    runs-on: ubuntu-latest
+    steps:
+      - name: Cancel Previous Runs
+        uses: styfle/cancel-workflow-action@0.9.1
+        with:
+          access_token: ${{ github.token }}
+
+      - name: Check out the repo
+        uses: actions/checkout@v4
+
+      - name: Set up env
+        uses: the-guild-org/shared-config/setup@main
+        with:
+          nodeVersion: 20
+          packageManager: pnpm
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Check formatting
+        run: pnpm prettier:check
+
+  typecheck:
+    if: contains(github.head_ref, 'crowdin') == false
+    runs-on: ubuntu-latest
+    steps:
+      - name: Cancel Previous Runs
+        uses: styfle/cancel-workflow-action@0.9.1
+        with:
+          access_token: ${{ github.token }}
+
+      - name: Check out the repo
+        uses: actions/checkout@v4
+
+      - name: Set up env
+        uses: the-guild-org/shared-config/setup@main
+        with:
+          nodeVersion: 20
+          packageManager: pnpm
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+  build:
+    if: contains(github.head_ref, 'crowdin') == false
+    runs-on: ubuntu-latest
+    needs: [lint, format, typecheck]
+    steps:
+      - name: Cancel Previous Runs
+        uses: styfle/cancel-workflow-action@0.9.1
+        with:
+          access_token: ${{ github.token }}
+
+      - name: Check out the repo
+        uses: actions/checkout@v4
+
+      - name: Set up env
+        uses: the-guild-org/shared-config/setup@main
+        with:
+          nodeVersion: 20
+          packageManager: pnpm
+
+      - name: Install dependencies
+        run: pnpm install
 
       - name: Build Docker image
         uses: docker/build-push-action@v5

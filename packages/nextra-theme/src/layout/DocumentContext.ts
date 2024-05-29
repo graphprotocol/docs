@@ -1,5 +1,5 @@
-import { NextSeoProps } from 'next-seo'
-import { Heading } from 'nextra'
+import type { NextSeoProps } from 'next-seo'
+import type { Heading } from 'nextra'
 import { createContext } from 'react'
 
 export type Frontmatter = {
