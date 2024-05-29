@@ -5,7 +5,7 @@ export default {
   },
   about: '',
   network: 'The Graph Network',
-  sunrise: 'Sunrise FAQ',
+  sunrise: 'Sunrise Upgrade FAQ',
   billing: '',
   glossary: '',
   tokenomics: 'Tokenomics',
