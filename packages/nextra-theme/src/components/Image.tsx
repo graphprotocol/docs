@@ -1,4 +1,4 @@
-import { ImgHTMLAttributes } from 'react'
+import type { ImgHTMLAttributes } from 'react'
 
 export type ImageProps = Omit<ImgHTMLAttributes<HTMLImageElement>, 'children'>
 

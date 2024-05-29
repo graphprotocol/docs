@@ -1,14 +1,14 @@
 import merge from 'lodash/merge'
-import { NextSeo, NextSeoProps } from 'next-seo'
-import { NextraThemeLayoutProps } from 'nextra'
+import { NextSeo, type NextSeoProps } from 'next-seo'
+import type { NextraThemeLayoutProps } from 'nextra'
 import { useFSRoute } from 'nextra/hooks'
 import { MDXProvider } from 'nextra/mdx'
 import { normalizePages } from 'nextra/normalize-pages'
-import { ReactElement, useCallback, useMemo } from 'react'
+import { type ReactElement, useCallback, useMemo } from 'react'
 import { useSet } from 'react-use'
-import { ThemeUICSSObject } from 'theme-ui'
+import type { ThemeUICSSObject } from 'theme-ui'
 
-import { Divider, DividerProps, Flex, Icon, Spacing, useI18n } from '@edgeandnode/gds'
+import { Divider, type DividerProps, Flex, Icon, Spacing, useI18n } from '@edgeandnode/gds'
 import { NPSForm } from '@edgeandnode/go'
 
 import {

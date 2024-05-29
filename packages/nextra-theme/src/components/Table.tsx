@@ -1,4 +1,4 @@
-import { TableHTMLAttributes } from 'react'
+import type { TableHTMLAttributes } from 'react'
 
 import { buildBorder, buildColor, FontWeight, Spacing, Text } from '@edgeandnode/gds'
 

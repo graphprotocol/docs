@@ -1,4 +1,4 @@
-import { HTMLAttributes } from 'react'
+import type { HTMLAttributes } from 'react'
 
 import { useI18n } from '@edgeandnode/gds'
 
