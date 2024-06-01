@@ -6,6 +6,8 @@ module.exports = {
   proseWrap: 'never',
   plugins: ['prettier-plugin-tailwindcss'],
   tailwindConfig: './website/tailwind.config.ts',
+  tailwindPreserveWhitespace: true,
+  tailwindFunctions: ['classNames'],
   overrides: [
     {
       files: ['**/tsconfig.json'],
