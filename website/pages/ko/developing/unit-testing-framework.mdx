@@ -69,9 +69,9 @@ And finally, do not use `graph test` (which uses your global installation of gra
     ...
   },
   "dependencies": {
-    "@graphprotocol/graph-cli": "^0.30.0",
-    "@graphprotocol/graph-ts": "^0.27.0",
-    "matchstick-as": "^0.5.0"
+    "@graphprotocol/graph-cli": "^0.56.0",
+    "@graphprotocol/graph-ts": "^0.31.0",
+    "matchstick-as": "^0.6.0"
   }
 }
 ```
@@ -142,9 +142,9 @@ You can try out and play around with the examples from this guide by cloning the
 
 Also you can check out the video series on ["How to use Matchstick to write unit tests for your subgraphs"](https://www.youtube.com/playlist?list=PLTqyKgxaGF3SNakGQwczpSGVjS_xvOv3h)
 
-## Tests structure (>=0.5.0)
+## Tests structure
 
-_**IMPORTANT: Requires matchstick-as >=0.5.0**_
+_**IMPORTANT: The test structure described below depens on `matchstick-as` version >=0.5.0**_
 
 ### describe()
 
@@ -522,6 +522,36 @@ assertNotNull<T>(value: T)
 entityCount(entityType: string, expectedCount: i32)
 ```
 
+As of version 0.6.0, asserts support custom error messages as well
+
+```typescript
+assert.fieldEquals('Gravatar', '0x123', 'id', '0x123', 'Id should be 0x123')
+assert.equals(ethereum.Value.fromI32(1), ethereum.Value.fromI32(1), 'Value should equal 1')
+assert.notInStore('Gravatar', '0x124', 'Gravatar should not be in store')
+assert.addressEquals(Address.zero(), Address.zero(), 'Address should be zero')
+assert.bytesEquals(Bytes.fromUTF8('0x123'), Bytes.fromUTF8('0x123'), 'Bytes should be equal')
+assert.i32Equals(2, 2, 'I32 should equal 2')
+assert.bigIntEquals(BigInt.fromI32(1), BigInt.fromI32(1), 'BigInt should equal 1')
+assert.booleanEquals(true, true, 'Boolean should be true')
+assert.stringEquals('1', '1', 'String should equal 1')
+assert.arrayEquals([ethereum.Value.fromI32(1)], [ethereum.Value.fromI32(1)], 'Arrays should be equal')
+assert.tupleEquals(
+  changetype<ethereum.Tuple>([ethereum.Value.fromI32(1)]),
+  changetype<ethereum.Tuple>([ethereum.Value.fromI32(1)]),
+  'Tuples should be equal',
+)
+assert.assertTrue(true, 'Should be true')
+assert.assertNull(null, 'Should be null')
+assert.assertNotNull('not null', 'Should be not null')
+assert.entityCount('Gravatar', 1, 'There should be 2 gravatars')
+assert.dataSourceCount('GraphTokenLockWallet', 1, 'GraphTokenLockWallet template should have one data source')
+assert.dataSourceExists(
+  'GraphTokenLockWallet',
+  Address.zero().toHexString(),
+  'GraphTokenLockWallet should have a data source for zero address',
+)
+```
+
 ## Write a Unit Test
 
 Let's see how a simple unit test would look like using the Gravatar examples in the [Demo Subgraph](https://github.com/LimeChain/demo-subgraph/blob/main/src/gravity.ts).
@@ -845,7 +875,7 @@ Users can assert that an entity does not exist in the store. The function takes 
 assert.notInStore('Gravatar', '23')
 ```
 
-### Printing the whole store (for debug purposes)
+### Printing the whole store, or single entities from it (for debug purposes)
 
 You can print the whole store to the console using this helper function:
 
@@ -853,6 +883,15 @@ You can print the whole store to the console using this helper function:
 import { logStore } from 'matchstick-as/assembly/store'
 
 logStore()
+```
+
+As of version 0.6.0, `logStore` no longer prints derived fields, instead users can use the new `logEntity` function. Of course `logEntity` can be used to print any entity, not just ones that have derived fields. `logEntity` takes the entity type, entity id and a `showRelated` flag to indicate if users want to print the related derived entities.
+
+```
+import { logEntity } from 'matchstick-as/assembly/store'
+
+
+logEntity("Gravatar", 23, true)
 ```
 
 ### Expected failure
@@ -908,26 +947,83 @@ Logging critical errors will stop the execution of the tests and blow everything
 
 ### Testing derived fields
 
-Testing derived fields is a feature which (as the example below shows) allows the user to set a field in a certain entity and have another entity be updated automatically if it derives one of its fields from the first entity. Important thing to note is that the first entity needs to be reloaded as the automatic update happens in the store in rust of which the AS code is agnostic.
+Testing derived fields is a feature which allows users to set a field on a certain entity and have another entity be updated automatically if it derives one of its fields from the first entity.
+
+Before version `0.6.0` it was possible to get the derived entities by accessing them as entity fields/properties, like so:
+
+```typescript
+let entity = ExampleEntity.load('id')
+let derivedEntity = entity.derived_entity
+```
+
+As of version `0.6.0`, this is done by using the `loadRelated` function of graph-node, the derived entities can be accessed the same way as in the handlers.
 
 ```typescript
 test('Derived fields example test', () => {
-  let mainAccount = new GraphAccount('12')
-  mainAccount.save()
-  let operatedAccount = new GraphAccount('1')
-  operatedAccount.operators = ['12']
-  operatedAccount.save()
-  let nst = new NameSignalTransaction('1234')
-  nst.signer = '12'
-  nst.save()
+  let mainAccount = GraphAccount.load('12')!
 
   assert.assertNull(mainAccount.get('nameSignalTransactions'))
   assert.assertNull(mainAccount.get('operatorOf'))
 
+  let operatedAccount = GraphAccount.load('1')!
+  operatedAccount.operators = [mainAccount.id]
+  operatedAccount.save()
+
+  mockNameSignalTransaction('1234', mainAccount.id)
+  mockNameSignalTransaction('2', mainAccount.id)
+
   mainAccount = GraphAccount.load('12')!
 
-  assert.i32Equals(1, mainAccount.nameSignalTransactions.length)
-  assert.stringEquals('1', mainAccount.operatorOf[0])
+  assert.assertNull(mainAccount.get('nameSignalTransactions'))
+  assert.assertNull(mainAccount.get('operatorOf'))
+
+  const nameSignalTransactions = mainAccount.nameSignalTransactions.load()
+  const operatorsOfMainAccount = mainAccount.operatorOf.load()
+
+  assert.i32Equals(2, nameSignalTransactions.length)
+  assert.i32Equals(1, operatorsOfMainAccount.length)
+
+  assert.stringEquals('1', operatorsOfMainAccount[0].id)
+
+  mockNameSignalTransaction('2345', mainAccount.id)
+
+  let nst = NameSignalTransaction.load('1234')!
+  nst.signer = '11'
+  nst.save()
+
+  store.remove('NameSignalTransaction', '2')
+
+  mainAccount = GraphAccount.load('12')!
+  assert.i32Equals(1, mainAccount.nameSignalTransactions.load().length)
+})
+```
+
+### Testing `loadInBlock`
+
+As of version `0.6.0`, users can test `loadInBlock` by using the `mockInBlockStore`, it allows mocking entities in the block cache.
+
+```typescript
+import { afterAll, beforeAll, describe, mockInBlockStore, test } from 'matchstick-as'
+import { Gravatar } from '../../generated/schema'
+
+describe('loadInBlock', () => {
+  beforeAll(() => {
+    mockInBlockStore('Gravatar', 'gravatarId0', gravatar)
+  })
+
+  afterAll(() => {
+    clearInBlockStore()
+  })
+
+  test('Can use entity.loadInBlock() to retrieve entity from cache store in the current block', () => {
+    let retrievedGravatar = Gravatar.loadInBlock('gravatarId0')
+    assert.stringEquals('gravatarId0', retrievedGravatar!.get('id')!.toString())
+  })
+
+  test("Returns null when calling entity.loadInBlock() if an entity doesn't exist in the current block", () => {
+    let retrievedGravatar = Gravatar.loadInBlock('IDoNotExist')
+    assert.assertNull(retrievedGravatar)
+  })
 })
 ```
 
@@ -987,6 +1083,198 @@ test('Data source simple mocking example', () => {
 ```
 
 Notice that dataSourceMock.resetValues() is called at the end. That's because the values are remembered when they are changed and need to be reset if you want to go back to the default values.
+
+### Testing dynamic data source creation
+
+As of version `0.6.0`, it is possible to test if a new data source has been created from a template. This feature supports both ethereum/contract and file/ipfs templates. There are four functions for this:
+
+- `assert.dataSourceCount(templateName, expectedCount)` can be used to assert the expected count of data sources from the specified template
+- `assert.dataSourceExists(templateName, address/ipfsHash)` asserts that a data source with the specified identifier (could be a contract address or IPFS file hash) from a specified template was created
+- `logDataSources(templateName)` prints all data sources from the specified template to the console for debugging purposes
+- `readFile(path)` reads a JSON file that represents an IPFS file and returns the content as Bytes
+
+#### Testing `ethereum/contract` templates
+
+```typescript
+test('ethereum/contract dataSource creation example', () => {
+  // Assert there are no dataSources created from GraphTokenLockWallet template
+  assert.dataSourceCount('GraphTokenLockWallet', 0)
+
+  // Create a new GraphTokenLockWallet datasource with address 0xA16081F360e3847006dB660bae1c6d1b2e17eC2A
+  GraphTokenLockWallet.create(Address.fromString('0xA16081F360e3847006dB660bae1c6d1b2e17eC2A'))
+
+  // Assert the dataSource has been created
+  assert.dataSourceCount('GraphTokenLockWallet', 1)
+
+  // Add a second dataSource with context
+  let context = new DataSourceContext()
+  context.set('contextVal', Value.fromI32(325))
+
+  GraphTokenLockWallet.createWithContext(Address.fromString('0xA16081F360e3847006dB660bae1c6d1b2e17eC2B'), context)
+
+  // Assert there are now 2 dataSources
+  assert.dataSourceCount('GraphTokenLockWallet', 2)
+
+  // Assert that a dataSource with address "0xA16081F360e3847006dB660bae1c6d1b2e17eC2B" was created
+  // Keep in mind that `Address` type is transformed to lower case when decoded, so you have to pass the address as all lower case when asserting if it exists
+  assert.dataSourceExists('GraphTokenLockWallet', '0xA16081F360e3847006dB660bae1c6d1b2e17eC2B'.toLowerCase())
+
+  logDataSources('GraphTokenLockWallet')
+})
+```
+
+##### Example `logDataSource` output
+
+```bash
+🛠  {
+  "0xa16081f360e3847006db660bae1c6d1b2e17ec2a": {
+    "kind": "ethereum/contract",
+    "name": "GraphTokenLockWallet",
+    "address": "0xa16081f360e3847006db660bae1c6d1b2e17ec2a",
+    "context": null
+  },
+  "0xa16081f360e3847006db660bae1c6d1b2e17ec2b": {
+    "kind": "ethereum/contract",
+    "name": "GraphTokenLockWallet",
+    "address": "0xa16081f360e3847006db660bae1c6d1b2e17ec2b",
+    "context": {
+      "contextVal": {
+        "type": "Int",
+        "data": 325
+      }
+    }
+  }
+}
+```
+
+#### Testing `file/ipfs` templates
+
+Similarly to contract dynamic data sources, users can test test file datas sources and their handlers
+
+##### Example `subgraph.yaml`
+
+```yaml
+...
+templates:
+ - kind: file/ipfs
+    name: GraphTokenLockMetadata
+    network: mainnet
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.6
+      language: wasm/assemblyscript
+      file: ./src/token-lock-wallet.ts
+      handler: handleMetadata
+      entities:
+        - TokenLockMetadata
+      abis:
+        - name: GraphTokenLockWallet
+          file: ./abis/GraphTokenLockWallet.json
+```
+
+##### Example `schema.graphql`
+
+```graphql
+"""
+Token Lock Wallets which hold locked GRT
+"""
+type TokenLockMetadata @entity {
+  "The address of the token lock wallet"
+  id: ID!
+  "Start time of the release schedule"
+  startTime: BigInt!
+  "End time of the release schedule"
+  endTime: BigInt!
+  "Number of periods between start time and end time"
+  periods: BigInt!
+  "Time when the releases start"
+  releaseStartTime: BigInt!
+}
+```
+
+##### Example `metadata.json`
+
+```json
+{
+  "startTime": 1,
+  "endTime": 1,
+  "periods": 1,
+  "releaseStartTime": 1
+}
+```
+
+##### Example handler
+
+```typescript
+export function handleMetadata(content: Bytes): void {
+  // dataSource.stringParams() returns the File DataSource CID
+  // stringParam() will be mocked in the handler test
+  // for more info https://thegraph.com/docs/en/developing/creating-a-subgraph/#create-a-new-handler-to-process-files
+  let tokenMetadata = new TokenLockMetadata(dataSource.stringParam())
+  const value = json.fromBytes(content).toObject()
+
+  if (value) {
+    const startTime = value.get('startTime')
+    const endTime = value.get('endTime')
+    const periods = value.get('periods')
+    const releaseStartTime = value.get('releaseStartTime')
+
+    if (startTime && endTime && periods && releaseStartTime) {
+      tokenMetadata.startTime = startTime.toBigInt()
+      tokenMetadata.endTime = endTime.toBigInt()
+      tokenMetadata.periods = periods.toBigInt()
+      tokenMetadata.releaseStartTime = releaseStartTime.toBigInt()
+    }
+
+    tokenMetadata.save()
+  }
+}
+```
+
+##### Example test
+
+```typescript
+import { assert, test, dataSourceMock, readFile } from 'matchstick-as'
+import { Address, BigInt, Bytes, DataSourceContext, ipfs, json, store, Value } from '@graphprotocol/graph-ts'
+
+import { handleMetadata } from '../../src/token-lock-wallet'
+import { TokenLockMetadata } from '../../generated/schema'
+import { GraphTokenLockMetadata } from '../../generated/templates'
+
+test('file/ipfs dataSource creation example', () => {
+  // Generate the dataSource CID from the ipfsHash + ipfs path file
+  // For example QmaXzZhcYnsisuue5WRdQDH6FDvqkLQX1NckLqBYeYYEfm/example.json
+  const ipfshash = 'QmaXzZhcYnsisuue5WRdQDH6FDvqkLQX1NckLqBYeYYEfm'
+  const CID = `${ipfshash}/example.json`
+
+  // Create a new dataSource using the generated CID
+  GraphTokenLockMetadata.create(CID)
+
+  // Assert the dataSource has been created
+  assert.dataSourceCount('GraphTokenLockMetadata', 1)
+  assert.dataSourceExists('GraphTokenLockMetadata', CID)
+  logDataSources('GraphTokenLockMetadata')
+
+  // Now we have to mock the dataSource metadata and specifically dataSource.stringParam()
+  // dataSource.stringParams actually uses the value of dataSource.address(), so we will mock the address using dataSourceMock from  matchstick-as
+  // First we will reset the values and then use dataSourceMock.setAddress() to set the CID
+  dataSourceMock.resetValues()
+  dataSourceMock.setAddress(CID)
+
+  // Now we need to generate the Bytes to pass to the dataSource handler
+  // For this case we introduced a new function readFile, that reads a local json and returns the content as Bytes
+  const content = readFile(`path/to/metadata.json`)
+  handleMetadata(content)
+
+  // Now we will test if a TokenLockMetadata was created
+  const metadata = TokenLockMetadata.load(CID)
+
+  assert.bigIntEquals(metadata!.endTime, BigInt.fromI32(1))
+  assert.bigIntEquals(metadata!.periods, BigInt.fromI32(1))
+  assert.bigIntEquals(metadata!.releaseStartTime, BigInt.fromI32(1))
+  assert.bigIntEquals(metadata!.startTime, BigInt.fromI32(1))
+})
+```
 
 ## Test Coverage
 
@@ -1081,15 +1369,15 @@ The log output includes the test run duration. Here's an example:
 This means you have used `console.log` in your code, which is not supported by AssemblyScript. Please consider using the [Logging API](/developing/assemblyscript-api/#logging-api)
 
 > ERROR TS2554: Expected ? arguments, but got ?.
->
+> 
 > return new ethereum.Block(defaultAddressBytes, defaultAddressBytes, defaultAddressBytes, defaultAddress, defaultAddressBytes, defaultAddressBytes, defaultAddressBytes, defaultBigInt, defaultBigInt, defaultBigInt, defaultBigInt, defaultBigInt, defaultBigInt, defaultBigInt, defaultBigInt);
->
+> 
 > in ~lib/matchstick-as/assembly/defaults.ts(18,12)
->
+> 
 > ERROR TS2554: Expected ? arguments, but got ?.
->
+> 
 > return new ethereum.Transaction(defaultAddressBytes, defaultBigInt, defaultAddress, defaultAddress, defaultBigInt, defaultBigInt, defaultBigInt, defaultAddressBytes, defaultBigInt);
->
+> 
 > in ~lib/matchstick-as/assembly/defaults.ts(24,12)
 
 The mismatch in arguments is caused by mismatch in `graph-ts` and `matchstick-as`. The best way to fix issues like this one is to update everything to the latest released version.

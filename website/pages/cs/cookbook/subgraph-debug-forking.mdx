@@ -2,7 +2,7 @@
 title: Rychlé a snadné ladění podgrafů pomocí vidliček
 ---
 
-Stejně jako u mnoha systémů zpracovávajících velké množství dat může indexerům grafu (Graph nodes) chvíli trvat, než synchronizují váš podgraf s cílovým blockchainem. Nesoulad mezi rychlými změnami za účelem ladění a dlouhými čekacími dobami potřebnými pro indexaci je extrémně kontraproduktivní a jsme si toho dobře vědomi. To je důvod, proč představujeme **rozvětvení podgrafů**, vyvinutý společností [LimeChain](https://limechain.tech/), a v tomto článku Ukážu vám, jak lze tuto funkci použít k podstatnému zrychlení ladění podgrafů!
+As with many systems processing large amounts of data, The Graph's Indexers (Graph Nodes) may take quite some time to sync-up your subgraph with the target blockchain. The discrepancy between quick changes with the purpose of debugging and long wait times needed for indexing is extremely counterproductive and we are well aware of that. This is why we are introducing **subgraph forking**, developed by [LimeChain](https://limechain.tech/), and in this article I will show you how this feature can be used to substantially speed-up subgraph debugging!
 
 ## Ok, co to je?
 
@@ -12,9 +12,9 @@ V kontextu ladění vám ** vidličkování podgrafů** umožňuje ladit neúsp�
 
 ## Co?! Jak?
 
-Pokud nasadíte podgraf do vzdáleného uzlu Graph pro indexování a dojde k selhání bloku*X*, dobrou zprávou je, že uzel Graph bude stále obsluhovat dotazy GraphQL pomocí svého úložiště, které je synchronizováno s blokem*X*. skvělé! To znamená, že můžeme využít tohoto "aktuálního" úložiště k odstranění chyb vznikajících při indexování bloku _X_.
+When you deploy a subgraph to a remote Graph Node for indexing and it fails at block _X_, the good news is that the Graph Node will still serve GraphQL queries using its store, which is synced-up to block _X_. That's great! This means we can take advantage of this "up-to-date" store to fix the bugs arising when indexing block _X_.
 
-V kostce budeme _vidličkovat chybový podgraf_ z vzdáleného uzlu grafu, který je zaručeně indexován až do bloku _X_, aby poskytl lokálně nasazenému podgrafu, který je laděn v bloku _X_, aktuální pohled na stav indexace.
+In a nutshell, we are going to _fork the failing subgraph_ from a remote Graph Node that is guaranteed to have the subgraph indexed up to block _X_ in order to provide the locally deployed subgraph being debugged at block _X_ an up-to-date view of the indexing state.
 
 ## Ukažte mi prosím nějaký kód!
 
@@ -44,12 +44,12 @@ export function handleUpdatedGravatar(event: UpdatedGravatar): void {
 }
 ```
 
-Ups, jak nešťastné, když jsem nasadil můj perfektně vypadající subgraf do [Hostované služby](https://thegraph.com/hosted-service/), selhalo to s chybou _"Gravatar nenalezen!"_.
+Oops, how unfortunate, when I deploy my perfect looking subgraph to [Subgraph Studio](https://thegraph.com/studio/) it fails with the _"Gravatar not found!"_ error.
 
 Obvyklý způsob, jak se pokusit o opravu, je:
 
 1. Proveďte změnu ve zdroji mapování, která podle vás problém vyřeší (zatímco já vím, že ne).
-2. Znovu nasaďte podgraf do [Hostované služby](https://thegraph.com/hosted-service/) (nebo jiného vzdáleného uzlu Graph).
+2. Re-deploy the subgraph to [Subgraph Studio](https://thegraph.com/studio/) (or another remote Graph Node).
 3. Počkejte na synchronizaci.
 4. Pokud se opět rozbije, vraťte se na 1, jinak: Hurá!
 
@@ -57,9 +57,9 @@ Je to skutečně docela podobné běžnému procesu ladění, ale existuje jedna
 
 Pomocí **vidličkování podgrafů** můžeme tento krok v podstatě eliminovat. Takto to vypadá:
 
-0. Vytvoření místního uzlu Graph s **_vhodnou sadou fork-base_**.
+0. Spin-up a local Graph Node with the **_appropriate fork-base_** set.
 1. Proveďte změnu ve zdroji mapování, která podle vás problém vyřeší.
-2. Nasaďte na lokální uzel grafu, **_vidličkující chybový podgraf_** a **_začínající od problémového bloku_**.
+2. Deploy to the local Graph Node, **_forking the failing subgraph_** and **_starting from the problematic block_**.
 3. Pokud se opět rozbije, vraťte se na 1, jinak: Hurá!
 
 Nyní můžete mít 2 otázky:
@@ -80,7 +80,7 @@ Nezapomeňte také nastavit pole `dataSources.source.startBlock` v manifestu pod
 
 Takže to dělám takhle:
 
-0. Nasaďte lokální uzel grafu ([zde je, jak na to](https://github.com/graphprotocol/graph-node#running-a-local-graph-node)) s možností `fork-base` nastavenou na: `https://api.thegraph.com/subgraphs/id/`, protože budu provádět vidličkování podgrafu, toho chybového, který jsem dříve nasadil ze služby [HostedService](https://thegraph.com/hosted-service/).
+1. I spin-up a local Graph Node ([here is how to do it](https://github.com/graphprotocol/graph-node#running-a-local-graph-node)) with the `fork-base` option set to: `https://api.thegraph.com/subgraphs/id/`, since I will fork a subgraph, the buggy one I deployed earlier, from [Subgraph Studio](https://thegraph.com/studio/).
 
 ```
 $ cargo run -p graph-node --release -- \
@@ -90,13 +90,12 @@ $ cargo run -p graph-node --release -- \
     --fork-base https://api.thegraph.com/subgraphs/id/
 ```
 
-1. Po pečlivém prozkoumání si všímám, že existuje nesoulad v reprezentacích `id`, které se používají při indexaci `Gravatar` v mých dvou obslužných funkcích. Zatímco `handleNewGravatar` ho převede na hex (`event.params.id.toHex()`), `handleUpdatedGravatar` používá int32 (`event.params.id.toI32()`), což způsobuje, že `handleUpdatedGravatar` selže s chybou "Gravatar nenalezen!". Udělám, aby obě převedly `id` na hex.
-2. Po provedení změn nasadím svůj podgraf na lokální uzel grafu, **_vidličkování chybového podgrafu_** a nastavení `dataSources.source.startBlock` na `6190343` v souboru `subgraph.yaml`:
+2. Po pečlivém prozkoumání si všímám, že existuje nesoulad v reprezentacích `id`, které se používají při indexaci `Gravatar` v mých dvou obslužných funkcích. Zatímco `handleNewGravatar` ho převede na hex (`event.params.id.toHex()`), `handleUpdatedGravatar` používá int32 (`event.params.id.toI32()`), což způsobuje, že `handleUpdatedGravatar` selže s chybou "Gravatar nenalezen!". Udělám, aby obě převedly `id` na hex.
+3. After I made the changes I deploy my subgraph to the local Graph Node, **_forking the failing subgraph_** and setting `dataSources.source.startBlock` to `6190343` in `subgraph.yaml`:
 
 ```bash
 $ graph deploy gravity --debug-fork QmNp169tKvomnH3cPXTfGg4ZEhAHA6kEq5oy1XDqAxqHmW --ipfs http://localhost:5001 --node http://localhost:8020
 ```
 
-3. Zkontroluji protokoly vytvořené místním uzel Graph a hurá, zdá se, že vše funguje.
-4. Nasadím svůj nyní již bezchybný podgraf do vzdáleného uzlu Graph a žiji šťastně! (žádné brambory)
-5. Konec...
+4. I inspect the logs produced by the local Graph Node and, Hooray!, everything seems to be working.
+5. I deploy my now bug-free subgraph to a remote Graph Node and live happily ever after! (no potatoes tho)
