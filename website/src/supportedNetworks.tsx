@@ -50,7 +50,9 @@ export async function getSupportedNetworks() {
           fullySupportedOnNetwork,
           partiallySupportedOnNetwork,
           substreams: chain.substreams ?? [],
-          integrationType: ['evm','near','cosmos','osmosis','ar'].includes(chain.network) ? chain.network : 'substreams',
+          integrationType: ['evm', 'near', 'cosmos', 'osmosis', 'ar'].includes(chain.network)
+            ? chain.network
+            : 'substreams',
         }
       })
       .filter(Boolean),
