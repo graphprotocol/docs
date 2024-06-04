@@ -50,7 +50,7 @@ export async function getSupportedNetworks() {
           fullySupportedOnNetwork,
           partiallySupportedOnNetwork,
           substreams: chain.substreams ?? [],
-          networkType: chain.network,
+          integrationType: ['evm','near','cosmos','osmosis','arweave'].includes(chain.network) ? chain.network : 'substreams',
         }
       })
       .filter(Boolean),
@@ -66,7 +66,7 @@ export function SupportedNetworksTable({ networks }: { networks: Awaited<ReturnT
         <tr>
           <th>{t('supportedNetworks.network')}</th>
           <th>{t('supportedNetworks.cliName')}</th>
-          <th align="center">{t('supportedNetworks.networkType')}</th>
+          <th align="center">{t('supportedNetworks.integrationType')}</th>
           <th align="center">{t('supportedNetworks.hostedService')}</th>
           <th align="center">{t('supportedNetworks.subgraphStudio')}</th>
           <th align="center">{t('supportedNetworks.decentralizedNetwork')}</th>
@@ -77,7 +77,7 @@ export function SupportedNetworksTable({ networks }: { networks: Awaited<ReturnT
             <td>
               <CodeInline>{network.cliName}</CodeInline>
             </td>
-            <td align="center">{network.networkType}</td>
+            <td align="center">{network.integrationType}</td>
             <td align="center">{network.supportedOnHostedService ? '✓' : null}</td>
             <td align="center">
               {network.supportedOnStudio ? '✓' : null}
