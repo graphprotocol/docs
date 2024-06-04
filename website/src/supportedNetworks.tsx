@@ -21,7 +21,7 @@ export async function getSupportedNetworks() {
       'eip155:42161',
       'eip155:42220',
       'eip155:43114',
-      'eip155:10'
+      'eip155:10',
     )
   }
 
@@ -50,7 +50,7 @@ export async function getSupportedNetworks() {
           fullySupportedOnNetwork,
           partiallySupportedOnNetwork,
           substreams: chain.substreams ?? [],
-          networkType: chain.network
+          networkType: chain.network,
         }
       })
       .filter(Boolean),
