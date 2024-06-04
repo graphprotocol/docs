@@ -1,7 +1,7 @@
 import { keyframes } from '@emotion/react'
 import * as Collapsible from '@radix-ui/react-collapsible'
-import { Item } from 'nextra/normalize-pages'
-import { Fragment, PropsWithChildren, useContext, useEffect, useState } from 'react'
+import type { Item } from 'nextra/normalize-pages'
+import { Fragment, type PropsWithChildren, useContext, useEffect, useState } from 'react'
 
 import { BorderRadius, buildTransition, Flex, Icon, Spacing, Text, useI18n } from '@edgeandnode/gds'
 

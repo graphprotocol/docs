@@ -1,9 +1,9 @@
-import { CodeInline, Paragraph, Table } from '@graphprotocol/nextra-theme'
-import { ExecutionResult } from 'graphql'
+import { CodeInline, Table } from '@graphprotocol/nextra-theme'
+import type { ExecutionResult } from 'graphql'
 
 import { ChainProductStatus, SupportedNetworkMap } from '@edgeandnode/common'
 
-import { execute, SupportedNetworksDocument, SupportedNetworksQuery } from '@/.graphclient'
+import { execute, SupportedNetworksDocument, type SupportedNetworksQuery } from '@/.graphclient'
 import { useI18n } from '@/i18n'
 
 export async function getSupportedNetworks() {

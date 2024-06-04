@@ -1,6 +1,6 @@
 import path from 'path'
 
-import { GetStaticProps, GetStaticPropsResult } from 'next'
+import type { GetStaticProps, GetStaticPropsResult } from 'next'
 
 import { Locale } from '@edgeandnode/gds'
 
