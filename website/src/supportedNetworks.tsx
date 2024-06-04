@@ -37,7 +37,6 @@ export async function getSupportedNetworks() {
 
         const fullySupportedOnNetwork =
           network.id === 'evm' && fullySupportedNetworkIds.includes(`eip155:${chain.chainId}`)
-        const partiallySupportedOnNetwork = ['evm', 'near'].includes(network.id) && !fullySupportedOnNetwork
 
         return {
           uid: chain.uid,
@@ -48,7 +47,6 @@ export async function getSupportedNetworks() {
           supportedOnHostedService,
           supportedOnStudio,
           fullySupportedOnNetwork,
-          partiallySupportedOnNetwork,
           substreams: chain.substreams ?? [],
           integrationType: ['evm', 'near', 'cosmos', 'osmosis', 'ar'].includes(chain.network)
             ? chain.network
