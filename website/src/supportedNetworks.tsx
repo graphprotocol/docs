@@ -68,7 +68,7 @@ export function SupportedNetworksTable({ networks }: { networks: Awaited<ReturnT
         <tr>
           <th>{t('supportedNetworks.network')}</th>
           <th>{t('supportedNetworks.cliName')}</th>
-          <th align="center">{t('supportedNetworks.integrationType')}</th>
+          <th align="center">{t('supportedNetworks.integrationType')}**</th>
           <th align="center">{t('supportedNetworks.hostedService')}</th>
           <th align="center">{t('supportedNetworks.subgraphStudio')}</th>
           <th align="center">{t('supportedNetworks.decentralizedNetwork')}</th>
