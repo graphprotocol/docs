@@ -11,7 +11,7 @@ export async function getSupportedNetworks() {
   const supportedNetworksQueryResult: ExecutionResult<SupportedNetworksQuery> = await execute(SupportedNetworksDocument)
   const fullySupportedNetworkIds = (supportedNetworksQueryResult.data?.networks ?? []).map((network) => network.id)
 
-  // Fallback in case the GraphQL query fails (last updated 2023-12-14)
+  // Fallback in case the GraphQL query fails (last updated 2024-06-04)
   if (fullySupportedNetworkIds.length === 0) {
     fullySupportedNetworkIds.push(
       'eip155:1',
@@ -21,6 +21,7 @@ export async function getSupportedNetworks() {
       'eip155:42161',
       'eip155:42220',
       'eip155:43114',
+      'eip155:10',
     )
   }
 
@@ -36,7 +37,6 @@ export async function getSupportedNetworks() {
 
         const fullySupportedOnNetwork =
           network.id === 'evm' && fullySupportedNetworkIds.includes(`eip155:${chain.chainId}`)
-        const partiallySupportedOnNetwork = ['evm', 'near'].includes(network.id) && !fullySupportedOnNetwork
 
         return {
           uid: chain.uid,
@@ -47,8 +47,10 @@ export async function getSupportedNetworks() {
           supportedOnHostedService,
           supportedOnStudio,
           fullySupportedOnNetwork,
-          partiallySupportedOnNetwork,
           substreams: chain.substreams ?? [],
+          integrationType: ['evm', 'near', 'cosmos', 'osmosis', 'ar'].includes(chain.network)
+            ? chain.network
+            : 'substreams',
         }
       })
       .filter(Boolean),
@@ -64,7 +66,7 @@ export function SupportedNetworksTable({ networks }: { networks: Awaited<ReturnT
         <tr>
           <th>{t('supportedNetworks.network')}</th>
           <th>{t('supportedNetworks.cliName')}</th>
-          <th align="center">{t('supportedNetworks.chainId')}</th>
+          <th align="center">{t('supportedNetworks.integrationType')}**</th>
           <th align="center">{t('supportedNetworks.hostedService')}</th>
           <th align="center">{t('supportedNetworks.subgraphStudio')}</th>
           <th align="center">{t('supportedNetworks.decentralizedNetwork')}</th>
@@ -75,7 +77,7 @@ export function SupportedNetworksTable({ networks }: { networks: Awaited<ReturnT
             <td>
               <CodeInline>{network.cliName}</CodeInline>
             </td>
-            <td align="center">{network.chainId}</td>
+            <td align="center">{network.integrationType}</td>
             <td align="center">{network.supportedOnHostedService ? '✓' : null}</td>
             <td align="center">
               {network.supportedOnStudio ? '✓' : null}
@@ -83,8 +85,7 @@ export function SupportedNetworksTable({ networks }: { networks: Awaited<ReturnT
             </td>
             <td align="center">
               {network.fullySupportedOnNetwork ? '✓' : null}
-              {network.partiallySupportedOnNetwork ? '*' : null}
-              {network.substreams.includes('network') ? <sup>†</sup> : null}
+              {!network.fullySupportedOnNetwork && network.supportedOnStudio ? '*' : null}
             </td>
           </tr>
         ))}
