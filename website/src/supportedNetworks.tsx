@@ -30,8 +30,14 @@ export async function getSupportedNetworks() {
       .map((chain) => {
         const supportedOnHostedService = chain.productDeployStatus.hostedService === ChainProductStatus.ALLOWED
         const supportedOnStudio = chain.productDeployStatus.studio === ChainProductStatus.ALLOWED
+        const integrationType = ['evm', 'near', 'cosmos', 'osmosis', 'ar'].includes(chain.network)
+          ? chain.network
+          : 'substreams'
 
-        if (!chain.graphCliName || (!supportedOnStudio && !supportedOnHostedService)) {
+        if (
+          !chain.graphCliName ||
+          (!supportedOnStudio && !supportedOnHostedService && integrationType !== 'substreams')
+        ) {
           return null as never // `as never` to work around the `.filter(Boolean)` below not narrowing the type
         }
 
@@ -48,9 +54,7 @@ export async function getSupportedNetworks() {
           supportedOnStudio,
           fullySupportedOnNetwork,
           substreams: chain.substreams ?? [],
-          integrationType: ['evm', 'near', 'cosmos', 'osmosis', 'ar'].includes(chain.network)
-            ? chain.network
-            : 'substreams',
+          integrationType,
         }
       })
       .filter(Boolean),
