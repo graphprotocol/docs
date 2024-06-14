@@ -42,6 +42,7 @@ export default {
   },
   'operating-graph-node': '',
   'chain-integration-overview': '',
+  'supported-network-requirements': '',
   'new-chain-integration': 'Integrating New Networks',
   firehose: '',
   graphcast: '',
