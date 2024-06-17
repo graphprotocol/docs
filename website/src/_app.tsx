@@ -152,7 +152,7 @@ function MyAppWithLocale({ Component, router, pageProps }: AppProps) {
             />
           </div>
           <Layout
-            preheader={<SunriseCountdownBanner />}
+            preheader={<SunriseCountdownBanner ctaPosition="end" />}
             header={
               <GlobalHeader
                 activeProduct="THE_GRAPH"
