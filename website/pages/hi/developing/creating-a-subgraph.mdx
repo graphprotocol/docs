@@ -1154,6 +1154,25 @@ eventHandlers:
 
 हैंडलर फ़ंक्शन के अंदर, रसीद को `Event.receipt` फ़ील्ड में एक्सेस किया जा सकता है। जब `receipt` कुंजी को `गलत` पर सेट किया जाता है या मेनिफ़ेस्ट में छोड़ दिया जाता है, तो इसके बजाय एक `शून्य` मान लौटाया जाएगा।
 
+## Declared eth_call
+
+Reducing `eth_call` definitely improves indexing speed. For `eth_calls` that cannot be eliminated, they can be declared in the subgraph manifest to be processed in parallel with the block processing. When `graph-node` processes a block, it performs all declared `eth_calls` in parallel before handlers are run where as `eth_calls` that are not declared are executed sequentially when handlers run. This helps reducing total time spent on `eth_calls` and improves indexing speed.
+
+> **Note:** [SpecVersion](#specversion-releases) >= `1.2.0` is required. Currently, `eth_calls` can only be declared for event handlers.
+
+### Example Configuration in Subgraph Manifest
+
+```yaml
+event: TransferWithPool(address indexed, address indexed, uint256, bytes32 indexed)
+handler: handleTransferWithPool
+calls:
+  ERC20.poolInfo: ERC20[event.address].getPoolInfo(event.params.to)
+```
+
+In the example above, the `ERC20.poolInfo` is declared `eth_call`. The text before colon(`ERC20.poolInfo`) is the label for this `eth_call` which is used when logging errors. The text after colon(`ERC20[event.address].getPoolInfo(event.params.to)`) is the actual `eth_call` that will be executed which is in the form of `Contract[address].function(arguments)`. The `address` and `arguments` can be replaced with variables which will be available when executing the handler.
+
+When declared `eth_calls` are used, `graph-node` caches the results in the memory and when the `eth_call` is triggered inside handlers, it fetches the result from the cache instead of making an actual RPC call.
+
 ## प्रायोगिक विशेषताएं
 
 `specVersion` `0.0.4` से शुरू होकर, सबग्राफ सुविधाओं को `सुविधाओं` अनुभाग में मेनिफेस्ट फ़ाइल के शीर्ष स्तर पर उनके का उपयोग करके स्पष्ट रूप से घोषित किया जाना चाहिए `camelCase` नाम, जैसा कि नीचे दी गई तालिका में सूचीबद्ध है:
