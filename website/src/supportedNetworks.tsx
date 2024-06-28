@@ -28,16 +28,12 @@ export async function getSupportedNetworks() {
   return Array.from(SupportedNetworkMap.values()).flatMap((network) =>
     Array.from(network.chains)
       .map((chain) => {
-        const supportedOnHostedService = chain.productDeployStatus.hostedService === ChainProductStatus.ALLOWED
         const supportedOnStudio = chain.productDeployStatus.studio === ChainProductStatus.ALLOWED
         const integrationType = ['evm', 'near', 'cosmos', 'osmosis', 'ar'].includes(chain.network)
           ? chain.network
           : 'substreams'
 
-        if (
-          !chain.graphCliName ||
-          (!supportedOnStudio && !supportedOnHostedService && integrationType !== 'substreams')
-        ) {
+        if (!chain.graphCliName || (!supportedOnStudio && integrationType !== 'substreams')) {
           return null as never // `as never` to work around the `.filter(Boolean)` below not narrowing the type
         }
 
@@ -50,7 +46,6 @@ export async function getSupportedNetworks() {
           cliName: chain.graphCliName,
           chainId: chain.chainId,
           testnet: chain.testnet,
-          supportedOnHostedService,
           supportedOnStudio,
           fullySupportedOnNetwork,
           substreams: chain.substreams ?? [],
@@ -71,7 +66,6 @@ export function SupportedNetworksTable({ networks }: { networks: Awaited<ReturnT
           <th>{t('supportedNetworks.network')}</th>
           <th>{t('supportedNetworks.cliName')}</th>
           <th align="center">{t('supportedNetworks.integrationType')}**</th>
-          <th align="center">{t('supportedNetworks.hostedService')}</th>
           <th align="center">{t('supportedNetworks.subgraphStudio')}</th>
           <th align="center">{t('supportedNetworks.decentralizedNetwork')}</th>
         </tr>
@@ -82,7 +76,6 @@ export function SupportedNetworksTable({ networks }: { networks: Awaited<ReturnT
               <CodeInline>{network.cliName}</CodeInline>
             </td>
             <td align="center">{network.integrationType}</td>
-            <td align="center">{network.supportedOnHostedService ? '✓' : null}</td>
             <td align="center">
               {network.supportedOnStudio ? '✓' : null}
               {network.substreams.includes('studio') ? <sup>†</sup> : null}
