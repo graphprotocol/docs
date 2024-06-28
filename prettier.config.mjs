@@ -1,11 +1,11 @@
 /** @type {import('prettier').Options} */
-module.exports = {
+export default {
   singleQuote: true,
   semi: false,
   printWidth: 120,
   proseWrap: 'never',
   plugins: ['prettier-plugin-tailwindcss'],
-  tailwindConfig: './website/tailwind.config.ts',
+  tailwindConfig: './website/tailwind.config.mjs',
   tailwindPreserveWhitespace: true,
   tailwindFunctions: ['classNames'],
   overrides: [

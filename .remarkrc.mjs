@@ -1,4 +1,4 @@
-module.exports = {
+export default {
   plugins: [
     'frontmatter', // should be defined
     ['remark-lint-first-heading-level', 2],
