@@ -37,9 +37,7 @@ export const getStaticProps = async context => ({
   },
 })
 
-/**
- * @type {import('next').NextConfig}
- */
+/** @type {import('next').NextConfig} */
 export default withNextra({
   env,
   output: 'export',
