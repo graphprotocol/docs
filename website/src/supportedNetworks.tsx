@@ -33,10 +33,7 @@ export async function getSupportedNetworks() {
           ? chain.network
           : 'substreams'
 
-        if (
-          !chain.graphCliName ||
-          (!supportedOnStudio && integrationType !== 'substreams')
-        ) {
+        if (!chain.graphCliName || (!supportedOnStudio && integrationType !== 'substreams')) {
           return null as never // `as never` to work around the `.filter(Boolean)` below not narrowing the type
         }
 
