@@ -15,7 +15,7 @@ import {
   Link,
   type NestedStrings,
 } from '@edgeandnode/gds'
-import { CookieBanner, GlobalFooter, GlobalHeader, SunriseCountdownBanner } from '@edgeandnode/go'
+import { CookieBanner, GlobalFooter, GlobalHeader } from '@edgeandnode/go'
 
 import { supportedLocales, translations, useI18n } from '@/i18n'
 
@@ -152,7 +152,6 @@ function MyAppWithLocale({ Component, router, pageProps }: AppProps) {
             />
           </div>
           <Layout
-            preheader={<SunriseCountdownBanner ctaPosition="end" />}
             header={
               <GlobalHeader
                 activeProduct="THE_GRAPH"
