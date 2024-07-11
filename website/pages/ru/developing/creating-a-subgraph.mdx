@@ -188,6 +188,176 @@ dataSources:
 
 > **Примечание:** При создании нового [динамического источника данных](#data-source-templates-for-dynamically-created-contracts) обработчики, определенные для динамических источников данных, начнут обработку только после обработки всех существующих обработчиков источников данных и будут повторяться в той же последовательности при каждом запуске.
 
+### Фильтры индексированных аргументов/фильтры тем
+
+> **Requires**: [SpecVersion](#specversion-releases) >= `1.2.0`
+
+Topic filters, also known as indexed argument filters, are a powerful feature in subgraphs that allow users to precisely filter blockchain events based on the values of their indexed arguments.
+
+- These filters help isolate specific events of interest from the vast stream of events on the blockchain, allowing subgraphs to operate more efficiently by focusing only on relevant data.
+
+- This is useful for creating personal subgraphs that track specific addresses and their interactions with various smart contracts on the blockchain.
+
+#### Как работают фильтры тем
+
+When a smart contract emits an event, any arguments that are marked as indexed can be used as filters in a subgraph's manifest. This allows the subgraph to listen selectively for events that match these indexed arguments.
+
+- The event's first indexed argument corresponds to `topic1`, the second to `topic2`, and so on, up to `topic3`, since the Ethereum Virtual Machine (EVM) allows up to three indexed arguments per event.
+
+```solidity
+// Идентификатор лицензии SPDX: MIT
+pragma solidity ^0.8.0;
+
+contract Token {
+    // Объявление события с индексируемыми параметрами для адресов
+    event Transfer(address indexed from, address indexed to, uint256 value);
+
+    // Функция для имитации передачи токенов
+    function transfer(address to, uint256 value) public {
+        // Генерация события Transfer с указанием from, to и value
+        emit Transfer(msg.sender, to, value);
+    }
+}
+```
+
+В этом примере:
+
+- Событие `Transfer` используется для протоколирования транзакций токенов между адресами.
+- The `from` and `to` parameters are indexed, allowing event listeners to filter and monitor transfers involving specific addresses.
+- Функция `transfer` — это простое представление действия передачи токена, которое генерирует событие Transfer при каждом вызове.
+
+#### Конфигурация в субграфах
+
+Фильтры тем определяются непосредственно в конфигурации обработчика событий в манифесте субграфа. Вот как они настроены:
+
+```yaml
+eventHandlers:
+  - event: SomeEvent(indexed uint256, indexed address, indexed uint256)
+    handler: handleSomeEvent
+    topic1: ['0xValue1', '0xValue2']
+    topic2: ['0xAddress1', '0xAddress2']
+    topic3: ['0xValue3']
+```
+
+В этой настройке:
+
+- `topic1` соответствует первому индексированному аргументу события, `topic2` — второму, а `topic3` — третьему.
+- Каждая тема может иметь одно или несколько значений, и событие обрабатывается только в том случае, если оно соответствует одному из значений в каждой указанной теме.
+
+##### Логика фильтра
+
+- В рамках одной темы: логика действует как условие OR. Событие будет обработано, если оно соответствует любому из перечисленных значений в данной теме.
+- Между разными темами: логика функционирует как условие AND. Событие должно удовлетворять всем указанным условиям в разных темах, чтобы вызвать соответствующий обработчик.
+
+#### Example 1: Tracking Direct Transfers from Address A to Address B
+
+```yaml
+eventHandlers:
+  - event: Transfer(indexed address,indexed address,uint256)
+    handler: handleDirectedTransfer
+    topic1: ['0xAddressA'] # Sender Address
+    topic2: ['0xAddressB'] # Receiver Address
+```
+
+В данной конфигурации:
+
+- `topic1` настроен на фильтрацию событий `Transfer`, где `0xAddressA` является отправителем.
+- `topic2` настроен на фильтрацию событий `Transfer`, где `0xAddressB` является получателем.
+- Субграф будет индексировать только транзакции, которые происходят непосредственно от `0xAddressA` к `0xAddressB`.
+
+#### Example 2: Tracking Transactions in Either Direction Between Two or More Addresses
+
+```yaml
+eventHandlers:
+  - event: Transfer(indexed address,indexed address,uint256)
+    handler: handleTransferToOrFrom
+    topic1: ['0xAddressA', '0xAddressB', '0xAddressC'] # Sender Address
+    topic2: ['0xAddressB', '0xAddressC'] # Receiver Address
+```
+
+В данной конфигурации:
+
+- `topic1` is configured to filter `Transfer` events where `0xAddressA`, `0xAddressB`, `0xAddressC` is the sender.
+- `topic2` is configured to filter `Transfer` events where `0xAddressB` and `0xAddressC` is the receiver.
+- The subgraph will index transactions that occur in either direction between multiple addresses allowing for comprehensive monitoring of interactions involving all addresses.
+
+## Declared eth_call
+
+> **Requires**: [SpecVersion](#specversion-releases) >= `1.2.0`. Currently, `eth_calls` can only be declared for event handlers.
+
+Declarative `eth_calls` are a valuable subgraph feature that allows `eth_calls` to be executed ahead of time, enabling `graph-node` to execute them in parallel.
+
+This feature does the following:
+
+- Significantly improves the performance of fetching data from the Ethereum blockchain by reducing the total time for multiple calls and optimizing the subgraph's overall efficiency.
+- Allows faster data fetching, resulting in quicker query responses and a better user experience.
+- Reduces wait times for applications that need to aggregate data from multiple Ethereum calls, making the data retrieval process more efficient.
+
+### Key Concepts
+
+- Declarative `eth_calls`: Ethereum calls that are defined to be executed in parallel rather than sequentially.
+- Parallel Execution: Instead of waiting for one call to finish before starting the next, multiple calls can be initiated simultaneously.
+- Time Efficiency: The total time taken for all the calls changes from the sum of the individual call times (sequential) to the time taken by the longest call (parallel).
+
+### Scenario without Declarative `eth_calls`
+
+Imagine you have a subgraph that needs to make three Ethereum calls to fetch data about a user's transactions, balance, and token holdings.
+
+Traditionally, these calls might be made sequentially:
+
+1. Call 1 (Transactions): Takes 3 seconds
+2. Call 2 (Balance): Takes 2 seconds
+3. Call 3 (Token Holdings): Takes 4 seconds
+
+Total time taken = 3 + 2 + 4 = 9 seconds
+
+### Scenario with Declarative `eth_calls`
+
+With this feature, you can declare these calls to be executed in parallel:
+
+1. Call 1 (Transactions): Takes 3 seconds
+2. Call 2 (Balance): Takes 2 seconds
+3. Call 3 (Token Holdings): Takes 4 seconds
+
+Since these calls are executed in parallel, the total time taken is equal to the time taken by the longest call.
+
+Total time taken = max (3, 2, 4) = 4 seconds
+
+### How it Works
+
+1. Declarative Definition: In the subgraph manifest, you declare the Ethereum calls in a way that indicates they can be executed in parallel.
+2. Parallel Execution Engine: The Graph Node's execution engine recognizes these declarations and runs the calls simultaneously.
+3. Result Aggregation: Once all calls are complete, the results are aggregated and used by the subgraph for further processing.
+
+### Example Configuration in Subgraph Manifest
+
+Declared `eth_calls` can access the `event.address` of the underlying event as well as all the `event.params`.
+
+`Subgraph.yaml` using `event.address`:
+
+```yaml
+eventHandlers:
+event: Swap(indexed address,indexed address,int256,int256,uint160,uint128,int24)
+handler: handleSwap
+calls:
+  global0X128: Pool[event.address].feeGrowthGlobal0X128()
+  global1X128: Pool[event.address].feeGrowthGlobal1X128()
+```
+
+Details for the example above:
+
+- `global0X128` is the declared `eth_call`.
+- The text before colon(`global0X128`) is the label for this `eth_call` which is used when logging errors.
+- The text (`Pool[event.address].feeGrowthGlobal0X128()`) is the actual `eth_call` that will be executed, which is in the form of `Contract[address].function(arguments)`
+- The `address` and `arguments` can be replaced with variables that will be available when the handler is executed.
+
+`Subgraph.yaml` using `event.params`
+
+```yaml
+calls:
+  - ERC20DecimalsToken0: ERC20[event.params.token0].decimals()
+```
+
 ### SpecVersion Releases
 
 | Версия | Примечания к релизу                                                                                                                                                    |
@@ -869,110 +1039,6 @@ dataSources:
           topic1: ['0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045', '0xc8dA6BF26964aF9D7eEd9e03E53415D37aA96325'] # Optional topic filter which filters only events with the specified topic.
 ```
 
-### Фильтры индексированных аргументов/фильтры тем
-
-> **Требуется `specVersion` >= 1.2.0**
-
-Фильтры тем, также известные как фильтры индексированных аргументов, представляют собой мощную функцию в субграфах, которая позволяет точно фильтровать события блокчейна на основе значений их индексированных аргументов. Эти фильтры особенно полезны для выделения конкретных событий из огромного потока событий в блокчейне, позволяя субграфам работать более эффективно, сосредотачиваясь только на соответствующих данных. Это может быть исключительно полезно для таких случаев использования, как создание персональных субграфов, которые отслеживают определенные адреса и их взаимодействие с различными смарт-контрактами в блокчейне.
-
-#### Как работают фильтры тем
-
-Когда смарт-контракт генерирует событие, любые аргументы, помеченные как индексированные, могут использоваться в качестве фильтров в манифесте субграфа. Это позволяет субграфу выборочно прослушивать события, соответствующие этим индексированным аргументам. Первый индексированный аргумент события соответствует `topic1`, второй — `topic2` и т. д. до `topic3`, поскольку виртуальная машина Ethereum (EVM) допускает до трех индексированных аргументов на одно событие.
-
-```solidity
-// Идентификатор лицензии SPDX: MIT
-pragma solidity ^0.8.0;
-
-contract Token {
-    // Объявление события с индексируемыми параметрами для адресов
-    event Transfer(address indexed from, address indexed to, uint256 value);
-
-    // Функция для имитации передачи токенов
-    function transfer(address to, uint256 value) public {
-        // Генерация события Transfer с указанием from, to и value
-        emit Transfer(msg.sender, to, value);
-    }
-}
-```
-
-В этом примере:
-
-- Событие `Transfer` используется для протоколирования транзакций токенов между адресами.
-- Параметры `from` и `to` индексируются, что позволяет прослушивателям событий фильтровать и отслеживать передачи, включающие определенные адреса.
-- Функция `transfer` — это простое представление действия передачи токена, которое генерирует событие Transfer при каждом вызове.
-
-#### Конфигурация в субграфах
-
-Фильтры тем определяются непосредственно в конфигурации обработчика событий в манифесте субграфа. Вот как они настроены:
-
-```yaml
-eventHandlers:
-  - event: SomeEvent(indexed uint256, indexed address, indexed uint256)
-    handler: handleSomeEvent
-    topic1: ['0xValue1', '0xValue2']
-    topic2: ['0xAddress1', '0xAddress2']
-    topic3: ['0xValue3']
-```
-
-В этой настройке:
-
-- `topic1` соответствует первому индексированному аргументу события, `topic2` — второму, а `topic3` — третьему.
-- Каждая тема может иметь одно или несколько значений, и событие обрабатывается только в том случае, если оно соответствует одному из значений в каждой указанной теме.
-
-##### Логика фильтра
-
-- В рамках одной темы: логика действует как условие OR. Событие будет обработано, если оно соответствует любому из перечисленных значений в данной теме.
-- Между разными темами: логика функционирует как условие AND. Событие должно удовлетворять всем указанным условиям в разных темах, чтобы вызвать соответствующий обработчик.
-
-### Пример 1. Отслеживание трансферных транзакций по одному адресу
-
-```yaml
-eventHandlers:
-  - event: Transfer(indexed address,indexed address,uint256)
-    handler: handleTransfer
-    topic1: ['0xSpecificAddress']
-  - event: Transfer(indexed address,indexed address,uint256)
-    handler: handleTransfer
-    topic2: ['0xSpecificAddress']
-```
-
-В данной конфигурации:
-
-- `topic1` фильтрует события передачи на основе адреса отправителя, а `topic2` фильтрует события на основе адреса получателя.
-- Субграф будет индексировать транзакции, в которых указанный адрес участвует либо в качестве отправителя, либо в качестве получателя.
-
-### Пример 2. Отслеживание прямых переводов с адреса A на адрес B
-
-```yaml
-eventHandlers:
-  - event: Transfer(indexed address,indexed address,uint256)
-    handler: handleDirectedTransfer
-    topic1: ['0xAddressA'] # Sender Address
-    topic2: ['0xAddressB'] # Receiver Address
-```
-
-В данной конфигурации:
-
-- `topic1` настроен на фильтрацию событий `Transfer`, где `0xAddressA` является отправителем.
-- `topic2` настроен на фильтрацию событий `Transfer`, где `0xAddressB` является получателем.
-- Субграф будет индексировать только транзакции, которые происходят непосредственно от `0xAddressA` к `0xAddressB`.
-
-### Пример 3. Отслеживание транзакций в любом направлении между двумя адресами
-
-```
-eventHandlers:
-  - event: Transfer(indexed address,indexed address,uint256)
-    handler: handleTransferToOrFrom
-    topic1: ["0xAddressA"]  # Sender or Receiver Address
-    topic2: ["0xAddressB"]  # Sender or Receiver Address
-```
-
-В данной конфигурации:
-
-- `topic1` настроен на фильтрацию событий `Transfer`, где `0xAddressA` — это либо отправитель, либо получатель.
-- `topic2` настроен на фильтрацию событий `Transfer`, где `0xAddressB` — это отправитель или получатель.
-- Субграф будет индексировать транзакции, происходящие в любом направлении между `0xAddressA` и `0xAddressB`, что позволяет осуществлять комплексный мониторинг взаимодействий с участием обоих адресов.
-
 ## Обработчики вызовов
 
 Хотя события обеспечивают эффективный способ сбора соответствующих изменений в состоянии контракта, многие контракты избегают создания логов для оптимизации затрат на газ. В этих случаях субграф может подписаться на обращения к контракту источника данных. Это достигается путем определения обработчиков вызовов, ссылающихся на сигнатуру функции, и обработчика мэппинга, который будет обрабатывать вызовы этой функции. Чтобы обработать эти вызовы, обработчик мэппинга получит `ethereum.Call` в качестве аргумента, содержащего типизированные входы и выходы вызова. Вызовы, выполненные на любой глубине цепочки вызовов транзакции, запускают мэппинг, позволяя фиксировать действия с контрактом источника данных через прокси-контракты.
@@ -1154,35 +1220,15 @@ eventHandlers:
 
 Внутри функции обработчика доступ к подтверждению можно получить в поле `Event.receipt`. Если для ключа `receipt` установлено значение`false` или оно опущено в манифесте, вместо него будет возвращено значение `null`.
 
-## Declared eth_call
-
-Reducing `eth_call` definitely improves indexing speed. For `eth_calls` that cannot be eliminated, they can be declared in the subgraph manifest to be processed in parallel with the block processing. When `graph-node` processes a block, it performs all declared `eth_calls` in parallel before handlers are run where as `eth_calls` that are not declared are executed sequentially when handlers run. This helps reducing total time spent on `eth_calls` and improves indexing speed.
-
-> **Note:** [SpecVersion](#specversion-releases) >= `1.2.0` is required. Currently, `eth_calls` can only be declared for event handlers.
-
-### Example Configuration in Subgraph Manifest
-
-```yaml
-event: TransferWithPool(address indexed, address indexed, uint256, bytes32 indexed)
-handler: handleTransferWithPool
-calls:
-  ERC20.poolInfo: ERC20[event.address].getPoolInfo(event.params.to)
-```
-
-In the example above, the `ERC20.poolInfo` is declared `eth_call`. The text before colon(`ERC20.poolInfo`) is the label for this `eth_call` which is used when logging errors. The text after colon(`ERC20[event.address].getPoolInfo(event.params.to)`) is the actual `eth_call` that will be executed which is in the form of `Contract[address].function(arguments)`. The `address` and `arguments` can be replaced with variables which will be available when executing the handler.
-
-When declared `eth_calls` are used, `graph-node` caches the results in the memory and when the `eth_call` is triggered inside handlers, it fetches the result from the cache instead of making an actual RPC call.
-
 ## Экспериментальные функции
 
 Начиная с `specVersion` `0.0.4`, функции субграфа должны быть явно объявлены в разделе `features` на верхнем уровне файла манифеста, используя их имя `camelCase`, как указано в таблице ниже:
 
-| Функция                                                    | Имя                                                  |
-| ---------------------------------------------------------- | ---------------------------------------------------- |
-| [Нефатальные ошибки](#non-fatal-errors)                    | `nonFatalErrors`                                     |
-| [Полнотекстовый поиск](#defining-fulltext-search-fields)   | `fullTextSearch`                                     |
-| [Графтинг](#grafting-onto-existing-subgraphs)              | `grafting`                                           |
-| [IPFS на контрактах Ethereum](#ipfs-on-ethereum-contracts) | `ipfsOnEthereumContracts` или `nonDeterministicIpfs` |
+| Функция                                                  | Имя              |
+| -------------------------------------------------------- | ---------------- |
+| [Нефатальные ошибки](#non-fatal-errors)                  | `nonFatalErrors` |
+| [Полнотекстовый поиск](#defining-fulltext-search-fields) | `fullTextSearch` |
+| [Графтинг](#grafting-onto-existing-subgraphs)            | `grafting`       |
 
 Например, если в субграфе используются функции **Full-Text Search** и **Non-fatal Errors**, поле `features` в манифесте должно быть:
 
@@ -1197,17 +1243,65 @@ dataSources: ...
 
 Обратите внимание, что использование функции без ее объявления приведет к **ошибке проверки** во время развертывания субграфа, но никаких ошибок не возникнет, если функция объявлена, но не используется.
 
-### IPFS на контрактах Ethereum
+### Тайм-серии и агрегации
 
-Распространенным вариантом сочетания IPFS с Ethereum является хранение данных в IPFS, которые было бы слишком дорого поддерживать в он-чейне, и ссылка на хэш IPFS в контрактах Ethereum.
+Тайм-серии и агрегации позволяют Вашему субграфу отслеживать такие статистические данные, как средняя цена за день, общий объем переводов за час и т. д.
 
-Учитывая такие хэши IPFS, субграфы могут считывать соответствующие файлы из IPFS, используя `ipfs.cat ` и `ipfs.map`. Для надежного выполнения этой задачи необходимо, чтобы эти файлы были привязаны к узлу IPFS с высокой доступностью, так чтобы[хостинговый сервис](https://thegraph.com/hosted-service) узла IPFS мог найти их при индексировании.
+Эта функция представляет два новых типа объектов субграфов. Объекты тайм-серий записывают точки данных с временными метками. Объекты агрегирования выполняют заранее объявленные вычисления над точками данных тайм-серий ежечасно или ежедневно, а затем сохраняют результаты для быстрого доступа через GraphQL.
 
-> **Примечание:** Сеть The Graph пока не поддерживает `ipfs.cat` и `ipfs.map`, и разработчикам не следует разворачивать субграфы, использующие эту функциональность, в сети через Studio.
+#### Пример схемы
 
-> **[Управление функционалом](#experimental-features):** `ipfsOnEthereumContracts` должны быть объявлены в разделе `features` в манифесте субграфа. Для чейнов, отличных от EVM, псевдоним `nonDeterministicIpfs` также может использоваться с той же целью.
+```graphql
+type Data @entity(timeseries: true) {
+  id: Int8!
+  timestamp: Timestamp!
+  price: BigDecimal!
+}
 
-При запуске локального узла The Graph необходимо установить переменную окружения `GRAPH_ALLOW_NON_DETERMINISTIC_IPFS`, чтобы индексировать субграфы, используя эту экспериментальную функциональность.
+type Stats @aggregation(intervals: ["hour", "day"], source: "Data") {
+  id: Int8!
+  timestamp: Timestamp!
+  sum: BigDecimal! @aggregate(fn: "sum", arg: "price")
+}
+```
+
+### Определение тайм-серий и агрегаций
+
+Объекты тайм-серий определяются с помощью `@entity(timeseries: true)` в schema.graphql. Каждый объект тайм-серии должен иметь уникальный идентификатор типа int8, метку времени типа Timestamp и включать данные, которые будут использоваться для вычислений объектами агрегации. Эти объекты тайм-серий могут быть сохранены в обычных обработчиках триггеров и выступать в качестве «необработанных данных» для объектов агрегации.
+
+Объекты агрегации определяются с помощью `@aggregation` в schema.graphql. Каждый объект агрегирования определяет источник, из которого он будет собирать данные (который должен быть объектом тайм-серии), устанавливает интервалы (например, час, день) и указывает функцию агрегирования, которую он будет использовать (например, сумма, количество, минимум, максимум, первый, последний). Объекты агрегации рассчитываются автоматически на основе указанного источника в конце необходимого интервала.
+
+#### Доступные интервалы агрегации
+
+- `hour`: устанавливает период тайм-серии каждый час, в час.
+- `day`: устанавливает период тайм-серий ежедневный, который начинается и заканчивается в 00:00.
+
+#### Доступные функции агрегации
+
+- `sum`: сумма всех значений.
+- `count`: количество значений.
+- `min`: минимальное значение.
+- `max`: максимальное значение.
+- `first`: первое значение в периоде.
+- `last`: последнее значение за период.
+
+#### Пример запроса агрегации
+
+```graphql
+{
+  stats(interval: "hour", where: { timestamp_gt: 1704085200 }) {
+    id
+    timestamp
+    sum
+  }
+}
+```
+
+Примечание:
+
+Чтобы использовать тайм-серии и агрегации, субграф должен иметь версию спецификации ≥1.1.0. Обратите внимание, что эта функция может претерпеть значительные изменения, которые могут повлиять на обратную совместимость.
+
+[Подробнее](https://github.com/graphprotocol/graph-node/blob/master/docs/aggregations.md) о тайм-сериях и агрегациях.
 
 ### Нефатальные ошибки
 
@@ -1288,7 +1382,7 @@ graft:
 
 > **[Управление функционалом](#experimental-features):** `grafting` должен быть объявлен в разделе `features` в манифесте субграфа.
 
-## Источники файловых данных
+## IPFS/Arweave File Data Sources
 
 Источники файловых данных — это новая функциональность субграфа для надежного и расширенного доступа к данным вне чейна во время индексации. Источники данных файлов поддерживают получение файлов из IPFS и Arweave.
 
@@ -1296,7 +1390,7 @@ graft:
 
 ### Обзор
 
-Вместо извлечения файлов «по очереди» во время выполнения обработчика вводятся шаблоны, которые могут создаваться как новые источники данных для заданного идентификатора файла. Эти новые источники данных извлекают файлы, повторяя попытки, если они не увенчались успехом, и запускают специальный обработчик, когда файл найден.
+Rather than fetching files "in line" during handler execution, this introduces templates which can be spawned as new data sources for a given file identifier. These new data sources fetch the files, retrying if they are unsuccessful, running a dedicated handler when the file is found.
 
 Это похоже на [существующие шаблоны источников данных](/developing/creating-a-subgraph/#data-source-templates), которые используются для динамического создания новых источников данных на чейн-основе.
 
@@ -1505,65 +1599,3 @@ export function handleTransfer(event: TransferEvent): void {
 #### Ссылки
 
 [Источники данных GIP-файла](https://forum.thegraph.com/t/gip-file-data-sources/2721)
-
-## Тайм-серии и агрегации
-
-### Обзор
-
-Тайм-серии и агрегации позволяют Вашему субграфу отслеживать такие статистические данные, как средняя цена за день, общий объем переводов за час и т. д.
-
-Эта функция представляет два новых типа объектов субграфов. Объекты тайм-серий записывают точки данных с временными метками. Объекты агрегирования выполняют заранее объявленные вычисления над точками данных тайм-серий ежечасно или ежедневно, а затем сохраняют результаты для быстрого доступа через GraphQL.
-
-#### Пример схемы
-
-```graphql
-type Data @entity(timeseries: true) {
-  id: Int8!
-  timestamp: Timestamp!
-  price: BigDecimal!
-}
-
-type Stats @aggregation(intervals: ["hour", "day"], source: "Data") {
-  id: Int8!
-  timestamp: Timestamp!
-  sum: BigDecimal! @aggregate(fn: "sum", arg: "price")
-}
-```
-
-### Определение тайм-серий и агрегаций
-
-Объекты тайм-серий определяются с помощью `@entity(timeseries: true)` в schema.graphql. Каждый объект тайм-серии должен иметь уникальный идентификатор типа int8, метку времени типа Timestamp и включать данные, которые будут использоваться для вычислений объектами агрегации. Эти объекты тайм-серий могут быть сохранены в обычных обработчиках триггеров и выступать в качестве «необработанных данных» для объектов агрегации.
-
-Объекты агрегации определяются с помощью `@aggregation` в schema.graphql. Каждый объект агрегирования определяет источник, из которого он будет собирать данные (который должен быть объектом тайм-серии), устанавливает интервалы (например, час, день) и указывает функцию агрегирования, которую он будет использовать (например, сумма, количество, минимум, максимум, первый, последний). Объекты агрегации рассчитываются автоматически на основе указанного источника в конце необходимого интервала.
-
-#### Доступные интервалы агрегации
-
-- `hour`: устанавливает период тайм-серии каждый час, в час.
-- `day`: устанавливает период тайм-серий ежедневный, который начинается и заканчивается в 00:00.
-
-#### Доступные функции агрегации
-
-- `sum`: сумма всех значений.
-- `count`: количество значений.
-- `min`: минимальное значение.
-- `max`: максимальное значение.
-- `first`: первое значение в периоде.
-- `last`: последнее значение за период.
-
-#### Пример запроса агрегации
-
-```graphql
-{
-  stats(interval: "hour", where: { timestamp_gt: 1704085200 }) {
-    id
-    timestamp
-    sum
-  }
-}
-```
-
-Примечание:
-
-Чтобы использовать тайм-серии и агрегации, субграф должен иметь версию спецификации ≥1.1.0. Обратите внимание, что эта функция может претерпеть значительные изменения, которые могут повлиять на обратную совместимость.
-
-[Подробнее](https://github.com/graphprotocol/graph-node/blob/master/docs/aggregations.md) о тайм-сериях и агрегациях.
