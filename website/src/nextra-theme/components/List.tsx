@@ -29,7 +29,3 @@ export const ListUnordered = (props: HTMLAttributes<HTMLUListElement>) => {
     />
   )
 }
-
-export const ListItem = (props: HTMLAttributes<HTMLLIElement>) => {
-  return <List.Item {...props} />
-}

@@ -8,18 +8,15 @@ import { type ReactElement, useCallback, useContext, useMemo } from 'react'
 import { useSet } from 'react-use'
 import type { ThemeUICSSObject } from 'theme-ui'
 
-import { Code, Divider, type DividerProps, Flex, Spacing } from '@edgeandnode/gds'
+import { Code, Divider, type DividerProps, Flex, Spacing, Link, List } from '@edgeandnode/gds'
 
 import {
   Callout,
   CodeBlock,
   Difficulty,
-  DocSearch,
   EditPageLink,
   Heading,
   Image,
-  LinkInline,
-  ListItem,
   ListOrdered,
   ListUnordered,
   Paragraph,
@@ -148,23 +145,13 @@ const mdxComponents = {
   h5: Heading.H5,
   h6: Heading.H6,
   img: Image,
-  a: LinkInline,
-  li: ListItem,
+  a: Link.Inline as any,
+  li: List.Item,
   ol: ListOrdered,
   ul: ListUnordered,
   p: Paragraph,
   table: Table,
-  Callout,
-  CodeBlock,
   Difficulty,
-  Heading,
-  Image,
-  LinkInline,
-  ListItem,
-  ListOrdered,
-  ListUnordered,
-  Paragraph,
-  Table,
   VideoEmbed,
   wrapper: MDXWrapper as any,
 }
@@ -176,24 +163,6 @@ const mdxStyles: ThemeUICSSObject = {
     display: 'block',
     textAlign: 'center',
   },
-}
-
-export const CodeInline = Code.Inline
-
-export {
-  Callout,
-  CodeBlock,
-  Difficulty,
-  DocSearch,
-  Heading,
-  Image,
-  LinkInline,
-  ListItem,
-  ListOrdered,
-  ListUnordered,
-  Paragraph,
-  Table,
-  VideoEmbed,
 }
 
 export default function NextraLayout({ children, pageOpts, pageProps }: NextraThemeLayoutProps): ReactElement {

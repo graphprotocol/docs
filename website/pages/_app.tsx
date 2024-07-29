@@ -1,4 +1,4 @@
-import { DocSearch } from '@graphprotocol/nextra-theme'
+import { DocSearch } from '@/src/nextra-theme/components'
 import mixpanel from 'mixpanel-browser'
 import type { AppProps } from 'next/app'
 import NextLink from 'next/link'

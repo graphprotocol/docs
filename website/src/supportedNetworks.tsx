@@ -1,4 +1,5 @@
-import { CodeInline, Table } from '@graphprotocol/nextra-theme'
+import { Table } from '@/src/nextra-theme/components'
+import { Code } from '@edgeandnode/gds'
 import type { ExecutionResult } from 'graphql'
 
 import { ChainProductStatus, SupportedNetworkMap } from '@edgeandnode/common'
@@ -73,7 +74,7 @@ export function SupportedNetworksTable({ networks }: { networks: Awaited<ReturnT
           <tr key={network.cliName}>
             <td>{network.name}</td>
             <td>
-              <CodeInline>{network.cliName}</CodeInline>
+              <Code.Inline>{network.cliName}</Code.Inline>
             </td>
             <td align="center">{network.integrationType}</td>
             <td align="center">

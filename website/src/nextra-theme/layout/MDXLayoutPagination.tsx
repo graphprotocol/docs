@@ -2,7 +2,7 @@ import { useContext } from 'react'
 
 import { buildTransition, Divider, Flex, Icon, Link, Spacing, Text, useI18n } from '@edgeandnode/gds'
 
-import { NavContext } from '@/layout'
+import { NavContext } from './NavContext'
 
 export const MDXLayoutPagination = () => {
   const { flatDocsDirectories, activeIndex } = useContext(NavContext)!

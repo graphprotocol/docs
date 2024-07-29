@@ -1,5 +1,5 @@
 import ContractAddresses from '@graphprotocol/contracts/addresses.json'
-import { Table } from '@graphprotocol/nextra-theme'
+import { Table } from '@/src/nextra-theme/components'
 
 import { getAddressLink } from '@edgeandnode/common'
 import { Link } from '@edgeandnode/gds'

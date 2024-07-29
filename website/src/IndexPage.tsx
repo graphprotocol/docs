@@ -1,4 +1,4 @@
-import { Image, LinkInline } from '@graphprotocol/nextra-theme'
+import { Image } from '@/src/nextra-theme/components'
 import { useData } from 'nextra/hooks'
 
 import { BorderRadius, buildBorder, buildTransition, Flex, Link, Spacing, Text } from '@edgeandnode/gds'
@@ -139,7 +139,7 @@ export function NetworkRoles() {
             </Text>
           </div>
           <Text as="div" weight="SEMIBOLD" size="16px" sx={{ mt: 'auto' }}>
-            <LinkInline href={role.href}>{t('index.readMore')}</LinkInline>
+            <Link.Inline href={role.href}>{t('index.readMore')}</Link.Inline>
           </Text>
         </Flex.Column>
       ))}
@@ -187,7 +187,7 @@ export function Products() {
             </Text>
           </div>
           <Text as="div" weight="SEMIBOLD" size="16px" sx={{ mt: 'auto' }}>
-            <LinkInline href={product.href}>{t('index.readMore')}</LinkInline>
+            <Link.Inline href={product.href}>{t('index.readMore')}</Link.Inline>
           </Text>
         </Flex.Column>
       ))}
