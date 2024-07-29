@@ -10,7 +10,9 @@ type Params = {
   filterDocs?: (filePath: string) => boolean
 }
 
-async function fetchRemoteFilePaths({ user, repo, branch, docsPath, outputPath, filterDocs }: Params): Promise<void> {
+const CWD = process.cwd()
+
+async function fetchRemoteDocs({ user, repo, branch, docsPath, outputPath, filterDocs }: Params): Promise<void> {
   const url = `https://api.github.com/repos/${user}/${repo}/git/trees/${branch}?recursive=1`
   const response = await fetch(url)
 
@@ -33,25 +35,30 @@ async function fetchRemoteFilePaths({ user, repo, branch, docsPath, outputPath, 
   if (filterDocs) {
     result.filePaths = result.filePaths.filter(filterDocs)
   }
-  const json = JSON.stringify(result, null, 2)
-
-  await fs.writeFile(outputPath, json, 'utf8')
-
-  console.log(`✅ Remote files from "${url}" saved!`)
+  for (const fp of result.filePaths) {
+    const response = await fetch(`https://raw.githubusercontent.com/${user}/${repo}/main/${docsPath}${fp}`)
+    if (!response.ok) {
+      throw new Error(`Failed to fetch remote file. ${response.status} ${response.statusText}`)
+    }
+    const text = await response.text()
+    const filePath = path.join(outputPath, fp)
+    await fs.writeFile(filePath, text)
+    console.log(`✅ Saved remote file "${fp}" in ${path.relative(CWD, filePath)}`)
+  }
 }
 
-await fetchRemoteFilePaths({
+await fetchRemoteDocs({
   user: 'graphprotocol',
   repo: 'graph-client',
   branch: 'main',
   docsPath: 'docs/',
-  outputPath: path.join(process.cwd(), 'remote-files', 'graph-client.json'),
+  outputPath: path.join(CWD, 'pages', 'en', 'querying', 'graph-client'),
 })
 
-await fetchRemoteFilePaths({
+await fetchRemoteDocs({
   user: 'graphprotocol',
   repo: 'graph-tooling',
   branch: 'main',
   docsPath: 'packages/ts/',
-  outputPath: path.join(process.cwd(), 'remote-files', 'graph-ts.json'),
+  outputPath: path.join(CWD, 'pages', 'en', 'developing', 'graph-ts'),
 })

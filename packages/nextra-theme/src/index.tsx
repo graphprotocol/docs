@@ -1,20 +1,18 @@
 import merge from 'lodash/merge'
 import { NextSeo, type NextSeoProps } from 'next-seo'
-import type { NextraThemeLayoutProps } from 'nextra'
-import { useFSRoute } from 'nextra/hooks'
+import type { NextraMDXContent, NextraThemeLayoutProps } from 'nextra'
+import { useFSRoute, useRouter } from 'nextra/hooks'
 import { MDXProvider } from 'nextra/mdx'
 import { normalizePages } from 'nextra/normalize-pages'
-import { type ReactElement, useCallback, useMemo } from 'react'
+import { type ReactElement, useCallback, useContext, useMemo } from 'react'
 import { useSet } from 'react-use'
 import type { ThemeUICSSObject } from 'theme-ui'
 
-import { Divider, type DividerProps, Flex, Icon, Spacing, useI18n } from '@edgeandnode/gds'
-import { NPSForm } from '@edgeandnode/go'
+import { Code, Divider, type DividerProps, Flex, Spacing } from '@edgeandnode/gds'
 
 import {
   Callout,
   CodeBlock,
-  CodeInline,
   Difficulty,
   DocSearch,
   EditPageLink,
@@ -30,10 +28,118 @@ import {
 } from '@/components'
 import { DocumentContext, MDXLayoutNav, MDXLayoutOutline, MDXLayoutPagination, NavContext } from '@/layout'
 
+const MDXWrapper: NextraMDXContent = ({ children, toc }) => {
+  const { activePath } = useContext(NavContext)!
+  const { frontMatter, timestamp, readingTime } = useContext(DocumentContext)!
+  const { locale } = useRouter()
+  const lastUpdated = timestamp ? new Date(timestamp) : null
+
+  return (
+    <>
+      <div sx={{ pt: [null, null, null, Spacing['24px']] }}>
+        <div sx={{ display: [null, null, null, 'none'], mb: Spacing['32px'] }}>
+          <MDXLayoutNav mobile />
+        </div>
+
+        <article className="graph-docs-content" sx={mdxStyles}>
+          {activePath.length > 1 && (
+            <div className="graph-docs-current-group" sx={{ display: 'none' }}>
+              {activePath.map((item) => item.title).join(' > ')}
+            </div>
+          )}
+          {frontMatter.title ? <Heading.H1>{frontMatter.title}</Heading.H1> : null}
+          {(lastUpdated || readingTime) && (
+            <Paragraph size="14px">
+              {lastUpdated && (
+                <span>
+                  <span sx={{ color: 'White64' }}>Last updated:</span>{' '}
+                  <time
+                    dateTime={lastUpdated.toISOString()}
+                    // Removes hydration errors because `toLocaleDateString` show different results
+                    // in Node.js and in browser for some languages like `ar`
+                    suppressHydrationWarning
+                  >
+                    {lastUpdated.toLocaleDateString(locale, {
+                      month: 'long',
+                      day: 'numeric',
+                      year: 'numeric',
+                    })}
+                  </time>
+                </span>
+              )}
+              <span
+                sx={{
+                  mx: Spacing['16px'],
+                  display: 'inline-block',
+                  verticalAlign: 'top',
+                  width: '1px',
+                  height: '20px',
+                  bg: 'White16',
+                  '&:not(span + span), &:not(:has(+ span))': {
+                    display: 'none',
+                  },
+                }}
+              />
+              {!!readingTime?.minutes && (
+                <span>
+                  <span sx={{ color: 'White64' }}>Reading time:</span> {Math.ceil(readingTime.minutes)} min
+                </span>
+              )}
+            </Paragraph>
+          )}
+          {children}
+        </article>
+
+        <Flex.Row sx={{ display: [null, null, null, 'none'], mt: Spacing['48px'] }}>
+          <EditPageLink mobile />
+        </Flex.Row>
+
+        <div sx={{ mt: Spacing['64px'] }}>
+          <MDXLayoutPagination />
+          {/* TODO: Uncomment when we're ready to add the NPS form to the docs
+            <NPSForm
+              key={fsPath}
+              question="Was this page helpful?"
+              choices={[
+                {
+                  label: 'No',
+                  commentsLabel: 'How can we improve this page?',
+                  icon: <Icon.ThumbsDown title="No" size="24px" />,
+                  hideLabel: true,
+                  score: -1,
+                },
+                {
+                  label: 'Yes',
+                  commentsLabel: 'In what way did this page help you?',
+                  icon: <Icon.ThumbsUp title="Yes" size="24px" />,
+                  hideLabel: true,
+                  score: 1,
+                },
+              ]}
+              chipSize="xlarge"
+              sx={{ mb: Spacing['32px'] }}
+            />
+            */}
+        </div>
+      </div>
+
+      <div
+        sx={{
+          display: ['none', null, null, 'block'],
+          marginInlineStart: '32px',
+          marginInlineEnd: '-8px',
+        }}
+      >
+        <MDXLayoutOutline toc={toc} />
+      </div>
+    </>
+  )
+}
+
 const mdxComponents = {
   blockquote: Callout,
   pre: CodeBlock,
-  code: CodeInline,
+  code: Code.Inline as any,
   hr: (props: DividerProps) => <Divider sx={{ my: Spacing['32px'] }} {...props} />,
   h1: Heading.H1,
   h2: Heading.H2,
@@ -50,7 +156,6 @@ const mdxComponents = {
   table: Table,
   Callout,
   CodeBlock,
-  CodeInline,
   Difficulty,
   Heading,
   Image,
@@ -61,6 +166,7 @@ const mdxComponents = {
   Paragraph,
   Table,
   VideoEmbed,
+  wrapper: MDXWrapper as any,
 }
 
 const mdxStyles: ThemeUICSSObject = {
@@ -72,10 +178,11 @@ const mdxStyles: ThemeUICSSObject = {
   },
 }
 
+export const CodeInline = Code.Inline
+
 export {
   Callout,
   CodeBlock,
-  CodeInline,
   Difficulty,
   DocSearch,
   Heading,
@@ -90,18 +197,15 @@ export {
 }
 
 export default function NextraLayout({ children, pageOpts, pageProps }: NextraThemeLayoutProps): ReactElement {
-  const { frontMatter, filePath, pageMap, headings, title, timestamp, readingTime } = pageOpts
-  const { locale, defaultLocale } = useI18n<any>()
+  const { frontMatter, filePath, pageMap, title, timestamp, readingTime } = pageOpts
   const fsPath = useFSRoute()
-
+  const { locale } = useRouter()
   const args = useMemo(() => {
     const result = normalizePages({
       list: pageMap,
-      locale,
-      defaultLocale,
       route: fsPath,
     })
-    if (typeof window === 'undefined') {
+    if (typeof window === 'undefined' && locale === 'en') {
       // Execute this check for sidebar links only on server, will be stripped from client build
       for (const item of result.flatDocsDirectories) {
         if (!item.route) {
@@ -110,7 +214,7 @@ export default function NextraLayout({ children, pageOpts, pageProps }: NextraTh
       }
     }
     return result
-  }, [defaultLocale, fsPath, locale, pageMap])
+  }, [fsPath, pageMap, locale])
 
   // Provide `markOutlineItem` to the `DocumentContext` so child `Heading` components can mark outline items as "in or above view" or not
   const [
@@ -128,16 +232,6 @@ export default function NextraLayout({ children, pageOpts, pageProps }: NextraTh
     },
     [markOutlineItemAsInOrAboveView, markOutlineItemAsNotInOrAboveView],
   )
-  // Compute `highlightedOutlineItemId` for the `DocumentContext` based on outline items that have been marked as "in or above view"
-  const highlightedOutlineItemId = useMemo(() => {
-    let _highlightedOutlineItemId = null
-    for (const heading of headings) {
-      if (heading.depth <= 3 && outlineItemIsInOrAboveView(heading.id)) {
-        _highlightedOutlineItemId = heading.id
-      }
-    }
-    return _highlightedOutlineItemId
-  }, [headings, outlineItemIsInOrAboveView])
 
   let seo: NextSeoProps = {
     title: `${title ? `${title} | ` : ''}Docs | The Graph`,
@@ -156,11 +250,17 @@ export default function NextraLayout({ children, pageOpts, pageProps }: NextraTh
     seo = merge(seo, frontMatter.seo)
   }
 
-  const lastUpdated = timestamp ? new Date(timestamp) : null
-
   return (
     <NavContext.Provider value={{ filePath: pageProps.remoteFilePath || filePath, ...args }}>
-      <DocumentContext.Provider value={{ frontMatter, headings, markOutlineItem, highlightedOutlineItemId }}>
+      <DocumentContext.Provider
+        value={{
+          frontMatter,
+          markOutlineItem,
+          outlineItemIsInOrAboveView,
+          timestamp,
+          readingTime,
+        }}
+      >
         <NextSeo {...seo} />
 
         <div
@@ -180,97 +280,7 @@ export default function NextraLayout({ children, pageOpts, pageProps }: NextraTh
             <MDXLayoutNav />
           </div>
 
-          <div sx={{ pt: [null, null, null, Spacing['24px']] }}>
-            <div sx={{ display: [null, null, null, 'none'], mb: Spacing['32px'] }}>
-              <MDXLayoutNav mobile />
-            </div>
-
-            <article className="graph-docs-content" sx={mdxStyles}>
-              {args.activePath.length > 1 ? (
-                <div className="graph-docs-current-group" sx={{ display: 'none' }}>
-                  {args.activePath.map((item) => item.title).join(' > ')}
-                </div>
-              ) : null}
-              {frontMatter.title ? <Heading.H1>{frontMatter.title}</Heading.H1> : null}
-              {lastUpdated || readingTime ? (
-                <Paragraph size="14px">
-                  {lastUpdated ? (
-                    <span>
-                      <span sx={{ color: 'White64' }}>Last updated:</span>{' '}
-                      <time dateTime={lastUpdated.toISOString()}>
-                        {lastUpdated.toLocaleDateString(locale, {
-                          month: 'long',
-                          day: 'numeric',
-                          year: 'numeric',
-                        })}
-                      </time>
-                    </span>
-                  ) : null}
-                  <span
-                    sx={{
-                      mx: Spacing['16px'],
-                      display: 'inline-block',
-                      verticalAlign: 'top',
-                      width: '1px',
-                      height: '20px',
-                      bg: 'White16',
-                      '&:not(span + span), &:not(:has(+ span))': {
-                        display: 'none',
-                      },
-                    }}
-                  />
-                  {(readingTime?.minutes ?? 0) > 0 ? (
-                    <span>
-                      <span sx={{ color: 'White64' }}>Reading time:</span> {Math.ceil(readingTime!.minutes)} min
-                    </span>
-                  ) : null}
-                </Paragraph>
-              ) : null}
-              <MDXProvider components={mdxComponents}>{children}</MDXProvider>
-            </article>
-
-            <Flex.Row sx={{ display: [null, null, null, 'none'], mt: Spacing['48px'] }}>
-              <EditPageLink mobile />
-            </Flex.Row>
-
-            <div sx={{ mt: Spacing['64px'] }}>
-              <MDXLayoutPagination />
-              {/* TODO: Uncomment when we're ready to add the NPS form to the docs
-              <NPSForm
-                key={fsPath}
-                question="Was this page helpful?"
-                choices={[
-                  {
-                    label: 'No',
-                    commentsLabel: 'How can we improve this page?',
-                    icon: <Icon.ThumbsDown title="No" size="24px" />,
-                    hideLabel: true,
-                    score: -1,
-                  },
-                  {
-                    label: 'Yes',
-                    commentsLabel: 'In what way did this page help you?',
-                    icon: <Icon.ThumbsUp title="Yes" size="24px" />,
-                    hideLabel: true,
-                    score: 1,
-                  },
-                ]}
-                chipSize="xlarge"
-                sx={{ mb: Spacing['32px'] }}
-              />
-              */}
-            </div>
-          </div>
-
-          <div
-            sx={{
-              display: ['none', null, null, 'block'],
-              marginInlineStart: '32px',
-              marginInlineEnd: '-8px',
-            }}
-          >
-            <MDXLayoutOutline />
-          </div>
+          <MDXProvider components={mdxComponents}>{children}</MDXProvider>
         </div>
       </DocumentContext.Provider>
     </NavContext.Provider>

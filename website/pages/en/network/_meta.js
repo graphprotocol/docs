@@ -1,6 +1,6 @@
 export default {
-  overview: 'Overview',
-  benefits: 'Benefits',
+  overview: '',
+  benefits: '',
   indexing: '',
   delegating: '',
   curating: '',

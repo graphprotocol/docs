@@ -21,6 +21,7 @@ import { supportedLocales, translations, useI18n } from '@/i18n'
 
 import '@edgeandnode/gds/style.css'
 import '@docsearch/css'
+import '../src/app.css'
 
 const internalAbsoluteHrefRegex = /^(((https?:)?\/\/((www|staging)\.)?thegraph\.com)?\/docs\/|\/(?!\/))/i
 const externalHrefRegex = /^(?!(https?:)?\/\/((www|staging)\.)?thegraph\.com)([a-zA-Z0-9+.-]+:)?\/\//i
@@ -58,9 +59,7 @@ function MyAppWithLocale({ Component, router, pageProps }: AppProps) {
         },
         navigateNewTab({ itemUrl }: { itemUrl: string }) {
           const windowReference = window.open(itemUrl, '_blank', 'noopener')
-          if (windowReference) {
-            windowReference.focus()
-          }
+          windowReference?.focus()
         },
         navigateNewWindow({ itemUrl }: { itemUrl: string }) {
           window.open(itemUrl, '_blank', 'noopener')
@@ -176,7 +175,7 @@ function MyAppWithLocale({ Component, router, pageProps }: AppProps) {
               />
             }
             headerSticky
-            footer={<GlobalFooter showLogo={true} showLocaleSwitcher={!hideLocaleSwitcher} />}
+            footer={<GlobalFooter showLogo showLocaleSwitcher={!hideLocaleSwitcher} />}
           >
             <CookieBanner />
             <Component {...pageProps} />

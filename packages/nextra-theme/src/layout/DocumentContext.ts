@@ -1,5 +1,5 @@
 import type { NextSeoProps } from 'next-seo'
-import type { Heading } from 'nextra'
+import type { ReadingTime } from 'nextra'
 import { createContext } from 'react'
 
 export type Frontmatter = {
@@ -11,9 +11,10 @@ export type Frontmatter = {
 
 export type DocumentContextProps = {
   frontMatter: Frontmatter
-  headings: Heading[]
   markOutlineItem: (id: string, inOrAboveView: boolean) => void
-  highlightedOutlineItemId: string | null
+  outlineItemIsInOrAboveView: (key: string) => boolean
+  timestamp?: number
+  readingTime?: ReadingTime
 }
 
 export const DocumentContext = createContext<DocumentContextProps | null>(null)

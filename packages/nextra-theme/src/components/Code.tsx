@@ -43,7 +43,3 @@ export const CodeBlock = ({ children, ...props }: CodeBlockProps) => {
     </Code.Block>
   )
 }
-
-export const CodeInline = ({ children, ...props }: HTMLAttributes<HTMLElement>) => {
-  return <Code.Inline {...props}>{children as string}</Code.Inline>
-}

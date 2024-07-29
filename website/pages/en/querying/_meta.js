@@ -7,5 +7,5 @@ export default {
   'graphql-api': '',
   'querying-by-subgraph-id-vs-deployment-id': '',
   'graph-client': 'Graph Client',
-  'querying-with-python': 'Python (Subgrounds)',
+  'querying-with-python': '',
 }

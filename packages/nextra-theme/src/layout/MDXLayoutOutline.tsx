@@ -1,12 +1,25 @@
-import { useContext, useEffect, useState } from 'react'
+import type { Heading } from 'nextra'
+import { removeLinks } from 'nextra/remove-links'
+import { useContext, useEffect, useMemo, useState } from 'react'
 
 import { buildTransition, Divider, Link, Spacing, Text, useI18n } from '@edgeandnode/gds'
 
 import { EditPageLink } from '@/components'
 import { DocumentContext } from '@/layout'
 
-export const MDXLayoutOutline = () => {
-  const { headings, highlightedOutlineItemId } = useContext(DocumentContext)!
+export const MDXLayoutOutline = ({ toc: headings }: { toc: Heading[] }) => {
+  const { outlineItemIsInOrAboveView } = useContext(DocumentContext)!
+  // Compute `highlightedOutlineItemId` for the `DocumentContext` based on outline items that have been marked as "in or above view"
+  const highlightedOutlineItemId = useMemo(() => {
+    let _highlightedOutlineItemId = null
+    for (const heading of headings) {
+      if (heading.depth <= 3 && outlineItemIsInOrAboveView(heading.id)) {
+        _highlightedOutlineItemId = heading.id
+      }
+    }
+    return _highlightedOutlineItemId
+  }, [headings, outlineItemIsInOrAboveView])
+
   const [_enableTransition, setEnableTransition] = useState(false)
   const { t } = useI18n<any>()
 
@@ -53,7 +66,7 @@ export const MDXLayoutOutline = () => {
                         transition: buildTransition('COLORS'),
                       }}
                     >
-                      {heading.value}
+                      {removeLinks(heading.value)}
                     </Link.Unstyled>
                   </li>
                 )
