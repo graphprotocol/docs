@@ -8,7 +8,7 @@ import { type ReactElement, useCallback, useContext, useMemo } from 'react'
 import { useSet } from 'react-use'
 import type { ThemeUICSSObject } from 'theme-ui'
 
-import { Code, Divider, type DividerProps, Flex, Spacing, Link, List } from '@edgeandnode/gds'
+import { Code, Divider, type DividerProps, Flex, Link, List, Spacing } from '@edgeandnode/gds'
 
 import {
   Callout,

@@ -5,6 +5,7 @@ import { useContext, useEffect, useMemo, useState } from 'react'
 import { buildTransition, Divider, Link, Spacing, Text, useI18n } from '@edgeandnode/gds'
 
 import { EditPageLink } from '../components'
+
 import { DocumentContext } from './DocumentContext'
 
 export const MDXLayoutOutline = ({ toc: headings }: { toc: Heading[] }) => {

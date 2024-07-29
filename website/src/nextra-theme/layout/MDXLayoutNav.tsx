@@ -6,6 +6,7 @@ import { Fragment, type PropsWithChildren, useContext, useEffect, useState } fro
 import { BorderRadius, buildTransition, Flex, Icon, Spacing, Text, useI18n } from '@edgeandnode/gds'
 
 import { NavTree } from '../components'
+
 import { NavContext } from './NavContext'
 
 const animationExpand = keyframes({

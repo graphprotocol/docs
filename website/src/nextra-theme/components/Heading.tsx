@@ -3,7 +3,7 @@ import { type ElementType, useContext } from 'react'
 import { useInView } from 'react-intersection-observer'
 import { useDebounce } from 'react-use'
 
-import { buildTransition, Opacity, Spacing, Text, type TextProps, useI18n, Link } from '@edgeandnode/gds'
+import { buildTransition, Link, Opacity, Spacing, Text, type TextProps, useI18n } from '@edgeandnode/gds'
 
 import { DocumentContext } from '../layout'
 

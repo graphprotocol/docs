@@ -1,4 +1,3 @@
-import { DocSearch } from '@/src/nextra-theme/components'
 import mixpanel from 'mixpanel-browser'
 import type { AppProps } from 'next/app'
 import NextLink from 'next/link'
@@ -18,6 +17,7 @@ import {
 import { CookieBanner, GlobalFooter, GlobalHeader } from '@edgeandnode/go'
 
 import { supportedLocales, translations, useI18n } from '@/i18n'
+import { DocSearch } from '@/src/nextra-theme/components'
 
 import '@edgeandnode/gds/style.css'
 import '@docsearch/css'

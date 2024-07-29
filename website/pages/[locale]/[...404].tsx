@@ -1,6 +1,6 @@
-import { Link } from '@edgeandnode/gds'
 import type { GetStaticPaths, GetStaticProps, NextPage } from 'next'
 
+import { Link } from '@edgeandnode/gds'
 import { NotFound, Spacing } from '@edgeandnode/gds'
 
 import { supportedLocales, useI18n } from '@/i18n'
