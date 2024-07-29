@@ -25,8 +25,8 @@ import {
   Paragraph,
   Table,
   VideoEmbed,
-} from '@/components'
-import { DocumentContext, MDXLayoutNav, MDXLayoutOutline, MDXLayoutPagination, NavContext } from '@/layout'
+} from './components'
+import { DocumentContext, MDXLayoutNav, MDXLayoutOutline, MDXLayoutPagination, NavContext } from './layout'
 
 const MDXWrapper: NextraMDXContent = ({ children, toc }) => {
   const { activePath } = useContext(NavContext)!

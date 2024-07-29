@@ -5,8 +5,8 @@ import { useDebounce } from 'react-use'
 
 import { buildTransition, Opacity, Spacing, Text, type TextProps, useI18n } from '@edgeandnode/gds'
 
-import { LinkInline } from '@/components'
-import { DocumentContext } from '@/layout/DocumentContext'
+import { LinkInline } from './Link'
+import { DocumentContext } from '../layout'
 
 export type HeadingProps = TextProps & {
   level: 1 | 2 | 3 | 4 | 5 | 6
