@@ -21,7 +21,7 @@ import { DocSearch } from '@/src/nextra-theme/components'
 
 import '@edgeandnode/gds/style.css'
 import '@docsearch/css'
-import '../src/app.css'
+import './globals.css'
 
 const internalAbsoluteHrefRegex = /^(((https?:)?\/\/((www|staging)\.)?thegraph\.com)?\/docs\/|\/(?!\/))/i
 const externalHrefRegex = /^(?!(https?:)?\/\/((www|staging)\.)?thegraph\.com)([a-zA-Z0-9+.-]+:)?\/\//i
