@@ -30,7 +30,7 @@ async function fetchRemoteDocs({ user, repo, branch, docsPath, outputPath, filte
     repo,
     branch,
     docsPath,
-    filePaths: filePaths.filter((filePath) => /\.md$/.test(filePath)),
+    filePaths: filePaths.filter((filePath) => filePath.endsWith('.md')),
   }
   if (filterDocs) {
     result.filePaths = result.filePaths.filter(filterDocs)
