@@ -29,66 +29,74 @@ const withNextra = nextra({
   defaultShowCopyCode: false,
   readingTime: true,
   transformPageMap(pageMap) {
-    const locale = pageMap[0].route.slice(0, 2)
-    // translate(translations, locale, 'sidebar.')
-    return [
-      {
-        index: '',
-        '---1': {
-          type: 'separator',
-        },
-        about: '',
-        network: 'The Graph Network',
-        sunrise: '',
-        billing: '',
-        glossary: '',
-        tokenomics: '',
-        arbitrum: 'Scaling with Arbitrum',
-        '---2': {
-          type: 'separator',
-        },
-        '###1': {
-          type: 'heading',
-          title: 'Subgraphs',
-        },
-        'quick-start': '',
-        developing: 'Developing',
-        deploying: 'Deploying',
-        publishing: 'Publishing',
-        managing: 'Managing',
-        querying: 'Querying',
-        cookbook: 'Cookbook',
-        'release-notes': 'Release Notes & Upgrade Guides',
-        '---3': {
-          type: 'separator',
-        },
-        '###2': {
-          type: 'heading',
-          title: 'Substreams',
-        },
-        substreams: '',
-        '---4': {
-          type: 'separator',
-        },
-        '###3': {
-          type: 'heading',
-          title: 'Indexing',
-        },
-        'operating-graph-node': '',
-        'chain-integration-overview': '',
-        'supported-network-requirements': '',
-        'new-chain-integration': '',
-        firehose: '',
-        graphcast: '',
-        'mips-faqs': '',
+    const locale = pageMap[0].route.slice(1, 3)
+    // TODO: remove this when crowdin will translate global.json
+    const t = (key) => {
+      try {
+        return translate(translations, locale, `global.sidebar.${key}`)
+      } catch {
+        return translate(translations, 'en', `global.sidebar.${key}`)
+      }
+    }
+
+    const metaFile = {
+      index: t('index'),
+      '---1': {
+        type: 'separator',
       },
+      about: '',
+      network: t('network'),
+      sunrise: '',
+      billing: '',
+      glossary: '',
+      tokenomics: '',
+      arbitrum: t('arbitrum'),
+      '---2': {
+        type: 'separator',
+      },
+      '###1': {
+        type: 'heading',
+        title: t('subgraphs'),
+      },
+      'quick-start': '',
+      developing: t('developing'),
+      deploying: t('deploying'),
+      publishing: t('publishing'),
+      managing: t('managing'),
+      querying: t('querying'),
+      cookbook: t('cookbook'),
+      'release-notes': t('releaseNotes'),
+      '---3': {
+        type: 'separator',
+      },
+      '###2': {
+        type: 'heading',
+        title: t('substreams'),
+      },
+      substreams: '',
+      '---4': {
+        type: 'separator',
+      },
+      '###3': {
+        type: 'heading',
+        title: t('indexing'),
+      },
+      'operating-graph-node': '',
+      'chain-integration-overview': '',
+      'supported-network-requirements': '',
+      'new-chain-integration': '',
+      firehose: '',
+      graphcast: '',
+      'mips-faqs': '',
+    }
+
+    return [
+      { data: metaFile },
       ...pageMap,
       {
         route: `/${locale}`,
         name: 'index',
-        frontMatter: {
-          sidebarTitle: translate(translations, locale, 'index.title'),
-        },
+        frontMatter: {},
       },
     ]
   },
