@@ -36,7 +36,7 @@ async function fetchRemoteDocs({ user, repo, branch, docsPath, outputPath, filte
     result.filePaths = result.filePaths.filter(filterDocs)
   }
   for (const fp of result.filePaths) {
-    const response = await fetch(`https://raw.githubusercontent.com/${user}/${repo}/main/${docsPath}${fp}`)
+    const response = await fetch(`https://raw.githubusercontent.com/${user}/${repo}/${branch}/${docsPath}${fp}`)
     if (!response.ok) {
       throw new Error(`Failed to fetch remote file. ${response.status} ${response.statusText}`)
     }
