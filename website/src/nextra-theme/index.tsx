@@ -25,6 +25,15 @@ import {
 } from './components'
 import { DocumentContext, MDXLayoutNav, MDXLayoutOutline, MDXLayoutPagination, NavContext } from './layout'
 
+const mdxStyles: ThemeUICSSObject = {
+  overflowWrap: 'break-word',
+  'img + em': {
+    mt: Spacing['16px'],
+    display: 'block',
+    textAlign: 'center',
+  },
+}
+
 const MDXWrapper: NextraMDXContent = ({ children, toc }) => {
   const { activePath } = useContext(NavContext)!
   const { frontMatter, timestamp, readingTime } = useContext(DocumentContext)!
@@ -154,15 +163,6 @@ const mdxComponents = {
   Difficulty,
   VideoEmbed,
   wrapper: MDXWrapper as any,
-}
-
-const mdxStyles: ThemeUICSSObject = {
-  overflowWrap: 'break-word',
-  'img + em': {
-    mt: Spacing['16px'],
-    display: 'block',
-    textAlign: 'center',
-  },
 }
 
 export default function NextraLayout({ children, pageOpts, pageProps }: NextraThemeLayoutProps): ReactElement {
