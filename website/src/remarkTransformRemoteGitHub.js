@@ -1,6 +1,6 @@
 import path from 'path'
 
-import { visit, EXIT } from 'unist-util-visit'
+import { EXIT, visit } from 'unist-util-visit'
 
 const GITHUB_DATA = {
   'graph-ts': {
