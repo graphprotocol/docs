@@ -52,7 +52,7 @@ await fetchRemoteDocs({
   repo: 'graph-client',
   branch: 'main',
   docsPath: 'docs/',
-  outputPath: path.join(CWD, 'pages', 'en', 'querying', 'graph-client'),
+  outputPath: path.join(CWD, 'src', 'pages', 'en', 'querying', 'graph-client'),
 })
 
 await fetchRemoteDocs({
@@ -60,5 +60,5 @@ await fetchRemoteDocs({
   repo: 'graph-tooling',
   branch: 'main',
   docsPath: 'packages/ts/',
-  outputPath: path.join(CWD, 'pages', 'en', 'developing', 'graph-ts'),
+  outputPath: path.join(CWD, 'src', 'pages', 'en', 'developing', 'graph-ts'),
 })
