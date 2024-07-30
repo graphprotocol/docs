@@ -92,12 +92,12 @@ const withNextra = nextra({
 
     return [
       { data: metaFile },
-      ...pageMap,
       {
         route: `/${locale}`,
         name: 'index',
         frontMatter: {},
       },
+      ...pageMap,
     ]
   },
   mdxOptions: {
