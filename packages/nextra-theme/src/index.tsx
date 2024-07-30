@@ -80,7 +80,7 @@ const MDXWrapper: NextraMDXContent = ({ children, toc }) => {
                   },
                 }}
               />
-              {Boolean(readingTime?.minutes) && (
+              {!!readingTime?.minutes && (
                 <span>
                   <span sx={{ color: 'White64' }}>Reading time:</span> {Math.ceil(readingTime.minutes)} min
                 </span>
