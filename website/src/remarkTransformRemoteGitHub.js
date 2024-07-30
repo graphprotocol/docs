@@ -23,7 +23,7 @@ const GO_BACK_REPEATED_REGEX = /(\.\.\/)+/
 
 const EXTERNAL_LINK_REGEX = /^(https?:)?\/\//
 
-export const remarkReplaceGitHubLinks = () => (tree, file) => {
+export const remarkTransformRemoteGitHub = () => (tree, file) => {
   // Rewrite relative links to ensure they work
   const filePath = path.relative(process.cwd(), file.history[0])
   const [fileName, directory] = filePath.split('/').reverse()
@@ -62,6 +62,6 @@ remoteFilePath: https://github.com/${user}/${repo}/tree/${branch}/${docsPath}${f
     delete node.children
     delete node.position
 
-    return EXIT // stop traversing in case there is other h1 nodes
+    return EXIT // stop traversing in case there are other h1 nodes
   })
 }

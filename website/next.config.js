@@ -4,7 +4,7 @@ import { translate } from '@edgeandnode/gds'
 
 // Compile `i18n.ts` to `i18n.js` since we can't import `ts` files in `next.config.js`
 import { translations } from './dist/i18n.js'
-import { remarkReplaceGitHubLinks } from './src/remarkReplaceGitHubLinks.js'
+import { remarkTransformRemoteGitHub } from './src/remarkTransformRemoteGitHub.js'
 
 const env = {
   ENVIRONMENT: process.env.ENVIRONMENT,
@@ -99,7 +99,7 @@ const withNextra = nextra({
     ]
   },
   mdxOptions: {
-    remarkPlugins: [remarkReplaceGitHubLinks],
+    remarkPlugins: [remarkTransformRemoteGitHub],
   },
 })
 
