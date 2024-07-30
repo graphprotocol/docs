@@ -220,7 +220,12 @@ export default function NextraLayout({ children, pageOpts, pageProps }: NextraTh
   }
 
   return (
-    <NavContext.Provider value={{ filePath: pageProps.remoteFilePath || filePath, ...args }}>
+    <NavContext.Provider
+      value={{
+        filePath: pageProps.remoteFilePath || frontMatter.remoteFilePath || filePath,
+        ...args,
+      }}
+    >
       <DocumentContext.Provider
         value={{
           frontMatter,

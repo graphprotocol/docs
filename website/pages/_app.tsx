@@ -17,7 +17,7 @@ import {
 import { CookieBanner, GlobalFooter, GlobalHeader } from '@edgeandnode/go'
 
 import { supportedLocales, translations, useI18n } from '@/i18n'
-import { DocSearch } from '@/src/nextra-theme/components'
+import { DocSearch } from '@/src/components'
 
 import '@edgeandnode/gds/style.css'
 import '@docsearch/css'

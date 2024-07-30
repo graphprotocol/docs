@@ -5,7 +5,7 @@ import { Code } from '@edgeandnode/gds'
 
 import { execute, SupportedNetworksDocument, type SupportedNetworksQuery } from '@/.graphclient'
 import { useI18n } from '@/i18n'
-import { Table } from '@/src/nextra-theme/components'
+import { Table } from '@/src/components'
 
 export async function getSupportedNetworks() {
   // Get the IDs of the networks that are fully supported (as opposed to supported only by the upgrade indexer) using the EBO subgraph

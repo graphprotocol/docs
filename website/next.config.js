@@ -1,12 +1,10 @@
 import nextra from 'nextra'
-import path from 'node:path'
-import { visit } from 'unist-util-visit'
 
 import { translate } from '@edgeandnode/gds'
 
 // Compile `i18n.ts` to `i18n.js` since we can't import `ts` files in `next.config.js`
 import { translations } from './dist/i18n.js'
-import { remarkReplaceLinks } from './src/remarkReplaceLinks.js'
+import { remarkReplaceGitHubLinks } from './src/remarkReplaceGitHubLinks.js'
 
 const env = {
   ENVIRONMENT: process.env.ENVIRONMENT,
@@ -23,7 +21,7 @@ const env = {
 }
 
 const withNextra = nextra({
-  theme: './src/nextra-theme/index.tsx',
+  theme: './src/NextraLayout.tsx',
   search: false,
   codeHighlight: false,
   defaultShowCopyCode: false,
@@ -101,37 +99,7 @@ const withNextra = nextra({
     ]
   },
   mdxOptions: {
-    remarkPlugins: [
-      () => (tree, file) => {
-        const filePath = path.relative(process.cwd(), file.history[0])
-        const [fileName, directory] = filePath.split('/').reverse()
-
-        let user
-        let repo
-        let branch
-        let basePath
-        if (directory === 'graph-ts') {
-          user = 'graphprotocol'
-          repo = 'graph-tooling'
-          branch = 'main'
-          basePath = '/developing/graph-ts/'
-        } else if (directory === 'graph-client') {
-          user = 'graphprotocol'
-          repo = 'graph-client'
-          branch = 'main'
-          basePath = '/querying/graph-client/'
-        }
-        if (user) {
-          visit(tree, 'link', (node) => {
-            if (node.url.startsWith('../')) {
-              const GO_BACK_REPEATED_REGEX = /(\.\.\/)+/
-              node.url = node.url.replace(GO_BACK_REPEATED_REGEX, `https://github.com/${user}/${repo}/tree/${branch}/`)
-            }
-          })
-          remarkReplaceLinks({ foundPath: fileName, basePath })(tree, file)
-        }
-      },
-    ],
+    remarkPlugins: [remarkReplaceGitHubLinks],
   },
 })
 
