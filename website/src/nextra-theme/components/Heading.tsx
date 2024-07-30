@@ -3,10 +3,9 @@ import { type ElementType, useContext } from 'react'
 import { useInView } from 'react-intersection-observer'
 import { useDebounce } from 'react-use'
 
-import { buildTransition, Opacity, Spacing, Text, type TextProps, useI18n } from '@edgeandnode/gds'
+import { buildTransition, Link, Opacity, Spacing, Text, type TextProps, useI18n } from '@edgeandnode/gds'
 
-import { LinkInline } from '@/components'
-import { DocumentContext } from '@/layout/DocumentContext'
+import { DocumentContext } from '../layout'
 
 export type HeadingProps = TextProps & {
   level: 1 | 2 | 3 | 4 | 5 | 6
@@ -47,10 +46,10 @@ const BaseHeading = ({ level, id, children, ...props }: HeadingProps) => {
         >
           {/* Zero-width non-breaking space, to prevent a line break between the `#` and the previous word */}
           &#8288;
-          <LinkInline href={`#${id}`}>
+          <Link.Inline href={`#${id}`}>
             <span aria-hidden="true">#</span>
             <VisuallyHidden.Root>{t('global.linkToThisSection')}</VisuallyHidden.Root>
-          </LinkInline>
+          </Link.Inline>
         </span>
       ) : null}
     </Text>

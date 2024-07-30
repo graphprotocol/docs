@@ -1,6 +1,6 @@
-import { LinkInline } from '@graphprotocol/nextra-theme'
 import type { GetStaticPaths, GetStaticProps, NextPage } from 'next'
 
+import { Link } from '@edgeandnode/gds'
 import { NotFound, Spacing } from '@edgeandnode/gds'
 
 import { supportedLocales, useI18n } from '@/i18n'
@@ -26,7 +26,7 @@ const Page: NextPage = () => {
       <NotFound
         title={t('global.notFoundTitle')}
         subtitle={t('global.notFoundSubtitle')}
-        link={<LinkInline href="/">{t('global.goHome')}</LinkInline>}
+        link={<Link.Inline href="/">{t('global.goHome')}</Link.Inline>}
       />
     </div>
   )

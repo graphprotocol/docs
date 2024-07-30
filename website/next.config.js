@@ -23,7 +23,7 @@ const env = {
 }
 
 const withNextra = nextra({
-  theme: '@graphprotocol/nextra-theme',
+  theme: './src/nextra-theme/index.tsx',
   search: false,
   codeHighlight: false,
   defaultShowCopyCode: false,
