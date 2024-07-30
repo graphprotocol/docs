@@ -1,8 +1,4 @@
-import path from 'path'
-
 import type { GetStaticProps, GetStaticPropsResult } from 'next'
-
-import { Locale } from '@edgeandnode/gds'
 
 import { getSupportedNetworks } from '@/src/supportedNetworks'
 
@@ -11,11 +7,6 @@ export const buildGetStaticProps = (fileName: string, overrides?: GetStaticProps
     const overrideStaticProps: GetStaticPropsResult<Record<string, any>> = overrides
       ? await overrides(context)
       : { props: {} }
-
-    const pagesDir = path.join(process.cwd(), '.next', 'server', 'pages')
-    const pagePath = path.relative(pagesDir, fileName)
-    const locale = pagePath.slice(0, 2) as Locale
-
     return {
       ...overrideStaticProps,
       props: {

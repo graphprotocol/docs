@@ -21,10 +21,10 @@ module.exports = {
       // Only lint the English pages because the Markdown for the other languages is auto-generated from English (via Crowdin).
       // But include all languages when running the ESLint extension in VS Code (in case the user has "eslint.validate": ["mdx"]),
       // otherwise there will be random errors since the non-English files don't match any ruleset.
-      files: [`website/pages/${isVSCode ? '' : 'en/'}**/*.{md,mdx}`],
+      files: [`website/src/pages/${isVSCode ? '' : 'en/'}**/*.{md,mdx}`],
       excludedFiles: [
-        `website/pages/${isVSCode ? '' : 'en/'}developing/graph-ts/*.md`,
-        `website/pages/${isVSCode ? '' : 'en/'}querying/graph-client/*.md`,
+        `website/src/pages/${isVSCode ? '' : 'en/'}developing/graph-ts/*.md`,
+        `website/src/pages/${isVSCode ? '' : 'en/'}querying/graph-client/*.md`,
       ],
       parser: 'eslint-mdx',
       processor: 'mdx/remark',
