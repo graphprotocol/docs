@@ -5,11 +5,9 @@ export default {
   },
   about: '',
   network: 'The Graph Network',
-  sunrise: 'Sunrise Upgrade FAQ',
   billing: '',
   glossary: '',
   tokenomics: 'Tokenomics',
-  arbitrum: 'Scaling with Arbitrum',
   '---2': {
     type: 'separator',
   },
@@ -47,4 +45,14 @@ export default {
   firehose: '',
   graphcast: '',
   'mips-faqs': '',
+  '---5': {
+    type: 'separator',
+  },
+  '###4': {
+    type: 'heading',
+    title: 'Archive',
+  },
+  sunrise: 'Sunrise Upgrade FAQ',
+  arbitrum: 'Scaling with Arbitrum',
+  benefits: 'Benefits',
 }
