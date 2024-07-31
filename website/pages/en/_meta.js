@@ -1,13 +1,13 @@
 export default {
   index: '',
+  about: '',
   '---1': {
     type: 'separator',
   },
   about: '',
   network: 'The Graph Network',
   billing: '',
-  glossary: '',
-  tokenomics: 'Tokenomics',
+  benefits: 'Benefits',
   '---2': {
     type: 'separator',
   },
@@ -44,15 +44,24 @@ export default {
   'new-chain-integration': 'Integrating New Networks',
   firehose: '',
   graphcast: '',
-  'mips-faqs': '',
   '---5': {
     type: 'separator',
   },
   '###4': {
     type: 'heading',
-    title: 'Archive',
+    title: 'Additional Resources',
   },
-  sunrise: 'Sunrise Upgrade FAQ',
+  tokenomics: 'Tokenomics',
+  contracts: 'Protocol Contracts',
+  glossary: '',
+  '---6': {
+    type: 'separator',
+  },
+  '###5': {
+    type: 'heading',
+    title: 'Archived',
+  },
+  'mips-faqs': '',
   arbitrum: 'Scaling with Arbitrum',
-  benefits: 'Benefits',
+  sunrise: 'Sunrise Upgrade FAQ',
 }
