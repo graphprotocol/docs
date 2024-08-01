@@ -7,7 +7,7 @@ Chains can bring subgraph support to their ecosystem by starting a new `graph-no
 1. **EVM JSON-RPC**
 2. **Firehose**: All Firehose integration solutions include Substreams, a large-scale streaming engine based off Firehose with native `graph-node` support, allowing for parallelized transforms.
 
-> Note that while the recommended approach is to develop a new Firehose for all new chains, it is a requirement for non-EVM chains.
+> Note that while the recommended approach is to develop a new Firehose for all new chains, it is only required required for non-EVM chains.
 
 ## Integration Strategies
 
@@ -17,7 +17,7 @@ If the blockchain is EVM equivalent and the client/node exposes the standard EVM
 
 #### Testing an EVM JSON-RPC
 
-For Graph Node to be able to ingest data from an EVM chain, the RPC node must expose the following EVM JSON RPC methods:
+For Graph Node to be able to ingest data from an EVM chain, the RPC node must expose the following EVM JSON-RPC methods:
 
 - `eth_getLogs`
 - `eth_call` (for historical blocks, with EIP-1898 - requires archive node)
@@ -37,7 +37,7 @@ The primary method to integrate the Firehose into chains is to use an RPC pollin
 
 #### Specific Firehose Instrumentation for EVM (`geth`) chains
 
-For the EVM chains, there exists a deeper level of data that can be achieved through the `geth` [live-tracer](https://github.com/ethereum/go-ethereum/releases/tag/v1.14.0), a collaboration between Go-Ethereum and StreamingFast, in building a high-throughput and rich transaction tracing system. The Live Tracer is the most comprehensive solution, resulting in [Extended](https://streamingfastio.medium.com/new-block-model-to-accelerate-chain-integration-9f65126e5425) block details. This enables new indexing paradigms, like pattern matching of events based on state changes, calls, parent call trees, or triggering of events based on changes to the actual variables in a smart contract.
+For EVM chains, there exists a deeper level of data that can be achieved through the `geth` [live-tracer](https://github.com/ethereum/go-ethereum/releases/tag/v1.14.0), a collaboration between Go-Ethereum and StreamingFast, in building a high-throughput and rich transaction tracing system. The Live Tracer is the most comprehensive solution, resulting in [Extended](https://streamingfastio.medium.com/new-block-model-to-accelerate-chain-integration-9f65126e5425) block details. This enables new indexing paradigms, like pattern matching of events based on state changes, calls, parent call trees, or triggering of events based on changes to the actual variables in a smart contract.
 
 ![Base block vs Extended block](/img/extended-vs-base-substreams-blocks.png)
 
@@ -47,7 +47,7 @@ For the EVM chains, there exists a deeper level of data that can be achieved thr
 
 While the JSON-RPC and Firehose are both suitable for subgraphs, a Firehose is always required for developers wanting to build with [Substreams](https://substreams.streamingfast.io). Supporting Substreams allows developers to build [Substreams-powered subgraphs](/cookbook/substreams-powered-subgraphs) for the new chain, and has the potential to improve the performance of your subgraphs. Additionally, Firehose — as a drop-in replacement for the JSON-RPC extraction layer of `graph-node` — reduces by 90% the number of RPC calls required for general indexing.
 
-- All those `getLogs` calls and roundtrips get replaced by a single stream arriving into the heart of `graph-node` and by running filters/transformations (Substreams) on the in-memory blocks; a single block model for all subgraphs it processes.
+- All those `getLogs` calls and roundtrips get replaced by a single stream arriving into the heart of `graph-node`; a single block model for all subgraphs it processes.
 
 > NOTE: A Firehose-based integration for EVM chains will still require Indexers to run the chain's archive RPC node to properly index subgraphs. This is due to the Firehose's inability to provide smart contract state typically accessible by the `eth_call` RPC method. (It's worth reminding that `eth_calls` are not a good practice for developers)
 
@@ -56,19 +56,19 @@ While the JSON-RPC and Firehose are both suitable for subgraphs, a Firehose is a
 Configuring Graph Node is as easy as preparing your local environment. Once your local environment is set, you can test the integration by locally deploying a subgraph.
 
 1. [Clone Graph Node](https://github.com/graphprotocol/graph-node)
-2. Modify [this line](https://github.com/graphprotocol/graph-node/blob/master/docker/docker-compose.yml#L22) to include the new network name and the EVM JSON RPC compliant URL
+2. Modify [this line](https://github.com/graphprotocol/graph-node/blob/master/docker/docker-compose.yml#L22) to include the new network name and the EVM JSON-RPC compliant URL
 
    > Do not change the env var name itself. It must remain `ethereum` even if the network name is different.
 
 3. Run an IPFS node or use the one used by The Graph: https://api.thegraph.com/ipfs/
 
-### **Testing an EVM JSON-RPC by locally deploying a subgraph**
+### Testing an EVM JSON-RPC by locally deploying a subgraph
 
 1. Install [graph-cli](https://github.com/graphprotocol/graph-cli)
 2. Create a simple example subgraph. Some options are below:
    1. The pre-packed [Gravitar](https://github.com/graphprotocol/example-subgraph/tree/f89bdd4628efa4badae7367d4919b3f648083323) smart contract and subgraph is a good starting point
    2. Bootstrap a local subgraph from any existing smart contract or solidity dev environment [using Hardhat with a Graph plugin](https://github.com/graphprotocol/hardhat-graph)
-3. Adapt the resulting `subgraph.yaml` by changing [`dataSources.network`](http://datasources.network/) to the same name previously passed on to Graph Node.
+3. Adapt the resulting `subgraph.yaml` by changing `dataSources.network` to the same name previously passed on to Graph Node.
 4. Create your subgraph in Graph Node: `graph create $SUBGRAPH_NAME --node $GRAPH_NODE_ENDPOINT`
 5. Publish your subgraph to Graph Node: `graph deploy $SUBGRAPH_NAME --ipfs $IPFS_ENDPOINT --node $GRAPH_NODE_ENDPOINT`
 
@@ -80,10 +80,10 @@ For StreamingFast-led Firehose/Substreams integrations, basic support for founda
 
 There are two options to consume Substreams data through a subgraph:
 
-- **Using Substreams triggers:** Consume from any Substreams module by importing the Protobuf model and move all your logic into the subgraph. This method creates the subgraph entities directly in the subgraph.
+- **Using Substreams triggers:** Consume from any Substreams module by importing the Protobuf model through a subgraph handler and move all your logic into a subgraph. This method creates the subgraph entities directly in the subgraph.
 - **Using EntityChanges:** By writing more of the logic into Substreams, you can consume the module's output directly into `graph-node`. In `graph-node`, you can use the Substreams data to create your subgraph entities.
 
-It is really a matter of where you put your logic, in the subgraph or the Substreams. Consider the following example using a subgraph handler:
+It is really a matter of where you put your logic, in the subgraph or the Substreams. Keep in mind that having your logic in Substreams benefits from a parallelized model, whereas Substreams triggers will be linearly consumed. Consider the following example using a subgraph handler:
 
 ```ts
 export function handleTransactions(bytes: Uint8Array): void {
@@ -105,6 +105,4 @@ export function handleTransactions(bytes: Uint8Array): void {
 }
 ```
 
-The `handleTransactions` function is a subgraph handler that receives the raw Substreams bytes as parameter and decodes them into a “Transactions” object. Then, for every transaction, a new subgraph entity is created. For more information about Substreams triggers, visit the [StreamingFast documentation](https://substreams.streamingfast.io/documentation/consume/subgraph/triggers) or check out community modules at [substreams.dev](https://substreams.dev/).
-
-> **NOTE:** Keep in mind that having your logic in Substreams benefits from a parallelized model, whereas Substreams triggers will be linearly consumed.
+The `handleTransactions` function is a subgraph handler that receives the raw Substreams bytes as parameter and decodes them into a `Transactions` object. Then, for every transaction, a new subgraph entity is created. For more information about Substreams triggers, visit the [StreamingFast documentation](https://substreams.streamingfast.io/documentation/consume/subgraph/triggers) or check out community modules at [substreams.dev](https://substreams.dev/).
