@@ -14,9 +14,9 @@ A definição de subgraph consiste de alguns arquivos:
 
 - `AssemblyScript Mappings`: código em [AssemblyScript](https://github.com/AssemblyScript/assemblyscript) que traduz dos dados de eventos às entidades definidas no seu schema (por ex., `mapping.ts` neste tutorial)
 
-> Para poder usar o seu subgraph na rede descentralizada do The Graph, [crie uma chave API](/deploying/subgraph-studio-faqs/#2-how-do-i-create-an-api-key). Recomendamos [adicionar sinais](/network/curating/#how-to-signal) ao seu subgraph com pelo menos [10.000 GRT](/network-transition-faq/#how-can-i-ensure-that-my-subgraph-will-be-picked-up-by-indexer-on-the-graph-network).
+> Para utilizar o seu subgraph na rede descentralizada do The Graph, será necessário [criar uma chave API](/deploying/subgraph-studio-faqs/#2-how-do-i-create-an-api-key). É recomendado [adicionar um sinal](/network/curating/#how-to-signal) ao seu subgraph com, no mínimo, [3000 GRT](/sunrise/#how-can-i-ensure-high-quality-of-service-and-redundancy-for-subgraphs-on-the-graph-network).
 
-Antes de se aprofundar nos conteúdos do arquivo manifest, instale o [Graph CLI](https://github.com/graphprotocol/graph-cli), que será necessário para construir e adicionar um subgraph.
+Antes de se aprofundar nos conteúdos do arquivo manifest, instale o [Graph CLI](https://github.com/graphprotocol/graph-tooling), que será necessário para construir e adicionar um subgraph.
 
 ## Como instalar o Graph CLI
 
@@ -61,7 +61,7 @@ O segundo modo que o `graph init` apoia é criar um projeto a partir de um exemp
 graph init --studio <SUBGRAPH_SLUG>
 ```
 
-O subgraph de exemplo é baseado no contrato Gravity por Dani Grant, que administra avatares de usuários e emite eventos `NewGravatar` ou `UpdateGravatar` sempre que avatares são criados ou atualizados. O subgraph lida com estes eventos ao escrever entidades `Gravatar` ao armazenamento do Graph Node e garantir que estes são atualizados de acordo com os eventos. As seguintes seções lidarão com os arquivos que compõem o manifest do subgraph para este exemplo.
+O [subgraph de exemplo](https://github.com/graphprotocol/example-subgraph) é baseado no contrato Gravity por Dani Grant, que administra avatares de usuários e emite eventos `NewGravatar` ou `UpdateGravatar` sempre que avatares são criados ou atualizados. O subgraph lida com estes eventos ao escrever entidades `Gravatar` ao armazenamento do Graph Node e garantir que estes são atualizados de acordo com os eventos. As seguintes secções lidarão com os arquivos que compõem o manifest do subgraph para este exemplo.
 
 ## Como Adicionar Novos dataSources para um Subgraph Existente
 
@@ -101,6 +101,8 @@ description: Gravatar for Ethereum
 repository: https://github.com/graphprotocol/graph-tooling
 schema:
   file: ./schema.graphql
+indexerHints:
+  prune: auto
 dataSources:
   - kind: ethereum/contract
     name: Gravity
@@ -144,11 +146,15 @@ dataSources:
 
 As entradas importantes para atualizar para o manifest são:
 
-- `description`: uma descrição legível a humanos do que é o subgraph. Esta descrição é exibida pelo Graph Explorer quando o subgraph é lançado ao serviço hospedado.
+- `specVersion`: uma versão de semver que identifica a estrutura de mainfest apoiada e a sua funcionalidade para o subgraph. A versão mais recente é `1.2.0`. Veja a secção de [lançamentos do specVersion](#specversion-releases) para mais detalhes sobre recursos & lançamentos.
 
-- `repository`: a URL do repositório onde está o manifest do subgraph. Isto também é exibido pelo Graph Explorer.
+- `description`: uma descrição legível a humanos do que é o subgraph. Esta descrição é exibida pelo Graph Explorer quando o subgraph é lançado ao Subgraph Studio.
+
+- `repository`: a URL do repositório onde está o manifest do subgraph. Isto também é exibido no Graph Explorer.
 
 - `features`: uma lista de todos os nomes de [feature](#experimental-features) usados.
+
+- `indexerHints.prune`: Define a retenção de dados históricos de blocos para um subgraph. Veja [prune](#prune) na secção [indexerHints](#indexer-hints).
 
 - `dataSources.source`: o endereço do contrato inteligente que abastece o subgraph, e a ABI do contrato inteligente a ser usada. O endereço é opcional; omiti-lo permite indexar eventos correspondentes de todos os contratos.
 
@@ -170,6 +176,8 @@ As entradas importantes para atualizar para o manifest são:
 
 Um único subgraph pode indexar dados de vários contratos inteligentes. Adicione uma entrada para cada contrato cujos dados devem ser indexados ao arranjo `dataSources`.
 
+### Ordem de Handlers de Gatilhos
+
 Os gatilhos para uma fonte de dados dentro de um bloco são ordenados com o seguinte processo:
 
 1. Gatilhos de evento e chamada são, primeiro, ordenados por índice de transação no bloco.
@@ -177,6 +185,192 @@ Os gatilhos para uma fonte de dados dentro de um bloco são ordenados com o segu
 3. Gatilhos de blocos são executados após gatilhos de evento e chamada, na ordem em que são definidos no manifest.
 
 Estas regras de organização estão sujeitas à mudança.
+
+> **Nota:** Quando novas [fontes de dados dinâmicas](#data-source-templates-for-dynamically-created-contracts) forem criadas, os handlers definidos para fontes de dados dinâmicas só começarão o processamento após todos os handlers existentes forem processados, e repetirão a mesma sequência quando ativados.
+
+### Filtros de Argumentos Indexados / Filtros de Tópicos
+
+> **Requires**: [SpecVersion](#specversion-releases) >= `1.2.0`
+
+Topic filters, also known as indexed argument filters, are a powerful feature in subgraphs that allow users to precisely filter blockchain events based on the values of their indexed arguments.
+
+- These filters help isolate specific events of interest from the vast stream of events on the blockchain, allowing subgraphs to operate more efficiently by focusing only on relevant data.
+
+- This is useful for creating personal subgraphs that track specific addresses and their interactions with various smart contracts on the blockchain.
+
+#### Como Filtros de Tópicos Funcionam
+
+When a smart contract emits an event, any arguments that are marked as indexed can be used as filters in a subgraph's manifest. This allows the subgraph to listen selectively for events that match these indexed arguments.
+
+- The event's first indexed argument corresponds to `topic1`, the second to `topic2`, and so on, up to `topic3`, since the Ethereum Virtual Machine (EVM) allows up to three indexed arguments per event.
+
+```solidity
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
+
+contract Token {
+    // Declaração de evento com parâmetros indexados para endereços
+    event Transfer(address indexed from, address indexed to, uint256 value);
+
+    // Função para simular a transferência de tokens
+    function transfer(address to, uint256 value) public {
+        // Emitting the Transfer event with from, to, and value
+        emit Transfer(msg.sender, to, value);
+    }
+}
+```
+
+Neste exemplo:
+
+- O evento `Transfer` é usado para gravar transações de tokens entre endereços.
+- The `from` and `to` parameters are indexed, allowing event listeners to filter and monitor transfers involving specific addresses.
+- A função `transfer` é uma representação simples de uma ação de transferência de token, e emite o evento Transfer sempre que é chamada.
+
+#### Configuração em Subgraphs
+
+Filtros de tópicos são definidos diretamente na configuração de handlers de eventos no manifest do subgraph. Veja como eles são configurados:
+
+```yaml
+eventHandlers:
+  - event: SomeEvent(indexed uint256, indexed address, indexed uint256)
+    handler: handleSomeEvent
+    topic1: ['0xValue1', '0xValue2']
+    topic2: ['0xAddress1', '0xAddress2']
+    topic3: ['0xValue3']
+```
+
+Neste cenário:
+
+- `topic1` corresponde ao primeiro argumento indexado do evento, `topic2` ao segundo e `topic3` ao terceiro.
+- Cada tópico pode ter um ou mais valores, e um evento só é processado se corresponder a um dos valores em cada tópico especificado.
+
+##### Lógica de Filtro
+
+- Dentro de um Tópico Único: A lógica funciona como uma condição OR. O evento será processado se corresponder a qualquer dos valores listados num tópico.
+- Entre Tópicos Diferentes: A lógica funciona como uma condição AND. Um evento deve atender a todas as condições especificadas em vários tópicos para acionar o handler associado.
+
+#### Example 1: Tracking Direct Transfers from Address A to Address B
+
+```yaml
+eventHandlers:
+  - event: Transfer(indexed address,indexed address,uint256)
+    handler: handleDirectedTransfer
+    topic1: ['0xAddressA'] # Sender Address
+    topic2: ['0xAddressB'] # Receiver Address
+```
+
+Nesta configuração:
+
+- `topic1` é configurado para filtrar eventos `Transfer` onde `0xAddressA` é o remetente.
+- `topic2` é configurado para filtrar eventos `Transfer` onde `0xAddressB` é o remetente.
+- O subgraph só indexará transações que ocorrerem diretamente do `0xAddressA` ao `0xAddressB`.
+
+#### Example 2: Tracking Transactions in Either Direction Between Two or More Addresses
+
+```yaml
+eventHandlers:
+  - event: Transfer(indexed address,indexed address,uint256)
+    handler: handleTransferToOrFrom
+    topic1: ['0xAddressA', '0xAddressB', '0xAddressC'] # Sender Address
+    topic2: ['0xAddressB', '0xAddressC'] # Receiver Address
+```
+
+Nesta configuração:
+
+- `topic1` is configured to filter `Transfer` events where `0xAddressA`, `0xAddressB`, `0xAddressC` is the sender.
+- `topic2` is configured to filter `Transfer` events where `0xAddressB` and `0xAddressC` is the receiver.
+- The subgraph will index transactions that occur in either direction between multiple addresses allowing for comprehensive monitoring of interactions involving all addresses.
+
+## eth_call declarada
+
+> **Requires**: [SpecVersion](#specversion-releases) >= `1.2.0`. Currently, `eth_calls` can only be declared for event handlers.
+
+Declarative `eth_calls` are a valuable subgraph feature that allows `eth_calls` to be executed ahead of time, enabling `graph-node` to execute them in parallel.
+
+This feature does the following:
+
+- Significantly improves the performance of fetching data from the Ethereum blockchain by reducing the total time for multiple calls and optimizing the subgraph's overall efficiency.
+- Allows faster data fetching, resulting in quicker query responses and a better user experience.
+- Reduces wait times for applications that need to aggregate data from multiple Ethereum calls, making the data retrieval process more efficient.
+
+### Key Concepts
+
+- Declarative `eth_calls`: Ethereum calls that are defined to be executed in parallel rather than sequentially.
+- Parallel Execution: Instead of waiting for one call to finish before starting the next, multiple calls can be initiated simultaneously.
+- Time Efficiency: The total time taken for all the calls changes from the sum of the individual call times (sequential) to the time taken by the longest call (parallel).
+
+### Scenario without Declarative `eth_calls`
+
+Imagine you have a subgraph that needs to make three Ethereum calls to fetch data about a user's transactions, balance, and token holdings.
+
+Traditionally, these calls might be made sequentially:
+
+1. Call 1 (Transactions): Takes 3 seconds
+2. Call 2 (Balance): Takes 2 seconds
+3. Call 3 (Token Holdings): Takes 4 seconds
+
+Total time taken = 3 + 2 + 4 = 9 seconds
+
+### Scenario with Declarative `eth_calls`
+
+With this feature, you can declare these calls to be executed in parallel:
+
+1. Call 1 (Transactions): Takes 3 seconds
+2. Call 2 (Balance): Takes 2 seconds
+3. Call 3 (Token Holdings): Takes 4 seconds
+
+Since these calls are executed in parallel, the total time taken is equal to the time taken by the longest call.
+
+Total time taken = max (3, 2, 4) = 4 seconds
+
+### How it Works
+
+1. Declarative Definition: In the subgraph manifest, you declare the Ethereum calls in a way that indicates they can be executed in parallel.
+2. Parallel Execution Engine: The Graph Node's execution engine recognizes these declarations and runs the calls simultaneously.
+3. Result Aggregation: Once all calls are complete, the results are aggregated and used by the subgraph for further processing.
+
+### Exemplo de Configuração no Manifest do Subgraph
+
+Declared `eth_calls` can access the `event.address` of the underlying event as well as all the `event.params`.
+
+`Subgraph.yaml` using `event.address`:
+
+```yaml
+eventHandlers:
+event: Swap(indexed address,indexed address,int256,int256,uint160,uint128,int24)
+handler: handleSwap
+calls:
+  global0X128: Pool[event.address].feeGrowthGlobal0X128()
+  global1X128: Pool[event.address].feeGrowthGlobal1X128()
+```
+
+Details for the example above:
+
+- `global0X128` is the declared `eth_call`.
+- The text before colon(`global0X128`) is the label for this `eth_call` which is used when logging errors.
+- The text (`Pool[event.address].feeGrowthGlobal0X128()`) is the actual `eth_call` that will be executed, which is in the form of `Contract[address].function(arguments)`
+- The `address` and `arguments` can be replaced with variables that will be available when the handler is executed.
+
+`Subgraph.yaml` using `event.params`
+
+```yaml
+calls:
+  - ERC20DecimalsToken0: ERC20[event.params.token0].decimals()
+```
+
+### Versões do SpecVersion
+
+| Versão | Notas de atualização                                                                                                                                                           |
+|:------:| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 1.2.0  | Adicionado apoio a [Filtragem de Argumentos Indexados](/#indexed-argument-filters--topic-filters) & `eth_call` declarado                                                       |
+| 1.1.0  | Apoio a [Séries de Tempo & Agregações](#timeseries-and-aggregations). Apoio adicionado ao tipo `Int8` para `id`.                                                               |
+| 1.0.0  | Apoia o recurso [`indexerHints`](/developing/creating-a-subgraph/#indexer-hints) para fazer pruning de subgraphs                                                               |
+| 0.0.9  | Apoio ao recurso `endBlock`                                                                                                                                                    |
+| 0.0.8  | Adicionado apoio ao polling de [Handlers de Bloco](developing/creating-a-subgraph/#polling-filter) e [Handlers de Inicialização](developing/creating-a-subgraph/#once-filter). |
+| 0.0.7  | Adicionado apoio a [Fontes de Arquivos de Dados](developing/creating-a-subgraph/#file-data-sources).                                                                           |
+| 0.0.6  | Apoio à variante de calculação de [Proof of Indexing](/network/indexing/#what-is-a-proof-of-indexing-poi).                                                                     |
+| 0.0.5  | Adicionado apoio a handlers de eventos com acesso a recibos de transação.                                                                                                      |
+| 0.0.4  | Adicionado apoio à gestão de recursos de subgraph.                                                                                                                             |
 
 ### Como Obter as ABIs
 
@@ -248,15 +442,16 @@ Para alguns tipos de entidade, o `id` é construído das id's de duas outras ent
 
 Nós apoiamos os seguintes escalares na nossa API do GraphQL:
 
-| Tipo | Descrição |
-| --- | --- |
-| `Bytes` | Arranjo de bytes, representado como string hexadecimal. Usado frequentemente por hashes e endereços no Ethereum. |
-| `String` | Escalar para valores `string`. Caracteres nulos são removidos automaticamente. |
-| `Boolean` | Escalar para valores `boolean`. |
-| `Int` | A especificação do GraphQL define que o `Int` tem um tamanho de 32 bytes. |
-| `Int8` | Um número inteiro assinado em 8 bits, também conhecido como um número inteiro assinado em 64 bits, pode armazenar valores de -9,223,372,036,854,775,808 a 9,223,372,036,854,775,807. Prefira usar isto para representar o `i64` do ethereum. |
-| `BigInt` | Números inteiros grandes. Usados para os tipos `uint32`, `int64`, `uint64`, ..., `uint256` do Ethereum. Nota: Tudo abaixo de `uint32`, como `int32`, `uint24` ou `int8` é representado como `i32`. |
-| `BigDecimal` | `BigDecimal` Decimais de alta precisão representados como um significando e um exponente. O alcance de exponentes é de -6143 até +6144. Arredondado para 34 dígitos significantes. |
+| Tipo         | Descrição                                                                                                                                                                                                                                    |
+| ------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Bytes`      | Arranjo de bytes, representado como string hexadecimal. Usado frequentemente por hashes e endereços no Ethereum.                                                                                                                             |
+| `String`     | Escalar para valores `string`. Caracteres nulos são removidos automaticamente.                                                                                                                                                               |
+| `Boolean`    | Escalar para valores `boolean`.                                                                                                                                                                                                              |
+| `Int`        | A especificação do GraphQL define o `Int` como um inteiro assinado de 32 bits.                                                                                                                                                               |
+| `Int8`       | Um número inteiro assinado em 8 bits, também conhecido como um número inteiro assinado em 64 bits, pode armazenar valores de -9,223,372,036,854,775,808 a 9,223,372,036,854,775,807. Prefira usar isto para representar o `i64` do ethereum. |
+| `BigInt`     | Números inteiros grandes. Usados para os tipos `uint32`, `int64`, `uint64`, ..., `uint256` do Ethereum. Nota: Tudo abaixo de `uint32`, como `int32`, `uint24` ou `int8` é representado como `i32`.                                           |
+| `BigDecimal` | `BigDecimal` Decimais de alta precisão representados como um significando e um exponente. O alcance de exponentes é de -6143 até +6144. Arredondado para 34 dígitos significantes.                                                           |
+| `Timestamp`  | É um valor `i64` em microssegundos. Usado frequentemente para campos `timestamp` para séries de tempo e agregações.                                                                                                                          |
 
 #### Enums
 
@@ -398,11 +593,11 @@ Esta maneira mais elaborada de armazenar relacionamentos vários-com-vários arm
 
 #### Como adicionar comentários ao schema
 
-Pela especificação do GraphQL, é possível adicionar comentários acima de atributos de entidade do schema com aspas duplas `""`. Isto é ilustrado no exemplo abaixo:
+Pela especificação do GraphQL, é possível adicionar comentários acima de atributos de entidade do schema com o símbolo de hash `#`. Isto é ilustrado no exemplo abaixo:
 
 ```graphql
 type MyFirstEntity @entity {
-  "unique identifier and primary key of the entity"
+  # identificador único e chave primária da entidade
   id: Bytes!
   address: Bytes!
 }
@@ -525,13 +720,32 @@ O segundo handler tenta carregar o `Gravatar` do armazenamento do Graph Node. Se
 
 ### IDs Recomendadas para Criar Novas Entidades
 
-Toda entidade deve ter uma `id` original entre todas as entidades do mesmo tipo. O valor do `id` de uma entidade é determinado quando ela é criada. Abaixo estão alguns valores recomendados de `id` para considerar ao criar novas entidades. NOTA: O valor da `id` deve ser um `string`.
+Recomendamos muito utilizar `Bytes` como o tipo para campos `id`, e só usar o `String` para atributos que realmente contenham texto legível para humanos, como o nome de um token. Abaixo estão alguns valores recomendados de `id` para considerar ao criar novas entidades.
 
-- `event.params.id.toHex()`
-- `event.transaction.from.toHex()`
-- `event.transaction.hash.toHex() + "-" + event.logIndex.toString()`
+- `transfer.id = event.transaction.hash`
 
-Nós fornecemos a [Biblioteca do Graph Typescript](https://github.com/graphprotocol/graph-ts), que contém utilidades para interagir com o armazenamento do Graph Node e conveniências para gerir entidades e dados de contratos inteligentes. Esta biblioteca pode ser usada nos seus mapeamentos importando o `@graphprotocol/graph-ts` no `mapping.ts`.
+- `let id = event.transaction.hash.concatI32(event.logIndex.toI32())`
+
+- Para entidades que armazenam dados agregados como, por exemplo, volumes diários de trading, a `id` costuma conter o número do dia. Aqui, usar `Bytes` como a `id` é beneficial. Determinar a `id` pareceria com
+
+```typescript
+let dayID = event.block.timestamp.toI32() / 86400
+let id = Bytes.fromI32(dayID)
+```
+
+- Converta endereços constantes em `Bytes`.
+
+`const id = Bytes.fromHexString('0xdead...beef')`
+
+Há uma [Biblioteca do Graph Typescript](https://github.com/graphprotocol/graph-tooling/tree/main/packages/ts), com utilidades para interagir com o armazenamento do Graph Node e conveniências para lidar com entidades e dados de contratos inteligentes. Ela pode ser importada ao `mapping.ts` do `@graphprotocol/graph-ts`.
+
+### Gestão de entidades com IDs idênticas
+
+Ao criar e salvar uma nova entidade, se já houver uma com a mesma ID, vale sempre usar as propriedades da nova entidade durante o processo de fusão. Isto significa que a entidade existente será atualizada com os valores da entidade nova.
+
+Se um valor nulo for propositadamente determinado para um campo na nova entidade com a mesma ID, a entidade existente será atualizada com o valor nulo.
+
+Se nenhum valor for inserido para um campo na nova entidade com a mesma ID, o campo também resultará em nulo.
 
 ## Geração de Código
 
@@ -659,7 +873,7 @@ export function handleNewExchange(event: NewExchange): void {
 ```
 
 > **Nota:** Uma nova fonte de dados só processará as chamadas e eventos para o bloco onde ele foi criado e todos os blocos a seguir. Porém, não serão processados dados históricos, por ex, contidos em blocos anteriores.
->
+> 
 > Se blocos anteriores conterem dados relevantes à nova fonte, é melhor indexá-los ao ler o estado atual do contrato e criar entidades que representem aquele estado na hora que a nova fonte de dados for criada.
 
 ### Contextos de Fontes de Dados
@@ -716,10 +930,114 @@ dataSources:
 ```
 
 > **Nota:** O bloco da criação do contrato pode ser buscado rapidamente no Etherscan:
->
+> 
 > 1. Procure pelo contrato ao inserir o seu endereço na barra de busca.
 > 2. Clique no hash da transação da criação na seção `Contract Creator`.
 > 3. Carregue a página dos detalhes da transação, onde encontrará o bloco inicial para aquele contrato.
+
+## IndexerHints
+
+A configuração `indexerHints`, no manifest de um subgraph, providencia diretivas para Indexadores processarem e gestarem um subgraph. Ela influencia decisões operacionais entre gestão de dados, estratégias de indexação e otimizações. Atualmente ela tem a opção `prune` para lidar com a retenção ou o pruning de dados históricos.
+
+> Este recurso está disponível desde a `specVersion: 1.0.0`
+
+### Prune
+
+`indexerHints.prune`: Define a retenção de dados históricos de bloco para um subgraph. As opções incluem:
+
+1. `"never"`: Nenhum pruning de dados históricos; retém o histórico completo.
+2. `"auto"`: Retém o histórico mínimo necessário determinado pelo Indexador e otimiza o desempenho das queries.
+3. Um número específico: Determina um limite personalizado no número de blocos históricos a guardar.
+
+```
+ indexerHints:
+  prune: auto
+```
+
+> O termo "histórico", neste contexto de subgraphs, refere-se ao armazenamento de dados que refletem os estados antigos de entidades mutáveis.
+
+O histórico, desde um bloco especificado, é necessário para:
+
+- [Queries de viagem no tempo](/querying/graphql-api/#time-travel-queries), que permitem queries dos estados anteriores destas entidades em blocos específicos, através do histórico do subgraph
+- O uso do subgraph como uma [base de enxerto](/developing/creating-a-subgraph/#grafting-onto-existing-subgraphs) em outro subgraph naquele bloco
+- Rebobinar o subgraph de volta àquele bloco
+
+Se os dados históricos desde aquele bloco tiverem passado por pruning, as capacidades acima não estarão disponíveis.
+
+> Vale usar o `"auto"`, por maximizar o desempenho de queries e ser suficiente para a maioria dos utilizadores que não requerem acesso a dados extensos no histórico.
+
+Para subgraphs que usam [queries de viagem no tempo](/querying/graphql-api/#time-travel-queries), recomendamos configurar um número especifico de blocos para reter dados históricos ou usar o `prune: never` para manter todos os estados históricos da entidade. Seguem abaixo exemplos de como configurar ambas as opções nas configurações do seu subgraph:
+
+Para reter uma quantidade específica de dados históricos:
+
+```
+ indexerHints:
+  prune: 1000 # Substitua 1000 pelo número desejado de blocos a reter
+```
+
+Para preservar o histórico completo dos estados da entidade:
+
+```
+indexerHints:
+  prune: never
+```
+
+É possível verificar o bloco mais antigo (com estado histórico) para um subgraph ao fazer um query da [API de Estado de Indexação](/deploying/deploying-a-subgraph-to-hosted/#checking-subgraph-health):
+
+```
+{
+  indexingStatuses(subgraphs: ["Qm..."]) {
+    subgraph
+    synced
+    health
+    chains {
+      earliestBlock {
+        number
+      }
+      latestBlock {
+        number
+      }
+      chainHeadBlock { number }
+    }
+  }
+}
+```
+
+Note que o `earliestBlock` é o bloco mais antigo com dados históricos, que será mais recente que o `startBlock` (bloco inicial) especificado no manifest, se o subgraph tiver passado por pruning.
+
+## Handlers de Eventos
+
+Handlers de eventos em um subgraph reagem a eventos específicos emitidos por contratos inteligentes na blockchain e acionam handlers definidos no manifest do subgraph. Isto permite que subgraphs processem e armazenem dados conforme a lógica definida.
+
+### Como Definir um Handler de Evento
+
+Um handler de evento é declarado dentro de uma fonte de dados na configuração YAML do subgraph. Ele especifica quais eventos devem ser escutados e a função correspondente a ser executada quando estes eventos forem detetados.
+
+```yaml
+dataSources:
+  - kind: ethereum/contract
+    name: Gravity
+    network: dev
+    source:
+      address: '0x731a10897d267e19b34503ad902d0a29173ba4b1'
+      abi: Gravity
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.6
+      language: wasm/assemblyscript
+      entities:
+        - Gravatar
+        - Transaction
+      abis:
+        - name: Gravity
+          file: ./abis/Gravity.json
+      eventHandlers:
+        - event: Approval(address,address,uint256)
+          handler: handleApproval
+        - event: Transfer(address,address,uint256)
+          handler: handleTransfer
+          topic1: ['0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045', '0xc8dA6BF26964aF9D7eEd9e03E53415D37aA96325'] # Filtro de tópico opcional que só filtra eventos com o tópico especificado.
+```
 
 ## Handlers de chamada
 
@@ -906,12 +1224,11 @@ Dentro da função do handler, o recibo pode ser acessado no campo `Event.receip
 
 A partir do `specVersion` `0.0.4`, os recursos de subgraph devem ser explicitamente declarados na seção `features` no maior nível do arquivo de manifest com o seu nome em `camelCase`, como listado abaixo:
 
-| Recurso                                                   | Nome                                                |
-| --------------------------------------------------------- | --------------------------------------------------- |
-| [Erros não-fatais](#non-fatal-errors)                     | `nonFatalErrors`                                    |
-| [Busca fulltext](#defining-fulltext-search-fields)        | `fullTextSearch`                                    |
-| [Enxertos](#grafting-onto-existing-subgraphs)             | `grafting`                                          |
-| [IPFS em Contratos Ethereum](#ipfs-on-ethereum-contracts) | `ipfsOnEthereumContracts` ou `nonDeterministicIpfs` |
+| Recurso                                            | Nome             |
+| -------------------------------------------------- | ---------------- |
+| [Erros não-fatais](#non-fatal-errors)              | `nonFatalErrors` |
+| [Busca fulltext](#defining-fulltext-search-fields) | `fullTextSearch` |
+| [Enxertos](#grafting-onto-existing-subgraphs)      | `grafting`       |
 
 Por exemplo, se um subgraph usa os recursos de **Busca Fulltext** e **Erros não-fatais**, o campo `features` no manifest deve ser:
 
@@ -926,17 +1243,65 @@ dataSources: ...
 
 Note que usar uma ferramenta sem declará-la causará um **erro de validação** durante o lançamento de um subgraph, mas não ocorrerá nenhum erro se um recurso for declarado sem ser usado.
 
-### IPFS em Contratos Ethereum
+### Séries de Tempo e Agregações
 
-Um caso de uso comum para a combinação do IPFS com o Ethereum é o armazenamento de dados no IPFS que seriam caros demais para manter on-chain, e referenciar o hash IPFS nos contratos do Ethereum.
+Séries de tempo e agregações permitem que o seu subgraph registre estatísticas como médias diárias de preço, total de transferências por hora, etc.
 
-Considerando tais hashes IPFS, os subgraphs podem ler os arquivos correspondentes do IPFS com `ipfs.cat` e `ipfs.map`. Para fazer isto de forma consistente, estes arquivos devem ser fixados em um node IPFS com alta disponibilidade, para que o node IPFS do [serviço hospedado](https://thegraph.com/hosted-service) possa encontrá-los durante a indexação.
+Este recurso introduz dois novos tipos de entidade de subgraph. Entidades de série de tempo registram pontos de dados com marcações de tempo. Entidades de agregação realizam cálculos pré-declarados nos pontos de dados de Séries de Tempo numa base por hora ou diária, e depois armazenam os resultados para acesso fácil via GraphQL.
 
-> **Nota:** A rede do The Graph ainda não apoia `ipfs.cat` e `ipfs.map`, e os programadores não devem lançar subgraphs à rede pelo Studio com esta funcionalidade.
+#### Exemplo de Schema
 
-> **[Gerenciamento de Recursos](#experimental-features):** O `ipfsOnEthereumContracts` deve ser declarado sob `features` no manifest do subgraph. Para chains que não sejam EVM, o apelido `nonDeterministicIpfs` serve a mesma função.
+```graphql
+type Data @entity(timeseries: true) {
+  id: Int8!
+  timestamp: Timestamp!
+  price: BigDecimal!
+}
 
-Ao executar um Graph Node local, a variável `GRAPH_ALLOW_NON_DETERMINISTIC_IPFS` deve ser configurada para poder indexar subgraphs usando esta funcionalidade experimental.
+type Stats @aggregation(intervals: ["hour", "day"], source: "Data") {
+  id: Int8!
+  timestamp: Timestamp!
+  sum: BigDecimal! @aggregate(fn: "sum", arg: "price")
+}
+```
+
+### Definição de Série de Tempo e Agregações
+
+Entidades de série de tempo são definidas com `@entity(timeseries: true)` no schema.graphql. Cada entidade deste tipo deve ter uma ID única do tipo int8, uma marcação do tipo Timestamp, e inclui dados que serão usados para cálculos por entidades de agregação. Estas entidades de Série de Tempo podem ser salvas em handlers de ação regular, e agem como os "dados brutos" das entidades de Agregação.
+
+Entidades de agregação são definidas com `@aggregation` no schema.graphql. Toda entidade deste tipo define a fonte de qual resgatará dados (que deve ser uma entidade de Série de Tempo), determina os intervalos (por ex., hora, dia) e especifica a função de agregação que usará (por ex., soma, contagem, min, max, primeiro, último). Entidades de agregação são calculadas automaticamente na base da fonte especificada ao final do intervalo requerido.
+
+#### Intervalos de Agregação Disponíveis
+
+- `hour`: configura o período de série de tempo para cada hora, em ponto.
+- `day`: configura o período de série de tempo para cada dia, a começar e terminar à meia-noite.
+
+#### Funções de Agregação Disponíveis
+
+- `sum`: Total de todos os valores.
+- `count`: Número de valores.
+- `min`: Valor mínimo.
+- `max`: Valor máximo.
+- `first`: Primeiro valor no período.
+- `last`: Último valor no período.
+
+#### Exemplo de Query de Agregações
+
+```graphql
+{
+  stats(interval: "hour", where: { timestamp_gt: 1704085200 }) {
+    id
+    timestamp
+    sum
+  }
+}
+```
+
+Nota:
+
+Para utilizar Séries de Tempo e Agregações, um subgraph deve ter uma versão de especificação maior que 1.1.0. Note que este recurso pode passar por mudanças significativas que podem afetar a retrocompatibilidade.
+
+[Leia mais](https://github.com/graphprotocol/graph-node/blob/master/docs/aggregations.md) sobre Séries de Tempo e Agregações.
 
 ### Erros não-fatais
 
@@ -1017,7 +1382,7 @@ O subgraph enxertado pode usar um schema GraphQL que não é idêntico ao schema
 
 > **[Gerenciamento de Recursos](#experimental-features):** O `grafting` deve ser declarado sob `features` no manifest do subgraph.
 
-## Fontes de Dados de Arquivos
+## IPFS/Arweave File Data Sources
 
 Fontes de dados de arquivos são uma nova funcionalidade de subgraph para acessar dados off-chain de forma robusta e extensível. As fontes de dados de arquivos apoiam o retiro de arquivos do IPFS e do Arweave.
 
@@ -1025,9 +1390,9 @@ Fontes de dados de arquivos são uma nova funcionalidade de subgraph para acessa
 
 ### Visão geral
 
-Em vez de buscar arquivos "em linha" durante a execução do handler, isto introduz modelos que podem ser colocados como novas fontes de dados para um identificador de arquivos. Estas novas fontes de dados pegam os arquivos e tentam novamente caso não obtenham êxito; quando o arquivo é encontrado, executam um handler dedicado.
+Rather than fetching files "in line" during handler execution, this introduces templates which can be spawned as new data sources for a given file identifier. These new data sources fetch the files, retrying if they are unsuccessful, running a dedicated handler when the file is found.
 
-Isto é parecido com os [modelos de fontes de dados existentes](https://thegraph.com/docs/en/developing/creating-a-subgraph/#data-source-templates), usados para criar novas fontes de dados baseadas em chains dinamicamente.
+Isto é parecido com os [modelos de fontes de dados existentes](/developing/creating-a-subgraph/#data-source-templates), usados para dinamicamente criar fontes de dados baseadas em chains.
 
 > Isto substitui a API `ipfs.cat` existente
 
@@ -1084,7 +1449,7 @@ type TokenMetadata @entity {
 
 Se o relacionamento for perfeitamente proporcional entre a entidade parente e a entidade de fontes de dados de arquivos resultante, é mais simples ligar a entidade parente a uma entidade de arquivos resultante, com a CID IPFS como o assunto de busca. Se tiver dificuldades em modelar suas novas entidades baseadas em arquivos, pergunte no Discord!
 
-> Podes usar [filtros aninhados](https://thegraph.com/docs/en/querying/graphql-api/#example-for-nested-entity-filtering) para filtrar entidades parentes na base destas entidades aninhadas.
+> É necessário usar [filtros ninhados](/querying/graphql-api/#example-for-nested-entity-filtering) para filtrar entidades parentes na base destas entidades ninhadas.
 
 #### Adicione um novo modelo de fonte de dados com `kind: file/ipfs` ou `kind: file/arweave`
 
@@ -1108,11 +1473,11 @@ templates:
 
 > Atualmente é obrigatório usar `abis`, mas não é possível chamar contratos de dentro de fontes de dados de arquivos
 
-A fonte de dados de arquivos deve mencionar especificamente todos os tipos de entidades com os quais ela interagirá sob `entities`. Veja [as limitações](#Limitations) para mais detalhes.
+A fonte de dados de arquivos deve mencionar especificamente todos os tipos de entidades com os quais ela interagirá sob `entities`. Veja [as limitações](#limitations) para mais detalhes.
 
 #### Criar um novo handler para processar arquivos
 
-Este handler deve aceitar um parâmetro `Bytes`, que consistirá dos conteúdos do arquivo; quando encontrado, este pode então ser acessado. Isto costuma ser um arquivo JSON, que pode ser processado com helpers `graph-ts` ([documentação](https://thegraph.com/docs/en/developing/assemblyscript-api/#json-api)).
+Este handler deve aceitar um parâmetro `Bytes`, que consistirá dos conteúdos do arquivo; quando encontrado, este poderá ser acessado. Isto costuma ser um arquivo JSON, que pode ser processado com helpers `graph-ts` ([documentação](/developing/assemblyscript-api/#json-api)).
 
 A CID do arquivo como um string legível pode ser acessada através do `dataSource` a seguir:
 
@@ -1156,7 +1521,7 @@ Agora pode criar fontes de dados de arquivos durante a execução de handlers ba
 
 Para o IPFS, o Graph Node apoia [identificadores de conteúdo v0 e v1](https://docs.ipfs.tech/concepts/content-addressing/) e identificadores com diretórios (por ex. `bafyreighykzv2we26wfrbzkcdw37sbrby4upq7ae3aqobbq7i4er3tnxci/metadata.json`).
 
-Para o Arweave, desde a versão 0.33.0, o Graph Node pode retirar arquivos baseado na sua [id de transação](https://docs.arweave.org/developers/server/http-api#transactions) de um gateway do Arweave ([arquivo de exemplo](https://bdxujjl5ev5eerd5ouhhs6o4kjrs4g6hqstzlci5pf6vhxezkgaa.arweave.net/CO9EpX0lekJEfXUOeXncUmMuG8eEp5WJHXl9U9yZUYA)) O Arweave apoia transações enviadas através do Bundlr, e o Graph Node também pode retirar arquivos baseados nos [manifests do Bundlr](https://docs.bundlr.network/learn/gateways#indexing).
+Para o Arweave, desde a versão 0.33.0, o Graph Node pode resgatar arquivos armazenados no Arweave com base na sua [ID de transação](https://docs.arweave.org/developers/arweave-node-server/http-api#transactions) de um gateway do Arweave ([exemplo de arquivo](https://bdxujjl5ev5eerd5ouhhs6o4kjrs4g6hqstzlci5pf6vhxezkgaa.arweave.net/CO9EpX0lekJEfXUOeXncUmMuG8eEp5WJHXl9U9yZUYA)). O Arweave apoia transações enviadas via Irys (antigo Bundlr), e o Graph Node também pode resgatar arquivos com base em [manifests do Irys](https://docs.irys.xyz/overview/gateways#indexing).
 
 Exemplo:
 
@@ -1215,7 +1580,7 @@ Além disto, não é possível criar fontes de dados de uma fonte de dado de arq
 
 Caso ligue metadados de NFTs a tokens correspondentes, use o hash IPFS destes para referenciar uma entidade de Metadados da entidade do Token. Salve a entidade de Metadados a usar o hash IPFS como ID.
 
-Pode usar o [contexto DataSource](https://thegraph.com/docs/en/developing/assemblyscript-api/#entity-and-data-source-context) ao criar Fontes de Dados de Arquivos para passar informações extras, que estarão disponíveis ao handler de Fontes de Dados de Arquivos.
+É possível usar o [contexto DataSource](/developing/graph-ts/api/#entity-and-datasourcecontext) ao criar Fontes de Dados de Arquivos para passar informações extras, que estarão disponíveis ao handler de Fontes de Dados de Arquivos.
 
 Caso tenha entidades a ser atualizadas várias vezes, crie entidades únicas baseadas em arquivos utilizando o hash IPFS & o ID da entidade, e as referencie com um campo derivado na entidade baseada na chain.
 
@@ -1225,7 +1590,7 @@ Caso tenha entidades a ser atualizadas várias vezes, crie entidades únicas bas
 
 Atualmente, fontes de dados de arquivos requerem ABIs, apesar destas não serem usadas ([problema no GitHub](https://github.com/graphprotocol/graph-cli/issues/961)). A solução é adicionar qualquer ABI.
 
-Handlers para Fontes de Dados de Arquvios não podem estar em arquivos que importam ligações de contrato `eth_call`, o que causa falhas com "unknown import: `ethereum::ethereum.call` has not been defined" ([problema no GitHub](https://github.com/graphprotocol/graph-cli/issues/4309)). A solução é criar handlers de fontes de dados de arquivos em um arquivo dedicado.
+Handlers para Fontes de Dados de Arquvios não podem estar em arquivos que importam ligações de contrato `eth_call`, o que causa falhas com "unknown import: `ethereum::ethereum.call` has not been defined" ([problema no GitHub](https://github.com/graphprotocol/graph-node/issues/4309)). A solução é criar handlers de fontes de dados de arquivos num arquivo dedicado.
 
 #### Exemplos
 
