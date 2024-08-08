@@ -6,6 +6,9 @@ import { DefaultSeo } from 'next-seo'
 import { type PropsWithChildren } from 'react'
 import googleAnalytics from 'react-ga4'
 
+import dynamic from 'next/dynamic'
+const AskCookbook = dynamic(() => import('@cookbookdev/docsbot/react-fixed'), { ssr: false }) 
+
 import {
   AnalyticsProvider,
   type ButtonOrLinkProps,
@@ -183,6 +186,9 @@ function MyAppWithLocale({ Component, router, pageProps }: AppProps) {
           </Layout>
         </AnalyticsProvider>
       </GDSProvider>
+      <AskCookbook
+        apiKey="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2NjZiOWUzY2Q3OTg1YTcyNDFlMzQxMjEiLCJpYXQiOjE3MTgzMjg4OTIsImV4cCI6MjAzMzkwNDg5Mn0.RWS5shd1qQq6US4C32qDV8xv5E8TBBTB6gCqoxmHiSw"
+      />
     </>
   )
 }
