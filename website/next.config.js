@@ -1,4 +1,12 @@
 import nextra from 'nextra'
+import path from 'node:path'
+import { visit } from 'unist-util-visit'
+
+import { translate } from '@edgeandnode/gds'
+
+// Compile `i18n.ts` to `i18n.js` since we can't import `ts` files in `next.config.js`
+import { translations } from './dist/i18n.js'
+import { remarkReplaceLinks } from './src/remarkReplaceLinks.js'
 
 const env = {
   ENVIRONMENT: process.env.ENVIRONMENT,
@@ -16,24 +24,55 @@ const env = {
 
 const withNextra = nextra({
   theme: '@graphprotocol/nextra-theme',
-  staticImage: true,
-  flexsearch: false,
+  search: false,
   codeHighlight: false,
   defaultShowCopyCode: false,
   readingTime: true,
-  transform(result, { route }) {
-    if (route && !result.includes('getStaticProps')) {
-      const banner = `
-import { getPageMap } from '@/src/getPageMap'
+  transformPageMap(pageMap) {
+    const locale = pageMap[0].data.slice(0, 2)
+    return [
+      ...pageMap,
+      {
+        route: `/${locale}`,
+        name: 'index',
+        frontMatter: {
+          title: translate(translations, locale, 'index.title'),
+        },
+      },
+    ]
+  },
+  mdxOptions: {
+    remarkPlugins: [
+      () => (tree, file) => {
+        const filePath = path.relative(process.cwd(), file.history[0])
+        const [fileName, directory] = filePath.split('/').reverse()
 
-export const getStaticProps = async context => ({
-  props: {
-    __nextra_pageMap: await getPageMap('${route.split('/')[1]}')
-  }
-})`
-      result += banner
-    }
-    return result
+        let user
+        let repo
+        let branch
+        let basePath
+        if (directory === 'graph-ts') {
+          user = 'graphprotocol'
+          repo = 'graph-tooling'
+          branch = 'main'
+          basePath = '/developing/graph-ts/'
+        } else if (directory === 'graph-client') {
+          user = 'graphprotocol'
+          repo = 'graph-client'
+          branch = 'main'
+          basePath = '/querying/graph-client/'
+        }
+        if (user) {
+          visit(tree, 'link', (node) => {
+            if (node.url.startsWith('../')) {
+              const GO_BACK_REPEATED_REGEX = /(\.\.\/)+/
+              node.url = node.url.replace(GO_BACK_REPEATED_REGEX, `https://github.com/${user}/${repo}/tree/${branch}/`)
+            }
+          })
+          remarkReplaceLinks({ foundPath: fileName, basePath })(tree, file)
+        }
+      },
+    ],
   },
 })
 
@@ -84,5 +123,36 @@ export default withNextra({
   ],
   images: {
     unoptimized: true,
+  },
+  i18n: {
+    defaultLocale: 'en',
+    locales: [
+      'ar',
+      'de',
+      'en',
+      'es',
+      'fr',
+      'hi',
+      'it',
+      'ja',
+      'ko',
+      'mr',
+      'nl',
+      'pl',
+      'pt',
+      'ru',
+      'sv',
+      'tr',
+      'uk',
+      'ur',
+      'vi',
+      'zh',
+      // I added new lang otherwise build fails with
+      // Module not found: Can't resolve '/Users/dmytro/Desktop/GUILD/graph-docs/website/.next/static/chunks/nextra-page-map-ro.mjs'
+      'cs',
+      'ha',
+      'ro',
+      'yo',
+    ],
   },
 })

@@ -1,5 +1,5 @@
 import { Image, LinkInline } from '@graphprotocol/nextra-theme'
-import { useData } from 'nextra/data'
+import { useData } from 'nextra/hooks'
 
 import { BorderRadius, buildBorder, buildTransition, Flex, Link, Spacing, Text } from '@edgeandnode/gds'
 import { NetworkIcon } from '@edgeandnode/go'

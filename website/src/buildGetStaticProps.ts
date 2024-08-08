@@ -4,7 +4,6 @@ import type { GetStaticProps, GetStaticPropsResult } from 'next'
 
 import { Locale } from '@edgeandnode/gds'
 
-import { getPageMap } from '@/src/getPageMap'
 import { getSupportedNetworks } from '@/src/supportedNetworks'
 
 export const buildGetStaticProps = (fileName: string, overrides?: GetStaticProps) => {
@@ -21,7 +20,6 @@ export const buildGetStaticProps = (fileName: string, overrides?: GetStaticProps
       ...overrideStaticProps,
       props: {
         ...('props' in overrideStaticProps && overrideStaticProps.props),
-        __nextra_pageMap: await getPageMap(locale),
       },
     }
   }

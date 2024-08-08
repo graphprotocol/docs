@@ -5,10 +5,10 @@ export default {
   },
   about: '',
   network: 'The Graph Network',
-  sunrise: 'Sunrise Upgrade FAQ',
+  sunrise: '',
   billing: '',
   glossary: '',
-  tokenomics: 'Tokenomics',
+  tokenomics: '',
   arbitrum: 'Scaling with Arbitrum',
   '---2': {
     type: 'separator',
