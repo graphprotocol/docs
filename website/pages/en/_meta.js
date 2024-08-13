@@ -1,40 +1,56 @@
 export default {
-  index: '',
-  about: '',
   '---1': {
-    type: 'separator',
-  },
-  about: '',
-  network: 'The Graph Network',
-  billing: '',
-  benefits: 'Benefits',
-  '---2': {
     type: 'separator',
   },
   '###1': {
     type: 'heading',
-    title: 'Subgraphs',
+    title: 'Overview',
+  },
+  index: '',
+  about: '',
+  about: '',
+  network: 'The Graph Roles',
+  billing: '',
+  benefits: 'Benefits',
+  tokenomics: 'Tokenomics',
+  contracts: 'Protocol Contracts',
+  glossary: '',
+  '---2': {
+    type: 'separator',
+  },
+  '###2': {
+    type: 'heading',
+    title: 'Products',
+  },
+  firehose: '',
+  substreams: '',
+  '---3': {
+    type: 'separator',
+  },
+  '###3': {
+    type: 'heading',
+    title: 'Data Consumers',
+  },
+  explorer: '',
+  querying: 'Querying',
+  '---4': {
+    type: 'separator',
+  },
+  '###4': {
+    type: 'heading',
+    title: 'Developing',
   },
   'quick-start': '',
   developing: 'Developing',
   deploying: 'Deploying',
   publishing: 'Publishing',
   managing: 'Managing',
-  querying: 'Querying',
   cookbook: 'Cookbook',
   'release-notes': 'Release Notes & Upgrade Guides',
-  '---3': {
+  '---5': {
     type: 'separator',
   },
-  '###2': {
-    type: 'heading',
-    title: 'Substreams',
-  },
-  substreams: '',
-  '---4': {
-    type: 'separator',
-  },
-  '###3': {
+  '###5': {
     type: 'heading',
     title: 'Indexing',
   },
@@ -42,26 +58,15 @@ export default {
   'chain-integration-overview': '',
   'supported-network-requirements': '',
   'new-chain-integration': 'Integrating New Networks',
-  firehose: '',
   graphcast: '',
-  '---5': {
-    type: 'separator',
-  },
-  '###4': {
-    type: 'heading',
-    title: 'Additional Resources',
-  },
-  tokenomics: 'Tokenomics',
-  contracts: 'Protocol Contracts',
-  glossary: '',
   '---6': {
     type: 'separator',
   },
-  '###5': {
+  '###6': {
     type: 'heading',
     title: 'Archived',
   },
+  sunrise: 'Sunrise Upgrade FAQ',
   'mips-faqs': '',
   arbitrum: 'Scaling with Arbitrum',
-  sunrise: 'Sunrise Upgrade FAQ',
 }

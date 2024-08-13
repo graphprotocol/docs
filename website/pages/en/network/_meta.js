@@ -4,5 +4,4 @@ export default {
   delegating: '',
   curating: '',
   developing: '',
-  explorer: '',
 }
