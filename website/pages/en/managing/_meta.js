@@ -1,3 +1,3 @@
 export default {
-  'transferring-subgraph-ownership': '',
+  'transfer-and-deprecate-a-subgraph': '',
 }
