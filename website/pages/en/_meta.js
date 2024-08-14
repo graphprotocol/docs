@@ -1,4 +1,5 @@
 export default {
+  index: '',
   '---1': {
     type: 'separator',
   },
@@ -6,8 +7,6 @@ export default {
     type: 'heading',
     title: 'Overview',
   },
-  index: '',
-  about: '',
   about: '',
   network: 'The Graph Roles',
   billing: '',
@@ -38,7 +37,7 @@ export default {
   },
   '###4': {
     type: 'heading',
-    title: 'Developing',
+    title: 'Developers',
   },
   'quick-start': '',
   developing: 'Developing',
@@ -52,7 +51,7 @@ export default {
   },
   '###5': {
     type: 'heading',
-    title: 'Indexing',
+    title: 'Indexers',
   },
   'operating-graph-node': '',
   'chain-integration-overview': '',
