@@ -2,7 +2,7 @@
 title: फॉर्क्स वापरून जलद आणि सुलभ सबग्राफ डीबगिंग
 ---
 
-बर्‍याच प्रणाली मोठ्या प्रमाणात डेटावर प्रक्रिया करतात त्याप्रमाणे, ग्राफचे इंडेक्सर्स (ग्राफ नोड्स) लक्ष्य ब्लॉकचेनसह तुमचा सबग्राफ समक्रमित करण्यासाठी थोडा वेळ लागू शकतात. डीबगिंगच्या उद्देशाने झटपट बदल आणि इंडेक्सिंगसाठी आवश्यक असलेली दीर्घ प्रतीक्षा वेळ यांच्यातील तफावत अत्यंत प्रतिकूल आहे आणि आम्हाला याची चांगली जाणीव आहे. म्हणूनच आम्ही **सबग्राफ फोर्किंग** सादर करत आहोत, जे [LimeChain](https://limechain.tech/) ने विकसित केले आहे आणि या लेखात मी तुम्हाला हे वैशिष्ट्य दाखवणार आहे की हे वैशिष्ट्य सबग्राफ डीबगिंगचा वेग वाढवण्यासाठी कसा वापरला जाऊ शकतो!
+As with many systems processing large amounts of data, The Graph's Indexers (Graph Nodes) may take quite some time to sync-up your subgraph with the target blockchain. The discrepancy between quick changes with the purpose of debugging and long wait times needed for indexing is extremely counterproductive and we are well aware of that. This is why we are introducing **subgraph forking**, developed by [LimeChain](https://limechain.tech/), and in this article I will show you how this feature can be used to substantially speed-up subgraph debugging!
 
 ## ठीक आहे, ते काय आहे?
 
@@ -12,9 +12,9 @@ title: फॉर्क्स वापरून जलद आणि सुलभ
 
 ## काय?! कसे?
 
-जेव्हा तुम्ही इंडेक्सिंगसाठी रिमोट ग्राफ नोडवर सबग्राफ उपयोजित करता आणि तो ब्लॉक _X_ वर अयशस्वी होतो, तेव्हा चांगली बातमी अशी आहे की आलेख नोड अजूनही त्याचे स्टोअर वापरून GraphQL क्वेरी सर्व्ह करेल, जे _X_ अवरोधित करण्यासाठी समक्रमित केले आहे. खूप छान आहे! याचा अर्थ ब्लॉक _X_ अनुक्रमित करताना उद्भवणाऱ्या बगचे निराकरण करण्यासाठी आम्ही या "अप-टू-डेट" स्टोअरचा लाभ घेऊ शकतो.
+When you deploy a subgraph to a remote Graph Node for indexing and it fails at block _X_, the good news is that the Graph Node will still serve GraphQL queries using its store, which is synced-up to block _X_. That's great! This means we can take advantage of this "up-to-date" store to fix the bugs arising when indexing block _X_.
 
-थोडक्यात, आम्ही एका रिमोट ग्राफ नोडवरून _अयशस्वी सबग्राफ फोर्क करणार आहोत_ ज्याला _X_ ब्लॉक _X_ वर डीबग केलेला स्थानिकरित्या उपयोजित सबग्राफ प्रदान करण्यासाठी अनुक्रमणिका स्थितीचे अद्ययावत दृश्य.
+In a nutshell, we are going to _fork the failing subgraph_ from a remote Graph Node that is guaranteed to have the subgraph indexed up to block _X_ in order to provide the locally deployed subgraph being debugged at block _X_ an up-to-date view of the indexing state.
 
 ## कृपया, मला काही कोड दाखवा!
 
@@ -44,12 +44,12 @@ export function handleUpdatedGravatar(event: UpdatedGravatar): void {
 }
 ```
 
-अरेरे, किती दुर्दैवी आहे, जेव्हा मी माझा परिपूर्ण दिसणारा सबग्राफ [होस्टेड सर्व्हिस](https://thegraph.com/hosted-service/) वर तैनात करतो तेव्हा तो _"Gravatar आढळले नाही!"_ त्रुटी.
+Oops, how unfortunate, when I deploy my perfect looking subgraph to [Subgraph Studio](https://thegraph.com/studio/) it fails with the _"Gravatar not found!"_ error.
 
 निराकरण करण्याचा प्रयत्न करण्याचा नेहमीचा मार्ग आहे:
 
 1. मॅपिंग स्त्रोतामध्ये बदल करा, जो तुम्हाला विश्वास आहे की समस्या सोडवेल (जेव्हा मला माहित आहे की ते होणार नाही).
-2. [होस्टेड सर्व्हिस](https://thegraph.com/hosted-service/) (किंवा अन्य रिमोट ग्राफ नोड) वर सबग्राफ पुन्हा तैनात करा.
+2. Re-deploy the subgraph to [Subgraph Studio](https://thegraph.com/studio/) (or another remote Graph Node).
 3. ते समक्रमित होण्याची प्रतीक्षा करा.
 4. तो पुन्हा खंडित झाल्यास 1 वर परत जा, अन्यथा: हुर्रे!
 
@@ -57,9 +57,9 @@ export function handleUpdatedGravatar(event: UpdatedGravatar): void {
 
 **सबग्राफ फोर्किंग** वापरून आम्ही मूलत: ही पायरी काढून टाकू शकतो. ते कसे दिसते ते येथे आहे:
 
-0. **_योग्य फोर्क-बेस_** सेटसह स्थानिक आलेख नोड स्पिन-अप करा.
+0. Spin-up a local Graph Node with the **_appropriate fork-base_** set.
 1. मॅपिंग स्त्रोतामध्ये बदल करा, जो तुम्हाला विश्वास आहे की समस्या सोडवेल.
-2. स्थानिक ग्राफ नोडवर तैनात करा, **_अयशस्वी सबग्राफ फोर्किंग_** आणि ** _समस्याग्रस्त ब्लॉकपासून सुरू होत आहे_**.
+2. Deploy to the local Graph Node, **_forking the failing subgraph_** and **_starting from the problematic block_**.
 3. तो पुन्हा खंडित झाल्यास, 1 वर परत जा, अन्यथा: हुर्रे!
 
 आता, तुमच्याकडे 2 प्रश्न असू शकतात:
@@ -80,7 +80,7 @@ $ आलेख तैनात <subgraph-name> --debug-fork <subgraph-id> --ipfs
 
 तर, मी काय करतो ते येथे आहे:
 
-0. मी स्थानिक आलेख नोड स्पिन-अप करतो ([हे कसे करायचे ते येथे आहे](https://github.com/graphprotocol/graph-node#running-a-local-graph-node)) `फोर्क-बेस` पर्याय यावर सेट केला आहे: `https://api.thegraph.com/subgraphs/id/`, कारण मी सबग्राफ फोर्क करीन, मी तैनात केलेली बग्गी पूर्वी, [HostedService](https://thegraph.com/hosted-service/) वरून.
+1. I spin-up a local Graph Node ([here is how to do it](https://github.com/graphprotocol/graph-node#running-a-local-graph-node)) with the `fork-base` option set to: `https://api.thegraph.com/subgraphs/id/`, since I will fork a subgraph, the buggy one I deployed earlier, from [Subgraph Studio](https://thegraph.com/studio/).
 
 ```
 $ cargo run -p graph-node --release -- \
@@ -90,13 +90,12 @@ $ cargo run -p graph-node --release -- \
     --fork-base https://api.thegraph.com/subgraphs/id/
 ```
 
-1. After careful inspection I notice that there is a mismatch in the `id` representations used when indexing `Gravatar`s in my two handlers. While `handleNewGravatar` converts it to a hex (`event.params.id.toHex()`), `handleUpdatedGravatar` uses an int32 (`event.params.id.toI32()`) which causes the `handleUpdatedGravatar` to panic with "Gravatar not found!". I make them both convert the `id` to a hex.
-2. मी बदल केल्यानंतर मी माझा सबग्राफ स्थानिक ग्राफ नोडवर तैनात करतो,**_अयशस्वी सबग्राफ फोर्किंग_** आणि सेटिंग `dataSources.source.startBlock``subgraph.yaml` मध्ये `6190343` ला:
+2. After careful inspection I notice that there is a mismatch in the `id` representations used when indexing `Gravatar`s in my two handlers. While `handleNewGravatar` converts it to a hex (`event.params.id.toHex()`), `handleUpdatedGravatar` uses an int32 (`event.params.id.toI32()`) which causes the `handleUpdatedGravatar` to panic with "Gravatar not found!". I make them both convert the `id` to a hex.
+3. After I made the changes I deploy my subgraph to the local Graph Node, **_forking the failing subgraph_** and setting `dataSources.source.startBlock` to `6190343` in `subgraph.yaml`:
 
 ```bash
 $ graph deploy gravity --debug-fork QmNp169tKvomnH3cPXTfGg4ZEhAHA6kEq5oy1XDqAxqHmW --ipfs http://localhost:5001 --node http://localhost:8020
 ```
 
-3. मी स्थानिक ग्राफ नोडद्वारे तयार केलेल्या लॉगची तपासणी करतो आणि हुर्रे!, सर्वकाही कार्य करत असल्याचे दिसते.
-4. मी माझा आता बग-मुक्त सबग्राफ रिमोट ग्राफ नोडवर उपयोजित करतो आणि आनंदाने जगतो! (बटाटे नाहीत)
-5. शेवट...
+4. I inspect the logs produced by the local Graph Node and, Hooray!, everything seems to be working.
+5. I deploy my now bug-free subgraph to a remote Graph Node and live happily ever after! (no potatoes tho)
