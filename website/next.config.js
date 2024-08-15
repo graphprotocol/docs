@@ -28,14 +28,7 @@ const withNextra = nextra({
   readingTime: true,
   transformPageMap(pageMap) {
     const locale = pageMap[0].route.slice(1, 3)
-    // TODO: remove this when crowdin will translate global.json
-    const t = (key) => {
-      try {
-        return translate(translations, locale, `global.sidebar.${key}`)
-      } catch {
-        return translate(translations, 'en', `global.sidebar.${key}`)
-      }
-    }
+    const t = (key) => translate(translations, locale, `global.sidebar.${key}`)
 
     const metaFile = {
       index: t('index'),
