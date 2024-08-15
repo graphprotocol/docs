@@ -4,7 +4,7 @@ import { BorderRadius, buildBorder, buildTransition, Flex, Link, Spacing, Text }
 import { NetworkIcon } from '@edgeandnode/go'
 
 import { useI18n } from '@/i18n'
-import { Image } from '@/src/nextra-theme/components'
+import { Image } from '@/src/components'
 
 import { getSupportedNetworks } from './supportedNetworks'
 
