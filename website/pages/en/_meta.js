@@ -8,34 +8,17 @@ export default {
     title: 'Overview',
   },
   about: '',
-  network: 'The Graph Roles',
-  billing: '',
-  benefits: 'Benefits',
+  network: 'The Graph Network',
   tokenomics: 'Tokenomics',
   contracts: 'Protocol Contracts',
   glossary: '',
+  explorer: '',
+  firehose: '',
+  substreams: '',
   '---2': {
     type: 'separator',
   },
   '###2': {
-    type: 'heading',
-    title: 'Products',
-  },
-  firehose: '',
-  substreams: '',
-  '---3': {
-    type: 'separator',
-  },
-  '###3': {
-    type: 'heading',
-    title: 'Data Consumers',
-  },
-  explorer: '',
-  querying: 'Querying',
-  '---4': {
-    type: 'separator',
-  },
-  '###4': {
     type: 'heading',
     title: 'Developers',
   },
@@ -44,12 +27,13 @@ export default {
   deploying: 'Deploying',
   publishing: 'Publishing',
   managing: 'Managing',
+  querying: 'Querying',
   cookbook: 'Cookbook',
   'release-notes': 'Release Notes & Upgrade Guides',
-  '---5': {
+  '---3': {
     type: 'separator',
   },
-  '###5': {
+  '###3': {
     type: 'heading',
     title: 'Indexers',
   },
@@ -58,10 +42,10 @@ export default {
   'supported-network-requirements': '',
   'new-chain-integration': 'Integrating New Networks',
   graphcast: '',
-  '---6': {
+  '---4': {
     type: 'separator',
   },
-  '###6': {
+  '###4': {
     type: 'heading',
     title: 'Archived',
   },
