@@ -49,7 +49,7 @@ export default {
     type: 'heading',
     title: 'Archived',
   },
-  sunrise: 'Sunrise Upgrade FAQ',
+  sunrise: 'Post-Sunrise Upgrade FAQ',
   'mips-faqs': '',
   arbitrum: 'Scaling with Arbitrum',
 }
