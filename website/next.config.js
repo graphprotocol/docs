@@ -81,11 +81,6 @@ export default withNextra({
       destination: '/en/developing/graph-ts/api/',
       permanent: true,
     },
-    {
-      source: '/en/network/benefits/',
-      destination: '/en/benefits/',
-      permanent: true,
-    },
   ],
   images: {
     unoptimized: true,
