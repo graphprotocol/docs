@@ -48,11 +48,6 @@ export function Intro() {
           description: t('index.shortcuts.createASubgraph.description'),
           href: '/developing/creating-a-subgraph',
         },
-        {
-          title: t('index.shortcuts.migrateFromHostedService.title'),
-          description: t('index.shortcuts.migrateFromHostedService.description'),
-          href: '/cookbook/upgrading-a-subgraph',
-        },
       ].map((card) => (
         <li key={card.href} sx={{ aspectRatio: '258/136' }}>
           <Link.Unstyled
