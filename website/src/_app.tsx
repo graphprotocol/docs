@@ -1,10 +1,12 @@
 import { DocSearch } from '@graphprotocol/nextra-theme'
 import mixpanel from 'mixpanel-browser'
 import type { AppProps } from 'next/app'
+import dynamic from 'next/dynamic'
 import NextLink from 'next/link'
 import { DefaultSeo } from 'next-seo'
 import { type PropsWithChildren } from 'react'
 import googleAnalytics from 'react-ga4'
+const AskCookbook = dynamic(() => import('@cookbookdev/docsbot/react'), { ssr: false })
 
 import {
   AnalyticsProvider,
@@ -183,6 +185,7 @@ function MyAppWithLocale({ Component, router, pageProps }: AppProps) {
           </Layout>
         </AnalyticsProvider>
       </GDSProvider>
+      <AskCookbook apiKey="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2NjZiOWUzY2Q3OTg1YTcyNDFlMzQxMjEiLCJpYXQiOjE3MTgzMjg4OTIsImV4cCI6MjAzMzkwNDg5Mn0.RWS5shd1qQq6US4C32qDV8xv5E8TBBTB6gCqoxmHiSw" />
     </>
   )
 }
