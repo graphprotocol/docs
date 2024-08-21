@@ -166,11 +166,6 @@ export function Products() {
           description: t('index.products.products.graphExplorer.description'),
           href: '/network/explorer',
         },
-        {
-          title: t('index.products.products.hostedService.title'),
-          description: t('index.products.products.hostedService.description'),
-          href: '/deploying/hosted-service',
-        },
       ].map((product) => (
         <Flex.Column as="li" key={product.href}>
           <div sx={{ mb: Spacing['16px'] }}>
