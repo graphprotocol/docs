@@ -56,31 +56,7 @@ export default withNextra({
       destination: '/en/',
       permanent: true,
     },
-    {
-      source: '/en/arbitrum-faq/',
-      destination: '/en/arbitrum/arbitrum-faq/',
-      permanent: true,
-    },
-    {
-      source: '/en/querying/graph-client/',
-      destination: '/en/querying/graph-client/README/',
-      permanent: false,
-    },
-    {
-      source: '/en/developing/graph-ts/',
-      destination: '/en/developing/graph-ts/README/',
-      permanent: false,
-    },
-    {
-      source: '/en/developer/assemblyscript-api/',
-      destination: '/en/developing/graph-ts/api/',
-      permanent: true,
-    },
-    {
-      source: '/en/developing/assemblyscript-api/',
-      destination: '/en/developing/graph-ts/api/',
-      permanent: true,
-    },
+    // If we ever change `output` to not be `export`, we should move all the redirects from `nginx.conf` here
   ],
   images: {
     unoptimized: true,
