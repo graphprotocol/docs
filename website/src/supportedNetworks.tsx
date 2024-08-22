@@ -27,30 +27,36 @@ export async function getSupportedNetworks() {
 
   return Array.from(SupportedNetworkMap.values()).flatMap((network) =>
     Array.from(network.chains)
-      .map((chain) => {
+      .flatMap((chain) => {
         const supportedOnStudio = chain.productDeployStatus.studio === ChainProductStatus.ALLOWED
         const integrationType = ['evm', 'near', 'cosmos', 'osmosis', 'ar'].includes(chain.network)
           ? chain.network
           : 'substreams'
 
-        if (!chain.graphCliName || (!supportedOnStudio && integrationType !== 'substreams')) {
-          return null as never // `as never` to work around the `.filter(Boolean)` below not narrowing the type
+        if (
+          !chain.graphCliName ||
+          (!supportedOnStudio && integrationType !== 'substreams') ||
+          chain.uid === 'evm-1946'
+        ) {
+          return []
         }
 
         const fullySupportedOnNetwork =
           network.id === 'evm' && fullySupportedNetworkIds.includes(`eip155:${chain.chainId}`)
 
-        return {
-          uid: chain.uid,
-          name: chain.name,
-          cliName: chain.graphCliName,
-          chainId: chain.chainId,
-          testnet: chain.testnet,
-          supportedOnStudio,
-          fullySupportedOnNetwork,
-          substreams: chain.substreams ?? [],
-          integrationType,
-        }
+        return [
+          {
+            uid: chain.uid,
+            name: chain.name,
+            cliName: chain.graphCliName,
+            chainId: chain.chainId,
+            testnet: chain.testnet,
+            supportedOnStudio,
+            fullySupportedOnNetwork,
+            substreams: chain.substreams ?? [],
+            integrationType,
+          },
+        ]
       })
       .filter(Boolean),
   )
