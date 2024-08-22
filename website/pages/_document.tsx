@@ -27,7 +27,8 @@ export default class MyDocument extends Document<MyDocumentProps> {
             href={`https://${process.env.ALGOLIA_APP_ID}-dsn.algolia.net`}
             crossOrigin="anonymous"
           />
-          <link rel="icon" type="image/png" href="https://storage.googleapis.com/graph-web/favicon.png" />
+          <link rel="icon" type="image/png" sizes="64x64" href="https://storage.thegraph.com/favicons/64x64.png" />
+          <link rel="icon" type="image/png" sizes="256x256" href="https://storage.thegraph.com/favicons/256x256.png" />
         </Head>
         <body>
           <Main />
