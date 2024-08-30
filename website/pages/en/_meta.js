@@ -10,7 +10,7 @@ export default {
   about: '',
   network: 'The Graph Network',
   tokenomics: 'Tokenomics',
-  contracts: 'Protocol Contracts',
+  contracts: '',
   glossary: '',
   explorer: '',
   firehose: '',
@@ -20,7 +20,7 @@ export default {
   },
   '###2': {
     type: 'heading',
-    title: 'Developers',
+    title: 'Subgraph Developers',
   },
   'quick-start': '',
   developing: 'Developing',
