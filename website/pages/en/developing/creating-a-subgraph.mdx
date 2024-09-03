@@ -2,45 +2,47 @@
 title: Creating a Subgraph
 ---
 
-A subgraph extracts data from a blockchain, processing it and storing it so that it can be easily queried via GraphQL.
+This comprehensive guide provides detailed instructions to create a subgraph successfully.
+
+A subgraph extracts data from a blockchain, processes it, and stores it for efficient querying via GraphQL.
+
+Before you begin, ensure you [create an API Key](deploying/subgraph-studio-faqs/#2-how-do-i-create-an-api-key) to enable your subgraph on The Graph.
 
 ![Defining a Subgraph](/img/defining-a-subgraph.png)
 
-The subgraph definition consists of a few files:
+## Getting Started
 
-- `subgraph.yaml`: a YAML file containing the subgraph manifest
+### Install the Graph CLI
 
-- `schema.graphql`: a GraphQL schema that defines what data is stored for your subgraph, and how to query it via GraphQL
+To build and deploy a subgraph, you will need the [Graph CLI](https://github.com/graphprotocol/graph-tooling).
 
-- `AssemblyScript Mappings`: [AssemblyScript](https://github.com/AssemblyScript/assemblyscript) code that translates from the event data to the entities defined in your schema (e.g. `mapping.ts` in this tutorial)
+The Graph CLI is written in TypeScript, and you must have `node` and either `npm` or `yarn` installed to use it. Check for the [most recent](https://github.com/graphprotocol/graph-tooling/releases?q=%40graphprotocol%2Fgraph-cli&expanded=true) CLI version.
 
-> In order to use your subgraph on The Graph's decentralized network, you will need to [create an API key](/deploying/subgraph-studio-faqs/#2-how-do-i-create-an-api-key). It is recommended that you [add signal](/network/curating/#how-to-signal) to your subgraph with at least [3,000 GRT](/sunrise/#how-can-i-ensure-high-quality-of-service-and-redundancy-for-subgraphs-on-the-graph-network).
+On your local machine, run one of the following commands:
 
-Before you go into detail about the contents of the manifest file, you need to install the [Graph CLI](https://github.com/graphprotocol/graph-tooling) which you will need to build and deploy a subgraph.
+Using [npm](https://www.npmjs.com/):
 
-## Install the Graph CLI
+```bash
+npm install -g @graphprotocol/graph-cli@latest
+```
 
-The Graph CLI is written in JavaScript, and you will need to install either `yarn` or `npm` to use it; it is assumed that you have yarn in what follows.
-
-Once you have `yarn`, install the Graph CLI by running
-
-**Install with yarn:**
+Using [yarn](https://yarnpkg.com/):
 
 ```bash
 yarn global add @graphprotocol/graph-cli
 ```
 
-**Install with npm:**
+- The `graph init` command can be used to set up a new subgraph project, either from an existing contract or from a demo subgraph.
 
-```bash
-npm install -g @graphprotocol/graph-cli
-```
+- This command can be used to create a subgraph in Subgraph Studio by passing in graph: `init --product subgraph-studio`.
 
-Once installed, the `graph init` command can be used to set up a new subgraph project, either from an existing contract or from an example subgraph. This command can be used to create a subgraph in Subgraph Studio by passing in `graph init --product subgraph-studio`. If you already have a smart contract deployed to your preferred network, bootstrapping a new subgraph from that contract can be a good way to get started.
+- If you already have a smart contract deployed to your preferred network, you can bootstrap a new subgraph from that contract to get started.
 
-## From An Existing Contract
+## Create a Subgraph
 
-The following command creates a subgraph that indexes all events of an existing contract. It attempts to fetch the contract ABI from Etherscan and falls back to requesting a local file path. If any of the optional arguments are missing, it takes you through an interactive form.
+### From an existing contract
+
+The following command creates a subgraph that indexes all events of an existing contract:
 
 ```sh
 graph init \
@@ -51,21 +53,27 @@ graph init \
   <SUBGRAPH_SLUG> [<DIRECTORY>]
 ```
 
-The `<SUBGRAPH_SLUG>` is the ID of your subgraph in Subgraph Studio, it can be found on your subgraph details page.
+- The graph-cli relies on a public RPC endpoint, which is rate-limited. While occasional failures are expected, retries typically resolve the issue. If failures persist, consider using a local ABI.
 
-## From An Example Subgraph
+- If any of the optional arguments are missing, it guides you through an interactive form.
 
-The second mode `graph init` supports is creating a new project from an example subgraph. The following command does this:
+- The `<SUBGRAPH_SLUG>` is the ID of your subgraph in Subgraph Studio. It can be found on your subgraph details page.
+
+### From a demo subgraph
+
+The following command creates a new project from an example subgraph:
 
 ```sh
 graph init --studio <SUBGRAPH_SLUG>
 ```
 
-The [example subgraph](https://github.com/graphprotocol/example-subgraph) is based on the Gravity contract by Dani Grant that manages user avatars and emits `NewGravatar` or `UpdateGravatar` events whenever avatars are created or updated. The subgraph handles these events by writing `Gravatar` entities to the Graph Node store and ensuring these are updated according to the events. The following sections will go over the files that make up the subgraph manifest for this example.
+- The example subgraph is based on the Gravity contract by Dani Grant, which manages user avatars and emits `NewGravatar` or `UpdateGravatar` events whenever avatars are created or updated.
 
-## Add New dataSources To An Existing Subgraph
+- The subgraph handles these events by writing `Gravatar` entities to the Graph Node store and ensuring these are updated according to the events
 
-Since `v0.31.0` the `graph-cli` supports adding new dataSources to an existing subgraph through the `graph add` command.
+### Add new dataSources to an existing subgraph
+
+Since v0.31.0, the `graph-cli` supports adding new dataSources to an existing subgraph through the `graph add` command:
 
 ```sh
 graph add <address> [<subgraph-manifest default: "./subgraph.yaml">]
@@ -78,22 +86,59 @@ Options:
       --network-file <path>     Networks config file path (default: "./networks.json")
 ```
 
-The `add` command will fetch the ABI from Etherscan (unless an ABI path is specified with the `--abi` option), and will create a new `dataSource` in the same way that `graph init` command creates a `dataSource` `--from-contract`, updating the schema and mappings accordingly.
+**Specifics**
 
-The `--merge-entities` option identifies how the developer would like to handle `entity` and `event` name conflicts:
+The `add` command will fetch the ABI from Etherscan unless an ABI path is specified with the `--abi` option. Subsequently, it will create a new `dataSource` like `graph init` command creates a dataSource `--from-contract` and will update the schema and mappings accordingly.
+
+> Note: This allows you to index implementation contracts from their proxy contracts.
+
+- The `--merge-entities` option identifies how the developer would like to handle `entity` and `event` name conflicts:
 
 - If `true`: the new `dataSource` should use existing `eventHandlers` & `entities`.
-- If `false`: a new entity & event handler should be created with `${dataSourceName}{EventName}`.
 
-The contract `address` will be written to the `networks.json` for the relevant network.
+- If `false`: a new `entity` & `event` handler should be created with `${dataSourceName}{EventName}`.
 
-> **Note:** When using the interactive cli, after successfully running `graph init`, you'll be prompted to add a new `dataSource`.
+- The contract `address `will be written to the `networks.json` for the relevant network.
 
-## The Subgraph Manifest
+> Note: When using the interactive cli, after successfully running `graph init`, you'll be prompted to add a new `dataSource`.
 
-The subgraph manifest `subgraph.yaml` defines the smart contracts your subgraph indexes, which events from these contracts to pay attention to, and how to map event data to entities that Graph Node stores and allows to query. The full specification for subgraph manifests can be found [here](https://github.com/graphprotocol/graph-node/blob/master/docs/subgraph-manifest.md).
+## Components of a Subgraph
 
-For the example subgraph, `subgraph.yaml` is:
+### The Subgraph Manifest
+
+The subgraph manifest, `subgraph.yaml`, specifies the following:
+
+- The smart contracts to index
+
+- The events from these contracts
+
+- The mapping of event data that Graph Node stores and queries
+
+The subgraph definition consists of the following files:
+
+- `subgraph.yaml`: Contains the subgraph manifest
+
+- `schema.graphql`: a GraphQL schema defining the data stored for your subgraph and how to query it via GraphQL.
+
+- `AssemblyScript` Mappings: [Assembly Script](https://github.com/AssemblyScript/assemblyscript) code that translates event data into entities defined in your schema (e.g. mapping.ts in this guide)
+
+A single subgraph can:
+
+- Index data from multiple smart contracts
+
+- Add an entry for each contract that requires indexing to the `dataSources array`.
+
+The subgraph definition consists of a few files:
+
+- `subgraph.yaml`: a YAML file containing the subgraph manifest
+
+- `schema.graphql`: a GraphQL schema that defines what data is stored for your subgraph, and how to query it via GraphQL
+
+- `AssemblyScript Mappings`: [AssemblyScript](https://github.com/AssemblyScript/assemblyscript) code that translates from the event data to the entities defined in your schema (e.g. `mapping.ts` in this tutorial)
+
+The full specification for subgraph manifests can be found [here](https://github.com/graphprotocol/graph-node/blob/master/docs/subgraph-manifest.md).
+
+For the demo subgraph listed above, `subgraph.yaml` is:
 
 ```yaml
 specVersion: 0.0.4
