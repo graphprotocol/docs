@@ -1,0 +1,200 @@
+---
+title: TAP Migration Guide
+---
+
+Learn about The Graph’s new payment system, **Timeline Aggregation Protocol, TAP**. This system provides fast, efficient microtransactions with minimized trust.
+
+## Короткий огляд
+
+[TAP](https://docs.rs/tap_core/latest/tap_core/index.html) is a drop-in replacement to the Scalar payment system currently in place. It provides the following key features:
+
+- Efficiently handles micropayments.
+- Adds a layer of consolidations to on-chain transactions and costs.
+- Allows Indexers control of receipts and payments, guaranteeing payment for queries.
+- It enables decentralized, trustless gateways and improves `indexer-service` performance for multiple senders.
+
+## Specifics
+
+TAP allows a sender to make multiple payments to a receiver, **TAP Receipts**, which aggregates these payments into a single payment, a **Receipt Aggregate Voucher**, also known as a **RAV**. This aggregated payment can then be verified on the blockchain, reducing the number of transactions and simplifying the payment process.
+
+For each query, the gateway will send you a `signed receipt` that is stored on your database. Then, these queries will be aggregated by a `tap-agent` through a request. Afterwards, you’ll receive a RAV. You can update a RAV by sending it with newer receipts and this will generate a new RAV with an increased value.
+
+### RAV Details
+
+- It’s money that is waiting to be sent to the blockchain.
+
+- It will continue to send requests to aggregate and ensure that the total value of non-aggregated receipts does not exceed the `amount willing to lose`.
+
+- Each RAV can be redeemed once in the contracts, which is why they are sent after the allocation is closed.
+
+### Redeeming RAV
+
+As long as you run `tap-agent` and `indexer-agent`, everything will be executed automatically. The following provides a detailed breakdown of the process:
+
+1. An Indexer closes allocation.
+
+2. `<recently-closed-allocation-buffer> period, tap-agent` takes all pending receipts for that specific allocation and requests an aggregation into a RAV, marking it as `last`.
+
+3. `indexer-agent` takes all the last RAVS and sends redeem requests to the blockchain, which will update the value of `redeem_at`.
+
+4. During the `<finality-time>` period, `indexer-agent` monitors if the blockchain has any reorganizations that revert the transaction.
+
+   - If it was reverted, the RAV is resent to the blockchain. If it was not reverted, it gets marked as `final`.
+
+## Blockchain Addresses
+
+### Contracts
+
+| Contract            | Arbitrum Sepolia                                              | Arbitrum Mainnet                                              |
+| ------------------- | ------------------------------------------------------------- | ------------------------------------------------------------- |
+| Contract            | Arbitrum Sepolia (421614)                  | Arbitrum Mainnet (42161)                   |
+| TAP Verifier        | 0xfC24cE7a4428A6B89B52645243662A02BA734ECF                    | 0x33f9E93266ce0E108fc85DdE2f71dab555A0F05a                    |
+| AllocationIDTracker | 0xAaC28a10d707bbc6e02029f1bfDAEB5084b2aD11                    | 0x5B2F33d7Ca6Ec88f5586f2528f58c20843D9FE7c                    |
+| Escrow              | 0x1e4dC4f9F95E102635D8F7ED71c5CdbFa20e2d02                    | 0x8f477709eF277d4A880801D01A140a9CF88bA0d3                    |
+
+### Gateway
+
+| Component  | Edge and Node (Testnet)                 | Edge and Node Mainnet (42161)           |
+| ---------- | ---------------------------------------------------------- | ---------------------------------------------------------- |
+| Sender     | 0xC3dDf37906724732FfD748057FEBe23379b0710D                 | 0xDDE4cfFd3D9052A9cb618fC05a1Cd02be1f2F467                 |
+| Signers    | 00xFb142dE83E261e43a81e9ACEADd1c66A0DB121FE                | 0xfF4B7A5EfD00Ff2EC3518D4F250A27e4c29A2211                 |
+| Aggregator | [for testnet](https://tap-aggregator.testnet.thegraph.com) | [for Mainnet](https://tap-aggregator.network.thegraph.com) |
+
+### Requirements
+
+In addition to the typical requirements to run an indexer, you’ll need a `tap-escrow-subgraph` endpoint to query TAP updates. You can use The Graph Network to query or host yourself on your `graph-node`.
+
+> Note: `indexer-cli` does not currently have a command to index this subgraph like it does for `graph-network`. As a result, you have to index it manually.
+
+## Migration Guide
+
+### Prerequisites
+
+Make sure you have the following version: `<insert the version here>`
+
+### Steps
+
+1. **Indexer Agent**
+
+   - Follow the [same process](https://github.com/graphprotocol/indexer/pkgs/container/indexer-agent#graph-protocol-indexer-components).
+   - Use the new argument `–tap-subgraph-endpoint`.
+
+2. **Indexer Service**
+
+   - Fully replace your current configuration with the new application.
+   - You can reuse some of the values in your environment variables and command arguments inside the configuration.
+     > It’s critical to install the new `tap-agent` component to receive your payments.
+
+3. **Configure**
+
+   Configuration is shared between components, enabling you to use a single configuration for both `indexer-service` and `tap-agent`. Each component will use the required fields.
+
+   Check out the full [configuration](https://github.com/graphprotocol/indexer-rs/blob/main/config/maximal-config-example.toml) and the [default values](https://github.com/graphprotocol/indexer-rs/blob/main/config/default_values.toml)
+
+For minimal configuration, use the following:
+
+```bash
+# You will have to change *all* the values below to match your setup.
+#
+# Some of the config below are global graph network values, which you can find here:
+# <https://github.com/graphprotocol/indexer/tree/main/docs/networks>
+#
+# Pro tip: if you need to load some values from the environment into this config, you
+# can overwrite with environment variables. For example, the following can be replaced
+# by [PREFIX]_DATABASE_POSTGRESURL, where PREFIX can be `INDEXER_SERVICE` or `TAP_AGENT`:
+#
+# [database]
+# postgres_url = "postgresql://indexer:${POSTGRES_PASSWORD}@postgres:5432/indexer_components_0"
+
+[indexer]
+indexer_address = "0x1111111111111111111111111111111111111111"
+operator_mnemonic = "celery smart tip orange scare van steel radio dragon joy alarm crane"
+
+[database]
+# The URL of the Postgres database used for the indexer components. The same database
+# that is used by the `indexer-agent`. It is expected that `indexer-agent` will create
+# the necessary tables.
+postgres_url = "postgres://postgres@postgres:5432/postgres"
+
+[graph_node]
+# URL to your graph-node's query endpoint
+query_url = "<http://graph-node:8000>"
+# URL to your graph-node's status endpoint
+status_url = "<http://graph-node:8000/graphql>"
+
+[subgraphs.network]
+# Query URL for the Graph Network subgraph.
+query_url = "<http://example.com/network-subgraph>"
+# Optional, deployment to look for in the local `graph-node`, if locally indexed.
+# Locally indexing the subgraph is recommended.
+# NOTE: Use `query_url` or `deployment_id` only
+deployment_id = "Qmaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+
+[subgraphs.escrow]
+# Query URL for the Escrow subgraph.
+query_url = "<http://example.com/network-subgraph>"
+# Optional, deployment to look for in the local `graph-node`, if locally indexed.
+# Locally indexing the subgraph is recommended.
+# NOTE: Use `query_url` or `deployment_id` only
+deployment_id = "Qmaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+
+[blockchain]
+# The chain ID of the network that the graph network is running on
+chain_id = 1337
+# Contract address of TAP's receipt aggregate voucher (RAV) verifier.
+receipts_verifier_address = "0x2222222222222222222222222222222222222222"
+
+########################################
+# Specific configurations to tap-agent #
+########################################
+[tap]
+# This is the amount of fees you are willing to risk at any given time. For ex.
+# if the sender stops supplying RAVs for long enough and the fees exceed this
+# amount, the indexer-service will stop accepting queries from the sender
+# until the fees are aggregated.
+# NOTE: Use strings for decimal values to prevent rounding errors
+# e.g:
+# max_amount_willing_to_lose_grt = "0.1"
+max_amount_willing_to_lose_grt = 20
+
+[tap.sender_aggregator_endpoints]
+# Key-Value of all senders and their aggregator endpoints
+0xdeadbeefcafebabedeadbeefcafebabedeadbeef = "https://example.com/aggregate-receipts"
+0x0123456789abcdef0123456789abcdef01234567 = "https://other.example.com/aggregate-receipts"
+```
+
+Notes:
+
+- Values for `tap.sender_aggregator_endpoints` can be found in the [gateway section](/tap/#gateway).
+- Values for `blockchain.receipts_verifier_address` must be used accordingly to the [Blockchain addresses section](/tap/#contracts) using the appropriate chain id.
+
+### Running
+
+| Component       | Version     | Image Link                                                                                                                |
+| --------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------- |
+| indexer-service | v1.0.0-rc.6 | [indexer-service](https://github.com/graphprotocol/indexer-rs/pkgs/container/indexer-service-rs/264320627?tag=1.0.0-rc.6) |
+| indexer-agent   | PR #995     | [indexer-agent](https://github.com/graphprotocol/indexer/pkgs/container/indexer-agent/266166026?tag=sha-d98cf80)          |
+| tap-agent       | v1.0.0-rc.6 | [tap-agent](https://github.com/graphprotocol/indexer-rs/pkgs/container/indexer-tap-agent/264320547?tag=1.0.0-rc.6)        |
+
+**Command argument**
+
+With a configuration file `config.toml` setup, you can either run the following docker-image or use the config args: `--config/path/to/config.toml`
+
+**Log Level**
+
+- You can set the log level by using the `RUST_LOG` environment variable.
+- It’s recommended that you set it to `RUST_LOG=indexer_tap_agent=debug,info`.
+
+## Monitoring
+
+### Metrics
+
+All components expose the port 7300 to be queried by prometheus.
+
+### Grafana Dashboard
+
+You can download [Grafana Dashboard](https://github.com/graphprotocol/indexer-rs/blob/main/docs/dashboard.json) and import.
+
+### Launchpad
+
+Currently, there is a WIP version of `indexer-rs` and `tap-agent` that can be found [here](https://github.com/graphops/launchpad-charts/tree/feat/indexer-rs/charts/graph-network-indexer)
