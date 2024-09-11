@@ -34,11 +34,4 @@ In the development environment, you will have access to the `substreams init` co
 
 
 
-### Generate Your Subgraph Project
-
-From the generated Substreams project, you can create a Substreams-powered Subgraph project that uses the Substreams as data source.
-
-In the folder of the Substreams project, run `substreams codegen subgraph` and choose the module that you want your subgraph to consume. A new `subgraph` folder will be created with ready-to-deploy subgraph.
-
-
 
