@@ -1,5 +1,4 @@
 export default {
-  'upgrading-a-subgraph': '',
   'subgraph-debug-forking': '',
   near: '',
   cosmos: '',
