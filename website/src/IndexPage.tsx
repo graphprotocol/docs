@@ -48,11 +48,6 @@ export function Intro() {
           description: t('index.shortcuts.createASubgraph.description'),
           href: '/developing/creating-a-subgraph',
         },
-        {
-          title: t('index.shortcuts.migrateFromHostedService.title'),
-          description: t('index.shortcuts.migrateFromHostedService.description'),
-          href: '/cookbook/upgrading-a-subgraph',
-        },
       ].map((card) => (
         <li key={card.href} sx={{ aspectRatio: '258/136' }}>
           <Link.Unstyled
@@ -170,11 +165,6 @@ export function Products() {
           title: t('index.products.products.graphExplorer.title'),
           description: t('index.products.products.graphExplorer.description'),
           href: '/network/explorer',
-        },
-        {
-          title: t('index.products.products.hostedService.title'),
-          description: t('index.products.products.hostedService.description'),
-          href: '/deploying/hosted-service',
         },
       ].map((product) => (
         <Flex.Column as="li" key={product.href}>

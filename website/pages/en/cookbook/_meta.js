@@ -1,6 +1,4 @@
 export default {
-  'base-testnet': '',
-  'upgrading-a-subgraph': '',
   'subgraph-debug-forking': '',
   near: '',
   cosmos: '',
