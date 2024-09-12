@@ -2,45 +2,47 @@
 title: Vytvoření podgraf
 ---
 
-Podgraf získává data z blockchain, zpracovává je a ukládá tak, aby se na ně dalo snadno dotazovat prostřednictvím jazyka GraphQL.
+This detailed guide provides instructions to successfully create a subgraph.
+
+A subgraph extracts data from a blockchain, processes it, and stores it for efficient querying via GraphQL.
 
 ![Definování podgrafu](/img/defining-a-subgraph.png)
 
-Definice podgraf se skládá z několika souborů:
+> In order to use your subgraph on The Graph's decentralized network, you will need to [create an API key](/deploying/subgraph-studio-faqs/#2-how-do-i-create-an-api-key) in [Subgraph Studio](https://thegraph.com/studio/apikeys/). It is recommended that you add signal to your subgraph with at least 3,000 GRT to attract 2-3 Indexers.
 
-- `subgraph.yaml`: soubor YAML obsahující manifest podgraf
+## Začínáme
 
-- `schema.graphql`: schéma GraphQL, které definuje, jaká data jsou uložena pro váš podgraf a jak se na ně dotazovat prostřednictvím jazyka GraphQL
+### Instalace Graf CLI
 
-- `Mapování skriptů sestavy`: [AssemblyScript](https://github.com/AssemblyScript/assemblyscript) kód, který převádí data událostí na entity definované ve vašem schématu (např. `mapping.ts` v tomto tutoriálu)
+To build and deploy a subgraph, you will need the [Graph CLI](https://github.com/graphprotocol/graph-tooling/tree/main/packages/cli).
 
-> In order to use your subgraph on The Graph's decentralized network, you will need to [create an API key](/deploying/subgraph-studio-faqs/#2-how-do-i-create-an-api-key). It is recommended that you [add signal](/network/curating/#how-to-signal) to your subgraph with at least [3,000 GRT](/sunrise/#how-can-i-ensure-high-quality-of-service-and-redundancy-for-subgraphs-on-the-graph-network).
+The Graph CLI is written in TypeScript, and you must have `node` and either `npm` or `yarn` installed to use it. Check for the [most recent](https://github.com/graphprotocol/graph-tooling/releases?q=%40graphprotocol%2Fgraph-cli&expanded=true) CLI version.
 
-Before you go into detail about the contents of the manifest file, you need to install the [Graph CLI](https://github.com/graphprotocol/graph-tooling) which you will need to build and deploy a subgraph.
+V místním počítači spusťte jeden z následujících příkazů:
 
-## Instalace Graf CLI
+#### Using [npm](https://www.npmjs.com/)
 
-Graf CLI je napsáno v jazyce JavaScript a k jeho použití je třeba nainstalovat buď `yarn`, nebo `npm`; v následujícím se předpokládá, že máte yarn.
+```bash
+npm install -g @graphprotocol/graph-cli@latest
+```
 
-Jakmile budete mít `yarn`, nainstalujte Graf CLI spuštěním příkazu
-
-**Instalace pomocí yarn:**
+#### Using [yarn](https://yarnpkg.com/)
 
 ```bash
 yarn global add @graphprotocol/graph-cli
 ```
 
-**Instalace pomocí npm:**
+- The `graph init` command can be used to set up a new subgraph project, either from an existing contract or from an example subgraph.
 
-```bash
-npm install -g @graphprotocol/graph-cli
-```
+- This `graph init` command can also create a subgraph in Subgraph Studio by passing in `--product subgraph-studio`.
 
-Once installed, the `graph init` command can be used to set up a new subgraph project, either from an existing contract or from an example subgraph. This command can be used to create a subgraph in Subgraph Studio by passing in `graph init --product subgraph-studio`. If you already have a smart contract deployed to your preferred network, bootstrapping a new subgraph from that contract can be a good way to get started.
+- If you already have a smart contract deployed to your preferred network, you can bootstrap a new subgraph from that contract to get started.
 
-## Ze stávající smlouvy
+## Create a subgraph
 
-Následující příkaz vytvoří podgraf, který indexuje všechny události existující smlouvy. Pokusí se načíst ABI smlouvy z Etherscan a vrátí se k požadavku na cestu k místnímu souboru. Pokud některý z nepovinných argumentů chybí, projde příkaz interaktivním formulářem.
+### From an existing contract
+
+The following command creates a subgraph that indexes all events of an existing contract:
 
 ```sh
 graph init \
@@ -51,21 +53,29 @@ graph init \
   <SUBGRAPH_SLUG> [<DIRECTORY>]
 ```
 
-`<SUBGRAPH_SLUG>` je ID vašeho podgraf ve Studio podgraph, najdete ho na stránce s podrobnostmi o podgrafu.
+- The command tries to retrieve the contract ABI from Etherscan.
 
-## Z příkladu podgraf
+  - The Graph CLI relies on a public RPC endpoint. While occasional failures are expected, retries typically resolve this issue. If failures persist, consider using a local ABI.
 
-Druhý režim `graf init` podporuje vytvoření nového projektu z příkladového podgraf. To provede následující příkaz:
+- If any of the optional arguments are missing, it guides you through an interactive form.
+
+- The `<SUBGRAPH_SLUG>` is the ID of your subgraph in [Subgraph Studio](https://thegraph.com/studio/). It can be found on your subgraph details page.
+
+### From an example subgraph
+
+The following command initializes a new project from an example subgraph:
 
 ```sh
-graph init --studio <SUBGRAPH_SLUG>
+graph init --studio <SUBGRAPH_SLUG> --from-example=example-subgraph
 ```
 
-The [example subgraph](https://github.com/graphprotocol/example-subgraph) is based on the Gravity contract by Dani Grant that manages user avatars and emits `NewGravatar` or `UpdateGravatar` events whenever avatars are created or updated. The subgraph handles these events by writing `Gravatar` entities to the Graph Node store and ensuring these are updated according to the events. The following sections will go over the files that make up the subgraph manifest for this example.
+- The [example subgraph](https://github.com/graphprotocol/example-subgraph) is based on the Gravity contract by Dani Grant, which manages user avatars and emits `NewGravatar` or `UpdateGravatar` events whenever avatars are created or updated.
 
-## Přidání nových zdrojů dat do existujícího podgraf
+- The subgraph handles these events by writing `Gravatar` entities to the Graph Node store and ensuring these are updated according to the events.
 
-Od verze `v0.31.0` podporuje `graf-cli` přidávání nových zdrojů dat do existujícího podgrafu pomocí příkazu `graf add`.
+## Add new `dataSources` to an existing subgraph
+
+Since `v0.31.0`, the Graph CLI supports adding new `dataSources` to an existing subgraph through the `graph add` command:
 
 ```sh
 graph add <address> [<subgraph-manifest default: "./subgraph.yaml">]
@@ -78,22 +88,45 @@ Možnosti:
       --network-file <path> Cesta ke konfiguračnímu souboru sítě (výchozí: "./networks.json")
 ```
 
-Příkaz `add` načte ABI z Etherscan (pokud není zadána cesta k ABI pomocí volby `--abi`) a vytvoří nový `dataSource` stejným způsobem jako příkaz `graph init` vytvoří `dataSource` `--from-contract`, přičemž odpovídajícím způsobem aktualizuje schéma a mapování.
+### Specifics
 
-Volba `--merge-entities` určuje, jak chce vývojář řešit konflikty názvů `entity` a `event`:
+The `graph add` command will fetch the ABI from Etherscan (unless an ABI path is specified with the `--abi` option) and creates a new `dataSource`, similar to how the `graph init` command creates a `dataSource` `--from-contract`, updating the schema and mappings accordingly. This allows you to index implementation contracts from their proxy contracts.
 
-- Pokud `true`: nový `dataSource` by měl používat stávající `eventHandlers` & `entity`.
-- Pokud `false`: měla by být vytvořena nová entita & obsluha události s `${dataSourceName}{EventName}`.
+- Volba `--merge-entities` určuje, jak chce vývojář řešit konflikty názvů `entity` a `event`:
 
-Smlouva `adresa` bude zapsána do souboru `networks.json` pro příslušnou síť.
+  - Pokud `true`: nový `dataSource` by měl používat stávající `eventHandlers` & `entity`.
 
-> **Poznámka:** Při použití interaktivního klienta budete po úspěšném spuštění `graf init` vyzváni k přidání nového `dataSource`.
+  - If `false`: a new `entity` & `event` handler should be created with `${dataSourceName}{EventName}`.
 
-## Manifest podgrafu
+- Smlouva `adresa` bude zapsána do souboru `networks.json` pro příslušnou síť.
 
-Manifest podgrafu `subgraph.yaml` definuje inteligentní smlouvy, které váš podgraf indexuje, kterým událostem z těchto smluv má věnovat pozornost a jak mapovat data událostí na entity, které Graf uzel ukládá a umožňuje dotazovat. Úplnou specifikaci manifestů podgrafu naleznete [zde](https://github.com/graphprotocol/graph-node/blob/master/docs/subgraph-manifest.md).
+> Note: When using the interactive CLI, after successfully running `graph init`, you'll be prompted to add a new `dataSource`.
 
-Pro příklad podgraf `subgraph.yaml` je:
+## Components of a subgraph
+
+### Manifest podgrafu
+
+The subgraph manifest, `subgraph.yaml`, defines the smart contracts & network your subgraph will index, the events from these contracts to pay attention to, and how to map event data to entities that Graph Node stores and allows to query.
+
+The **subgraph definition** consists of the following files:
+
+- `subgraph.yaml`: Contains the subgraph manifest
+
+- `schema.graphql`: A GraphQL schema defining the data stored for your subgraph and how to query it via GraphQL
+
+- `mapping.ts`: [AssemblyScript Mappings](https://github.com/AssemblyScript/assemblyscript) code that translates event data into entities defined in your schema (e.g. `mapping.ts` in this guide)
+
+A single subgraph can:
+
+- Index data from multiple smart contracts (but not multiple networks).
+
+- Index data from IPFS files using File Data Sources.
+
+- Add an entry for each contract that requires indexing to the `dataSources` array.
+
+The full specification for subgraph manifests can be found [here](https://github.com/graphprotocol/graph-node/blob/master/docs/subgraph-manifest.md).
+
+For the example subgraph listed above, `subgraph.yaml` is:
 
 ```yaml
 specVersion: 0.0.4
@@ -180,9 +213,9 @@ Jeden subgraf může indexovat data z více inteligentní smluv. Do pole `dataSo
 
 Spouštěče pro zdroj dat v rámci bloku jsou seřazeny podle následujícího postupu:
 
-1. Spouštěče událostí a volání jsou nejprve seřazeny podle indexu transakce v rámci bloku.
-2. Spouštěče událostí a volání v rámci jedné transakce jsou seřazeny podle konvence: nejprve spouštěče událostí a poté spouštěče volání, přičemž každý typ dodržuje pořadí, v jakém jsou definovány v manifestu.
-3. Spouštěče bloků jsou spuštěny po spouštěčích událostí a volání, v pořadí, v jakém jsou definovány v manifestu.
+1.  Spouštěče událostí a volání jsou nejprve seřazeny podle indexu transakce v rámci bloku.
+2.  Spouštěče událostí a volání v rámci jedné transakce jsou seřazeny podle konvence: nejprve spouštěče událostí a poté spouštěče volání, přičemž každý typ dodržuje pořadí, v jakém jsou definovány v manifestu.
+3.  Spouštěče bloků jsou spuštěny po spouštěčích událostí a volání, v pořadí, v jakém jsou definovány v manifestu.
 
 Tato pravidla objednávání se mohou změnit.
 
@@ -305,9 +338,9 @@ Imagine you have a subgraph that needs to make three Ethereum calls to fetch dat
 
 Traditionally, these calls might be made sequentially:
 
-1. Call 1 (Transactions): Takes 3 seconds
-2. Call 2 (Balance): Takes 2 seconds
-3. Call 3 (Token Holdings): Takes 4 seconds
+1.  Call 1 (Transactions): Takes 3 seconds
+2.  Call 2 (Balance): Takes 2 seconds
+3.  Call 3 (Token Holdings): Takes 4 seconds
 
 Total time taken = 3 + 2 + 4 = 9 seconds
 
@@ -315,9 +348,9 @@ Total time taken = 3 + 2 + 4 = 9 seconds
 
 With this feature, you can declare these calls to be executed in parallel:
 
-1. Call 1 (Transactions): Takes 3 seconds
-2. Call 2 (Balance): Takes 2 seconds
-3. Call 3 (Token Holdings): Takes 4 seconds
+1.  Call 1 (Transactions): Takes 3 seconds
+2.  Call 2 (Balance): Takes 2 seconds
+3.  Call 3 (Token Holdings): Takes 4 seconds
 
 Since these calls are executed in parallel, the total time taken is equal to the time taken by the longest call.
 
@@ -325,9 +358,9 @@ Total time taken = max (3, 2, 4) = 4 seconds
 
 ### How it Works
 
-1. Declarative Definition: In the subgraph manifest, you declare the Ethereum calls in a way that indicates they can be executed in parallel.
-2. Parallel Execution Engine: The Graph Node's execution engine recognizes these declarations and runs the calls simultaneously.
-3. Result Aggregation: Once all calls are complete, the results are aggregated and used by the subgraph for further processing.
+1.  Declarative Definition: In the subgraph manifest, you declare the Ethereum calls in a way that indicates they can be executed in parallel.
+2.  Parallel Execution Engine: The Graph Node's execution engine recognizes these declarations and runs the calls simultaneously.
+3.  Result Aggregation: Once all calls are complete, the results are aggregated and used by the subgraph for further processing.
 
 ### Example Configuration in Subgraph Manifest
 
@@ -347,7 +380,7 @@ calls:
 Details for the example above:
 
 - `global0X128` is the declared `eth_call`.
-- The text before colon(`global0X128`) is the label for this `eth_call` which is used when logging errors.
+- The text (`global0X128`) is the label for this `eth_call` which is used when logging errors.
 - The text (`Pool[event.address].feeGrowthGlobal0X128()`) is the actual `eth_call` that will be executed, which is in the form of `Contract[address].function(arguments)`
 - The `address` and `arguments` can be replaced with variables that will be available when the handler is executed.
 
@@ -593,7 +626,7 @@ Tento propracovanější způsob ukládání vztahů mnoho-více vede k menším
 
 #### Přidání komentářů do schématu
 
-As per GraphQL spec, comments can be added above schema entity attributes using the hash symble `#`. This is illustrated in the example below:
+As per GraphQL spec, comments can be added above schema entity attributes using the hash symbol `#`. This is illustrated in the example below:
 
 ```graphql
 type MyFirstEntity @entity {
@@ -945,9 +978,9 @@ Nastavení `indexerHints` v manifestu podgrafu poskytuje směrnice pro indexáto
 
 `indexerHints.prune`: Definuje zachování historických blokových dat pro podgraf. Mezi možnosti patří:
 
-1. `"nikdy"`: Žádné ořezávání historických dat; zachovává celou historii.
-2. `"auto"`: Zachovává minimální potřebnou historii nastavenou indexátorem, čímž optimalizuje výkon dotazu.
-3. Konkrétní číslo: Nastaví vlastní limit počtu historických bloků, které se mají zachovat.
+1.  `"nikdy"`: Žádné ořezávání historických dat; zachovává celou historii.
+2.  `"auto"`: Zachovává minimální potřebnou historii nastavenou indexátorem, čímž optimalizuje výkon dotazu.
+3.  Konkrétní číslo: Nastaví vlastní limit počtu historických bloků, které se mají zachovat.
 
 ```
  indexerHints:
