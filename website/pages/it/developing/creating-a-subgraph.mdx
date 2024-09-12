@@ -2,45 +2,47 @@
 title: Creare un subgraph
 ---
 
-Un subgraph estrae i dati da una blockchain, li elabora e li memorizza in modo che possano essere facilmente interrogati tramite GraphQL.
+This detailed guide provides instructions to successfully create a subgraph.
+
+A subgraph extracts data from a blockchain, processes it, and stores it for efficient querying via GraphQL.
 
 ![Definizione di un Subgraph](/img/defining-a-subgraph.png)
 
-La definizione del subgraph consiste in alcuni file:
+> In order to use your subgraph on The Graph's decentralized network, you will need to [create an API key](/deploying/subgraph-studio-faqs/#2-how-do-i-create-an-api-key) in [Subgraph Studio](https://thegraph.com/studio/apikeys/). It is recommended that you add signal to your subgraph with at least 3,000 GRT to attract 2-3 Indexers.
 
-- `subgraph.yaml`: un file YAML contenente il manifesto del subgraph
+## Getting Started
 
-- `schema.graphql`: uno schema GraphQL che definisce quali dati sono memorizzati per il subgraph e come interrogarli via GraphQL
+### Installare the Graph CLI
 
-- `AssemblyScript Mappings`: [AssemblyScript](https://github.com/AssemblyScript/assemblyscript) codice che traduce i dati dell'evento nelle entità definite nello schema (ad esempio `mapping.ts` in questo tutorial)
+To build and deploy a subgraph, you will need the [Graph CLI](https://github.com/graphprotocol/graph-tooling/tree/main/packages/cli).
 
-> In order to use your subgraph on The Graph's decentralized network, you will need to [create an API key](/deploying/subgraph-studio-faqs/#2-how-do-i-create-an-api-key). It is recommended that you [add signal](/network/curating/#how-to-signal) to your subgraph with at least [3,000 GRT](/sunrise/#how-can-i-ensure-high-quality-of-service-and-redundancy-for-subgraphs-on-the-graph-network).
+The Graph CLI is written in TypeScript, and you must have `node` and either `npm` or `yarn` installed to use it. Check for the [most recent](https://github.com/graphprotocol/graph-tooling/releases?q=%40graphprotocol%2Fgraph-cli&expanded=true) CLI version.
 
-Before you go into detail about the contents of the manifest file, you need to install the [Graph CLI](https://github.com/graphprotocol/graph-tooling) which you will need to build and deploy a subgraph.
+On your local machine, run one of the following commands:
 
-## Installare the Graph CLI
+#### Using [npm](https://www.npmjs.com/)
 
-The Graph CLI è scritta in JavaScript e per utilizzarla è necessario installare `yarn` oppure `npm`; in quanto segue si presume che si disponga di yarn.
+```bash
+npm install -g @graphprotocol/graph-cli@latest
+```
 
-Una volta che si dispone di `yarn`, installare the Graph CLI eseguendo
-
-**Installare con yarn:**
+#### Using [yarn](https://yarnpkg.com/)
 
 ```bash
 yarn global add @graphprotocol/graph-cli
 ```
 
-**Installare con npm:**
+- The `graph init` command can be used to set up a new subgraph project, either from an existing contract or from an example subgraph.
 
-```bash
-npm install -g @graphprotocol/graph-cli
-```
+- This `graph init` command can also create a subgraph in Subgraph Studio by passing in `--product subgraph-studio`.
 
-Once installed, the `graph init` command can be used to set up a new subgraph project, either from an existing contract or from an example subgraph. This command can be used to create a subgraph in Subgraph Studio by passing in `graph init --product subgraph-studio`. If you already have a smart contract deployed to your preferred network, bootstrapping a new subgraph from that contract can be a good way to get started.
+- If you already have a smart contract deployed to your preferred network, you can bootstrap a new subgraph from that contract to get started.
 
-## Da un contratto esistente
+## Create a subgraph
 
-Il comando seguente crea un subgraph che indicizza tutti gli eventi di un contratto esistente. Tenta di recuperare l'ABI del contratto da Etherscan e torna a richiedere il percorso di un file locale. Se manca uno qualsiasi degli argomenti opzionali, il comando viene eseguito attraverso un modulo interattivo.
+### From an existing contract
+
+The following command creates a subgraph that indexes all events of an existing contract:
 
 ```sh
 graph init \
@@ -51,21 +53,29 @@ graph init \
   <SUBGRAPH_SLUG> [<DIRECTORY>]
 ```
 
-Il `<SUBGRAPH_SLUG>` è l'ID del subgraph in Subgraph Studio, che si trova nella pagina dei dettagli del subgraph.
+- The command tries to retrieve the contract ABI from Etherscan.
 
-## Da un subgraph di esempio
+  - The Graph CLI relies on a public RPC endpoint. While occasional failures are expected, retries typically resolve this issue. If failures persist, consider using a local ABI.
 
-La seconda modalità supportata da `graph init` è la creazione di un nuovo progetto a partire da un subgraph di esempio. Il comando seguente esegue questa operazione:
+- If any of the optional arguments are missing, it guides you through an interactive form.
+
+- The `<SUBGRAPH_SLUG>` is the ID of your subgraph in [Subgraph Studio](https://thegraph.com/studio/). It can be found on your subgraph details page.
+
+### From an example subgraph
+
+The following command initializes a new project from an example subgraph:
 
 ```sh
-graph init --studio <SUBGRAPH_SLUG>
+graph init --studio <SUBGRAPH_SLUG> --from-example=example-subgraph
 ```
 
-The [example subgraph](https://github.com/graphprotocol/example-subgraph) is based on the Gravity contract by Dani Grant that manages user avatars and emits `NewGravatar` or `UpdateGravatar` events whenever avatars are created or updated. The subgraph handles these events by writing `Gravatar` entities to the Graph Node store and ensuring these are updated according to the events. The following sections will go over the files that make up the subgraph manifest for this example.
+- The [example subgraph](https://github.com/graphprotocol/example-subgraph) is based on the Gravity contract by Dani Grant, which manages user avatars and emits `NewGravatar` or `UpdateGravatar` events whenever avatars are created or updated.
 
-## Aggiungere nuove data sources a un subgraph esistente
+- The subgraph handles these events by writing `Gravatar` entities to the Graph Node store and ensuring these are updated according to the events.
 
-Dalla `v0.31.0` il `graph-cli` supporta l'aggiunta di nuove sorgenti di dati a un subgraph esistente tramite il comando `graph add`.
+## Add new `dataSources` to an existing subgraph
+
+Since `v0.31.0`, the Graph CLI supports adding new `dataSources` to an existing subgraph through the `graph add` command:
 
 ```sh
 graph add <address> [<subgraph-manifest default: "./subgraph.yaml">]
@@ -78,22 +88,45 @@ Opzioni:
       --network-file <path>     Percorso del file di configurazione della rete (predefinito: "./networks.json")
 ```
 
-Il comando `add` recupera l'ABI da Etherscan (a meno che non sia specificato un percorso ABI con l'opzione `--abi`) e crea una nuova `dataSource` nello stesso modo in cui il comando `graph init` crea una `dataSource` `-from-contract`, aggiornando di conseguenza lo schema e le mappature.
+### Specifics
 
-L'opzione `--merge-entities` identifica il modo in cui lo sviluppatore desidera gestire i conflitti tra i nomi di `entità` e `evento`:
+The `graph add` command will fetch the ABI from Etherscan (unless an ABI path is specified with the `--abi` option) and creates a new `dataSource`, similar to how the `graph init` command creates a `dataSource` `--from-contract`, updating the schema and mappings accordingly. This allows you to index implementation contracts from their proxy contracts.
 
-- If `true`: il nuovo `dataSource` dovrebbe utilizzare gli `eventHandler` & `entità` esistenti.
-- If `false`: una nuova entità & il gestore dell'evento deve essere creato con `${dataSourceName}{EventName}`.
+- L'opzione `--merge-entities` identifica il modo in cui lo sviluppatore desidera gestire i conflitti tra i nomi di `entità` e `evento`:
 
-Il contratto `address` sarà scritto in `networks.json` per la rete rilevante.
+  - If `true`: il nuovo `dataSource` dovrebbe utilizzare gli `eventHandler` & `entità` esistenti.
 
-> **Nota:** Quando si utilizza il cli interattivo, dopo aver eseguito con successo `graph init`, verrà richiesto di aggiungere un nuovo `dataSource`.
+  - If `false`: a new `entity` & `event` handler should be created with `${dataSourceName}{EventName}`.
 
-## Manifesto di Subgraph
+- Il contratto `address` sarà scritto in `networks.json` per la rete rilevante.
 
-Il manifesto del subgraph `subgraph.yaml` definisce gli smart contract che il subgraph indicizza, a quali eventi di questi contratti prestare attenzione e come mappare i dati degli eventi alle entità che Graph Node memorizza e permette di effettuare query. Le specifiche complete dei manifesti dei subgraph sono disponibili [qui](https://github.com/graphprotocol/graph-node/blob/master/docs/subgraph-manifest.md).
+> Note: When using the interactive CLI, after successfully running `graph init`, you'll be prompted to add a new `dataSource`.
 
-Per il subgraph di esempio, `subgraph.yaml` è:
+## Components of a subgraph
+
+### Manifesto di Subgraph
+
+The subgraph manifest, `subgraph.yaml`, defines the smart contracts & network your subgraph will index, the events from these contracts to pay attention to, and how to map event data to entities that Graph Node stores and allows to query.
+
+The **subgraph definition** consists of the following files:
+
+- `subgraph.yaml`: Contains the subgraph manifest
+
+- `schema.graphql`: A GraphQL schema defining the data stored for your subgraph and how to query it via GraphQL
+
+- `mapping.ts`: [AssemblyScript Mappings](https://github.com/AssemblyScript/assemblyscript) code that translates event data into entities defined in your schema (e.g. `mapping.ts` in this guide)
+
+A single subgraph can:
+
+- Index data from multiple smart contracts (but not multiple networks).
+
+- Index data from IPFS files using File Data Sources.
+
+- Add an entry for each contract that requires indexing to the `dataSources` array.
+
+The full specification for subgraph manifests can be found [here](https://github.com/graphprotocol/graph-node/blob/master/docs/subgraph-manifest.md).
+
+For the example subgraph listed above, `subgraph.yaml` is:
 
 ```yaml
 specVersion: 0.0.4
@@ -180,9 +213,9 @@ Un singolo subgraph può indicizzare i dati di più smart contract. Aggiungere a
 
 I trigger per una data source all'interno di un blocco sono ordinati secondo il seguente processo:
 
-1. I trigger di eventi e chiamate sono ordinati prima per indice di transazione all'interno del blocco.
-2. I trigger di eventi e chiamate all'interno della stessa transazione sono ordinati secondo una convenzione: prima i trigger di eventi e poi quelli di chiamate, rispettando l'ordine in cui sono definiti nel manifesto.
-3. I trigger di blocco vengono eseguiti dopo i trigger di evento e di chiamata, nell'ordine in cui sono definiti nel manifesto.
+1.  I trigger di eventi e chiamate sono ordinati prima per indice di transazione all'interno del blocco.
+2.  I trigger di eventi e chiamate all'interno della stessa transazione sono ordinati secondo una convenzione: prima i trigger di eventi e poi quelli di chiamate, rispettando l'ordine in cui sono definiti nel manifesto.
+3.  I trigger di blocco vengono eseguiti dopo i trigger di evento e di chiamata, nell'ordine in cui sono definiti nel manifesto.
 
 Queste regole di ordinazione sono soggette a modifiche.
 
@@ -305,9 +338,9 @@ Imagine you have a subgraph that needs to make three Ethereum calls to fetch dat
 
 Traditionally, these calls might be made sequentially:
 
-1. Call 1 (Transactions): Takes 3 seconds
-2. Call 2 (Balance): Takes 2 seconds
-3. Call 3 (Token Holdings): Takes 4 seconds
+1.  Call 1 (Transactions): Takes 3 seconds
+2.  Call 2 (Balance): Takes 2 seconds
+3.  Call 3 (Token Holdings): Takes 4 seconds
 
 Total time taken = 3 + 2 + 4 = 9 seconds
 
@@ -315,9 +348,9 @@ Total time taken = 3 + 2 + 4 = 9 seconds
 
 With this feature, you can declare these calls to be executed in parallel:
 
-1. Call 1 (Transactions): Takes 3 seconds
-2. Call 2 (Balance): Takes 2 seconds
-3. Call 3 (Token Holdings): Takes 4 seconds
+1.  Call 1 (Transactions): Takes 3 seconds
+2.  Call 2 (Balance): Takes 2 seconds
+3.  Call 3 (Token Holdings): Takes 4 seconds
 
 Since these calls are executed in parallel, the total time taken is equal to the time taken by the longest call.
 
@@ -325,9 +358,9 @@ Total time taken = max (3, 2, 4) = 4 seconds
 
 ### How it Works
 
-1. Declarative Definition: In the subgraph manifest, you declare the Ethereum calls in a way that indicates they can be executed in parallel.
-2. Parallel Execution Engine: The Graph Node's execution engine recognizes these declarations and runs the calls simultaneously.
-3. Result Aggregation: Once all calls are complete, the results are aggregated and used by the subgraph for further processing.
+1.  Declarative Definition: In the subgraph manifest, you declare the Ethereum calls in a way that indicates they can be executed in parallel.
+2.  Parallel Execution Engine: The Graph Node's execution engine recognizes these declarations and runs the calls simultaneously.
+3.  Result Aggregation: Once all calls are complete, the results are aggregated and used by the subgraph for further processing.
 
 ### Example Configuration in Subgraph Manifest
 
@@ -347,7 +380,7 @@ calls:
 Details for the example above:
 
 - `global0X128` is the declared `eth_call`.
-- The text before colon(`global0X128`) is the label for this `eth_call` which is used when logging errors.
+- The text (`global0X128`) is the label for this `eth_call` which is used when logging errors.
 - The text (`Pool[event.address].feeGrowthGlobal0X128()`) is the actual `eth_call` that will be executed, which is in the form of `Contract[address].function(arguments)`
 - The `address` and `arguments` can be replaced with variables that will be available when the handler is executed.
 
@@ -593,7 +626,7 @@ Questo modo più elaborato di memorizzare le relazioni molti-a-molti si traduce 
 
 #### Aggiungere commenti allo schema
 
-As per GraphQL spec, comments can be added above schema entity attributes using the hash symble `#`. This is illustrated in the example below:
+As per GraphQL spec, comments can be added above schema entity attributes using the hash symbol `#`. This is illustrated in the example below:
 
 ```graphql
 type MyFirstEntity @entity {
@@ -945,9 +978,9 @@ The `indexerHints` setting in a subgraph's manifest provides directives for inde
 
 `indexerHints.prune`: Defines the retention of historical block data for a subgraph. Options include:
 
-1. `"never"`: No pruning of historical data; retains the entire history.
-2. `"auto"`: Retains the minimum necessary history as set by the indexer, optimizing query performance.
-3. A specific number: Sets a custom limit on the number of historical blocks to retain.
+1.  `"never"`: No pruning of historical data; retains the entire history.
+2.  `"auto"`: Retains the minimum necessary history as set by the indexer, optimizing query performance.
+3.  A specific number: Sets a custom limit on the number of historical blocks to retain.
 
 ```
  indexerHints:
