@@ -3,19 +3,24 @@ export default {
   '---1': {
     type: 'separator',
   },
+  '###1': {
+    type: 'heading',
+    title: 'Overview',
+  },
   about: '',
   network: 'The Graph Network',
-  sunrise: 'Post-Sunrise Upgrade FAQ',
-  billing: '',
-  glossary: '',
   tokenomics: 'Tokenomics',
-  arbitrum: 'Scaling with Arbitrum',
+  contracts: '',
+  glossary: '',
+  explorer: '',
+  firehose: '',
+  substreams: '',
   '---2': {
     type: 'separator',
   },
-  '###1': {
+  '###2': {
     type: 'heading',
-    title: 'Subgraphs',
+    title: 'Subgraph Developers',
   },
   'quick-start': '',
   developing: 'Developing',
@@ -28,24 +33,24 @@ export default {
   '---3': {
     type: 'separator',
   },
-  '###2': {
-    type: 'heading',
-    title: 'Substreams',
-  },
-  substreams: '',
-  '---4': {
-    type: 'separator',
-  },
   '###3': {
     type: 'heading',
-    title: 'Indexing',
+    title: 'Indexers',
   },
   'operating-graph-node': '',
   tap: '',
   'chain-integration-overview': '',
   'supported-network-requirements': '',
   'new-chain-integration': '',
-  firehose: '',
   graphcast: '',
+  '---4': {
+    type: 'separator',
+  },
+  '###4': {
+    type: 'heading',
+    title: 'Archived',
+  },
+  sunrise: 'Post-Sunrise Upgrade FAQ',
   'mips-faqs': '',
+  arbitrum: 'Scaling with Arbitrum',
 }
