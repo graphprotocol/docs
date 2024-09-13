@@ -2,7 +2,7 @@
 title: Example Susbtreams Trigger
 ---
 
-Here you’ll walk through a Solana based example for setting up your Substreams-powered subgraph project. If you haven’t already, first check out the [Getting Started Guide](https://github.com/streamingfast/substreams/blob/enol/how-to-guides/docs/new/how-to-guides/intro-how-to-guides.md) for more information on how to initialize your project. 
+Here you’ll walk through a Solana based example for setting up your Substreams-powered subgraph project. If you haven’t already, first check out the [Getting Started Guide](https://github.com/streamingfast/substreams/blob/enol/how-to-guides/docs/new/how-to-guides/intro-how-to-guides.md) for more information on how to initialize your project.
 
 Consider the following example of a Substreams manifest (`substreams.yaml`), a configuration file similar to the `subgraph.yaml`, using the SPL token program Id:
 
@@ -12,17 +12,17 @@ package:
   name: my_project_sol
   version: v0.1.0
 
-imports: #Pass your spkg of interest 
+imports: #Pass your spkg of interest
   solana: https://github.com/streamingfast/substreams-solana-spl-token/raw/master/tokens/solana-spl-token-v0.1.0.spkg
 
 modules:
-   
+
  - name: map_spl_transfers
    use: solana:map_block #Select corresponding modules available within your spkg
    initialBlock: 260000082
-   
+
  - name: map_transactions_by_programid
-   use: solana:solana:transactions_by_programid_without_votes 
+   use: solana:solana:transactions_by_programid_without_votes
 
 network: solana-mainnet-beta
 
@@ -30,8 +30,6 @@ params: #Modify the param fields to meet your needs
 			  #For program_id: TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA
   map_spl_transfers: token_contract:orcaEKTdK7LKz57vaAYr9QeNsVEPfiu6QeMU1kektZE
 ```
-
- 
 
 Now see the corresponding subgraph manifest **(`subgraph.yaml`)** using a Substreams package as the data source:
 
@@ -57,45 +55,44 @@ dataSources:
       handler: handleTriggers
 ```
 
-Once your manifests are created, define in the `schema.graphql` the data fields you’d like saved in your subgraph entities: 
+Once your manifests are created, define in the `schema.graphql` the data fields you’d like saved in your subgraph entities:
 
 ```graphql
 type MyTransfer @entity {
-    id: ID!
-    amount: String!
-    source: String!
-    designation: String!
-    signers: [String!]!
+  id: ID!
+  amount: String!
+  source: String!
+  designation: String!
+  signers: [String!]!
 }
 ```
 
 The Protobuf object is generated in AssemblyScript by running `npm run protogen` after running `substreams codegen subgraph` in the devcontainer, so you can import it in the subgraph code. Then transform your decoded Substreams data within the `src/mappings.ts` file, just like in a standard subgraph:
 
 ```tsx
-import { Protobuf } from "as-proto/assembly";
-import { Events as protoEvents } from "./pb/sf/solana/spl/token/v1/Events";
-import { MyTransfer } from "../generated/schema";
+import { Protobuf } from 'as-proto/assembly'
+import { Events as protoEvents } from './pb/sf/solana/spl/token/v1/Events'
+import { MyTransfer } from '../generated/schema'
 
 export function handleTriggers(bytes: Uint8Array): void {
-  const input: protoEvents = Protobuf.decode<protoEvents>(bytes, protoEvents.decode);
-  
-  for (let i=0; i<input.data.length; i++) {
-		const event = input.data[i];
-    
+  const input: protoEvents = Protobuf.decode<protoEvents>(bytes, protoEvents.decode)
+
+  for (let i = 0; i < input.data.length; i++) {
+    const event = input.data[i]
+
     if (event.transfer != null) {
-      let entity_id: string = `${event.txnId}-${i}`;
-      const entity = new MyTransfer(entity_id);
-      entity.amount = (event.transfer!.instruction!.amount).toString(); 
-      entity.source = event.transfer!.accounts!.source;
-      entity.designation = event.transfer!.accounts!.destination; 
-      
-      if (event.transfer!.accounts!.signer!.single != null){
-        entity.signers = [event.transfer!.accounts!.signer!.single.signer]; 
-      } 
-      else if (event.transfer!.accounts!.signer!.multisig != null) {
-        entity.signers = event.transfer!.accounts!.signer!.multisig!.signers; 
+      let entity_id: string = `${event.txnId}-${i}`
+      const entity = new MyTransfer(entity_id)
+      entity.amount = event.transfer!.instruction!.amount.toString()
+      entity.source = event.transfer!.accounts!.source
+      entity.designation = event.transfer!.accounts!.destination
+
+      if (event.transfer!.accounts!.signer!.single != null) {
+        entity.signers = [event.transfer!.accounts!.signer!.single.signer]
+      } else if (event.transfer!.accounts!.signer!.multisig != null) {
+        entity.signers = event.transfer!.accounts!.signer!.multisig!.signers
       }
-      entity.save();
+      entity.save()
     }
   }
 }
@@ -107,5 +104,4 @@ Here's what you’re seeing in the `mappings.ts`:
 2. Looping over the transactions
 3. Create a new subgraph entity for every transaction
 
-> Note: It's beneficial to have more of your logic in Substreams, as it allows for a parallelized model, whereas triggers are  linearly consumed in `graph-node`.
->
+> Note: It's beneficial to have more of your logic in Substreams, as it allows for a parallelized model, whereas triggers are linearly consumed in `graph-node`.
