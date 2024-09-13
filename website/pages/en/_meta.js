@@ -33,6 +33,7 @@ export default {
     title: 'Substreams',
   },
   substreams: '',
+  sps: 'Substreams-powered Subgraphs',
   '---4': {
     type: 'separator',
   },
