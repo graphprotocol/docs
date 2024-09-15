@@ -1,5 +1,5 @@
 export default {
-  'sps-intro': '',
+  'sps-intro': 'Introduction',
   triggers: '',
   'triggers-example': '',
 }
