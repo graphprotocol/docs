@@ -12,11 +12,11 @@ Before starting, make sure to:
 ## Step 1: Initialize Your Project
 
 1. Open your Dev Container and run the following command to initialize your project:
-    
-    ```bash
-    substreams init
-    ```
-    
+
+   ```bash
+   substreams init
+   ```
+
 2. Select the "minimal" project option.
 3. Replace the contents of the generated `substreams.yaml` file with the following configuration, which filters transactions for the Orca account on the SPL token program ID:
 
@@ -26,22 +26,21 @@ package:
   name: my_project_sol
   version: v0.1.0
 
-imports: # Pass your spkg of interest 
+imports: # Pass your spkg of interest
   solana: https://github.com/streamingfast/substreams-solana-spl-token/raw/master/tokens/solana-spl-token-v0.1.0.spkg
 
 modules:
-   
- - name: map_spl_transfers
-   use: solana:map_block # Select corresponding modules available within your spkg
-   initialBlock: 260000082
-   
- - name: map_transactions_by_programid
-   use: solana:solana:transactions_by_programid_without_votes 
+  - name: map_spl_transfers
+    use: solana:map_block # Select corresponding modules available within your spkg
+    initialBlock: 260000082
+
+  - name: map_transactions_by_programid
+    use: solana:solana:transactions_by_programid_without_votes
 
 network: solana-mainnet-beta
 
 params: # Modify the param fields to meet your needs
-# For program_id: TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA
+  # For program_id: TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA
   map_spl_transfers: token_contract:orcaEKTdK7LKz57vaAYr9QeNsVEPfiu6QeMU1kektZE
 ```
 
@@ -56,8 +55,8 @@ substreams codegen subgraph
 You will generate a`subgraph.yaml` manifest which imports the Substreams package as a data source:
 
 ```yaml
-...
 
+---
 dataSources:
   - kind: substreams
     name: my_project_sol
@@ -79,11 +78,11 @@ Define the fields you want to save in your subgraph entities by updating the `sc
 
 ```graphql
 type MyTransfer @entity {
-    id: ID!
-    amount: String!
-    source: String!
-    designation: String!
-    signers: [String!]!
+  id: ID!
+  amount: String!
+  source: String!
+  designation: String!
+  signers: [String!]!
 }
 ```
 
@@ -104,30 +103,29 @@ This command converts the Protobuf definitions into AssemblyScript, allowing you
 With the Protobuf objects generated, you can now handle the decoded Substreams data in your `mappings.ts` file found in the `./src` directory. The example below demonstrates how to extract to subgraph entities the non-derived transfers associated to the Orca account id:
 
 ```ts
-import { Protobuf } from "as-proto/assembly";
-import { Events as protoEvents } from "./pb/sf/solana/spl/token/v1/Events";
-import { MyTransfer } from "../generated/schema";
+import { Protobuf } from 'as-proto/assembly'
+import { Events as protoEvents } from './pb/sf/solana/spl/token/v1/Events'
+import { MyTransfer } from '../generated/schema'
 
 export function handleTriggers(bytes: Uint8Array): void {
-  const input: protoEvents = Protobuf.decode<protoEvents>(bytes, protoEvents.decode);
-  
-  for (let i=0; i<input.data.length; i++) {
-		const event = input.data[i];
-    
+  const input: protoEvents = Protobuf.decode<protoEvents>(bytes, protoEvents.decode)
+
+  for (let i = 0; i < input.data.length; i++) {
+    const event = input.data[i]
+
     if (event.transfer != null) {
-      let entity_id: string = `${event.txnId}-${i}`;
-      const entity = new MyTransfer(entity_id);
-      entity.amount = (event.transfer!.instruction!.amount).toString(); 
-      entity.source = event.transfer!.accounts!.source;
-      entity.designation = event.transfer!.accounts!.destination; 
-      
-      if (event.transfer!.accounts!.signer!.single != null){
-        entity.signers = [event.transfer!.accounts!.signer!.single.signer]; 
-      } 
-      else if (event.transfer!.accounts!.signer!.multisig != null) {
-        entity.signers = event.transfer!.accounts!.signer!.multisig!.signers; 
+      let entity_id: string = `${event.txnId}-${i}`
+      const entity = new MyTransfer(entity_id)
+      entity.amount = event.transfer!.instruction!.amount.toString()
+      entity.source = event.transfer!.accounts!.source
+      entity.designation = event.transfer!.accounts!.destination
+
+      if (event.transfer!.accounts!.signer!.single != null) {
+        entity.signers = [event.transfer!.accounts!.signer!.single.signer]
+      } else if (event.transfer!.accounts!.signer!.multisig != null) {
+        entity.signers = event.transfer!.accounts!.signer!.multisig!.signers
       }
-      entity.save();
+      entity.save()
     }
   }
 }
