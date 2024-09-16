@@ -47,5 +47,4 @@ export default {
   'new-chain-integration': '',
   firehose: '',
   graphcast: '',
-  'mips-faqs': '',
 }
