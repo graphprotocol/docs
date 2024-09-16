@@ -41,7 +41,6 @@ export default {
     title: 'Indexing',
   },
   'operating-graph-node': '',
-  tap: '',
   'chain-integration-overview': '',
   'supported-network-requirements': '',
   'new-chain-integration': '',
