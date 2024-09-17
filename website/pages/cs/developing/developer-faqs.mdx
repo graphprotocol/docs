@@ -2,35 +2,69 @@
 title: FAQs pro vývojáře
 ---
 
-## 1. Co je to podgraf?
+This page summarizes some of the most common questions for developers building on The Graph.
 
-Podgraf je vlastní API postavené na datech blockchainu. Podgrafy jsou dotazovány pomocí dotazovacího jazyka GraphQL a jsou nasazeny do uzlu Graf pomocí Graf CLI. Po nasazení a zveřejnění v decentralizované síti Graf zpracovávají indexery podgrafy a zpřístupňují je k dotazování konzumentům podgrafů.
+## Subgraph Related
 
-## 2. Mohu svůj podgraf smazat?
+### 1. Co je to podgraf?
 
-Jednou vytvořené podgrafy není možné odstranit.
+A subgraph is a custom API built on blockchain data. Subgraphs are queried using the GraphQL query language and are deployed to a Graph Node using The Graph CLI. Once deployed and published to The Graph's decentralized network, Indexers process subgraphs and make them available for subgraph consumers to query.
 
-## 3. Mohu změnit název podgrafu?
+### 2. What is the first step to create a subgraph?
 
-Ne. Jakmile je podgraf vytvořen, nelze jeho název změnit. Před vytvořením podgrafu si to důkladně promyslete, aby byl snadno vyhledatelný a identifikovatelný ostatními dapps.
+To successfully create a subgraph, you will need to install The Graph CLI. Review the [Quick Start](/quick-start/) to get started. For detailed information, see [Creating a Subgraph](/developing/creating-a-subgraph/).
 
-## 4. Mohu změnit účet GitHub přidružený k mému podgrafu?
+### 3. Can I still create a subgraph if my smart contracts don't have events?
 
-Ne. Jakmile je podgraf vytvořen, nelze přidružený účet GitHub změnit. Než vytvoříte podgraf, důkladně si to promyslete.
+It is highly recommended that you structure your smart contracts to have events associated with data you are interested in querying. Event handlers in the subgraph are triggered by contract events and are the fastest way to retrieve useful data.
 
-## 5. Mohu vytvořit podgraf i v případě, že moje chytré smlouvy nemají události?
+If the contracts you work with do not contain events, your subgraph can use call and block handlers to trigger indexing. However, this is not recommended, as performance will be significantly slower.
 
-Důrazně doporučujeme, abyste své chytré kontrakty strukturovali tak, aby měly události spojené s daty, na která se chcete dotazovat. Obsluhy událostí v podgrafu jsou spouštěny událostmi smlouva a jsou zdaleka nejrychlejším způsobem, jak získat užitečná data.
+### 4. Mohu změnit účet GitHub přidružený k mému podgrafu?
 
-Pokud smlouva, se kterými pracujete, neobsahují události, můžete ke spuštění indexování použít obsluhy volání a bloků. To se však nedoporučuje, protože výkon bude výrazně nižší.
+No. Once a subgraph is created, the associated GitHub account cannot be changed. Please make sure to carefully consider this before creating your subgraph.
 
-## 6. How are templates different from data sources?
+### 5. How do I update a subgraph on mainnet?
 
-Šablony umožňují vytvářet zdroje dat za běhu, zatímco se podgraf indexuje. Může se stát, že vaše smlouva bude vytvářet nové smlouvy, jak s ní budou lidé interagovat, a protože znáte tvar těchto smluv (ABI, události atd.) předem, můžete definovat, jak je chcete indexovat v šabloně, a když se vytvoří, váš podgraf vytvoří dynamický zdroj dat dodáním adresy smlouvy.
+You can deploy a new version of your subgraph to Subgraph Studio using the CLI. This action maintains your subgraph private, but once you’re happy with it, you can publish to Graph Explorer. This will create a new version of your subgraph that Curators can start signaling on.
+
+### 6. Is it possible to duplicate a subgraph to another account or endpoint without redeploying?
+
+Podgraf musíte znovu nasadit, ale pokud se ID podgrafu (hash IPFS) nezmění, nebude se muset synchronizovat od začátku.
+
+### 7. How do I call a contract function or access a public state variable from my subgraph mappings?
+
+Take a look at `Access to smart contract` state inside the section [AssemblyScript API](/developing/graph-ts/api/#access-to-smart-contract-state).
+
+### 8. Can I import `ethers.js` or other JS libraries into my subgraph mappings?
+
+Not currently, as mappings are written in AssemblyScript.
+
+One possible alternative solution to this is to store raw data in entities and perform logic that requires JS libraries on the client.
+
+### 9. When listening to multiple contracts, is it possible to select the contract order to listen to events?
+
+V rámci podgrafu se události zpracovávají vždy v pořadí, v jakém se objevují v blocích, bez ohledu na to, zda se jedná o více smluv.
+
+### 10. How are templates different from data sources?
+
+Templates allow you to create data sources quickly, while your subgraph is indexing. Your contract might spawn new contracts as people interact with it. Since you know the shape of those contracts (ABI, events, etc.) upfront, you can define how you want to index them in a template. When they are spawned, your subgraph will create a dynamic data source by supplying the contract address.
 
 Podívejte se do části "Instancování šablony zdroje dat" na: [Šablony datových zdrojů](/developing/creating-a-subgraph#data-source-templates).
 
-## 7. How do I make sure I'm using the latest version of graph-node for my local deployments?
+### 11. Is it possible to set up a subgraph using `graph init` from `graph-cli` with two contracts? Or should I manually add another dataSource in `subgraph.yaml` after running `graph init`?
+
+Yes. On `graph init` command itself you can add multiple dataSources by entering contracts one after the other.
+
+You can also use `graph add` command to add a new dataSource.
+
+### 12. In what order are the event, block, and call handlers triggered for a data source?
+
+Obsluhy událostí a volání jsou nejprve seřazeny podle indexu transakce v rámci bloku. Obsluhy událostí a volání v rámci téže transakce jsou seřazeny podle konvence: nejprve obsluhy událostí, pak obsluhy volání, přičemž každý typ dodržuje pořadí, v jakém jsou definovány v manifestu. Obsluhy bloků se spouštějí po obsluhách událostí a volání v pořadí, v jakém jsou definovány v manifestu. I tato pravidla řazení se mohou měnit.
+
+Při vytváření nových dynamických zdrojů dat se obslužné rutiny definované pro dynamické zdroje dat začnou zpracovávat až po zpracování všech existujících obslužných rutin zdrojů dat a budou se opakovat ve stejném pořadí, kdykoli budou spuštěny.
+
+### 13. How do I make sure I'm using the latest version of graph-node for my local deployments?
 
 Můžete spustit následující příkaz:
 
@@ -38,32 +72,23 @@ Můžete spustit následující příkaz:
 docker pull graphprotocol/graph-node:latest
 ```
 
-**POZNÁMKA:** docker / docker-compose vždy použije tu verzi graf uzlu, která byla stažena při prvním spuštění, takže je důležité to udělat, abyste se ujistili, že máte nejnovější verzi graf uzlu.
+> Note: docker / docker-compose will always use whatever graph-node version was pulled the first time you ran it, so make sure you're up to date with the latest version of graph-node.
 
-## 8. How do I call a contract function or access a public state variable from my subgraph mappings?
-
-Take a look at `Access to smart contract` state inside the section [AssemblyScript API](/developing/graph-ts/api/#access-to-smart-contract-state).
-
-## 9. Is it possible to set up a subgraph using `graph init` from `graph-cli` with two contracts? Or should I manually add another datasource in `subgraph.yaml` after running `graph init`?
-
-Ano. V samotném příkazu `graph init` můžete přidat více datových zdrojů zadáním smluv za sebou. Pro přidání nového datového zdroje můžete také použít příkaz `graph add`.
-
-## 10. I want to contribute or add a GitHub issue. Where can I find the open source repositories?
-
-- [graph-node](https://github.com/graphprotocol/graph-node)
-- [graph-tooling](https://github.com/graphprotocol/graph-tooling)
-- [graph-docs](https://github.com/graphprotocol/docs)
-- [graph-client](https://github.com/graphprotocol/graph-client)
-
-## 11. What is the recommended way to build "autogenerated" ids for an entity when handling events?
+### 14. What is the recommended way to build "autogenerated" ids for an entity when handling events?
 
 Pokud je během události vytvořena pouze jedna entita a pokud není k dispozici nic lepšího, pak by hash transakce + index protokolu byly jedinečné. Můžete je obfuskovat tak, že je převedete na bajty a pak je proženete přes `crypto.keccak256`, ale tím se jejich jedinečnost nezvýší.
 
-## 12. When listening to multiple contracts, is it possible to select the contract order to listen to events?
+### 15. Can I delete my subgraph?
 
-V rámci podgrafu se události zpracovávají vždy v pořadí, v jakém se objevují v blocích, bez ohledu na to, zda se jedná o více smluv.
+It is not possible to delete subgraphs once they are created. However, you can [transfer and deprecate your subgraph](/managing/transfer-and-deprecate-a-subgraph/).
 
-## 13. Is it possible to differentiate between networks (mainnet, Sepolia, local) from within event handlers?
+## Network Related
+
+### 16. What networks are supported by The Graph?
+
+Seznam podporovaných sítí najdete [zde](/developing/supported-networks).
+
+### 17. Is it possible to differentiate between networks (mainnet, Sepolia, local) within event handlers?
 
 Ano, můžete to provést importováním `graph-ts` podle níže uvedeného příkladu:
 
@@ -74,23 +99,21 @@ dataSource.network()
 dataSource.address()
 ```
 
-## 14. Do you support block and call handlers on Sepolia?
+### 18. Do you support block and call handlers on Sepolia?
 
 Yes. Sepolia supports block handlers, call handlers and event handlers. It should be noted that event handlers are far more performant than the other two handlers, and they are supported on every EVM-compatible network.
 
-## 15. Can I import ethers.js or other JS libraries into my subgraph mappings?
+## Indexing & Querying Related
 
-V současné době ne, protože mapování jsou zapsána v AssemblyScript. Jedním z možných alternativních řešení je ukládat surová data do entit a logiku, která vyžaduje knihovny JS, provádět na klientovi.
+### 19. Is it possible to specify what block to start indexing on?
 
-## 16. Is it possible to specify what block to start indexing on?
+Yes. `dataSources.source.startBlock` in the `subgraph.yaml` file specifies the number of the block that the dataSource starts indexing from. In most cases, we suggest using the block where the contract was created: [Start blocks](/developing/creating-a-subgraph#start-blocks)
 
-Yes. `dataSources.source.startBlock` in the `subgraph.yaml` file specifies the number of the block that the data source starts indexing from. In most cases, we suggest using the block in which the contract was created: [Start blocks](/developing/creating-a-subgraph#start-blocks)
+### 20. What are some tips to increase the performance of indexing? My subgraph is taking a very long time to sync
 
-## 17. Are there some tips to increase the performance of indexing? My subgraph is taking a very long time to sync
+Yes, you should take a look at the optional start block feature to start indexing from the block where the contract was deployed: [Start blocks](/developing/creating-a-subgraph#start-blocks)
 
-Ano, měli byste se podívat na volitelnou funkci start bloku, která umožňuje zahájit indexování od bloku, ve kterém byla smlouva nasazena: [Start bloky](/developing/creating-a-subgraph#start-blocks)
-
-## 18. Is there a way to query the subgraph directly to determine the latest block number it has indexed?
+### 21. Is there a way to query the subgraph directly to determine the latest block number it has indexed?
 
 Ano! Vyzkoušejte následující příkaz, přičemž "organization/subgraphName" nahraďte názvem organizace, pod kterou je publikován, a názvem vašeho podgrafu:
 
@@ -98,36 +121,27 @@ Ano! Vyzkoušejte následující příkaz, přičemž "organization/subgraphName
 curl -X POST -d '{ "query": "{indexingStatusForCurrentVersion(subgraphName: \"organization/subgraphName\") { chains { latestBlock { hash number }}}}"}' https://api.thegraph.com/index-node/graphql
 ```
 
-## 19. What networks are supported by The Graph?
+### 22. Is there a limit to how many objects The Graph can return per query?
 
-Seznam podporovaných sítí najdete [zde](/developing/supported-networks).
-
-## 20. Is it possible to duplicate a subgraph to another account or endpoint without redeploying?
-
-Podgraf musíte znovu nasadit, ale pokud se ID podgrafu (hash IPFS) nezmění, nebude se muset synchronizovat od začátku.
-
-## 21. Is this possible to use Apollo Federation on top of graph-node?
-
-Federace zatím není podporována, i když ji chceme v budoucnu podporovat. V současné době můžete použít sešívání schémat, a to buď na klientovi, nebo prostřednictvím služby proxy.
-
-## 22. Is there a limit to how many objects The Graph can return per query?
-
-Ve výchozím nastavení jsou odpovědi na dotazy omezeny na 100 položek na kolekci. Pokud chcete získat více, můžete jít až na 1000 položek na kolekci a nad tuto hranici můžete stránkovat pomocí:
+By default, query responses are limited to 100 items per collection. If you want to receive more, you can go up to 1000 items per collection and beyond that, you can paginate with:
 
 ```graphql
 someCollection(first: 1000, skip: <number>) { ... }
 ```
 
-## 23. If my dapp frontend uses The Graph for querying, do I need to write my query key into the frontend directly? What if we pay query fees for users – will malicious users cause our query fees to be very high?
+### 23. If my dapp frontend uses The Graph for querying, do I need to write my query key into the frontend directly? What if we pay query fees for users – will malicious users cause our query fees to be very high?
 
-V současné době je doporučeným přístupem pro dapp přidání klíče do frontendu a jeho zpřístupnění koncovým uživatelům. Přitom můžete tento klíč omezit na název hostitele, například _yourdapp.io_ a podgraf. Bránu v současné době provozuje Edge & Node. Součástí odpovědnosti brány je monitorování zneužití a blokování provozu od škodlivých klientů.
+Currently, the recommended approach for a dapp is to add the key to the frontend and expose it to end users. That said, you can limit that key to a hostname, like _yourdapp.io_ and subgraph. The gateway is currently being run by Edge & Node. Part of the responsibility of a gateway is to monitor for abusive behavior and block traffic from malicious clients.
 
-## 24. How do I update a subgraph on mainnet?
+## Miscellaneous
 
-If you’re a subgraph developer, you can deploy a new version of your subgraph to Subgraph Studio using the CLI. It’ll be private at that point, but if you’re happy with it, you can publish to the decentralized Graph Explorer. This will create a new version of your subgraph that Curators can start signaling on.
+### 24. Is it possible to use Apollo Federation on top of graph-node?
 
-## 25. In what order are the event, block, and call handlers triggered for a data source?
+Federation is not supported yet. At the moment, you can use schema stitching, either on the client or via a proxy service.
 
-Obsluhy událostí a volání jsou nejprve seřazeny podle indexu transakce v rámci bloku. Obsluhy událostí a volání v rámci téže transakce jsou seřazeny podle konvence: nejprve obsluhy událostí, pak obsluhy volání, přičemž každý typ dodržuje pořadí, v jakém jsou definovány v manifestu. Obsluhy bloků se spouštějí po obsluhách událostí a volání v pořadí, v jakém jsou definovány v manifestu. I tato pravidla řazení se mohou měnit.
+### 25. I want to contribute or add a GitHub issue. Where can I find the open source repositories?
 
-Při vytváření nových dynamických zdrojů dat se obslužné rutiny definované pro dynamické zdroje dat začnou zpracovávat až po zpracování všech existujících obslužných rutin zdrojů dat a budou se opakovat ve stejném pořadí, kdykoli budou spuštěny.
+- [graph-node](https://github.com/graphprotocol/graph-node)
+- [graph-tooling](https://github.com/graphprotocol/graph-tooling)
+- [graph-docs](https://github.com/graphprotocol/docs)
+- [graph-client](https://github.com/graphprotocol/graph-client)
