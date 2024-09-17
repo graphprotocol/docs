@@ -1,0 +1,241 @@
+---
+title: Deploying a Subgraph to Multiple Networks
+---
+
+This page explains how to deploy a subgraph to multiple networks. To deploy a subgraph you need to first install the [Graph CLI](https://github.com/graphprotocol/graph-tooling/tree/main/packages/cli). If you have not created a subgraph already, see [Creating a subgraph](/developing/creating-a-subgraph).
+
+## सबग्राफ को कई नेटवर्क पर तैनात करना
+
+कुछ मामलों में, आप एक ही सबग्राफ को इसके सभी कोड को डुप्लिकेट किए बिना कई नेटवर्क पर तैनात करना चाहेंगे। इसके साथ आने वाली मुख्य चुनौती यह है कि इन नेटवर्कों पर अनुबंध के पते अलग-अलग हैं।
+
+### Using `graph-cli`
+
+Both `graph build` (since `v0.29.0`) and `graph deploy` (since `v0.32.0`) accept two new options:
+
+```sh
+Options:
+
+      ...
+      --network <name>          Network configuration to use from the networks config file
+      --network-file <path>     Networks config file path (default: "./networks.json")
+```
+
+You can use the `--network` option to specify a network configuration from a `json` standard file (defaults to `networks.json`) to easily update your subgraph during development.
+
+> Note: The `init` command will now auto-generate a `networks.json` based on the provided information. You will then be able to update existing or add additional networks.
+
+If you don't have a `networks.json` file, you'll need to manually create one with the following structure:
+
+```json
+{
+    "network1": { // the network name
+        "dataSource1": { // the dataSource name
+            "address": "0xabc...", // the contract address (optional)
+            "startBlock": 123456 // the startBlock (optional)
+        },
+        "dataSource2": {
+            "address": "0x123...",
+            "startBlock": 123444
+        }
+    },
+    "network2": {
+        "dataSource1": {
+            "address": "0x987...",
+            "startBlock": 123
+        },
+        "dataSource2": {
+            "address": "0xxyz..",
+            "startBlock": 456
+        }
+    },
+    ...
+}
+```
+
+> Note: You don't have to specify any of the `templates` (if you have any) in the config file, only the `dataSources`. If there are any `templates` declared in the `subgraph.yaml` file, their network will be automatically updated to the one specified with the `--network` option.
+
+Now, let's assume you want to be able to deploy your subgraph to the `mainnet` and `sepolia` networks, and this is your `subgraph.yaml`:
+
+```yaml
+# ...
+dataSources:
+  - kind: ethereum/contract
+    name: Gravity
+    network: mainnet
+    source:
+      address: '0x123...'
+      abi: Gravity
+    mapping:
+      kind: ethereum/events
+```
+
+आपकी नेटवर्क कॉन्फ़िग फ़ाइल इस तरह दिखनी चाहिए:
+
+```json
+{
+  "mainnet": {
+    "Gravity": {
+      "address": "0x123..."
+    }
+  },
+  "sepolia": {
+    "Gravity": {
+      "address": "0xabc..."
+    }
+  }
+}
+```
+
+अब हम निम्न में से कोई एक कमांड चला सकते हैं:
+
+```sh
+# Using default networks.json file
+yarn build --network sepolia
+
+# Using custom named file
+yarn build --network sepolia --network-file path/to/config
+```
+
+The `build` command will update your `subgraph.yaml` with the `sepolia` configuration and then re-compile the subgraph. Your `subgraph.yaml` file now should look like this:
+
+```yaml
+# ...
+dataSources:
+  - kind: ethereum/contract
+    name: Gravity
+    network: sepolia
+    source:
+      address: '0xabc...'
+      abi: Gravity
+    mapping:
+      kind: ethereum/events
+```
+
+Now you are ready to `yarn deploy`.
+
+> Note: As mentioned earlier, since `graph-cli 0.32.0` you can directly run `yarn deploy` with the `--network` option:
+
+```sh
+# Using default networks.json file
+yarn deploy --network sepolia
+
+# Using custom named file
+yarn deploy --network sepolia --network-file path/to/config
+```
+
+### Subgraph.yaml टेम्पलेट का उपयोग करना
+
+One way to parameterize aspects like contract addresses using older `graph-cli` versions is to generate parts of it with a templating system like [Mustache](https://mustache.github.io/) or [Handlebars](https://handlebarsjs.com/).
+
+To illustrate this approach, let's assume a subgraph should be deployed to mainnet and Sepolia using different contract addresses. You could then define two config files providing the addresses for each network:
+
+```json
+{
+  "network": "mainnet",
+  "address": "0x123..."
+}
+```
+
+और
+
+```json
+{
+  "network": "sepolia",
+  "address": "0xabc..."
+}
+```
+
+Along with that, you would substitute the network name and addresses in the manifest with variable placeholders `{{network}}` and `{{address}}` and rename the manifest to e.g. `subgraph.template.yaml`:
+
+```yaml
+# ...
+dataSources:
+  - kind: ethereum/contract
+    name: Gravity
+    network: mainnet
+    network: {{network}}
+    source:
+      address: '0x2E645469f354BB4F5c8a05B3b30A929361cf77eC'
+      address: '{{address}}'
+      abi: Gravity
+    mapping:
+      kind: ethereum/events
+```
+
+In order to generate a manifest to either network, you could add two additional commands to `package.json` along with a dependency on `mustache`:
+
+```json
+{
+  ...
+  "scripts": {
+    ...
+    "prepare:mainnet": "mustache config/mainnet.json subgraph.template.yaml > subgraph.yaml",
+    "prepare:sepolia": "mustache config/sepolia.json subgraph.template.yaml > subgraph.yaml"
+  },
+  "devDependencies": {
+    ...
+    "mustache": "^3.1.0"
+  }
+}
+```
+
+To deploy this subgraph for mainnet or Sepolia you would now simply run one of the two following commands:
+
+```sh
+# Mainnet:
+yarn prepare:mainnet && yarn deploy
+
+# Sepolia:
+yarn prepare:sepolia && yarn deploy
+```
+
+A working example of this can be found [here](https://github.com/graphprotocol/example-subgraph/tree/371232cf68e6d814facf5e5413ad0fef65144759).
+
+**Note:** This approach can also be applied to more complex situations, where it is necessary to substitute more than contract addresses and network names or where generating mappings or ABIs from templates as well.
+
+This will give you the `chainHeadBlock` which you can compare with the `latestBlock` on your subgraph to check if it is running behind. `synced` informs if the subgraph has ever caught up to the chain. `health` can currently take the values of `healthy` if no errors occurred, or `failed` if there was an error which halted the progress of the subgraph. In this case, you can check the `fatalError` field for details on this error.
+
+## सबग्राफ स्टूडियो सबग्राफ संग्रह नीति
+
+A subgraph version in Studio is archived if and only if it meets the following criteria:
+
+- The version is not published to the network (or pending publish)
+- The version was created 45 or more days ago
+- The subgraph hasn't been queried in 30 days
+
+In addition, when a new version is deployed, if the subgraph has not been published, then the N-2 version of the subgraph is archived.
+
+इस नीति से प्रभावित प्रत्येक सबग्राफ के पास विचाराधीन संस्करण को वापस लाने का विकल्प है।
+
+## सबग्राफ स्वास्थ्य की जाँच करना
+
+यदि एक सबग्राफ सफलतापूर्वक सिंक हो जाता है, तो यह एक अच्छा संकेत है कि यह हमेशा के लिए अच्छी तरह से चलता रहेगा। हालांकि, नेटवर्क पर नए ट्रिगर्स के कारण आपका सबग्राफ एक अनुपयोगी त्रुटि स्थिति में आ सकता है या यह प्रदर्शन समस्याओं या नोड ऑपरेटरों के साथ समस्याओं के कारण पीछे पड़ना शुरू हो सकता है।
+
+Graph Node exposes a GraphQL endpoint which you can query to check the status of your subgraph. On the hosted service, it is available at `https://api.thegraph.com/index-node/graphql`. On a local node, it is available on port `8030/graphql` by default. The full schema for this endpoint can be found [here](https://github.com/graphprotocol/graph-node/blob/master/server/index-node/src/schema.graphql). Here is an example query that checks the status of the current version of a subgraph:
+
+```graphql
+{
+  indexingStatusForCurrentVersion(subgraphName: "org/subgraph") {
+    synced
+    health
+    fatalError {
+      message
+      block {
+        number
+        hash
+      }
+      handler
+    }
+    chains {
+      chainHeadBlock {
+        number
+      }
+      latestBlock {
+        number
+      }
+    }
+  }
+}
+```
+
+This will give you the `chainHeadBlock` which you can compare with the `latestBlock` on your subgraph to check if it is running behind. `synced` informs if the subgraph has ever caught up to the chain. `health` can currently take the values of `healthy` if no errors occurred, or `failed` if there was an error which halted the progress of the subgraph. In this case, you can check the `fatalError` field for details on this error.
