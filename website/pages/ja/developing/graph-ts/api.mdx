@@ -2,14 +2,16 @@
 title: AssemblyScript API
 ---
 
-> 注意: `graph-cli`/`graph-ts` のバージョン `0.22.0` より前にサブグラフを作成した場合、古いバージョンのAssemblyScriptを使用しているので、[`マイグレーションガイド`](/release-notes/assemblyscript-migration-guide) を参照することをお勧めします。
+> Note: If you created a subgraph prior to `graph-cli`/`graph-ts` version `0.22.0`, then you're using an older version of AssemblyScript. It is recommended to review the [`Migration Guide`](/release-notes/assemblyscript-migration-guide).
 
-このページでは、サブグラフのマッピングを記述する際に、どのような組み込み API を使用できるかを説明します。 すぐに使える API は 2 種類あります:
+Learn what built-in APIs can be used when writing subgraph mappings. There are two kinds of APIs available out of the box:
 
-- the [Graph TypeScript library](https://github.com/graphprotocol/graph-tooling/tree/main/packages/ts) (`graph-ts`) and
-- graph codegenによってサブグラフファイルから生成されたコードです。
+- The [Graph TypeScript library](https://github.com/graphprotocol/graph-tooling/tree/main/packages/ts) (`graph-ts`)
+- Code generated from subgraph files by `graph codegen`
 
-また、<a href="https://github.com/AssemblyScript/assemblyscript">AssemblyScript</a>との互換性があれば、他のライブラリを依存関係に追加することも可能です。 マッピングはこの言語で書かれているので、言語や標準ライブラリの機能については、 <a href="https://github.com/AssemblyScript/assemblyscript/wiki">AssemblyScript wiki</a>が参考になります。
+You can also add other libraries as dependencies, as long as they are compatible with [AssemblyScript](https://github.com/AssemblyScript/assemblyscript).
+
+Since language mappings are written in AssemblyScript, it is useful to review the language and standard library features from the [AssemblyScript wiki](https://github.com/AssemblyScript/assemblyscript/wiki).
 
 ## API リファレンス
 
@@ -98,7 +100,7 @@ _Math_
 - div(y: BigDecimal)： BigDecimal`-`x / y\` と書くことができます。
 - equals(y: BigDecimal): bool`-`x == y\` と書くことができます。
 - notEqual(y: BigDecimal): bool`-`x != y\` と書くことができます。
-- lt(y: BigDecimal): bool`-`x \< y\` と書くことができます。
+- lt(y: BigDecimal): bool`-`x < y\` と書くことができます。
 - `le(y: BigDecimal): bool` - `x <= y` と書くことができます。
 - `gt(y: BigDecimal): bool` と書くことができます。
 - `ge(y: BigDecimal): bool`と書くことができます。
@@ -252,7 +254,9 @@ export function handleTransfer(event: TransferEvent): void {
 
 チェーンの処理中に `Transfer` イベントが発生すると、生成された `Transfer` 型（エンティティ型との名前の衝突を避けるために、ここでは `TransferEvent` のエイリアス）を使用して `handleTransfer` イベントハンドラに渡されます。この型はイベントの親トランザクションやそのパラメータなどのデータにアクセスすることを可能にします。
 
-各エンティティは、他のエンティティとの衝突を避けるために、ユニークな ID を持たなければなりません。 イベントのパラメータには、使用可能な一意の識別子が含まれているのが一般的です。 注：トランザクションのハッシュを ID として使用することは、同じトランザクション内の他のイベントがこのハッシュを ID としてエンティティを作成しないことを前提としています。
+Each entity must have a unique ID to avoid collisions with other entities. It is fairly common for event parameters to include a unique identifier that can be used.
+
+> Note: Using the transaction hash as the ID assumes that no other events in the same transaction create entities with this hash as the ID.
 
 #### ストアからのエンティティの読み込み
 
@@ -268,15 +272,18 @@ if (transfer == null) {
 // Use the Transfer entity as before
 ```
 
-エンティティはまだストアに存在していない可能性があるため、loadメソッドはTransfer | null型の値を返します。 そのため、値を使用する前に、nullのケースをチェックする必要があるかもしれません。
+As the entity may not exist in the store yet, the `load` method returns a value of type `Transfer | null`. It may be necessary to check for the `null` case before using the value.
 
-> Note: エンティティのロードは、マッピングでの変更がエンティティの以前のデータに依存する場合にのみ必要です。 既存のエンティティを更新する 2 つの方法については、次のセクションを参照してください。
+> Note: Loading entities is only necessary if the changes made in the mapping depend on the previous data of an entity. See the next section for the two ways of updating existing entities.
 
 #### ブロック内で作成されたエンティティの検索
 
 graph-node v0.31.0、@graphprotocol/graph-ts v0.30.0、および @graphprotocol/graph-cli v0.49.0 以降、 loadInBlock メソッドはすべてのエンティティ タイプで使用できます。
 
-ストア API を使用すると、現在のブロックで作成または更新されたエンティティの取得が容易になります。この一般的な状況は、あるハンドラーがオンチェーン イベントからトランザクションを作成し、後のハンドラーがこのトランザクションが存在する場合にアクセスしようとすることです。トランザクションが存在しない場合、サブグラフはエンティティが存在しないことを確認するためだけにデータベースにアクセスする必要があります。エンティティが同じブロック内に作成されている必要があることをサブグラフの作成者がすでに知っている場合は、loadInBlock を使用すると、このデータベースのラウンドトリップが回避されます。一部のサブグラフでは、これらのルックアップの欠落がインデックス作成時間に大きく影響する可能性があります。
+The store API facilitates the retrieval of entities that were created or updated in the current block. A typical situation for this is that one handler creates a transaction from some on-chain event, and a later handler wants to access this transaction if it exists.
+
+- In the case where the transaction does not exist, the subgraph will have to go to the database simply to find out that the entity does not exist. If the subgraph author already knows that the entity must have been created in the same block, using `loadInBlock` avoids this database roundtrip.
+- For some subgraphs, these missed lookups can contribute significantly to the indexing time.
 
 ```typescript
 let id =event.transaction.hash // または ID が構築される方法
@@ -503,7 +510,9 @@ Ethereum の ERC20Contractにsymbolというパブリックな読み取り専用
 
 #### リバートされた呼び出しの処理
 
-コントラクトの読み取り専用メソッドが復帰する可能性がある場合は、try\_を前置して生成されたコントラクトメソッドを呼び出すことで対処しなければなりません。 例えば、Gravity コントラクトではgravatarToOwnerメソッドを公開しています。 このコードでは、そのメソッドの復帰を処理することができます。
+If the read-only methods of your contract may revert, then you should handle that by calling the generated contract method prefixed with `try_`.
+
+- For example, the Gravity contract exposes the `gravatarToOwner` method. This code would be able to handle a revert in that method:
 
 ```typescript
 let gravity = Gravity.bind(event.address)
@@ -515,7 +524,7 @@ if (callResult.reverted) {
 }
 ```
 
-ただし、Geth や Infura のクライアントに接続された Graph ノードでは、すべてのリバートを検出できない場合があるので、これに依存する場合は Parity のクライアントに接続された Graph ノードを使用することをお勧めします。
+> Note: A Graph node connected to a Geth or Infura client may not detect all reverts. If you rely on this, we recommend using a Graph Node connected to a Parity client.
 
 #### 符号化/復号化 ABI
 
@@ -761,44 +770,44 @@ if (value.kind == JSONValueKind.BOOL) {
 
 ### タイプ 変換参照
 
-| Source(s)            | Destination                             | Conversion function                                                |
-| --------------------------------------- | --------------------------------------- | ------------------------------------------------------------------ |
-| Address                                 | Bytes                                   | none                                                               |
-| Address                                 | String                                  | s.toHexString()                                 |
-| BigDecimal                              | String                                  | s.toString()                                    |
-| BigInt                                  | BigDecimal                              | s.toBigDecimal()                                |
-| BigInt                                  | String (hexadecimal) | s.toHexString() or s.toHex() |
-| BigInt                                  | String (unicode)     | s.toString()                                    |
-| BigInt                                  | i32                                     | s.toI32()                                       |
-| Boolean                                 | Boolean                                 | none                                                               |
-| Bytes (signed)       | BigInt                                  | BigInt.fromSignedBytes(s)                       |
-| Bytes (unsigned)     | BigInt                                  | BigInt.fromUnsignedBytes(s)                     |
-| Bytes                                   | String (hexadecimal) | s.toHexString() or s.toHex() |
-| Bytes                                   | String (unicode)     | s.toString()                                    |
-| Bytes                                   | String (base58)      | s.toBase58()                                    |
-| Bytes                                   | i32                                     | s.toI32()                                       |
-| Bytes                                   | u32                                     | s.toU32()                                       |
-| Bytes                                   | JSON                                    | json.fromBytes(s)                               |
-| int8                                    | i32                                     | none                                                               |
-| int32                                   | i32                                     | none                                                               |
-| int32                                   | BigInt                                  | Bigint.fromI32(s)                               |
-| uint24                                  | i32                                     | none                                                               |
-| int64 - int256                          | BigInt                                  | none                                                               |
-| uint32 - uint256                        | BigInt                                  | none                                                               |
-| JSON                                    | boolean                                 | s.toBool()                                      |
-| JSON                                    | i64                                     | s.toI64()                                       |
-| JSON                                    | u64                                     | s.toU64()                                       |
-| JSON                                    | f64                                     | s.toF64()                                       |
-| JSON                                    | BigInt                                  | s.toBigInt()                                    |
-| JSON                                    | string                                  | s.toString()                                    |
-| JSON                                    | Array                                   | s.toArray()                                     |
-| JSON                                    | Object                                  | s.toObject()                                    |
-| String                                  | Address                                 | Address.fromString(s)                           |
-| Bytes                                   | Address                                 | Address.fromString(s)                           |
-| String                                  | BigInt                                  | BigDecimal.fromString(s)                        |
-| String                                  | BigDecimal                              | BigDecimal.fromString(s)                        |
-| String (hexadecimal) | Bytes                                   | ByteArray.fromHexString(s)                      |
-| String (UTF-8)       | Bytes                                   | ByteArray.fromUTF8(s)                           |
+| Source(s)            | Destination          | Conversion function              |
+| -------------------- | -------------------- | -------------------------------- |
+| Address              | Bytes                | none                             |
+| Address              | String               | s.toHexString()                  |
+| BigDecimal           | String               | s.toString()                     |
+| BigInt               | BigDecimal           | s.toBigDecimal()                 |
+| BigInt               | String (hexadecimal) | s.toHexString() or s.toHex()     |
+| BigInt               | String (unicode)     | s.toString()                     |
+| BigInt               | i32                  | s.toI32()                        |
+| Boolean              | Boolean              | none                             |
+| Bytes (signed)       | BigInt               | BigInt.fromSignedBytes(s)        |
+| Bytes (unsigned)     | BigInt               | BigInt.fromUnsignedBytes(s)      |
+| Bytes                | String (hexadecimal) | s.toHexString() or s.toHex()     |
+| Bytes                | String (unicode)     | s.toString()                     |
+| Bytes                | String (base58)      | s.toBase58()                     |
+| Bytes                | i32                  | s.toI32()                        |
+| Bytes                | u32                  | s.toU32()                        |
+| Bytes                | JSON                 | json.fromBytes(s)                |
+| int8                 | i32                  | none                             |
+| int32                | i32                  | none                             |
+| int32                | BigInt               | Bigint.fromI32(s)                |
+| uint24               | i32                  | none                             |
+| int64 - int256       | BigInt               | none                             |
+| uint32 - uint256     | BigInt               | none                             |
+| JSON                 | boolean              | s.toBool()                       |
+| JSON                 | i64                  | s.toI64()                        |
+| JSON                 | u64                  | s.toU64()                        |
+| JSON                 | f64                  | s.toF64()                        |
+| JSON                 | BigInt               | s.toBigInt()                     |
+| JSON                 | string               | s.toString()                     |
+| JSON                 | Array                | s.toArray()                      |
+| JSON                 | Object               | s.toObject()                     |
+| String               | Address              | Address.fromString(s)            |
+| Bytes                | Address              | Address.fromString(s)            |
+| String               | BigInt               | BigDecimal.fromString(s)         |
+| String               | BigDecimal           | BigDecimal.fromString(s)         |
+| String (hexadecimal) | Bytes                | ByteArray.fromHexString(s)       |
+| String (UTF-8)       | Bytes                | ByteArray.fromUTF8(s)            |
 
 ### データソースのメタデータ
 
