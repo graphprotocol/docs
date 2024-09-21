@@ -2,11 +2,9 @@
 title: Bästa praxis för förfrågningar
 ---
 
-The Graph tillhandahåller ett decentraliserat sätt att hämta data från blockkedjor.
+The Graph provides a decentralized way to query data from blockchains via GraphQL APIs, making it easier to query data with the GraphQL language.
 
-The Graph-nätverkets data exponeras genom ett GraphQL API, vilket gör det enklare att fråga data med GraphQL-språket.
-
-Den här sidan kommer att guida dig genom de grundläggande reglerna för GraphQL-språket och bästa praxis för GraphQL-frågor.
+Learn the essential GraphQL language rules and GraphQL querying best practices.
 
 ---
 
@@ -71,7 +69,7 @@ GraphQL är ett språk och en uppsättning konventioner som transporteras över 
 
 Det innebär att du kan ställa en fråga till ett GraphQL API med hjälp av standard `fetch` (nativt eller via `@whatwg-node/fetch` eller `isomorphic-fetch`).
 
-Men, som det anges i ["Frågehantering från en applikation"](/querying/querying-from-an-application), rekommenderar vi att du använder vår `graph-client` som stöder unika funktioner som:
+However, as stated in ["Querying from an Application"](/querying/querying-from-an-application), it's recommend to use `graph-client` which supports unique features such as:
 
 - Hantering av subgrafer över olika blockkedjor: Frågehantering från flera subgrafer i en enda fråga
 - [Automatisk blockspårning](https://github.com/graphprotocol/graph-client/blob/main/packages/block-tracking/README.md)
@@ -103,8 +101,6 @@ main()
 ```
 
 Fler GraphQL-klientalternativ behandlas i ["Querying from an Application"](/querying/querying-from-an-application).
-
-Nu när vi har gått igenom de grundläggande reglerna för syntax för GraphQL-förfrågningar ska vi titta på bästa praxis för att skriva GraphQL-förfrågningar.
 
 ---
 
@@ -164,11 +160,11 @@ Detta medför **många fördelar**:
 - **Variabler kan cachas** på serversidan
 - **Frågor kan statiskt analyseras av verktyg** (mer om detta i följande avsnitt)
 
-**Observera: Hur man inkluderar fält villkorligt i statiska frågor**
+### How to include fields conditionally in static queries
 
-Ibland vill vi inkludera fältet `owner` endast under vissa villkor.
+You might want to include the `owner` field only on a particular condition.
 
-För detta kan vi utnyttja direktivet `@include(if:...)` på följande sätt:
+For this, you can leverage the `@include(if:...)` directive as follows:
 
 ```tsx
 import { execute } from "your-favorite-graphql-client";
@@ -191,7 +187,7 @@ const result = await execute(query, {
 })
 ```
 
-Observera: Det motsatta direktivet är `@skip(if: ...)`.
+> Observera: Det motsatta direktivet är `@skip(if: ...)`.
 
 ### Ask for what you want
 
@@ -199,9 +195,8 @@ GraphQL blev känd för sitt motto "Be om det du vill ha".
 
 Av den anledningen finns det ingen möjlighet i GraphQL att få alla tillgängliga fält utan att behöva lista dem individuellt.
 
-När du frågar GraphQL API:er, tänk alltid på att endast fråga efter de fält som faktiskt kommer att användas.
-
-En vanlig orsak till överhämtning är samlingar av enheter. Som standard kommer frågor att hämta 100 enheter i en samling, vilket vanligtvis är mycket mer än vad som faktiskt kommer att användas, t.ex., för att visas för användaren. Därför bör frågor nästan alltid ange first explicit och se till att de bara hämtar så många enheter som de faktiskt behöver. Detta gäller inte bara för toppnivåsamlingar i en fråga, utan ännu mer för inbäddade samlingar av enheter.
+- När du frågar GraphQL API:er, tänk alltid på att endast fråga efter de fält som faktiskt kommer att användas.
+- Make sure queries only fetch as many entities as you actually need. By default, queries will fetch 100 entities in a collection, which is usually much more than what will actually be used, e.g., for display to the user. This applies not just to top-level collections in a query, but even more so to nested collections of entities.
 
 Till exempel, i följande fråga:
 
@@ -337,8 +332,8 @@ query {
 
 Sådana upprepade fält (`id`, `active`, `status`) medför många problem:
 
-- svårare att läsa för mer omfattande frågor
-- när du använder verktyg som genererar TypeScript-typer baserat på frågor (_mer om det i den sista avsnittet_), kommer `newDelegate` och `oldDelegate` att resultera i två olika inline-gränssnitt.
+- More extensive queries become harder to read.
+- When using tools that generate TypeScript types based on queries (_more on that in the last section_), `newDelegate` and `oldDelegate` will result in two distinct inline interfaces.
 
 En omstrukturerad version av frågan skulle vara följande:
 
@@ -364,13 +359,13 @@ fragment DelegateItem on Transcoder {
 }
 ```
 
-Att använda GraphQL `fragment` kommer att förbättra läsbarheten (särskilt i större skala) och leda till bättre generering av TypeScript-typer.
+Using GraphQL `fragment` will improve readability (especially at scale) and result in better TypeScript types generation.
 
 När du använder verktyget för typsgenerering kommer den ovanstående frågan att generera en korrekt typ av `DelegateItemFragment` (_se sista avsnittet_).
 
 ### Dos and Don'ts för GraphQL Fragment
 
-**Fragmentbas måste vara en typ**
+### Fragmentbas måste vara en typ
 
 Ett fragment kan inte baseras på en oanvändbar typ, kort sagt, **på en typ som inte har fält**:
 
@@ -382,7 +377,7 @@ fragment MyFragment on BigInt {
 
 `BigInt` är en **skalär** (inbyggd "vanlig" typ) som inte kan användas som grund för ett fragment.
 
-**Hur man sprider ett fragment**
+#### Hur man sprider ett fragment
 
 Fragment är definierade på specifika typer och bör användas i enlighet med det i frågor.
 
@@ -411,16 +406,16 @@ fragment VoteItem on Vote {
 
 Det är inte möjligt att sprida ett fragment av typ `Vote` här.
 
-**Definiera fragment som en atomisk affärsenhet för data**
+#### Definiera fragment som en atomisk affärsenhet för data
 
-GraphQL Fragment måste definieras baserat på deras användning.
+GraphQL `Fragment`s must be defined based on their usage.
 
 För de flesta användningsfall är det tillräckligt att definiera ett fragment per typ (i fallet med upprepade fält eller typgenerering).
 
-Här är en tumregel för användning av fragment:
+Here is a rule of thumb for using fragments:
 
-- när fält av samma typ upprepas i en fråga, gruppera dem i ett fragment
-- när liknande men inte samma fält upprepas, skapa flera fragment, t.ex.
+- When fields of the same type are repeated in a query, group them in a `Fragment`.
+- When similar but different fields are repeated, create multiple fragments, for instance:
 
 ```graphql
 # base fragment (mostly used in listing)
@@ -443,7 +438,7 @@ fragment VoteWithPoll on Vote {
 
 ---
 
-## De väsentliga verktygen
+## The Essential Tools
 
 ### Webbaserade GraphQL-upptäckare
 
@@ -473,11 +468,11 @@ Detta kommer att tillåta dig att **upptäcka fel utan ens att testa frågor** p
 
 [GraphQL VSCode-tillägget](https://marketplace.visualstudio.com/items?itemName=GraphQL.vscode-graphql) är ett utmärkt komplement till din utvecklingsarbetsflöde för att få:
 
-- syntaxmarkering
-- autokompletteringsförslag
-- validering mot schema
-- snuttar
-- gå till definition för fragment och inmatningstyper
+- Syntax highlighting
+- Autocomplete suggestions
+- Validation against schema
+- Snippets
+- Go to definition for fragments and input types
 
 Om du använder `graphql-eslint` är [ESLint VSCode-tillägget](https://marketplace.visualstudio.com/items?itemName=dbaeumer.vscode-eslint) ett måste för att visualisera fel och varningar korrekt infogade i din kod.
 
@@ -485,9 +480,9 @@ Om du använder `graphql-eslint` är [ESLint VSCode-tillägget](https://marketpl
 
 [JS GraphQL-tillägget](https://plugins.jetbrains.com/plugin/8097-graphql/) kommer att förbättra din upplevelse av att arbeta med GraphQL genom att tillhandahålla:
 
-- syntaxmarkering
-- autokompletteringsförslag
-- validering mot schema
-- snuttar
+- Syntax highlighting
+- Autocomplete suggestions
+- Validation against schema
+- Snippets
 
-Mer information om denna [WebStorm-artikel](https://blog.jetbrains.com/webstorm/2019/04/featured-plugin-js-graphql/) som visar upp alla tilläggets huvudfunktioner.
+For more information on this topic, check out the [WebStorm article](https://blog.jetbrains.com/webstorm/2019/04/featured-plugin-js-graphql/) which showcases all the plugin's main features.
