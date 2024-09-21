@@ -2,11 +2,9 @@
 title: Osvědčené postupy dotazování
 ---
 
-Graf poskytuje decentralizovaný způsob dotazování na data z blockchainů.
+The Graph provides a decentralized way to query data from blockchains via GraphQL APIs, making it easier to query data with the GraphQL language.
 
-Data sítě Graf jsou zpřístupněna prostřednictvím GraphQL API, což usnadňuje dotazování na data pomocí jazyka GraphQL.
-
-Tato stránka vás provede základními pravidly jazyka GraphQL a osvědčenými postupy pro dotazy GraphQL.
+Learn the essential GraphQL language rules and GraphQL querying best practices.
 
 ---
 
@@ -71,7 +69,7 @@ GraphQL je jazyk a sada konvencí, které se přenášejí přes protokol HTTP.
 
 To znamená, že se můžete dotazovat na GraphQL API pomocí standardního `fetch` (nativně nebo pomocí `@whatwg-node/fetch` nebo `isomorphic-fetch`).
 
-Jak je však uvedeno v části ["Dotazování z aplikace"](/querying/querying-from-an-application), doporučujeme používat našeho `graf-klienta`, který podporuje jedinečné funkce, jako např:
+However, as stated in ["Querying from an Application"](/querying/querying-from-an-application), it's recommend to use `graph-client` which supports unique features such as:
 
 - Manipulace s podgrafy napříč řetězci: Dotazování z více podgrafů v jednom dotazu
 - [Automatické sledování](https://github.com/graphprotocol/graph-client/blob/main/packages/block-tracking/README.md)
@@ -103,8 +101,6 @@ main()
 ```
 
 Další alternativy klienta GraphQL jsou popsány v ["Dotazování z aplikace"](/querying/querying-from-an-application).
-
-Nyní, když jsme se seznámili se základními pravidly syntaxe dotazů GraphQL, se podíváme na osvědčené postupy psaní dotazů GraphQL.
 
 ---
 
@@ -164,11 +160,11 @@ To přináší **mnoho výhod**:
 - **Proměnné lze ukládat do mezipaměti** na úrovni serveru
 - **Nástroje mohou staticky analyzovat dotazy** (více v následujících kapitolách)
 
-**Poznámka: Jak podmíněně zahrnout pole do statických dotazů**
+### How to include fields conditionally in static queries
 
-Pole `vlastník` můžeme chtít zahrnout pouze při splnění určité podmínky.
+You might want to include the `owner` field only on a particular condition.
 
-K tomu můžeme využít direktivu `@include(if:...)` takto:
+For this, you can leverage the `@include(if:...)` directive as follows:
 
 ```tsx
 import { execute } from 'your-favorite-graphql-client'
@@ -191,7 +187,7 @@ const result = await execute(query, {
 })
 ```
 
-Poznámka: Opačným direktivou je `@skip(if: ...)`.
+> Poznámka: Opačným direktivou je `@skip(if: ...)`.
 
 ### Ask for what you want
 
@@ -199,9 +195,8 @@ GraphQL se proslavil sloganem „Požádejte o to, co chcete“.
 
 Z tohoto důvodu neexistuje způsob, jak v GraphQL získat všechna dostupná pole, aniž byste je museli vypisovat jednotlivě.
 
-Při dotazování na GraphQL vždy myslete na to, abyste dotazovali pouze pole, která budou skutečně použita.
-
-Častou příčinou nadměrného načítání jsou kolekce entit. Ve výchozím nastavení dotazy načtou 100 entit v kolekci, což je obvykle mnohem více, než kolik se skutečně použije, např. pro zobrazení uživateli. Dotazy by proto měly být téměř vždy nastaveny explicitně jako první a měly by zajistit, aby načítaly pouze tolik entit, kolik skutečně potřebují. To platí nejen pro kolekce nejvyšší úrovně v dotazu, ale ještě více pro vnořené kolekce entit.
+- Při dotazování na GraphQL vždy myslete na to, abyste dotazovali pouze pole, která budou skutečně použita.
+- Make sure queries only fetch as many entities as you actually need. By default, queries will fetch 100 entities in a collection, which is usually much more than what will actually be used, e.g., for display to the user. This applies not just to top-level collections in a query, but even more so to nested collections of entities.
 
 Například v následujícím dotazu:
 
@@ -337,8 +332,8 @@ query {
 
 Taková opakovaná pole (`id`, `active`, `status`) přinášejí mnoho problémů:
 
-- hůře čitelné pro rozsáhlejší dotazy
-- při použití nástrojů, které generují typy TypeScript na základě dotazů (_více o tom v poslední části_), budou `newDelegate` a `oldDelegate` mít za následek dvě samostatné inline rozhraní.
+- More extensive queries become harder to read.
+- When using tools that generate TypeScript types based on queries (_more on that in the last section_), `newDelegate` and `oldDelegate` will result in two distinct inline interfaces.
 
 Přepracovaná verze dotazu by byla následující:
 
@@ -364,13 +359,13 @@ fragment DelegateItem on Transcoder {
 }
 ```
 
-Použití GraphQL `fragment` zlepší čitelnost (zejména v měřítku), ale také povede k lepšímu generování typůTypeScript.
+Using GraphQL `fragment` will improve readability (especially at scale) and result in better TypeScript types generation.
 
 Při použití nástroje pro generování typů vygeneruje výše uvedený dotaz vhodný typ `DelegateItemFragment` (_viz poslední část "Nástroje"_).
 
 ### Co dělat a nedělat s fragmenty GraphQL
 
-**Základem fragmentu musí být typ**
+### Základem fragmentu musí být typ
 
 Fragment nemůže být založen na nepoužitelném typu, zkrátka **na typu, který nemá pole**:
 
@@ -382,7 +377,7 @@ fragment MyFragment on BigInt {
 
 `BigInt` je **skalární** (nativní "jednoduchý" typ), který nelze použít jako základ fragmentu.
 
-**Jak šířit fragment**
+#### Jak šířit fragment
 
 Fragmenty jsou definovány na konkrétních typech a podle toho by se měly používat v dotazech.
 
@@ -411,16 +406,16 @@ fragment VoteItem on Vote {
 
 Fragment typu `Vote` zde není možné šířit.
 
-**Definice fragmentu jako atomické obchodní jednotky dat**
+#### Definice fragmentu jako atomické obchodní jednotky dat
 
-Fragment GraphQL musí být definován na základě jejich použití.
+GraphQL `Fragment`s must be defined based on their usage.
 
 Pro většinu případů použití stačí definovat jeden fragment pro každý typ (v případě opakovaného použití polí nebo generování typů).
 
-Zde je praktický postup pro použití Fragmentu:
+Here is a rule of thumb for using fragments:
 
-- pokud se v dotazu opakují pole stejného typu, seskupte je do fragmentu
-- pokud se opakují podobná, ale ne stejná pole, vytvořte více fragmentů, např:
+- When fields of the same type are repeated in a query, group them in a `Fragment`.
+- When similar but different fields are repeated, create multiple fragments, for instance:
 
 ```graphql
 # base fragment (mostly used in listing)
@@ -443,7 +438,7 @@ fragment VoteWithPoll on Vote {
 
 ---
 
-## Základní nástroje
+## The Essential Tools
 
 ### Weboví průzkumníci GraphQL
 
@@ -473,11 +468,11 @@ To vám umožní **odhalit chyby i bez testování dotazů** na hřišti nebo je
 
 Rozšíření [GraphQL VSCode](https://marketplace.visualstudio.com/items?itemName=GraphQL.vscode-graphql) je vynikajícím doplňkem vašeho vývojového pracovního postup:
 
-- zvýraznění syntaxe
-- návrhy automatického dokončování
-- validace proti schéma
-- snippets
-- přejít na definici fragmentů a vstupních typů
+- Syntax highlighting
+- Autocomplete suggestions
+- Validation against schema
+- Snippets
+- Go to definition for fragments and input types
 
 Pokud používáte `graphql-eslint`, je rozšíření [ESLint VSCode](https://marketplace.visualstudio.com/items?itemName=dbaeumer.vscode-eslint) nutností pro správnou vizualizaci chyb a varování v kódu.
 
@@ -485,9 +480,9 @@ Pokud používáte `graphql-eslint`, je rozšíření [ESLint VSCode](https://ma
 
 Zásuvný modul [JS GraphQL](https://plugins.jetbrains.com/plugin/8097-graphql/) výrazně zlepší vaše zkušenosti při práci s GraphQL tím, že poskytuje:
 
-- zvýraznění syntaxe
-- návrhy automatického dokončování
-- validace proti schématu
-- snippets
+- Syntax highlighting
+- Autocomplete suggestions
+- Validation against schema
+- Snippets
 
-Další informace najdete v tomto [článku o WebStormu](https://blog.jetbrains.com/webstorm/2019/04/featured-plugin-js-graphql/), který představuje všechny hlavní funkce zásuvného.
+For more information on this topic, check out the [WebStorm article](https://blog.jetbrains.com/webstorm/2019/04/featured-plugin-js-graphql/) which showcases all the plugin's main features.
