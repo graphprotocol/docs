@@ -2,11 +2,9 @@
 title: クエリのベストプラクティス
 ---
 
-The Graphは、ブロックチェーンのデータをクエリするための分散化された方法を提供します。
+The Graph provides a decentralized way to query data from blockchains via GraphQL APIs, making it easier to query data with the GraphQL language.
 
-The GraphのネットワークのデータはGraphQL APIで公開され、GraphQL言語によるデータクエリーが容易になります。
-
-このページでは、GraphQLの言語ルールとGraphQLクエリのベストプラクティスに必要不可欠な情報をご案内しています。
+Learn the essential GraphQL language rules and GraphQL querying best practices.
 
 ---
 
@@ -71,7 +69,7 @@ GraphQLは、HTTPを介して転送される言語と一連の規約です。
 
 これは、標準の`fetch`（ネイティブであれば、`@whatwg-node/fetch`や`isomorphic-fetch`を介しても）を使用して、GraphQL APIにクエリを送信できることを意味します。
 
-ただし、「[アプリケーションからのクエリ](/querying/querying-from-an-application)」で述べたように、以下のような固有の機能をサポートする`graph-client`を使用することをおすすめします。
+However, as stated in ["Querying from an Application"](/querying/querying-from-an-application), it's recommend to use `graph-client` which supports unique features such as:
 
 - クロスチェーンのサブグラフ処理：1回のクエリで複数のサブグラフからクエリを実行可能
 - [自動ブロック追跡](https://github.com/graphprotocol/graph-client/blob/main/packages/block-tracking/README.md)
@@ -103,8 +101,6 @@ main()
 ```
 
 その他の GraphQL クライアントの代替手段については、[「アプリケーションからのクエリ」](/querying/querying-from-an-application) で説明します。
-
-GraphQL クエリ構文の基本ルールを説明したので、今度は GraphQL クエリ記述のベスト プラクティスを見てみましょう。
 
 ---
 
@@ -164,11 +160,11 @@ const result = await execute(query, {
 - サーバーレベルで**変数がキャッシュできます**。
 - **ツールでクエリを静的に分析できる**（これについては、次のセクションで詳しく説明します。）
 
-**注: 静的クエリに条件付きでフィールドを含める方法**
+### How to include fields conditionally in static queries
 
-特定の条件でのみ `owner` フィールドを含めることができます。
+You might want to include the `owner` field only on a particular condition.
 
-このために、次のように `@include(if:...)` ディレクティブを利用できます:
+For this, you can leverage the `@include(if:...)` directive as follows:
 
 ```tsx
 import { execute } from 'your-favorite-graphql-client'
@@ -191,7 +187,7 @@ const result = await execute(query, {
 })
 ```
 
-注: 反対のディレクティブは `@skip(if: ...)` です。
+> 注: 反対のディレクティブは `@skip(if: ...)` です。
 
 ### Ask for what you want
 
@@ -199,9 +195,8 @@ GraphQL は、「欲しいものを聞いてください」というキャッチ
 
 このため、GraphQLでは、個々にリストすることなくすべての利用可能なフィールドを取得する方法はありません。
 
-GraphQL APIをクエリする際には、実際に使用するフィールドのみをクエリするように常に考えてください。
-
-過剰なデータ取得の一般的な原因は、エンティティのコレクションです。デフォルトでは、クエリはコレクション内のエンティティを100個取得しますが、通常、実際に使用される量（たとえば、ユーザーに表示される量）よりもはるかに多いです。そのため、クエリはほぼ常に`first`を明示的に設定し、実際に必要なだけのエンティティを取得するようにする必要があります。これは、クエリ内のトップレベルのコレクションだけでなく、さらにエンティティのネストされたコレクションにも当てはまります。
+- GraphQL APIをクエリする際には、実際に使用するフィールドのみをクエリするように常に考えてください。
+- Make sure queries only fetch as many entities as you actually need. By default, queries will fetch 100 entities in a collection, which is usually much more than what will actually be used, e.g., for display to the user. This applies not just to top-level collections in a query, but even more so to nested collections of entities.
 
 たとえば、次のクエリでは:
 
@@ -335,8 +330,8 @@ query {
 
 このような繰り返しフィールド (`id`、`active`、`status`) は、多くの問題を引き起こします。
 
-- より広範囲なクエリに対応するために読みにくくなります
-- クエリに基づいて TypeScript 型を生成するツールを使用する場合 (_前のセクションで詳しく説明します_)、`newDelegate` および `oldDelegate` は、2 つの異なるインライン インターフェイスになります。
+- More extensive queries become harder to read.
+- When using tools that generate TypeScript types based on queries (_more on that in the last section_), `newDelegate` and `oldDelegate` will result in two distinct inline interfaces.
 
 クエリのリファクタリングされたバージョンは次のようになります:
 
@@ -362,13 +357,13 @@ fragment DelegateItem on Transcoder {
 }
 ```
 
-GraphQLの`fragment`を使用すると、可読性が向上します（特に大規模な場合）し、さらにはより良いTypeScriptの型生成にも結びつきます。
+Using GraphQL `fragment` will improve readability (especially at scale) and result in better TypeScript types generation.
 
 型生成ツールを使用すると、上記のクエリは適切な`DelegateItemFragment`型を生成します（_最後の「ツール」セクションを参照_）。
 
 ### GraphQLフラグメントの注意点
 
-**フラグメントベースは型である必要があります**
+### フラグメントベースは型である必要があります
 
 フラグメントは、適用できない型、つまり**フィールドを持たない型**に基づくことはできません。
 
@@ -380,7 +375,7 @@ fragment MyFragment on BigInt {
 
 `BigInt` は**スカラー** (ネイティブの「プレーン」タイプ) であり、フラグメントのベースとして使用できません。
 
-**フラグメントを拡散する方法**
+#### フラグメントを拡散する方法
 
 フラグメントは特定のタイプに定義されているため、クエリではそれに応じて使用する必要があります。
 
@@ -409,16 +404,16 @@ fragment VoteItem on Vote {
 
 ここでタイプ `Vote` のフラグメントを拡散することはできません。
 
-**フラグメントをデータのアトミックなビジネス単位として定義する**
+#### フラグメントをデータのアトミックなビジネス単位として定義する
 
-GraphQL フラグメントは、その使用法に基づいて定義する必要があります。
+GraphQL `Fragment`s must be defined based on their usage.
 
 ほとんどのユースケースでは、1つのタイプに対して1つのフラグメントを定義すること（繰り返しフィールドの使用または型生成の場合）で十分です。
 
-Fragment を使用する場合の経験則は次のとおりです:
+Here is a rule of thumb for using fragments:
 
-- 同じ型のフィールドがクエリ内で繰り返される場合、それらをFragmentでグループ化します。
-- 同じフィールドが繰り返される場合、複数のフラグメントを作成します。
+- When fields of the same type are repeated in a query, group them in a `Fragment`.
+- When similar but different fields are repeated, create multiple fragments, for instance:
 
 ```graphql
 # base fragment (mostly used in listing)
@@ -441,7 +436,7 @@ fragment VoteWithPoll on Vote {
 
 ---
 
-## 必須ツール
+## The Essential Tools
 
 ### GraphQL ウェブベースのエクスプローラ
 
@@ -471,11 +466,11 @@ If you are looking for a more flexible way to debug/test your queries, other sim
 
 The [GraphQL VSCode Extension](https://marketplace.visualstudio.com/items?itemName=GraphQL.vscode-graphql) is a great addition to your development workflow, allowing you to:
 
-- 構文の強調表示
-- オートコンプリートの提案
-- スキーマに対する検証
-- snippets
-- フラグメントと入力タイプの定義に移動
+- Syntax highlighting
+- Autocomplete suggestions
+- Validation against schema
+- Snippets
+- Go to definition for fragments and input types
 
 `graphql-eslint`を使用している場合、[ESLint VSCode拡張機能](https://marketplace.visualstudio.com/items?itemName=dbaeumer.vscode-eslint)はエラーや警告を正しくコード内に表示するために必須です。
 
@@ -483,9 +478,9 @@ The [GraphQL VSCode Extension](https://marketplace.visualstudio.com/items?itemNa
 
 [JS GraphQLプラグイン](https://plugins.jetbrains.com/plugin/8097-graphql/)は、以下を提供することで、GraphQLを使用する際のエクスペリエンスを大幅に向上させます。
 
-- 構文の強調表示
-- オートコンプリートの提案
-- スキーマに対する検証
-- snippets
+- Syntax highlighting
+- Autocomplete suggestions
+- Validation against schema
+- Snippets
 
-詳細は、この[WebStorm の記事](https://blog.jetbrains.com/webstorm/2019/04/featured-plugin-js-graphql/)で、プラグインの主な機能をすべて紹介しています。
+For more information on this topic, check out the [WebStorm article](https://blog.jetbrains.com/webstorm/2019/04/featured-plugin-js-graphql/) which showcases all the plugin's main features.
