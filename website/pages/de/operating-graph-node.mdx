@@ -97,9 +97,9 @@ Dieses Setup kann horizontal skaliert werden, indem mehrere Graph-Knoten und meh
 
 Eine [TOML](https://toml.io/en/)-Konfigurationsdatei kann verwendet werden, um komplexere Konfigurationen als die in der CLI bereitgestellten festzulegen. Der Speicherort der Datei wird mit dem Befehlszeilenschalter --config übergeben.
 
-> When using a configuration file, it is not possible to use the options --postgres-url, --postgres-secondary-hosts, and --postgres-host-weights.
+> Bei Verwendung einer Konfigurationsdatei ist es nicht möglich, die Optionen --postgres-url, --postgres-secondary-hosts und --postgres-host-weights zu verwenden.
 
-A minimal `config.toml` file can be provided; the following file is equivalent to using the --postgres-url command line option:
+Eine minimale `config.toml`-Datei kann bereitgestellt werden; Die folgende Datei entspricht der Verwendung der Befehlszeilenoption --postgres-url:
 
 ```toml
 [store]
@@ -110,19 +110,19 @@ connection="<.. postgres-url argument ..>"
 indexers = [ "<.. list of all indexing nodes ..>" ]
 ```
 
-Full documentation of `config.toml` can be found in the [Graph Node docs](https://github.com/graphprotocol/graph-node/blob/master/docs/config.md).
+Die vollständige Dokumentation von `config.toml` finden Sie in den [Graph Node Dokumenten](https://github.com/graphprotocol/graph-node/blob/master/docs/config.md).
 
-#### Multiple Graph Nodes
+#### Mehrere Graph-Knoten
 
 Graph Node indexing can scale horizontally, running multiple instances of Graph Node to split indexing and querying across different nodes. This can be done simply by running Graph Nodes configured with a different `node_id` on startup (e.g. in the Docker Compose file), which can then be used in the `config.toml` file to specify [dedicated query nodes](#dedicated-query-nodes), [block ingestors](#dedicated-block-ingestion), and splitting subgraphs across nodes with [deployment rules](#deployment-rules).
 
-> Note that multiple Graph Nodes can all be configured to use the same database, which itself can be horizontally scaled via sharding.
+> Beachten Sie darauf, dass mehrere Graph-Knoten so konfiguriert werden können, dass sie dieselbe Datenbank verwenden, die ihrerseits durch Sharding horizontal skaliert werden kann.
 
-#### Deployment rules
+#### Bereitstellungsregeln
 
 Given multiple Graph Nodes, it is necessary to manage deployment of new subgraphs so that the same subgraph isn't being indexed by two different nodes, which would lead to collisions. This can be done by using deployment rules, which can also specify which `shard` a subgraph's data should be stored in, if database sharding is being used. Deployment rules can match on the subgraph name and the network that the deployment is indexing in order to make a decision.
 
-Example deployment rule configuration:
+Beispielkonfiguration für Bereitstellungsregeln:
 
 ```toml
 [deployment]
@@ -150,49 +150,49 @@ indexers = [
   ]
 ```
 
-Read more about deployment rules [here](https://github.com/graphprotocol/graph-node/blob/master/docs/config.md#controlling-deployment).
+Weitere Informationen zu Bereitstellungsregeln finden Sie [hier](https://github.com/graphprotocol/graph-node/blob/master/docs/config.md#controlling-deployment).
 
-#### Dedicated query nodes
+#### Dedizierte Abfrageknoten
 
-Nodes can be configured to explicitly be query nodes by including the following in the configuration file:
+Knoten können explizit als Abfrageknoten konfiguriert werden, indem Sie Folgendes in die Konfigurationsdatei aufnehmen:
 
 ```toml
 [general]
 query = "<regular expression>"
 ```
 
-Any node whose --node-id matches the regular expression will be set up to only respond to queries.
+Jeder Knoten, dessen --node-id mit dem regulären Ausdruck übereinstimmt, wird so eingerichtet, dass er nur auf Abfragen antwortet.
 
-#### Database scaling via sharding
+#### Datenbankskalierung durch Sharding
 
-For most use cases, a single Postgres database is sufficient to support a graph-node instance. When a graph-node instance outgrows a single Postgres database, it is possible to split the storage of graph-node's data across multiple Postgres databases. All databases together form the store of the graph-node instance. Each individual database is called a shard.
+Für die meisten Anwendungsfälle reicht eine einzelne Postgres-Datenbank aus, um eine Graph-Node-Instanz zu unterstützen. Wenn eine Graph-Node-Instanz aus einer einzelnen Postgres-Datenbank herauswächst, ist es möglich, die Speicherung der Daten des Graph-Nodes auf mehrere Postgres-Datenbanken aufzuteilen. Alle Datenbanken zusammen bilden den Speicher der Graph-Node-Instanz. Jede einzelne Datenbank wird als Shard bezeichnet.
 
 Shards can be used to split subgraph deployments across multiple databases, and can also be used to use replicas to spread query load across databases. This includes configuring the number of available database connections each `graph-node` should keep in its connection pool for each database, which becomes increasingly important as more subgraphs are being indexed.
 
-Sharding becomes useful when your existing database can't keep up with the load that Graph Node puts on it, and when it's not possible to increase the database size anymore.
+Sharding wird nützlich, wenn Ihre vorhandene Datenbank nicht mit der Last Schritt halten kann, die Graph Node ihr auferlegt, und wenn es nicht mehr möglich ist, die Datenbankgröße zu erhöhen.
 
 > It is generally better make a single database as big as possible, before starting with shards. One exception is where query traffic is split very unevenly between subgraphs; in those situations it can help dramatically if the high-volume subgraphs are kept in one shard and everything else in another because that setup makes it more likely that the data for the high-volume subgraphs stays in the db-internal cache and doesn't get replaced by data that's not needed as much from low-volume subgraphs.
 
-In terms of configuring connections, start with max_connections in postgresql.conf set to 400 (or maybe even 200) and look at the store_connection_wait_time_ms and store_connection_checkout_count Prometheus metrics. Noticeable wait times (anything above 5ms) is an indication that there are too few connections available; high wait times there will also be caused by the database being very busy (like high CPU load). However if the database seems otherwise stable, high wait times indicate a need to increase the number of connections. In the configuration, how many connections each graph-node instance can use is an upper limit, and Graph Node will not keep connections open if it doesn't need them.
+Was das Konfigurieren von Verbindungen betrifft, beginnen Sie mit max_connections in postgresql.conf, das auf 400 (oder vielleicht sogar 200) eingestellt ist, und sehen Sie sich die Prometheus-Metriken store_connection_wait_time_ms und store_connection_checkout_count an. Spürbare Wartezeiten (alles über 5 ms) sind ein Hinweis darauf, dass zu wenige Verbindungen verfügbar sind; hohe Wartezeiten werden auch dadurch verursacht, dass die Datenbank sehr ausgelastet ist (z. B. hohe CPU-Last). Wenn die Datenbank jedoch ansonsten stabil erscheint, weisen hohe Wartezeiten darauf hin, dass die Anzahl der Verbindungen erhöht werden muss. In der Konfiguration ist die Anzahl der Verbindungen, die jede Graph-Knoten-Instanz verwenden kann, eine Obergrenze, und der Graph-Knoten hält Verbindungen nicht offen, wenn er sie nicht benötigt.
 
-Read more about store configuration [here](https://github.com/graphprotocol/graph-node/blob/master/docs/config.md#configuring-multiple-databases).
+Weitere Informationen zur Speicherkonfiguration finden Sie [hier](https://github.com/graphprotocol/graph-node/blob/master/docs/config.md#configuring-multiple-databases).
 
-#### Dedicated block ingestion
+#### Dedizierte Blockaufnahme
 
-If there are multiple nodes configured, it will be necessary to specify one node which is responsible for ingestion of new blocks, so that all configured index nodes aren't polling the chain head. This is done as part of the `chains` namespace, specifying the `node_id` to be used for block ingestion:
+Wenn mehrere Knoten konfiguriert sind, muss ein Knoten angegeben werden, der für die Aufnahme neuer Blöcke verantwortlich ist, damit nicht alle konfigurierten Indexknoten den Kettenkopf abfragen. Dies geschieht als Teil des `chains`-Namespace, der die `node_id` angibt, die für die Blockaufnahme verwendet werden soll:
 
 ```toml
 [chains]
 ingestor = "block_ingestor_node"
 ```
 
-#### Supporting multiple networks
+#### Unterstützung mehrerer Netzwerke
 
-The Graph Protocol is increasing the number of networks supported for indexing rewards, and there exist many subgraphs indexing unsupported networks which an indexer would like to process. The `config.toml` file allows for expressive and flexible configuration of:
+Das Graph-Protokoll erhöht die Anzahl der Netzwerke, die für die Indizierung von Belohnungen unterstützt werden, und es gibt viele Subgraphen, die nicht unterstützte Netzwerke indizieren, die ein Indexer verarbeiten möchte. Die Datei `config.toml` ermöglicht eine ausdrucksstarke und flexible Konfiguration von:
 
-- Multiple networks
-- Multiple providers per network (this can allow splitting of load across providers, and can also allow for configuration of full nodes as well as archive nodes, with Graph Node preferring cheaper providers if a given workload allows).
-- Additional provider details, such as features, authentication and the type of provider (for experimental Firehose support)
+- Mehrere Netzwerke
+- Mehrere Anbieter pro Netzwerk (dies kann eine Aufteilung der Last auf Anbieter ermöglichen und kann auch die Konfiguration von vollständigen Knoten sowie Archivknoten ermöglichen, wobei Graph Node günstigere Anbieter bevorzugt, wenn eine bestimmte Arbeitslast dies zulässt).
+- Zusätzliche Anbieterdetails, wie Funktionen, Authentifizierung und Anbietertyp (für experimentelle Firehose-Unterstützung)
 
 The `[chains]` section controls the ethereum providers that graph-node connects to, and where blocks and other metadata for each chain are stored. The following example configures two chains, mainnet and kovan, where blocks for mainnet are stored in the vip shard and blocks for kovan are stored in the primary shard. The mainnet chain can use two different providers, whereas kovan only has one provider.
 
@@ -210,17 +210,17 @@ shard = "primary"
 provider = [ { label = "kovan", url = "http://..", features = [] } ]
 ```
 
-Read more about provider configuration [here](https://github.com/graphprotocol/graph-node/blob/master/docs/config.md#configuring-ethereum-providers).
+Weitere Informationen zur Anbieterkonfiguration finden Sie [hier](https://github.com/graphprotocol/graph-node/blob/master/docs/config.md#configuring-ethereum-providers).
 
-### Environment variables
+### Umgebungsvariablen
 
-Graph Node supports a range of environment variables which can enable features, or change Graph Node behaviour. These are documented [here](https://github.com/graphprotocol/graph-node/blob/master/docs/environment-variables.md).
+Graph Node unterstützt eine Reihe von Umgebungsvariablen, die Funktionen aktivieren oder das Verhalten von Graph Node ändern können. Diese sind [hier](https://github.com/graphprotocol/graph-node/blob/master/docs/environment-variables.md) dokumentiert.
 
-### Continuous deployment
+### Kontinuierlicher Einsatz
 
-Users who are operating a scaled indexing setup with advanced configuration may benefit from managing their Graph Nodes with Kubernetes.
+Benutzer, die ein skaliertes Indizierungs-Setup mit erweiterter Konfiguration betreiben, können von der Verwaltung ihrer Graph-Knoten mit Kubernetes profitieren.
 
-- The indexer repository has an [example Kubernetes reference](https://github.com/graphprotocol/indexer/tree/main/k8s)
+- Das Indexer-Repository enthält eine [Beispielreferenz für Kubernetes](https://github.com/graphprotocol/indexer/tree/main/k8s)
 - [Launchpad](https://docs.graphops.xyz/launchpad/intro) is a toolkit for running a Graph Protocol Indexer on Kubernetes maintained by GraphOps. It provides a set of Helm charts and a CLI to manage a Graph Node deployment.
 
 ### Managing Graph Node
