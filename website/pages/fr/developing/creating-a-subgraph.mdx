@@ -314,7 +314,7 @@ In this configuration:
 - `topic2` is configured to filter `Transfer` events where `0xAddressB` and `0xAddressC` is the receiver.
 - The subgraph will index transactions that occur in either direction between multiple addresses allowing for comprehensive monitoring of interactions involving all addresses.
 
-## Declared eth_call
+### Declared eth_call
 
 > **Requires**: [SpecVersion](#specversion-releases) >= `1.2.0`. Currently, `eth_calls` can only be declared for event handlers.
 
@@ -326,13 +326,13 @@ This feature does the following:
 - Allows faster data fetching, resulting in quicker query responses and a better user experience.
 - Reduces wait times for applications that need to aggregate data from multiple Ethereum calls, making the data retrieval process more efficient.
 
-### Key Concepts
+#### Key Concepts
 
 - Declarative `eth_calls`: Ethereum calls that are defined to be executed in parallel rather than sequentially.
 - Parallel Execution: Instead of waiting for one call to finish before starting the next, multiple calls can be initiated simultaneously.
 - Time Efficiency: The total time taken for all the calls changes from the sum of the individual call times (sequential) to the time taken by the longest call (parallel).
 
-### Scenario without Declarative `eth_calls`
+#### Scenario without Declarative `eth_calls`
 
 Imagine you have a subgraph that needs to make three Ethereum calls to fetch data about a user's transactions, balance, and token holdings.
 
@@ -344,7 +344,7 @@ Traditionally, these calls might be made sequentially:
 
 Total time taken = 3 + 2 + 4 = 9 seconds
 
-### Scenario with Declarative `eth_calls`
+#### Scenario with Declarative `eth_calls`
 
 With this feature, you can declare these calls to be executed in parallel:
 
@@ -356,13 +356,13 @@ Since these calls are executed in parallel, the total time taken is equal to the
 
 Total time taken = max (3, 2, 4) = 4 seconds
 
-### How it Works
+#### How it Works
 
 1.  Declarative Definition: In the subgraph manifest, you declare the Ethereum calls in a way that indicates they can be executed in parallel.
 2.  Parallel Execution Engine: The Graph Node's execution engine recognizes these declarations and runs the calls simultaneously.
 3.  Result Aggregation: Once all calls are complete, the results are aggregated and used by the subgraph for further processing.
 
-### Example Configuration in Subgraph Manifest
+#### Example Configuration in Subgraph Manifest
 
 Declared `eth_calls` can access the `event.address` of the underlying event as well as all the `event.params`.
 
@@ -405,27 +405,33 @@ calls:
 |  0.0.5  | Added support for event handlers having access to transaction receipts.                                                                                                |
 |  0.0.4  | Added support for managing subgraph features.                                                                                                                          |
 
-### Obtenir les ABI
+### Getting The ABIs
 
 Le(s) fichier(s) ABI doivent correspondre à votre(vos) contrat(s). Il existe plusieurs façons d'obtenir des fichiers ABI :
 
 - Si vous construisez votre propre projet, vous aurez probablement accès à vos ABI les plus récents.
-- Si vous créez un subgraph pour un projet public, vous pouvez télécharger ce projet sur votre ordinateur et obtenir l'ABI en utilisant la [`compilation truffle `](https://truffleframework.com/docs/truffle/overview) ou en utilisant solc pour compiler.
+- If you are building a subgraph for a public project, you can download that project to your computer and get the ABI by using [`npx hardhat compile`](https://hardhat.org/hardhat-runner/docs/guides/compile-contracts#compiling-your-contracts) or using `solc` to compile.
 - Vous pouvez également trouver l'ABI sur [Etherscan](https://etherscan.io/), mais ce n'est pas toujours fiable, car l'ABI qui y est téléchargé peut être obsolète. Assurez-vous d'avoir le bon ABI, sinon l'exécution de votre subgraph échouera.
 
-## Le Schema GraphQL
+### The GraphQL Schema
 
-Le schéma de votre subgraph se trouve dans le fichier `schema.graphql`. Les schémas GraphQL sont définis à l'aide du langage de définition d'interface GraphQL. Si vous n'avez jamais écrit de schéma GraphQL, il est recommandé de consulter cette introduction sur le système de types GraphQL. La documentation de référence pour les schémas GraphQL est disponible dans la section [API GraphQL](/querying/graphql-api).
+The schema for your subgraph is in the file `schema.graphql`. GraphQL schemas are defined using the GraphQL interface definition language. If you've never written a GraphQL schema, it is recommended that you check out this primer on the GraphQL type system. Reference documentation for GraphQL schemas can be found in the [GraphQL API](/querying/graphql-api/) section.
 
-## Définir des entités
+### Defining Entities
 
-Avant de définir des entités, il est important de prendre du recul et de réfléchir à la manière dont vos données sont structurées et liées. Toutes les requêtes seront effectuées sur le modèle de données défini dans le schéma du subgraph et les entités indexées par le subgraph. Pour cette raison, il est bon de définir le schéma du subgraph d'une manière qui correspond aux besoins de votre dapp. Il peut être utile d'imaginer les entités comme des « objets contenant des données », plutôt que comme des événements ou des fonctions.
+Before defining entities, it is important to take a step back and think about how your data is structured and linked.
 
-Avec The Graph, vous définissez simplement les types d'entités dans `schema.graphql`, et Graph Node générera des champs de niveau supérieur pour interroger des instances uniques et des collections de ce type d'entité. Chaque type qui doit être une entité doit être annoté avec une directive `@entity`. Par défaut, les entités sont mutables, ce qui signifie que les mappages peuvent charger des entités existantes, les modifier et stocker une nouvelle version de cette entité. La mutabilité a un prix, et pour les types d'entités dont on sait qu'elles ne seront jamais modifiées, par exemple parce qu'elles contiennent simplement des données extraites textuellement de la chaîne, il est recommandé de les marquer comme immuables avec `@entity (immuable : vrai)`. Les mappages peuvent apporter des modifications aux entités immuables tant que ces modifications se produisent dans le même bloc dans lequel l'entité a été créée. Les entités immuables sont beaucoup plus rapides à écrire et à interroger et doivent donc être utilisées autant que possible.
+- All queries will be made against the data model defined in the subgraph schema and the entities indexed by the subgraph. As a result, it is good to define the subgraph schema in a way that matches the needs of your dapp.
+- It may be useful to imagine entities as "objects containing data", rather than as events or functions.
+- You define entity types in `schema.graphql`, and Graph Node will generate top-level fields for querying single instances and collections of that entity type.
+- Each type that should be an entity is required to be annotated with an `@entity` directive.
+- By default, entities are mutable, meaning that mappings can load existing entities, modify them and store a new version of that entity.
+  - Mutability comes at a price, so for entity types that will never be modified, such as those containing data extracted verbatim from the chain, it is recommended to mark them as immutable with `@entity(immutable: true)`.
+  - If changes happen in the same block in which the entity was created, then mappings can make changes to immutable entities. Immutable entities are much faster to write and to query so they should be used whenever possible.
 
-### Bon exemple
+#### Bon exemple
 
-L'entité `Gravatar` ci-dessous est structurée autour d'un objet Gravatar et constitue un bon exemple de la façon dont une entité pourrait être définie.
+The following `Gravatar` entity is structured around a Gravatar object and is a good example of how an entity could be defined.
 
 ```graphql
 type Gravatar @entity(immutable: true) {
@@ -437,9 +443,9 @@ type Gravatar @entity(immutable: true) {
 }
 ```
 
-### Mauvais exemple
+#### Mauvais exemple
 
-Les exemples d'entités `GravatarAccepted` et `GravatarDeclined` ci-dessous sont basés sur des événements. Il n'est pas recommandé de mapper des événements ou des appels de fonction à des entités 1:1.
+The following example `GravatarAccepted` and `GravatarDeclined` entities are based around events. It is not recommended to map events or function calls to entities 1:1.
 
 ```graphql
 type GravatarAccepted @entity {
@@ -457,7 +463,7 @@ type GravatarDeclined @entity {
 }
 ```
 
-### Champs facultatifs et obligatoires
+#### Champs facultatifs et obligatoires
 
 Les champs d'entité peuvent être définis comme obligatoires ou facultatifs. Les champs obligatoires sont indiqués par le `!` dans le schéma. Si un champ obligatoire n'est pas défini dans le mappage, vous recevrez cette erreur lors de l'interrogation du champ :
 
@@ -473,7 +479,7 @@ Pour certains types d'entités, l'`id` est construit à partir des identifiants 
 
 #### Scalaires pris en charge par GraphQL
 
-Nous prenons en charge les scalaires suivants dans notre API GraphQL :
+The following scalars are supported in the GraphQL API:
 
 | Type         | Description                                                                                                                                                                                                                   |
 | ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
