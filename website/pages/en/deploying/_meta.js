@@ -1,4 +1,4 @@
 export default {
-  'deploying-a-subgraph-to-studio': '',
+  'deploy-using-subgraph-studio': '',
   'subgraph-studio-faqs': '',
 }
