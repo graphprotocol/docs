@@ -33,6 +33,7 @@ export default {
     title: 'Substreams',
   },
   substreams: '',
+  sps: 'Substreams-powered Subgraphs',
   '---4': {
     type: 'separator',
   },
@@ -42,10 +43,9 @@ export default {
   },
   'operating-graph-node': '',
   tap: '',
-  'chain-integration-overview': '',
   'supported-network-requirements': '',
+  'chain-integration-overview': '',
   'new-chain-integration': '',
   firehose: '',
   graphcast: '',
-  'mips-faqs': '',
 }
