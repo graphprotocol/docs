@@ -18,6 +18,7 @@ export default {
     title: 'Subgraphs',
   },
   'quick-start': '',
+  subgraphs: '',
   developing: 'Developing',
   deploying: 'Deploying',
   publishing: 'Publishing',
