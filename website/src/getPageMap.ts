@@ -23,7 +23,7 @@ export async function getPageMap(locale: Locale = Locale.ENGLISH) {
   ]
 
   const metaIndex = pageMap.findIndex((pageItem) => pageItem.kind === 'Meta')
-  ;(resultPageMap[metaIndex] as MetaJsonFile).data.index = translate(translations, locale, 'index.title')
+  ;(resultPageMap[metaIndex] as MetaJsonFile).data.index = translate(translations, locale, 'index.navTitle')
 
   return resultPageMap
 }

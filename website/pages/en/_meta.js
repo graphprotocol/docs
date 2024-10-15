@@ -1,6 +1,7 @@
 export default {
   index: '',
   about: '',
+  'supported-networks': '',
   overview: 'Overview',
   '---1': {
     type: 'separator',
@@ -10,6 +11,7 @@ export default {
     title: 'Products',
   },
   substreams: '',
+  sps: 'Substreams-powered Subgraphs',
   '---2': {
     type: 'separator',
   },
