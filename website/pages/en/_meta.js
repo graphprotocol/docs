@@ -1,63 +1,47 @@
 export default {
   index: '',
+  about: '',
+  overview: 'Overview',
   '---1': {
     type: 'separator',
   },
   '###1': {
     type: 'heading',
-    title: 'Get Started',
+    title: 'Products',
   },
-  'quick-start': '',
-  explorer: '',
+  substreams: '',
   '---2': {
     type: 'separator',
   },
   '###2': {
     type: 'heading',
-    title: 'Products',
-  },
-  substreams: '',
-  '---3': {
-    type: 'separator',
-  },
-  about: '',
-  overview: 'Overview',
-  '---4': {
-    type: 'separator',
-  },
-  '###4': {
-    type: 'heading',
-    title: 'Data Consumers',
-  },
-  querying: 'Querying',
-  '---5': {
-    type: 'separator',
-  },
-  '###5': {
-    type: 'heading',
-    title: 'Subgraph Developers',
+    title: 'Subgraphs',
   },
   'quick-start': '',
-  billing: '',
+  explorer: '',
+  querying: 'Querying',
   developing: 'Developing',
   deploying: 'Deploying',
   publishing: 'Publishing',
+  curating: '',
   managing: 'Managing',
+  billing: '',
+  benefits: 'Benefits',
   cookbook: 'Cookbooks',
   'release-notes': 'Release Notes & Upgrade Guides',
-  '---6': {
+  '---3': {
     type: 'separator',
   },
-  '###6': {
+  '###3': {
     type: 'heading',
     title: 'Substreams',
   },
   substreams: '',
   sps: 'Substreams-powered Subgraphs',
-  '---7': {
+  '---4': {
     type: 'separator',
   },
-  '###7': {
+  '###4': {
     type: 'heading',
     title: 'Indexing',
   },
@@ -69,37 +53,28 @@ export default {
   'new-chain-integration': '',
   firehose: '',
   graphcast: '',
-  '---8': {
+  '---5': {
     type: 'separator',
   },
-  '###8': {
+  '###5': {
     type: 'heading',
     title: 'Delegators',
   },
   delegating: '',
-  '---9': {
+  '---6': {
     type: 'separator',
   },
-  '###9': {
-    type: 'heading',
-    title: 'Curating',
-  },
-  curating: '',
-  '---10': {
-    type: 'separator',
-  },
-  '###10': {
+  '###6': {
     type: 'heading',
     title: 'Resources',
   },
-  benefits: 'Benefits',
   tokenomics: 'Tokenomics',
   contracts: 'Contracts',
   glossary: '',
-  '---11': {
+  '---7': {
     type: 'separator',
   },
-  '###11': {
+  '###7': {
     type: 'heading',
     title: 'Archived',
   },
