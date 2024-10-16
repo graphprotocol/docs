@@ -1,3 +1,4 @@
 export default {
-  'transfer-and-deprecate-a-subgraph': '',
+  'transfer-a-subgraph': '',
+  'deprecate-a-subgraph': '',
 }

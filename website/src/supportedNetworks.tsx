@@ -25,41 +25,39 @@ export async function getSupportedNetworks() {
     )
   }
 
-  return Array.from(SupportedNetworkMap.values()).flatMap((network) =>
-    Array.from(network.chains)
-      .flatMap((chain) => {
-        const supportedOnStudio = chain.productDeployStatus.studio === ChainProductStatus.ALLOWED
-        const integrationType = ['evm', 'near', 'cosmos', 'osmosis', 'ar'].includes(chain.network)
-          ? chain.network
-          : 'substreams'
+  return Array.from(SupportedNetworkMap.values())
+    .flatMap((network) =>
+      Array.from(network.chains)
+        .flatMap((chain) => {
+          const supportedOnStudio = chain.productDeployStatus.studio === ChainProductStatus.ALLOWED
+          const integrationType = ['evm', 'near', 'cosmos', 'osmosis', 'ar'].includes(chain.network)
+            ? chain.network
+            : 'substreams'
 
-        if (
-          !chain.graphCliName ||
-          (!supportedOnStudio && integrationType !== 'substreams') ||
-          chain.uid === 'evm-1946'
-        ) {
-          return []
-        }
+          if (!chain.graphCliName || (!supportedOnStudio && integrationType !== 'substreams')) {
+            return []
+          }
 
-        const fullySupportedOnNetwork =
-          network.id === 'evm' && fullySupportedNetworkIds.includes(`eip155:${chain.chainId}`)
+          const fullySupportedOnNetwork =
+            network.id === 'evm' && fullySupportedNetworkIds.includes(`eip155:${chain.chainId}`)
 
-        return [
-          {
-            uid: chain.uid,
-            name: chain.name,
-            cliName: chain.graphCliName,
-            chainId: chain.chainId,
-            testnet: chain.testnet,
-            supportedOnStudio,
-            fullySupportedOnNetwork,
-            substreams: chain.substreams ?? [],
-            integrationType,
-          },
-        ]
-      })
-      .filter(Boolean),
-  )
+          return [
+            {
+              uid: chain.uid,
+              name: chain.name,
+              cliName: chain.graphCliName,
+              chainId: chain.chainId,
+              testnet: chain.testnet,
+              supportedOnStudio,
+              fullySupportedOnNetwork,
+              substreams: chain.substreams ?? [],
+              integrationType,
+            },
+          ]
+        })
+        .filter(Boolean),
+    )
+    .sort((a, b) => a.name.localeCompare(b.name))
 }
 
 export function SupportedNetworksTable({ networks }: { networks: Awaited<ReturnType<typeof getSupportedNetworks>> }) {
