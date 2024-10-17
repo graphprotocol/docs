@@ -2,15 +2,15 @@
 title: Bästa praxis för förfrågningar
 ---
 
-The Graph provides a decentralized way to query data from blockchains via GraphQL APIs, making it easier to query data with the GraphQL language.
+The Graph provides a decentralized way to query data from blockchains. Its data is exposed through a GraphQL API, making it easier to query with the GraphQL language.
 
-Learn the essential GraphQL language rules and GraphQL querying best practices.
+Learn the essential GraphQL language rules and best practices to optimize your subgraph.
 
 ---
 
 ## Att fråga ett GraphQL API
 
-### Anatomien av en GraphQL-fråga
+### The Anatomy of a GraphQL Query
 
 Till skillnad från REST API bygger ett GraphQL API på ett schema som definierar vilka frågor som kan utföras.
 
@@ -50,7 +50,7 @@ query [operationName]([variableName]: [variableType]) {
 }
 ```
 
-Listan över syntaktiska do's and don'ts är lång, men här är de viktigaste reglerna att tänka på när det gäller att skriva GraphQL-förfrågningar:
+## Rules for Writing GraphQL Queries
 
 - Varje `queryName` får endast användas en gång per operation.
 - Varje `field` får bara användas en gång i ett urval (vi kan inte fråga `id` två gånger under `token`)
@@ -59,24 +59,24 @@ Listan över syntaktiska do's and don'ts är lång, men här är de viktigaste r
 - I en given lista med variabler måste var och en av dem vara unik.
 - Alla definierade variabler måste användas.
 
-Om du inte följer ovanstående regler kommer du att få ett felmeddelande från Graph API.
+> Note: Failing to follow these rules will result in an error from The Graph API.
 
-For a complete list of rules with code examples, please look at our [GraphQL Validations guide](/release-notes/graphql-validations-migration-guide/).
+For a complete list of rules with code examples, check out [GraphQL Validations guide](/release-notes/graphql-validations-migration-guide/).
 
 ### Att skicka en fråga till ett GraphQL API
 
-GraphQL är ett språk och en uppsättning konventioner som transporteras över HTTP.
+GraphQL is a language and set of conventions that transport over HTTP.
 
-Det innebär att du kan ställa en fråga till ett GraphQL API med hjälp av standard `fetch` (nativt eller via `@whatwg-node/fetch` eller `isomorphic-fetch`).
+It means that you can query a GraphQL API using standard `fetch` (natively or via `@whatwg-node/fetch` or `isomorphic-fetch`).
 
-However, as stated in ["Querying from an Application"](/querying/querying-from-an-application), it's recommend to use `graph-client` which supports unique features such as:
+However, as mentioned in ["Querying from an Application"](/querying/querying-from-an-application), it's recommended to use `graph-client`, which supports the following unique features:
 
 - Hantering av subgrafer över olika blockkedjor: Frågehantering från flera subgrafer i en enda fråga
 - [Automatisk blockspårning](https://github.com/graphprotocol/graph-client/blob/main/packages/block-tracking/README.md)
 - [Automatisk paginering](https://github.com/graphprotocol/graph-client/blob/main/packages/auto-pagination/README.md)
 - Fullt typad resultat
 
-Så här ställer du en fråga till The Graph med `graph-client`:
+Here's how to query The Graph with `graph-client`:
 
 ```tsx
 import { execute } from "../.graphclient";
@@ -100,7 +100,7 @@ async function main() {
 main()
 ```
 
-Fler GraphQL-klientalternativ behandlas i ["Querying from an Application"](/querying/querying-from-an-application).
+More GraphQL client alternatives are covered in ["Querying from an Application"](/querying/querying-from-an-application).
 
 ---
 
@@ -108,7 +108,7 @@ Fler GraphQL-klientalternativ behandlas i ["Querying from an Application"](/quer
 
 ### Skriv alltid statiska frågor
 
-En vanlig (dålig) praxis är att dynamiskt bygga upp frågesträngar enligt följande:
+A common (bad) practice is to dynamically build query strings as follows:
 
 ```tsx
 const id = params.id;
@@ -124,14 +124,14 @@ query GetToken {
 // Execute query...
 ```
 
-Medan det tidigare avsnittet genererar en giltig GraphQL-fråga har den **många nackdelar**:
+While the above snippet produces a valid GraphQL query, **it has many drawbacks**:
 
 - det gör det **svårare att förstå** frågan som helhet
 - utvecklare är **ansvariga för att säkert sanera stränginterpolationen**
 - att inte skicka värdena av variablerna som en del av förfrågningsparametrarna **förhindrar möjlig cache på servern**
 - det **hindrar verktyg från statisk analys av frågan** (exempel: Linter eller typgenereringsverktyg)
 
-Av dessa skäl rekommenderas det alltid att skriva frågor som statiska strängar:
+For this reason, it is recommended to always write queries as static strings:
 
 ```tsx
 import { execute } from "your-favorite-graphql-client";
@@ -153,7 +153,7 @@ const result = await execute(query, {
 })
 ```
 
-Detta medför **många fördelar**:
+Doing so brings **many advantages**:
 
 - **Lättlästa och underhållna** frågor
 - GraphQL **server hanterar sanitet av variabler**
@@ -187,18 +187,18 @@ const result = await execute(query, {
 })
 ```
 
-> Observera: Det motsatta direktivet är `@skip(if: ...)`.
+> Note: The opposite directive is `@skip(if: ...)`.
 
 ### Ask for what you want
 
-GraphQL blev känd för sitt motto "Be om det du vill ha".
+GraphQL became famous for its "Ask for what you want" tagline.
 
-Av den anledningen finns det ingen möjlighet i GraphQL att få alla tillgängliga fält utan att behöva lista dem individuellt.
+For this reason, there is no way, in GraphQL, to get all available fields without having to list them individually.
 
 - När du frågar GraphQL API:er, tänk alltid på att endast fråga efter de fält som faktiskt kommer att användas.
 - Make sure queries only fetch as many entities as you actually need. By default, queries will fetch 100 entities in a collection, which is usually much more than what will actually be used, e.g., for display to the user. This applies not just to top-level collections in a query, but even more so to nested collections of entities.
 
-Till exempel, i följande fråga:
+For example, in the following query:
 
 ```graphql
 query listTokens {
@@ -213,9 +213,9 @@ query listTokens {
 }
 ```
 
-Svaret kan innehålla 100 transaktioner för varje av de 100 tokens.
+The response could contain 100 transactions for each of the 100 tokens.
 
-Om applikationen bara behöver 10 transaktioner bör frågan explicit ange `first: 10` på transaktionsfältet.
+If the application only needs 10 transactions, the query should explicitly set `first: 10` on the transactions field.
 
 ### Use a single query to request multiple records
 
@@ -251,7 +251,7 @@ query ManyRecords {
 
 ### Combine multiple queries in a single request
 
-Din applikation kan kräva att du ställer flera typer av datafrågor enligt följande:
+Your application might require querying multiple types of data as follows:
 
 ```graphql
 import { execute } from "your-favorite-graphql-client"
@@ -281,9 +281,9 @@ const [tokens, counters] = Promise.all(
 )
 ```
 
-Medan denna implementation är helt giltig kräver den två rundturer med GraphQL API:n.
+While this implementation is totally valid, it will require two round trips with the GraphQL API.
 
-Lyckligtvis är det också giltigt att skicka flera frågor i samma GraphQL-begäran enligt följande:
+Fortunately, it is also valid to send multiple queries in the same GraphQL request as follows:
 
 ```graphql
 import { execute } from "your-favorite-graphql-client"
@@ -304,13 +304,13 @@ query GetTokensandCounters {
 const  { result: { tokens, counters } } = execute(query)
 ```
 
-Detta tillvägagångssätt kommer att **förbättra den övergripande prestandan** genom att minska tiden som spenderas på nätverket (sparar en omväg till API:n) och kommer att ge en **mer koncis implementation**.
+This approach will **improve the overall performance** by reducing the time spent on the network (saves you a round trip to the API) and will provide a **more concise implementation**.
 
 ### Dra nytta av GraphQL-fragment
 
-En användbar funktion för att skriva GraphQL-frågor är GraphQL-fragment.
+A helpful feature to write GraphQL queries is GraphQL Fragment.
 
-Om vi tittar på följande fråga kommer du att märka att vissa fält upprepas över flera urvalssatser (`{ ... }`):
+Looking at the following query, you will notice that some fields are repeated across multiple Selection-Sets (`{ ... }`):
 
 ```graphql
 query {
@@ -330,12 +330,12 @@ query {
 }
 ```
 
-Sådana upprepade fält (`id`, `active`, `status`) medför många problem:
+Such repeated fields (`id`, `active`, `status`) bring many issues:
 
 - More extensive queries become harder to read.
 - When using tools that generate TypeScript types based on queries (_more on that in the last section_), `newDelegate` and `oldDelegate` will result in two distinct inline interfaces.
 
-En omstrukturerad version av frågan skulle vara följande:
+A refactored version of the query would be the following:
 
 ```graphql
 query {
@@ -361,13 +361,13 @@ fragment DelegateItem on Transcoder {
 
 Using GraphQL `fragment` will improve readability (especially at scale) and result in better TypeScript types generation.
 
-När du använder verktyget för typsgenerering kommer den ovanstående frågan att generera en korrekt typ av `DelegateItemFragment` (_se sista avsnittet_).
+When using the types generation tool, the above query will generate a proper `DelegateItemFragment` type (_see last "Tools" section_).
 
 ### Dos and Don'ts för GraphQL Fragment
 
 ### Fragmentbas måste vara en typ
 
-Ett fragment kan inte baseras på en oanvändbar typ, kort sagt, **på en typ som inte har fält**:
+A Fragment cannot be based on a non-applicable type, in short, **on type not having fields**:
 
 ```graphql
 fragment MyFragment on BigInt {
@@ -375,11 +375,11 @@ fragment MyFragment on BigInt {
 }
 ```
 
-`BigInt` är en **skalär** (inbyggd "vanlig" typ) som inte kan användas som grund för ett fragment.
+`BigInt` is a **scalar** (native "plain" type) that cannot be used as a fragment's base.
 
 #### Hur man sprider ett fragment
 
-Fragment är definierade på specifika typer och bör användas i enlighet med det i frågor.
+Fragments are defined on specific types and should be used accordingly in queries.
 
 Exempel:
 
@@ -402,15 +402,15 @@ fragment VoteItem on Vote {
 }
 ```
 
-`newDelegate` och `oldDelegate` är av typen `Transcoder`.
+`newDelegate` and `oldDelegate` are of type `Transcoder`.
 
-Det är inte möjligt att sprida ett fragment av typ `Vote` här.
+It is not possible to spread a fragment of type `Vote` here.
 
 #### Definiera fragment som en atomisk affärsenhet för data
 
 GraphQL `Fragment`s must be defined based on their usage.
 
-För de flesta användningsfall är det tillräckligt att definiera ett fragment per typ (i fallet med upprepade fält eller typgenerering).
+For most use-case, defining one fragment per type (in the case of repeated fields usage or type generation) is sufficient.
 
 Here is a rule of thumb for using fragments:
 
@@ -448,7 +448,7 @@ If you are looking for a more flexible way to debug/test your queries, other sim
 
 ### GraphQL Linting
 
-För att hålla dig uppdaterad med de tidigare nämnda bästa praxis och syntaktiska regler rekommenderas det starkt att använda följande arbetsflöde och IDE-verktyg.
+In order to keep up with the mentioned above best practices and syntactic rules, it is highly recommended to use the following workflow and IDE tools.
 
 **GraphQL ESLint**
 
@@ -460,13 +460,13 @@ För att hålla dig uppdaterad med de tidigare nämnda bästa praxis och syntakt
 - `@graphql-eslint/no-unused variables`: bör en given variabel förbli oanvänd?
 - och mer!
 
-Detta kommer att tillåta dig att **upptäcka fel utan ens att testa frågor** på lekplatsen eller köra dem i produktion!
+This will allow you to **catch errors without even testing queries** on the playground or running them in production!
 
 ### IDE-tillägg
 
-**VSCode och GraphQL**
+**VSCode and GraphQL**
 
-[GraphQL VSCode-tillägget](https://marketplace.visualstudio.com/items?itemName=GraphQL.vscode-graphql) är ett utmärkt komplement till din utvecklingsarbetsflöde för att få:
+The [GraphQL VSCode extension](https://marketplace.visualstudio.com/items?itemName=GraphQL.vscode-graphql) is an excellent addition to your development workflow to get:
 
 - Syntax highlighting
 - Autocomplete suggestions
@@ -474,11 +474,11 @@ Detta kommer att tillåta dig att **upptäcka fel utan ens att testa frågor** p
 - Snippets
 - Go to definition for fragments and input types
 
-Om du använder `graphql-eslint` är [ESLint VSCode-tillägget](https://marketplace.visualstudio.com/items?itemName=dbaeumer.vscode-eslint) ett måste för att visualisera fel och varningar korrekt infogade i din kod.
+If you are using `graphql-eslint`, the [ESLint VSCode extension](https://marketplace.visualstudio.com/items?itemName=dbaeumer.vscode-eslint) is a must-have to visualize errors and warnings inlined in your code correctly.
 
-**WebStorm/Intellij och GraphQL**
+**WebStorm/Intellij and GraphQL**
 
-[JS GraphQL-tillägget](https://plugins.jetbrains.com/plugin/8097-graphql/) kommer att förbättra din upplevelse av att arbeta med GraphQL genom att tillhandahålla:
+The [JS GraphQL plugin](https://plugins.jetbrains.com/plugin/8097-graphql/) will significantly improve your experience while working with GraphQL by providing:
 
 - Syntax highlighting
 - Autocomplete suggestions
