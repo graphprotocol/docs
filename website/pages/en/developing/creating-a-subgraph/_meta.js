@@ -4,4 +4,5 @@ export default {
   'subgraph-manifest': '',
   'ql-schema': '',
   'assemblyscript-mappings': '',
+  advanced: '',
 }
