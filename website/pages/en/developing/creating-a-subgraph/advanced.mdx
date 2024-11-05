@@ -2,7 +2,9 @@
 title: Advance Subgraph Features
 ---
 
-## Experimental features
+## Overview
+
+Learn about and implement advanced subgraph features to enhanced your subgraph's built.
 
 Starting from `specVersion` `0.0.4`, subgraph features must be explicitly declared in the `features` section at the top level of the manifest file, using their `camelCase` name, as listed in the table below:
 
@@ -23,7 +25,115 @@ features:
 dataSources: ...
 ```
 
-Note that using a feature without declaring it will incur a **validation error** during subgraph deployment, but no errors will occur if a feature is declared but not used.
+> Note that using a feature without declaring it will incur a **validation error** during subgraph deployment, but no errors will occur if a feature is declared but not used.
+
+## Timeseries and Aggregations
+
+Timeseries and aggregations enable your subgraph to track statistics like daily average price, hourly total transfers, etc.
+
+This feature introduces two new types of subgraph entity. Timeseries entities record data points with timestamps. Aggregation entities perform pre-declared calculations on the Timeseries data points on an hourly or daily basis, then store the results for easy access via GraphQL.
+
+### Example Schema
+
+```graphql
+type Data @entity(timeseries: true) {
+  id: Int8!
+  timestamp: Timestamp!
+  price: BigDecimal!
+}
+
+type Stats @aggregation(intervals: ["hour", "day"], source: "Data") {
+  id: Int8!
+  timestamp: Timestamp!
+  sum: BigDecimal! @aggregate(fn: "sum", arg: "price")
+}
+```
+
+### Defining Timeseries and Aggregations
+
+Timeseries entities are defined with `@entity(timeseries: true)` in schema.graphql. Every timeseries entity must have a unique ID of the int8 type, a timestamp of the Timestamp type, and include data that will be used for calculation by aggregation entities. These Timeseries entities can be saved in regular trigger handlers, and act as the “raw data” for the Aggregation entities.
+
+Aggregation entities are defined with `@aggregation` in schema.graphql. Every aggregation entity defines the source from which it will gather data (which must be a Timeseries entity), sets the intervals (e.g., hour, day), and specifies the aggregation function it will use (e.g., sum, count, min, max, first, last). Aggregation entities are automatically calculated on the basis of the specified source at the end of the required interval.
+
+#### Available Aggregation Intervals
+
+- `hour`: sets the timeseries period every hour, on the hour.
+- `day`: sets the timeseries period every day, starting and ending at 00:00.
+
+#### Available Aggregation Functions
+
+- `sum`: Total of all values.
+- `count`: Number of values.
+- `min`: Minimum value.
+- `max`: Maximum value.
+- `first`: First value in the period.
+- `last`: Last value in the period.
+
+#### Example Aggregations Query
+
+```graphql
+{
+  stats(interval: "hour", where: { timestamp_gt: 1704085200 }) {
+    id
+    timestamp
+    sum
+  }
+}
+```
+
+Note:
+
+To use Timeseries and Aggregations, a subgraph must have a spec version ≥1.1.0. Note that this feature might undergo significant changes that could affect backward compatibility.
+
+[Read more](https://github.com/graphprotocol/graph-node/blob/master/docs/aggregations.md) about Timeseries and Aggregations.
+
+## Non-fatal errors
+
+Indexing errors on already synced subgraphs will, by default, cause the subgraph to fail and stop syncing. Subgraphs can alternatively be configured to continue syncing in the presence of errors, by ignoring the changes made by the handler which provoked the error. This gives subgraph authors time to correct their subgraphs while queries continue to be served against the latest block, though the results might be inconsistent due to the bug that caused the error. Note that some errors are still always fatal. To be non-fatal, the error must be known to be deterministic.
+
+> **Note:** The Graph Network does not yet support non-fatal errors, and developers should not deploy subgraphs using that functionality to the network via the Studio.
+
+Enabling non-fatal errors requires setting the following feature flag on the subgraph manifest:
+
+```yaml
+specVersion: 0.0.4
+description: Gravatar for Ethereum
+features:
+    - nonFatalErrors
+    ...
+```
+
+The query must also opt-in to querying data with potential inconsistencies through the `subgraphError` argument. It is also recommended to query `_meta` to check if the subgraph has skipped over errors, as in the example:
+
+```graphql
+foos(first: 100, subgraphError: allow) {
+  id
+}
+
+_meta {
+  hasIndexingErrors
+}
+```
+
+If the subgraph encounters an error, that query will return both the data and a graphql error with the message `"indexing_error"`, as in this example response:
+
+```graphql
+"data": {
+    "foos": [
+        {
+          "id": "0xdead"
+        }
+    ],
+    "_meta": {
+        "hasIndexingErrors": true
+    }
+},
+"errors": [
+    {
+        "message": "indexing_error"
+    }
+]
+```
 
 ## IPFS/Arweave File Data Sources
 
@@ -243,7 +353,7 @@ Handlers for File Data Sources cannot be in files which import `eth_call` contra
 
 [GIP File Data Sources](https://forum.thegraph.com/t/gip-file-data-sources/2721)
 
-### Indexed Argument Filters / Topic Filters
+## Indexed Argument Filters / Topic Filters
 
 > **Requires**: [SpecVersion](#specversion-releases) >= `1.2.0`
 
@@ -253,7 +363,7 @@ Topic filters, also known as indexed argument filters, are a powerful feature in
 
 - This is useful for creating personal subgraphs that track specific addresses and their interactions with various smart contracts on the blockchain.
 
-#### How Topic Filters Work
+### How Topic Filters Work
 
 When a smart contract emits an event, any arguments that are marked as indexed can be used as filters in a subgraph's manifest. This allows the subgraph to listen selectively for events that match these indexed arguments.
 
@@ -299,7 +409,7 @@ In this setup:
 - `topic1` corresponds to the first indexed argument of the event, `topic2` to the second, and `topic3` to the third.
 - Each topic can have one or more values, and an event is only processed if it matches one of the values in each specified topic.
 
-##### Filter Logic
+#### Filter Logic
 
 - Within a Single Topic: The logic functions as an OR condition. The event will be processed if it matches any one of the listed values in a given topic.
 - Between Different Topics: The logic functions as an AND condition. An event must satisfy all specified conditions across different topics to trigger the associated handler.
@@ -336,7 +446,7 @@ In this configuration:
 - `topic2` is configured to filter `Transfer` events where `0xAddressB` and `0xAddressC` is the receiver.
 - The subgraph will index transactions that occur in either direction between multiple addresses allowing for comprehensive monitoring of interactions involving all addresses.
 
-### Declared eth_call
+## Declared eth_call
 
 > Note: This is an experimental feature that is not currently available in a stable Graph Node release yet. You can only use it in Subgraph Studio or your self-hosted node.
 
@@ -348,7 +458,7 @@ This feature does the following:
 - Allows faster data fetching, resulting in quicker query responses and a better user experience.
 - Reduces wait times for applications that need to aggregate data from multiple Ethereum calls, making the data retrieval process more efficient.
 
-#### Key Concepts
+### Key Concepts
 
 - Declarative `eth_calls`: Ethereum calls that are defined to be executed in parallel rather than sequentially.
 - Parallel Execution: Instead of waiting for one call to finish before starting the next, multiple calls can be initiated simultaneously.
