@@ -11,4 +11,5 @@ export default {
   'immutable-entities-bytes-as-ids': 'Subgraph Best Practice 3: Using Immutable Entities and Bytes as IDs',
   'avoid-eth-calls': 'Subgraph Best Practice 4: Avoid eth_calls',
   'transfer-to-the-graph': '',
+  enums: '',
 }
