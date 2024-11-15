@@ -203,7 +203,7 @@ export function SupportedNetworks() {
         .map((network) => (
           <Flex.Column key={network.uid} as="li" align="center" gap={Spacing['8px']} sx={{ color: 'White64' }}>
             <div sx={{ height: '40px' }}>
-              <NetworkIcon chain={network as any} size="40px" title="" />
+              <NetworkIcon chain={network} size="40px" />
             </div>
             <Text.P14 as="div" align="center">
               {network.name}
