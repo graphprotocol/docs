@@ -41,6 +41,7 @@ function MyAppWithLocale({ Component, router, pageProps }: AppProps) {
       appId={process.env.ALGOLIA_APP_ID ?? ''}
       indexName="thegraph-docs"
       searchParameters={{
+        indexName: 'thegraph-docs',
         facetFilters: [`language:${locale}`],
       }}
       disableUserPersonalization={true}
