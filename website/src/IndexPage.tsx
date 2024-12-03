@@ -199,7 +199,7 @@ export function SupportedNetworks() {
       }}
     >
       {supportedNetworks
-        .filter((network) => !network.testnet)
+        .filter((network) => !network.testnet || ['evm-1946'].includes(network.uid))
         .map((network) => (
           <Flex.Column key={network.uid} as="li" align="center" gap={Spacing['8px']} sx={{ color: 'White64' }}>
             <div sx={{ height: '40px' }}>
