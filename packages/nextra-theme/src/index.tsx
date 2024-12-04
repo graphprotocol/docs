@@ -103,11 +103,19 @@ export default function NextraLayout({ children, pageOpts, pageProps }: NextraTh
     })
     if (typeof window === 'undefined') {
       // Execute this check for sidebar links only on server, will be stripped from client build
-      for (const item of result.flatDocsDirectories) {
-        if (!item.route) {
-          throw new Error(`Route "${item.name}" does not exist. Remove this field from _meta.js file`)
+      const checkIfRouteExists = (item: (typeof result.docsDirectories)[number], baseRoute = '') => {
+        const expectedRoute = `${baseRoute}/${item.name}`
+        // TODO: When a page doesn't exist in languages other than English, `item.route` is `#` for some reason
+        if (item.type === 'doc' && !item.route) {
+          throw new Error(`Route "${expectedRoute}" does not exist. Remove this field from _meta.js file`)
+        }
+        if (item.children) {
+          for (const child of item.children) {
+            checkIfRouteExists(child, item.route)
+          }
         }
       }
+      result.docsDirectories.forEach((item) => checkIfRouteExists(item))
     }
     return result
   }, [defaultLocale, fsPath, locale, pageMap])
