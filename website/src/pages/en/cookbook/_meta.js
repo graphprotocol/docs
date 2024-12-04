@@ -8,8 +8,4 @@ export default {
   grafting: '',
   'subgraph-uncrashable': '',
   'substreams-powered-subgraphs': '',
-  pruning: '',
-  derivedfrom: '',
-  'immutable-entities-bytes-as-ids': '',
-  'avoid-eth-calls': '',
 }
