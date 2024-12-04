@@ -10,11 +10,10 @@ import {
   type ButtonOrLinkProps,
   GDSProvider,
   I18nProvider,
-  Layout,
   Link,
   type NestedStrings,
 } from '@edgeandnode/gds'
-import { CookieBanner, GlobalFooter, GlobalHeader } from '@edgeandnode/go'
+import { CookieBanner } from '@edgeandnode/go'
 
 import { DocSearch } from '@/components'
 import { supportedLocales, translations, useI18n } from '@/i18n'
@@ -134,53 +133,8 @@ function MyAppWithLocale({ Component, router, pageProps }: AppProps) {
             measurementId: process.env.GOOGLE_ANALYTICS_MEASUREMENT_ID ?? null,
           }}
         >
-          <div sx={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, overflow: 'hidden' }}>
-            <div
-              sx={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                right: 0,
-                minHeight: '768px',
-                backgroundImage: `url('${process.env.BASE_PATH ?? ''}/img/page-background.png')`,
-                backgroundSize: 'cover',
-                backgroundPosition: 'center top',
-                '@media (min-width: 1440px)': {
-                  aspectRatio: '1440/768',
-                },
-              }}
-            />
-          </div>
-          <Layout
-            header={
-              <GlobalHeader
-                activeProduct="THE_GRAPH"
-                basePath="/docs"
-                showLocaleSwitcher={!hideLocaleSwitcher}
-                leftContent={(defaultContent) => [
-                  defaultContent,
-                  null,
-                  <>
-                    {defaultContent}
-                    {docSearch}
-                  </>,
-                ]}
-                rightContent={(defaultContent) => [
-                  <>
-                    {defaultContent}
-                    {docSearch}
-                  </>,
-                  null,
-                  defaultContent,
-                ]}
-              />
-            }
-            headerSticky
-            footer={<GlobalFooter showLogo showLocaleSwitcher={!hideLocaleSwitcher} />}
-          >
-            <CookieBanner />
-            <Component {...pageProps} />
-          </Layout>
+          <CookieBanner />
+          <Component {...pageProps} />
         </AnalyticsProvider>
       </GDSProvider>
     </>

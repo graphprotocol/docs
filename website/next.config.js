@@ -1,6 +1,6 @@
 import nextra from 'nextra'
 
-import { translate } from '@edgeandnode/gds'
+import { defaultLocale, translate } from '@edgeandnode/gds'
 
 // Compile `i18n.ts` to `i18n.js` since we can't import `ts` files in `next.config.js`
 import { translations } from './dist/i18n.js'
@@ -28,14 +28,16 @@ const withNextra = nextra({
   defaultShowCopyCode: false,
   readingTime: true,
   transformPageMap(pageMap) {
-    const locale = pageMap[0].route.slice(1, 3)
+    const route = pageMap[0]?.route
+    const locale = typeof route === 'string' ? route.slice(1, 3) : defaultLocale
     const t = (key) => translate(translations, locale, `global.sidebar.${key}`)
 
     const metaFile = {
-      index: t('index'),
-      '---1': {
+      '---0': {
         type: 'separator',
+        title: 'Introduction',
       },
+      index: t('index'),
       about: '',
       network: t('network'),
       sunrise: '',
@@ -43,11 +45,8 @@ const withNextra = nextra({
       glossary: '',
       tokenomics: '',
       arbitrum: t('arbitrum'),
-      '---2': {
+      '---1': {
         type: 'separator',
-      },
-      '###1': {
-        type: 'heading',
         title: t('subgraphs'),
       },
       'quick-start': '',
@@ -58,19 +57,13 @@ const withNextra = nextra({
       querying: t('querying'),
       cookbook: t('cookbook'),
       'release-notes': t('releaseNotes'),
-      '---3': {
+      '---2': {
         type: 'separator',
-      },
-      '###2': {
-        type: 'heading',
         title: t('substreams'),
       },
       substreams: '',
-      '---4': {
+      '---3': {
         type: 'separator',
-      },
-      '###3': {
-        type: 'heading',
         title: t('indexing'),
       },
       'operating-graph-node': '',
@@ -146,7 +139,7 @@ export default withNextra({
     unoptimized: true,
   },
   i18n: {
-    defaultLocale: 'en',
+    defaultLocale,
     locales: Object.keys(translations),
   },
 })

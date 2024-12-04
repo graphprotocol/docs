@@ -20,7 +20,14 @@ export default class MyDocument extends Document<MyDocumentProps> {
     const { locale } = this.props
 
     return (
-      <Html {...getHtmlAttributesForLocale(locale)} data-theme="dark">
+      <Html
+        {...getHtmlAttributesForLocale(locale)}
+        data-theme="dark"
+        style={{
+          // TODO: Update GDS background color
+          backgroundColor: '#0b091a',
+        }}
+      >
         <Head>
           <link
             rel="preconnect"
