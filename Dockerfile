@@ -1,23 +1,23 @@
-FROM node:22-alpine as builder
+FROM node:22-alpine AS builder
 
 ARG ENVIRONMENT
+ARG ORIGIN
 ENV ENVIRONMENT=$ENVIRONMENT
+ENV ORIGIN=$ORIGIN
 
 ENV PNPM_HOME="/usr/bin"
 
 RUN apk add --no-cache git
-RUN npm install -g pnpm@9.5.0
+RUN npm install -g pnpm@9.14.4
 
 WORKDIR /app
 
-COPY . .
+COPY . ./
 
-# install the packages
-RUN pnpm install --frozen-lockfile --ignore-scripts
+RUN pnpm install --frozen-lockfile
 
 RUN pnpm build
 
-## production environment
 FROM nginx:1.16.0-alpine
 
 COPY --from=builder ./app/nginx.conf /etc/nginx/
