@@ -1,8 +1,8 @@
 import { initWasm, Resvg } from '@resvg/resvg-wasm'
-import { ReactNode } from 'react'
-import satori, { FontWeight } from 'satori'
+import type { ReactNode } from 'react'
+import satori, { type FontWeight } from 'satori'
 
-import resvgWasm from '../vender/index_bg.wasm'
+import resvgWasm from '../vendor/index_bg.wasm'
 
 export function toImage(svg: string): Uint8Array {
   const resvg = new Resvg(svg)
@@ -36,7 +36,7 @@ export async function loadGoogleFont({ family, weight }: { family: string; weigh
 
   const res = await fetch(fontUrl)
   return {
-    data: await res.arrayBuffer(),
+    data: (await res.arrayBuffer()) as ArrayBuffer,
     weight: Number(/weight: (.+);/.exec(css)?.[1]) as FontWeight,
     name: family,
   }
