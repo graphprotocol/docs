@@ -1,6 +1,6 @@
 import type { GetStaticProps, GetStaticPropsResult } from 'next'
 
-import { getSupportedNetworks } from '@/src/supportedNetworks'
+import { getSupportedNetworks } from '@/supportedNetworks'
 
 export const buildGetStaticProps = (fileName: string, overrides?: GetStaticProps) => {
   const getStaticProps: GetStaticProps = async (context) => {

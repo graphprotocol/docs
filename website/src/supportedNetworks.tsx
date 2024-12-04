@@ -3,9 +3,10 @@ import type { ExecutionResult } from 'graphql'
 import { ChainProductStatus, SupportedNetworkMap } from '@edgeandnode/common'
 import { Code } from '@edgeandnode/gds'
 
-import { execute, SupportedNetworksDocument, type SupportedNetworksQuery } from '@/.graphclient'
+import { Table } from '@/components'
 import { useI18n } from '@/i18n'
-import { Table } from '@/src/components'
+
+import { execute, SupportedNetworksDocument, type SupportedNetworksQuery } from '../.graphclient'
 
 export async function getSupportedNetworks() {
   // Get the IDs of the networks that are fully supported (as opposed to supported only by the upgrade indexer) using the EBO subgraph

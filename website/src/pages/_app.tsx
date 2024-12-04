@@ -16,12 +16,12 @@ import {
 } from '@edgeandnode/gds'
 import { CookieBanner, GlobalFooter, GlobalHeader } from '@edgeandnode/go'
 
+import { DocSearch } from '@/components'
 import { supportedLocales, translations, useI18n } from '@/i18n'
-import { DocSearch } from '@/src/components'
 
 import '@edgeandnode/gds/style.css'
 import '@docsearch/css'
-import './globals.css'
+import '@/app.css'
 
 const internalAbsoluteHrefRegex = /^(((https?:)?\/\/((www|staging)\.)?thegraph\.com)?\/docs\/|\/(?!\/))/i
 const externalHrefRegex = /^(?!(https?:)?\/\/((www|staging)\.)?thegraph\.com)([a-zA-Z0-9+.-]+:)?\/\//i
@@ -42,6 +42,7 @@ function MyAppWithLocale({ Component, router, pageProps }: AppProps) {
       appId={process.env.ALGOLIA_APP_ID ?? ''}
       indexName="thegraph-docs"
       searchParameters={{
+        indexName: 'thegraph-docs',
         facetFilters: [`language:${locale}`],
       }}
       disableUserPersonalization={true}

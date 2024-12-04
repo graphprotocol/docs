@@ -3,8 +3,8 @@ import { useData } from 'nextra/hooks'
 import { BorderRadius, buildBorder, buildTransition, Flex, Link, Spacing, Text } from '@edgeandnode/gds'
 import { NetworkIcon } from '@edgeandnode/go'
 
+import { Image } from '@/components'
 import { useI18n } from '@/i18n'
-import { Image } from '@/src/components'
 
 import { getSupportedNetworks } from './supportedNetworks'
 
