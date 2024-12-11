@@ -1,6 +1,7 @@
 export default {
   index: '',
   about: '',
+  contracts: '',
   '---1': {
     type: 'separator',
   },
@@ -31,6 +32,7 @@ export default {
     type: 'heading',
     title: 'Indexing',
   },
+  indexing: '',
   'indexer-tooling': 'Indexer Tooling',
   tap: '',
   'supported-network-requirements': '',
@@ -43,11 +45,12 @@ export default {
     type: 'heading',
     title: 'Resources',
   },
+  overview: 'Overview',
+  benefits: 'Benefits',
   tokenomics: 'Tokenomics',
   glossary: '',
-  contracts: '',
-  network: 'The Graph Network',
-  sunrise: 'Post-Sunrise Upgrade FAQ',
-  arbitrum: 'Scaling with Arbitrum',
+  delegating: '',
+  curating: '',
   'release-notes': 'Release Notes & Upgrade Guides',
+  archived: 'Archived',
 }
