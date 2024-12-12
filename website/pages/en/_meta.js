@@ -1,16 +1,8 @@
 export default {
   index: '',
-  '---1': {
-    type: 'separator',
-  },
   about: '',
-  network: 'The Graph Network',
-  sunrise: 'Post-Sunrise Upgrade FAQ',
-  billing: '',
-  glossary: '',
-  tokenomics: 'Tokenomics',
-  arbitrum: 'Scaling with Arbitrum',
-  '---2': {
+  contracts: '',
+  '---1': {
     type: 'separator',
   },
   '###1': {
@@ -18,15 +10,12 @@ export default {
     title: 'Subgraphs',
   },
   'quick-start': '',
-  subgraphs: '',
-  developing: 'Developing',
-  deploying: 'Deploying',
-  publishing: 'Publishing',
-  managing: 'Managing',
+  explorer: '',
   querying: 'Querying',
+  developing: 'Developing',
+  billing: '',
   cookbook: 'Cookbook',
-  'release-notes': 'Release Notes & Upgrade Guides',
-  '---3': {
+  '---2': {
     type: 'separator',
   },
   '###2': {
@@ -35,18 +24,33 @@ export default {
   },
   substreams: '',
   sps: 'Substreams-powered Subgraphs',
-  '---4': {
+  cookbook: 'Cookbooks',
+  '---3': {
     type: 'separator',
   },
   '###3': {
     type: 'heading',
     title: 'Indexing',
   },
-  'operating-graph-node': '',
+  indexing: '',
+  'indexer-tooling': 'Indexer Tooling',
   tap: '',
   'supported-network-requirements': '',
   'chain-integration-overview': '',
   'new-chain-integration': '',
-  firehose: '',
-  graphcast: '',
+  '---4': {
+    type: 'separator',
+  },
+  '###4': {
+    type: 'heading',
+    title: 'Resources',
+  },
+  overview: 'Overview',
+  benefits: 'Benefits',
+  tokenomics: 'Tokenomics',
+  glossary: '',
+  delegating: '',
+  curating: '',
+  'release-notes': 'Release Notes & Upgrade Guides',
+  archived: 'Archived',
 }
