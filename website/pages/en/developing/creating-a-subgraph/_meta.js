@@ -5,4 +5,6 @@ export default {
   'ql-schema': '',
   'assemblyscript-mappings': '',
   advanced: '',
+  'graph-ts': 'AssemblyScript API',
+  'unit-testing-framework': '',
 }

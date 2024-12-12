@@ -1,9 +1,10 @@
 export default {
   'supported-networks': '',
-  developing: '',
+  developing: 'Introduction to Development',
   subgraphs: '',
-  creating: 'Creating',
+  'creating-a-subgraph': 'Create a Subgraph',
   deploying: 'Deploying',
   publishing: 'Publishing',
   managing: 'Managing',
+  'developer-faqs': '',
 }

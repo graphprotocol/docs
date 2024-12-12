@@ -23,7 +23,7 @@ export default {
     title: 'Substreams',
   },
   substreams: '',
-  sps: 'Substreams-powered Subgraphs',
+  sps: 'Substreams Powered Subgraphs',
   cookbook: 'Cookbooks',
   '---3': {
     type: 'separator',
