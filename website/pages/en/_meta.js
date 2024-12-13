@@ -45,12 +45,9 @@ export default {
     type: 'heading',
     title: 'Resources',
   },
-  overview: 'Overview',
-  benefits: 'Benefits',
+  'roles-and-benefits': 'Roles and Benefits',
   tokenomics: 'Tokenomics',
   glossary: '',
-  delegating: '',
-  curating: '',
   'release-notes': 'Release Notes & Upgrade Guides',
   archived: 'Archived',
 }
