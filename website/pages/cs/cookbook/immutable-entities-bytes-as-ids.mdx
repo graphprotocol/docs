@@ -1,39 +1,14 @@
 ---
-title: Subgraph Best Practice 3 - Improve Indexing and Query Performance by Using Immutable Entities and Bytes as IDs
+title: Osvědčený postup 3 - Zlepšení indexování a výkonu dotazů pomocí neměnných entit a bytů jako ID
 ---
 
 ## TLDR
 
-Using Immutable Entities and Bytes for IDs in our `schema.graphql` file [significantly improves ](https://thegraph.com/blog/two-simple-subgraph-performance-improvements/) indexing speed and query performance.
+Použití neměnných entit a bytů pro ID v našem souboru `schema.graphql` [výrazně zlepšuje ](https://thegraph.com/blog/two-simple-subgraph-performance-improvements/) rychlost indexování a výkonnost dotazů.
 
-## Immutable Entities
+## Nezměnitelné entity
 
-To make an entity immutable, we simply add `(immutable: true)` to an entity.
-
-```graphql
-type Transfer @entity(immutable: true) {
-  id: Bytes!
-  from: Bytes!
-  to: Bytes!
-  value: BigInt!
-}
-```
-
-By making the `Transfer` entity immutable, graph-node is able to process the entity more efficiently, improving indexing speeds and query responsiveness.
-
-Immutable Entities structures will not change in the future. An ideal entity to become an Immutable Entity would be an entity that is directly logging on-chain event data, such as a `Transfer` event being logged as a `Transfer` entity.
-
-### Under the hood
-
-Mutable entities have a 'block range' indicating their validity. Updating these entities requires the graph node to adjust the block range of previous versions, increasing database workload. Queries also need filtering to find only live entities. Immutable entities are faster because they are all live and since they won't change, no checks or updates are required while writing, and no filtering is required during queries.
-
-### When not to use Immutable Entities
-
-If you have a field like `status` that needs to be modified over time, then you should not make the entity immutable. Otherwise, you should use immutable entities whenever possible.
-
-## Bytes as IDs
-
-Every entity requires an ID. In the previous example, we can see that the ID is already of the Bytes type.
+Aby byla entita neměnná, jednoduše k ní přidáme `(immutable: true)`.
 
 ```graphql
 type Transfer @entity(immutable: true) {
@@ -44,19 +19,44 @@ type Transfer @entity(immutable: true) {
 }
 ```
 
-While other types for IDs are possible, such as String and Int8, it is recommended to use the Bytes type for all IDs due to character strings taking twice as much space as Byte strings to store binary data, and comparisons of UTF-8 character strings must take the locale into account which is much more expensive than the bytewise comparison used to compare Byte strings.
+Tím, že je entita `Transfer` neměnná, je grafový uzel schopen ji zpracovávat efektivněji, což zvyšuje rychlost indexování a odezvu dotazů.
 
-### Reasons to Not Use Bytes as IDs
+Struktury neměnných entit se v budoucnu nezmění. Ideální entitou, která by se měla stát nezměnitelnou entitou, by byla entita, která přímo zaznamenává data událostí v řetězci, například událost `Převod` by byla zaznamenána jako entita `Převod`.
 
-1. If entity IDs must be human-readable such as auto-incremented numerical IDs or readable strings, Bytes for IDs should not be used.
-2. If integrating a subgraph’s data with another data model that does not use Bytes as IDs, Bytes as IDs should not be used.
-3. Indexing and querying performance improvements are not desired.
+### Pod kapotou
 
-### Concatenating With Bytes as IDs
+Mutabilní entity mají "rozsah bloku", který udává jejich platnost. Aktualizace těchto entit vyžaduje, aby uzel grafu upravil rozsah bloků předchozích verzí, což zvyšuje zatížení databáze. Dotazy je také třeba filtrovat, aby byly nalezeny pouze živé entity. Neměnné entity jsou rychlejší, protože jsou všechny živé, a protože se nebudou měnit, nejsou při zápisu nutné žádné kontroly ani aktualizace a při dotazech není nutné žádné filtrování.
 
-It is a common practice in many subgraphs to use string concatenation to combine two properties of an event into a single ID, such as using `event.transaction.hash.toHex() + "-" + event.logIndex.toString()`. However, as this returns a string, this significantly impedes subgraph indexing and querying performance.
+### Kdy nepoužívat nezměnitelné entity
 
-Instead, we should use the `concatI32()` method to concatenate event properties. This strategy results in a `Bytes` ID that is much more performant.
+Pokud máte pole, jako je `status`, které je třeba v průběhu času měnit, neměli byste entitu učinit neměnnou. Jinak byste měli používat neměnné entity, kdykoli je to možné.
+
+## Bajty jako IDs
+
+Každá entita vyžaduje ID. V předchozím příkladu vidíme, že ID je již typu Bytes.
+
+```graphql
+type Transfer @entity(immutable: true) {
+  id: Bytes!
+  from: Bytes!
+  to: Bytes!
+  value: BigInt!
+}
+```
+
+I když jsou možné i jiné typy ID, například String a Int8, doporučuje se pro všechna ID používat typ Bytes, protože pro uložení binárních dat zabírají znakové řetězce dvakrát více místa než řetězce Byte a při porovnávání znakových řetězců UTF-8 se musí brát v úvahu locale, což je mnohem dražší než bytewise porovnávání používané pro porovnávání řetězců Byte.
+
+### Důvody, proč nepoužívat bajty jako IDs
+
+1. Pokud musí být IDs entit čitelné pro člověka, například automaticky doplňované číselné IDs nebo čitelné řetězce, neměly by být použity bajty pro IDs.
+2. Při integraci dat podgrafu s jiným datovým modelem, který nepoužívá bajty jako IDs, by se bajty jako IDs neměly používat.
+3. Zlepšení výkonu indexování a dotazování není žádoucí.
+
+### Konkatenace s byty jako IDs
+
+V mnoha podgrafech se běžně používá spojování řetězců ke spojení dvou vlastností události do jediného ID, například pomocí `event.transaction.hash.toHex() + "-" + event.logIndex.toString()`. Protože se však tímto způsobem vrací řetězec, značně to zhoršuje indexování podgrafů a výkonnost dotazování.
+
+Místo toho bychom měli použít metodu `concatI32()` pro spojování vlastností událostí. Výsledkem této strategie je ID `Bytes`, které je mnohem výkonnější.
 
 ```typescript
 export function handleTransfer(event: TransferEvent): void {
@@ -73,11 +73,11 @@ export function handleTransfer(event: TransferEvent): void {
 }
 ```
 
-### Sorting With Bytes as IDs
+### Třídění s bajty jako ID
 
-Sorting using Bytes as IDs is not optimal as seen in this example query and response.
+Třídění pomocí bajtů jako IDs není optimální, jak je vidět v tomto příkladu dotazu a odpovědi.
 
-Query:
+Dotaz:
 
 ```graphql
 {
@@ -90,7 +90,7 @@ Query:
 }
 ```
 
-Query response:
+Odpověď na dotaz:
 
 ```json
 {
@@ -119,9 +119,9 @@ Query response:
 }
 ```
 
-The IDs are returned as hex.
+ID jsou vrácena v hex.
 
-To improve sorting, we should create another field on the entity that is a BigInt.
+Abychom zlepšili třídění, měli bychom v entitě vytvořit další pole, které bude BigInt.
 
 ```graphql
 type Transfer @entity {
@@ -133,9 +133,9 @@ type Transfer @entity {
 }
 ```
 
-This will allow for sorting to be optimized sequentially.
+To umožní postupnou optimalizaci třídění.
 
-Query:
+Dotaz:
 
 ```graphql
 {
@@ -146,7 +146,7 @@ Query:
 }
 ```
 
-Query Response:
+Odpověď na dotaz:
 
 ```json
 {
@@ -171,6 +171,20 @@ Query Response:
 
 ## Závěr
 
-Using both Immutable Entities and Bytes as IDs has been shown to markedly improve subgraph efficiency. Specifically, tests have highlighted up to a 28% increase in query performance and up to a 48% acceleration in indexing speeds.
+Bylo prokázáno, že použití neměnných entit i bytů jako ID výrazně zvyšuje efektivitu podgrafů. Testy konkrétně ukázaly až 28% nárůst výkonu dotazů a až 48% zrychlení indexace.
 
-Read more about using Immutable Entities and Bytes as IDs in this blog post by David Lutterkort, a Software Engineer at Edge & Node: [Two Simple Subgraph Performance Improvements](https://thegraph.com/blog/two-simple-subgraph-performance-improvements/).
+Více informací o používání nezměnitelných entit a bytů jako ID najdete v tomto příspěvku na blogu Davida Lutterkorta, softwarového inženýra ve společnosti Edge & Node: [Dvě jednoduchá vylepšení výkonu podgrafu](https://thegraph.com/blog/two-simple-subgraph-performance-improvements/).
+
+## Subgraph Best Practices 1-6
+
+1. [Improve Query Speed with Subgraph Pruning](/cookbook/pruning/)
+
+2. [Improve Indexing and Query Responsiveness by Using @derivedFrom](/cookbook/derivedfrom/)
+
+3. [Improve Indexing and Query Performance by Using Immutable Entities and Bytes as IDs](/cookbook/immutable-entities-bytes-as-ids/)
+
+4. [Improve Indexing Speed by Avoiding `eth_calls`](/cookbook/avoid-eth-calls/)
+
+5. [Simplify and Optimize with Timeseries and Aggregations](/cookbook/timeseries/)
+
+6. [Use Grafting for Quick Hotfix Deployment](/cookbook/grafting-hotfix/)
