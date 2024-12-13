@@ -1,0 +1,534 @@
+---
+title: Subgraph Manifest
+---
+
+## 概述
+
+The subgraph manifest, `subgraph.yaml`, defines the smart contracts & network your subgraph will index, the events from these contracts to pay attention to, and how to map event data to entities that Graph Node stores and allows to query.
+
+The **subgraph definition** consists of the following files:
+
+- `subgraph.yaml`: Contains the subgraph manifest
+
+- `schema.graphql`: A GraphQL schema defining the data stored for your subgraph and how to query it via GraphQL
+
+- `mapping.ts`: [AssemblyScript Mappings](https://github.com/AssemblyScript/assemblyscript) code that translates event data into entities defined in your schema (e.g. `mapping.ts` in this guide)
+
+### Subgraph Capabilities
+
+A single subgraph can:
+
+- Index data from multiple smart contracts (but not multiple networks).
+
+- Index data from IPFS files using File Data Sources.
+
+- Add an entry for each contract that requires indexing to the `dataSources` array.
+
+The full specification for subgraph manifests can be found [here](https://github.com/graphprotocol/graph-node/blob/master/docs/subgraph-manifest.md).
+
+For the example subgraph listed above, `subgraph.yaml` is:
+
+```yaml
+specVersion: 0.0.4
+description: Gravatar for Ethereum
+repository: https://github.com/graphprotocol/graph-tooling
+schema:
+  file: ./schema.graphql
+indexerHints:
+  prune: auto
+dataSources:
+  - kind: ethereum/contract
+    name: Gravity
+    network: mainnet
+    source:
+      address: '0x2E645469f354BB4F5c8a05B3b30A929361cf77eC'
+      abi: Gravity
+      startBlock: 6175244
+      endBlock: 7175245
+    context:
+      foo:
+        type: Bool
+        data: true
+      bar:
+        type: String
+        data: 'bar'
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.6
+      language: wasm/assemblyscript
+      entities:
+        - Gravatar
+      abis:
+        - name: Gravity
+          file: ./abis/Gravity.json
+      eventHandlers:
+        - event: NewGravatar(uint256,address,string,string)
+          handler: handleNewGravatar
+        - event: UpdatedGravatar(uint256,address,string,string)
+          handler: handleUpdatedGravatar
+      callHandlers:
+        - function: createGravatar(string,string)
+          handler: handleCreateGravatar
+      blockHandlers:
+        - handler: handleBlock
+        - handler: handleBlockWithCall
+          filter:
+            kind: call
+      file: ./src/mapping.ts
+```
+
+## Subgraph Entries
+
+> Important Note: Be sure you populate your subgraph manifest with all handlers and [entities](/developing/creating-a-subgraph/ql-schema/).
+
+清单中要更新的重要条目是：
+
+- `specVersion`: a semver version that identifies the supported manifest structure and functionality for the subgraph. The latest version is `1.2.0`. See [specVersion releases](#specversion-releases) section to see more details on features & releases.
+
+- `description`: a human-readable description of what the subgraph is. This description is displayed in Graph Explorer when the subgraph is deployed to Subgraph Studio.
+
+- `repository`: the URL of the repository where the subgraph manifest can be found. This is also displayed in Graph Explorer.
+
+- `features`: a list of all used [feature](#experimental-features) names.
+
+- `indexerHints.prune`: Defines the retention of historical block data for a subgraph. See [prune](#prune) in [indexerHints](#indexer-hints) section.
+
+- `dataSources.source`: the address of the smart contract the subgraph sources, and the ABI of the smart contract to use. The address is optional; omitting it allows to index matching events from all contracts.
+
+- `dataSources.source.startBlock`: the optional number of the block that the data source starts indexing from. In most cases, we suggest using the block in which the contract was created.
+
+- `dataSources.source.endBlock`: The optional number of the block that the data source stops indexing at, including that block. Minimum spec version required: `0.0.9`.
+
+- `dataSources.context`: key-value pairs that can be used within subgraph mappings. Supports various data types like `Bool`, `String`, `Int`, `Int8`, `BigDecimal`, `Bytes`, `List`, and `BigInt`. Each variable needs to specify its `type` and `data`. These context variables are then accessible in the mapping files, offering more configurable options for subgraph development.
+
+- `dataSources.mapping.entities`: the entities that the data source writes to the store. The schema for each entity is defined in the schema.graphql file.
+
+- `dataSources.mapping.abis`: one or more named ABI files for the source contract as well as any other smart contracts that you interact with from within the mappings.
+
+- `dataSources.mapping.eventHandlers`: lists the smart contract events this subgraph reacts to and the handlers in the mapping—./src/mapping.ts in the example—that transform these events into entities in the store.
+
+- `dataSources.mapping.callHandlers`: lists the smart contract functions this subgraph reacts to and handlers in the mapping that transform the inputs and outputs to function calls into entities in the store.
+
+- `dataSources.mapping.blockHandlers`: lists the blocks this subgraph reacts to and handlers in the mapping to run when a block is appended to the chain. Without a filter, the block handler will be run every block. An optional call-filter can be provided by adding a `filter` field with `kind: call` to the handler. This will only run the handler if the block contains at least one call to the data source contract.
+
+A single subgraph can index data from multiple smart contracts. Add an entry for each contract from which data needs to be indexed to the `dataSources` array.
+
+## Event Handlers
+
+Event handlers in a subgraph react to specific events emitted by smart contracts on the blockchain and trigger handlers defined in the subgraph's manifest. This enables subgraphs to process and store event data according to defined logic.
+
+### Defining an Event Handler
+
+An event handler is declared within a data source in the subgraph's YAML configuration. It specifies which events to listen for and the corresponding function to execute when those events are detected.
+
+```yaml
+dataSources:
+  - kind: ethereum/contract
+    name: Gravity
+    network: dev
+    source:
+      address: '0x731a10897d267e19b34503ad902d0a29173ba4b1'
+      abi: Gravity
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.6
+      language: wasm/assemblyscript
+      entities:
+        - Gravatar
+        - Transaction
+      abis:
+        - name: Gravity
+          file: ./abis/Gravity.json
+      eventHandlers:
+        - event: Approval(address,address,uint256)
+          handler: handleApproval
+        - event: Transfer(address,address,uint256)
+          handler: handleTransfer
+          topic1: ['0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045', '0xc8dA6BF26964aF9D7eEd9e03E53415D37aA96325'] # Optional topic filter which filters only events with the specified topic.
+```
+
+## 调用处理程序
+
+While events provide an effective way to collect relevant changes to the state of a contract, many contracts avoid generating logs to optimize gas costs. In these cases, a subgraph can subscribe to calls made to the data source contract. This is achieved by defining call handlers referencing the function signature and the mapping handler that will process calls to this function. To process these calls, the mapping handler will receive an `ethereum.Call` as an argument with the typed inputs to and outputs from the call. Calls made at any depth in a transaction's call chain will trigger the mapping, allowing activity with the data source contract through proxy contracts to be captured.
+
+调用处理程序只会在以下两种情况之一触发：当指定的函数被合约本身以外的账户调用时，或者当它在 Solidity 中被标记为外部，并作为同一合约中另一个函数的一部分被调用时。
+
+> **Note:** Call handlers currently depend on the Parity tracing API. Certain networks, such as BNB chain and Arbitrum, does not support this API. If a subgraph indexing one of these networks contain one or more call handlers, it will not start syncing. Subgraph developers should instead use event handlers. These are far more performant than call handlers, and are supported on every evm network.
+
+### 定义调用处理程序
+
+To define a call handler in your manifest, simply add a `callHandlers` array under the data source you would like to subscribe to.
+
+```yaml
+dataSources:
+  - kind: ethereum/contract
+    name: Gravity
+    network: mainnet
+    source:
+      address: '0x731a10897d267e19b34503ad902d0a29173ba4b1'
+      abi: Gravity
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.6
+      language: wasm/assemblyscript
+      entities:
+        - Gravatar
+        - Transaction
+      abis:
+        - name: Gravity
+          file: ./abis/Gravity.json
+      callHandlers:
+        - function: createGravatar(string,string)
+          handler: handleCreateGravatar
+```
+
+The `function` is the normalized function signature to filter calls by. The `handler` property is the name of the function in your mapping you would like to execute when the target function is called in the data source contract.
+
+### 映射函数
+
+Each call handler takes a single parameter that has a type corresponding to the name of the called function. In the example subgraph above, the mapping contains a handler for when the `createGravatar` function is called and receives a `CreateGravatarCall` parameter as an argument:
+
+```typescript
+import { CreateGravatarCall } from '../generated/Gravity/Gravity'
+import { Transaction } from '../generated/schema'
+
+export function handleCreateGravatar(call: CreateGravatarCall): void {
+  let id = call.transaction.hash
+  let transaction = new Transaction(id)
+  transaction.displayName = call.inputs._displayName
+  transaction.imageUrl = call.inputs._imageUrl
+  transaction.save()
+}
+```
+
+The `handleCreateGravatar` function takes a new `CreateGravatarCall` which is a subclass of `ethereum.Call`, provided by `@graphprotocol/graph-ts`, that includes the typed inputs and outputs of the call. The `CreateGravatarCall` type is generated for you when you run `graph codegen`.
+
+## 区块处理程序
+
+除了订阅合约事件或函数调用之外，子图可能还希望在将新区块附加到链上时更新其数据。 为了实现这一点，子图可以在每个区块之后，或匹配预定义过滤器的区块之后，运行一个函数。
+
+### 支持的过滤器
+
+#### 调用筛选器
+
+```yaml
+filter:
+  kind: call
+```
+
+_The defined handler will be called once for every block which contains a call to the contract (data source) the handler is defined under._
+
+> **Note:** The `call` filter currently depend on the Parity tracing API. Certain networks, such as BNB chain and Arbitrum, does not support this API. If a subgraph indexing one of these networks contain one or more block handlers with a `call` filter, it will not start syncing.
+
+块处理程序没有过滤器将确保每个块都调用处理程序。对于每种过滤器类型，一个数据源只能包含一个块处理程序。
+
+```yaml
+dataSources:
+  - kind: ethereum/contract
+    name: Gravity
+    network: dev
+    source:
+      address: '0x731a10897d267e19b34503ad902d0a29173ba4b1'
+      abi: Gravity
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.6
+      language: wasm/assemblyscript
+      entities:
+        - Gravatar
+        - Transaction
+      abis:
+        - name: Gravity
+          file: ./abis/Gravity.json
+      blockHandlers:
+        - handler: handleBlock
+        - handler: handleBlockWithCallToContract
+          filter:
+            kind: call
+```
+
+#### 投票筛选器
+
+> **Requires `specVersion` >= 0.0.8**
+>
+> **Note:** Polling filters are only available on dataSources of `kind: ethereum`.
+
+```yaml
+blockHandlers:
+  - handler: handleBlock
+    filter:
+      kind: polling
+      every: 10
+```
+
+The defined handler will be called once for every `n` blocks, where `n` is the value provided in the `every` field. This configuration allows the subgraph to perform specific operations at regular block intervals.
+
+#### 一次性筛选器
+
+> **Requires `specVersion` >= 0.0.8**
+>
+> **Note:** Once filters are only available on dataSources of `kind: ethereum`.
+
+```yaml
+blockHandlers:
+  - handler: handleOnce
+    filter:
+      kind: once
+```
+
+带有 "once filter" 的所定义处理程序将在所有其他处理程序运行之前仅被调用一次。这种配置允许子图将该处理程序用作初始化处理程序，在索引开始时执行特定任务。
+
+```ts
+export function handleOnce(block: ethereum.Block): void {
+  let data = new InitialData(Bytes.fromUTF8('initial'))
+  data.data = 'Setup data here'
+  data.save()
+}
+```
+
+### 映射函数
+
+The mapping function will receive an `ethereum.Block` as its only argument. Like mapping functions for events, this function can access existing subgraph entities in the store, call smart contracts and create or update entities.
+
+```typescript
+import { ethereum } from '@graphprotocol/graph-ts'
+
+export function handleBlock(block: ethereum.Block): void {
+  let id = block.hash
+  let entity = new Block(id)
+  entity.save()
+}
+```
+
+## 匿名事件
+
+如果您需要在 Solidity 中处理匿名事件，可以通过提供事件的主题 0 来实现，如示例所示：
+
+```yaml
+eventHandlers:
+  - event: LogNote(bytes4,address,bytes32,bytes32,uint256,bytes)
+    topic0: '0x644843f351d3fba4abcd60109eaff9f54bac8fb8ccf0bab941009c21df21cf31'
+    handler: handleGive
+```
+
+An event will only be triggered when both the signature and topic 0 match. By default, `topic0` is equal to the hash of the event signature.
+
+## 事件处理程序中的交易接收
+
+Starting from `specVersion` `0.0.5` and `apiVersion` `0.0.7`, event handlers can have access to the receipt for the transaction which emitted them.
+
+To do so, event handlers must be declared in the subgraph manifest with the new `receipt: true` key, which is optional and defaults to false.
+
+```yaml
+eventHandlers:
+  - event: NewGravatar(uint256,address,string,string)
+    handler: handleNewGravatar
+    receipt: true
+```
+
+Inside the handler function, the receipt can be accessed in the `Event.receipt` field. When the `receipt` key is set to `false` or omitted in the manifest, a `null` value will be returned instead.
+
+## Order of Triggering Handlers
+
+区块内数据源的触发器使用以下流程进行排序：
+
+1. 事件和调用触发器首先按区块内的交易索引排序。
+2. 同一交易中的事件和调用触发器使用约定进行排序：首先是事件触发器，然后是调用触发器，每种类型都遵循它们在清单中定义的顺序。
+3. 区块触发器按照它们在清单中定义的顺序，在事件和调用触发器之后运行。
+
+这些排序规则可能会发生变化。
+
+> **Note:** When new [dynamic data source](#data-source-templates-for-dynamically-created-contracts) are created, the handlers defined for dynamic data sources will only start processing after all existing data source handlers are processed, and will repeat in the same sequence whenever triggered.
+
+## 数据源模板
+
+EVM兼容智能合约中的一种常见模式是使用注册表或工厂合约，其中一个合约创建、管理或引用任意数量的其他合约，每个合约都有自己的状态和事件。
+
+The addresses of these sub-contracts may or may not be known upfront and many of these contracts may be created and/or added over time. This is why, in such cases, defining a single data source or a fixed number of data sources is impossible and a more dynamic approach is needed: _data source templates_.
+
+### 主合约的数据源
+
+First, you define a regular data source for the main contract. The snippet below shows a simplified example data source for the [Uniswap](https://uniswap.org) exchange factory contract. Note the `NewExchange(address,address)` event handler. This is emitted when a new exchange contract is created on-chain by the factory contract.
+
+```yaml
+dataSources:
+  - kind: ethereum/contract
+    name: Factory
+    network: mainnet
+    source:
+      address: '0xc0a47dFe034B400B47bDaD5FecDa2621de6c4d95'
+      abi: Factory
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.6
+      language: wasm/assemblyscript
+      file: ./src/mappings/factory.ts
+      entities:
+        - Directory
+      abis:
+        - name: Factory
+          file: ./abis/factory.json
+      eventHandlers:
+        - event: NewExchange(address,address)
+          handler: handleNewExchange
+```
+
+### 动态创建合约的数据源模板
+
+Then, you add _data source templates_ to the manifest. These are identical to regular data sources, except that they lack a pre-defined contract address under `source`. Typically, you would define one template for each type of sub-contract managed or referenced by the parent contract.
+
+```yaml
+dataSources:
+  - kind: ethereum/contract
+    name: Factory
+    # ... other source fields for the main contract ...
+templates:
+  - name: Exchange
+    kind: ethereum/contract
+    network: mainnet
+    source:
+      abi: Exchange
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.6
+      language: wasm/assemblyscript
+      file: ./src/mappings/exchange.ts
+      entities:
+        - Exchange
+      abis:
+        - name: Exchange
+          file: ./abis/exchange.json
+      eventHandlers:
+        - event: TokenPurchase(address,uint256,uint256)
+          handler: handleTokenPurchase
+        - event: EthPurchase(address,uint256,uint256)
+          handler: handleEthPurchase
+        - event: AddLiquidity(address,uint256,uint256)
+          handler: handleAddLiquidity
+        - event: RemoveLiquidity(address,uint256,uint256)
+          handler: handleRemoveLiquidity
+```
+
+### 实例化数据源模板
+
+In the final step, you update your main contract mapping to create a dynamic data source instance from one of the templates. In this example, you would change the main contract mapping to import the `Exchange` template and call the `Exchange.create(address)` method on it to start indexing the new exchange contract.
+
+```typescript
+import { Exchange } from '../generated/templates'
+
+export function handleNewExchange(event: NewExchange): void {
+  // Start indexing the exchange; `event.params.exchange` is the
+  // address of the new exchange contract
+  Exchange.create(event.params.exchange)
+}
+```
+
+> **Note:** A new data source will only process the calls and events for the block in which it was created and all following blocks, but will not process historical data, i.e., data that is contained in prior blocks.
+>
+> 如果先前的区块包含与新数据源相关的数据，最好通过读取合约的当前状态，并在创建新数据源时创建表示该状态的实体来索引该数据。
+
+### 数据源背景
+
+Data source contexts allow passing extra configuration when instantiating a template. In our example, let's say exchanges are associated with a particular trading pair, which is included in the `NewExchange` event. That information can be passed into the instantiated data source, like so:
+
+```typescript
+import { Exchange } from '../generated/templates'
+
+export function handleNewExchange(event: NewExchange): void {
+  let context = new DataSourceContext()
+  context.setString('tradingPair', event.params.tradingPair)
+  Exchange.createWithContext(event.params.exchange, context)
+}
+```
+
+Inside a mapping of the `Exchange` template, the context can then be accessed:
+
+```typescript
+import { dataSource } from '@graphprotocol/graph-ts'
+
+let context = dataSource.context()
+let tradingPair = context.getString('tradingPair')
+```
+
+There are setters and getters like `setString` and `getString` for all value types.
+
+## 起始区块
+
+The `startBlock` is an optional setting that allows you to define from which block in the chain the data source will start indexing. Setting the start block allows the data source to skip potentially millions of blocks that are irrelevant. Typically, a subgraph developer will set `startBlock` to the block in which the smart contract of the data source was created.
+
+```yaml
+dataSources:
+  - kind: ethereum/contract
+    name: ExampleSource
+    network: mainnet
+    source:
+      address: '0xc0a47dFe034B400B47bDaD5FecDa2621de6c4d95'
+      abi: ExampleContract
+      startBlock: 6627917
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.6
+      language: wasm/assemblyscript
+      file: ./src/mappings/factory.ts
+      entities:
+        - User
+      abis:
+        - name: ExampleContract
+          file: ./abis/ExampleContract.json
+      eventHandlers:
+        - event: NewEvent(address,address)
+          handler: handleNewEvent
+```
+
+> **Note:** The contract creation block can be quickly looked up on Etherscan:
+>
+> 1. 通过在搜索栏中输入合约地址来搜索合约。
+> 2. Click on the creation transaction hash in the `Contract Creator` section.
+> 3. 加载交易详情页面，您将在其中找到该合约的起始区块。
+
+## Indexer Hints
+
+The `indexerHints` setting in a subgraph's manifest provides directives for indexers on processing and managing a subgraph. It influences operational decisions across data handling, indexing strategies, and optimizations. Presently, it features the `prune` option for managing historical data retention or pruning.
+
+> This feature is available from `specVersion: 1.0.0`
+
+### Prune
+
+`indexerHints.prune`: Defines the retention of historical block data for a subgraph. Options include:
+
+1. `"never"`: No pruning of historical data; retains the entire history.
+2. `"auto"`: Retains the minimum necessary history as set by the indexer, optimizing query performance.
+3. A specific number: Sets a custom limit on the number of historical blocks to retain.
+
+```
+ indexerHints:
+  prune: auto
+```
+
+> The term "history" in this context of subgraphs is about storing data that reflects the old states of mutable entities.
+
+History as of a given block is required for:
+
+- [Time travel queries](/querying/graphql-api/#time-travel-queries), which enable querying the past states of these entities at specific blocks throughout the subgraph's history
+- Using the subgraph as a [graft base](/developing/creating-a-subgraph/#grafting-onto-existing-subgraphs) in another subgraph, at that block
+- Rewinding the subgraph back to that block
+
+If historical data as of the block has been pruned, the above capabilities will not be available.
+
+> Using `"auto"` is generally recommended as it maximizes query performance and is sufficient for most users who do not require access to extensive historical data.
+
+For subgraphs leveraging [time travel queries](/querying/graphql-api/#time-travel-queries), it's advisable to either set a specific number of blocks for historical data retention or use `prune: never` to keep all historical entity states. Below are examples of how to configure both options in your subgraph's settings:
+
+To retain a specific amount of historical data:
+
+```
+ indexerHints:
+  prune: 1000 # Replace 1000 with the desired number of blocks to retain
+```
+
+To preserve the complete history of entity states:
+
+```
+indexerHints:
+  prune: never
+```
