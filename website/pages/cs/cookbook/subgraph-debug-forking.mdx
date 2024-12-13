@@ -2,7 +2,7 @@
 title: Rychlé a snadné ladění podgrafů pomocí vidliček
 ---
 
-As with many systems processing large amounts of data, The Graph's Indexers (Graph Nodes) may take quite some time to sync-up your subgraph with the target blockchain. The discrepancy between quick changes with the purpose of debugging and long wait times needed for indexing is extremely counterproductive and we are well aware of that. This is why we are introducing **subgraph forking**, developed by [LimeChain](https://limechain.tech/), and in this article I will show you how this feature can be used to substantially speed-up subgraph debugging!
+Stejně jako u mnoha systémů zpracovávajících velké množství dat může indexerům grafu (Graph Nodes) trvat poměrně dlouho, než synchronizují váš podgraf s cílovým blockchainem. Nesoulad mezi rychlými změnami za účelem ladění a dlouhými čekacími dobami potřebnými pro indexaci je extrémně kontraproduktivní a jsme si toho dobře vědomi. To je důvod, proč představujeme **rozvětvování podgrafů**, vyvinutý společností [LimeChain](https://limechain.tech/), a v tomto článku Ukážu vám, jak lze tuto funkci použít k podstatnému zrychlení ladění podgrafů!
 
 ## Ok, co to je?
 
@@ -12,9 +12,9 @@ V kontextu ladění vám ** vidličkování podgrafů** umožňuje ladit neúsp�
 
 ## Co?! Jak?
 
-When you deploy a subgraph to a remote Graph Node for indexing and it fails at block _X_, the good news is that the Graph Node will still serve GraphQL queries using its store, which is synced-up to block _X_. That's great! This means we can take advantage of this "up-to-date" store to fix the bugs arising when indexing block _X_.
+Když nasadíte podgraf do vzdáleného uzlu Graf pro indexování a ten selže v bloku _X_, dobrou zprávou je, že uzel Graf bude stále obsluhovat dotazy GraphQL pomocí svého úložiště, které je synchronizováno s blokem _X_. To je skvělé! To znamená, že můžeme využít tohoto "aktuálního" úložiště k opravě chyb vznikajících při indexování bloku _X_.
 
-In a nutshell, we are going to _fork the failing subgraph_ from a remote Graph Node that is guaranteed to have the subgraph indexed up to block _X_ in order to provide the locally deployed subgraph being debugged at block _X_ an up-to-date view of the indexing state.
+Stručně řečeno, _rozvětvíme neúspěšný podgraf_ ze vzdáleného uzlu grafu, u kterého je zaručeno, že podgraf bude indexován až do bloku _X_, abychom lokálně nasazenému podgrafu laděnému v bloku _X_ poskytli aktuální pohled na stav indexování.
 
 ## Ukažte mi prosím nějaký kód!
 
@@ -44,12 +44,12 @@ export function handleUpdatedGravatar(event: UpdatedGravatar): void {
 }
 ```
 
-Oops, how unfortunate, when I deploy my perfect looking subgraph to [Subgraph Studio](https://thegraph.com/studio/) it fails with the _"Gravatar not found!"_ error.
+Oops, jak nešťastné, když jsem nasadil můj perfektně vypadající podgraf do [Podgraf Studio](https://thegraph.com/studio/), selhalo to s chybou _"Gravatar nenalezen!"_.
 
 Obvyklý způsob, jak se pokusit o opravu, je:
 
 1. Proveďte změnu ve zdroji mapování, která podle vás problém vyřeší (zatímco já vím, že ne).
-2. Re-deploy the subgraph to [Subgraph Studio](https://thegraph.com/studio/) (or another remote Graph Node).
+2. Znovu nasaďte podgraf do [Subgraph Studio](https://thegraph.com/studio/) (nebo jiného vzdáleného uzlu Graf).
 3. Počkejte na synchronizaci.
 4. Pokud se opět rozbije, vraťte se na 1, jinak: Hurá!
 
@@ -59,7 +59,7 @@ Pomocí **vidličkování podgrafů** můžeme tento krok v podstatě eliminovat
 
 0. Spin-up a local Graph Node with the **_appropriate fork-base_** set.
 1. Proveďte změnu ve zdroji mapování, která podle vás problém vyřeší.
-2. Deploy to the local Graph Node, **_forking the failing subgraph_** and **_starting from the problematic block_**.
+2. Nasazení do místního uzlu Graf, **_forking selhávajícího podgrafu_** a **_zahájení od problematického bloku_**.
 3. Pokud se opět rozbije, vraťte se na 1, jinak: Hurá!
 
 Nyní můžete mít 2 otázky:
@@ -80,7 +80,7 @@ Nezapomeňte také nastavit pole `dataSources.source.startBlock` v manifestu pod
 
 Takže to dělám takhle:
 
-1. I spin-up a local Graph Node ([here is how to do it](https://github.com/graphprotocol/graph-node#running-a-local-graph-node)) with the `fork-base` option set to: `https://api.thegraph.com/subgraphs/id/`, since I will fork a subgraph, the buggy one I deployed earlier, from [Subgraph Studio](https://thegraph.com/studio/).
+1. Spustím místní uzel Graf ([zde je návod, jak to udělat](https://github.com/graphprotocol/graph-node#running-a-local-graph-node)) s volbou `fork-base` nastavenou na: `https://api.thegraph.com/subgraphs/id/`, protože budu forkovat podgraf, ten chybný, který jsem nasadil dříve, z [Podgraph Studio](https://thegraph.com/studio/).
 
 ```
 $ cargo run -p graph-node --release -- \
@@ -91,11 +91,11 @@ $ cargo run -p graph-node --release -- \
 ```
 
 2. Po pečlivém prozkoumání si všímám, že existuje nesoulad v reprezentacích `id`, které se používají při indexaci `Gravatar` v mých dvou obslužných funkcích. Zatímco `handleNewGravatar` ho převede na hex (`event.params.id.toHex()`), `handleUpdatedGravatar` používá int32 (`event.params.id.toI32()`), což způsobuje, že `handleUpdatedGravatar` selže s chybou "Gravatar nenalezen!". Udělám, aby obě převedly `id` na hex.
-3. After I made the changes I deploy my subgraph to the local Graph Node, **_forking the failing subgraph_** and setting `dataSources.source.startBlock` to `6190343` in `subgraph.yaml`:
+3. Po provedení změn jsem nasadil svůj podgraf do místního uzlu Graf, **_rozvětveníl selhávající podgraf_** a nastavil `dataSources.source.startBlock` na `6190343` v `subgraph.yaml`:
 
 ```bash
 $ graph deploy gravity --debug-fork QmNp169tKvomnH3cPXTfGg4ZEhAHA6kEq5oy1XDqAxqHmW --ipfs http://localhost:5001 --node http://localhost:8020
 ```
 
-4. I inspect the logs produced by the local Graph Node and, Hooray!, everything seems to be working.
-5. I deploy my now bug-free subgraph to a remote Graph Node and live happily ever after! (no potatoes tho)
+4. Zkontroluji protokoly vytvořené místním graf uzlem a hurá, zdá se, že vše funguje.
+5. Nasadím svůj nyní již bezchybný podgraf do vzdáleného uzlu Graf a žiji šťastně až do smrti! (bez brambor)

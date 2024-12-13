@@ -2,14 +2,16 @@
 title: असेंबलीस्क्रिप्ट एपीआई
 ---
 
-> Note: if you created a subgraph prior to `graph-cli`/`graph-ts` version `0.22.0`, you're using an older version of AssemblyScript, we recommend taking a look at the [`Migration Guide`](/release-notes/assemblyscript-migration-guide)
+> ध्यान दें: यदि आपने `graph-cli`/`graph-ts` version `0.22.0` से पहले एक subgragh बनाया है, तो आप AssemblyScript के पुराना संस्करण का उपयोग कर रहे हैं, हम अनुशंसा करते हैं कि [`Migration Guide`](/release-notes/assemblyscript-migration-guide).
 
-यह पृष्ठ दस्तावेज करता है कि सबग्राफ मैपिंग लिखते समय किन अंतर्निहित एपीआई का उपयोग किया जा सकता है। बॉक्स से बाहर दो प्रकार के एपीआई उपलब्ध हैं:
+यह पृष्ठ दस्तावेज करता है कि Subgraph मैपिंग लिखते समय किन अंतर्निहित एपीआई का उपयोग किया जा सकता है। बॉक्स से बाहर दो प्रकार के एपीआई उपलब्ध हैं:
 
-- the [Graph TypeScript library](https://github.com/graphprotocol/graph-tooling/tree/main/packages/ts) (`graph-ts`) and
-- code generated from subgraph files by `graph codegen`.
+- The Graph TypeScript लाइब्रेरी (https://github.com/graphprotocol/graph-tooling/tree/main/packages/ts) (graph-ts)
+- `graph codegen` द्वारा subgraph files से उत्पन्न code
 
-It is also possible to add other libraries as dependencies, as long as they are compatible with [AssemblyScript](https://github.com/AssemblyScript/assemblyscript). Since this is the language mappings are written in, the [AssemblyScript wiki](https://github.com/AssemblyScript/assemblyscript/wiki) is a good source for language and standard library features.
+आप अन्य पुस्तकालयों को भी निर्भरताओं के रूप में जोड़ सकते हैं, बशर्ते कि वे [AssemblyScript](https://github.com/AssemblyScript/assemblyscript) के साथ संगत हों।
+
+चूंकि भाषा मैपिंग्स AssemblyScript में लिखी गई हैं, इसलिए [AssemblyScript wiki](https://github.com/AssemblyScript/assemblyscript/wiki) से भाषा और मानक पुस्तकालय की सुविधाओं की समीक्षा करना उपयोगी है।
 
 ## एपीआई संदर्भ
 
@@ -252,7 +254,9 @@ export function handleTransfer(event: TransferEvent): void {
 
 When a `Transfer` event is encountered while processing the chain, it is passed to the `handleTransfer` event handler using the generated `Transfer` type (aliased to `TransferEvent` here to avoid a naming conflict with the entity type). This type allows accessing data such as the event's parent transaction and its parameters.
 
-अन्य संस्थाओं के साथ टकराव से बचने के लिए प्रत्येक इकाई के पास एक विशिष्ट आईडी होनी चाहिए। ईवेंट पैरामीटर के लिए एक अद्वितीय पहचानकर्ता शामिल करना काफी सामान्य है जिसका उपयोग किया जा सकता है। नोट: आईडी के रूप में लेन-देन हैश का उपयोग करना मानता है कि एक ही लेन-देन में कोई अन्य घटना इस हैश के साथ आईडी के रूप में संस्था नहीं बनाती है।
+प्रत्येक इकाई के पास एक अद्वितीय ID होनी चाहिए ताकि अन्य इकाइयों के साथ टकराव से बचा जा सके। यह काफी सामान्य है कि इवेंट पैरामीटर में एक अद्वितीय पहचानकर्ता शामिल होता है जिसका उपयोग किया जा सकता है।
+
+> नोट: लेन-देन हैश को आईडी के रूप में उपयोग करने का मतलब यह है कि उसी लेन-देन में कोई अन्य घटनाएँ इस हैश को आईडी के रूप में Entities नहीं बनाती हैं।
 
 #### Loading entities from the store
 
@@ -268,15 +272,18 @@ if (transfer == null) {
 // Use the Transfer entity as before
 ```
 
-As the entity may not exist in the store yet, the `load` method returns a value of type `Transfer | null`. It may thus be necessary to check for the `null` case before using the value.
+चूंकि एंटिटी स्टोर में अभी मौजूद नहीं हो सकती है, इसलिए `load` विधि `Transfer | null` प्रकार का मान लौटाती है। मान का उपयोग करने से पहले `null` मामले की जांच करना आवश्यक हो सकता है।
 
-> **Note:** Loading entities is only necessary if the changes made in the mapping depend on the previous data of an entity. See the next section for the two ways of updating existing entities.
+> ध्यान दें: एंटिटी लोड करना तभी आवश्यक है जब मैपिंग में किए गए परिवर्तन किसी एंटिटी के पिछले डेटा पर निर्भर हों। मौजूदा एंटिटी को अपडेट करने के दो तरीकों के लिए अगला सेक्शन देखें।
 
 #### एक ब्लॉक के साथ बनाई गई संस्थाओं को देखना
 
 As of `graph-node` v0.31.0, `@graphprotocol/graph-ts` v0.30.0 and `@graphprotocol/graph-cli` v0.49.0 the `loadInBlock` method is available on all entity types.
 
-स्टोर एपीआई उन संस्थाओं की पुनर्प्राप्ति की सुविधा देता है जो वर्तमान ब्लॉक में बनाई या अपडेट की गई थीं। इसके लिए एक विशिष्ट स्थिति यह है कि एक हैंडलर कुछ ऑन-चेन ईवेंट से लेन-देन बनाता है, और बाद में हैंडलर मौजूद होने पर इस लेनदेन तक पहुंचना चाहता है। ऐसे मामले में जहां लेन-देन मौजूद नहीं है, सबग्राफ को केवल यह पता लगाने के लिए डेटाबेस में जाना होगा कि इकाई मौजूद नहीं है; अगर सबग्राफ लेखक पहले से ही जानता है कि इकाई को उसी ब्लॉक में बनाया जाना चाहिए, तो loadInBlock का उपयोग करके इस डेटाबेस राउंडट्रिप से बचा जाता है। कुछ सबग्राफ के लिए, ये छूटे हुए लुकअप इंडेक्सिंग समय में महत्वपूर्ण योगदान दे सकते हैं।
+स्टोर एपीआई वर्तमान ब्लॉक में बनाए गए या अपडेट किए गए Entities को पुनः प्राप्त करने की सुविधा प्रदान करता है। इस स्थिति में एक हैंडलर किसी ऑन-चेन घटना से एक लेन-देन बनाता है, और एक बाद वाला हैंडलर चाहता है कि यदि यह लेन-देन मौजूद है, तो वह इसे एक्सेस कर सके।
+
+- यदि लेन-देन मौजूद नहीं है, तो subgraph को केवल यह पता लगाने के लिए डेटाबेस में जाना होगा कि Entity मौजूद नहीं है। यदि subgraph लेखक पहले से जानता है कि Entity उसी ब्लॉक में बनाई जानी चाहिए थी, तो `loadInBlock` का उपयोग इस डेटाबेस राउंडट्रिप से बचाता है।
+- कुछ subgraphs के लिए, ये छूटे हुए लुकअप्स indexing समय में महत्वपूर्ण योगदान दे सकते हैं।
 
 ```typescript
 let id = event.transaction.hash // or however the ID is constructed
@@ -503,7 +510,9 @@ As long as the `ERC20Contract` on Ethereum has a public read-only function calle
 
 #### रिवर्टेड कॉल्स को हैंडल करना
 
-If the read-only methods of your contract may revert, then you should handle that by calling the generated contract method prefixed with `try_`. For example, the Gravity contract exposes the `gravatarToOwner` method. This code would be able to handle a revert in that method:
+यदि आपके अनुबंध के केवल-पढ़ने वाले तरीके वापस हो सकते हैं, तो आपको इसे `try_` से पूर्व निर्धारित अनुबंध विधि को कॉल करके संभालना चाहिए।
+
+- उदाहरण के लिए, Gravity कॉन्ट्रैक्ट `gravatarToOwner` मेथड को उजागर करता है। यह कोड उस मेथड में एक रिवर्ट को संभालने में सक्षम होगा:
 
 ```typescript
 let gravity = Gravity.bind(event.address)
@@ -515,7 +524,7 @@ if (callResult.reverted) {
 }
 ```
 
-ध्यान दें कि Geth या Infura क्लाइंट से जुड़ा एक ग्राफ़ नोड सभी रिवर्ट का पता नहीं लगा सकता है, अगर आप इस पर भरोसा करते हैं तो हम पैरिटी क्लाइंट से जुड़े ग्राफ़ नोड का उपयोग करने की सलाह देते हैं।
+> नोट: एक Graph नोड जो Geth या Infura क्लाइंट से जुड़ा है, सभी रिवर्ट का पता नहीं लगा सकता है। यदि आप इस पर निर्भर करते हैं, तो हम Parity क्लाइंट से जुड़े Graph नोड का उपयोग करने की सिफारिश करते हैं।
 
 #### एन्कोडिंग/डिकोडिंग एबीआई
 
@@ -540,7 +549,7 @@ let decoded = ethereum.decode('(address,uint256)', encoded)
 
 - [ABI Spec](https://docs.soliditylang.org/en/v0.7.4/abi-spec.html#types)
 - Encoding/decoding [Rust library/CLI](https://github.com/rust-ethereum/ethabi)
-- More [complex example](https://github.com/graphprotocol/graph-node/blob/08da7cb46ddc8c09f448c5ea4b210c9021ea05ad/tests/integration-tests/host-exports/src/mapping.ts#L86).
+- ज्यादा जटिल उदाहरण (https://github.com/graphprotocol/graph-node/blob/08da7cb46ddc8c09f448c5ea4b210c9021ea05ad/tests/integration-tests/host-exports/src/mapping.ts#L86).
 
 #### Balance of an Address
 
