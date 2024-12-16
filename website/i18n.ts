@@ -6,7 +6,6 @@ import de from '@/pages/de/translations'
 import en from '@/pages/en/translations'
 import es from '@/pages/es/translations'
 import fr from '@/pages/fr/translations'
-import ha from '@/pages/ha/translations'
 import hi from '@/pages/hi/translations'
 import it from '@/pages/it/translations'
 import ja from '@/pages/ja/translations'
@@ -22,7 +21,6 @@ import tr from '@/pages/tr/translations'
 import uk from '@/pages/uk/translations'
 import ur from '@/pages/ur/translations'
 import vi from '@/pages/vi/translations'
-import yo from '@/pages/yo/translations'
 import zh from '@/pages/zh/translations'
 
 const appLocales = [
@@ -32,7 +30,6 @@ const appLocales = [
   Locale.ENGLISH,
   Locale.SPANISH,
   Locale.FRENCH,
-  // Locale.HAUSA,
   Locale.HINDI,
   Locale.ITALIAN,
   Locale.JAPANESE,
@@ -48,7 +45,6 @@ const appLocales = [
   // Locale.UKRAINIAN,
   Locale.URDU,
   // Locale.VIETNAMESE,
-  // Locale.YORUBA,
   Locale.CHINESE,
 ] as const
 
@@ -67,7 +63,6 @@ export const translations = {
   en,
   es,
   fr,
-  ha,
   hi,
   it,
   ja,
@@ -83,7 +78,6 @@ export const translations = {
   uk,
   ur,
   vi,
-  yo,
   zh,
 } satisfies Translations & {
   [key in AppLocale]: {
