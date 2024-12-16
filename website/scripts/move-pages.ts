@@ -1,5 +1,5 @@
 /**
- * This script moves pages or directories of pages to a new location.
+ * This script moves and/or renames pages or directories of pages.
  * It performs these operations in order:
  *
  * 1. Prepares the move using English locale:
@@ -73,21 +73,22 @@ async function getSourceFiles(sourcePath: string): Promise<string[]> {
 }
 
 async function main() {
-  const [sourcePath, destinationDirectory] = process.argv.slice(2)
-  if (!sourcePath || !destinationDirectory) {
+  const [sourcePath, destinationPath] = process.argv.slice(2)
+  if (!sourcePath || !destinationPath) {
     throw new Error(
-      'Usage: pnpm run move-pages <source-path> <destination-directory>\n' +
-        'Example: pnpm run move-pages creating-a-subgraph.mdx developing/guides\n' +
-        'Example: pnpm run move-pages old-dir/nested new-dir/structure',
+      'Usage: pnpm run move-pages <source-path> <destination>\n' +
+        'Examples:\n' +
+        '  pnpm run move-pages page.mdx new-directory             Move page (keeping name)\n' +
+        '  pnpm run move-pages page.mdx new-name.mdx              Rename page\n' +
+        '  pnpm run move-pages page.mdx new-dir/new-name.mdx      Move and rename page\n' +
+        '  pnpm run move-pages developing subgraphs/developing    Move directory\n' +
+        '  pnpm run move-pages developing subgraphs               Rename directory\n',
     )
   }
 
-  // Normalize paths and validate destination is a directory
+  // Normalize paths
   const normalizedSource = path.normalize(sourcePath).replace(/^[/\\]|[/\\]$/g, '')
-  const normalizedDestination = path.normalize(destinationDirectory).replace(/^[/\\]|[/\\]$/g, '')
-  if (path.extname(normalizedDestination)) {
-    throw new Error('Destination must be a directory (no file extension)')
-  }
+  const normalizedDestination = path.normalize(destinationPath).replace(/^[/\\]|[/\\]$/g, '')
 
   // Get list of files to move from source locale
   const sourceFiles = await getSourceFiles(normalizedSource)
@@ -96,10 +97,17 @@ async function main() {
   const isFile = (await fs.stat(path.join(PAGES_DIRECTORY, SOURCE_LOCALE, normalizedSource))).isFile()
   const filesToMove = sourceFiles.map((file) => {
     if (isFile) {
-      // When moving a single file to a directory, keep the filename
+      // When moving a single file:
+      // - If destination has extension, use it as the new filename
+      // - Otherwise treat destination as directory and keep original filename
+      const destinationHasExtension = path.extname(normalizedDestination) !== ''
+      const newPath = destinationHasExtension
+        ? normalizedDestination
+        : path.join(normalizedDestination, path.basename(file))
+
       return {
         sourcePath: file,
-        destinationPath: path.join(normalizedDestination, path.basename(file)),
+        destinationPath: newPath,
       }
     } else {
       // When moving a directory, preserve the relative paths
