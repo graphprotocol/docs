@@ -20,8 +20,8 @@
  *      referencing a non-existent directory in the meta file
  */
 
-import fs from 'fs/promises'
-import path from 'path'
+import fs from 'node:fs/promises'
+import path from 'node:path'
 
 const FORCE_META = process.argv.includes('--force-meta')
 
@@ -31,7 +31,7 @@ const META_FILENAME = '_meta.js'
 const CATCH_ALL_PREFIX = '[[...'
 const HIDDEN_FILE_PREFIX = '.'
 
-async function fileExists(filepath: string) {
+async function fileExists(filepath: string): Promise<boolean> {
   try {
     await fs.access(filepath)
     return true
@@ -153,7 +153,12 @@ async function main() {
   for (const locale of [SOURCE_LOCALE, ...translatedLocales]) {
     const { directories } = await getPagesStructure(locale)
     for (const directory of directories) {
-      if (!sourceStructure.contentDirectories.has(directory)) {
+      // Delete directory if it has no content files in source language
+      // AND none of its subdirectories have content files
+      const existsInSource =
+        sourceStructure.contentDirectories.has(directory) ||
+        Array.from(sourceStructure.contentDirectories).some((sourceDir) => sourceDir.startsWith(directory + '/'))
+      if (!existsInSource) {
         console.log(`Removing directory ${path.join(locale, directory)}`)
         await fs.rm(path.join(PAGES_DIRECTORY, locale, directory), { recursive: true, force: true })
       }
@@ -161,4 +166,7 @@ async function main() {
   }
 }
 
-main().catch(console.error)
+main().catch((error) => {
+  console.error(error.message)
+  process.exit(1)
+})
