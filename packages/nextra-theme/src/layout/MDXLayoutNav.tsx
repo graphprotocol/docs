@@ -133,6 +133,10 @@ export const MDXLayoutNav = ({ mobile = false }: { mobile?: boolean }) => {
               return <NavTree.Heading key={pageItem.name}>{pageItem.title}</NavTree.Heading>
             }
             if ('children' in pageItem && pageItem.children) {
+              if (pageItem.children.length === 0) {
+                return null
+              }
+
               if (pageItem.type === 'children') {
                 return <Fragment key={pageItem.name}>{pageItem.children.map(renderSidebar)}</Fragment>
               }

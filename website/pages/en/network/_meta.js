@@ -6,4 +6,5 @@ export default {
   curating: '',
   developing: '',
   explorer: '',
+  contracts: '',
 }
