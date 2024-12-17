@@ -46,8 +46,8 @@ export default {
     type: 'heading',
     title: 'Resources',
   },
-  network: 'Network',
   glossary: '',
+  network: 'Network',
   'release-notes': 'Release Notes & Upgrade Guides',
   archived: 'Archived',
 }
