@@ -1,6 +1,5 @@
 export default {
-  overview: 'Overview',
-  benefits: 'Benefits',
+  benefits: 'The Graph vs Self Hosting',
   tokenomics: 'Tokenomics',
   delegating: '',
   curating: '',

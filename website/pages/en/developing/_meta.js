@@ -1,7 +1,7 @@
 export default {
   developing: 'Introduction to Development',
   subgraphs: '',
-  'creating-a-subgraph': 'Creating a Subgraph',
+  'creating-a-subgraph': 'Creating',
   deploying: 'Deploying',
   publishing: 'Publishing',
   managing: 'Managing',
