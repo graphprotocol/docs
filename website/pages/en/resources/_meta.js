@@ -2,6 +2,6 @@ export default {
   glossary: '',
   tokenomics: 'Tokenomics',
   benefits: '',
-  roles: 'Network Roles',
+  roles: 'Additional Roles',
   'release-notes': 'Release Notes & Upgrade Guides',
 }

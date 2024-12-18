@@ -1,5 +1,5 @@
 export default {
-  introduction: 'Introduction',
+  overview: 'Overview',
   tooling: 'Indexer Tooling',
   tap: '',
   'supported-network-requirements': '',

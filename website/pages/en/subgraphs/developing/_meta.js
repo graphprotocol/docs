@@ -5,5 +5,5 @@ export default {
   deploying: 'Deploying',
   publishing: 'Publishing',
   managing: 'Managing',
-  'developer-faqs': '',
+  'developer-faq': 'FAQ',
 }
