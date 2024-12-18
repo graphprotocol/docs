@@ -137,7 +137,7 @@ O núcleo da infraestrutura de um Indexador é o Graph Node, que monitora as red
 
 - **Serviço de Indexador** — Cuida de todas as comunicações externas com a rede requeridas. Divide modelos de custo e estados de indexação, passa pedidos de consulta de gateways para um Graph Node, e monitora os pagamentos de consulta através de canais de estado com o gateway.
 
-- **Agente Indexador** — Facilita as interações de Indexadores on-chain, incluindo cadastros na rede, gestão de lançamentos de Subgraph ao(s) seu(s) Graph Node(s), e gestão de alocações.
+- **Indexer agent** - Facilitates the Indexers interactions onchain including registering on the network, managing subgraph deployments to its Graph Node/s, and managing allocations.
 
 - **Servidor de métricas Prometheus** — O Graph Node e os componentes de Indexador logam suas métricas ao servidor de métricas.
 
@@ -367,7 +367,7 @@ docker-compose up
 
 Para participar com êxito na rede, são necessários monitorados e interações quase constantes, portanto, construímos uma suite de aplicativos Typescript para facilitar a participação de um Indexador na rede. Há três componentes de Indexador:
 
-- **Agente indexador** — O agente monitora a rede e a própria infraestrutura do Indexador, e administra quais lançamentos de subgraph são indexados e alocados on-chain; e a quantia a ser alocada para cada um.
+- **Indexer agent** - The agent monitors the network and the Indexer's own infrastructure and manages which subgraph deployments are indexed and allocated towards onchain and how much is allocated towards each.
 
 - **Serviço indexador** — O único componente que deve ser exposto externamente, o serviço passa consultas de subgraph ao graph node, cuida de canais de estado para pagamentos de consulta, e compartilha informações importantes de decisões para clientes, como os gateways.
 
@@ -617,7 +617,7 @@ graph indexer rules delete QmZfeJYR86UARzp9HiXbURWunYgC9ywvPvoePNbuaATrEK
 
 O indexer-cli providencia um módulo `actions` para trabalhar manualmente com a fila de ações. Ele interage com a fila de ações através do **API GraphQL** hospedado pelo servidor de gestão de indexador.
 
-O trabalhador de execução de ações só retirará itens da fila para execução se eles tiverem o `ActionStatus = approved`. No caminho recomendado, as ações são adicionadas à fila com `ActionStatus = queued`, para que sejam depois aprovadas para serem executadas on-chain. O fluxo geral parecerá com isto:
+The action execution worker will only grab items from the queue to execute if they have `ActionStatus = approved`. In the recommended path actions are added to the queue with ActionStatus = queued, so they must then be approved in order to be executed onchain. The general flow will look like:
 
 - Ação adicionada à fila por ferramenta de otimização de terceiros ou utilizador do indexer-cli
 - O Indexador pode usar o `indexer-cli` para visualizar todas as ações enfileiradas
@@ -813,8 +813,8 @@ Para configurar os parâmetros de delegação com a interface do Graph Explorer,
 
 After being created by an Indexer a healthy allocation goes through two states.
 
-- **Ativa** - Quando uma alocação é criada on-chain ([allocateFrom()](https://github.com/graphprotocol/contracts/blob/main/packages/contracts/contracts/staking/Staking.sol#L316)), ela é considerada **ativa**. Uma porção do stake próprio e/ou delegado do Indexador é alocada a um lançamento de subgraph, que lhe permite resgatar recompensas de indexação e servir queries para aquele lançamento de subgraph. O agente indexador cria alocações baseada nas regras do Indexador.
+- **Active** - Once an allocation is created onchain ([allocateFrom()](https://github.com/graphprotocol/contracts/blob/main/packages/contracts/contracts/staking/Staking.sol#L316)) it is considered **active**. A portion of the Indexer's own and/or delegated stake is allocated towards a subgraph deployment, which allows them to claim indexing rewards and serve queries for that subgraph deployment. The Indexer agent manages creating allocations based on the Indexer rules.
 
 - **Fechada** - Um Indexador pode fechar uma alocação após a passagem de um epoch ([closeAllocation()](https://github.com/graphprotocol/contracts/blob/main/packages/contracts/contracts/staking/Staking.sol#L335)), ou o seu agente indexador a fechará automaticamente após o **maxAllocationEpochs** (atualmente, 28 dias). Quando uma alocação é fechada com uma prova de indexação válida (POI), as suas recompensas de indexação são distribuídas ao Indexador e aos seus Delegantes ([aprenda mais](/network/indexing/#how-are-indexing-rewards-distributed)).
 
-É ideal que os Indexadores utilizem a funcionalidade de sincronização off-chain para sincronizar lançamentos de subgraph à chainhead antes de criar a alocação on-chain. Esta ferramenta é mais útil para subgraphs que demorem mais de 28 epochs para sincronizar, ou que têm chances de falhar não-deterministicamente.
+Indexers are recommended to utilize offchain syncing functionality to sync subgraph deployments to chainhead before creating the allocation onchain. This feature is especially useful for subgraphs that may take longer than 28 epochs to sync or have some chances of failing undeterministically.
