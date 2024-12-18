@@ -137,7 +137,7 @@ Use Etherscan to call `getRewards()`:
 
 - **Indexer service** - ネットワークとの必要な外部通信を全て処理します。 コストモデルとインデキシングのステータスを共有し、ゲートウェイからのクエリ要求をグラフノードに渡し、ゲートウェイとのステートチャンネルを介してクエリの支払いを管理します。
 
-- **Indexer agent** - ネットワークへの登録、グラフノードへのサブグラフのデプロイ管理、割り当ての管理など、チェーン上のインデクサーのインタラクションを容易にします。
+- **Indexer agent** - Facilitates the Indexers interactions onchain including registering on the network, managing subgraph deployments to its Graph Node/s, and managing allocations.
 
 - **Prometheus metrics server** - Graph Node と Indexer コンポーネントは、自分のメトリクスをメトリクス・サーバーにログします。
 
@@ -366,7 +366,7 @@ docker-compose up
 
 ネットワークへの参加を成功させるためには、ほぼ常に監視と対話を行う必要があるため、Indexers のネットワークへの参加を促進するための一連の Typescript アプリケーションを構築しました。 インデクサーには 3 つのコンポーネントがあります:
 
-- **Indexer agent** - ネットワークとインデクサー自身のインフラを監視し、どのサブグラフ・デプロイメントがインデキシングされ、チェーンに割り当てられるか、またそれぞれにどれだけの量が割り当てられるかを管理します。
+- **Indexer agent** - The agent monitors the network and the Indexer's own infrastructure and manages which subgraph deployments are indexed and allocated towards onchain and how much is allocated towards each.
 
 - **Indexer service** - 外部に公開する必要のある唯一のコンポーネントで、サブグラフのクエリをグラフノードに渡し、クエリの支払いのための状態チャンネルを管理し、重要な意思決定情報をゲートウェイなどのクライアントに共有します。
 
@@ -616,7 +616,7 @@ graph indexer rules delete QmZfeJYR86UARzp9HiXbURWunYgC9ywvPvoePNbuaATrEK
 
 indexer-cli は、アクションキューを手動で操作するための `actions` モジュールを提供します。これは、アクションキューと対話するために、インデクサ管理サーバによってホストされる **Graphql API** を使用します。
 
-アクション実行ワーカーは、`ActionStatus = approved` である場合にのみ、実行するためにキューからアイテムを取得します。推奨されるパスでは、アクションは ActionStatus = queued でキューに追加されるので、オンチェインで実行するためには承認されなければなりません。一般的なフローは次のようになります。
+The action execution worker will only grab items from the queue to execute if they have `ActionStatus = approved`. In the recommended path actions are added to the queue with ActionStatus = queued, so they must then be approved in order to be executed onchain. The general flow will look like:
 
 - サードパーティのオプティマイザツールやindexer-cliのユーザーによってキューに追加されたアクション
 - インデクサーは `indexer-cli` を使って、キューに入れられたすべてのアクションを見ることができます。
@@ -811,8 +811,8 @@ To set the delegation parameters using Graph Explorer interface, follow these st
 
 After being created by an Indexer a healthy allocation goes through two states.
 
-- **Active** - Once an allocation is created on-chain ([allocateFrom()](https://github.com/graphprotocol/contracts/blob/main/packages/contracts/contracts/staking/Staking.sol#L316)) it is considered **active**. A portion of the Indexer's own and/or delegated stake is allocated towards a subgraph deployment, which allows them to claim indexing rewards and serve queries for that subgraph deployment. The Indexer agent manages creating allocations based on the Indexer rules.
+- **Active** - Once an allocation is created onchain ([allocateFrom()](https://github.com/graphprotocol/contracts/blob/main/packages/contracts/contracts/staking/Staking.sol#L316)) it is considered **active**. A portion of the Indexer's own and/or delegated stake is allocated towards a subgraph deployment, which allows them to claim indexing rewards and serve queries for that subgraph deployment. The Indexer agent manages creating allocations based on the Indexer rules.
 
 - **Closed** - An Indexer is free to close an allocation once 1 epoch has passed ([closeAllocation()](https://github.com/graphprotocol/contracts/blob/main/packages/contracts/contracts/staking/Staking.sol#L335)) or their Indexer agent will automatically close the allocation after the **maxAllocationEpochs** (currently 28 days). When an allocation is closed with a valid proof of indexing (POI) their indexing rewards are distributed to the Indexer and its Delegators ([learn more](/network/indexing/#how-are-indexing-rewards-distributed)).
 
-インデクサーは、チェーン上に配置を作成する前に、チェーンヘッドにサブグラフの配置を同期させるために、オフチェーン同期機能を利用することを推奨します。この機能は、同期に28エポック以上かかる可能性があるサブグラフや、不定期に失敗する可能性があるサブグラフに特に有効です。
+Indexers are recommended to utilize offchain syncing functionality to sync subgraph deployments to chainhead before creating the allocation onchain. This feature is especially useful for subgraphs that may take longer than 28 epochs to sync or have some chances of failing undeterministically.
