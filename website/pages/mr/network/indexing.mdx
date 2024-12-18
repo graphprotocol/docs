@@ -137,7 +137,7 @@ Once an allocation has been closed the rebates are available to be claimed by th
 
 - **इंडेक्सर सेवा** - नेटवर्कसह सर्व आवश्यक बाह्य संप्रेषणे हाताळते. किमतीची मॉडेल्स आणि अनुक्रमणिका स्थिती शेअर करते, गेटवेकडून आलेख नोडवर क्वेरी विनंत्या पाठवते आणि गेटवेसह राज्य चॅनेलद्वारे क्वेरी पेमेंट व्यवस्थापित करते.
 
-- **इंडेक्सर एजंट** - नेटवर्कवर नोंदणी करणे, त्याच्या ग्राफ नोड्सवर सबग्राफ उपयोजन व्यवस्थापित करणे आणि वाटप व्यवस्थापित करणे यासह साखळीवरील इंडेक्सर्स परस्परसंवाद सुलभ करते.
+- **Indexer agent** - Facilitates the Indexers interactions onchain including registering on the network, managing subgraph deployments to its Graph Node/s, and managing allocations.
 
 - **प्रोमेथियस मेट्रिक्स सर्व्हर** - ग्राफ नोड आणि इंडेक्सर घटक त्यांचे मेट्रिक्स मेट्रिक्स सर्व्हरवर लॉग करतात.
 
@@ -367,7 +367,7 @@ docker-compose up
 
 फक्त लिनक्स वापरण्यासाठी - स्क्रिप्ट वापरून `docker-compose. yaml` मध्ये `host. docker. internal` समाविष्ट करा होस्ट आयपी पत्ता वापरा:
 
-- **इंडेक्सर एजंट** - एजंट नेटवर्क आणि इंडेक्सरच्या स्वतःच्या इन्फ्रास्ट्रक्चरचे निरीक्षण करतो आणि कोणते सबग्राफ डिप्लॉयमेंट अनुक्रमित केले जातात आणि साखळीवर वाटप केले जातात आणि प्रत्येकासाठी किती वाटप केले जाते हे व्यवस्थापित करतो.
+- **Indexer agent** - The agent monitors the network and the Indexer's own infrastructure and manages which subgraph deployments are indexed and allocated towards onchain and how much is allocated towards each.
 
 - **इंडेक्सर सेवा** - बाहेरून उघड करणे आवश्यक असलेला एकमेव घटक, सेवा ग्राफ नोडवर सबग्राफ क्वेरी पास करते, क्वेरी पेमेंटसाठी राज्य चॅनेल व्यवस्थापित करते, महत्त्वपूर्ण निर्णय घेण्याची माहिती सामायिक करते गेटवे सारख्या ग्राहकांना.
 
@@ -617,7 +617,7 @@ graph indexer rules delete QmZfeJYR86UARzp9HiXbURWunYgC9ywvPvoePNbuaATrEK
 
 इंडेक्सर-cli कृती रांगेसह मॅन्युअली कार्य करण्यासाठी `कृती` मॉड्यूल प्रदान करते. ते क्रिया रांगेशी संवाद साधण्यासाठी इंडेक्सर व्यवस्थापन सर्व्हरद्वारे होस्ट केलेले **Graphql API** वापरते.
 
-क्रिया अंमलबजावणी कार्यकर्ता रांगेतील आयटम फक्त अंमलात आणण्यासाठी पकडेल जर त्यांच्याकडे `ActionStatus = मंजूर` असेल. शिफारस केलेल्या पथात क्रिया ActionStatus = रांगेत रांगेत जोडल्या जातात, त्यामुळे ऑन-चेन अंमलात आणण्यासाठी त्या नंतर मंजूर केल्या पाहिजेत. सामान्य प्रवाह असे दिसेल:
+The action execution worker will only grab items from the queue to execute if they have `ActionStatus = approved`. In the recommended path actions are added to the queue with ActionStatus = queued, so they must then be approved in order to be executed onchain. The general flow will look like:
 
 - Action added to the queue by the 3rd party optimizer tool or indexer-cli user
 - Indexer can use the `indexer-cli` to view all queued actions
@@ -812,8 +812,8 @@ To set the delegation parameters using Graph Explorer interface, follow these st
 
 After being created by an Indexer a healthy allocation goes through two states.
 
-- **Active** - Once an allocation is created on-chain ([allocateFrom()](https://github.com/graphprotocol/contracts/blob/main/packages/contracts/contracts/staking/Staking.sol#L316)) it is considered **active**. A portion of the Indexer's own and/or delegated stake is allocated towards a subgraph deployment, which allows them to claim indexing rewards and serve queries for that subgraph deployment. The Indexer agent manages creating allocations based on the Indexer rules.
+- **Active** - Once an allocation is created onchain ([allocateFrom()](https://github.com/graphprotocol/contracts/blob/main/packages/contracts/contracts/staking/Staking.sol#L316)) it is considered **active**. A portion of the Indexer's own and/or delegated stake is allocated towards a subgraph deployment, which allows them to claim indexing rewards and serve queries for that subgraph deployment. The Indexer agent manages creating allocations based on the Indexer rules.
 
 - **Closed** - An Indexer is free to close an allocation once 1 epoch has passed ([closeAllocation()](https://github.com/graphprotocol/contracts/blob/main/packages/contracts/contracts/staking/Staking.sol#L335)) or their Indexer agent will automatically close the allocation after the **maxAllocationEpochs** (currently 28 days). When an allocation is closed with a valid proof of indexing (POI) their indexing rewards are distributed to the Indexer and its Delegators ([learn more](/network/indexing/#how-are-indexing-rewards-distributed)).
 
-ऑन-चेन वाटप तयार करण्यापूर्वी चेनहेडमध्ये सबग्राफ उपयोजन समक्रमित करण्यासाठी ऑफचेन सिंकिंग कार्यक्षमता वापरण्याची शिफारस इंडेक्सर्सना केली जाते. हे वैशिष्ट्य विशेषतः उपग्राफसाठी उपयुक्त आहे ज्यांना समक्रमित करण्यासाठी 28 पेक्षा जास्त काळ लागू शकतो किंवा अनिश्चितपणे अयशस्वी होण्याची काही शक्यता असते.
+Indexers are recommended to utilize offchain syncing functionality to sync subgraph deployments to chainhead before creating the allocation onchain. This feature is especially useful for subgraphs that may take longer than 28 epochs to sync or have some chances of failing undeterministically.
