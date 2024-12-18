@@ -102,6 +102,7 @@ async function main() {
             (file.endsWith('.md') || file.endsWith('.mdx')),
         )
         .map((file) => path.basename(file, path.extname(file)))
+      console.log(`Creating meta file ${path.join(SOURCE_LOCALE, directory, META_FILENAME)}`)
       await fs.writeFile(
         sourceMetaPath,
         `export default {\n${filesInDirectory.map((page) => `  '${page}': '',`).join('\n')}\n}\n`,
@@ -122,6 +123,7 @@ async function main() {
       if (FORCE_META || !(await fileExists(translatedMetaPath))) {
         const depth = path.relative(PAGES_DIRECTORY, translatedDirectory).split(path.sep).length
         const importPath = path.posix.join('../'.repeat(depth), SOURCE_LOCALE, directory, META_FILENAME)
+        console.log(`Creating meta file ${path.join(locale, directory, META_FILENAME)}`)
         await fs.writeFile(translatedMetaPath, `import meta from '${importPath}'\n\nexport default {\n  ...meta,\n}\n`)
       }
     }

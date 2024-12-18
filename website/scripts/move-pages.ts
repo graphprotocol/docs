@@ -9,6 +9,7 @@
  * 2. Moves files in all locales:
  *    - Creates destination directories as needed
  *    - Skips files that don't exist or would be overwritten
+ *    - When moving a directory, moves _meta.js in English and recreates it in other locales
  *
  * 3. Runs `fix-pages-structure` to:
  *    - Clean up any orphaned directories
@@ -152,11 +153,14 @@ async function main() {
       const sourceFile = path.join(localeDirectory, sourcePath)
       const destinationFile = path.join(localeDirectory, destinationPath)
 
-      // Skip if source doesn't exist or would overwrite an existing _meta.js
-      if (
-        !(await fileExists(sourceFile)) ||
-        (path.basename(destinationPath) === META_FILENAME && (await fileExists(destinationFile)))
-      ) {
+      // Skip if source doesn't exist or destination would be overwritten
+      if (!(await fileExists(sourceFile)) || (await fileExists(destinationFile))) {
+        continue
+      }
+
+      // For translations, skip _meta.js (they'll be recreated by `fix-pages-structure`)
+      // For English, move _meta.js to preserve customizations
+      if (locale !== SOURCE_LOCALE && path.basename(destinationPath) === META_FILENAME) {
         continue
       }
 
@@ -167,7 +171,7 @@ async function main() {
     console.log() // Add blank line between locales
   }
 
-  // Run fix-pages-structure to clean up and update meta files
+  // Run `fix-pages-structure` to clean up and update meta files
   console.log('\nRunning fix-pages-structure...')
   await execFileAsync('tsx', ['scripts/fix-pages-structure.ts'])
 }
