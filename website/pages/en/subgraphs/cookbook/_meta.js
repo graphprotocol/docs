@@ -14,4 +14,5 @@ export default {
   timeseries: 'Subgraph Best Practice 5: Simplify and Optimize with Timeseries and Aggregations',
   'grafting-hotfix': 'Subgraph Best Practice 6: Grafting and Hotfixing',
   enums: '',
+  'secure-api-keys-nextjs': '',
 }
