@@ -10,12 +10,9 @@ export default {
     type: 'heading',
     title: 'Subgraphs',
   },
-  'quick-start': '',
-  explorer: '',
-  querying: 'Querying',
-  developing: 'Developing',
-  billing: '',
-  cookbook: 'Cookbook',
+  subgraphs: {
+    type: 'children',
+  },
   '---2': {
     type: 'separator',
   },
@@ -23,9 +20,9 @@ export default {
     type: 'heading',
     title: 'Substreams',
   },
-  substreams: '',
-  sps: 'Substreams Powered Subgraphs',
-  cookbook: 'Cookbooks',
+  substreams: {
+    type: 'children',
+  },
   '---3': {
     type: 'separator',
   },
@@ -33,12 +30,9 @@ export default {
     type: 'heading',
     title: 'Indexing',
   },
-  indexing: '',
-  'indexer-tooling': 'Indexer Tooling',
-  tap: '',
-  'supported-network-requirements': '',
-  'chain-integration-overview': '',
-  'new-chain-integration': '',
+  indexing: {
+    type: 'children',
+  },
   '---4': {
     type: 'separator',
   },
@@ -46,8 +40,8 @@ export default {
     type: 'heading',
     title: 'Resources',
   },
-  glossary: '',
-  network: 'Network',
-  'release-notes': 'Release Notes & Upgrade Guides',
+  resources: {
+    type: 'children',
+  },
   archived: 'Archived',
 }

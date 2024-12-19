@@ -1,0 +1,202 @@
+---
+title: グラフティングでコントラクトを取り替え、履歴を残す
+---
+
+このガイドでは、既存のサブグラフをグラフティングして新しいサブグラフを構築し、配備する方法を学びます。
+
+## グラフティングとは？
+
+グラフティングは、既存のサブグラフからデータを再利用し、後のブロックからインデックスを作成します。これは、開発中にマッピングの単純なエラーを素早く乗り越えるため、または、既存のサブグラフが失敗した後に一時的に再び動作させるために有用です。また、ゼロからインデックスを作成するのに時間がかかる機能をサブグラフに追加する場合にも使用できます。
+
+グラフト化されたサブグラフは、ベースとなるサブグラフのスキーマと同一ではなく、単に互換性のある GraphQL スキーマを使用することができます。また、それ自体は有効なサブグラフのスキーマでなければなりませんが、以下の方法でベースサブグラフのスキーマから逸脱することができます。
+
+- エンティティタイプを追加または削除する
+- エンティティタイプから属性を削除する
+- 属性を追エンティティタイプに nullable加する
+- null 化できない属性を null 化できる属性に変更する
+- enums に値を追加する
+- インターフェースの追加または削除
+- インターフェースがどのエンティティタイプに実装されるかを変更する
+
+詳しくは、こちらでご確認ください。
+
+- [Grafting](/developing/creating-a-subgraph/#grafting-onto-existing-subgraphs)
+
+In this tutorial, we will be covering a basic use case. We will replace an existing contract with an identical contract (with a new address, but the same code). Then, graft the existing subgraph onto the "base" subgraph that tracks the new contract.
+
+## ネットワークにアップグレードする際の移植に関する重要な注意事項
+
+> **Caution**: It is recommended to not use grafting for subgraphs published to The Graph Network
+
+### 何でこれが大切ですか？
+
+Grafting is a powerful feature that allows you to "graft" one subgraph onto another, effectively transferring historical data from the existing subgraph to a new version. It is not possible to graft a subgraph from The Graph Network back to Subgraph Studio.
+
+### ベストプラクティス
+
+**初期移行**: サブグラフを初めて分散ネットワークにデプロイするときは、移植せずに実行してください。 サブグラフが安定しており、期待どおりに機能していることを確認します。
+
+**その後の更新**: サブグラフが分散ネットワーク上で稼働し、安定したら、移行をよりスムーズにし、履歴データを保存するために、将来のバージョンにグラフティングを使用できます。
+
+これらのガイドラインに従うことで、リスクを最小限に抑え、よりスムーズな移行プロセスを確保できます。
+
+## 既存のサブグラフの構築
+
+Building subgraphs is an essential part of The Graph, described more in depth [here](/subgraphs/quick-start/). To be able to build and deploy the existing subgraph used in this tutorial, the following repo is provided:
+
+- [サブグラフ例文レポ](https://github.com/Shiyasmohd/grafting-tutorial)
+
+> 注：サブグラフで使用されているコントラクトは、以下の[Hackathon Starterkit](https://github.com/schmidsi/hackathon-starterkit)から取得したものです。
+
+## サブグラフマニフェストの定義
+
+サブグラフ マニフェスト `subgraph.yaml` は、サブグラフのデータ ソース、関心のあるトリガー、およびこれらのトリガーに応答して実行される関数を識別します。使用するサブグラフ マニフェストの例については、以下を参照してください。
+
+```yaml
+specVersion: 0.0.4
+schema:
+  file: ./schema.graphql
+dataSources:
+  - kind: ethereum
+    name: Lock
+    network: sepolia
+    source:
+      address: '0xb3aabe721794b85fe4e72134795c2f93b4eb7e63'
+      abi: Lock
+      startBlock: 5955690
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.6
+      language: wasm/assemblyscript
+      entities:
+        - Withdrawal
+      abis:
+        - name: Lock
+          file: ./abis/Lock.json
+      eventHandlers:
+        - event: Withdrawal(uint256,uint256)
+          handler: handleWithdrawal
+      file: ./src/lock.ts
+```
+
+- `Lock`データソースは、コンパイルとデプロイ時に取得するアビとコントラクトのアドレスです。
+- The network should correspond to an indexed network being queried. Since we're running on Sepolia testnet, the network is `sepolia`
+- `mapping`セクションでは、関心のあるトリガーと、それらのトリガーに応答して実行されるべき関数を定義しています。この場合、`Withdrawal`イベントをリスニングし、それが発信されたときに`handleWithdrawal`関数を呼び出すことにしています。
+
+## グラフティングマニフェストの定義
+
+グラフティングは、元のサブグラフ・マニフェストに新しい2つの項目を追加する必要があります。
+
+```yaml
+---
+features:
+  - grafting # feature name
+graft:
+  base: Qm... # subgraph ID of base subgraph
+  block: 5956000 # block number
+```
+
+- `features:` is a list of all used [feature names](/developing/creating-a-subgraph/#experimental-features).
+- `graft:`は`base`サブグラフとグラフティングをするブロックのマップです。`block`はインデックスを開始するブロック番号です。Graphは、指定されたブロックまでのベースサブグラフのデータをコピーし、そのブロックから新しいサブグラフのインデックスを作成し続けます。
+
+`base`と`block`の値は、2つのサブグラフを展開することで求めることができます：一つはベースインデックス用、もう一つはグラフティング用です
+
+## ベースサブグラフの起動
+
+1. Go to [Subgraph Studio](https://thegraph.com/studio/) and create a subgraph on Sepolia testnet called `graft-example`
+2. レポの `graft-example` フォルダ内のサブグラフのページにある `AUTH & DEPLOY` セクションの指示にしたがってください。
+3. 終了後、サブグラフが正しくインデックスされていることを確認します。The Graph Playgroundで以下のコマンドを実行すると、サブグラフが正常にインデックスされます。
+
+```graphql
+{
+  withdrawals(first: 5) {
+    id
+    amount
+    when
+  }
+}
+```
+
+このようなものが返ってきます：
+
+```
+{
+  "data": {
+    "withdrawals": [
+      {
+        "id": "0xe8323d21c4f104607b10b0fff9fc24b9612b9488795dea8196b2d5f980d3dc1d0a000000",
+        "amount": "0",
+        "when": "1716394824"
+      },
+      {
+        "id": "0xea1cee35036f2cacb72f2a336be3e54ab911f5bebd58f23400ebb8ecc5cfc45203000000",
+        "amount": "0",
+        "when": "1716394848"
+      }
+    ]
+  }
+}
+```
+
+サブグラフが正しくインデックスされていることを確認したら、グラフティングで素早くサブグラフを更新することができます。
+
+## グラフティングサブグラフの展開
+
+グラフト置換されたsubgraph.yamlは、新しいコントラクトのアドレスを持つことになります。これは、ダンプを更新したり、コントラクトを再デプロイしたりしたときに起こりうることです。
+
+1. Go to [Subgraph Studio](https://thegraph.com/studio/) and create a subgraph on Sepolia testnet called `graft-replacement`
+2. Create a new manifest. The `subgraph.yaml` for `graph-replacement` contains a different contract address and new information about how it should graft. These are the `block` of the [last event emitted](https://sepolia.etherscan.io/tx/0xea1cee35036f2cacb72f2a336be3e54ab911f5bebd58f23400ebb8ecc5cfc452) you care about by the old contract and the `base` of the old subgraph. The `base` subgraph ID is the `Deployment ID` of your original `graph-example` subgraph. You can find this in Subgraph Studio.
+3. レポの `graft-replacement` フォルダ内のサブグラフのページにある `AUTH & DEPLOY` セクションの指示にしたがってください。
+4. 終了後、サブグラフが正しくインデックスされていることを確認します。The Graph Playgroundで以下のコマンドを実行すると、サブグラフが正常にインデックスされます。
+
+```graphql
+{
+  withdrawals(first: 5) {
+    id
+    amount
+    when
+  }
+}
+```
+
+以下のように返ってくるはずです：
+
+```
+{
+  "data": {
+    "withdrawals": [
+      {
+        "id": "0xe8323d21c4f104607b10b0fff9fc24b9612b9488795dea8196b2d5f980d3dc1d0a000000",
+        "amount": "0",
+        "when": "1716394824"
+      },
+      {
+        "id": "0xea1cee35036f2cacb72f2a336be3e54ab911f5bebd58f23400ebb8ecc5cfc45203000000",
+        "amount": "0",
+        "when": "1716394848"
+      },
+      {
+        "id": "0x2410475f76a44754bae66d293d14eac34f98ec03a3689cbbb56a716d20b209af06000000",
+        "amount": "0",
+        "when": "1716429732"
+      }
+    ]
+  }
+}
+```
+
+You can see that the `graft-replacement` subgraph is indexing from older `graph-example` data and newer data from the new contract address. The original contract emitted two `Withdrawal` events, [Event 1](https://sepolia.etherscan.io/tx/0xe8323d21c4f104607b10b0fff9fc24b9612b9488795dea8196b2d5f980d3dc1d) and [Event 2](https://sepolia.etherscan.io/tx/0xea1cee35036f2cacb72f2a336be3e54ab911f5bebd58f23400ebb8ecc5cfc452). The new contract emitted one `Withdrawal` after, [Event 3](https://sepolia.etherscan.io/tx/0x2410475f76a44754bae66d293d14eac34f98ec03a3689cbbb56a716d20b209af). The two previously indexed transactions (Event 1 and 2) and the new transaction (Event 3) were combined together in the `graft-replacement` subgraph.
+
+Congrats! You have successfully grafted a subgraph onto another subgraph.
+
+## その他のリソース
+
+If you want more experience with grafting, here are a few examples for popular contracts:
+
+- [曲線](https://github.com/messari/subgraphs/blob/master/subgraphs/curve-finance/protocols/curve-finance/config/templates/curve.template.yaml)
+- [ERC-721](https://github.com/messari/subgraphs/blob/master/subgraphs/erc721-metadata/subgraph.yaml)
+- [Uniswap](https://github.com/messari/subgraphs/blob/master/subgraphs/uniswap-v3-forks/protocols/uniswap-v3/config/templates/uniswapV3Template.yaml),
+
+To become even more of a Graph expert, consider learning about other ways to handle changes in underlying datasources. Alternatives like [Data Source Templates](/developing/creating-a-subgraph/#data-source-templates) can achieve similar results
+
+> 注：この記事の多くの資料は、以前公開された[アルウィーブの記事](/subgraphs/cookbook/arweave/)から引用したものです。

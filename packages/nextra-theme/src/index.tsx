@@ -199,7 +199,9 @@ export default function NextraLayout({ children, pageOpts, pageProps }: NextraTh
                   {args.activePath.map((item) => item.title).join(' > ')}
                 </div>
               ) : null}
-              {frontMatter.title ? <Heading.H1>{frontMatter.title}</Heading.H1> : null}
+              {frontMatter.title || args.activeIndex === 0 ? (
+                <Heading.H1>{args.activeIndex === 0 ? 'The Graph Docs' : frontMatter.title}</Heading.H1>
+              ) : null}
               {lastUpdated || readingTime ? (
                 <Paragraph size="14px">
                   {lastUpdated ? (

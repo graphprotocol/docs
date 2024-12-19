@@ -1,0 +1,283 @@
+---
+title: Создание субграфов на NEAR
+---
+
+Это руководство представляет собой введение в построение подграфов, индексирующих смарт-контракты на [блокчейне NEAR](https://docs.near.org/).
+
+## Что такое NEAR?
+
+[NEAR](https://near.org/) is a smart contract platform for building decentralized applications. Visit the [official documentation](https://docs.near.org/concepts/basics/protocol) for more information.
+
+## Что такое NEAR подграфы?
+
+The Graph предоставляет разработчикам инструменты для обработки событий блокчейна и делает результирующие данные легко доступными через GraphQL API, известный индивидуально как субграф. [Graph Node](https://github.com/graphprotocol/graph-node) теперь способен обрабатывать события NEAR, что означает, что разработчики NEAR теперь могут создавать субграфы для индексации своих смарт-контрактов.
+
+Субграфы основаны на событиях, что означает, что они отслеживают и затем обрабатывают события в сети. В настоящее время для подграфов NEAR поддерживаются два типа обработчиков:
+
+- Обработчики блоков: они запускаются для каждого нового блока
+- Обработчики квитанций: запускаются каждый раз, когда сообщение выполняется в указанной учетной записи
+
+[From the NEAR documentation](https://docs.near.org/build/data-infrastructure/lake-data-structures/receipt):
+
+> Квитанция - это единственный объект, к которому можно применить действие в системе. Когда мы говорим об "обработке транзакции" на платформе NEAR, это в конечном итоге означает "применение квитанций" в какой-то момент.
+
+## Создание NEAR подграфа
+
+`@graphprotocol/graph-cli` - это инструмент командной строки для построения и развертывания субграфов.
+
+`@graphprotocol/graph-ts` - это библиотека типов, специфичных для субграфов.
+
+Для разработки NEAR субграфа требуется `graph-cli` выше версии `0.23.0` и `graph-ts` выше версии `0.23.0`.
+
+> Построение NEAR сабграфа очень похоже на построение сабграфа, индексирующего Ethereum.
+
+Существует три аспекта определения подграфа:
+
+**subgraph.yaml:** манифест подграфа, определяющий источники данных, представляющие интерес, и как они должны быть обработаны. NEAR - это новый `вид` источника данных.
+
+**schema.graphql:** файл схемы, который определяет, какие данные хранятся для вашего подграфа и как запрашивать их через GraphQL. Требования к подграфам NEAR рассматриваются в [существующей документации](/developing/creating-a-subgraph/#the-graphql-schema).
+
+**AssemblyScript Mappings:** [AssemblyScript code](/subgraphs/developing/creating/graph-ts/api/) that translates from the event data to the entities defined in your schema. NEAR support introduces NEAR-specific data types and new JSON parsing functionality.
+
+Во время разработки субграфа есть две ключевые команды:
+
+```bash
+$ graph codegen # генерирует типы из файла схемы, указанного в манифесте
+$ graph build # генерирует Web Assembly из файлов AssemblyScript и подготавливает все файлы субграфа в папке /build
+```
+
+### Определение манифеста подграфа
+
+Манифест подграфа (`subgraph.yaml`) определяет источники данных для подграфа, интересующие триггеры и функции, которые должны быть запущены в ответ на эти триггеры. Ниже приведен пример манифеста подграфа для подграфа NEAR:
+
+```yaml
+specVersion: 0.0.2
+schema:
+  file: ./src/schema.graphql # link to the schema file
+dataSources:
+  - kind: near
+    network: near-mainnet
+    source:
+      account: app.good-morning.near # This data source will monitor this account
+      startBlock: 10662188 # Required for NEAR
+    mapping:
+      apiVersion: 0.0.5
+      language: wasm/assemblyscript
+      blockHandlers:
+        - handler: handleNewBlock # the function name in the mapping file
+      receiptHandlers:
+        - handler: handleReceipt # the function name in the mapping file
+      file: ./src/mapping.ts # link to the file with the Assemblyscript mappings
+```
+
+- NEAR подграфы вводят новый ` вид` источника данных (`near`)
+- The `network` should correspond to a network on the hosting Graph Node. On Subgraph Studio, NEAR's mainnet is `near-mainnet`, and NEAR's testnet is `near-testnet`
+- NEAR data sources introduce an optional `source.account` field, which is a human-readable ID corresponding to a [NEAR account](https://docs.near.org/concepts/protocol/account-model). This can be an account or a sub-account.
+- Источниками данных NEAR вводят альтернативное необязательное поле `source.accounts`, которое содержит необязательные суффиксы и префиксы. Необходимо указать по крайней мере префикс или суффикс, они будут соответствовать любой учетной записи, начинающейся или заканчивающейся списком значений соответственно. Приведенный ниже пример соответствовал бы: `[app|good].*[morning.near|morning.testnet]`. Если необходим только список префиксов или суффиксов, другое поле можно опустить.
+
+```yaml
+accounts:
+  prefixes:
+    - app
+    - good
+  suffixes:
+    - morning.near
+    - morning.testnet
+```
+
+Источники данных NEAR поддерживают два типа обработчиков:
+
+- `blockHandlers` запускаются при каждом новом ближайшем блоке. Не требуется `source.account`.
+- `receiptHandlers`: run on every receipt where the data source's `source.account` is the recipient. Note that only exact matches are processed ([subaccounts](https://docs.near.org/tutorials/crosswords/basics/add-functions-call#create-a-subaccount) must be added as independent data sources).
+
+### Определение схемы
+
+Определение схемы описывает структуру результирующей базы данных подграфов и взаимосвязи между объектами. Это не зависит от исходного источника данных. Более подробная информация об определении схемы подграфа [ приведена здесь](/developing/creating-a-subgraph/#the-graphql-schema).
+
+### Сопоставления AssemblyScript
+
+Обработчики событий написаны на языке [AssemblyScript](https://www.assemblyscript.org/).
+
+NEAR indexing introduces NEAR-specific data types to the [AssemblyScript API](/subgraphs/developing/creating/graph-ts/api/).
+
+```typescript
+
+class ExecutionOutcome {
+      gasBurnt: u64,
+      blockHash: Bytes,
+      id: Bytes,
+      logs: Array<string>,
+      receiptIds: Array<Bytes>,
+      tokensBurnt: BigInt,
+      executorId: string,
+  }
+
+class ActionReceipt {
+      predecessorId: string,
+      receiverId: string,
+      id: CryptoHash,
+      signerId: string,
+      gasPrice: BigInt,
+      outputDataReceivers: Array<DataReceiver>,
+      inputDataIds: Array<CryptoHash>,
+      actions: Array<ActionValue>,
+  }
+
+class BlockHeader {
+      height: u64,
+      prevHeight: u64,// Always zero when version < V3
+      epochId: Bytes,
+      nextEpochId: Bytes,
+      chunksIncluded: u64,
+      hash: Bytes,
+      prevHash: Bytes,
+      timestampNanosec: u64,
+      randomValue: Bytes,
+      gasPrice: BigInt,
+      totalSupply: BigInt,
+      latestProtocolVersion: u32,
+  }
+
+class ChunkHeader {
+      gasUsed: u64,
+      gasLimit: u64,
+      shardId: u64,
+      chunkHash: Bytes,
+      prevBlockHash: Bytes,
+      balanceBurnt: BigInt,
+  }
+
+class Block {
+      author: string,
+      header: BlockHeader,
+      chunks: Array<ChunkHeader>,
+  }
+
+class ReceiptWithOutcome {
+      outcome: ExecutionOutcome,
+      receipt: ActionReceipt,
+      block: Block,
+  }
+```
+
+Эти типы передаются обработчикам блоков и квитанций:
+
+- Обработчики блоков получат `Block`
+- Обработчики квитанций получат `ReceiptWithOutcome`
+
+Otherwise, the rest of the [AssemblyScript API](/subgraphs/developing/creating/graph-ts/api/) is available to NEAR subgraph developers during mapping execution.
+
+This includes a new JSON parsing function - logs on NEAR are frequently emitted as stringified JSONs. A new `json.fromString(...)` function is available as part of the [JSON API](/subgraphs/developing/creating/graph-ts/api/#json-api) to allow developers to easily process these logs.
+
+## Развертывание NEAR субграфа
+
+Как только у вас будет построенный субграф, пришло время развернуть его в Graph Node для индексации. NEAR субграфы могут быть развернуты на любой ноде Graph `>=v0.26.x` (эта версия еще не была помечена & выпущена).
+
+Subgraph Studio and the upgrade Indexer on The Graph Network currently supports indexing NEAR mainnet and testnet in beta, with the following network names:
+
+- `near-mainnet`
+- `near-testnet`
+
+More information on creating and deploying subgraphs on Subgraph Studio can be found [here](/deploying/deploying-a-subgraph-to-studio/).
+
+As a quick primer - the first step is to "create" your subgraph - this only needs to be done once. On Subgraph Studio, this can be done from [your Dashboard](https://thegraph.com/studio/): "Create a subgraph".
+
+Как только ваш подграф создан, вы можете развернуть его с помощью команды `graph deploy` CLI:
+
+```sh
+$ graph create --node <graph-node-url> <subgraph-name> # creates a subgraph on a local Graph Node (on Subgraph Studio, this is done via the UI)
+$ graph deploy --node <graph-node-url> --ipfs https://api.thegraph.com/ipfs/ <subgraph-name> # uploads the build files to a specified IPFS endpoint, and then deploys the subgraph to a specified Graph Node based on the manifest IPFS hash
+```
+
+Конфигурация ноды будет зависеть от того, где развертывается подграф.
+
+### Subgraph Studio
+
+```sh
+graph auth
+graph deploy <subgraph-name>
+```
+
+### Local Graph Node (based on default configuration)
+
+```sh
+graph deploy --node http://localhost:8020/ --ipfs http://localhost:5001 <subgraph-name>
+```
+
+Как только ваш подграф будет развернут, он будет проиндексирован Graph Node. Вы можете проверить его прогресс, сделав запрос к самому субграфу:
+
+```graphql
+{
+  _meta {
+    block {
+      number
+    }
+  }
+}
+```
+
+### Indexing NEAR with a Local Graph Node
+
+Запуск ноды Graph, который индексирует NEAR, имеет следующие эксплуатационные требования:
+
+- Фреймворк NEAR Indexer с инструментарием Firehose
+- Компонент(ы) NEAR Firehose
+- Graph Node с настроенным эндпоинтом Firehose
+
+В ближайшее время мы предоставим более подробную информацию о запуске вышеуказанных компонентов.
+
+## Запрос NEAR подграфа
+
+Эндпоинт GraphQL для NEAR подграфов определяется определением схемы с помощью существующего интерфейса API. Пожалуйста, посетите [Документацию GraphQL API](/subgraphs/querying/graphql-api/) для получения дополнительной информации.
+
+## Примеры подграфов
+
+Вот несколько примеров подграфов для справки:
+
+[NEAR Blocks](https://github.com/graphprotocol/graph-tooling/tree/main/examples/near-blocks)
+
+[NEAR Receipts](https://github.com/graphprotocol/graph-tooling/tree/main/examples/near-receipts)
+
+## Часто задаваемые вопросы
+
+### How does the beta work?
+
+Поддержка NEAR находится в стадии бета-тестирования, что означает, что в API могут быть внесены изменения, поскольку мы продолжаем работать над улучшением интеграции. Пожалуйста, напишите по электронной почте near@thegraph.com чтобы мы могли поддержать вас в создании NEAR подграфов и держать вас в курсе последних разработок!
+
+### Can a subgraph index both NEAR and EVM chains?
+
+Нет, субграф может поддерживать источники данных только из одного чейна/сети.
+
+### Can subgraphs react to more specific triggers?
+
+В настоящее время поддерживаются только триггеры Block и Receipt. Мы исследуем триггеры для вызовов функций к указанной учетной записи. Мы также заинтересованы в поддержке триггеров событий, когда NEAR обладает собственной поддержкой событий.
+
+### Will receipt handlers trigger for accounts and their sub-accounts?
+
+Если указан `account`, это будет соответствовать только точному имени учетной записи. Можно сопоставить субсчеты, указав поле `accounts` с `suffixes` и `prefixes`, указанными для сопоставления учетных записей и субсчетов, например, следующее будет соответствовать всем `mintbase1.near`:
+
+```yaml
+accounts:
+  suffixes:
+    - mintbase1.near
+```
+
+### Can NEAR subgraphs make view calls to NEAR accounts during mappings?
+
+Это не поддерживается. Мы оцениваем, требуется ли эта функциональность для индексации.
+
+### Can I use data source templates in my NEAR subgraph?
+
+В настоящее время это не поддерживается. Мы оцениваем, требуется ли эта функциональность для индексации.
+
+### Ethereum subgraphs support "pending" and "current" versions, how can I deploy a "pending" version of a NEAR subgraph?
+
+Ожидающая функциональность еще не поддерживается для NEAR подграфов. Тем временем вы можете развернуть новую версию на другом "именованном" подграфе, а затем, когда она будет синхронизирована с заголовком чейна, вы можете повторно развернуть ее на свой основной "именованный" подграф, который будет использовать тот же базовый идентификатор развертывания, поэтому основной субграф будет мгновенно синхронизирован.
+
+### My question hasn't been answered, where can I get more help building NEAR subgraphs?
+
+If it is a general question about subgraph development, there is a lot more information in the rest of the [Developer documentation](/subgraphs/quick-start/). Otherwise please join [The Graph Protocol Discord](https://discord.gg/graphprotocol) and ask in the #near channel or email near@thegraph.com.
+
+## Ссылки
+
+- [Документация разработчика NEAR](https://docs.near.org/tutorials/crosswords/basics/set-up-skeleton)
