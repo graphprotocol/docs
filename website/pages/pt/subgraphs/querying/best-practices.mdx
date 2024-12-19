@@ -1,0 +1,488 @@
+---
+title: Etiqueta de Query
+---
+
+The Graph provides a decentralized way to query data from blockchains. Its data is exposed through a GraphQL API, making it easier to query with the GraphQL language.
+
+Learn the essential GraphQL language rules and best practices to optimize your subgraph.
+
+---
+
+## Queries numa API GraphQL
+
+### The Anatomy of a GraphQL Query
+
+Ao contrário da REST API, uma API GraphQL é construída em cima de um Schema que define quais queries podem ser realizados.
+
+Por exemplo, um query para retornar um token através do query `token` ficará assim:
+
+```graphql
+query GetToken($id: ID!) {
+  token(id: $id) {
+    id
+    owner
+  }
+}
+```
+
+o que retornará a seguinte resposta previsível no JSON (_ao passar o valor variável `$id` apropriado_):
+
+```json
+{
+  "token": {
+    "id": "...",
+    "owner": "..."
+  }
+}
+```
+
+Queries GraphQL usam a linguagem GraphQL, definida sobre [uma especificação](https://spec.graphql.org/).
+
+O query `GetToken` acima é composto de várias partes da linguagem (substituído abaixo com `[...]` temporários):
+
+```graphql
+query [operationName]([variableName]: [variableType]) {
+  [queryName]([argumentName]: [variableName]) {
+    # "{ ... }" expressa um Selection-Set, estamos a consultar campos do `queryName`.
+    [field]
+    [field]
+  }
+}
+```
+
+## Rules for Writing GraphQL Queries
+
+- Cada `queryName` deve ser usado apenas uma vez por operação.
+- Cada `field` deve ser usado apenas uma vez numa seleção (não podemos consultar a `id` duas vezes sob o `token`)
+- Alguns `fields`s ou queries (como `tokens`) retornam tipos complexos que requerem uma seleção de subcampo. Não providenciar uma seleção quando esperado (ou providenciar uma quando não é esperado - por exemplo, no `id`) resultará num erro. Para conhecer um tipo de campo, consulte o [Graph Explorer](/subgraphs/explorer/).
+- Qualquer variável apontada a um argumento deve corresponder ao seu tipo.
+- Em uma lista dada de variáveis, cada uma delas deve ser única.
+- Todas as variáveis definidas devem ser usadas.
+
+> Note: Failing to follow these rules will result in an error from The Graph API.
+
+For a complete list of rules with code examples, check out [GraphQL Validations guide](/resources/release-notes/graphql-validations-migration-guide/).
+
+### Como enviar um query a uma API GraphQL
+
+GraphQL is a language and set of conventions that transport over HTTP.
+
+It means that you can query a GraphQL API using standard `fetch` (natively or via `@whatwg-node/fetch` or `isomorphic-fetch`).
+
+However, as mentioned in ["Querying from an Application"](/subgraphs/querying/from-an-application/), it's recommended to use `graph-client`, which supports the following unique features:
+
+- Gestão de Subgraph Cross-chain: Queries de múltiplos subgraphs numa única consulta
+- [Rastreamento Automático de Blocos](https://github.com/graphprotocol/graph-client/blob/main/packages/block-tracking/README.md)
+- [Paginação Automática](https://github.com/graphprotocol/graph-client/blob/main/packages/auto-pagination/README.md)
+- Resultado totalmente digitado
+
+Here's how to query The Graph with `graph-client`:
+
+```tsx
+import { execute } from '../.graphclient'
+
+const query = `
+query GetToken($id: ID!) {
+  token(id: $id) {
+    id
+    owner
+  }
+}
+`
+const variables = { id: '1' }
+
+async function main() {
+  const result = await execute(query, variables)
+  // `result` is fully typed!
+  console.log(result)
+}
+
+main()
+```
+
+More GraphQL client alternatives are covered in ["Querying from an Application"](/subgraphs/querying/from-an-application/).
+
+---
+
+## Boas práticas
+
+### Sempre escreva consultas estáticas
+
+A common (bad) practice is to dynamically build query strings as follows:
+
+```tsx
+const id = params.id
+const fields = ['id', 'owner']
+const query = `
+query GetToken {
+  token(id: ${id}) {
+    ${fields.join('\n')}
+  }
+}
+`
+
+// Execute query...
+```
+
+While the above snippet produces a valid GraphQL query, **it has many drawbacks**:
+
+- ela **dificulta** a consulta na totalidade
+- os programadores são **responsáveis por higienizar com segurança a interpolação de string**
+- não mandar os valores das variáveis como parte dos parâmetros de pedido **impede um possível caching no lado do servidor**
+- ela **impede as ferramentas de analisar estaticamente a consulta** (por ex. Linter ou ferramentas de geração de tipo)
+
+For this reason, it is recommended to always write queries as static strings:
+
+```tsx
+import { execute } from 'your-favorite-graphql-client'
+
+const id = params.id
+const query = `
+query GetToken($id: ID!) {
+  token(id: $id) {
+    id
+    owner
+  }
+}
+`
+
+const result = await execute(query, {
+  variables: {
+    id,
+  },
+})
+```
+
+Doing so brings **many advantages**:
+
+- Queries **fáceis de ler e manter**
+- O **servidor GraphQL cuida da higienização de variáveis**
+- **Variáveis podem ser cacheadas** no nível do servidor
+- **Queries podem ser analisados estaticamente por ferramentas** (mais sobre isto nas seções seguintes)
+
+### How to include fields conditionally in static queries
+
+You might want to include the `owner` field only on a particular condition.
+
+For this, you can leverage the `@include(if:...)` directive as follows:
+
+```tsx
+import { execute } from 'your-favorite-graphql-client'
+
+const id = params.id
+const query = `
+query GetToken($id: ID!, $includeOwner: Boolean) {
+  token(id: $id) {
+    id
+    owner @include(if: $includeOwner)
+  }
+}
+`
+
+const result = await execute(query, {
+  variables: {
+    id,
+    includeOwner: true,
+  },
+})
+```
+
+> Note: The opposite directive is `@skip(if: ...)`.
+
+### Pergunte pelo que queres
+
+GraphQL became famous for its "Ask for what you want" tagline.
+
+For this reason, there is no way, in GraphQL, to get all available fields without having to list them individually.
+
+- Ao consultar APIs GraphQL, sempre considere fazer query apenas dos campos que serão usados.
+- Make sure queries only fetch as many entities as you actually need. By default, queries will fetch 100 entities in a collection, which is usually much more than what will actually be used, e.g., for display to the user. This applies not just to top-level collections in a query, but even more so to nested collections of entities.
+
+For example, in the following query:
+
+```graphql
+query listTokens {
+  tokens {
+    # will fetch up to 100 tokens
+    id
+    transactions {
+      # will fetch up to 100 transactions
+      id
+    }
+  }
+}
+```
+
+The response could contain 100 transactions for each of the 100 tokens.
+
+If the application only needs 10 transactions, the query should explicitly set `first: 10` on the transactions field.
+
+### Use uma única query para pedir vários registros
+
+By default, subgraphs have a singular entity for one record. For multiple records, use the plural entities and filter: `where: {id_in:[X,Y,Z]}` or `where: {volume_gt:100000}`
+
+Example of inefficient querying:
+
+```graphql
+query SingleRecord {
+  entity(id: X) {
+    id
+    name
+  }
+}
+query SingleRecord {
+  entity(id: Y) {
+    id
+    name
+  }
+}
+```
+
+Example of optimized querying:
+
+```graphql
+query ManyRecords {
+  entities(where: { id_in: [X, Y] }) {
+    id
+    name
+  }
+}
+```
+
+### Combine múltiplas queries em um único pedido
+
+Your application might require querying multiple types of data as follows:
+
+```graphql
+import { execute } from "your-favorite-graphql-client"
+
+const tokensQuery = `
+query GetTokens {
+  tokens(first: 50) {
+    id
+    owner
+  }
+}
+`
+const countersQuery = `
+query GetCounters {
+  counters {
+    id
+    value
+  }
+}
+`
+
+const [tokens, counters] = Promise.all(
+  [
+    tokensQuery,
+    countersQuery,
+  ].map(execute)
+)
+```
+
+While this implementation is totally valid, it will require two round trips with the GraphQL API.
+
+Fortunately, it is also valid to send multiple queries in the same GraphQL request as follows:
+
+```graphql
+import { execute } from "your-favorite-graphql-client"
+
+const query = `
+query GetTokensandCounters {
+  tokens(first: 50) {
+    id
+    owner
+  }
+  counters {
+    id
+    value
+  }
+}
+`
+
+const  { result: { tokens, counters } } = execute(query)
+```
+
+This approach will **improve the overall performance** by reducing the time spent on the network (saves you a round trip to the API) and will provide a **more concise implementation**.
+
+### Como Aproveitar Fragmentos GraphQL
+
+A helpful feature to write GraphQL queries is GraphQL Fragment.
+
+Looking at the following query, you will notice that some fields are repeated across multiple Selection-Sets (`{ ... }`):
+
+```graphql
+query {
+  bondEvents {
+    id
+    newDelegate {
+      id
+      active
+      status
+    }
+    oldDelegate {
+      id
+      active
+      status
+    }
+  }
+}
+```
+
+Such repeated fields (`id`, `active`, `status`) bring many issues:
+
+- More extensive queries become harder to read.
+- When using tools that generate TypeScript types based on queries (_more on that in the last section_), `newDelegate` and `oldDelegate` will result in two distinct inline interfaces.
+
+A refactored version of the query would be the following:
+
+```graphql
+query {
+  bondEvents {
+    id
+    newDelegate {
+      ...DelegateItem
+    }
+    oldDelegate {
+      ...DelegateItem
+    }
+  }
+}
+
+# nós definimos um fragmento (subtipo) no Transcoder
+# para fatorizar campos repetidos no query
+fragment DelegateItem on Transcoder {
+  id
+  active
+  status
+}
+```
+
+Using GraphQL `fragment` will improve readability (especially at scale) and result in better TypeScript types generation.
+
+When using the types generation tool, the above query will generate a proper `DelegateItemFragment` type (_see last "Tools" section_).
+
+### O que fazer e o que não fazer em Fragments GraphQL
+
+### A base do fragment deve ser um tipo
+
+A Fragment cannot be based on a non-applicable type, in short, **on type not having fields**:
+
+```graphql
+fragment MyFragment on BigInt {
+  # ...
+}
+```
+
+`BigInt` is a **scalar** (native "plain" type) that cannot be used as a fragment's base.
+
+#### Como espalhar um Fragment
+
+Fragments are defined on specific types and should be used accordingly in queries.
+
+Exemplo:
+
+```graphql
+query {
+  bondEvents {
+    id
+    newDelegate {
+      ...VoteItem # Error! `VoteItem` cannot be spread on `Transcoder` type
+    }
+    oldDelegate {
+      ...VoteItem
+    }
+  }
+}
+
+fragment VoteItem on Vote {
+  id
+  voter
+}
+```
+
+`newDelegate` and `oldDelegate` are of type `Transcoder`.
+
+It is not possible to spread a fragment of type `Vote` here.
+
+#### Defina o Fragment como uma unidade de negócios atômica de dados
+
+GraphQL `Fragment`s must be defined based on their usage.
+
+For most use-case, defining one fragment per type (in the case of repeated fields usage or type generation) is sufficient.
+
+Here is a rule of thumb for using fragments:
+
+- When fields of the same type are repeated in a query, group them in a `Fragment`.
+- When similar but different fields are repeated, create multiple fragments, for instance:
+
+```graphql
+# base fragment (mostly used in listing)
+fragment Voter on Vote {
+  id
+  voter
+}
+
+# extended fragment (when querying a detailed view of a vote)
+fragment VoteWithPoll on Vote {
+  id
+  voter
+  choiceID
+  poll {
+    id
+    proposal
+  }
+}
+```
+
+---
+
+## The Essential Tools
+
+### Exploradores do GraphQL baseados em web
+
+Iterating over queries by running them in your application can be cumbersome. For this reason, don't hesitate to use [Graph Explorer](https://thegraph.com/explorer) to test your queries before adding them to your application. Graph Explorer will provide you a preconfigured GraphQL playground to test your queries.
+
+If you are looking for a more flexible way to debug/test your queries, other similar web-based tools are available such as [Altair](https://altairgraphql.dev/) and [GraphiQL](https://graphiql-online.com/graphiql).
+
+### GraphQL Linting
+
+In order to keep up with the mentioned above best practices and syntactic rules, it is highly recommended to use the following workflow and IDE tools.
+
+**GraphQL ESLint**
+
+[GraphQL ESLint](https://the-guild.dev/graphql/eslint/docs/getting-started) will help you stay on top of GraphQL best practices with zero effort.
+
+[Setup the "operations-recommended"](https://the-guild.dev/graphql/eslint/docs/configs) config will enforce essential rules such as:
+
+- `@graphql-eslint/fields-on-correct-type`: um campo está num tipo apropriado?
+- `@graphql-eslint/no-unused variables`: uma variável usada deve ficar sem uso?
+- e mais!
+
+This will allow you to **catch errors without even testing queries** on the playground or running them in production!
+
+### Plugins IDE
+
+**VSCode and GraphQL**
+
+The [GraphQL VSCode extension](https://marketplace.visualstudio.com/items?itemName=GraphQL.vscode-graphql) is an excellent addition to your development workflow to get:
+
+- Syntax highlighting
+- Autocomplete suggestions
+- Validation against schema
+- Snippets
+- Go to definition for fragments and input types
+
+If you are using `graphql-eslint`, the [ESLint VSCode extension](https://marketplace.visualstudio.com/items?itemName=dbaeumer.vscode-eslint) is a must-have to visualize errors and warnings inlined in your code correctly.
+
+**WebStorm/Intellij and GraphQL**
+
+The [JS GraphQL plugin](https://plugins.jetbrains.com/plugin/8097-graphql/) will significantly improve your experience while working with GraphQL by providing:
+
+- Syntax highlighting
+- Autocomplete suggestions
+- Validation against schema
+- Snippets
+
+For more information on this topic, check out the [WebStorm article](https://blog.jetbrains.com/webstorm/2019/04/featured-plugin-js-graphql/) which showcases all the plugin's main features.

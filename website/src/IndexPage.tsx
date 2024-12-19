@@ -26,27 +26,27 @@ export function Intro() {
         {
           title: t('index.shortcuts.aboutTheGraph.title'),
           description: t('index.shortcuts.aboutTheGraph.description'),
-          href: '/about',
+          href: '/about/',
         },
         {
           title: t('index.shortcuts.quickStart.title'),
           description: t('index.shortcuts.quickStart.description'),
-          href: '/quick-start',
+          href: '/subgraphs/quick-start/',
         },
         {
           title: t('index.shortcuts.developerFaqs.title'),
           description: t('index.shortcuts.developerFaqs.description'),
-          href: '/developing/developer-faqs',
+          href: '/subgraphs/developing/developer-faq/',
         },
         {
           title: t('index.shortcuts.queryFromAnApplication.title'),
           description: t('index.shortcuts.queryFromAnApplication.description'),
-          href: '/querying/querying-from-an-application',
+          href: '/subgraphs/querying/from-an-application/',
         },
         {
           title: t('index.shortcuts.createASubgraph.title'),
           description: t('index.shortcuts.createASubgraph.description'),
-          href: '/developing/creating-a-subgraph',
+          href: '/subgraphs/developing/creating/starting-your-subgraph/',
         },
       ].map((card) => (
         <li key={card.href} sx={{ aspectRatio: '258/136' }}>
@@ -102,25 +102,25 @@ export function NetworkRoles() {
           title: t('index.networkRoles.roles.developer.title'),
           description: t('index.networkRoles.roles.developer.description'),
           image: '/img/roles/developer.png',
-          href: '/developing/defining-a-subgraph',
+          href: '/subgraphs/developing/creating/starting-your-subgraph/',
         },
         {
           title: t('index.networkRoles.roles.indexer.title'),
           description: t('index.networkRoles.roles.indexer.description'),
           image: '/img/roles/indexer.png',
-          href: '/network/indexing',
+          href: '/indexing/overview/',
         },
         {
           title: t('index.networkRoles.roles.curator.title'),
           description: t('index.networkRoles.roles.curator.description'),
           image: '/img/roles/curator.png',
-          href: '/network/curating',
+          href: '/resources/roles/curating/',
         },
         {
           title: t('index.networkRoles.roles.delegator.title'),
           description: t('index.networkRoles.roles.delegator.description'),
           image: '/img/roles/delegator.png',
-          href: '/network/delegating',
+          href: '/resources/roles/delegating/',
         },
       ].map((role, index) => (
         <Flex.Column as="li" key={index}>
@@ -159,12 +159,12 @@ export function Products() {
         {
           title: t('index.products.products.subgraphStudio.title'),
           description: t('index.products.products.subgraphStudio.description'),
-          href: '/deploying/subgraph-studio',
+          href: '/subgraphs/developing/deploying/using-subgraph-studio/',
         },
         {
           title: t('index.products.products.graphExplorer.title'),
           description: t('index.products.products.graphExplorer.description'),
-          href: '/network/explorer',
+          href: '/subgraphs/explorer/',
         },
       ].map((product) => (
         <Flex.Column as="li" key={product.href}>

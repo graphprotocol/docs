@@ -1,0 +1,283 @@
+---
+title: Vytváření podgrafů v NEAR
+---
+
+Tato příručka je úvodem do vytváření subgrafů indexujících chytré kontrakty na [NEAR blockchain](https://docs.near.org/).
+
+## Co je NEAR?
+
+[NEAR](https://near.org/) je platforma pro chytré smlouvy, která slouží k vytváření decentralizovaných aplikací. Další informace najdete v [oficiální dokumentaci](https://docs.near.org/concepts/basics/protocol).
+
+## Co jsou podgrafy NEAR?
+
+"The Graph poskytuje vývojářům nástroje pro zpracování událostí na blockchainu a snadný přístup k výsledným datům prostřednictvím GraphQL API, známého individuálně jako podgraf. [Graph Node](https://github.com/graphprotocol/graph-node) je nyní schopen zpracovávat události na síti NEAR, což znamená, že vývojáři na NEAR mohou nyní vytvářet podgrafy pro indexaci svých chytrých kontraktů."
+
+Podgrafy jsou založeny na událostech, což znamená, že naslouchají událostem v řetězci a následně je zpracovávají. V současné době jsou pro podgrafy NEAR podporovány dva typy zpracovatelů:
+
+- Obsluhy bloků: jsou spouštěny při každém novém bloku.
+- Obsluhy příjmu: spouštějí se pokaždé, když je zpráva provedena na zadaném účtu.
+
+[Z dokumentace NEAR](https://docs.near.org/build/data-infrastructure/lake-data-structures/receipt):
+
+> Příjemka je jediným objektem, který lze v systému použít. Když na platformě NEAR hovoříme o "zpracování transakce", znamená to v určitém okamžiku "použití účtenky".
+
+## Sestavení podgrafu NEAR
+
+`@graphprotocol/graph-cli` je nástroj příkazového řádku pro vytváření a nasazování subgrafů.
+
+`@graphprotocol/graph-ts` je knihovna typů specifických pro podgrafy.
+
+Vývoj podgrafů NEAR vyžaduje `graph-cli` nad verzí `0.23.0` a `graph-ts` nad verzí `0.23.0`.
+
+> Vytváření subgrafu NEAR je velmi podobné vytváření subgrafu, který indexuje Ethereum.
+
+Definice podgrafů má tři aspekty:
+
+**subgraph.yaml:** manifest podgrafu definující zdroje dat, které vás zajímají, a způsob jejich zpracování. NEAR je nový `druh` zdroje dat.
+
+**schema.graphql:** soubor se schématem, který definuje, jaká data jsou uložena pro váš podgraf, a jak je možné je dotazovat pomocí GraphQL. Požadavky na podgrafy NEAR jsou pokryty [existující dokumentací](/developing/creating-a-subgraph/#the-graphql-schema).
+
+**Mapování AssemblyScript:** [Kód AssemblyScript](/subgraphs/developing/creating/graph-ts/api/), který převádí data událostí na entity definované ve vašem schématu. Podpora NEAR zavádí datové typy specifické pro NEAR a nové funkce pro parsování JSON.
+
+Při vývoji podgrafů existují dva klíčové příkazy:
+
+```bash
+$ graph codegen # generuje typy ze souboru se schématem identifikovaným v manifestu
+$ graph build # vygeneruje webové sestavení ze souborů AssemblyScript a připraví všechny dílčí soubory do složky /build
+```
+
+### Definice podgrafu Manifest
+
+Manifest podgrafu (`subgraph.yaml`) identifikuje zdroje dat pro podgraf, spouštěče zájmu a funkce, které by měly být spuštěny v reakci na tyto spouštěče. Příklad manifestu podgrafu pro podgraf NEAR naleznete níže:
+
+```yaml
+specVersion: 0.0.2
+schema:
+  file: ./src/schema.graphql # link to the schema file
+dataSources:
+  - kind: near
+    network: near-mainnet
+    source:
+      account: app.good-morning.near # This data source will monitor this account
+      startBlock: 10662188 # Required for NEAR
+    mapping:
+      apiVersion: 0.0.5
+      language: wasm/assemblyscript
+      blockHandlers:
+        - handler: handleNewBlock # the function name in the mapping file
+      receiptHandlers:
+        - handler: handleReceipt # the function name in the mapping file
+      file: ./src/mapping.ts # link to the file with the Assemblyscript mappings
+```
+
+- Podgrafy NEAR představují nový `druh` zdroje dat (`near`)
+- `Síť` by měla odpovídat síti v hostitelském uzlu Graf. V Podgraf Studio je hlavní síť NEAR `near-mainnet` a testovací síť NEAR je `near-testnet`
+- Zdroje dat NEAR zavádějí volitelné pole `source.account`, které je čitelným ID odpovídajícím [účtu NEAR](https://docs.near.org/concepts/protocol/account-model). Může to být účet nebo podúčet.
+- NEAR datové zdroje představují alternativní volitelné pole `source.accounts`, které obsahuje volitelné přípony a předpony. Musí být specifikována alespoň jedna z předpony nebo přípony, které odpovídají jakémukoli účtu začínajícímu nebo končícímu uvedenými hodnotami. Příklad níže by odpovídal: `[app|good].*[morning.near|morning.testnet]`. Pokud je potřeba pouze seznam předpon nebo přípon, druhé pole lze vynechat.
+
+```yaml
+accounts:
+  prefixes:
+    - app
+    - good
+  suffixes:
+    - morning.near
+    - morning.testnet
+```
+
+Zdroje dat NEAR podporují dva typy zpracovatelů:
+
+- `blockHandlers`: spustí se na každém novém bloku NEAR. Není vyžadován žádný `source.account`.
+- `receiptHandlers`: spustí se na každé příjemce, kde je `účet zdroje dat` příjemcem. Všimněte si, že se zpracovávají pouze přesné shody ([podúčty](https://docs.near.org/tutorials/crosswords/basics/add-functions-call#create-a-subaccount) musí být přidány jako nezávislé zdroje dat).
+
+### Definice schématu
+
+Definice schématu popisuje strukturu výsledné databáze podgrafů a vztahy mezi entitami. Toto je agnostika původního zdroje dat. Další podrobnosti o definici schématu podgrafu naleznete [zde](/developing/creating-a-subgraph/#the-graphql-schema).
+
+### AssemblyScript Mapování
+
+Obslužné programy pro zpracování událostí jsou napsány v jazyce [AssemblyScript](https://www.assemblyscript.org/).
+
+Indexování NEAR zavádí do [API AssemblyScript](/subgraphs/developing/creating/graph-ts/api/) datové typy specifické pro NEAR.
+
+```typescript
+
+class ExecutionOutcome {
+      gasBurnt: u64,
+      blockHash: Bytes,
+      id: Bytes,
+      logs: Array<string>,
+      receiptIds: Array<Bytes>,
+      tokensBurnt: BigInt,
+      executorId: string,
+  }
+
+class ActionReceipt {
+      predecessorId: string,
+      receiverId: string,
+      id: CryptoHash,
+      signerId: string,
+      gasPrice: BigInt,
+      outputDataReceivers: Array<DataReceiver>,
+      inputDataIds: Array<CryptoHash>,
+      actions: Array<ActionValue>,
+  }
+
+class BlockHeader {
+      height: u64,
+      prevHeight: u64,// Always zero when version < V3
+      epochId: Bytes,
+      nextEpochId: Bytes,
+      chunksIncluded: u64,
+      hash: Bytes,
+      prevHash: Bytes,
+      timestampNanosec: u64,
+      randomValue: Bytes,
+      gasPrice: BigInt,
+      totalSupply: BigInt,
+      latestProtocolVersion: u32,
+  }
+
+class ChunkHeader {
+      gasUsed: u64,
+      gasLimit: u64,
+      shardId: u64,
+      chunkHash: Bytes,
+      prevBlockHash: Bytes,
+      balanceBurnt: BigInt,
+  }
+
+class Block {
+      author: string,
+      header: BlockHeader,
+      chunks: Array<ChunkHeader>,
+  }
+
+class ReceiptWithOutcome {
+      outcome: ExecutionOutcome,
+      receipt: ActionReceipt,
+      block: Block,
+  }
+```
+
+Tyto typy jsou předány do block & obsluha účtenek:
+
+- Obsluhy bloků obdrží `Block`
+- Obsluhy příjmu obdrží `ReceiptWithOutcome`
+
+V opačném případě mají vývojáři podgrafů NEAR během provádění mapování k dispozici zbytek [AssemblyScript API](/subgraphs/developing/creating/graph-ts/api/).
+
+To zahrnuje novou funkci pro parsování JSON - log na NEAR jsou často emitovány jako serializované JSONs. Nová funkce `json.fromString(...)` je k dispozici jako součást [JSON API](/subgraphs/developing/creating/graph-ts/api/#json-api), která umožňuje vývojářům snadno zpracovávat tyto log.
+
+## Nasazení podgrafu NEAR
+
+Jakmile máte sestavený podgraf, je čas jej nasadit do Graph Node k indexování. Podgrafy NEAR lze nasadit do libovolného Graph Node `>=v0.26.x` (tato verze ještě nebyla označena & vydána).
+
+Subgraph Studio and the upgrade Indexer on The Graph Network currently supports indexing NEAR mainnet and testnet in beta, with the following network names:
+
+- `near-mainnet`
+- `near-testnet`
+
+More information on creating and deploying subgraphs on Subgraph Studio can be found [here](/deploying/deploying-a-subgraph-to-studio/).
+
+As a quick primer - the first step is to "create" your subgraph - this only needs to be done once. On Subgraph Studio, this can be done from [your Dashboard](https://thegraph.com/studio/): "Create a subgraph".
+
+Po vytvoření podgrafu můžete podgraf nasadit pomocí příkazu `graph deploy` CLI:
+
+```sh
+$ graph create --node <graph-node-url> <subgraph-name> # creates a subgraph on a local Graph Node (on Subgraph Studio, this is done via the UI)
+$ graph deploy --node <graph-node-url> --ipfs https://api.thegraph.com/ipfs/ <subgraph-name> # uploads the build files to a specified IPFS endpoint, and then deploys the subgraph to a specified Graph Node based on the manifest IPFS hash
+```
+
+Konfigurace uzlů závisí na tom, kde je podgraf nasazen.
+
+### Podgraf Studio
+
+```sh
+graph auth
+graph deploy <subgraph-name>
+```
+
+### Místní uzel grafu (na základě výchozí konfigurace)
+
+```sh
+graph deploy --node http://localhost:8020/ --ipfs http://localhost:5001 <subgraph-name>
+```
+
+Jakmile je podgraf nasazen, bude indexován pomocí Graph Node. Jeho průběh můžete zkontrolovat dotazem na samotný podgraf:
+
+```graphql
+{
+  _meta {
+    block {
+      number
+    }
+  }
+}
+```
+
+### Indexování NEAR pomocí místního uzlu grafu
+
+Spuštění grafu uzlu, který indexuje NEAR, má následující provozní požadavky:
+
+- Framework NEAR Indexer s instrumentací Firehose
+- Komponenta(y) NEAR Firehose
+- Uzel Graph s nakonfigurovaným koncovým bodem Firehose
+
+Brzy vám poskytneme další informace o provozu výše uvedených komponent.
+
+## Dotazování podgrafu NEAR
+
+Koncový bod GraphQL pro podgrafy NEAR je určen definicí schématu se stávajícím rozhraním API. Další informace naleznete v [dokumentaci GraphQL API](/subgraphs/querying/graphql-api/).
+
+## Příklady podgrafů
+
+Zde je několik příkladů podgrafů:
+
+[NEAR bloky](https://github.com/graphprotocol/graph-tooling/tree/main/examples/near-blocks)
+
+[NEAR Receipts](https://github.com/graphprotocol/graph-tooling/tree/main/examples/near-receipts)
+
+## FAQ
+
+### Jak funguje beta verze?
+
+Podpora NEAR je ve fázi beta, což znamená, že v API může dojít ke změnám, protože budeme pokračovat ve zdokonalování integrace. Napište nám prosím na adresu near@thegraph.com, abychom vás mohli podpořit při vytváření podgrafů NEAR a informovat vás o nejnovějším vývoji!
+
+### Může podgraf indexovat řetězce NEAR i EVM?
+
+Ne, podgraf může podporovat zdroje dat pouze z jednoho řetězce/sítě.
+
+### Mohou podgrafy reagovat na specifičtější spouštěče?
+
+V současné době jsou podporovány pouze spouštěče Blok a Příjem. Zkoumáme spouštěče pro volání funkcí na zadaném účtu. Máme také zájem o podporu spouštěčů událostí, jakmile bude mít NEAR nativní podporu událostí.
+
+### Budou se obsluhy příjmu spouštět pro účty a jejich podúčty?
+
+Pokud je zadán `účet`, bude odpovídat pouze přesnému názvu účtu. Je možné spárovat podúčty zadáním pole `účty` s `příponami` a `předponami`, aby odpovídaly například účtům a podúčtům následující by odpovídalo všem podúčtům `mintbase1.near`:
+
+```yaml
+accounts:
+  suffixes:
+    - mintbase1.near
+```
+
+### Mohou podgrafy NEAR během mapování volat zobrazení na účty NEAR?
+
+To není podporováno. Vyhodnocujeme, zda je tato funkce pro indexování nutná.
+
+### Mohu v podgrafu NEAR používat šablony zdrojů dat?
+
+Tato funkce není v současné době podporována. Vyhodnocujeme, zda je tato funkce pro indexování nutná.
+
+### Podgrafy Ethereum podporují verze "pending" a "current", jak mohu nasadit verzi "pending" podgrafu NEAR?
+
+Pro podgrafy NEAR zatím nejsou podporovány čekající funkce. V mezidobí můžete novou verzi nasadit do jiného "pojmenovaného" podgrafu a po jeho synchronizaci s hlavou řetězce ji můžete znovu nasadit do svého hlavního "pojmenovaného" podgrafu, který bude používat stejné ID nasazení, takže hlavní podgraf bude okamžitě synchronizován.
+
+### Moje otázka nebyla zodpovězena, kde mohu získat další pomoc při vytváření podgrafů NEAR?
+
+Pokud se jedná o obecnou otázku týkající se vývoje podgrafů, je zde mnohem více informací ve zbytku [dokumentace pro vývojáře](/subgraphs/quick-start/). Jinak se prosím připojte k [The Graph Protocol Discord](https://discord.gg/graphprotocol) a zeptejte se na #near kanálu nebo e-mailem near@thegraph.com.
+
+## Odkazy:
+
+- [ Dokumentace pro vývojáře NEAR](https://docs.near.org/tutorials/crosswords/basics/set-up-skeleton)

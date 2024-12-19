@@ -1,0 +1,257 @@
+---
+title: Создание субграфов на Cosmos
+---
+
+Это руководство представляет собой введение в создание субграфов, индексирующих блокчейны на основе [Cosmos](https://cosmos.network/).
+
+## Что такое субграфы на Cosmos?
+
+The Graph позволяет разработчикам обрабатывать события блокчейна и делать полученные данные легко доступными через открытый API GraphQL, известный как субграф. [Graph Node](https://github.com/graphprotocol/graph-node) теперь может обрабатывать события Cosmos, а это означает, что разработчики Cosmos теперь могут создавать субграфы для удобного индексирования событий в сети.
+
+Существует четыре типа обработчиков, поддерживаемых в субграфах Cosmos:
+
+- **Обработчики блоков** запускаются всякий раз, когда к чейну добавляется новый блок.
+- **Обработчики событий** запускаются при возникновении определенного события.
+- **Обработчики транзакций** запускаются, когда происходит транзакция.
+- ** Обработчики сообщений** запускаются при появлении определенного сообщения.
+
+На основе [официальной документации Cosmos](https://docs.cosmos.network/):
+
+> [События](https://docs.cosmos.network/main/learn/advanced/events) — это объекты, содержащие информацию о выполнении приложения. В основном они используются поставщиками услуг, такими как обозреватели блоков и кошельки, для отслеживания выполнения различных сообщений и индексных транзакций.
+
+> [Транзакции](https://docs.cosmos.network/main/learn/advanced/transactions) — это объекты, созданные конечными пользователями для инициирования изменений состояния приложения.
+
+> [Сообщения](https://docs.cosmos.network/main/learn/advanced/transactions#messages) — это объекты, специфичные для модуля, которые запускают переходы состояний в пределах модуля, которому они принадлежат.
+
+Хотя доступ ко всем данным можно получить с помощью обработчика блоков, другие обработчики позволяют разработчикам субграфов обрабатывать данные гораздо более детально.
+
+## Создание субграфа на Cosmos
+
+### Зависимости субграфа
+
+[graph-cli](https://github.com/graphprotocol/graph-tooling/tree/main/packages/cli) — это инструмент CLI для создания и развертывания субграфов. Для работы с субграфами Cosmos требуется версия `>=0.30.0`.
+
+[graph-ts](https://github.com/graphprotocol/graph-tooling/tree/main/packages/ts) — это библиотека типов, специфичных для субграфов. Для работы с субграфами Cosmos требуется версия `>=0.27.0`.
+
+### Основные компоненты субграфа
+
+Когда дело доходит до определения субграфа, имеется три ключевых момента:
+
+**subgraph.yaml**: файл YAML, содержащий манифест субграфа, который определяет, какие события отслеживать и как их обрабатывать.
+
+**schema.graphql**: схема GraphQL, которая определяет, какие данные хранятся для Вашего субграфа и как их запрашивать через GraphQL.
+
+**AssemblyScript Mappings**: код [AssemblyScript](https://github.com/AssemblyScript/assemblyscript), преобразующий данные блокчейна в определенные объекты в Вашей схеме.
+
+### Определение манифеста субграфа
+
+Манифест субграфа (`subgraph.yaml`) определяет источники данных для субграфа, релевантные триггеры и функции (`handlers`), которые должны выполняться в ответ на эти триггеры. Ниже приведен пример манифеста субграфа для субграфа на Cosmos:
+
+```yaml
+specVersion: 0.0.5
+description: Cosmos Subgraph Example
+schema:
+  file: ./schema.graphql # ссылка на файл схемы
+dataSources:
+  - kind: cosmos
+    name: CosmosHub
+    network: cosmoshub-4 # это будет меняться для каждого блокчейна, основанного на Cosmos. В данном случае в примере используется основная сеть Cosmos Hub.
+    source:
+      startBlock: 0 # требуется для Cosmos, установите для этого параметра значение 0, чтобы начать индексирование с начального блока генезиса чейна.
+    mapping:
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      blockHandlers:
+        - handler: handleNewBlock # имя функции в мэппинг-файле
+      eventHandlers:
+        - event: rewards # тип события, которое будет обрабатываться
+          handler: handleReward # имя функции в мэппинг-файле
+      transactionHandlers:
+        - handler: handleTransaction # имя функции в мэппинг-файле
+      messageHandlers:
+        - message: /cosmos.staking.v1beta1.MsgDelegate # тип сообщения
+          handler: handleMsgDelegate # имя функции в мэппинг-файле
+      file: ./src/mapping.ts # ссылка на мэппинг-файл скрипта сборки
+```
+
+- Субграфы на Cosmos представляют новый `вид` источника данных (`cosmos`).
+- `network` должен соответствовать чейну в экосистеме Cosmos. В примере используется майннет Cosmos Hub.
+
+### Определение схемы
+
+Определение схемы описывает структуру результирующей базы данных субграфа и взаимосвязи между объектами. Это не зависит от исходного источника данных. Более подробная информация об определении схемы субграфа приведена [здесь](/developing/creating-a-subgraph/#the-graphql-schema).
+
+### Мэппинги AssemblyScript
+
+Обработчики событий написаны на языке [AssemblyScript](https://www.assemblyscript.org/).
+
+Cosmos indexing introduces Cosmos-specific data types to the [AssemblyScript API](/subgraphs/developing/creating/graph-ts/api/).
+
+```tsx
+class Block {
+  header: Header
+  evidence: EvidenceList
+  resultBeginBlock: ResponseBeginBlock
+  resultEndBlock: ResponseEndBlock
+  transactions: Array<TxResult>
+  validatorUpdates: Array<Validator>
+}
+
+class EventData {
+  event: Event
+  block: HeaderOnlyBlock
+  tx: TransactionContext
+}
+
+class TransactionData {
+  tx: TxResult
+  block: HeaderOnlyBlock
+}
+
+class MessageData {
+  message: Any
+  block: HeaderOnlyBlock
+  tx: TransactionContext
+}
+
+class TransactionContext {
+  hash: Bytes
+  index: u32
+  code: u32
+  gasWanted: i64
+  gasUsed: i64
+}
+
+class HeaderOnlyBlock {
+  header: Header
+}
+
+class Header {
+  version: Consensus
+  chainId: string
+  height: u64
+  time: Timestamp
+  lastBlockId: BlockID
+  lastCommitHash: Bytes
+  dataHash: Bytes
+  validatorsHash: Bytes
+  nextValidatorsHash: Bytes
+  consensusHash: Bytes
+  appHash: Bytes
+  lastResultsHash: Bytes
+  evidenceHash: Bytes
+  proposerAddress: Bytes
+  hash: Bytes
+}
+
+class TxResult {
+  height: u64
+  index: u32
+  tx: Tx
+  result: ResponseDeliverTx
+  hash: Bytes
+}
+
+class Event {
+  eventType: string
+  attributes: Array<EventAttribute>
+}
+
+class Any {
+  typeUrl: string
+  value: Bytes
+}
+```
+
+Каждый тип обработчика имеет свою собственную структуру данных, которая передается в качестве аргумента функции мэппинга.
+
+- Обработчики блоков получают тип `Block`.
+- Обработчики событий получают тип `EventData`.
+- Обработчики транзакций получают тип `TransactionData`.
+- Обработчики сообщений получают тип `MessageData`.
+
+Как часть `MessageData` обработчик сообщения получает контекст транзакции, который содержит наиболее важную информацию о транзакции, включающей сообщение. Контекст транзакции также доступен в типе `EventData`, но только, когда соответствующее событие связано с транзакцией. Кроме того, все обработчики получают ссылку на блок (`HeaderOnlyBlock`).
+
+Полный список типов для интеграции Cosmos можно найти [здесь](https://github.com/graphprotocol/graph-ts/blob/4c064a8118dff43b110de22c7756e5d47fcbc8df/chain/cosmos.ts).
+
+### Расшифровка сообщений
+
+Важно отметить, что сообщения Cosmos специфичны для каждой чейна и передаются в субграф в виде сериализованной нагрузки [Protocol Buffers](https://protobuf.dev/). В результате данные сообщения должны быть декодированы в функции мэппинга перед их обработкой.
+
+Пример того, как расшифровываются данные сообщения в субграфе, можно найти [здесь](https://github.com/graphprotocol/graph-tooling/blob/main/examples/cosmos-validator-delegations/src/decoding.ts).
+
+## Создание и построение субграфа на Cosmos
+
+Первым шагом перед началом написания мэппингов субграфов является создание привязок типов на основе объектов, определенных в файле схемы субграфа (`schema.graphql`). Это позволит функциям мэппинга создавать новые объекты этих типов и сохранять их в хранилище. Для этого используется команда CLI `codegen`:
+
+```bash
+$ graph codegen
+```
+
+После того, как мэппинги готовы, необходимо построить субграф. На этом шаге будут выделены все ошибки, которые могут быть в манифесте или мэппингах. Субграф должен быть успешно построен, чтобы его можно было развернуть на Graph Node. Это можно сделать с помощью команды `build` командной строки:
+
+```bash
+$ graph build
+```
+
+## Развертывание субграфа на Cosmos
+
+Как только Ваш субграф создан, Вы можете развернуть его с помощью команды `graph deploy` CLI:
+
+**Subgraph Studio**
+
+Посетите Subgraph Studio, чтобы создать новый субграф.
+
+```bash
+graph deploy subgraph-name
+```
+
+**Локальная Graph Node (на основе конфигурации по умолчанию):**
+
+```bash
+graph create subgraph-name --node http://localhost:8020
+```
+
+```bash
+graph deploy subgraph-name --node http://localhost:8020/ --ipfs http://localhost:5001
+```
+
+## Запрос субграфа на Cosmos
+
+Конечная точка GraphQL для субграфов на Cosmos устанавливается определением схемы с помощью существующего интерфейса API. Дополнительную информацию можно найти в [документации GraphQL API](/subgraphs/querying/graphql-api/).
+
+## Поддерживаемые блокчейны Cosmos
+
+### Cosmos Hub
+
+#### Что такое Cosmos Hub?
+
+[Блокчейн Cosmos Hub](https://hub.cosmos.network/) — первый блокчейн в экосистеме [Cosmos](https://cosmos.network/). Дополнительную информацию можно найти в [официальной документации](https://docs.cosmos.network/).
+
+#### Сети
+
+Основная сеть Cosmoshub — `cosmoshub-4`. Текущая тестовая сеть Cosmos Hub — `theta-testnet-001`. <br/>Другие сети Cosmos Hub, например, `cosmoshub-3`, остановлены, поэтому данные для них не предоставляются.
+
+### Osmosis
+
+> Поддержка Osmosis в Graph Node и Subgraph Studio находится в стадии бета-тестирования: обращайтесь к команде the Graph по любым вопросам, касающимся создания субграфов Osmosis!
+
+#### Что такое Osmosis?
+
+[Osmosis](https://osmosis.zone/) – это децентрализованный межсетевой протокол автоматизированного маркет-мейкера (AMM), построенный на основе Cosmos SDK. Он позволяет пользователям создавать собственные пулы ликвидности и торговать токенами с поддержкой IBC. Дополнительную информацию можно найти в [официальной документации](https://docs.osmosis.zone/).
+
+#### Сети
+
+Майннет Osmosis — `osmosis-1`. Текущая тестовая сеть Osmosis — `osmo-test-4`.
+
+## Примеры субграфов
+
+Вот несколько примеров субграфов для справки:
+
+[Пример блочной фильтрации](https://github.com/graphprotocol/graph-tooling/tree/main/examples/cosmos-block-filtering)
+
+[Пример вознаграждения валидатора](https://github.com/graphprotocol/graph-tooling/tree/main/examples/cosmos-validator-rewards)
+
+[Пример делегирования валидатору](https://github.com/graphprotocol/graph-tooling/tree/main/examples/cosmos-validator-delegations)
+
+[Пример свопа токенов на Osmosis](https://github.com/graphprotocol/graph-tooling/tree/main/examples/cosmos-osmosis-token-swaps)

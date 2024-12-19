@@ -1,0 +1,283 @@
+---
+title: NEAR पर सबग्राफ बनाना
+---
+
+यह गाइड [NEAR ब्लॉकचेन](https://docs.near.org/) पर स्मार्ट कॉन्ट्रैक्ट्स को इंडेक्स करने वाले सबग्राफ बनाने का परिचय है।
+
+## NEAR क्या है?
+
+[NEAR](https://near.org/) is a smart contract platform for building decentralized applications. Visit the [official documentation](https://docs.near.org/concepts/basics/protocol) for more information.
+
+## NEAR सबग्राफ क्या हैं?
+
+ग्राफ़ ब्लॉकचैन घटनाओं को प्रोसेस करने के लिए डेवलपर्स टूल देता है और परिणामी डेटा को एक ग्राफक्यूएल एपीआई के माध्यम से आसानी से उपलब्ध कराता है, जिसे व्यक्तिगत रूप से सबग्राफ के रूप में जाना जाता है। [ग्राफ़ नोड](https://github.com/graphprotocol/graph-node) अब NEAR इवेंट को प्रोसेस करने में सक्षम है, जिसका मतलब है कि NEAR डेवलपर अब अपने स्मार्ट कॉन्ट्रैक्ट को इंडेक्स करने के लिए सबग्राफ बना सकते हैं।
+
+सबग्राफ घटना-आधारित होते हैं, जिसका अर्थ है कि वे ऑन-चेन घटनाओं को सुनते हैं और फिर उन्हें प्रोसेस करते हैं। वर्तमान में NEAR सबग्राफ के लिए समर्थित दो प्रकार के हैंडलर हैं:
+
+- ब्लॉक हैंडलर्स: ये हर नए ब्लॉक पर चलते हैं
+- रसीद हैंडलर: किसी निर्दिष्ट खाते पर संदेश निष्पादित होने पर हर बार चलें
+
+[From the NEAR documentation](https://docs.near.org/build/data-infrastructure/lake-data-structures/receipt):
+
+> रसीद सिस्टम में एकमात्र कार्रवाई योग्य वस्तु है। जब हम NEAR प्लेटफॉर्म पर "एक लेन-देन को संसाधित करने" के बारे में बात करते हैं, तो अंततः इसका अर्थ किसी बिंदु पर "रसीदें लागू करना" होता है।
+
+## NEAR सबग्राफ बनाना
+
+`@graphprotocol/graph-cli` सबग्राफ बनाने और तैनात करने के लिए एक कमांड-लाइन टूल है।
+
+`@graphprotocol/graph-ts` सबग्राफ-विशिष्ट प्रकार की एक लाइब्रेरी है।
+
+NEAR सबग्राफ डेवलपमेंट के लिए `graph-cli` का `0.23.0` के उपरोक्त संस्करण, और `graph-ts` का `0.23.0` के उपरोक्त संस्करण की आवश्यकता होती है.
+
+> NEAR सबग्राफ का निर्माण वह सबग्राफ के निर्माण के समान है जो एथेरियम को अनुक्रमित करता है।
+
+सबग्राफ परिभाषा के तीन पहलू हैं:
+
+**subgraph.yaml:** सबग्राफ मेनिफेस्ट, रुचि के डेटा स्रोतों को परिभाषित करता है, और उन्हें कैसे संसाधित किया जाना चाहिए। NEAR डेटा स्रोत का `प्रकार` है।
+
+**schema.graphql:** एक स्कीमा फ़ाइल जो परिभाषित करती है कि आपके सबग्राफ के लिए कौन सा डेटा इकट्ठा होगा, और इसे ग्राफ़क्यूएल के माध्यम से कैसे क्वेरी करें। NEAR सबग्राफ की आवश्यकताएं [मौजूदा दस्तावेज़ीकरण](/developing/creating-a-subgraph/#the-graphql-schema) द्वारा कवर की गई हैं।
+
+**AssemblyScript मापिंग:** [AssemblyScript कोड](/subgraphs/developing/creating/graph-ts/api/) जो घटना डेटा को आपकी स्कीमा में परिभाषित संस्थाओं में अनुवादित करता है। NEAR समर्थन NEAR-विशिष्ट डेटा प्रकार और नई JSON पार्सिंग कार्यक्षमता पेश करता है।
+
+सबग्राफ डेवलपमेंट के दौरान दो प्रमुख कमांड होते हैं:
+
+```bash
+$ graph codegen # generates types from the schema file identified in the manifest
+$ graph build # generates Web Assembly from the AssemblyScript files, and prepares all the subgraph files in a /build folder
+```
+
+### सबग्राफ मेनिफेस्ट परिभाषा
+
+सबग्राफ मेनिफ़ेस्ट (`subgraph.yaml`) सबग्राफ़ के लिए डेटा स्रोत, रुचि के ट्रिगर और उन ट्रिगर के जवाब में चलाए जाने वाले फ़ंक्शन की पहचान करता है. NEAR सबग्राफ के लिए एक उदाहरण सबग्राफ मेनिफेस्ट के लिए नीचे देखें:
+
+```yaml
+specVersion: 0.0.2
+schema:
+  file: ./src/schema.graphql # link to the schema file
+dataSources:
+  - kind: near
+    network: near-mainnet
+    source:
+      account: app.good-morning.near # This data source will monitor this account
+      startBlock: 10662188 # Required for NEAR
+    mapping:
+      apiVersion: 0.0.5
+      language: wasm/assemblyscript
+      blockHandlers:
+        - handler: handleNewBlock # the function name in the mapping file
+      receiptHandlers:
+        - handler: handleReceipt # the function name in the mapping file
+      file: ./src/mapping.ts # link to the file with the Assemblyscript mappings
+```
+
+- NEAR सबग्राफ डेटा स्रोत के एक नए `प्रकार` के साथ परिचित करता हैं (`near`)
+- The `network` should correspond to a network on the hosting Graph Node. On Subgraph Studio, NEAR's mainnet is `near-mainnet`, and NEAR's testnet is `near-testnet`
+- NEAR data sources introduce an optional `source.account` field, which is a human-readable ID corresponding to a [NEAR account](https://docs.near.org/concepts/protocol/account-model). This can be an account or a sub-account.
+- NEAR डेटा स्रोत एक वैकल्पिक वैकल्पिक `source.accounts` फ़ील्ड प्रस्तुत करते हैं, जिसमें वैकल्पिक प्रत्यय और उपसर्ग होते हैं। कम से कम उपसर्ग या प्रत्यय निर्दिष्ट किया जाना चाहिए, वे क्रमशः मूल्यों की सूची के साथ शुरू या समाप्त होने वाले किसी भी खाते से मेल खाएंगे। नीचे दिया गया उदाहरण इससे मेल खाएगा: `[app|good].*[morning.near|morning.testnet]`। यदि केवल उपसर्गों या प्रत्ययों की सूची आवश्यक है तो अन्य फ़ील्ड को छोड़ा जा सकता है।
+
+```yaml
+accounts:
+  prefixes:
+    - app
+    - good
+  suffixes:
+    - morning.near
+    - morning.testnet
+```
+
+NEAR डेटा स्रोत दो प्रकार के हैंडलर का समर्थन करते हैं:
+
+- `blockHandlers`: हर नए NEAR ब्लॉक पर चलता है। कोई `source.account` आवश्यक नहीं है।
+- `receiptHandlers`: run on every receipt where the data source's `source.account` is the recipient. Note that only exact matches are processed ([subaccounts](https://docs.near.org/tutorials/crosswords/basics/add-functions-call#create-a-subaccount) must be added as independent data sources).
+
+### स्कीमा परिभाषा
+
+स्कीमा परिभाषा परिणामी सबग्राफ डेटाबेस की संरचना और संस्थाओं के बीच संबंधों का वर्णन करती है। यह मूल डेटा स्रोत का अज्ञेयवादी है। सबग्राफ स्कीमा परिभाषा [यहां](/developing/creating-a-subgraph/#the-graphql-schema) पर अधिक विवरण हैं।
+
+### असेंबलीस्क्रिप्ट मैपिंग्स
+
+इवेंट को प्रोसेस करने के लिए हैंडलर [AssemblyScript](https://www.assemblyscript.org/) में लिखे होते हैं।
+
+NEAR indexing 'NEAR' के लिए विशिष्ट डेटा प्रकारों को [AssemblyScript API](/subgraphs/developing/creating/graph-ts/api/) में पेश करता है।
+
+```typescript
+
+class ExecutionOutcome {
+      gasBurnt: u64,
+      blockHash: Bytes,
+      id: Bytes,
+      logs: Array<string>,
+      receiptIds: Array<Bytes>,
+      tokensBurnt: BigInt,
+      executorId: string,
+  }
+
+class ActionReceipt {
+      predecessorId: string,
+      receiverId: string,
+      id: CryptoHash,
+      signerId: string,
+      gasPrice: BigInt,
+      outputDataReceivers: Array<DataReceiver>,
+      inputDataIds: Array<CryptoHash>,
+      actions: Array<ActionValue>,
+  }
+
+class BlockHeader {
+      height: u64,
+      prevHeight: u64,// Always zero when version < V3
+      epochId: Bytes,
+      nextEpochId: Bytes,
+      chunksIncluded: u64,
+      hash: Bytes,
+      prevHash: Bytes,
+      timestampNanosec: u64,
+      randomValue: Bytes,
+      gasPrice: BigInt,
+      totalSupply: BigInt,
+      latestProtocolVersion: u32,
+  }
+
+class ChunkHeader {
+      gasUsed: u64,
+      gasLimit: u64,
+      shardId: u64,
+      chunkHash: Bytes,
+      prevBlockHash: Bytes,
+      balanceBurnt: BigInt,
+  }
+
+class Block {
+      author: string,
+      header: BlockHeader,
+      chunks: Array<ChunkHeader>,
+  }
+
+class ReceiptWithOutcome {
+      outcome: ExecutionOutcome,
+      receipt: ActionReceipt,
+      block: Block,
+  }
+```
+
+इन प्रकारों को ब्लॉक के लिए पास किया जाता है& रसीद संचालक:
+
+- ब्लॉक हैंडलर्स को एक `ब्लॉक` प्राप्त होगा
+- रसीद संचालकों को `ReceiptWithOutcome` प्राप्त होगा
+
+अन्यथा, [AssemblyScript API](/subgraphs/developing/creating/graph-ts/api/) का शेष भाग NEAR subgraph डेवलपर्स के लिए मैपिंग निष्पादन के दौरान उपलब्ध है।
+
+यह एक नई JSON पार्सिंग फ़ंक्शन को शामिल करता है - NEAR पर लॉग अक्सर स्ट्रिंगिफाइड JSONs के रूप में उत्पन्न होते हैं। एक नई `json.fromString(...)` फ़ंक्शन [JSON API](/subgraphs/developing/creating/graph-ts/api/#json-api) का हिस्सा के रूप में उपलब्ध है, जिससे डेवलपर्स इन लॉग्स को आसानी से प्रोसेस कर सकते हैं।
+
+## एक NEAR सबग्राफ की तैनाती
+
+एक बार आपके पास एक निर्मित सबग्राफ हो जाने के बाद, इसे अनुक्रमण के लिए ग्राफ़ नोड पर तैनात करने का समय आ गया है। NEAR सबग्राफ को किसी भी ग्राफ़ नोड `>=v0.26.x` पर तैनात किया जा सकता है (यह संस्करण अभी तक टैग& और जारी नहीं किया गया है)।
+
+Subgraph Studio and the upgrade Indexer on The Graph Network currently supports indexing NEAR mainnet and testnet in beta, with the following network names:
+
+- `near-mainnet`
+- `near-testnet`
+
+More information on creating and deploying subgraphs on Subgraph Studio can be found [here](/deploying/deploying-a-subgraph-to-studio/).
+
+As a quick primer - the first step is to "create" your subgraph - this only needs to be done once. On Subgraph Studio, this can be done from [your Dashboard](https://thegraph.com/studio/): "Create a subgraph".
+
+एक बार आपका सबग्राफ बन जाने के बाद, आप `graph deploy` CLI कमांड का उपयोग करके अपना सबग्राफ डिप्लॉय कर सकते हैं:
+
+```sh
+$ graph create --node <graph-node-url> <subgraph-name> # creates a subgraph on a local Graph Node (on Subgraph Studio, this is done via the UI)
+$ graph deploy --node <graph-node-url> --ipfs https://api.thegraph.com/ipfs/ <subgraph-name> # uploads the build files to a specified IPFS endpoint, and then deploys the subgraph to a specified Graph Node based on the manifest IPFS hash
+```
+
+नोड कॉन्फ़िगरेशन इस बात पर निर्भर करेगा कि सबग्राफ को कहाँ तैनात किया जा रहा है।
+
+### Subgraph Studio
+
+```sh
+graph auth
+graph deploy <subgraph-name>
+```
+
+### स्थानीय ग्राफ़ नोड (डिफ़ॉल्ट कॉन्फ़िगरेशन पर आधारित)
+
+```sh
+graph deploy --node http://localhost:8020/ --ipfs http://localhost:5001 <subgraph-name>
+```
+
+एक बार आपका सबग्राफ तैनात हो जाने के बाद, इसे ग्राफ़ नोड द्वारा अनुक्रमित किया जाएगा। आप सबग्राफ को क्वेरी करके इसकी प्रगति की जांच कर सकते हैं:
+
+```graphql
+{
+  _meta {
+    block {
+      number
+    }
+  }
+}
+```
+
+### एक स्थानीय ग्राफ़ नोड के साथ NEAR को अनुक्रमणित करना
+
+NEAR को अनुक्रमित करने वाले ग्राफ़ नोड को चलाने के लिए निम्नलिखित परिचालन आवश्यकताएँ हैं:
+
+- Firehose इंस्ट्रूमेंटेशन के साथ NEAR इंडेक्सर फ्रेमवर्क
+- NEAR Firehose कंपोनेंट्(स)
+- Firehose एंडपॉइन्ट के साथ ग्राफ़ नोड कॉन्फ़िगर किया गया
+
+हम जल्द ही उपरोक्त कंपोनेंट्स को चलाने के बारे में और जानकारी प्रदान करेंगे।
+
+## NEAR सबग्राफ को क्वेरी करना
+
+NEAR सबग्राफ के लिए ग्राफक्यूएल एंडपॉइंट मौजूदा एपीआई इंटरफेस के साथ स्कीमा परिभाषा द्वारा निर्धारित किया जाता है। अधिक जानकारी के लिए कृपया [GraphQL API दस्तावेज़ीकरण](/subgraphs/querying/graphql-api/) पर जाएं।
+
+## उदाहरण सबग्राफ
+
+संदर्भ के लिए यहां कुछ उदाहरण सबग्राफ दिए गए हैं:
+
+[NEAR ब्लॉक्स](https://github.com/graphprotocol/graph-tooling/tree/main/examples/near-blocks)
+
+[NEAR रेसिप्टस](https://github.com/graphprotocol/graph-tooling/tree/main/examples/near-receipts)
+
+## सामान्य प्रश्न
+
+### बीटा कैसे काम करता है?
+
+NEAR समर्थन बीटा में है, जिसका मतलब है कि एपीआई में बदलाव हो सकते हैं क्योंकि हम इंटीग्रेशन में सुधार पर काम करना जारी रखेंगे। कृपया near@thegraph.com पर ईमेल करें ताकि हम NEAR सबग्राफ बनाने में आपकी सहायता कर सकें, और आपको नवीनतम विकासों के बारे में अपडेट रख सकें!
+
+### Can a subgraph index both NEAR and EVM chains?
+
+नहीं, एक सबग्राफ केवल एक श्रृंखला/नेटवर्क से डेटा स्रोतों का समर्थन कर सकता है।
+
+### क्या सबग्राफ अधिक विशिष्ट ट्रिगर्स पर प्रतिक्रिया कर सकते हैं?
+
+वर्तमान में, केवल अवरोधित करें और प्राप्त करें ट्रिगर समर्थित हैं। हम एक निर्दिष्ट खाते में फ़ंक्शन कॉल के लिए ट्रिगर्स की जांच कर रहे हैं। एक बार जब NEAR को नेटिव ईवेंट समर्थन मिल जाता है, तो हम ईवेंट ट्रिगर्स का समर्थन करने में भी रुचि रखते हैं।
+
+### क्या रसीद हैंडलर खातों और उनके उप-खातों के लिए ट्रिगर करेंगे?
+
+यदि कोई `खाता` निर्दिष्ट किया गया है, तो वह केवल सटीक खाता नाम से मेल खाएगा। उदाहरण के लिए, खातों और उप-खातों के मिलान के लिए निर्दिष्ट `प्रत्यय` और `उपसर्ग` के साथ, `खाते` फ़ील्ड निर्दिष्ट करके उप-खातों का मिलान करना संभव है निम्नलिखित सभी `mintbase1.near` उप-खातों से मेल खाएगा:
+
+```yaml
+accounts:
+  suffixes:
+    - mintbase1.near
+```
+
+### क्या मैपिंग के दौरान NEAR सबग्राफ, NEAR खातों को व्यू कॉल कर सकते हैं?
+
+यह समर्थित नहीं है। हम मूल्यांकन कर रहे हैं कि अनुक्रमण के लिए यह कार्यक्षमता आवश्यक है या नहीं।
+
+### क्या मैं अपने NEAR सबग्राफ में डेटा स्रोत टेम्प्लेट का उपयोग कर सकता हूँ?
+
+यह वर्तमान में समर्थित नहीं है। हम मूल्यांकन कर रहे हैं कि अनुक्रमण के लिए यह कार्यक्षमता आवश्यक है या नहीं।
+
+### Ethereum subgraphs support "pending" and "current" versions, how can I deploy a "pending" version of a NEAR subgraph?
+
+NEAR सबग्राफ के लिए पेंडिंग कार्यक्षमता अभी तक समर्थित नहीं है। अंतरिम में, आप एक अलग "नामित" सबग्राफ के लिए एक नया संस्करण तैनात कर सकते हैं, और फिर जब वह चेन हेड के साथ सिंक हो जाता है, तो आप अपने प्राथमिक "नामित" सबग्राफ में फिर से तैनात कर सकते हैं, जो उसी अंतर्निहित डेप्लॉयमेंट आईडी का उपयोग करेगा, इसलिए मुख्य सबग्राफ तुरंत सिंक हो जाएगा।
+
+### My question hasn't been answered, where can I get more help building NEAR subgraphs?
+
+If it is a general question about subgraph development, there is a lot more information in the rest of the [Developer documentation](/subgraphs/quick-start/). Otherwise please join [The Graph Protocol Discord](https://discord.gg/graphprotocol) and ask in the #near channel or email near@thegraph.com.
+
+## संदर्भ
+
+- [NEAR डेवलपर दस्तावेज़ीकरण](https://docs.near.org/tutorials/crosswords/basics/set-up-skeleton)
