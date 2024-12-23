@@ -1,0 +1,821 @@
+---
+title: Indexing Overview
+---
+
+Indexerare är nodoperatörer i The Graph Network som satsar Graph Tokens (GRT) för att tillhandahålla indexering och frågebehandlingstjänster. Indexerare tjänar avgifter för frågor och indexering samt får frågebetalningar som återbetalas enligt en exponentiell återbetalningsfunktion.
+
+GRT som satsas i protokollet är föremål för en tiningperiod och kan drabbas av strykning om indexerare är skadliga och tillhandahåller felaktiga data till applikationer eller om de indexerar felaktigt. Indexerare tjänar också belöningar för delegerat satsning från Delegater, för att bidra till nätverket.
+
+Indexerare väljer subgrafer att indexera baserat på subgrafens kuratersignal, där Curators satsar GRT för att ange vilka subgrafer som är av hög kvalitet och bör prioriteras. Konsumenter (t.ex. applikationer) kan också ställa in parametrar för vilka indexerare som behandlar frågor för deras subgrafer och ange preferenser för pris på frågebetalning.
+
+<Difficulty level="ADVANCED" />
+
+## FAQ
+
+### Vad är det minsta satsade belopp som krävs för att vara en indexerare i nätverket?
+
+Det minsta beloppet för en indexerare är för närvarande inställt på 100 000 GRT.
+
+### Vad är intäktskällorna för en indexerare?
+
+**Query fee rebates** - Payments for serving queries on the network. These payments are mediated via state channels between an Indexer and a gateway. Each query request from a gateway contains a payment and the corresponding response a proof of query result validity.
+
+**Indexing rewards** - Generated via a 3% annual protocol wide inflation, the indexing rewards are distributed to Indexers who are indexing subgraph deployments for the network.
+
+### Hur fördelas indexeringsbelöningar?
+
+Indexing rewards come from protocol inflation which is set to 3% annual issuance. They are distributed across subgraphs based on the proportion of all curation signal on each, then distributed proportionally to Indexers based on their allocated stake on that subgraph. **An allocation must be closed with a valid proof of indexing (POI) that meets the standards set by the arbitration charter in order to be eligible for rewards.**
+
+Numerous tools have been created by the community for calculating rewards; you'll find a collection of them organized in the [Community Guides collection](https://www.notion.so/Community-Guides-abbb10f4dba040d5ba81648ca093e70c). You can also find an up to date list of tools in the #Delegators and #Indexers channels on the [Discord server](https://discord.gg/graphprotocol). Here we link a [recommended allocation optimiser](https://github.com/graphprotocol/allocation-optimizer) integrated with the indexer software stack.
+
+### Vad är ett bevis på indexering (POI)?
+
+POI:er används i nätverket för att verifiera att en indexerare indexerar de subgrafer de har tilldelat sig. Ett POI för det första blocket i den nuvarande epoken måste lämnas in när en tilldelning stängs för att vara berättigad till indexeringsbelöningar. Ett POI för ett block är en digest för alla entity store-transaktioner för en specifik subgrafdepå fram till och med det blocket.
+
+### När fördelas indexeringsbelöningar?
+
+Tilldelningar ackumulerar kontinuerligt belöningar medan de är aktiva och tilldelade inom 28 epoker. Belöningarna samlas in av indexerarna och distribueras när deras tilldelningar stängs. Det sker antingen manuellt, när indexeraren vill tvinga dem att stängas, eller efter 28 epoker kan en Delegat stänga tilldelningen för indexeraren, men detta resulterar inte i några belöningar. 28 epoker är den maximala tilldelningens livslängd (för närvarande varar en epok i cirka ~24h).
+
+### Kan väntande indexeringsbelöningar övervakas?
+
+The RewardsManager contract has a read-only [getRewards](https://github.com/graphprotocol/contracts/blob/main/packages/contracts/contracts/rewards/RewardsManager.sol#L316) function that can be used to check the pending rewards for a specific allocation.
+
+Många av gemenskapens egentillverkade instrument inkluderar värden för väntande belöningar och de kan enkelt kontrolleras manuellt genom att följa dessa steg:
+
+1. Query the [mainnet subgraph](https://thegraph.com/explorer/subgraphs/9Co7EQe5PgW3ugCUJrJgRv4u9zdEuDJf8NvMWftNsBH8?view=Query&chain=arbitrum-one) to get the IDs for all active allocations:
+
+```graphql
+query indexerAllocations {
+  indexer(id: "<INDEXER_ADDRESS>") {
+    allocations {
+      activeForIndexer {
+        allocations {
+          id
+        }
+      }
+    }
+  }
+}
+```
+
+Use Etherscan to call `getRewards()`:
+
+- Navigate to [Etherscan interface to Rewards contract](https://etherscan.io/address/0x9Ac758AB77733b4150A901ebd659cbF8cB93ED66#readProxyContract)
+
+<!---->
+
+- To call `getRewards()`:
+  - Expand the **9. getRewards** dropdown.
+  - Enter the **allocationID** in the input.
+  - Click the **Query** button.
+
+### Vad är tvister och var kan jag se dem?
+
+Indexerares frågor och tilldelningar kan båda bli föremål för tvister på The Graph under tvisteperioden. Tvisteperioden varierar beroende på typen av tvist. Frågor/erkännanden har en tvistefönster på 7 epocher, medan tilldelningar har 56 epocher. Efter att dessa perioder har passerat kan inga tvister öppnas mot vare sig tilldelningar eller frågor. När en tvist öppnas krävs en insättning av minst 10 000 GRT av Fishermen, som kommer att vara låsta tills tvisten är avslutad och en resolution har lämnats. Fishermen är nätverksdeltagare som öppnar tvister.
+
+Disputes have **three** possible outcomes, so does the deposit of the Fishermen.
+
+- Om tvisten avvisas kommer den GRT som satts in av Fishermen att brännas, och den ifrågasatta Indexern kommer inte att bli straffad.
+- Om tvisten avgörs som oavgjord kommer Fishermens insättning att återbetalas, och den ifrågasatta Indexern kommer inte att bli straffad.
+- Om tvisten godkänns kommer den GRT som satts in av Fishermen att återbetalas, den ifrågasatta Indexern kommer att bli straffad, och Fishermen kommer att tjäna 50% av den straffade GRT.
+
+Disputes can be viewed in the UI in an Indexer's profile page under the `Disputes` tab.
+
+### Vad är återbetalningar av frågeavgifter och när distribueras de?
+
+Query fees are collected by the gateway and distributed to indexers according to the exponential rebate function (see GIP [here](https://forum.thegraph.com/t/gip-0051-exponential-query-fee-rebates-for-indexers/4162)). The exponential rebate function is proposed as a way to ensure indexers achieve the best outcome by faithfully serving queries. It works by incentivizing Indexers to allocate a large amount of stake (which can be slashed for erring when serving a query) relative to the amount of query fees they may collect.
+
+När en tilldelning har avslutats är återbetalningarna tillgängliga för Indexern att hämta. Vid hämtning distribueras frågeavgiftsåterbetalningarna till Indexern och deras Delegatorer baserat på frågeavgiftsminskningen och den exponentiella rabattfunktionen.
+
+### Vad är frågeavgiftsminskning och minskning av indexeringsbelöning?
+
+The `queryFeeCut` and `indexingRewardCut` values are delegation parameters that the Indexer may set along with cooldownBlocks to control the distribution of GRT between the Indexer and their Delegators. See the last steps in [Staking in the Protocol](/indexing/overview/#stake-in-the-protocol) for instructions on setting the delegation parameters.
+
+- **queryFeeCut** - the % of query fee rebates that will be distributed to the Indexer. If this is set to 95%, the Indexer will receive 95% of the query fees earned when an allocation is closed with the other 5% going to the Delegators.
+
+- **indexingRewardCut** - the % of indexing rewards that will be distributed to the Indexer. If this is set to 95%, the Indexer will receive 95% of the indexing rewards when an allocation is closed and the Delegators will split the other 5%.
+
+### Hur vet Indexers vilka subgrafer de ska indexera?
+
+Indexers kan skilja sig åt genom att tillämpa avancerade tekniker för att fatta beslut om indexering av subgrafer, men för att ge en allmän idé kommer vi att diskutera flera viktiga metoder som används för att utvärdera subgrafer i nätverket:
+
+- **Curation signal** - The proportion of network curation signal applied to a particular subgraph is a good indicator of the interest in that subgraph, especially during the bootstrap phase when query voluming is ramping up.
+
+- **Query fees collected** - The historical data for volume of query fees collected for a specific subgraph is a good indicator of future demand.
+
+- **Amount staked** - Monitoring the behavior of other Indexers or looking at proportions of total stake allocated towards specific subgraphs can allow an Indexer to monitor the supply side for subgraph queries to identify subgraphs that the network is showing confidence in or subgraphs that may show a need for more supply.
+
+- **Subgraphs with no indexing rewards** - Some subgraphs do not generate indexing rewards mainly because they are using unsupported features like IPFS or because they are querying another network outside of mainnet. You will see a message on a subgraph if it is not generating indexing rewards.
+
+### Vilka är de tekniska kraven?
+
+- **Small** - Enough to get started indexing several subgraphs, will likely need to be expanded.
+- **Standard** - Default setup, this is what is used in the example k8s/terraform deployment manifests.
+- **Medium** - Production Indexer supporting 100 subgraphs and 200-500 requests per second.
+- **Large** - Prepared to index all currently used subgraphs and serve requests for the related traffic.
+
+| Konfiguration | Postgres<br />(CPU:er) | Postgres<br />(minne i GB) | Postgres<br />(disk i TB) | VM:er<br />(CPU:er) | VM:er<br />(minne i GB) |
+| ------------- | :--------------------: | :------------------------: | :-----------------------: | :-----------------: | :---------------------: |
+| Liten         |            4           |              8             |             1             |          4          |            16           |
+| Standard      |            8           |             30             |             1             |          12         |            48           |
+| Medium        |           16           |             64             |             2             |          32         |            64           |
+| Stor          |           72           |             468            |            3,5            |          48         |           184           |
+
+### Vilka grundläggande säkerhetsåtgärder bör en Indexer vidta?
+
+- **Operator wallet** - Setting up an operator wallet is an important precaution because it allows an Indexer to maintain separation between their keys that control stake and those that are in control of day-to-day operations. See [Stake in Protocol](/indexing/overview/#stake-in-the-protocol) for instructions.
+
+- **Firewall** - Only the Indexer service needs to be exposed publicly and particular attention should be paid to locking down admin ports and database access: the Graph Node JSON-RPC endpoint (default port: 8030), the Indexer management API endpoint (default port: 18000), and the Postgres database endpoint (default port: 5432) should not be exposed.
+
+## Infrastruktur
+
+At the center of an Indexer's infrastructure is the Graph Node which monitors the indexed networks, extracts and loads data per a subgraph definition and serves it as a [GraphQL API](/about/#how-the-graph-works). The Graph Node needs to be connected to an endpoint exposing data from each indexed network; an IPFS node for sourcing data; a PostgreSQL database for its store; and Indexer components which facilitate its interactions with the network.
+
+- **PostgreSQL database** - The main store for the Graph Node, this is where subgraph data is stored. The Indexer service and agent also use the database to store state channel data, cost models, indexing rules, and allocation actions.
+
+- **Data endpoint** - For EVM-compatible networks, Graph Node needs to be connected to an endpoint that exposes an EVM-compatible JSON-RPC API. This may take the form of a single client or it could be a more complex setup that load balances across multiple. It's important to be aware that certain subgraphs will require particular client capabilities such as archive mode and/or the parity tracing API.
+
+- **IPFS node (version less than 5)** - Subgraph deployment metadata is stored on the IPFS network. The Graph Node primarily accesses the IPFS node during subgraph deployment to fetch the subgraph manifest and all linked files. Network Indexers do not need to host their own IPFS node, an IPFS node for the network is hosted at https://ipfs.network.thegraph.com.
+
+- **Indexer service** - Handles all required external communications with the network. Shares cost models and indexing statuses, passes query requests from gateways on to a Graph Node, and manages the query payments via state channels with the gateway.
+
+- **Indexer agent** - Facilitates the Indexers interactions onchain including registering on the network, managing subgraph deployments to its Graph Node/s, and managing allocations.
+
+- **Prometheus metrics server** - The Graph Node and Indexer components log their metrics to the metrics server.
+
+Observera: För att stödja smidig skalning rekommenderas det att fråge- och indexeringsbekymmer separeras mellan olika uppsättningar noder: frågenoder och indexnoder.
+
+### Översikt över portar
+
+> **Important**: Be careful about exposing ports publicly - **administration ports** should be kept locked down. This includes the the Graph Node JSON-RPC and the Indexer management endpoints detailed below.
+
+#### Graf Node
+
+| Port | Syfte                                                | Vägar                                          | CLI-argument       | Miljövariabel |
+| ---- | ---------------------------------------------------- | ---------------------------------------------- | ------------------ | ------------- |
+| 8000 | GraphQL HTTP-server<br />(för subgraf-förfrågningar) | /subgraphs/id/...<br />/subgraphs/name/.../... | \--http-port       | -             |
+| 8001 | GraphQL WS<br />(för subgraf-prenumerationer)        | /subgraphs/id/...<br />/subgraphs/name/.../... | \--ws-port         | -             |
+| 8020 | JSON-RPC<br />(för hantering av distributioner)      | /                                              | \--admin-port      | -             |
+| 8030 | Subgrafindexeringsstatus-API                         | /graphql                                       | \--index-node-port | -             |
+| 8040 | Prometheus-metrar                                    | /metrics                                       | \--metrics-port    | -             |
+
+#### Indexertjänst
+
+| Port | Syfte                                                        | Vägar                                                       | CLI-argument    | Miljövariabel          |
+| ---- | ------------------------------------------------------------ | ----------------------------------------------------------- | --------------- | ---------------------- |
+| 7600 | GraphQL HTTP-server<br />(för betalda subgraf-förfrågningar) | /subgraphs/id/...<br />/status<br />/channel-messages-inbox | \--port         | `INDEXER_SERVICE_PORT` |
+| 7300 | Prometheus-metrar                                            | /metrics                                                    | \--metrics-port | -                      |
+
+#### Indexeragent
+
+| Port | Purpose                | Vägar  | CLI Argument               | Environment Variable                    |
+| ---- | ---------------------- | ------ | -------------------------- | --------------------------------------- |
+| 8000 | Indexerhanterings-API  | /      | \--indexer-management-port | `INDEXER_AGENT_INDEXER_MANAGEMENT_PORT` |
+
+### Konfigurera serverinfrastruktur med Terraform på Google Cloud
+
+> Obs: Indexers kan alternativt använda AWS, Microsoft Azure eller Alibaba.
+
+#### Installera förutsättningar
+
+- SDK för Google Cloud
+- Kubectl kommandoradsverktyg
+- Terraform
+
+#### Skapa ett Google Cloud-projekt
+
+- Clone or navigate to the [Indexer repository](https://github.com/graphprotocol/indexer).
+
+- Navigate to the `./terraform` directory, this is where all commands should be executed.
+
+```sh
+cd terraform
+```
+
+- Autentisera dig med Google Cloud och skapa ett nytt projekt.
+
+```sh
+gcloud auth login
+project=<PROJECT_NAME>
+gcloud projects create --enable-cloud-apis $project
+```
+
+- Använd faktureringssidan i Google Cloud Console för att aktivera fakturering för det nya projektet.
+
+- Skapa en Google Cloud-konfiguration.
+
+```sh
+proj_id=$(gcloud projects list --format='get(project_id)' --filter="name=$project")
+gcloud config configurations create $project
+gcloud config set project "$proj_id"
+gcloud config set compute/region us-central1
+gcloud config set compute/zone us-central1-a
+```
+
+- Aktivera nödvändiga API:er för Google Cloud.
+
+```sh
+gcloud services enable compute.googleapis.com
+gcloud services enable container.googleapis.com
+gcloud services enable servicenetworking.googleapis.com
+gcloud services enable sqladmin.googleapis.com
+```
+
+- Skapa ett servicekonto.
+
+```sh
+svc_name=<SERVICE_ACCOUNT_NAME>
+gcloud iam service-accounts create $svc_name \
+  --description="Service account for Terraform" \
+  --display-name="$svc_name"
+gcloud iam service-accounts list
+# Get the email of the service account from the list
+svc=$(gcloud iam service-accounts list --format='get(email)'
+--filter="displayName=$svc_name")
+gcloud iam service-accounts keys create .gcloud-credentials.json \
+  --iam-account="$svc"
+gcloud projects add-iam-policy-binding $proj_id \
+  --member serviceAccount:$svc \
+  --role roles/editor
+```
+
+- Aktivera peering mellan databasen och Kubernetes-klustret som kommer att skapas i nästa steg.
+
+```sh
+gcloud compute addresses create google-managed-services-default \
+  --prefix-length=20 \
+  --purpose=VPC_PEERING \
+  --network default \
+  --global \
+  --description 'IP Range for peer networks.'
+gcloud services vpc-peerings connect \
+  --network=default \
+  --ranges=google-managed-services-default
+```
+
+- Skapa en minimal konfigurationsfil för terraformen (uppdatera vid behov).
+
+```sh
+indexer=<INDEXER_NAME>
+cat > terraform.tfvars <<EOF
+project = "$proj_id"
+indexer = "$indexer"
+database_password = "<database password>"
+EOF
+```
+
+#### Använd Terraform för att skapa infrastruktur
+
+Before running any commands, read through [variables.tf](https://github.com/graphprotocol/indexer/blob/main/terraform/variables.tf) and create a file `terraform.tfvars` in this directory (or modify the one we created in the last step). For each variable where you want to override the default, or where you need to set a value, enter a setting into `terraform.tfvars`.
+
+- Kör följande kommandon för att skapa infrastrukturen.
+
+```sh
+# Installera nödvändiga plugins
+terraform init
+
+# Se plan för resurser som ska skapas
+terraform plan
+
+# Skapa resurserna (räkna med att det tar upp till 30 minuter)
+terraform apply
+```
+
+Download credentials for the new cluster into `~/.kube/config` and set it as your default context.
+
+```sh
+gcloud container clusters get-credentials $indexer
+kubectl config use-context $(kubectl config get-contexts --output='name'
+| grep $indexer)
+```
+
+#### Skapa Kubernetes-komponenter för indexeraren
+
+- Copy the directory `k8s/overlays` to a new directory `$dir,` and adjust the `bases` entry in `$dir/kustomization.yaml` so that it points to the directory `k8s/base`.
+
+- Read through all the files in `$dir` and adjust any values as indicated in the comments.
+
+Deploy all resources with `kubectl apply -k $dir`.
+
+### Graf Node
+
+[Graph Node](https://github.com/graphprotocol/graph-node) is an open source Rust implementation that event sources the Ethereum blockchain to deterministically update a data store that can be queried via the GraphQL endpoint. Developers use subgraphs to define their schema, and a set of mappings for transforming the data sourced from the blockchain and the Graph Node handles syncing the entire chain, monitoring for new blocks, and serving it via a GraphQL endpoint.
+
+#### Komma igång från källkoden
+
+#### Installera förutsättningar
+
+- **Rust**
+
+- **PostgreSQL**
+
+- **IPFS**
+
+- **Additional Requirements for Ubuntu users** - To run a Graph Node on Ubuntu a few additional packages may be needed.
+
+```sh
+sudo apt-get install -y clang libpg-dev libssl-dev pkg-config
+```
+
+#### Konfiguration
+
+1. Starta en PostgreSQL-databasserver
+
+```sh
+initdb -D .postgres
+pg_ctl -D .postgres -l logfile start
+createdb graph-node
+```
+
+2. Clone [Graph Node](https://github.com/graphprotocol/graph-node) repo and build the source by running `cargo build`
+
+3. Nu när alla beroenden är konfigurerade startar du Graph Node:
+
+```sh
+cargo run -p graph-node --release -- \
+  --postgres-url postgresql://[USERNAME]:[PASSWORD]@localhost:5432/graph-node \
+  --ethereum-rpc [NETWORK_NAME]:[URL] \
+  --ipfs https://ipfs.network.thegraph.com
+```
+
+#### Komma igång med Docker
+
+#### Förutsättningar
+
+- **Ethereum node** - By default, the docker compose setup will use mainnet: [http://host.docker.internal:8545](http://host.docker.internal:8545) to connect to the Ethereum node on your host machine. You can replace this network name and url by updating `docker-compose.yaml`.
+
+#### Konfiguration
+
+1. Klona Graph Node och navigera till Docker-katalogen:
+
+```sh
+git clone https://github.com/graphprotocol/graph-node
+cd graph-node/docker
+```
+
+2. For linux users only - Use the host IP address instead of `host.docker.internal` in the `docker-compose.yaml `using the included script:
+
+```sh
+./setup.sh
+```
+
+3. Starta en lokal Graph Node som kommer att ansluta till din Ethereum-ändpunkt:
+
+```sh
+docker-compose up
+```
+
+### Indexerkomponenter
+
+För att framgångsrikt delta i nätverket krävs nästan konstant övervakning och interaktion, så vi har byggt en uppsättning Typescript-applikationer för att underlätta en Indexers nätverksdeltagande. Det finns tre Indexer-komponenter:
+
+- **Indexer agent** - The agent monitors the network and the Indexer's own infrastructure and manages which subgraph deployments are indexed and allocated towards onchain and how much is allocated towards each.
+
+- **Indexer service** - The only component that needs to be exposed externally, the service passes on subgraph queries to the graph node, manages state channels for query payments, shares important decision making information to clients like the gateways.
+
+- **Indexer CLI** - The command line interface for managing the Indexer agent. It allows Indexers to manage cost models, manual allocations, actions queue, and indexing rules.
+
+#### Komma igång
+
+The Indexer agent and Indexer service should be co-located with your Graph Node infrastructure. There are many ways to set up virtual execution environments for your Indexer components; here we'll explain how to run them on baremetal using NPM packages or source, or via kubernetes and docker on the Google Cloud Kubernetes Engine. If these setup examples do not translate well to your infrastructure there will likely be a community guide to reference, come say hi on [Discord](https://discord.gg/graphprotocol)! Remember to [stake in the protocol](/indexing/overview/#stake-in-the-protocol) before starting up your Indexer components!
+
+#### Från NPM-paket
+
+```sh
+npm install -g @graphprotocol/indexer-service
+npm install -g @graphprotocol/indexer-agent
+
+# Indexer CLI är ett plugin för Graph CLI, så båda måste installeras:
+npm install -g @graphprotocol/graph-cli
+npm install -g @graphprotocol/indexer-cli
+
+# Indexeringstjänst
+graph-indexer-service start ...
+
+# Indexerare agent
+graph-indexer-agent start ...
+
+# CLI för indexerare
+#Vidarebefordra porten till din agent-pod om du använder Kubernetes
+kubectl port-forward pod/POD_ID 18000:8000
+graph indexer connect http://localhost:18000/
+graph indexer ...
+```
+
+#### Från källa
+
+```sh
+# Från Repos rotkatalog
+yarn
+
+# Indexeringstjänst
+cd packages/indexer-service
+./bin/graph-indexer-service start ...
+
+# Indexerare agent
+cd packages/indexer-agent
+./bin/graph-indexer-service start ...
+
+# Indexer CLI
+cd packages/indexer-cli
+./bin/graph-indexer-cli indexer connect http://localhost:18000/
+./bin/graph-indexer-cli indexer ...
+```
+
+#### Använda docker
+
+- Hämta bilder från registret
+
+```sh
+docker pull ghcr.io/graphprotocol/indexer-service:latest
+docker pull ghcr.io/graphprotocol/indexer-agent:latest
+```
+
+Eller skapa bilder lokalt från källkod
+
+```sh
+# Indexer service
+docker build \
+  --build-arg NPM_TOKEN=<npm-token> \
+  -f Dockerfile.indexer-service \
+  -t indexer-service:latest \
+# Indexer agent
+docker build \
+  --build-arg NPM_TOKEN=<npm-token> \
+  -f Dockerfile.indexer-agent \
+  -t indexer-agent:latest \
+```
+
+- Kör komponenterna
+
+```sh
+docker run -p 7600:7600 -it indexer-service:latest ...
+docker run -p 18000:8000 -it indexer-agent:latest ...
+```
+
+**NOTE**: After starting the containers, the Indexer service should be accessible at [http://localhost:7600](http://localhost:7600) and the Indexer agent should be exposing the Indexer management API at [http://localhost:18000/](http://localhost:18000/).
+
+#### Användning av K8s och Terraform
+
+See the [Setup Server Infrastructure Using Terraform on Google Cloud](/indexing/overview/#setup-server-infrastructure-using-terraform-on-google-cloud) section
+
+#### Användning
+
+> **NOTE**: All runtime configuration variables may be applied either as parameters to the command on startup or using environment variables of the format `COMPONENT_NAME_VARIABLE_NAME`(ex. `INDEXER_AGENT_ETHEREUM`).
+
+#### Indexeragent
+
+```sh
+graph-indexer-agent start \
+  --ethereum <MAINNET_ETH_ENDPOINT> \
+  --ethereum-network mainnet \
+  --mnemonic <MNEMONIC> \
+  --indexer-address <INDEXER_ADDRESS> \
+  --graph-node-query-endpoint http://localhost:8000/ \
+  --graph-node-status-endpoint http://localhost:8030/graphql \
+  --graph-node-admin-endpoint http://localhost:8020/ \
+  --public-indexer-url http://localhost:7600/ \
+  --indexer-geo-coordinates <YOUR_COORDINATES> \
+  --index-node-ids default \
+  --indexer-management-port 18000 \
+  --metrics-port 7040 \
+  --network-subgraph-endpoint http://query-node-0:8000/subgraphs/id/QmUzRg2HHMpbgf6Q4VHKNDbtBEJnyp5JWCh2gUX9AV6jXv \
+  --default-allocation-amount 100 \
+  --register true \
+  --inject-dai true \
+  --postgres-host localhost \
+  --postgres-port 5432 \
+  --postgres-username <DB_USERNAME> \
+  --postgres-password <DB_PASSWORD> \
+  --postgres-database indexer \
+  --allocation-management auto \
+  | pino-pretty
+```
+
+#### Indexeringstjänst
+
+```sh
+SERVER_HOST=localhost \
+SERVER_PORT=5432 \
+SERVER_DB_NAME=is_staging \
+SERVER_DB_USER=<DB_USERNAME> \
+SERVER_DB_PASSWORD=<DB_PASSWORD> \
+graph-indexer-service start \
+  --ethereum <MAINNET_ETH_ENDPOINT> \
+  --ethereum-network mainnet \
+  --mnemonic <MNEMONIC> \
+  --indexer-address <INDEXER_ADDRESS> \
+  --port 7600 \
+  --metrics-port 7300 \
+  --graph-node-query-endpoint http://localhost:8000/ \
+  --graph-node-status-endpoint http://localhost:8030/graphql \
+  --postgres-host localhost \
+  --postgres-port 5432 \
+  --postgres-username <DB_USERNAME> \
+  --postgres-password <DB_PASSWORD> \
+  --postgres-database is_staging \
+  --network-subgraph-endpoint http://query-node-0:8000/subgraphs/id/QmUzRg2HHMpbgf6Q4VHKNDbtBEJnyp5JWCh2gUX9AV6jXv \
+  | pino-pretty
+```
+
+#### Indexer CLI
+
+The Indexer CLI is a plugin for [`@graphprotocol/graph-cli`](https://www.npmjs.com/package/@graphprotocol/graph-cli) accessible in the terminal at `graph indexer`.
+
+```sh
+graph indexer connect http://localhost:18000
+graph indexer status
+```
+
+#### Indexerhantering med Indexer CLI
+
+The suggested tool for interacting with the **Indexer Management API** is the **Indexer CLI**, an extension to the **Graph CLI**. The Indexer agent needs input from an Indexer in order to autonomously interact with the network on the behalf of the Indexer. The mechanism for defining Indexer agent behavior are **allocation management** mode and **indexing rules**. Under auto mode, an Indexer can use **indexing rules** to apply their specific strategy for picking subgraphs to index and serve queries for. Rules are managed via a GraphQL API served by the agent and known as the Indexer Management API. Under manual mode, an Indexer can create allocation actions using **actions queue** and explicitly approve them before they get executed. Under oversight mode, **indexing rules** are used to populate **actions queue** and also require explicit approval for execution.
+
+#### Användning
+
+The **Indexer CLI** connects to the Indexer agent, typically through port-forwarding, so the CLI does not need to run on the same server or cluster. To help you get started, and to provide some context, the CLI will briefly be described here.
+
+- `graph indexer connect <url>` - Connect to the Indexer management API. Typically the connection to the server is opened via port forwarding, so the CLI can be easily operated remotely. (Example: `kubectl port-forward pod/<indexer-agent-pod> 8000:8000`)
+
+- `graph indexer rules get [options] <deployment-id> [<key1> ...]` - Get one or more indexing rules using `all` as the `<deployment-id>` to get all rules, or `global` to get the global defaults. An additional argument `--merged` can be used to specify that deployment specific rules are merged with the global rule. This is how they are applied in the Indexer agent.
+
+- `graph indexer rules set [options] <deployment-id> <key1> <value1> ...` - Set one or more indexing rules.
+
+- `graph indexer rules start [options] <deployment-id>` - Start indexing a subgraph deployment if available and set its `decisionBasis` to `always`, so the Indexer agent will always choose to index it. If the global rule is set to always then all available subgraphs on the network will be indexed.
+
+- `graph indexer rules stop [options] <deployment-id>` - Stop indexing a deployment and set its `decisionBasis` to never, so it will skip this deployment when deciding on deployments to index.
+
+- `graph indexer rules maybe [options] <deployment-id>` — Set the `decisionBasis` for a deployment to `rules`, so that the Indexer agent will use indexing rules to decide whether to index this deployment.
+
+- `graph indexer actions get [options] <action-id>` - Fetch one or more actions using `all` or leave `action-id` empty to get all actions. An additional argument `--status` can be used to print out all actions of a certain status.
+
+- `graph indexer action queue allocate <deployment-id> <allocation-amount>` - Queue allocation action
+
+- `graph indexer action queue reallocate <deployment-id> <allocation-id> <allocationAmount>` - Queue reallocate action
+
+- `graph indexer action queue unallocate <deployment-id> <allocation-id>` - Queue unallocate action
+
+- `graph indexer actions cancel [<action-id> ...]` - Cancel all action in the queue if id is unspecified, otherwise cancel array of id with space as separator
+
+- `graph indexer actions approve [<action-id> ...]` - Approve multiple actions for execution
+
+- `graph indexer actions execute approve` - Force the worker to execute approved actions immediately
+
+All commands which display rules in the output can choose between the supported output formats (`table`, `yaml`, and `json`) using the `-output` argument.
+
+#### Indexeringsregler
+
+Indexing rules can either be applied as global defaults or for specific subgraph deployments using their IDs. The `deployment` and `decisionBasis` fields are mandatory, while all other fields are optional. When an indexing rule has `rules` as the `decisionBasis`, then the Indexer agent will compare non-null threshold values on that rule with values fetched from the network for the corresponding deployment. If the subgraph deployment has values above (or below) any of the thresholds it will be chosen for indexing.
+
+For example, if the global rule has a `minStake` of **5** (GRT), any subgraph deployment which has more than 5 (GRT) of stake allocated to it will be indexed. Threshold rules include `maxAllocationPercentage`, `minSignal`, `maxSignal`, `minStake`, and `minAverageQueryFees`.
+
+Datamodell:
+
+```graphql
+type IndexingRule {
+    identifier: string
+    identifierType: IdentifierType
+    decisionBasis: IndexingDecisionBasis!
+    allocationAmount: number | null
+    allocationLifetime: number | null
+    autoRenewal: boolean
+    parallelAllocations: number | null
+    maxAllocationPercentage: number | null
+    minSignal: string | null
+    maxSignal: string | null
+    minStake: string | null
+    minAverageQueryFees: string | null
+    custom: string | null
+    requireSupported: boolean | null
+  }
+
+IdentifierType {
+  deployment
+  subgraph
+  group
+}
+
+IndexingDecisionBasis {
+  rules
+  never
+  always
+  offchain
+}
+```
+
+Exempel på användning av indexeringsregel:
+
+```
+graph indexer rules offchain QmZfeJYR86UARzp9HiXbURWunYgC9ywvPvoePNbuaATrEK
+
+graph indexer rules set QmZfeJYR86UARzp9HiXbURWunYgC9ywvPvoePNbuaATrEK decisionBasis always allocationAmount 123321 allocationLifetime 14 autoRenewal false requireSupported false
+
+graph indexer rules stop QmZfeJYR86UARzp9HiXbURWunYgC9ywvPvoePNbuaATrEK
+
+graph indexer rules delete QmZfeJYR86UARzp9HiXbURWunYgC9ywvPvoePNbuaATrEK
+```
+
+#### CLI tail-åtgärder
+
+The indexer-cli provides an `actions` module for manually working with the action queue. It uses the **Graphql API** hosted by the indexer management server to interact with the actions queue.
+
+The action execution worker will only grab items from the queue to execute if they have `ActionStatus = approved`. In the recommended path actions are added to the queue with ActionStatus = queued, so they must then be approved in order to be executed onchain. The general flow will look like:
+
+- Åtgärd läggs till i kön av tredjeparts-optimeringsverktyget eller indexer-cli-användaren
+- Indexer can use the `indexer-cli` to view all queued actions
+- Indexer (or other software) can approve or cancel actions in the queue using the `indexer-cli`. The approve and cancel commands take an array of action ids as input.
+- The execution worker regularly polls the queue for approved actions. It will grab the `approved` actions from the queue, attempt to execute them, and update the values in the db depending on the status of execution to `success` or `failed`.
+- If an action is successful the worker will ensure that there is an indexing rule present that tells the agent how to manage the allocation moving forward, useful when taking manual actions while the agent is in `auto` or `oversight` mode.
+- Indexer kan övervaka åtgärds kön för att se en historia över åtgärdsutförande och om det behövs godkänna om och uppdatera åtgärdsobjekt om de misslyckades med utförande. Åtgärds kön ger en historia över alla köade och tagna åtgärder.
+
+Datamodell:
+
+```graphql
+Type ActionInput {
+    status: ActionStatus
+    type: ActionType
+    deploymentID: string | null
+    allocationID: string | null
+    amount: string | null
+    poi: string | null
+    force: boolean | null
+    source: string
+    reason: string | null
+    priority: number | null
+}
+
+ActionStatus {
+  queued
+  approved
+  pending
+  success
+  failed
+  canceled
+}
+
+ActionType {
+  allocate
+  unallocate
+  reallocate
+  collect
+}
+```
+
+Exempel på användning från källa:
+
+```bash
+graph indexer actions get all
+
+graph indexer actions get --status queued
+
+graph indexer actions queue allocate QmeqJ6hsdyk9dVbo1tvRgAxWrVS3rkERiEMsxzPShKLco6 5000
+
+graph indexer actions queue reallocate QmeqJ6hsdyk9dVbo1tvRgAxWrVS3rkERiEMsxzPShKLco6 0x4a58d33e27d3acbaecc92c15101fbc82f47c2ae5 55000
+
+graph indexer actions queue unallocate QmeqJ6hsdyk9dVbo1tvRgAxWrVS3rkERiEMsxzPShKLco6 0x4a58d33e27d3acbaecc92c15101fbc82f47c2ae
+
+graph indexer actions cancel
+
+graph indexer actions approve 1 3 5
+
+graph indexer actions execute approve
+```
+
+Observera att åtgärdstyper som stöds för allokeringshantering har olika krav på indata:
+
+- `Allocate` - allocate stake to a specific subgraph deployment
+
+  - obligatoriska åtgärdsparametrar:
+    - deploymentID
+    - belopp
+
+- `Unallocate` - close allocation, freeing up the stake to reallocate elsewhere
+
+  - obligatoriska åtgärdsparametrar:
+    - allocationID
+    - deploymentID
+  - valfria åtgärdsparametrar:
+    - poi
+    - force (tvingar användning av den angivna POI även om den inte matchar det som grafnoden tillhandahåller)
+
+- `Reallocate` - atomically close allocation and open a fresh allocation for the same subgraph deployment
+
+  - obligatoriska åtgärdsparametrar:
+    - allocationID
+    - deploymentID
+    - belopp
+  - valfria åtgärdsparametrar:
+    - poi
+    - force (tvingar användning av den angivna POI även om den inte matchar det som grafnoden tillhandahåller)
+
+#### Kostnadsmodeller
+
+Kostnadsmodeller tillhandahåller dynamisk prissättning för frågor baserat på marknaden och frågans egenskaper. Indexer Service delar en kostnadsmodell med gatewayerna för varje subgraph för vilka de avser att svara på frågor. Gatewayerna använder i sin tur kostnadsmodellen för att fatta beslut om indexeringsval per fråga och för att förhandla om betalning med valda indexers.
+
+#### Agora
+
+Agora-språket ger ett flexibelt format för deklaration av kostnadsmodeller för frågor. En Agora-prismodell är en sekvens av uttalanden som utförs i ordning för varje toppnivåfråga i en GraphQL-fråga. För varje toppnivåfråga avgör det första uttalandet som matchar den priset för den frågan.
+
+Ett uttalande består av en predikat, som används för att matcha GraphQL-frågor, och ett kostnadsuttryck som när det utvärderas ger en kostnad i decimal GRT. Värden i den namngivna argumentpositionen i en fråga kan fångas i predikatet och användas i uttrycket. Globala variabler kan också sättas och ersättas för platshållare i ett uttryck.
+
+Exempel kostnadsmodell:
+
+```
+# This statement captures the skip value,
+# uses a boolean expression in the predicate to match specific queries that use `skip`
+# and a cost expression to calculate the cost based on the `skip` value and the SYSTEM_LOAD global
+query { pairs(skip: $skip) { id } } when $skip > 2000 => 0.0001 * $skip * $SYSTEM_LOAD;
+
+# This default will match any GraphQL expression.
+# It uses a Global substituted into the expression to calculate cost
+default => 0.1 * $SYSTEM_LOAD;
+```
+
+Exempel på kostnadskalkyl enligt ovanstående modell:
+
+| Query                                                                        | Price   |
+| ---------------------------------------------------------------------------- | ------- |
+| { pairs(skip: 5000) { id } }                                                 | 0.5 GRT |
+| { tokens { symbol } }                                                        | 0.1 GRT |
+| { pairs(skip: 5000) { id } tokens { symbol } }                               | 0.6 GRT |
+
+#### Tillämpning av kostnadsmodellen
+
+Kostnadsmodeller tillämpas via Indexer CLI, som skickar dem till Indexer Management API för Indexer agent för lagring i databasen. Indexer Service kommer sedan att hämta dem och servera kostnadsmodellerna till gatewayerna när de begär dem.
+
+```sh
+indexer cost set variables '{ "SYSTEM_LOAD": 1.4 }'
+indexer cost set model my_model.agora
+```
+
+## Interagera med nätverket
+
+### Satsa i protokollet
+
+The first steps to participating in the network as an Indexer are to approve the protocol, stake funds, and (optionally) set up an operator address for day-to-day protocol interactions.
+
+> Note: For the purposes of these instructions Remix will be used for contract interaction, but feel free to use your tool of choice ([OneClickDapp](https://oneclickdapp.com/), [ABItopic](https://abitopic.io/), and [MyCrypto](https://www.mycrypto.com/account) are a few other known tools).
+
+Once an Indexer has staked GRT in the protocol, the [Indexer components](/indexing/overview/#indexer-components) can be started up and begin their interactions with the network.
+
+#### Godkänn tokens
+
+1. Open the [Remix app](https://remix.ethereum.org/) in a browser
+
+2. In the `File Explorer` create a file named **GraphToken.abi** with the [token ABI](https://raw.githubusercontent.com/graphprotocol/contracts/mainnet-deploy-build/build/abis/GraphToken.json).
+
+3. With `GraphToken.abi` selected and open in the editor, switch to the `Deploy and run transactions` section in the Remix interface.
+
+4. Under environment select `Injected Web3` and under `Account` select your Indexer address.
+
+5. Set the GraphToken contract address - Paste the GraphToken contract address (`0xc944E90C64B2c07662A292be6244BDf05Cda44a7`) next to `At Address` and click the `At address` button to apply.
+
+6. Call the `approve(spender, amount)` function to approve the Staking contract. Fill in `spender` with the Staking contract address (`0xF55041E37E12cD407ad00CE2910B8269B01263b9`) and `amount` with the tokens to stake (in wei).
+
+#### Satsa tokens
+
+1. Open the [Remix app](https://remix.ethereum.org/) in a browser
+
+2. In the `File Explorer` create a file named **Staking.abi** with the staking ABI.
+
+3. With `Staking.abi` selected and open in the editor, switch to the `Deploy and run transactions` section in the Remix interface.
+
+4. Under environment select `Injected Web3` and under `Account` select your Indexer address.
+
+5. Set the Staking contract address - Paste the Staking contract address (`0xF55041E37E12cD407ad00CE2910B8269B01263b9`) next to `At Address` and click the `At address` button to apply.
+
+6. Call `stake()` to stake GRT in the protocol.
+
+7. (Optional) Indexers may approve another address to be the operator for their Indexer infrastructure in order to separate the keys that control the funds from those that are performing day to day actions such as allocating on subgraphs and serving (paid) queries. In order to set the operator call `setOperator()` with the operator address.
+
+8. (Optional) In order to control the distribution of rewards and strategically attract Delegators Indexers can update their delegation parameters by updating their indexingRewardCut (parts per million), queryFeeCut (parts per million), and cooldownBlocks (number of blocks). To do so call `setDelegationParameters()`. The following example sets the queryFeeCut to distribute 95% of query rebates to the Indexer and 5% to Delegators, set the indexingRewardCutto distribute 60% of indexing rewards to the Indexer and 40% to Delegators, and set `thecooldownBlocks` period to 500 blocks.
+
+```
+setDelegationParameters(950000, 600000, 500)
+```
+
+### Setting delegation parameters
+
+The `setDelegationParameters()` function in the [staking contract](https://github.com/graphprotocol/contracts/blob/main/packages/contracts/contracts/staking/Staking.sol) is essential for Indexers, allowing them to set parameters that define their interactions with Delegators, influencing their reward sharing and delegation capacity.
+
+### How to set delegation parameters
+
+To set the delegation parameters using Graph Explorer interface, follow these steps:
+
+1. Navigate to [Graph Explorer](https://thegraph.com/explorer/).
+2. Connect your wallet. Choose multisig (such as Gnosis Safe) and then select mainnet. Note: You will need to repeat this process for Arbitrum One.
+3. Connect the wallet you have as a signer.
+4. Navigate to the 'Settings' section and select 'Delegation Parameters'. These parameters should be configured to achieve an effective cut within the desired range. Upon entering values in the provided input fields, the interface will automatically calculate the effective cut. Adjust these values as necessary to attain the desired effective cut percentage.
+5. Submit the transaction to the network.
+
+> Note: This transaction will need to be confirmed by the multisig wallet signers.
+
+### En allokations livscykel
+
+After being created by an Indexer a healthy allocation goes through two states.
+
+- **Active** - Once an allocation is created onchain ([allocateFrom()](https://github.com/graphprotocol/contracts/blob/main/packages/contracts/contracts/staking/Staking.sol#L316)) it is considered **active**. A portion of the Indexer's own and/or delegated stake is allocated towards a subgraph deployment, which allows them to claim indexing rewards and serve queries for that subgraph deployment. The Indexer agent manages creating allocations based on the Indexer rules.
+
+- **Closed** - An Indexer is free to close an allocation once 1 epoch has passed ([closeAllocation()](https://github.com/graphprotocol/contracts/blob/main/packages/contracts/contracts/staking/Staking.sol#L335)) or their Indexer agent will automatically close the allocation after the **maxAllocationEpochs** (currently 28 days). When an allocation is closed with a valid proof of indexing (POI) their indexing rewards are distributed to the Indexer and its Delegators ([learn more](/indexing/overview/#how-are-indexing-rewards-distributed)).
+
+Indexers are recommended to utilize offchain syncing functionality to sync subgraph deployments to chainhead before creating the allocation onchain. This feature is especially useful for subgraphs that may take longer than 28 epochs to sync or have some chances of failing undeterministically.
