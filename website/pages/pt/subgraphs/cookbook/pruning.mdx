@@ -1,0 +1,55 @@
+---
+title: Boas Práticas de Subgraph 1 - Acelerar Queries com Pruning
+---
+
+## TLDR
+
+O [pruning](/developing/creating-a-subgraph/#prune) retira entidades de arquivo do banco de dados de um subgraph até um bloco especificado; e retirar entidades não usadas do banco de dados de um subgraph tende a melhorar muito o desempenho de queries de um subgraph. Usar o `indexerHints` é uma maneira fácil de fazer o pruning de um subgraph.
+
+## Como Fazer Pruning de um Subgraph com `indexerHints`
+
+Adicione uma secção chamada `indexerHints` ao manifest.
+
+O `indexerHints` tem três opções de `prune`:
+
+- `prune: auto`: Guarda o histórico mínimo necessário, conforme configurado pelo Indexador, para otimizar o desempenho dos queries. Esta é a configuração geralmente recomendada e é padrão para todos os subgraphs criados pela `graph-cli` >= 0.66.0.
+- `prune: <Number of blocks to retain>`: Determina um limite personalizado no número de blocos históricos a serem retidos.
+- `prune: never`: No pruning of historical data; retains the entire history and is the default if there is no `indexerHints` section. `prune: never` should be selected if [Time Travel Queries](/subgraphs/querying/graphql-api/#time-travel-queries) are desired.
+
+Podemos adicionar `indexerHints` aos nossos subgraphs ao atualizar o nosso `subgraph.yaml`:
+
+```yaml
+specVersion: 1.0.0
+schema:
+  file: ./schema.graphql
+indexerHints:
+  prune: auto
+dataSources:
+  - kind: ethereum/contract
+    name: Contract
+    network: mainnet
+```
+
+## Considerações Importantes
+
+- If [Time Travel Queries](/subgraphs/querying/graphql-api/#time-travel-queries) are desired as well as pruning, pruning must be performed accurately to retain Time Travel Query functionality. Due to this, it is generally not recommended to use `indexerHints: prune: auto` with Time Travel Queries. Instead, prune using `indexerHints: prune: <Number of blocks to retain>` to accurately prune to a block height that preserves the historical data required by Time Travel Queries, or use `prune: never` to maintain all data.
+
+- It is not possible to [graft](/subgraphs/cookbook/grafting/) at a block height that has been pruned. If grafting is routinely performed and pruning is desired, it is recommended to use `indexerHints: prune: <Number of blocks to retain>` that will accurately retain a set number of blocks (e.g., enough for six months).
+
+## Conclusão
+
+O pruning com `indexerHints` é uma boa prática para o desenvolvimento de subgraphs que oferece melhorias significativas no desempenho de queries.
+
+## Subgraph Best Practices 1-6
+
+1. [Improve Query Speed with Subgraph Pruning](/subgraphs/cookbook/pruning/)
+
+2. [Improve Indexing and Query Responsiveness by Using @derivedFrom](/subgraphs/cookbook/derivedfrom/)
+
+3. [Improve Indexing and Query Performance by Using Immutable Entities and Bytes as IDs](/subgraphs/cookbook/immutable-entities-bytes-as-ids/)
+
+4. [Improve Indexing Speed by Avoiding `eth_calls`](/subgraphs/cookbook/avoid-eth-calls/)
+
+5. [Simplify and Optimize with Timeseries and Aggregations](/subgraphs/cookbook/timeseries/)
+
+6. [Use Grafting for Quick Hotfix Deployment](/subgraphs/cookbook/grafting-hotfix/)
