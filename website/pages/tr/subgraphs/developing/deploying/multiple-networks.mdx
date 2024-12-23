@@ -1,0 +1,241 @@
+---
+title: Bir Subgraph'i Birden Fazla Ağda Dağıtma
+---
+
+This page explains how to deploy a subgraph to multiple networks. To deploy a subgraph you need to first install the [Graph CLI](https://github.com/graphprotocol/graph-tooling/tree/main/packages/cli). If you have not created a subgraph already, see [Creating a subgraph](/developing/creating-a-subgraph/).
+
+## Subgraph'i Birden Fazla Ağda Dağıtma
+
+Bazı durumlarda, tüm kodu tekrarlamak zorunda olmadan aynı subgraph'i birden fazla ağda yayına almak isteyebilirsiniz. Bunu yapmaktaki temel zorluk, sözleşme kodu tamamen aynı olsa dahi, farklı ağlardaki sözleşme adreslerinin farklı olmasıdır.
+
+### `graph-cli` Kullanarak
+
+Hem `graph build` (`v0.29.0`'dan itibaren) hem de `graph deploy` (`v0.32.0`'dan itibaren) komutları iki yeni seçeneği kabul eder:
+
+```sh
+Seçenekler:
+
+      ...
+      --network <name>          Ağ yapılandırmasını networks config dosyasını kullanarak yapmak için
+      --network-file <path>     Ağ yapılandırma dosya yolu (varsayılan: "./networks.json")
+```
+
+`--network` seçeneğini, geliştirme sırasında subgraph'inizi kolayca güncellemek amacıyla, bir `json` standart dosyası kullanarak bir ağ yapılandırması belirlemek için kullanabilirsiniz. (Varsayılan olarak `networks.json` dosyasını kullanır.)
+
+> Not: Artık, `init` komutu, sağlanan bilgilere dayanarak otomatik olarak bir `networks.json` dosyası oluşturmaktadır. Daha sonra mevcut ağları güncelleyebilir veya yeni ağlar ekleyebilirsiniz.
+
+Eğer bir `networks.json` dosyanız yoksa, aşağıdaki yapı ile manuel olarak oluşturmanız gerekecek:
+
+```json
+{
+    "network1": { // ağ adı
+        "dataSource1": { //veri kaynağı adı
+            "address": "0xabc...", // sözleşme adresi (isteğe bağlı)
+            "startBlock": 123456 // başlangıç bloku (isteğe bağlı)
+        },
+        "dataSource2": {
+            "address": "0x123...",
+            "startBlock": 123444
+        }
+    },
+    "network2": {
+        "dataSource1": {
+            "address": "0x987...",
+            "startBlock": 123
+        },
+        "dataSource2": {
+            "address": "0xxyz..",
+            "startBlock": 456
+        }
+    },
+    ...
+}
+```
+
+> Not: Yapılandırma dosyasında `templates` (şablonlar, eğer varsa) kısmını doldurmanıza gerek yoktur, yalnızca `dataSources` (veri kaynaklarını) belirtmelisiniz. Eğer `subgraph.yaml` dosyasında `templates` kısmı tanımlanmışsa, bunların ağı `--network` seçeneği ile belirtilen ağa otomatik olarak güncellenecektir.
+
+Şimdi, subgraph'inizi `mainnet` ve `sepolia` ağlarında dağıtmak istediğinizi varsayalım ve `subgraph.yaml` dosyanız aşağıdaki gibi olsun\`:
+
+```yaml
+# ...
+dataSources:
+  - kind: ethereum/contract
+    name: Gravity
+    network: mainnet
+    source:
+      address: '0x123...'
+      abi: Gravity
+    mapping:
+      kind: ethereum/events
+```
+
+Ağ yapılandırma dosyanız şu şekilde olmalıdır:
+
+```json
+{
+  "mainnet": {
+    "Gravity": {
+      "address": "0x123..."
+    }
+  },
+  "sepolia": {
+    "Gravity": {
+      "address": "0xabc..."
+    }
+  }
+}
+```
+
+Şimdi aşağıdaki komutlardan birini çalıştırabilirsiniz:
+
+```sh
+# Varsayılan networks.json dosyasını kullanarak
+yarn build --network sepolia
+
+# Özel adlandırılmış bir dosya kullanarak
+yarn build --network sepolia --network-file path/to/config
+```
+
+`build` komutu, `subgraph.yaml` dosyanızı `sepolia` yapılandırmasıyla güncelleyip ardından subgraph'i yeniden derleyecektir. `subgraph.yaml` dosyanız artık şöyle görünmelidir:
+
+```yaml
+# ...
+dataSources:
+  - kind: ethereum/contract
+    name: Gravity
+    network: sepolia
+    source:
+      address: '0xabc...'
+      abi: Gravity
+    mapping:
+      kind: ethereum/events
+```
+
+Artık `yarn deploy` komutunu çalıştırmaya hazırsınız.
+
+> Not: Daha önce de belirtildiği gibi, `graph-cli 0.32.0` sürümünden itibaren `yarn deploy` komutunu doğrudan `--network` seçeneğiyle çalıştırabilirsiniz:
+
+```sh
+# Varsayılan networks.json dosyasını kullanarak
+yarn deploy --network sepolia
+
+# Özel adlandırılmış bir dosya kullanarak
+yarn deploy --network sepolia --network-file path/to/config
+```
+
+### <code>subgraph.yaml</code> şablonunu kullanarak:
+
+Daha eski `graph-cli` sürümlerini kullanarak kontrat adresleri gibi unsurları parametrize etmenin bir yolu, bunların bir kısmını [Mustache](https://mustache.github.io/) veya [Handlebar](https://handlebarsjs.com/) gibi bir şablonlama sistemiyle oluşturmaktır.
+
+Bu yaklaşımı açıklamak için, bir subgraph'in mainnet ve Sepolia ağlarına farklı sözleşme adresleri ile dağıtılması gerektiğini varsayalım. Her ağ için adresleri sağlayan iki yapılandırma dosyası tanımlayabilirsiniz:
+
+```json
+{
+  "network": "mainnet",
+  "address": "0x123..."
+}
+```
+
+ve
+
+```json
+{
+  "network": "sepolia",
+  "address": "0xabc..."
+}
+```
+
+Bununla birlikte, ağ adını ve adresleri manifesto içinde `{{network}}` ve `{{address}}` gibi değişken yer tutucularla değiştirir ve manifestoyu örneğin `subgraph.template.yaml` olarak yeniden adlandırırsınız:
+
+```yaml
+# ...
+dataSources:
+  - kind: ethereum/contract
+    name: Gravity
+    network: mainnet
+    network: {{network}}
+    source:
+      address: '0x2E645469f354BB4F5c8a05B3b30A929361cf77eC'
+      address: '{{address}}'
+      abi: Gravity
+    mapping:
+      kind: ethereum/events
+```
+
+Her iki ağ için de bir manifesto oluşturmak amacıyla, `package.json` dosyasına `mustache` gereksinimiyle birlikte iki ek komut ekleyebilirsiniz:
+
+```json
+{
+  ...
+  "scripts": {
+    ...
+    "prepare:mainnet": "mustache config/mainnet.json subgraph.template.yaml > subgraph.yaml",
+    "prepare:sepolia": "mustache config/sepolia.json subgraph.template.yaml > subgraph.yaml"
+  },
+  "devDependencies": {
+    ...
+    "mustache": "^3.1.0"
+  }
+}
+```
+
+Bu subgraph'i mainnet veya Sepolia üzerinde yayına almak için artık aşağıdaki iki komuttan birini çalıştırabilirsiniz:
+
+```sh
+# Mainnet:
+yarn prepare:mainnet && yarn deploy
+
+# Sepolia:
+yarn prepare:sepolia && yarn deploy
+```
+
+Bunun çalışan bir örneğini [burada](https://github.com/graphprotocol/example-subgraph/tree/371232cf68e6d814facf5e5413ad0fef65144759) bulabilirsiniz.
+
+**Not**: Bu yaklaşım, sözleşme adresleri ve ağ adlarının ötesinde daha fazla değişiklik yapmanın, veya şablonlardan mapping ya da ABI'ler oluşturmanın gerekli olduğu, daha karmaşık durumlara da uygulanabilir.
+
+Bu işlem, subgraph'inizin geride kalıp kalmadığını kontrol etmek için `chainHeadBlock` değerini subgraph'inizdeki `latestBlock` ile karşılaştırmanızı sağlar. `synced`, subgraph'in zincire daha önce hiç yetişip yetişmediğini belirtir. `health` ise şu anda hata olmadığında `healthy` ve bir hata nedeniyle subgraph'in ilerlemesi durduğunda `failed` değerlerini alabilir. Bu durumda, hataya dair ayrıntılar için `fatalError` alanını kontrol edebilirsiniz.
+
+## Subgraph Studio Subgraph Arşivleme Politikası
+
+Studio’daki bir subgraph sürümü yalnızca aşağıdaki kriterleri karşılaması durumunda arşivlenir:
+
+- Sürüm ağa yayımlanmamıştır (veya yayım askıda kalmıştır)
+- Sürüm, 45 gün veya daha uzun bir süre önce oluşturulmuştur
+- Subgraph son 30 gündür sorgulanmamıştır
+
+Ek olarak, yeni bir sürüm yayına alındığında, eğer subgraph yayımlanmadıysa, subgraph’in N-2 sürümü arşivlenir.
+
+Bu politika kapsamında etkilenen her subgraph, ilgili sürümü geri getirme seçeneğine sahiptir.
+
+## Subgraph durumunu kontrol etme
+
+Bir subgraph'in başarıyla senkronize olması, sonsuza kadar sorunsuz çalışmaya devam edeceğine dair iyi bir işarettir. Ancak, ağdaki yeni tetikleyiciler subgraph'inizin test edilmemiş bir hata durumuna düşmesine neden olabilir, veya performans sorunları ya da düğüm operatörlerindeki sorunlar nedeniyle subgraph geride kalmaya başlayabilir.
+
+Graph Düğümü, subgraph'inizin durumunu kontrol etmek için sorgu yapabileceğiniz bir GraphQL uç noktası sunar. Sağlayıcı hizmetinde bu uç nokta `https://api.thegraph.com/index-node/graphql` adresinde bulunmaktadır. Yerel bir düğümde ise varsayılan olarak `8030/graphql` portunda erişilebilir. Bu uç noktanın tam şemasına [buradan](https://github.com/graphprotocol/graph-node/blob/master/server/index-node/src/schema.graphql) ulaşabilirsiniz. İşte bir subgraph'in güncel sürümünün durumunu kontrol eden örnek bir sorgu:
+
+```graphql
+{
+  indexingStatusForCurrentVersion(subgraphName: "org/subgraph") {
+    synced
+    health
+    fatalError {
+      message
+      block {
+        number
+        hash
+      }
+      handler
+    }
+    chains {
+      chainHeadBlock {
+        number
+      }
+      latestBlock {
+        number
+      }
+    }
+  }
+}
+```
+
+Bu işlem, subgraph'inizin geride kalıp kalmadığını kontrol etmek için `chainHeadBlock` değerini subgraph'inizdeki `latestBlock` ile karşılaştırmanızı sağlar. `synced`, subgraph'in zincire daha önce hiç yetişip yetişmediğini belirtir. `health` ise şu anda hata olmadığında `healthy` ve bir hata nedeniyle subgraph'in ilerlemesi durduğunda `failed` değerlerini alabilir. Bu durumda, hataya dair ayrıntılar için `fatalError` alanını kontrol edebilirsiniz.
