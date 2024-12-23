@@ -1,0 +1,283 @@
+---
+title: NEAR Üzerinde Subgraphlar Oluşturma
+---
+
+This guide is an introduction to building subgraphs indexing smart contracts on the [NEAR blockchain](https://docs.near.org/).
+
+## NEAR Nedir?
+
+[NEAR](https://near.org/) is a smart contract platform for building decentralized applications. Visit the [official documentation](https://docs.near.org/concepts/basics/protocol) for more information.
+
+## NEAR subgraphları nedir?
+
+The Graph gives developers tools to process blockchain events and make the resulting data easily available via a GraphQL API, known individually as a subgraph. [Graph Node](https://github.com/graphprotocol/graph-node) is now able to process NEAR events, which means that NEAR developers can now build subgraphs to index their smart contracts.
+
+Subgraphs are event-based, which means that they listen for and then process onchain events. There are currently two types of handlers supported for NEAR subgraphs:
+
+- Blok işleyicileri: Bunlar her yeni blokta çalışır
+- Makbuz işleyicileri: Belirli bir hesapta her mesaj yürütüldüğünde çalışır
+
+[From the NEAR documentation](https://docs.near.org/build/data-infrastructure/lake-data-structures/receipt):
+
+> Makbuz, sistemdeki eyleme geçirilebilir tek nesnedir. NEAR platformunda "bir işlemin işlenmesinden" bahsettiğimizde, bu nihayetinde bir noktada "makbuzların uygulanması" anlamına gelir.
+
+## NEAR Subgraph'ı Oluşturma
+
+`@graphprotocol/graph-cli` is a command-line tool for building and deploying subgraphs.
+
+`@graphprotocol/graph-ts` is a library of subgraph-specific types.
+
+NEAR subgraph development requires `graph-cli` above version `0.23.0`, and `graph-ts` above version `0.23.0`.
+
+> Bir NEAR subgraph'ı oluşturmak, Ethereum'u indeksleyen bir subgraph oluşturmakla çok benzerdir.
+
+Subgraph tanımının üç yönü vardır:
+
+**subgraph.yaml:** the subgraph manifest, defining the data sources of interest, and how they should be processed. NEAR is a new `kind` of data source.
+
+**schema.graphql:** a schema file that defines what data is stored for your subgraph, and how to query it via GraphQL. The requirements for NEAR subgraphs are covered by [the existing documentation](/developing/creating-a-subgraph/#the-graphql-schema).
+
+**AssemblyScript Mappings:** [AssemblyScript code](/subgraphs/developing/creating/graph-ts/api/) that translates from the event data to the entities defined in your schema. NEAR support introduces NEAR-specific data types and new JSON parsing functionality.
+
+Subgraph geliştirme sırasında iki anahtar komut vardır:
+
+```bash
+$ graph codegen # manifest'de tanımlanan şema dosyasından tipleri üretir
+$ graph build # AssemblyScript dosyalarından Web Assembly oluşturur ve tüm subgraph dosyalarını bir /build klasöründe hazırlar
+```
+
+### Subgraph Manifest Tanımı
+
+The subgraph manifest (`subgraph.yaml`) identifies the data sources for the subgraph, the triggers of interest, and the functions that should be run in response to those triggers. See below for an example subgraph manifest for a NEAR subgraph:
+
+```yaml
+specVersion: 0.0.2
+schema:
+  file: ./src/schema.graphql # şema dosyasına bağlantı
+dataSources:
+  - kind: near
+    network: near-mainnet
+    source:
+      account: app.good-morning.near # Bu veri kaynağı bu hesabı izleyecektir
+      startBlock: 10662188 # NEAR için gereklidir
+    mapping:
+      apiVersion: 0.0.5
+      language: wasm/assemblyscript
+      blockHandlers:
+        - handler: handleNewBlock # eşleştirme dosyasındaki fonksiyon adı
+      receiptHandlers:
+        - handler: handleReceipt # eşleştirme dosyasındaki fonksiyon adı
+      file: ./src/mapping.ts # Assemblyscript eşleştirmelerinin bulunduğu dosyaya bağlantı
+```
+
+- NEAR subgraphs introduce a new `kind` of data source (`near`)
+- The `network` should correspond to a network on the hosting Graph Node. On Subgraph Studio, NEAR's mainnet is `near-mainnet`, and NEAR's testnet is `near-testnet`
+- NEAR data sources introduce an optional `source.account` field, which is a human-readable ID corresponding to a [NEAR account](https://docs.near.org/concepts/protocol/account-model). This can be an account or a sub-account.
+- NEAR data sources introduce an alternative optional `source.accounts` field, which contains optional suffixes and prefixes. At least prefix or suffix must be specified, they will match the any account starting or ending with the list of values respectively. The example below would match: `[app|good].*[morning.near|morning.testnet]`. If only a list of prefixes or suffixes is necessary the other field can be omitted.
+
+```yaml
+accounts:
+  prefixes:
+    - app
+    - good
+  suffixes:
+    - morning.near
+    - morning.testnet
+```
+
+NEAR veri kaynakları iki tür işleyiciyi destekler:
+
+- `blockHandlers`: run on every new NEAR block. No `source.account` is required.
+- `receiptHandlers`: run on every receipt where the data source's `source.account` is the recipient. Note that only exact matches are processed ([subaccounts](https://docs.near.org/tutorials/crosswords/basics/add-functions-call#create-a-subaccount) must be added as independent data sources).
+
+### Şema Tanımı
+
+Schema definition describes the structure of the resulting subgraph database and the relationships between entities. This is agnostic of the original data source. There are more details on subgraph schema definition [here](/developing/creating-a-subgraph/#the-graphql-schema).
+
+### AssemblyScript Eşlemeleri
+
+The handlers for processing events are written in [AssemblyScript](https://www.assemblyscript.org/).
+
+NEAR indexing introduces NEAR-specific data types to the [AssemblyScript API](/subgraphs/developing/creating/graph-ts/api/).
+
+```typescript
+
+class ExecutionOutcome {
+      gasBurnt: u64,
+      blockHash: Bytes,
+      id: Bytes,
+      logs: Array<string>,
+      receiptIds: Array<Bytes>,
+      tokensBurnt: BigInt,
+      executorId: string,
+  }
+
+class ActionReceipt {
+      predecessorId: string,
+      receiverId: string,
+      id: CryptoHash,
+      signerId: string,
+      gasPrice: BigInt,
+      outputDataReceivers: Array<DataReceiver>,
+      inputDataIds: Array<CryptoHash>,
+      actions: Array<ActionValue>,
+  }
+
+class BlockHeader {
+      height: u64,
+      prevHeight: u64,// Always zero when version < V3
+      epochId: Bytes,
+      nextEpochId: Bytes,
+      chunksIncluded: u64,
+      hash: Bytes,
+      prevHash: Bytes,
+      timestampNanosec: u64,
+      randomValue: Bytes,
+      gasPrice: BigInt,
+      totalSupply: BigInt,
+      latestProtocolVersion: u32,
+  }
+
+class ChunkHeader {
+      gasUsed: u64,
+      gasLimit: u64,
+      shardId: u64,
+      chunkHash: Bytes,
+      prevBlockHash: Bytes,
+      balanceBurnt: BigInt,
+  }
+
+class Block {
+      author: string,
+      header: BlockHeader,
+      chunks: Array<ChunkHeader>,
+  }
+
+class ReceiptWithOutcome {
+      outcome: ExecutionOutcome,
+      receipt: ActionReceipt,
+      block: Block,
+  }
+```
+
+These types are passed to block & receipt handlers:
+
+- Block handlers will receive a `Block`
+- Receipt handlers will receive a `ReceiptWithOutcome`
+
+Otherwise, the rest of the [AssemblyScript API](/subgraphs/developing/creating/graph-ts/api/) is available to NEAR subgraph developers during mapping execution.
+
+This includes a new JSON parsing function - logs on NEAR are frequently emitted as stringified JSONs. A new `json.fromString(...)` function is available as part of the [JSON API](/subgraphs/developing/creating/graph-ts/api/#json-api) to allow developers to easily process these logs.
+
+## NEAR Subgraph'ını Dağıtma
+
+Once you have a built subgraph, it is time to deploy it to Graph Node for indexing. NEAR subgraphs can be deployed to any Graph Node `>=v0.26.x` (this version has not yet been tagged & released).
+
+Subgraph Studio and the upgrade Indexer on The Graph Network currently supports indexing NEAR mainnet and testnet in beta, with the following network names:
+
+- `near-mainnet`
+- `near-testnet`
+
+More information on creating and deploying subgraphs on Subgraph Studio can be found [here](/deploying/deploying-a-subgraph-to-studio/).
+
+As a quick primer - the first step is to "create" your subgraph - this only needs to be done once. On Subgraph Studio, this can be done from [your Dashboard](https://thegraph.com/studio/): "Create a subgraph".
+
+Once your subgraph has been created, you can deploy your subgraph by using the `graph deploy` CLI command:
+
+```sh
+$ graph create --node <graph-node-url> <subgraph-name> # creates a subgraph on a local Graph Node (on Subgraph Studio, this is done via the UI)
+$ graph deploy --node <graph-node-url> --ipfs https://api.thegraph.com/ipfs/ <subgraph-name> # uploads the build files to a specified IPFS endpoint, and then deploys the subgraph to a specified Graph Node based on the manifest IPFS hash
+```
+
+Düğüm yapılandırması, subgraph'ın nerede dağıtıldığına bağlı olacaktır.
+
+### Subgraph Stüdyosu
+
+```sh
+graph auth
+graph deploy <subgraph-name>
+```
+
+### Yerel Graph Düğümü (varsayılan yapılandırmaya göre)
+
+```sh
+graph deploy --node http://localhost:8020/ --ipfs http://localhost:5001 <subgraph-name>
+```
+
+Subgraph'ınız dağıtıldıktan sonra Graph Düğüme tarafından indekslenecektir. Subgraph'ın kendisini sorgulayarak ilerlemesini kontrol edebilirsiniz:
+
+```graphql
+{
+  _meta {
+    block {
+      number
+    }
+  }
+}
+```
+
+### NEAR'ı Yerel Graph Düğümü ile İndeksleme
+
+NEAR'ı indeksleyen bir Graph Düğümü çalıştırmanın aşağıdaki operasyonel gereksinimleri vardır:
+
+- Firehose enstrümantasyonu ile NEAR İndeksleyici Çerçevesi
+- NEAR Firehose Bileşen(ler)i
+- Firehose uç noktası yapılandırılmış Graph Düğümü
+
+Yukarıdaki bileşenlerin çalıştırılması hakkında yakında daha fazla bilgi vereceğiz.
+
+## NEAR Subgraph'ını Sorgulama
+
+The GraphQL endpoint for NEAR subgraphs is determined by the schema definition, with the existing API interface. Please visit the [GraphQL API documentation](/subgraphs/querying/graphql-api/) for more information.
+
+## Örnek Subgraph'ler
+
+Here are some example subgraphs for reference:
+
+[NEAR Blocks](https://github.com/graphprotocol/graph-tooling/tree/main/examples/near-blocks)
+
+[NEAR Receipts](https://github.com/graphprotocol/graph-tooling/tree/main/examples/near-receipts)
+
+## SSS
+
+### Beta nasıl çalışır?
+
+NEAR desteği beta aşamasındadır, bu da entegrasyonu geliştirmek için çalışmaya devam ederken API'de değişiklikler olabileceği anlamına gelir. NEAR subgraphları oluştururken size destek olabilmemiz ve en son gelişmelerden sizi haberdar edebilmemiz için lütfen near@thegraph.com adresine e-posta gönderin!
+
+### Bir subgraph hem NEAR hem de EVM zincirlerini indeksleyebilir mi?
+
+Hayır, bir subgraph yalnızca bir zincirden/ağdan veri kaynaklarını destekleyebilir.
+
+### Subgraphlar daha spesifik tetikleyicilere tepki verebilir mi?
+
+Şu anda yalnızca Blok ve Makbuz tetikleyicileri desteklenmektedir. Belirli bir hesaba yapılan fonksiyon çağrıları için tetikleyicileri araştırma aşamasındayız. NEAR yerel olay desteğine sahip oldu takdirde, olay tetikleyicilerini desteklemekle de ilgileneceğiz.
+
+### Makbuz işleyicileri hesaplar ve bunların alt hesapları için tetiklenecek mi?
+
+If an `account` is specified, that will only match the exact account name. It is possible to match sub-accounts by specifying an `accounts` field, with `suffixes` and `prefixes` specified to match accounts and sub-accounts, for example the following would match all `mintbase1.near` sub-accounts:
+
+```yaml
+accounts:
+  suffixes:
+    - mintbase1.near
+```
+
+### NEAR subgraphları eşleştirmeler sırasında NEAR hesaplarına görünüm çağrıları yapabilir mi?
+
+Bu desteklenmemektedir. Bu fonksiyonelliğin indeksleme için gerekli olup olmadığını değerlendiriyoruz.
+
+### NEAR subgraph'ımda veri kaynağı şablonları kullanabilir miyim?
+
+Bu şu anda desteklenmemektedir. Bu fonksiyonelliğin indeksleme için gerekli olup olmadığını değerlendiriyoruz.
+
+### Ethereum subgraphları "beklemedeki" ve "mevcut" sürümleri destekler, bir NEAR subgraph'ının "beklemedeki" sürümünü nasıl dağıtabilirim?
+
+Bekleme fonksiyonelliği henüz NEAR subgraphları için desteklenmemektedir. Bu arada, farklı "adlandırılmış" bir subgraph'a yeni bir sürüm dağıtabilir ve daha sonra bu zincir başı ile senkronize edildiğinde, aynı temel dağıtım ID'sini kullanacak olan birincil "adlandırılmış" subgraph'ınıza yeniden dağıtabilirsiniz. Böylece ana subgraph anında senkronize olur.
+
+### Sorum yanıtlanmadı, NEAR subgraphları oluşturma konusunda nereden daha fazla yardım alabilirim?
+
+If it is a general question about subgraph development, there is a lot more information in the rest of the [Developer documentation](/subgraphs/quick-start/). Otherwise please join [The Graph Protocol Discord](https://discord.gg/graphprotocol) and ask in the #near channel or email near@thegraph.com.
+
+## Referanslar
+
+- [NEAR developer documentation](https://docs.near.org/tutorials/crosswords/basics/set-up-skeleton)
