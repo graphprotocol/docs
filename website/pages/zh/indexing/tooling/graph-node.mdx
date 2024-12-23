@@ -1,0 +1,345 @@
+---
+title: Graph 节点
+---
+
+Graph节点是索引子图的组件，并使生成的数据可通过GraphQL API进行查询。因此，它是索引人堆栈的中心，Graph节点的正确运作对于运行成功的索引人至关重要。
+
+This provides a contextual overview of Graph Node, and some of the more advanced options available to indexers. Detailed documentation and instructions can be found in the [Graph Node repository](https://github.com/graphprotocol/graph-node).
+
+## Graph 节点
+
+[Graph Node](https://github.com/graphprotocol/graph-node) is the reference implementation for indexing Subgraphs on The Graph Network, connecting to blockchain clients, indexing subgraphs and making indexed data available to query.
+
+Graph Node (and the whole indexer stack) can be run on bare metal, or in a cloud environment. This flexibility of the central indexing component is crucial to the robustness of The Graph Protocol. Similarly, Graph Node can be [built from source](https://github.com/graphprotocol/graph-node), or indexers can use one of the [provided Docker Images](https://hub.docker.com/r/graphprotocol/graph-node).
+
+### PostgreSQL 数据库
+
+Graph节点的主存储区，这是存储子图数据、子图元数据以及子图不可知的网络数据（如区块缓存和eth_call缓存）的地方。
+
+### 网络客户端
+
+为了索引网络，Graph节点需要通过以太坊兼容的JSON-RPC访问网络客户端。此RPC可能连接到单个以太坊客户端，也可能是跨多个客户端进行负载平衡的更复杂的设置。
+
+While some subgraphs may just require a full node, some may have indexing features which require additional RPC functionality. Specifically subgraphs which make `eth_calls` as part of indexing will require an archive node which supports [EIP-1898](https://eips.ethereum.org/EIPS/eip-1898), and subgraphs with `callHandlers`, or `blockHandlers` with a `call` filter, require `trace_filter` support ([see trace module documentation here](https://openethereum.github.io/JSONRPC-trace-module)).
+
+**Network Firehoses** - a Firehose is a gRPC service providing an ordered, yet fork-aware, stream of blocks, developed by The Graph's core developers to better support performant indexing at scale. This is not currently an Indexer requirement, but Indexers are encouraged to familiarise themselves with the technology, ahead of full network support. Learn more about the Firehose [here](https://firehose.streamingfast.io/).
+
+### IPFS节点
+
+子图部署元数据存储在IPFS网络上。Graph节点主要在子图部署期间访问IPFS节点，以获取子图清单和所有链接文件。网络索引人不需要托管自己的IPFS节点。网络的IPFS节点托管于https://ipfs.network.thegraph.com。
+
+### Prometheus指标服务器
+
+为了实现监控和报告，Graph节点可以选择将指标记录到Prometheus指标服务器。
+
+### 从来源开始
+
+#### 安装先决条件
+
+- **Rust**
+
+- **PostgreSQL**
+
+- **IPFS**
+
+- **Additional Requirements for Ubuntu users** - To run a Graph Node on Ubuntu a few additional packages may be needed.
+
+```sh
+sudo apt-get install -y clang libpq-dev libssl-dev pkg-config
+```
+
+#### 设置
+
+1. 启动 PostgreSQL 数据库服务器
+
+```sh
+initdb -D .postgres
+pg_ctl -D .postgres -l logfile start
+createdb graph-node
+```
+
+2. Clone [Graph Node](https://github.com/graphprotocol/graph-node) repo and build the source by running `cargo build`
+
+3. 现在，所有的依赖关系都已设置完毕，启动 Graph节点。
+
+```sh
+cargo run -p graph-node --release -- \
+  --postgres-url postgresql://[USERNAME]:[PASSWORD]@localhost:5432/graph-node \
+  --ethereum-rpc [NETWORK_NAME]:[URL] \
+  --ipfs https://ipfs.network.thegraph.com
+```
+
+### Kubernetes入门
+
+A complete Kubernetes example configuration can be found in the [indexer repository](https://github.com/graphprotocol/indexer/tree/main/k8s).
+
+### 端口
+
+当运行Graph Node时，会暴露以下端口：
+
+| 端口   | 用途                             | 路径                                                      | CLI 参数             | 环境 变量 |
+| ---- | ------------------------------ | ------------------------------------------------------- | ------------------ | ----- |
+| 8000 | GraphQL HTTP 服务 <br />（用于子图查询） | /subgraphs/id/... <br /> <br /> /subgraphs/name/.../... | \--http-port       | -     |
+| 8001 | GraphQL WS <br />（用于子图订阅）      | /subgraphs/id/... <br /> <br /> /subgraphs/name/.../... | \--ws-port         | -     |
+| 8020 | JSON-RPC <br />（用于管理部署）        | /                                                       | \--admin-port      | -     |
+| 8030 | 子图索引状态 API                     | /graphql                                                | \--index-node-port | -     |
+| 8040 | Prometheus 指标                  | /metrics                                                | \--metrics-port    | -     |
+
+> **Important**: Be careful about exposing ports publicly - **administration ports** should be kept locked down. This includes the the Graph Node JSON-RPC endpoint.
+
+## 高级 Graph 节点配置
+
+最简单的是，Graph节点可以使用Graph节点的单个实例、单个PostgreSQL数据库、IPFS节点和要索引的子图所需的网络客户端来操作。
+
+This setup can be scaled horizontally, by adding multiple Graph Nodes, and multiple databases to support those Graph Nodes. Advanced users may want to take advantage of some of the horizontal scaling capabilities of Graph Node, as well as some of the more advanced configuration options, via the `config.toml` file and Graph Node's environment variables.
+
+### `config.toml`
+
+A [TOML](https://toml.io/en/) configuration file can be used to set more complex configurations than those exposed in the CLI. The location of the file is passed with the --config command line switch.
+
+> 使用配置文件时，不能使用选项--postgres-url、--postgres-secondary-hosts和--postgres-host-weights。
+
+A minimal `config.toml` file can be provided; the following file is equivalent to using the --postgres-url command line option:
+
+```toml
+[store]
+[store.primary]
+connection="<.. postgres-url argument ..>"
+[deployment]
+[[deployment.rule]]
+indexers = [ "<.. list of all indexing nodes ..>" ]
+```
+
+Full documentation of `config.toml` can be found in the [Graph Node docs](https://github.com/graphprotocol/graph-node/blob/master/docs/config.md).
+
+#### 多个 Graph 节点
+
+Graph Node indexing can scale horizontally, running multiple instances of Graph Node to split indexing and querying across different nodes. This can be done simply by running Graph Nodes configured with a different `node_id` on startup (e.g. in the Docker Compose file), which can then be used in the `config.toml` file to specify [dedicated query nodes](#dedicated-query-nodes), [block ingestors](#dedicated-block-ingestion), and splitting subgraphs across nodes with [deployment rules](#deployment-rules).
+
+> 请注意，可以将多个Graph节点配置为使用同一个数据库，该数据库本身可以通过分片进行水平扩展。
+
+#### 部署规则
+
+Given multiple Graph Nodes, it is necessary to manage deployment of new subgraphs so that the same subgraph isn't being indexed by two different nodes, which would lead to collisions. This can be done by using deployment rules, which can also specify which `shard` a subgraph's data should be stored in, if database sharding is being used. Deployment rules can match on the subgraph name and the network that the deployment is indexing in order to make a decision.
+
+部署规则配置示例：
+
+```toml
+[deployment]
+[[deployment.rule]]
+match = { name = "(vip|important)/.*" }
+shard = "vip"
+indexers = [ "index_node_vip_0", "index_node_vip_1" ]
+[[deployment.rule]]
+match = { network = "kovan" }
+# No shard, so we use the default shard called 'primary'
+indexers = [ "index_node_kovan_0" ]
+[[deployment.rule]]
+match = { network = [ "xdai", "poa-core" ] }
+indexers = [ "index_node_other_0" ]
+[[deployment.rule]]
+# There's no 'match', so any subgraph matches
+shards = [ "sharda", "shardb" ]
+indexers = [
+    "index_node_community_0",
+    "index_node_community_1",
+    "index_node_community_2",
+    "index_node_community_3",
+    "index_node_community_4",
+    "index_node_community_5"
+  ]
+```
+
+Read more about deployment rules [here](https://github.com/graphprotocol/graph-node/blob/master/docs/config.md#controlling-deployment).
+
+#### 专用查询节点
+
+通过在配置文件中包含以下内容，可以将节点配置为显式查询节点：
+
+```toml
+[general]
+query = "<regular expression>"
+```
+
+任何--node-id与正则表达式匹配的节点都将被设置为只响应查询。
+
+#### 通过分片扩展数据库
+
+对于大多数用例，单个Postgres数据库足以支持graph节点实例。当一个graph节点实例超过一个Postgres数据库时，可以将graph节点的数据存储拆分到多个Postgres数据库中。所有数据库一起构成graph节点实例的存储。每个单独的数据库都称为分片。
+
+Shards can be used to split subgraph deployments across multiple databases, and can also be used to use replicas to spread query load across databases. This includes configuring the number of available database connections each `graph-node` should keep in its connection pool for each database, which becomes increasingly important as more subgraphs are being indexed.
+
+当您的现有数据库无法跟上Graph节点给它带来的负载时，以及当无法再增加数据库大小时，分片变得非常有用。
+
+> 在开始使用分片之前，通常最好使单个数据库尽可能大。一个例外是查询流量在子图之间分配非常不均匀；在这些情况下，如果将高容量子图保存在一个分片中，而将其他所有内容都保存在另一个分片上，这会有很大的帮助，因为这种设置使高容量子图的数据更有可能保留在数据库内部缓存中，而不会被低容量子图中不需要的数据所取代。
+
+在配置连接方面，首先将 postgresql.conf 中的 max_connections 设置为400（或甚至200），然后查看 store_connection_wait_time_ms 和 store_connecion_checkout_count Prometheus 度量。明显的等待时间（任何超过5ms的时间）表明可用连接太少；高等待时间也将由数据库非常繁忙（如高CPU负载）引起。然而，如果数据库在其他方面看起来很稳定，那么高等待时间表明需要增加连接数量。在配置中，每个graph节点实例可以使用的连接数是一个上限，如果不需要，Graph节点将不会保持连接打开。
+
+Read more about store configuration [here](https://github.com/graphprotocol/graph-node/blob/master/docs/config.md#configuring-multiple-databases).
+
+#### 专用区块摄取
+
+If there are multiple nodes configured, it will be necessary to specify one node which is responsible for ingestion of new blocks, so that all configured index nodes aren't polling the chain head. This is done as part of the `chains` namespace, specifying the `node_id` to be used for block ingestion:
+
+```toml
+[chains]
+ingestor = "block_ingestor_node"
+```
+
+#### 支持多个网络
+
+The Graph Protocol is increasing the number of networks supported for indexing rewards, and there exist many subgraphs indexing unsupported networks which an indexer would like to process. The `config.toml` file allows for expressive and flexible configuration of:
+
+- 多个网络。
+- 每个网络有多个提供程序（这可以允许跨提供程序分配负载，也可以允许配置完整节点和归档节点，如果给定的工作负载允许，Graph Node更喜欢便宜些的提供程序）。
+- 其他提供商详细信息，如特征、身份验证和提供程序类型（用于实验性Firehose支持）。
+
+The `[chains]` section controls the ethereum providers that graph-node connects to, and where blocks and other metadata for each chain are stored. The following example configures two chains, mainnet and kovan, where blocks for mainnet are stored in the vip shard and blocks for kovan are stored in the primary shard. The mainnet chain can use two different providers, whereas kovan only has one provider.
+
+```toml
+[chains]
+ingestor = "block_ingestor_node"
+[chains.mainnet]
+shard = "vip"
+provider = [
+  { label = "mainnet1", url = "http://..", features = [], headers = { Authorization = "Bearer foo" } },
+  { label = "mainnet2", url = "http://..", features = [ "archive", "traces" ] }
+]
+[chains.kovan]
+shard = "primary"
+provider = [ { label = "kovan", url = "http://..", features = [] } ]
+```
+
+Read more about provider configuration [here](https://github.com/graphprotocol/graph-node/blob/master/docs/config.md#configuring-ethereum-providers).
+
+### 环境变量
+
+Graph Node supports a range of environment variables which can enable features, or change Graph Node behaviour. These are documented [here](https://github.com/graphprotocol/graph-node/blob/master/docs/environment-variables.md).
+
+### 持续部署
+
+使用高级配置操作缩放索引设置的用户可以从使用Kubernetes管理Graph节点中受益。
+
+- The indexer repository has an [example Kubernetes reference](https://github.com/graphprotocol/indexer/tree/main/k8s)
+- [Launchpad](https://docs.graphops.xyz/launchpad/intro) is a toolkit for running a Graph Protocol Indexer on Kubernetes maintained by GraphOps. It provides a set of Helm charts and a CLI to manage a Graph Node deployment.
+
+### 管理Graph节点
+
+给定一个正在运行的 Graph 节点（或多個 Graph 节点！），接下来的挑战是如何跨这些节点管理部署的子图。Graph 节点覆盖了一系列工具，以帮助管理子图。
+
+#### 日志
+
+Graph Node's logs can provide useful information for debugging and optimisation of Graph Node and specific subgraphs. Graph Node supports different log levels via the `GRAPH_LOG` environment variable, with the following levels: error, warn, info, debug or trace.
+
+In addition setting `GRAPH_LOG_QUERY_TIMING` to `gql` provides more details about how GraphQL queries are running (though this will generate a large volume of logs).
+
+#### Monitoring & alerting
+
+默认情况下，Graph Node通过8040端口上的Prometheus端点提供指标。然后可以使用Grafana来可视化这些指标。
+
+The indexer repository provides an [example Grafana configuration](https://github.com/graphprotocol/indexer/blob/main/k8s/base/grafana.yaml).
+
+#### Graphman
+
+`graphman` is a maintenance tool for Graph Node, helping with diagnosis and resolution of different day-to-day and exceptional tasks.
+
+The graphman command is included in the official containers, and you can docker exec into your graph-node container to run it. It requires a `config.toml` file.
+
+Full documentation of `graphman` commands is available in the Graph Node repository. See [/docs/graphman.md] (https://github.com/graphprotocol/graph-node/blob/master/docs/graphman.md) in the Graph Node `/docs`
+
+### 使用子图
+
+#### 索引状态API
+
+默认情况下，在端口8030/graphql上可用，索引状态API公开了一系列方法，用于检查不同子图的索引状态、检查索引证明、检查子图特征等。
+
+The full schema is available [here](https://github.com/graphprotocol/graph-node/blob/master/server/index-node/src/schema.graphql).
+
+#### 索引性能
+
+索引过程有三个独立的部分：
+
+- 正在从提供程序获取感兴趣的事件
+- 使用适当的处理程序按顺序处理事件（这可能涉及调用状态链，并从存储中获取数据）
+- 将生成的数据写入存储
+
+这些阶段是流水线的（即可以并行执行），但它们彼此依赖。如果子图索引速度慢，则根本原因将取决于特定的子图。
+
+索引速度慢的常见原因：
+
+- Time taken to find relevant events from the chain (call handlers in particular can be slow, given the reliance on `trace_filter`)
+- Making large numbers of `eth_calls` as part of handlers
+- 执行期间大量的存储交互
+- 要保存到存储的大量数据
+- 要处理的大量事件
+- 拥挤节点的数据库连接时间慢
+- 提供商本身落后于链头
+- 在链头从提供商获取新收据的速度较慢
+
+子图索引度量可以帮助诊断索引速度慢的根本原因。在某些情况下，问题在于子图本身，但在其他情况下，改进的网络提供商、减少的数据库冲突和其他配置改进可以显著提高索引性能。
+
+#### 失败的子图
+
+在为子图编制索引期间，如果遇到意外数据、某些组件未按预期工作，或者事件处理程序或配置中存在错误，则子图可能会失败。有两种常见的故障类型：
+
+- 确定性故障：这些故障不会通过重试解决
+- 非确定性故障：这些故障可能是由于提供程序的问题，或者是一些意外的Graph节点错误。当发生非确定性故障时，Graph节点将重试失败的处理程序，并随着时间的推移而后退。
+
+在某些情况下，索引人可能会解决故障（例如，如果错误是由于没有正确类型的提供程序导致的，则添加所需的提供程序将允许继续索引）。然而，在其他情况下，需要更改子图代码。
+
+> Deterministic failures are considered "final", with a Proof of Indexing generated for the failing block, while non-deterministic failures are not, as the subgraph may manage to "unfail" and continue indexing. In some cases, the non-deterministic label is incorrect, and the subgraph will never overcome the error; such failures should be reported as issues on the Graph Node repository.
+
+#### 区块和调用缓存
+
+Graph Node caches certain data in the store in order to save refetching from the provider. Blocks are cached, as are the results of `eth_calls` (the latter being cached as of a specific block). This caching can dramatically increase indexing speed during "resyncing" of a slightly altered subgraph.
+
+However, in some instances, if an Ethereum node has provided incorrect data for some period, that can make its way into the cache, leading to incorrect data or failed subgraphs. In this case indexers can use `graphman` to clear the poisoned cache, and then rewind the affected subgraphs, which will then fetch fresh data from the (hopefully) healthy provider.
+
+如果怀疑区块缓存不一致，例如tx收据丢失事件：
+
+1. `graphman chain list` to find the chain name.
+2. `graphman chain check-blocks <CHAIN> by-number <NUMBER>` will check if the cached block matches the provider, and deletes the block from the cache if it doesn’t.
+   1. If there is a difference, it may be safer to truncate the whole cache with `graphman chain truncate <CHAIN>`.
+   2. 如果区块与提供程序匹配，则可以直接针对提供程序调试问题。
+
+#### 查询问题和错误
+
+一旦子图被索引，索引人就可以期望通过子图的专用查询端点来服务查询。如果索引人希望为大量查询量提供服务，建议使用专用查询节点，如果查询量非常大，索引人可能需要配置副本分片，以便查询不会影响索引过程。
+
+然而，即使使用专用的查询节点和副本，某些查询也可能需要很长时间才能执行，在某些情况下还会增加内存使用量，并对其他用户的查询时间产生负面影响。
+
+没有一个"万灵丹"，而是一系列用于预防、诊断和处理慢速查询的工具。
+
+##### 查询缓存
+
+Graph Node caches GraphQL queries by default, which can significantly reduce database load. This can be further configured with the `GRAPH_QUERY_CACHE_BLOCKS` and `GRAPH_QUERY_CACHE_MAX_MEM` settings - read more [here](https://github.com/graphprotocol/graph-node/blob/master/docs/environment-variables.md#graphql-caching).
+
+##### 分析查询
+
+有问题的查询通常以两种方式之一出现。在某些情况下，用户自己报告给定的查询很慢。在这种情况下，挑战是诊断缓慢的原因——无论是一般问题，还是特定于子图或查询。如果可能的话，当然要解决它。
+
+在其他情况下，触发因素可能是查询节点上的高内存使用率，在这种情况下，首要挑战是要确定导致问题的查询。
+
+Indexers can use [qlog](https://github.com/graphprotocol/qlog/) to process and summarize Graph Node's query logs. `GRAPH_LOG_QUERY_TIMING` can also be enabled to help identify and debug slow queries.
+
+针对慢查询，索引器有几个选项。当然，他们可以改变成本模型，显著增加发送有问题查询的成本。这可能导致该查询的频率降低。然而，这通常并不能解决问题的根本原因。
+
+##### 账户式优化
+
+存储实体的数据库表通常有两种类型：“类交易”，即实体一旦创建，就永远不会更新，即存储类似于金融交易列表的内容；“类账户”，即经常更新实体，即存储每次记录交易时都会修改的类似金融账户的内容。类账户表的特点是，它们包含大量实体版本，但不同的实体相对较少。通常，在这种表中，不同实体的数量是行总数的1%（实体版本）。
+
+For account-like tables, `graph-node` can generate queries that take advantage of details of how Postgres ends up storing data with such a high rate of change, namely that all of the versions for recent blocks are in a small subsection of the overall storage for such a table.
+
+The command `graphman stats show <sgdNNNN`> shows, for each entity type/table in a deployment, how many distinct entities, and how many entity versions each table contains. That data is based on Postgres-internal estimates, and is therefore necessarily imprecise, and can be off by an order of magnitude. A `-1` in the `entities` column means that Postgres believes that all rows contain a distinct entity.
+
+In general, tables where the number of distinct entities are less than 1% of the total number of rows/entity versions are good candidates for the account-like optimization. When the output of `graphman stats show` indicates that a table might benefit from this optimization, running `graphman stats show <sgdNNN> <table>` will perform a full count of the table - that can be slow, but gives a precise measure of the ratio of distinct entities to overall entity versions.
+
+Once a table has been determined to be account-like, running `graphman stats account-like <sgdNNN>.<table>` will turn on the account-like optimization for queries against that table. The optimization can be turned off again with `graphman stats account-like --clear <sgdNNN>.<table>` It takes up to 5 minutes for query nodes to notice that the optimization has been turned on or off. After turning the optimization on, it is necessary to verify that the change does not in fact make queries slower for that table. If you have configured Grafana to monitor Postgres, slow queries would show up in `pg_stat_activity`in large numbers, taking several seconds. In that case, the optimization needs to be turned off again.
+
+For Uniswap-like subgraphs, the `pair` and `token` tables are prime candidates for this optimization, and can have a dramatic effect on database load.
+
+#### 删除子图
+
+> 这是一项新功能，将在Graph Node 0.29.x中提供。
+
+At some point an indexer might want to remove a given subgraph. This can be easily done via `graphman drop`, which deletes a deployment and all it's indexed data. The deployment can be specified as either a subgraph name, an IPFS hash `Qm..`, or the database namespace `sgdNNN`. Further documentation is available [here](https://github.com/graphprotocol/graph-node/blob/master/docs/graphman.md#-drop).
