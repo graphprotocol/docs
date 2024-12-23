@@ -1,0 +1,345 @@
+---
+title: Graph Node
+---
+
+Graph Düğümü, subgraphları indeksleyen ve sonuçta oluşan verileri GraphQL API aracılığıyla sorgulanabilir hale getiren bileşendir. Bu nedenle indeksleyici yığınının merkezi bir parçasıdır ve başarılı bir indeksleyici çalıştırmak için Graph Düğümü'nün doğru şekilde çalışması çok önemlidir.
+
+This provides a contextual overview of Graph Node, and some of the more advanced options available to indexers. Detailed documentation and instructions can be found in the [Graph Node repository](https://github.com/graphprotocol/graph-node).
+
+## Graph Node
+
+[Graph Node](https://github.com/graphprotocol/graph-node) is the reference implementation for indexing Subgraphs on The Graph Network, connecting to blockchain clients, indexing subgraphs and making indexed data available to query.
+
+Graph Node (and the whole indexer stack) can be run on bare metal, or in a cloud environment. This flexibility of the central indexing component is crucial to the robustness of The Graph Protocol. Similarly, Graph Node can be [built from source](https://github.com/graphprotocol/graph-node), or indexers can use one of the [provided Docker Images](https://hub.docker.com/r/graphprotocol/graph-node).
+
+### PostgreSQL veritabanı
+
+Graph Düğümü'nün ana deposu, burada subgraph verileri yanı sıra subgraphlarla ilgili üst veriler ve blok önbelleği ve eth_call önbelleği gibi subgraphtan bağımsız ağ verileri saklanır.
+
+### Ağ istemcileri
+
+In order to index a network, Graph Node needs access to a network client via an EVM-compatible JSON-RPC API. This RPC may connect to a single client or it could be a more complex setup that load balances across multiple.
+
+While some subgraphs may just require a full node, some may have indexing features which require additional RPC functionality. Specifically subgraphs which make `eth_calls` as part of indexing will require an archive node which supports [EIP-1898](https://eips.ethereum.org/EIPS/eip-1898), and subgraphs with `callHandlers`, or `blockHandlers` with a `call` filter, require `trace_filter` support ([see trace module documentation here](https://openethereum.github.io/JSONRPC-trace-module)).
+
+**Network Firehoses** - a Firehose is a gRPC service providing an ordered, yet fork-aware, stream of blocks, developed by The Graph's core developers to better support performant indexing at scale. This is not currently an Indexer requirement, but Indexers are encouraged to familiarise themselves with the technology, ahead of full network support. Learn more about the Firehose [here](https://firehose.streamingfast.io/).
+
+### IPFS Düğümleri
+
+Subgraph dağıtım üst verilerini IPFS ağında depolanır. Graph düğümü, subgraph manifestini ve tüm bağlantılı dosyaları almak için subgraph dağıtımı sırasında öncelikle IPFS düğümüne erişir. Ağ indeksleyicilerinin kendi IPFS düğümlerini barındırmaları gerekmez. Ağ için bir IPFS düğümü https://ipfs.network.thegraph.com adresinde barındırılmaktadır.
+
+### Prometheus metrik sunucusu
+
+İzleme ve raporlama etkinleştirmek için Graph Düğümü, metrikleri bir Prometheus metrik sunucusuna opsiyonel olarak kaydedebilir.
+
+### Kaynaktan başlama
+
+#### Önkoşulları yükleme
+
+- **Rust**
+
+- **PostgreSQL**
+
+- **IPFS**
+
+- **Additional Requirements for Ubuntu users** - To run a Graph Node on Ubuntu a few additional packages may be needed.
+
+```sh
+sudo apt-get install -y clang libpq-dev libssl-dev pkg-config
+```
+
+#### Kurulum
+
+1. Bir PostgreSQL veritabanı sunucusu başlatma
+
+```sh
+initdb -D .postgres
+pg_ctl -D .postgres -l logfile start
+createdb graph-node
+```
+
+2. Clone [Graph Node](https://github.com/graphprotocol/graph-node) repo and build the source by running `cargo build`
+
+3. Artık tüm bağımlılıklar ayarlandığına göre Graph Düğümü'nü başlatın:
+
+```sh
+cargo run -p graph-node --release -- \
+  --postgres-url postgresql://[USERNAME]:[PASSWORD]@localhost:5432/graph-node \
+  --ethereum-rpc [NETWORK_NAME]:[URL] \
+  --ipfs https://ipfs.network.thegraph.com
+```
+
+### Kubernetes'i kullanmaya başlarken
+
+A complete Kubernetes example configuration can be found in the [indexer repository](https://github.com/graphprotocol/indexer/tree/main/k8s).
+
+### Portlar
+
+Graph Düğümü çalışırken aşağıdaki portları açar:
+
+| Port | Amaç                                                  | Rotalar                                        | CLI Argümanı       | Ortam Değişkeni |
+| ---- | ----------------------------------------------------- | ---------------------------------------------- | ------------------ | --------------- |
+| 8000 | GraphQL HTTP sunucusu<br />( subgraph sorguları için) | /subgraphs/id/...<br />/subgraphs/name/.../... | \--http-port       | -               |
+| 8001 | GraphQL WS<br />( subgraph abonelikleri için)         | /subgraphs/id/...<br />/subgraphs/name/.../... | \--ws-port         | -               |
+| 8020 | JSON-RPC<br />(dağıtımları yönetmek için)             | /                                              | \--admin-port      | -               |
+| 8030 | Subgraph indeksleme durum API'si                      | /graphql                                       | \--index-node-port | -               |
+| 8040 | Prometheus metrikleri                                 | /metrics                                       | \--metrics-port    | -               |
+
+> **Important**: Be careful about exposing ports publicly - **administration ports** should be kept locked down. This includes the the Graph Node JSON-RPC endpoint.
+
+## Gelişmiş Graph Düğüm yapılandırması
+
+En basit haliyle, Graph Düğümü tek bir Graph Düğüm örneği, bir PostgreSQL veritabanı, bir IPFS düğümü ve indekslenecek subgraphlar tarafından gerektirilen ağ istemcileri ile çalıştırılabilir.
+
+This setup can be scaled horizontally, by adding multiple Graph Nodes, and multiple databases to support those Graph Nodes. Advanced users may want to take advantage of some of the horizontal scaling capabilities of Graph Node, as well as some of the more advanced configuration options, via the `config.toml` file and Graph Node's environment variables.
+
+### `config.toml`
+
+A [TOML](https://toml.io/en/) configuration file can be used to set more complex configurations than those exposed in the CLI. The location of the file is passed with the --config command line switch.
+
+> Yapılandırma dosyası kullanırken --postgres-url, --postgres-secondary-hosts ve --postgres-host-weights seçeneklerinin kullanılması mümkün değildir.
+
+A minimal `config.toml` file can be provided; the following file is equivalent to using the --postgres-url command line option:
+
+```toml
+[store]
+[store.primary]
+connection="<.. postgres-url argument ..>"
+[deployment]
+[[deployment.rule]]
+indexers = [ "<.. list of all indexing nodes ..>" ]
+```
+
+Full documentation of `config.toml` can be found in the [Graph Node docs](https://github.com/graphprotocol/graph-node/blob/master/docs/config.md).
+
+#### Birden Fazla Graph Düğümü
+
+Graph Node indexing can scale horizontally, running multiple instances of Graph Node to split indexing and querying across different nodes. This can be done simply by running Graph Nodes configured with a different `node_id` on startup (e.g. in the Docker Compose file), which can then be used in the `config.toml` file to specify [dedicated query nodes](#dedicated-query-nodes), [block ingestors](#dedicated-block-ingestion), and splitting subgraphs across nodes with [deployment rules](#deployment-rules).
+
+> Birden fazla Graph Düğümü, aynı veritabanını kullanacak şekilde yapılandırılabilir ve veritabanı sharding kullanılarak yatay olarak ölçeklenebilir.
+
+#### Dağıtım kuralları
+
+Given multiple Graph Nodes, it is necessary to manage deployment of new subgraphs so that the same subgraph isn't being indexed by two different nodes, which would lead to collisions. This can be done by using deployment rules, which can also specify which `shard` a subgraph's data should be stored in, if database sharding is being used. Deployment rules can match on the subgraph name and the network that the deployment is indexing in order to make a decision.
+
+Örnek dağıtım kuralı yapılandırması:
+
+```toml
+[deployment]
+[[deployment.rule]]
+match = { name = "(vip|important)/.*" }
+shard = "vip"
+indexers = [ "index_node_vip_0", "index_node_vip_1" ]
+[[deployment.rule]]
+match = { network = "kovan" }
+# No shard, so we use the default shard called 'primary'
+indexers = [ "index_node_kovan_0" ]
+[[deployment.rule]]
+match = { network = [ "xdai", "poa-core" ] }
+indexers = [ "index_node_other_0" ]
+[[deployment.rule]]
+# There's no 'match', so any subgraph matches
+shards = [ "sharda", "shardb" ]
+indexers = [
+    "index_node_community_0",
+    "index_node_community_1",
+    "index_node_community_2",
+    "index_node_community_3",
+    "index_node_community_4",
+    "index_node_community_5"
+  ]
+```
+
+Read more about deployment rules [here](https://github.com/graphprotocol/graph-node/blob/master/docs/config.md#controlling-deployment).
+
+#### Özelleştirilmiş sorgu düğümleri
+
+Düğümler, yapılandırma dosyasına aşağıdakini dahil ederek açıkça sorgu düğümleri olarak yapılandırılabilir:
+
+```toml
+[general]
+query = "<regular expression>"
+```
+
+\--node-id'si düzenli ifade ile eşleşen herhangi bir düğüm, sadece sorgulara yanıt vermek üzere ayarlanacaktır.
+
+#### Sharding ile veritabanı ölçeklendirme
+
+Çoğu kullanım durumu için, tek bir Postgres veritabanı bir graph-düğümü örneğini desteklemek için yeterlidir. Bir graph-düğümü örneği tek bir Postgres veritabanından daha büyük hale geldiğinde, bu graph düğümü verilerinin depolanmasını birden fazla Postgres veritabanına yaymak mümkündür. Tüm veritabanları birlikte, graph-düğümü örneğinin deposunu oluşturur. Her tekil veritabanına bir shard denir.
+
+Shards can be used to split subgraph deployments across multiple databases, and can also be used to use replicas to spread query load across databases. This includes configuring the number of available database connections each `graph-node` should keep in its connection pool for each database, which becomes increasingly important as more subgraphs are being indexed.
+
+Sharding, Graph Düğümü'nün üzerine koyduğu yükü mevcut veritabanınıza koyamadığınızda ve veritabanı boyutunu artıramayacağınızda faydalı hale gelir.
+
+> Genellikle, shard'larla başlamadan önce tek bir veritabanını mümkün olduğunca büyük hale getirmek daha mantıklıdır. Tek bir istisna, sorgu trafiği subgraphlar arasında çokta eşit olmayan bir şekilde bölünmesidir. Bu durumda, yüksek-hacimli subgraphlar'ın bir shard'da tutulması ve geriye kalan her şeyin diğer bir shard'da tutulması, yüksek hacimli subgraphlar için verinin veritabanı dahili önbellekte kalması ve düşük hacimli subgraphlar'daki daha az ihtiyaç duyulan veriler tarafından değiştirilmemesi daha olası olduğu için çok yardımcı olabilir.
+
+Bağlantı yapılandırması açısından postgresql.conf'da max_connections değerinin 400 (veya belki de 200) olarak ayarlanması ve store_connection_wait_time_ms ve store_connection_checkout_count Prometheus metriklerine bakılması önerilir. Belirgin bekleme süreleri (5 milisaniye'nin üzerinde herhangi bir değer) yetersiz bağlantıların mevcut olduğunun bir işaretidir; yüksek bekleme süreleri veritabanının çok yoğun olması gibi sebeplerden de kaynaklanabilir. Ancak, veritabanı genel olarak stabil görünüyorsa, yüksek bekleme süreleri bağlantı sayısını arttırma ihtiyacını belirtir. Yapılandırmada her graph-düğümü örneğinin ne kadar bağlantı kullanabileceği bir üst sınırdır ve Graph Düğümü bunları gereksiz bulmadığı sürece açık tutmaz.
+
+Read more about store configuration [here](https://github.com/graphprotocol/graph-node/blob/master/docs/config.md#configuring-multiple-databases).
+
+#### Özelleştirilmiş blok alınması
+
+If there are multiple nodes configured, it will be necessary to specify one node which is responsible for ingestion of new blocks, so that all configured index nodes aren't polling the chain head. This is done as part of the `chains` namespace, specifying the `node_id` to be used for block ingestion:
+
+```toml
+[chains]
+ingestor = "block_ingestor_node"
+```
+
+#### Birden fazla ağın desteklenmesi
+
+The Graph Protocol is increasing the number of networks supported for indexing rewards, and there exist many subgraphs indexing unsupported networks which an indexer would like to process. The `config.toml` file allows for expressive and flexible configuration of:
+
+- Birden fazla ağ
+- Ağ başına birden fazla sağlayıcı (bu, yükü sağlayıcılar arasında bölme ve bir Graph Düğümü'nün deneyimsel Firehose desteği gibi daha ucuz sağlayıcıları tercih etmesi ile tam düğümlerin yanı sıra arşiv düğümlerinin yapılandırılmasına da izin verebilir).
+- Özellikler, kimlik doğrulama ve sağlayıcı türü gibi ek sağlayıcı detayları (deneysel Firehose desteği için)
+
+The `[chains]` section controls the ethereum providers that graph-node connects to, and where blocks and other metadata for each chain are stored. The following example configures two chains, mainnet and kovan, where blocks for mainnet are stored in the vip shard and blocks for kovan are stored in the primary shard. The mainnet chain can use two different providers, whereas kovan only has one provider.
+
+```toml
+[chains]
+ingestor = "block_ingestor_node"
+[chains.mainnet]
+shard = "vip"
+provider = [
+  { label = "mainnet1", url = "http://..", features = [], headers = { Authorization = "Bearer foo" } },
+  { label = "mainnet2", url = "http://..", features = [ "archive", "traces" ] }
+]
+[chains.kovan]
+shard = "primary"
+provider = [ { label = "kovan", url = "http://..", features = [] } ]
+```
+
+Read more about provider configuration [here](https://github.com/graphprotocol/graph-node/blob/master/docs/config.md#configuring-ethereum-providers).
+
+### Ortam değişkenleri
+
+Graph Node supports a range of environment variables which can enable features, or change Graph Node behaviour. These are documented [here](https://github.com/graphprotocol/graph-node/blob/master/docs/environment-variables.md).
+
+### Sürekli dağıtım
+
+Gelişmiş yapılandırmaya sahip ölçeklendirilmiş bir dizinleme kurulumu işleten kullanıcılar, Graph Düğümler'ini Kubernetes ile yönetmekten faydalanabilirler.
+
+- The indexer repository has an [example Kubernetes reference](https://github.com/graphprotocol/indexer/tree/main/k8s)
+- [Launchpad](https://docs.graphops.xyz/launchpad/intro) is a toolkit for running a Graph Protocol Indexer on Kubernetes maintained by GraphOps. It provides a set of Helm charts and a CLI to manage a Graph Node deployment.
+
+### Graph Düğümü Yönetimi
+
+Çalışan bir Graph Düğümüne (veya Graph Düğümlerine) sahip olunduktan sonra, dağıtılan subgraplar'ın bu düğümler üzerinde yönetilmesi zorluğu ortaya çıkar. Subgraphlar'ı yönetmeye yardımcı olmak için Graph Düğümü, bir dizi araç sunar.
+
+#### Kayıt tutma
+
+Graph Node's logs can provide useful information for debugging and optimisation of Graph Node and specific subgraphs. Graph Node supports different log levels via the `GRAPH_LOG` environment variable, with the following levels: error, warn, info, debug or trace.
+
+In addition setting `GRAPH_LOG_QUERY_TIMING` to `gql` provides more details about how GraphQL queries are running (though this will generate a large volume of logs).
+
+#### Monitoring & alerting
+
+Graph Düğümü, varsayılan olarak 8040 port'undaki Prometheus uç noktası aracılığıyla metrikleri sağlar. Ardından Grafana, bu metrikleri görselleştirmek için kullanılabilir.
+
+The indexer repository provides an [example Grafana configuration](https://github.com/graphprotocol/indexer/blob/main/k8s/base/grafana.yaml).
+
+#### Graphman
+
+`graphman` is a maintenance tool for Graph Node, helping with diagnosis and resolution of different day-to-day and exceptional tasks.
+
+The graphman command is included in the official containers, and you can docker exec into your graph-node container to run it. It requires a `config.toml` file.
+
+Full documentation of `graphman` commands is available in the Graph Node repository. See [/docs/graphman.md] (https://github.com/graphprotocol/graph-node/blob/master/docs/graphman.md) in the Graph Node `/docs`
+
+### Subgraphlarla çalışma
+
+#### İndeksleme durum API'si
+
+Varsayılan olarak 8030/graphql port'unda mevcut olan indeksleme durumu API'si, farklı subgraphlar için indeksleme durumunu ve ispatlarını kontrol etmek, subgraph özelliklerini incelemek ve daha fazlasını yapmak için çeşitli yöntemler sunar.
+
+The full schema is available [here](https://github.com/graphprotocol/graph-node/blob/master/server/index-node/src/schema.graphql).
+
+#### Endeksleme performansı
+
+İndeksleme sürecinin üç ayrı parçası bulunmaktadır:
+
+- Sağlayıcıdan ilgili olayları getirme
+- Uygun işleyicilerle sırayla olayları işleme (bu, durumu sormak için zincire çağrı yapmayı ve depodan veri getirmeyi içerebilir)
+- Elde edilen verileri depoya yazma
+
+Bu aşamalar boru hattında (yani eşzamanlı olarak yürütülebilir), ancak birbirlerine bağımlıdırlar. Subgraphlar'ın indekslenmesi yavaş olduğunda, bunun altındaki neden spesifik subgraphlar'a bağlı olacaktır.
+
+İndeksleme yavaşlığının yaygın nedenleri:
+
+- Time taken to find relevant events from the chain (call handlers in particular can be slow, given the reliance on `trace_filter`)
+- Making large numbers of `eth_calls` as part of handlers
+- Yürütme sırasında büyük miktarda depolama etkileşimi
+- Depoya kaydedilecek büyük miktarda veri
+- İşlenecek büyük miktarda olay
+- Kalabalık düğümler için yavaş veritabanı bağlantı süresi
+- Sağlayıcının zincir başından geriye düşmesi
+- Sağlayıcıdan zincir başındaki yeni makbuzların alınmasındaki yavaşlık
+
+Subgraph indeksleme metrikleri, indeksleme yavaşlığının temel nedenini teşhis etmede yardımcı olabilir. Bazı durumlarda, sorun subgraph'ın kendisiyle ilgilidir, ancak diğer durumlarda, geliştirilmiş ağ sağlayıcıları, azaltılmış veritabanı çekişmesi ve diğer yapılandırma iyileştirmeleri indeksleme performansını belirgin şekilde artırabilir.
+
+#### Başarısıız subgraphlar
+
+İndekslemesi sırasında subgraphlar beklenmedik veri, beklendiği gibi çalışmayan bir bileşen veya olay işleyicilerinde veya yapılandırmada bir hata olması durumunda başarısız olabilir. İki genel başarısızlık türü mevcuttur:
+
+- Deterministik başarısızlıklar: Bu, yeniden denemelerle çözülmeyecek hatalardır
+- Deterministik olmayan başarısızlıklar: Bunlar, sağlayıcının sorunları veya beklenmedik bir Graph Düğüm hatası gibi nedenlere bağlı olabilir. Deterministik olmayan bir başarısızlık meydana geldiğinde Graph Düğümü, başarısız olan işleyicileri yeniden deneyecek ve zamanla geri çekilecektir.
+
+Bazı durumlarda, başarısızlık indeksleyici tarafından çözülebilir (örneğin, hatanın doğru türde sağlayıcıya sahip olmamasından kaynaklanması durumunda, gerekli sağlayıcı eklenirse indeksleme devam ettirilebilir). Ancak diğer durumlarda, subgraph kodunda bir değişiklik gereklidir.
+
+> Deterministic failures are considered "final", with a Proof of Indexing generated for the failing block, while non-deterministic failures are not, as the subgraph may manage to "unfail" and continue indexing. In some cases, the non-deterministic label is incorrect, and the subgraph will never overcome the error; such failures should be reported as issues on the Graph Node repository.
+
+#### Blok ve çağrı önbelleği
+
+Graph Node caches certain data in the store in order to save refetching from the provider. Blocks are cached, as are the results of `eth_calls` (the latter being cached as of a specific block). This caching can dramatically increase indexing speed during "resyncing" of a slightly altered subgraph.
+
+However, in some instances, if an Ethereum node has provided incorrect data for some period, that can make its way into the cache, leading to incorrect data or failed subgraphs. In this case indexers can use `graphman` to clear the poisoned cache, and then rewind the affected subgraphs, which will then fetch fresh data from the (hopefully) healthy provider.
+
+Örneğin tx makbuzu etkinlik eksikliği gibi bir blok önbellek tutarsızlığı şüphesi varsa:
+
+1. `graphman chain list` to find the chain name.
+2. `graphman chain check-blocks <CHAIN> by-number <NUMBER>` will check if the cached block matches the provider, and deletes the block from the cache if it doesn’t.
+   1. If there is a difference, it may be safer to truncate the whole cache with `graphman chain truncate <CHAIN>`.
+   2. Blok sağlayıcıyla eşleşirse, sorun doğrudan sağlayıcıya karşı hata ayıklanabilir.
+
+#### Sorgulama sorunları ve hataları
+
+Bir subgraph indekslendikten sonra, indeksleyiciler subgraph'ın ayrılmış sorgu son noktası aracılığıyla sorguları sunmayı bekleyebilirler. İndeksleyiciler önemli sorgu hacmi sunmayı umuyorlarsa, bunun için ayrılmış bir sorgu düğümü önerilir ve çok yüksek sorgu hacimleri durumunda indeksleyiciler sorguların indeksleme sürecini etkilememesi için replika shardlar yapılandırmak isteyebilirler.
+
+Bununla birlikte, özel bir sorgu düğümü ve replikalarda bile, belirli sorguların yürütülmesi uzun zaman alabilir, bazı durumlarda bellek kullanımını artırabilir ve diğer kullanıcılar için sorgu süresini olumsuz etkileyebilir.
+
+Tek bir "sihirli çözüm" yoktur, ancak yavaş sorguların önlenmesi, teşhisi ve işlenmesi için bir dizi araç bulunmaktadır.
+
+##### Sorgu önbellekleme
+
+Graph Node caches GraphQL queries by default, which can significantly reduce database load. This can be further configured with the `GRAPH_QUERY_CACHE_BLOCKS` and `GRAPH_QUERY_CACHE_MAX_MEM` settings - read more [here](https://github.com/graphprotocol/graph-node/blob/master/docs/environment-variables.md#graphql-caching).
+
+##### Sorguların analizi
+
+Sorunlu sorgular genellikle iki şekilde ortaya çıkar. Bazı durumlarda, kullanıcılar kendileri belirli bir sorgunun yavaş olduğunu bildirirler. Bu durumda zorluk, yavaşlığın nedenini teşhis etmektir - genel bir sorun mu, yoksa subgraph'a veya sorguya özgü mü olduğunu belirlemek ve tabii ki mümkünse sonra çözmek olacaktır.
+
+Diğer durumlarda, tetikleyici sorgu düğümündee yüksek bellek kullanımı olabilir, bu durumda zorluk ilk olarak soruna neden olan sorguyu belirlemektir.
+
+Indexers can use [qlog](https://github.com/graphprotocol/qlog/) to process and summarize Graph Node's query logs. `GRAPH_LOG_QUERY_TIMING` can also be enabled to help identify and debug slow queries.
+
+Yavaş bir sorgu verildiğinde, indeksleyicilerin birkaç seçeneği vardır. Tabii ki, sorunlu sorgunun gönderilme maliyetini önemli ölçüde artırmak için maliyet modelini değiştirebilirler. Bu, o sorgunun sıklığında azalmaya neden olabilir. Ancak, genellikle sorunun temek nedenini çözmez.
+
+##### Hesabımsı optimizasyon
+
+Varlıkları depolayan veritabanı tablolarının genellikle iki çeşit olduğu görünmektedir: oluşturulduktan sonra hiçbir zaman güncellenmeyen mesela finansal işlemler listesine benzer şeyler saklayan olan 'işlemimsi' ve varlıkların çok sık güncellendiği, mesela her işlem kaydedildiğinde değiştirilen finansal hesaplar gibi şeyler saklayan 'hesabımsı'. Hesabımsı tablolar, birçok varlık sürümünü içermelerine rağmen, nispeten az sayıda farklı varlığa sahip olmasıyla bilinir. Çoğu durumda, böyle bir tabloda farklı varlık sayısı, toplam satır (varlık sürümleri) sayısının %1'ine eşittir
+
+For account-like tables, `graph-node` can generate queries that take advantage of details of how Postgres ends up storing data with such a high rate of change, namely that all of the versions for recent blocks are in a small subsection of the overall storage for such a table.
+
+The command `graphman stats show <sgdNNNN`> shows, for each entity type/table in a deployment, how many distinct entities, and how many entity versions each table contains. That data is based on Postgres-internal estimates, and is therefore necessarily imprecise, and can be off by an order of magnitude. A `-1` in the `entities` column means that Postgres believes that all rows contain a distinct entity.
+
+In general, tables where the number of distinct entities are less than 1% of the total number of rows/entity versions are good candidates for the account-like optimization. When the output of `graphman stats show` indicates that a table might benefit from this optimization, running `graphman stats show <sgdNNN> <table>` will perform a full count of the table - that can be slow, but gives a precise measure of the ratio of distinct entities to overall entity versions.
+
+Once a table has been determined to be account-like, running `graphman stats account-like <sgdNNN>.<table>` will turn on the account-like optimization for queries against that table. The optimization can be turned off again with `graphman stats account-like --clear <sgdNNN>.<table>` It takes up to 5 minutes for query nodes to notice that the optimization has been turned on or off. After turning the optimization on, it is necessary to verify that the change does not in fact make queries slower for that table. If you have configured Grafana to monitor Postgres, slow queries would show up in `pg_stat_activity`in large numbers, taking several seconds. In that case, the optimization needs to be turned off again.
+
+For Uniswap-like subgraphs, the `pair` and `token` tables are prime candidates for this optimization, and can have a dramatic effect on database load.
+
+#### Subgraphları kaldırma
+
+> Bu, Graph Node 0.29.x sürümünde kullanılabilir olan yeni bir fonksiyonelliktir
+
+At some point an indexer might want to remove a given subgraph. This can be easily done via `graphman drop`, which deletes a deployment and all it's indexed data. The deployment can be specified as either a subgraph name, an IPFS hash `Qm..`, or the database namespace `sgdNNN`. Further documentation is available [here](https://github.com/graphprotocol/graph-node/blob/master/docs/graphman.md#-drop).
