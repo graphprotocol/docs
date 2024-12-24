@@ -43,17 +43,17 @@ export function handleTransfer(event: Transfer): void {
 }
 ```
 
-This is functional, however is not ideal as it slows down our subgraph’s indexing.
+Cela fonctionne, mais ce n'est pas idéal car cela ralentit l'indexation de notre subgraph.
 
-## How to Eliminate `eth_calls`
+## Comment Éliminer les `eth_calls`
 
-Ideally, the smart contract should be updated to emit all necessary data within events. For instance, modifying the smart contract to include pool information in the event could eliminate the need for `eth_calls`:
+Idéalement, le smart contract devrait être mis à jour pour émettre toutes les données nécessaires dans les événements. Par exemple, modifier le smart contract pour inclure les informations du pool dans l'événement pourrait éliminer le besoin de `eth_calls`:
 
 ```
 event TransferWithPool(address indexed from, address indexed to, uint256 value, bytes32 indexed poolInfo);
 ```
 
-With this update, the subgraph can directly index the required data without external calls:
+Avec cette mise à jour, le subgraph peut indexer directement les données requises sans appels externes :
 
 ```typescript
 import { Address } from '@graphprotocol/graph-ts'
@@ -80,7 +80,7 @@ Si la modification du smart contract n'est pas possible et que les `eth_calls` s
 
 ## Réduire le Surcharge d'Exécution des `eth_calls`
 
-For the `eth_calls` that can not be eliminated, the runtime overhead they introduce can be minimized by declaring them in the manifest. When `graph-node` processes a block it performs all declared `eth_calls` in parallel before handlers are run. Calls that are not declared are executed sequentially when handlers run. The runtime improvement comes from performing calls in parallel rather than sequentially - that helps reduce the total time spent in calls but does not eliminate it completely.
+Pour les `eth_calls` qui ne peuvent pas être éliminés, la surcharge d'exécution qu'ils introduisent peut être minimisée en les déclarant dans le manifeste. Lorsque `graph-node` traite un bloc, il exécute tous les `eth_calls` déclarés en parallèle avant que les gestionnaires (handlers) soient exécutés. Les appels qui ne sont pas déclarés sont exécutés séquentiellement lorsque les gestionnaires sont exécutés. L'amélioration de la durée d'exécution vient du fait que les appels sont effectués en parallèle plutôt que séquentiellement - cela aide à réduire le temps total passé en appels mais ne l'élimine pas complètement.
 
 Actuellement, les `eth_calls` ne peuvent être déclarés que pour les gestionnaires d'événements. Dans le manifeste, écrivez
 
@@ -91,11 +91,11 @@ calls:
   ERC20.poolInfo: ERC20[event.address].getPoolInfo(event.params.to)
 ```
 
-The portion highlighted in yellow is the call declaration. The part before the colon is simply a text label that is only used for error messages. The part after the colon has the form `Contract[address].function(params)`. Permissible values for address and params are `event.address` and `event.params.<name>`.
+La partie mise en évidence en jaune est la déclaration d'appel. La partie avant le deux-points est simplement une étiquette de texte utilisée uniquement pour les messages d'erreur. La partie après le deux-points a la forme `Contract[address].function(params)`. Les valeurs permises pour l'adresse et les paramètres sont `event.address` et `event.params.<name>`.
 
-The handler itself accesses the result of this `eth_call` exactly as in the previous section by binding to the contract and making the call. graph-node caches the results of declared `eth_calls` in memory and the call from the handler will retrieve the result from this in memory cache instead of making an actual RPC call.
+Le handler lui-même accède au résultat de ce `eth_call` exactement comme dans la section précédente en se liant au contrat et en effectuant l'appel. graph-node met en cache les résultats des `eth_calls` déclarés en mémoire et l'appel depuis le handler récupérera le résultat depuis ce cache en mémoire au lieu d'effectuer un appel RPC réel.
 
-Note: Declared eth_calls can only be made in subgraphs with specVersion >= 1.2.0.
+Note : Les eth_calls déclarés ne peuvent être effectués que dans les subgraphs avec specVersion >= 1.2.0.
 
 ## Conclusion
 
