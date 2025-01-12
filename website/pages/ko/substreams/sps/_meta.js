@@ -1,4 +1,4 @@
-import meta from '../../../en/substreams/sps/_meta.js'
+import meta from '../../../en/sps/_meta.js'
 
 export default {
   ...meta,
