@@ -49,16 +49,16 @@ async function fetchRemoteDocs({ user, repo, branch, docsPath, outputPath, filte
 
 await fetchRemoteDocs({
   user: 'graphprotocol',
-  repo: 'graph-client',
+  repo: 'graph-tooling',
   branch: 'main',
-  docsPath: 'docs/',
-  outputPath: path.join(CWD, 'src', 'pages', 'en', 'querying', 'graph-client'),
+  docsPath: 'packages/ts/',
+  outputPath: path.join(CWD, 'src/pages/en/subgraphs/developing/creating/graph-ts'),
 })
 
 await fetchRemoteDocs({
   user: 'graphprotocol',
-  repo: 'graph-tooling',
+  repo: 'graph-client',
   branch: 'main',
-  docsPath: 'packages/ts/',
-  outputPath: path.join(CWD, 'src', 'pages', 'en', 'developing', 'graph-ts'),
+  docsPath: 'docs/',
+  outputPath: path.join(CWD, 'src/pages/en/subgraphs/querying/graph-client'),
 })

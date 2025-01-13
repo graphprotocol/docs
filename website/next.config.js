@@ -33,46 +33,33 @@ const withNextra = nextra({
     const t = (key) => translate(translations, locale, `global.sidebar.${key}`)
 
     const metaFile = {
-      '---0': {
-        type: 'separator',
-        title: 'Introduction',
-      },
-      index: t('index'),
+      index: '',
       about: '',
-      network: t('network'),
-      sunrise: '',
-      billing: '',
-      glossary: '',
-      tokenomics: '',
-      arbitrum: t('arbitrum'),
-      '---1': {
-        type: 'separator',
+      'supported-networks': '',
+      contracts: '',
+      subgraphs: {
+        type: 'children',
         title: t('subgraphs'),
       },
-      'quick-start': '',
-      developing: t('developing'),
-      deploying: t('deploying'),
-      publishing: t('publishing'),
-      managing: t('managing'),
-      querying: t('querying'),
-      cookbook: t('cookbook'),
-      'release-notes': t('releaseNotes'),
-      '---2': {
-        type: 'separator',
+      substreams: {
+        type: 'children',
         title: t('substreams'),
       },
-      substreams: '',
-      '---3': {
-        type: 'separator',
+      indexing: {
+        type: 'children',
         title: t('indexing'),
       },
-      'operating-graph-node': '',
-      'chain-integration-overview': '',
-      'supported-network-requirements': '',
-      'new-chain-integration': '',
-      firehose: '',
-      graphcast: '',
-      'mips-faqs': '',
+      '---1': {
+        type: 'separator',
+        title: t('resources'),
+      },
+      resources: {
+        type: 'children',
+      },
+      archived: {
+        type: 'children',
+        title: t('archived'),
+      },
     }
 
     return [
@@ -109,31 +96,7 @@ export default withNextra({
       destination: '/en/',
       permanent: true,
     },
-    {
-      source: '/en/arbitrum-faq/',
-      destination: '/en/arbitrum/arbitrum-faq/',
-      permanent: true,
-    },
-    {
-      source: '/en/querying/graph-client/',
-      destination: '/en/querying/graph-client/README/',
-      permanent: false,
-    },
-    {
-      source: '/en/developing/graph-ts/',
-      destination: '/en/developing/graph-ts/README/',
-      permanent: false,
-    },
-    {
-      source: '/en/developer/assemblyscript-api/',
-      destination: '/en/developing/graph-ts/api/',
-      permanent: true,
-    },
-    {
-      source: '/en/developing/assemblyscript-api/',
-      destination: '/en/developing/graph-ts/api/',
-      permanent: true,
-    },
+    // If we ever change `output` to not be `export`, we should move all the redirects from `nginx.conf` here
   ],
   images: {
     unoptimized: true,

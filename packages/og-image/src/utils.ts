@@ -36,7 +36,7 @@ export async function loadGoogleFont({ family, weight }: { family: string; weigh
 
   const res = await fetch(fontUrl)
   return {
-    data: (await res.arrayBuffer()) as ArrayBuffer,
+    data: await res.arrayBuffer(),
     weight: Number(/weight: (.+);/.exec(css)?.[1]) as FontWeight,
     name: family,
   }

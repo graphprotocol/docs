@@ -8,14 +8,14 @@ const GITHUB_DATA = {
     repo: 'graph-tooling',
     branch: 'main',
     docsPath: 'packages/ts/',
-    basePath: '/developing/graph-ts/',
+    basePath: '/subgraphs/developing/creating/graph-ts/',
   },
   'graph-client': {
     user: 'graphprotocol',
     repo: 'graph-client',
     branch: 'main',
     docsPath: 'docs/',
-    basePath: '/querying/graph-client/',
+    basePath: '/subgraphs/querying/graph-client/',
   },
 }
 

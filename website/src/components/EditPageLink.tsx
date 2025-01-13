@@ -16,7 +16,7 @@ export const EditPageLink = ({ mobile = false, ...props }: EditPageLinkProps) =>
   const [, fileLocale, ...filePathSegments] = filePath.split('/')
   const path = filePath.startsWith('https')
     ? filePath
-    : `https://github.com/graphprotocol/docs/blob/main/website/pages/${
+    : `https://github.com/graphprotocol/docs/blob/main/website/src/pages/${
         fileLocale && ['en', '[locale]'].includes(fileLocale) ? fileLocale : 'en'
       }/${filePathSegments.join('/')}`
   return (

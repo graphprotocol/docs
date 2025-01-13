@@ -18,21 +18,21 @@ describe('handler()', () => {
     const response = await handler({
       url: 'http://localhost:3000',
     } as Request)
-    const result = Buffer.from((await response.arrayBuffer()) as ArrayBuffer)
+    const result = Buffer.from(await response.arrayBuffer())
     expect(result).toMatchImageSnapshot(config)
   })
   it('should align title and have container padding', async () => {
     const response = await handler({
       url: 'http://localhost:3000?title=Hello this is a test of really really really really really really long title',
     } as Request)
-    const result = Buffer.from((await response.arrayBuffer()) as ArrayBuffer)
+    const result = Buffer.from(await response.arrayBuffer())
     expect(result).toMatchImageSnapshot(config)
   })
   it('should align title without whitespaces', async () => {
     const response = await handler({
       url: 'http://localhost:3000?title=Home',
     } as Request)
-    const result = Buffer.from((await response.arrayBuffer()) as ArrayBuffer)
+    const result = Buffer.from(await response.arrayBuffer())
     expect(result).toMatchImageSnapshot(config)
   })
 
@@ -49,7 +49,7 @@ describe('handler()', () => {
         const response = await handler({
           url: `http://localhost:3000?title=${title}`,
         } as Request)
-        const result = Buffer.from((await response.arrayBuffer()) as ArrayBuffer)
+        const result = Buffer.from(await response.arrayBuffer())
         expect(result).toMatchImageSnapshot(config)
       })
     }

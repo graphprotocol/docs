@@ -85,6 +85,10 @@ export const MDXLayoutNav = ({ mobile = false }: { mobile?: boolean }) => {
             }
             // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
             if ('children' in pageItem && pageItem.children) {
+              if (pageItem.children.length === 0) {
+                return null
+              }
+
               if (pageItem.type === 'children') {
                 return <Fragment key={pageItem.name}>{pageItem.children.map(renderSidebar)}</Fragment>
               }

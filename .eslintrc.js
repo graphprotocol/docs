@@ -23,8 +23,8 @@ module.exports = {
       // otherwise there will be random errors since the non-English files don't match any ruleset.
       files: [`website/src/pages/${isVSCode ? '' : 'en/'}**/*.{md,mdx}`],
       excludedFiles: [
-        `website/src/pages/${isVSCode ? '' : 'en/'}developing/graph-ts/*.md`,
-        `website/src/pages/${isVSCode ? '' : 'en/'}querying/graph-client/*.md`,
+        'website/src/pages/*/subgraphs/developing/creating/graph-ts/*.md',
+        'website/src/pages/*/subgraphs/querying/graph-client/*.md',
       ],
       parser: 'eslint-mdx',
       processor: 'mdx/remark',

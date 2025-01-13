@@ -1,0 +1,101 @@
+---
+title: फोर्क्स का उपयोग करके त्वरित और आसान सबग्राफ डिबगिंग
+---
+
+As with many systems processing large amounts of data, The Graph's Indexers (Graph Nodes) may take quite some time to sync-up your subgraph with the target blockchain. The discrepancy between quick changes with the purpose of debugging and long wait times needed for indexing is extremely counterproductive and we are well aware of that. This is why we are introducing **subgraph forking**, developed by [LimeChain](https://limechain.tech/), and in this article I will show you how this feature can be used to substantially speed-up subgraph debugging!
+
+## ठीक है वो क्या है?
+
+**सबग्राफ फोर्किंग** आलसी ढंग से _दूसरे_ सबग्राफ के स्टोर (आमतौर पर एक परोक्ष सबग्राफ) से इकाइयां को लाने की प्रक्रिया है।
+
+डिबगिंग के संदर्भ में, **सबग्राफ फोर्किंग** आपको ब्लॉक*X* को सिंक-अप करने के लिए बिना प्रतीक्षा किए ब्लॉक _X_ पर अपने विफल सबग्राफ को डीबग करने की अनुमति देता है ।
+
+## क्या?! कैसे?
+
+When you deploy a subgraph to a remote Graph Node for indexing and it fails at block _X_, the good news is that the Graph Node will still serve GraphQL queries using its store, which is synced-up to block _X_. That's great! This means we can take advantage of this "up-to-date" store to fix the bugs arising when indexing block _X_.
+
+In a nutshell, we are going to _fork the failing subgraph_ from a remote Graph Node that is guaranteed to have the subgraph indexed up to block _X_ in order to provide the locally deployed subgraph being debugged at block _X_ an up-to-date view of the indexing state.
+
+## कृपया मुझे कुछ कोड दिखाओ!
+
+सबग्राफ डिबगिंग पर ध्यान केंद्रित करने के लिए, आइए चीजों को सरल रखें और एथेरियम ग्रेविटी स्मार्ट कॉन्ट्रैक्ट को इंडेक्स करने वाले [उदाहरण-सबग्राफ](https://github.com/graphprotocol/graph-tooling/tree/main/examples/ethereum-gravatar) के साथ चलें।
+
+`Gravatar`s को अनुक्रमणित करने के लिए परिभाषित हैंडलर यहां दिए गए हैं, बिना किसी बग के:
+
+```tsx
+export function handleNewGravatar(event: NewGravatar): void {
+  let gravatar = new Gravatar(event.params.id.toHex().toString())
+  gravatar.owner = event.params.owner
+  gravatar.displayName = event.params.displayName
+  gravatar.imageUrl = event.params.imageUrl
+  gravatar.save()
+}
+
+export function handleUpdatedGravatar(event: UpdatedGravatar): void {
+  let gravatar = Gravatar.load(event.params.id.toI32().toString())
+  if (gravatar == null) {
+    log.critical('Gravatar not found!', [])
+    return
+  }
+  gravatar.owner = event.params.owner
+  gravatar.displayName = event.params.displayName
+  gravatar.imageUrl = event.params.imageUrl
+  gravatar.save()
+}
+```
+
+Oops, how unfortunate, when I deploy my perfect looking subgraph to [Subgraph Studio](https://thegraph.com/studio/) it fails with the _"Gravatar not found!"_ error.
+
+फिक्स का प्रयास करने का सामान्य तरीका है:
+
+1. मैपिंग सोर्स में बदलाव करें, जो आपको लगता है कि समस्या का समाधान करेगा (जबकि मुझे पता है कि यह नहीं होगा)।
+2. Re-deploy the subgraph to [Subgraph Studio](https://thegraph.com/studio/) (or another remote Graph Node).
+3. इसके सिंक-अप होने की प्रतीक्षा करें।
+4. यदि यह फिर से टूट जाता है तो 1 पर वापस जाएँ, अन्यथा: हुर्रे!
+
+यह वास्तव में एक सामान्य डिबग प्रक्रिया से काफी परिचित है, लेकिन एक कदम है जो प्रक्रिया को बहुत धीमा कर देता है: _3. इसके सिंक-अप होने की प्रतीक्षा करें।_
+
+**सबग्राफ फोर्किंग** का उपयोग करके हम अनिवार्य रूप से इस चरण को समाप्त कर सकते हैं। यहाँ यह कैसा दिखता है:
+
+0. Spin-up a local Graph Node with the **_appropriate fork-base_** set.
+1. मैपिंग सोर्स में परिवर्तन करें, जिसके बारे में आपको लगता है कि इससे समस्या हल हो जाएगी.
+2. Deploy to the local Graph Node, **_forking the failing subgraph_** and **_starting from the problematic block_**.
+3. यदि यह फिर से ब्रेक जाता है, तो 1 पर वापस जाएँ, अन्यथा: हुर्रे!
+
+अब, आपके 2 प्रश्न हो सकते हैं:
+
+1. फोर्क-बेस क्या???
+2. फोर्किंग कौन?!
+
+और मैं उत्तर देता हूं:
+
+1. `fork-base` "आधार" URL है, जैसे कि जब _सबग्राफ आईडी_ जोड़ा जाता है तो परिणामी URL (`<fork-base>/<subgraph-id>`) सबग्राफ के स्टोर के लिए एक मान्य ग्राफ़क्यूएल एंडपॉइंट है।
+2. फोर्किंग आसान है, पसीना बहाने की जरूरत नहीं:
+
+```bash
+$ graph deploy <subgraph-name> --debug-fork <subgraph-id> --ipfs http://localhost:5001 --node http://localhost:8020
+```
+
+साथ ही, सबग्राफ मेनिफ़ेस्ट में `dataSources.source.startBlock` फ़ील्ड को समस्याग्रस्त ब्लॉक की संख्या पर सेट करना न भूलें, ताकि आप अनावश्यक ब्लॉकों को इंडेक्सिंग करना छोड़ सकें और फोर्क का लाभ उठा सकें!
+
+तो, यहाँ मैं क्या करता हूँ:
+
+1. I spin-up a local Graph Node ([here is how to do it](https://github.com/graphprotocol/graph-node#running-a-local-graph-node)) with the `fork-base` option set to: `https://api.thegraph.com/subgraphs/id/`, since I will fork a subgraph, the buggy one I deployed earlier, from [Subgraph Studio](https://thegraph.com/studio/).
+
+```
+$ cargo run -p graph-node --release -- \
+    --postgres-url postgresql://USERNAME[:PASSWORD]@localhost:5432/graph-node \
+    --ethereum-rpc NETWORK_NAME:[CAPABILITIES]:URL \
+    --ipfs 127.0.0.1:5001
+    --fork-base https://api.thegraph.com/subgraphs/id/
+```
+
+2. सावधानीपूर्वक निरीक्षण के बाद मैंने देखा कि मेरे दो हैंडलर में `Gravatar` को अनुक्रमित करते समय उपयोग किए जाने वाले `id` अभ्यावेदन में एक बेमेल है। जबकि `handleNewGravatar` इसे हेक्स (`event.params.id.toHex()`) में बदल देता है, `handleUpdatedGravatar` एक int32 (`event. params.id.toI32()`) जो "Gravatar नहीं मिला!" से घबराने के लिए `handleUpdatedGravatar` का कारण बनता है। मैं उन दोनों को `आईडी` को हेक्स में बदलने के लिए तैयार करता हूं।
+3. After I made the changes I deploy my subgraph to the local Graph Node, **_forking the failing subgraph_** and setting `dataSources.source.startBlock` to `6190343` in `subgraph.yaml`:
+
+```bash
+$ graph deploy gravity --debug-fork QmNp169tKvomnH3cPXTfGg4ZEhAHA6kEq5oy1XDqAxqHmW --ipfs http://localhost:5001 --node http://localhost:8020
+```
+
+4. I inspect the logs produced by the local Graph Node and, Hooray!, everything seems to be working.
+5. I deploy my now bug-free subgraph to a remote Graph Node and live happily ever after! (no potatoes tho)

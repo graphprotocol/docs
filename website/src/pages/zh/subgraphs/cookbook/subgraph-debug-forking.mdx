@@ -1,0 +1,101 @@
+---
+title: 使用分叉快速轻松地调试子图
+---
+
+As with many systems processing large amounts of data, The Graph's Indexers (Graph Nodes) may take quite some time to sync-up your subgraph with the target blockchain. The discrepancy between quick changes with the purpose of debugging and long wait times needed for indexing is extremely counterproductive and we are well aware of that. This is why we are introducing **subgraph forking**, developed by [LimeChain](https://limechain.tech/), and in this article I will show you how this feature can be used to substantially speed-up subgraph debugging!
+
+## 首先，让我们来看什么是子图分叉
+
+**子图分叉** 是从*另一个* 子图的存储（通常是远程存储）中缓慢获取实体的过程。
+
+在调试时，**subgraph forking** 允许您在固定的区块 _X_ 中调试失败的子图，而无需等待区块同步 _X_。
+
+## 让我们看看这是如何做到的？
+
+When you deploy a subgraph to a remote Graph Node for indexing and it fails at block _X_, the good news is that the Graph Node will still serve GraphQL queries using its store, which is synced-up to block _X_. That's great! This means we can take advantage of this "up-to-date" store to fix the bugs arising when indexing block _X_.
+
+In a nutshell, we are going to _fork the failing subgraph_ from a remote Graph Node that is guaranteed to have the subgraph indexed up to block _X_ in order to provide the locally deployed subgraph being debugged at block _X_ an up-to-date view of the indexing state.
+
+## 下面让我们看一下代码示例
+
+为了专注于子图调试，让我们保持简单，并与索引 Ethereum Gravity 智能合约的 [example-subgraph](https://github.com/graphprotocol/graph-tooling/tree/main/examples/ethereum-gravatar) 一起运行。
+
+以下是索引 `Gravatar` 定义的处理程序，没有任何错误：
+
+```tsx
+export function handleNewGravatar(event: NewGravatar): void {
+  let gravatar = new Gravatar(event.params.id.toHex().toString())
+  gravatar.owner = event.params.owner
+  gravatar.displayName = event.params.displayName
+  gravatar.imageUrl = event.params.imageUrl
+  gravatar.save()
+}
+
+export function handleUpdatedGravatar(event: UpdatedGravatar): void {
+  let gravatar = Gravatar.load(event.params.id.toI32().toString())
+  if (gravatar == null) {
+    log.critical('Gravatar not found!', [])
+    return
+  }
+  gravatar.owner = event.params.owner
+  gravatar.displayName = event.params.displayName
+  gravatar.imageUrl = event.params.imageUrl
+  gravatar.save()
+}
+```
+
+Oops, how unfortunate, when I deploy my perfect looking subgraph to [Subgraph Studio](https://thegraph.com/studio/) it fails with the _"Gravatar not found!"_ error.
+
+尝试修复的常用方法是：
+
+1. 在映射源中进行更改，你认为这将解决问题（但我知道它不会）。
+2. Re-deploy the subgraph to [Subgraph Studio](https://thegraph.com/studio/) (or another remote Graph Node).
+3. 等待同步。
+4. 如果它再次中断，则返回 第1步，否则：搞定！
+
+对于一个普通的调试过程来说很常见，但是有一个步骤会严重减缓这个过程：_3。 等待同步。_
+
+使用 **子图分叉** 我们可以从根本上解决这个问题。 如下：
+
+0. Spin-up a local Graph Node with the **_appropriate fork-base_** set.
+1. 按照你认为可以解决问题的方法，在映射源中进行更改。
+2. Deploy to the local Graph Node, **_forking the failing subgraph_** and **_starting from the problematic block_**.
+3. 如果它再次中断，则返回 第1步，否则：搞定！
+
+现在，你可能有 2 个问题：
+
+1. 子分叉集是什么???
+2. 分叉什么?!
+
+回答如下：
+
+1. `子分叉集` 是“基础”URL，例如将 _子图 id_ 添加到结果 URL (`<子分叉集>/<subgraph-id>`) ，就是一个合法的子图GraphQL访问端口。
+2. 分叉容易，不要紧张：
+
+```bash
+$ graph 部署 <subgraph-name> --调试分叉 <subgraph-id> --ipfs地址 http://localhost:5001 --node http://localhost:8020
+```
+
+另外，不要忘记将子图中的 `dataSources.source.startBlock` 字段设置为有问题的区块编号，这样您就可以跳过索引不必要的区块并利用分叉！
+
+所以，我是这么做的：
+
+1. I spin-up a local Graph Node ([here is how to do it](https://github.com/graphprotocol/graph-node#running-a-local-graph-node)) with the `fork-base` option set to: `https://api.thegraph.com/subgraphs/id/`, since I will fork a subgraph, the buggy one I deployed earlier, from [Subgraph Studio](https://thegraph.com/studio/).
+
+```
+$ cargo run -p graph-node --release -- \
+    --postgres-url postgresql://USERNAME[:PASSWORD]@localhost:5432/graph-node \
+    --ethereum-rpc NETWORK_NAME:[CAPABILITIES]:URL \
+    --ipfs 127.0.0.1:5001
+    --fork-base https://api.thegraph.com/subgraphs/id/
+```
+
+2. 经过仔细检查，我注意到在我的两个处理程序中索引 `Gravatar` 时使用的 `id` 不匹配。 `handleNewGravatar` 将其转换为十六进制 (`event.params.id.toHex()`)，而 `handleUpdatedGravatar` 使用 int32格式 (`event. params.id.toI32()`) 这会导致 `handleUpdatedGravatar` 出现“未找到 Gravatar！”的错误。 于是我将他们都 `id` 转换为十六进制。
+3. After I made the changes I deploy my subgraph to the local Graph Node, **_forking the failing subgraph_** and setting `dataSources.source.startBlock` to `6190343` in `subgraph.yaml`:
+
+```bash
+$ graph deploy gravity --debug-fork QmNp169tKvomnH3cPXTfGg4ZEhAHA6kEq5oy1XDqAxqHmW --ipfs http://localhost:5001 --node http://localhost:8020
+```
+
+4. I inspect the logs produced by the local Graph Node and, Hooray!, everything seems to be working.
+5. I deploy my now bug-free subgraph to a remote Graph Node and live happily ever after! (no potatoes tho)

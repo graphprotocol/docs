@@ -1,7 +1,7 @@
-import supportedNetworks from './developing/supported-networks.json'
 import docsearch from './docsearch.json'
 import global from './global.json'
 import index from './index.json'
+import supportedNetworks from './supported-networks.json'
 
 const translations = {
   global,

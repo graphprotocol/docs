@@ -1,0 +1,101 @@
+---
+title: Rychlé a snadné ladění podgrafů pomocí vidliček
+---
+
+Stejně jako u mnoha systémů zpracovávajících velké množství dat může indexerům grafu (Graph Nodes) trvat poměrně dlouho, než synchronizují váš podgraf s cílovým blockchainem. Nesoulad mezi rychlými změnami za účelem ladění a dlouhými čekacími dobami potřebnými pro indexaci je extrémně kontraproduktivní a jsme si toho dobře vědomi. To je důvod, proč představujeme **rozvětvování podgrafů**, vyvinutý společností [LimeChain](https://limechain.tech/), a v tomto článku Ukážu vám, jak lze tuto funkci použít k podstatnému zrychlení ladění podgrafů!
+
+## Ok, co to je?
+
+**podgraf vidličkování** je proces líného načítání entit z _úložiště jiného_ subgrafu (obvykle vzdáleného).
+
+V kontextu ladění vám ** vidličkování podgrafů** umožňuje ladit neúspěšný podgraf v bloku _X_, aniž byste museli čekat k synchronizaci zablokovat _X_.
+
+## Co?! Jak?
+
+Když nasadíte podgraf do vzdáleného uzlu Graf pro indexování a ten selže v bloku _X_, dobrou zprávou je, že uzel Graf bude stále obsluhovat dotazy GraphQL pomocí svého úložiště, které je synchronizováno s blokem _X_. To je skvělé! To znamená, že můžeme využít tohoto "aktuálního" úložiště k opravě chyb vznikajících při indexování bloku _X_.
+
+Stručně řečeno, _rozvětvíme neúspěšný podgraf_ ze vzdáleného uzlu grafu, u kterého je zaručeno, že podgraf bude indexován až do bloku _X_, abychom lokálně nasazenému podgrafu laděnému v bloku _X_ poskytli aktuální pohled na stav indexování.
+
+## Ukažte mi prosím nějaký kód!
+
+Abychom se soustředili na ladění podgrafů, zůstaňme u jednoduchých věcí a projděme si [příkladový podgraf](https://github.com/graphprotocol/graph-tooling/tree/main/examples/ethereum-gravatar) indexující inteligentní kontrakt Ethereum Gravity.
+
+Zde jsou definovány obslužné programy pro indexování `Gravatarů` bez jakýchkoli chyb:
+
+```tsx
+export function handleNewGravatar(event: NewGravatar): void {
+  let gravatar = new Gravatar(event.params.id.toHex().toString())
+  gravatar.owner = event.params.owner
+  gravatar.displayName = event.params.displayName
+  gravatar.imageUrl = event.params.imageUrl
+  gravatar.save()
+}
+
+export function handleUpdatedGravatar(event: UpdatedGravatar): void {
+  let gravatar = Gravatar.load(event.params.id.toI32().toString())
+  if (gravatar == null) {
+    log.critical('Gravatar not found!', [])
+    return
+  }
+  gravatar.owner = event.params.owner
+  gravatar.displayName = event.params.displayName
+  gravatar.imageUrl = event.params.imageUrl
+  gravatar.save()
+}
+```
+
+Oops, jak nešťastné, když jsem nasadil můj perfektně vypadající podgraf do [Podgraf Studio](https://thegraph.com/studio/), selhalo to s chybou _"Gravatar nenalezen!"_.
+
+Obvyklý způsob, jak se pokusit o opravu, je:
+
+1. Proveďte změnu ve zdroji mapování, která podle vás problém vyřeší (zatímco já vím, že ne).
+2. Znovu nasaďte podgraf do [Subgraph Studio](https://thegraph.com/studio/) (nebo jiného vzdáleného uzlu Graf).
+3. Počkejte na synchronizaci.
+4. Pokud se opět rozbije, vraťte se na 1, jinak: Hurá!
+
+Je to skutečně docela podobné běžnému procesu ladění, ale existuje jedna fáze, která ho strašně zpomaluje: _3. Počkejte, až se synchronizuje._
+
+Pomocí **vidličkování podgrafů** můžeme tento krok v podstatě eliminovat. Takto to vypadá:
+
+0. Spin-up a local Graph Node with the **_appropriate fork-base_** set.
+1. Proveďte změnu ve zdroji mapování, která podle vás problém vyřeší.
+2. Nasazení do místního uzlu Graf, **_forking selhávajícího podgrafu_** a **_zahájení od problematického bloku_**.
+3. Pokud se opět rozbije, vraťte se na 1, jinak: Hurá!
+
+Nyní můžete mít 2 otázky:
+
+1. fork-base co???
+2. Vidličkování kdo?!
+
+A já odpovídám:
+
+1. `fork-base` je "base" adresa URL, takže když je připojeno _identifikátor podgrafu_, výsledná adresa URL (`<fork-base>/<subgraph-id>`) je platným koncovým bodem GraphQL pro úložiště podgrafu.
+2. Vidličkování je snadné, není třeba se potit:
+
+```bash
+$ graph deploy <subgraph-name> --debug-fork <subgraph-id> --ipfs http://localhost:5001 --node http://localhost:8020
+```
+
+Nezapomeňte také nastavit pole `dataSources.source.startBlock` v manifestu podgrafu na číslo problematického bloku, abyste mohli vynechat indexování nepotřebných bloků a využít výhod vidličkování!
+
+Takže to dělám takhle:
+
+1. Spustím místní uzel Graf ([zde je návod, jak to udělat](https://github.com/graphprotocol/graph-node#running-a-local-graph-node)) s volbou `fork-base` nastavenou na: `https://api.thegraph.com/subgraphs/id/`, protože budu forkovat podgraf, ten chybný, který jsem nasadil dříve, z [Podgraph Studio](https://thegraph.com/studio/).
+
+```
+$ cargo run -p graph-node --release -- \
+    --postgres-url postgresql://USERNAME[:PASSWORD]@localhost:5432/graph-node \
+    --ethereum-rpc NETWORK_NAME:[CAPABILITIES]:URL \
+    --ipfs 127.0.0.1:5001
+    --fork-base https://api.thegraph.com/subgraphs/id/
+```
+
+2. Po pečlivém prozkoumání si všímám, že existuje nesoulad v reprezentacích `id`, které se používají při indexaci `Gravatar` v mých dvou obslužných funkcích. Zatímco `handleNewGravatar` ho převede na hex (`event.params.id.toHex()`), `handleUpdatedGravatar` používá int32 (`event.params.id.toI32()`), což způsobuje, že `handleUpdatedGravatar` selže s chybou "Gravatar nenalezen!". Udělám, aby obě převedly `id` na hex.
+3. Po provedení změn jsem nasadil svůj podgraf do místního uzlu Graf, **_rozvětveníl selhávající podgraf_** a nastavil `dataSources.source.startBlock` na `6190343` v `subgraph.yaml`:
+
+```bash
+$ graph deploy gravity --debug-fork QmNp169tKvomnH3cPXTfGg4ZEhAHA6kEq5oy1XDqAxqHmW --ipfs http://localhost:5001 --node http://localhost:8020
+```
+
+4. Zkontroluji protokoly vytvořené místním graf uzlem a hurá, zdá se, že vše funguje.
+5. Nasadím svůj nyní již bezchybný podgraf do vzdáleného uzlu Graf a žiji šťastně až do smrti! (bez brambor)
