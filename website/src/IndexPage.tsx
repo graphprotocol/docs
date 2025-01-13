@@ -13,6 +13,7 @@ export function Intro() {
 
   return (
     <ul
+      className="graph-docs-not-markdown"
       sx={{
         mb: '96px',
         display: 'grid',
@@ -89,6 +90,7 @@ export function NetworkRoles() {
 
   return (
     <ul
+      className="graph-docs-not-markdown"
       sx={{
         mt: Spacing['32px'],
         mb: '128px',
@@ -147,6 +149,7 @@ export function Products() {
 
   return (
     <ul
+      className="graph-docs-not-markdown"
       sx={{
         mt: Spacing['32px'],
         mb: '128px',
@@ -190,6 +193,7 @@ export function SupportedNetworks() {
 
   return (
     <ul
+      className="graph-docs-not-markdown"
       sx={{
         my: Spacing['48px'],
         display: 'grid',

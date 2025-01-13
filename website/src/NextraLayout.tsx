@@ -5,7 +5,7 @@ import { useFSRoute, useRouter } from 'nextra/hooks'
 import { MDXProvider } from 'nextra/mdx'
 import { normalizePages } from 'nextra/normalize-pages'
 import {
-  type ComponentProps,
+  type ComponentPropsWithoutRef,
   createContext,
   type MouseEvent,
   type ReactElement,
@@ -17,25 +17,25 @@ import {
 } from 'react'
 import { useSet } from 'react-use'
 
+import type { WithOptional } from '@edgeandnode/common'
 import {
   ButtonOrLink,
   type ButtonOrLinkProps,
   classNames,
-  Code,
-  Divider,
   ExperimentalButton,
+  ExperimentalCodeBlock,
+  type ExperimentalCodeBlockProps,
+  ExperimentalDivider,
   ExperimentalSearch,
   ExperimentalSelectChip,
   ExperimentalTransition,
   Flex,
-  Link,
-  List,
 } from '@edgeandnode/gds'
 import {
   CaretDown,
   CirclesFour,
+  Files,
   House,
-  MagicWand,
   Subgraph,
   Substreams,
   SubstreamsPoweredSubgraph,
@@ -43,21 +43,10 @@ import {
 
 import { TheGraphLogo } from '@/assets/TheGraphLogo'
 
-import {
-  Callout,
-  CodeBlock,
-  Difficulty,
-  EditPageLink,
-  Heading,
-  Image,
-  ListOrdered,
-  ListUnordered,
-  Paragraph,
-  Table,
-  VideoEmbed,
-} from './components'
+import { Difficulty, EditPageLink, Heading, Paragraph, VideoEmbed } from './components'
 import { DocumentContext, MDXLayoutNav, MDXLayoutOutline, MDXLayoutPagination, NavContext } from './layout'
 
+// TODO: Refactor / re-implement
 const MDXWrapper: NextraMDXContent = ({ children, toc }) => {
   const { activePath } = useContext(NavContext)!
   const { frontMatter, timestamp, readingTime } = useContext(DocumentContext)!
@@ -66,7 +55,7 @@ const MDXWrapper: NextraMDXContent = ({ children, toc }) => {
 
   return (
     <>
-      <div className="p-26">
+      <div>
         <div sx={{ display: [null, null, null, 'none'] }}>
           <MDXLayoutNav mobile />
         </div>
@@ -110,16 +99,15 @@ const MDXWrapper: NextraMDXContent = ({ children, toc }) => {
         <MDXLayoutPagination />
       </div>
 
-      {/* TODO: Re-implement
-        <div sx={{ display: ['none', null, null, 'block'] }}>
-          <MDXLayoutOutline toc={toc} />
-        </div>
-      */}
+      <div sx={{ display: ['none', null, null, 'block'] }}>
+        <MDXLayoutOutline toc={toc} />
+      </div>
     </>
   )
 }
 
 const mdxComponents = {
+  /*
   blockquote: Callout,
   pre: CodeBlock,
   code: Code.Inline as any,
@@ -137,14 +125,26 @@ const mdxComponents = {
   ul: ListUnordered,
   p: Paragraph,
   table: Table,
+  */
   Difficulty,
   VideoEmbed,
-  wrapper: MDXWrapper,
+  // wrapper: MDXWrapper,
+  pre: ({ className, children, ...props }: ComponentPropsWithoutRef<'pre'>) => {
+    return (
+      <ExperimentalCodeBlock
+        className={classNames(['graph-docs-not-markdown not-last:mb-6', className])}
+        {...(props as ExperimentalCodeBlockProps)}
+      >
+        {String(children)}
+      </ExperimentalCodeBlock>
+    )
+  },
+  hr: ExperimentalDivider,
 }
 
-const NavigationGroup = ({ className, children, ...props }: ComponentProps<'div'>) => {
+const NavigationGroup = ({ className, children, ...props }: ComponentPropsWithoutRef<'div'>) => {
   return (
-    <div className={classNames(['-mx-2 overflow-clip border-b border-white/8 p-2', className])} {...props}>
+    <div className={classNames(['-mx-4 overflow-clip border-b border-white/8 px-4 py-2', className])} {...props}>
       <NavigationList>{children}</NavigationList>
     </div>
   )
@@ -154,7 +154,7 @@ const NavigationListContext = createContext<{
   depth: number
 } | null>(null)
 
-const NavigationList = ({ className, children, ...props }: ComponentProps<'ul'>) => {
+const NavigationList = ({ className, children, ...props }: ComponentPropsWithoutRef<'ul'>) => {
   const ancestorNavigationListContext = useContext(NavigationListContext)
   const depth = ancestorNavigationListContext ? ancestorNavigationListContext.depth + 1 : 0
 
@@ -185,10 +185,25 @@ type NavigationItemProps =
 const NavigationItem = ({ title, icon, onClick, className, children, ...props }: NavigationItemProps) => {
   const navigationListContext = useContext(NavigationListContext)
   const depth = navigationListContext?.depth ?? 0
-  const [expanded, setExpanded] = useState(false)
+  const [expandedIfChildren, setExpanded] = useState(false)
+  const expanded = children ? expandedIfChildren : false
 
   return (
-    <li data-expanded={expanded || undefined} className={classNames(['group/navigation-item', className])}>
+    <li
+      data-expanded={expanded || undefined}
+      className={classNames([
+        `group/navigation-item
+        [--docs-navigation-item-expanded:0]
+        [--docs-navigation-item-first:0]
+        [--docs-navigation-item-last:0]
+        [--docs-navigation-item-no-top-line:0]
+        first:[--docs-navigation-item-first:1]
+        last:[--docs-navigation-item-last:1]
+        data-[expanded]:[--docs-navigation-item-expanded:1]
+        nearest-group-[&>li:has(ul:not(:scope_ul_*,[inert]_*)>li:last-child[data-expanded])+]/navigation-list:[--docs-navigation-item-no-top-line:1]`,
+        className,
+      ])}
+    >
       <div className="flex items-center">
         {/* TODO: Focus ring? */}
         <ButtonOrLink
@@ -196,23 +211,38 @@ const NavigationItem = ({ title, icon, onClick, className, children, ...props }:
             setExpanded(true)
             onClick?.(event)
           }}
-          className={`
-            flex flex-1 gap-1 p-2 text-white/64 transition
-            hocus-visible:text-white
-            aria-[current=true]:text-white
-            nested-icon:size-3.5
-            nested-icon:aria-[current=true]:prop-color-purple
-          `}
+          className="flex flex-1 gap-1 p-2"
           {...props}
         >
-          <span className="flex h-5 w-4 shrink-0 items-center justify-center">{icon}</span>
-          <span className="text-p14">{title}</span>
+          <span
+            className={`
+              flex h-5 w-4 shrink-0 items-center justify-center text-white/64 transition
+              in-clickable-hocus-visible:text-white
+              in-clickable-[[aria-current=true]]:text-purple
+              in-clickable-[[aria-current=true]]:transition-none
+              nested-icon:size-3.5
+            `}
+          >
+            {icon}
+          </span>
+          <span
+            className={`
+              text-p14 text-white/64 transition
+              in-clickable-hocus-visible:text-white
+              in-clickable-[[aria-current=true]]:text-white
+              in-clickable-[[aria-current=true]]:transition-none
+            `}
+          >
+            {title}
+          </span>
           {depth > 0 ? (
             <span className="absolute inset-y-0 left-2 flex w-1.5 flex-col items-center gap-1">
               <span
                 className={`
-                  w-px flex-1 bg-white/8
-                  not-in-group-data-[depth=2]/navigation-list:nearest-group-first/navigation-item:opacity-0
+                  w-px flex-1 bg-white/8 transition duration-150
+                  @style-[--docs-navigation-item-no-top-line=1]:opacity-0
+                  @style-[--docs-navigation-item-no-top-line=1]:delay-150
+                  @style-[--docs-navigation-item-first=1]:not-in-group-data-[depth=2]/navigation-list:opacity-0
                 `}
               />
               <span
@@ -225,9 +255,10 @@ const NavigationItem = ({ title, icon, onClick, className, children, ...props }:
               />
               <span
                 className={`
-                  w-px flex-1 bg-white/8 transition duration-0 ease-[step-end]
-                  not-in-group-[:not(:last-child)]/navigation-item:nearest-group-[:not([data-expanded])]/navigation-item:opacity-0
-                  not-in-group-[:not(:last-child)]/navigation-item:nearest-group-[:not([data-expanded])]/navigation-item:duration-300
+                  w-px flex-1 bg-white/8 transition duration-150
+                  @style-[--docs-navigation-item-expanded=0]:@style-[--docs-navigation-item-last:1]:@style-[--docs-previous-navigation-item-last:1]:opacity-0
+                  @style-[--docs-navigation-item-expanded=0]:@style-[--docs-navigation-item-last:1]:@style-[--docs-previous-navigation-item-last:1]:delay-150
+                  @style-[--docs-navigation-item-expanded=0]:@style-[--docs-navigation-item-last:1]:@style-[--docs-previous-navigation-item-last:1]:duration-300
                 `}
               />
             </span>
@@ -262,22 +293,24 @@ const NavigationItem = ({ title, icon, onClick, className, children, ...props }:
           >
             <NavigationList
               key={expanded ? 'expanded' : 'collapsed'}
-              className="group-data-[depth=1]/navigation-list:pl-4"
+              className={`
+                [--docs-previous-navigation-item-expanded:var(--docs-navigation-item-expanded)]
+                [--docs-previous-navigation-item-first:var(--docs-navigation-item-first)]
+                [--docs-previous-navigation-item-last:var(--docs-navigation-item-last)]
+                group-data-[depth=1]/navigation-list:pl-4
+              `}
             >
               {expanded ? children : null}
             </NavigationList>
           </ExperimentalTransition>
           {depth > 0 ? (
-            <span
-              data-expanded={expanded || undefined}
-              className="group/navigation-item-children-line absolute inset-y-0 left-2.5 z-10 w-[17px] translate-x-[0.5px]"
-            >
+            <span className="absolute inset-y-0 left-2.5 z-10 w-[17px] translate-x-[0.5px]">
               <svg
                 viewBox="0 0 17 17"
                 className={`
-                  absolute -top-2 left-0 z-10 aspect-square w-full origin-left bg-background fill-none stroke-white/8 transition duration-150
-                  group-data-[expanded]/navigation-item-children-line:delay-150
-                  group-not-data-[expanded]/navigation-item-children-line:opacity-0
+                  absolute -top-2 left-0 z-10 aspect-square w-full origin-left bg-background fill-none stroke-white/8 transition duration-150 safari:delay-150
+                  @style-[--docs-navigation-item-expanded=0]:opacity-0
+                  @style-[--docs-navigation-item-expanded=0]:safari:delay-0
                 `}
               >
                 <path
@@ -285,27 +318,27 @@ const NavigationItem = ({ title, icon, onClick, className, children, ...props }:
                   className={`
                     transition-all duration-150
                     [d:path('M_0.5_0_C_0.5_13,_0.5_4,_0.5_17')]
-                    group-data-[expanded]/navigation-item-children-line:delay-150
-                    group-data-[expanded]/navigation-item-children-line:[d:path('M_0.5_0_C_0.5_13,_16.5_4,_16.5_17')]
+                    @style-[--docs-navigation-item-expanded=1]:delay-150
+                    @style-[--docs-navigation-item-expanded=1]:[d:path('M_0.5_0_C_0.5_13,_16.5_4,_16.5_17')]
                   `}
                 />
               </svg>
               <span
-                data-expanded={expanded || undefined}
                 className={`
                   absolute inset-y-0 left-0 w-px bg-white/8 transition delay-75 duration-75
-                  group-data-[expanded]/navigation-item-children-line:opacity-0
-                  group-data-[expanded]/navigation-item-children-line:delay-150
+                  @style-[--docs-navigation-item-expanded=1]:opacity-0
+                  @style-[--docs-navigation-item-expanded=1]:delay-150
                 `}
               />
               <svg
                 viewBox="0 0 17 17"
-                data-expanded={expanded || undefined}
                 className={`
-                  absolute -bottom-2 left-0 aspect-square w-full origin-left bg-background fill-none stroke-white/8 transition duration-150
-                  group-data-[expanded]/navigation-item-children-line:delay-150
-                  group-not-data-[expanded]/navigation-item-children-line:opacity-0
-                  nearest-group-last/navigation-item:opacity-0
+                  absolute -bottom-2 left-0 aspect-square w-full origin-left bg-background fill-none stroke-white/8 transition duration-150 safari:delay-150
+                  nearest-group-[&:has(ul:not(:scope_ul_*,[inert]_*)>li:last-child[data-expanded])]/navigation-item:opacity-0
+                  nearest-group-[&:has(ul:not(:scope_ul_*,[inert]_*)>li:last-child[data-expanded])]/navigation-item:delay-150
+                  @style-[--docs-navigation-item-expanded=0]:opacity-0
+                  @style-[--docs-navigation-item-last=1]:opacity-0
+                  @style-[--docs-navigation-item-expanded=0]:safari:delay-0
                 `}
               >
                 <path
@@ -313,8 +346,8 @@ const NavigationItem = ({ title, icon, onClick, className, children, ...props }:
                   className={`
                     transition-all duration-150
                     [d:path('M_0.5_0_C_0.5_13,_0.5_4,_0.5_17')]
-                    group-data-[expanded]/navigation-item-children-line:delay-150
-                    group-data-[expanded]/navigation-item-children-line:[d:path('M_16.5_0_C_16.5_13,_0.5_4,_0.5_17')]
+                    @style-[--docs-navigation-item-expanded=1]:delay-150
+                    @style-[--docs-navigation-item-expanded=1]:[d:path('M_16.5_0_C_16.5_13,_0.5_4,_0.5_17')]
                   `}
                 />
               </svg>
@@ -339,12 +372,12 @@ export default function NextraLayout({ children, pageOpts, pageProps }: NextraTh
     })
     // TODO: Check for missing pages in other languages too
     if (typeof window === 'undefined' && locale === 'en') {
-      const checkIfRouteExists = (item: (typeof result.docsDirectories)[number], baseRoute = '') => {
+      const checkIfRouteExists = (item: NavigationItem, baseRoute = '') => {
         const expectedRoute = `${baseRoute}/${item.name}`
         if (item.type === 'doc' && !item.route) {
           throw new Error(`Route "${expectedRoute}" does not exist. Remove this field from _meta.js file`)
         }
-        for (const child of (item.children as typeof item.children | undefined) ?? []) {
+        for (const child of item.children ?? []) {
           checkIfRouteExists(child, item.route)
         }
       }
@@ -353,20 +386,66 @@ export default function NextraLayout({ children, pageOpts, pageProps }: NextraTh
     return result
   }, [fsPath, pageMap, locale])
 
+  type NavigationItem = WithOptional<(typeof normalizePagesResult.directories)[number], 'children'>
   type NavigationGroup = {
-    title: string
-    route: string | null
-    items: typeof normalizePagesResult.directories
+    title: string | undefined
+    route: string | undefined
+    items: NavigationItem[]
   }
-  const navigationGroups = normalizePagesResult.directories.reduce<NavigationGroup[]>((groups, item) => {
-    if (groups.length === 0 || item.type === 'separator') {
-      groups.push({ title: item.title, route: item.route, items: [] })
+  const navigationItemIsExpandable = (item: NavigationItem) => {
+    if (!item.children?.length) return false
+    switch (item.type) {
+      case 'children':
+        /**
+         * This is hacky: we want to render an item of type `children` without a `NavigationItem` wrapper only when
+         * it doesn't have a title, but Nextra defaults `title` to `name` so it's never actually empty.
+         */
+        return item.title !== item.name
+      default:
+        return true
     }
-    if (item.type !== 'separator') {
-      groups[groups.length - 1]!.items.push(item)
+  }
+  const getNavigationItemRoute = (item: NavigationItem) => {
+    let currentItem = item
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+    while (true) {
+      if (!('children' in currentItem) || currentItem.withIndexPage) {
+        return currentItem.route
+      }
+      if (!currentItem.children?.length) {
+        return undefined
+      }
+      currentItem = currentItem.children[0]!
     }
-    return groups
-  }, [])
+  }
+  const navigationGroups = normalizePagesResult.directories.reduce<NavigationGroup[]>(
+    (groups, item: NavigationItem) => {
+      if (item.type === 'separator') {
+        groups.push({ title: item.title, route: undefined, items: [] })
+      } else {
+        const route = getNavigationItemRoute(item)
+        let currentGroup = groups[groups.length - 1]
+        if (
+          !currentGroup ||
+          currentGroup.items.some(navigationItemIsExpandable) ||
+          (currentGroup.title === undefined && navigationItemIsExpandable(item))
+        ) {
+          groups.push({
+            title: undefined,
+            route,
+            items: [],
+          })
+        }
+        currentGroup = groups[groups.length - 1]!
+        currentGroup.items.push(item)
+        if (currentGroup.route === undefined && route !== undefined) {
+          currentGroup.route = route
+        }
+      }
+      return groups
+    },
+    [],
+  )
   const activeRoute = normalizePagesResult.activePath.at(-1)?.route ?? null
 
   // Provide `markOutlineItem` to the `DocumentContext` so child `Heading` components can mark outline items as "in or above view" or not
@@ -421,40 +500,35 @@ export default function NextraLayout({ children, pageOpts, pageProps }: NextraTh
       >
         <NextSeo {...seo} />
 
-        <div
-          sx={{
-            display: ['block', null, null, 'grid'],
-            gridTemplateColumns: '240px auto 240px',
-          }}
-        >
-          <div sx={{ display: ['none', null, null, 'block'] }}>
-            {/* TODO: Integrate in MDXLayoutNav */}
-            <nav
-              aria-label="Main navigation" // TODO: Translate
-              className="sticky top-0 h-screen overflow-y-auto overflow-x-clip border-e border-white/8 p-2"
-            >
-              <header className="flex items-center py-4 ps-2">
-                <div>
-                  <TheGraphLogo alt="" size={8} />
-                  <ButtonOrLink href="https://thegraph.com" className="absolute -inset-2">
-                    <span className="sr-only">The Graph</span>
-                  </ButtonOrLink>
-                </div>
-                <div className="mx-3 h-7 w-px bg-white/8" />
-                <div className="text-16 text-white/88">Docs</div>
-                {/* TODO: Make language switcher functional */}
-                {/* TODO GDS: Allow changing padding of `ExperimentalChip`? */}
-                <ExperimentalSelectChip size="small" valueLabel="EN" className="ms-auto">
-                  <ExperimentalSelectChip.Option>English</ExperimentalSelectChip.Option>
-                  <ExperimentalSelectChip.Option>Spanish</ExperimentalSelectChip.Option>
-                  <ExperimentalSelectChip.Option>French</ExperimentalSelectChip.Option>
-                </ExperimentalSelectChip>
-              </header>
+        <div className="grid grid-cols-[theme(spacing.64)_auto]">
+          {/* TODO: Integrate in MDXLayoutNav */}
+          <nav
+            aria-label="Main navigation" // TODO: Translate
+            className="sticky top-0 h-screen overflow-y-auto overflow-x-clip border-e border-white/8 scrollbar-thin"
+          >
+            <header className="flex h-16 items-center border-b border-white/8 pe-4 ps-6">
+              <div>
+                <TheGraphLogo alt="" size={8} />
+                <ButtonOrLink href="https://thegraph.com" className="absolute -inset-2">
+                  <span className="sr-only">The Graph</span>
+                </ButtonOrLink>
+              </div>
+              <div className="mx-3 h-7 w-px bg-white/8" />
+              <div className="text-16 text-white/88">Docs</div>
+              {/* TODO: Make language switcher functional */}
+              {/* TODO GDS: Allow changing padding of `ExperimentalChip`? */}
+              <ExperimentalSelectChip size="small" valueLabel="EN" className="ms-auto">
+                <ExperimentalSelectChip.Option>English</ExperimentalSelectChip.Option>
+                <ExperimentalSelectChip.Option>Spanish</ExperimentalSelectChip.Option>
+                <ExperimentalSelectChip.Option>French</ExperimentalSelectChip.Option>
+              </ExperimentalSelectChip>
+            </header>
+            <div className="p-4">
               {/* TODO: Make search functional */}
               {/* TODO GDS: Allow changing background color, border color, and border radius of `ExperimentalSearch`? */}
-              <div className="my-2">
+              <div>
                 <ExperimentalSearch size="small" />
-                <span className="text-p12 pointer-events-none absolute inset-y-0 right-3 flex items-center text-white/88">
+                <span className="text-p12 pointer-events-none absolute inset-y-0 right-3 flex items-center text-white/48">
                   <span>
                     <kbd>⌘</kbd> <kbd>K</kbd>
                   </span>
@@ -474,7 +548,7 @@ export default function NextraLayout({ children, pageOpts, pageProps }: NextraTh
                   href="/developing/supported-networks"
                   selected={activeRoute === '/en/developing/supported-networks'}
                 />
-                <NavigationItem title="Concepts" icon={<MagicWand alt="" />} />
+                <NavigationItem title="Contracts" icon={<Files alt="" />} />
               </NavigationGroup>
               <NavigationGroup>
                 <NavigationItem title="Subgraphs" icon={<Subgraph alt="" />}>
@@ -485,11 +559,17 @@ export default function NextraLayout({ children, pageOpts, pageProps }: NextraTh
                     <NavigationItem title="Architecture">
                       <NavigationItem title="Quick Start With Long Title To Show How It Wraps" />
                       <NavigationItem title="Querying Subgraphs" />
-                      <NavigationItem title="Developing a Subgraph Also With A Long Title" />
+                      <NavigationItem title="Developing a Subgraph" />
                     </NavigationItem>
-                    <NavigationItem title="Live" />
+                    <NavigationItem title="Live">
+                      <NavigationItem title="Querying Subgraphs" />
+                      <NavigationItem title="Developing a Subgraph">
+                        <NavigationItem title="Quick Start" />
+                      </NavigationItem>
+                    </NavigationItem>
                   </NavigationItem>
                   <NavigationItem title="Cookbooks" />
+                  <NavigationItem title="One Last Item With A Long Title" />
                 </NavigationItem>
               </NavigationGroup>
               <NavigationGroup>
@@ -511,33 +591,68 @@ export default function NextraLayout({ children, pageOpts, pageProps }: NextraTh
                   return null
                 }
                 const groupContent = group.items.map((groupItem) =>
-                  (function renderItem(item: typeof groupItem) {
-                    return (
-                      <NavigationItem
-                        key={item.name}
-                        title={item.title}
-                        href={item.route}
-                        selected={item.route === activeRoute}
-                        children={'children' in item ? item.children.map(renderItem) : undefined}
-                      />
-                    )
+                  (function renderItem(item: typeof groupItem): ReactNode {
+                    const childrenContent = item.children?.length ? item.children.map(renderItem) : null
+                    if (childrenContent && !navigationItemIsExpandable(item)) {
+                      return childrenContent
+                    } else {
+                      return (
+                        <NavigationItem
+                          key={item.name}
+                          title={item.title}
+                          href={getNavigationItemRoute(item)}
+                          selected={item.route === activeRoute}
+                          children={childrenContent}
+                        />
+                      )
+                    }
                   })(groupItem),
                 )
                 return (
                   <NavigationGroup key={groupIndex}>
-                    {groupContent.length === 1 ? (
-                      groupContent
-                    ) : (
-                      <NavigationItem title={group.title} href={group.route ?? group.items[0]!.route}>
+                    {group.title !== undefined ? (
+                      <NavigationItem title={group.title} href={group.route}>
                         {groupContent}
                       </NavigationItem>
+                    ) : (
+                      groupContent
                     )}
                   </NavigationGroup>
                 )
               })}
-            </nav>
-          </div>
-          <MDXProvider components={mdxComponents}>{children}</MDXProvider>
+            </div>
+          </nav>
+
+          <main>
+            <header className="h-16 border-b border-white/8"></header>
+            <div className="px-26 py-12">
+              <article
+                className={`
+                  text-p16 leading-7 text-white/64
+                  mdx-[h1]:text-h24
+                  mdx-[h2]:text-h20
+                  mdx-[h3]:text-h18
+                  mdx-[h4,h5,h6]:text-h16
+                  mdx-[:is(ul,ol)_:is(ul,ol)]:mt-2
+                  mdx-[ul,ol]:flex
+                  mdx-[ol]:list-decimal
+                  mdx-[ul]:list-disc
+                  mdx-[ul,ol]:flex-col
+                  mdx-[ul,ol]:gap-2
+                  mdx-[li]:pl-2
+                  mdx-[ul,ol]:pl-6
+                  mdx-[b,strong]:text-white
+                  mdx-[h1,h2,h3,h4,h5,h6]:text-white
+                  not-first:mdx-[h1,h2,h3,h4,h5,h6]:mt-12
+                  not-last:mdx-[h1,h2,h3,h4,h5,h6]:mb-3
+                  not-last:mdx-[p,ul,ol]:mb-6
+                `}
+              >
+                <h1>{frontMatter.title}</h1>
+                <MDXProvider components={mdxComponents}>{children}</MDXProvider>
+              </article>
+            </div>
+          </main>
         </div>
       </DocumentContext.Provider>
     </NavContext.Provider>
