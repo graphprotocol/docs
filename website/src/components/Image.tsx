@@ -1,8 +1,13 @@
-import type { ImgHTMLAttributes } from 'react'
+import type NextImage from 'next/image'
+import type { ComponentProps, ImgHTMLAttributes } from 'react'
 
-export type ImageProps = Omit<ImgHTMLAttributes<HTMLImageElement>, 'children'>
+export type ImageProps = {
+  src?: ComponentProps<typeof NextImage>['src']
+} & Omit<ImgHTMLAttributes<HTMLImageElement>, 'src' | 'children'>
 
-export const Image = ({ src, ...props }: ImageProps) => {
+export const Image = ({ src: passedSrc, ...props }: ImageProps) => {
+  let src = typeof passedSrc === 'object' ? ('default' in passedSrc ? passedSrc.default.src : passedSrc.src) : passedSrc
+
   // If the URL is internal, automatically prepend the base path
   if (src?.startsWith('/')) {
     src = `${process.env.BASE_PATH ?? ''}${src}`
