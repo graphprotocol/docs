@@ -2,6 +2,7 @@ import { Image, LinkInline } from '@graphprotocol/nextra-theme'
 import { useData } from 'nextra/data'
 
 import { BorderRadius, buildBorder, buildTransition, Flex, Link, Spacing, Text } from '@edgeandnode/gds'
+import { NetworkAbstract, NetworkCorn, NetworkSoneium } from '@edgeandnode/gds/dist/icons'
 import { NetworkIcon } from '@edgeandnode/go'
 
 import { useI18n } from '@/i18n'
@@ -199,11 +200,27 @@ export function SupportedNetworks() {
       }}
     >
       {supportedNetworks
-        .filter((network) => !network.testnet || ['evm-1946'].includes(network.uid))
+        .filter((network) => !network.testnet)
+        // Temporarily filter out networks we don't have icons for in GDS
+        .filter((network) => !['evm-81', 'evm-146', 'evm-43111', 'evm-994873017'].includes(network.uid))
         .map((network) => (
           <Flex.Column key={network.uid} as="li" align="center" gap={Spacing['8px']} sx={{ color: 'White64' }}>
             <div sx={{ height: '40px' }}>
-              <NetworkIcon chain={network} size="40px" />
+              {(() => {
+                const iconProps = {
+                  size: '40px' as const,
+                }
+                switch (network.uid) {
+                  case 'evm-2741':
+                    return <NetworkAbstract {...iconProps} />
+                  case 'evm-1868':
+                    return <NetworkSoneium {...iconProps} />
+                  case 'evm-21000000':
+                    return <NetworkCorn {...iconProps} />
+                  default:
+                    return <NetworkIcon chain={network.uid} {...iconProps} />
+                }
+              })()}
             </div>
             <Text.P14 as="div" align="center">
               {network.name}
