@@ -629,7 +629,8 @@ export default function NextraLayout({ children, pageOpts, pageProps }: NextraTh
               <article
                 className={`
                   text-p20 mx-auto max-w-[min(50vw,80ch)]
-                  leading-9 text-white/64 mdx-[h1]:text-h40
+                  leading-9 text-white/64 
+                  mdx-[h1]:text-h40
                   mdx-[h2]:text-h32
                   mdx-[h3]:text-h24
                   mdx-[h4,h5,h6]:text-h20
