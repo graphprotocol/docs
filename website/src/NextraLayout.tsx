@@ -211,7 +211,7 @@ const NavigationItem = ({ title, icon, onClick, className, children, ...props }:
             setExpanded(true)
             onClick?.(event)
           }}
-          className="rounded-sm flex flex-1 items-start gap-1 p-2"
+          className="flex flex-1 gap-1 p-2"
           {...props}
         >
           <span
