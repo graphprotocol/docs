@@ -504,7 +504,7 @@ export default function NextraLayout({ children, pageOpts, pageProps }: NextraTh
           {/* TODO: Integrate in MDXLayoutNav */}
           <nav
             aria-label="Main navigation" // TODO: Translate
-            className="sticky top-0 h-screen overflow-y-auto overflow-x-clip border-e border-white/8 scrollbar-thin hidden sm:block"
+            className="sticky top-0 h-screen overflow-y-auto overflow-x-clip border-e border-white/8 scrollbar-thin"
           >
             <header className="flex h-16 items-center border-b border-white/8 pe-4 ps-6">
               <div>
@@ -625,7 +625,7 @@ export default function NextraLayout({ children, pageOpts, pageProps }: NextraTh
 
           <main>
             <header className="h-16 border-b border-white/8"></header>
-            <div className="px-8 py-12 md:px-26 w-full">
+            <div className="w-full px-8 py-12 md:px-26">
               <article
                 className={`
                   text-p20 mx-auto max-w-[min(50vw,80ch)]
