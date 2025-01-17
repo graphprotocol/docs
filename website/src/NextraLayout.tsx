@@ -625,7 +625,7 @@ export default function NextraLayout({ children, pageOpts, pageProps }: NextraTh
 
           <main>
             <header className="h-16 border-b border-white/8"></header>
-            <div className="w-full px-8 py-12 md:px-26">
+            <div className="px-8 py-12 md:px-26">
               <article
                 className={`
                   text-p20 mx-auto max-w-[min(50vw,80ch)]
