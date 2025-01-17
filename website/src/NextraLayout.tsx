@@ -216,18 +216,18 @@ const NavigationItem = ({ title, icon, onClick, className, children, ...props }:
         >
           <span
             className={`
-              flex h-5 w-4 shrink-0 items-center justify-center text-white/64 transition
+              flex size-6 shrink-0 items-center justify-center text-white/64 transition
               in-clickable-hocus-visible:text-white
               in-clickable-[[aria-current=true]]:text-purple
               in-clickable-[[aria-current=true]]:transition-none
-              nested-icon:size-3.5
+              nested-icon:size-4
             `}
           >
             {icon}
           </span>
           <span
             className={`
-              text-p14 text-white/64 transition
+              text-p16 text-white/64 transition
               in-clickable-hocus-visible:text-white
               in-clickable-[[aria-current=true]]:text-white
               in-clickable-[[aria-current=true]]:transition-none
@@ -247,7 +247,7 @@ const NavigationItem = ({ title, icon, onClick, className, children, ...props }:
               />
               <span
                 className={`
-                  size-1.5 rounded-full bg-white/8 transition
+                  size-2 rounded-full bg-white/8 transition
                   in-clickable-hocus-visible:bg-white/16
                   in-clickable-[[aria-current=true]]:bg-purple
                   in-clickable-[[aria-current=true]]:transition-none
@@ -625,14 +625,15 @@ export default function NextraLayout({ children, pageOpts, pageProps }: NextraTh
 
           <main>
             <header className="h-16 border-b border-white/8"></header>
-            <div className="px-26 py-12">
+            <div className="px-8 py-12 md:px-26">
               <article
                 className={`
-                  text-p16 leading-7 text-white/64
-                  mdx-[h1]:text-h24
-                  mdx-[h2]:text-h20
-                  mdx-[h3]:text-h18
-                  mdx-[h4,h5,h6]:text-h16
+                  text-p20 mx-auto max-w-[min(50vw,80ch)]
+                  leading-9 text-white/64 
+                  mdx-[h1]:text-h40
+                  mdx-[h2]:text-h32
+                  mdx-[h3]:text-h24
+                  mdx-[h4,h5,h6]:text-h20
                   mdx-[:is(ul,ol)_:is(ul,ol)]:mt-2
                   mdx-[ul,ol]:flex
                   mdx-[ol]:list-decimal
