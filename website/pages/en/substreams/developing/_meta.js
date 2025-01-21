@@ -1,5 +1,5 @@
 export default {
-    devcontainer: 'Dev Container',
-    solana: 'Solana',
-    sinks: 'Sink your Substreams',
-  }
+  devcontainer: 'Dev Container',
+  solana: 'Solana',
+  sinks: 'Sink your Substreams',
+}

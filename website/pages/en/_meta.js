@@ -28,7 +28,7 @@ export default {
   },
   '###3': {
     type: 'heading',
-    title: 'Indexing', 
+    title: 'Indexing',
   },
   indexing: {
     type: 'children',
