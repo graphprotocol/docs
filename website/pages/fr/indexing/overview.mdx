@@ -567,7 +567,7 @@ Toutes les commandes qui affichent des règles dans la sortie peuvent choisir en
 
 Les règles d'indexation peuvent être appliquées par défaut au niveau global ou pour des déploiements de subgraphs spécifiques en utilisant leurs identifiants. Les champs `deployment` et `decisionBasis` sont obligatoires, tandis que tous les autres champs sont optionnels. Lorsqu'une règle d'indexation a `rules` comme `decisionBasis`, l'agent d'Indexeur compare les valeurs de seuil non nulles de cette règle avec les valeurs extraites du réseau pour le déploiement correspondant. Si le déploiement du subgraph a des valeurs supérieures (ou inférieures) à l'un des seuils, il sera choisi pour l'indexation.
 
-For example, if the global rule has a `minStake` of **5** (GRT), any subgraph deployment which has more than 5 (GRT) of stake allocated to it will be indexed. Threshold rules include `maxAllocationPercentage`, `minSignal`, `maxSignal`, `minStake`, and `minAverageQueryFees`.
+Par exemple, si la règle globale a un `minStake` de **5** (GRT), tout déploiement de subgraph qui a plus de 5 (GRT) de staking alloué à lui sera indexé. Les règles de seuil incluent `maxAllocationPercentage`, `minSignal`, `maxSignal`, `minStake`, et `minAverageQueryFees`.
 
 Modèle de données:
 
@@ -617,15 +617,15 @@ graph indexer rules delete QmZfeJYR86UARzp9HiXbURWunYgC9ywvPvoePNbuaATrEK
 
 #### CLI de la file des actions
 
-The indexer-cli provides an `actions` module for manually working with the action queue. It uses the **Graphql API** hosted by the indexer management server to interact with the actions queue.
+L'indexer-cli fournit un module `actions` pour travailler manuellement avec la file d'attente des actions. Il utilise l'**API Graphql** hébergée par le serveur de gestion de l'Indexeur pour interagir avec la file d'attente des actions.
 
-The action execution worker will only grab items from the queue to execute if they have `ActionStatus = approved`. In the recommended path actions are added to the queue with ActionStatus = queued, so they must then be approved in order to be executed onchain. The general flow will look like:
+L'agent d'exécution des actions ne récupère les éléments de la file d'attente pour les exécuter que s'ils ont un `ActionStatus = approved`. Dans le chemin recommandé, les actions sont ajoutées à la file d'attente avec ActionStatus = queued, elles doivent donc être approuvées pour être exécutées on-chain. Le flux général se présente comme suit :
 
 - Action ajoutée à la file d'attente par l'outil d'optimisation tiers ou l'utilisateur indexeur-cli
-- Indexer can use the `indexer-cli` to view all queued actions
-- Indexer (or other software) can approve or cancel actions in the queue using the `indexer-cli`. The approve and cancel commands take an array of action ids as input.
-- The execution worker regularly polls the queue for approved actions. It will grab the `approved` actions from the queue, attempt to execute them, and update the values in the db depending on the status of execution to `success` or `failed`.
-- If an action is successful the worker will ensure that there is an indexing rule present that tells the agent how to manage the allocation moving forward, useful when taking manual actions while the agent is in `auto` or `oversight` mode.
+- L'Indexeur peut utiliser `indexer-cli` pour visualiser toutes les actions en file d'attente
+- L'Indexeur (ou un autre logiciel) peut approuver ou annuler des actions dans la file d'attente en utilisant l'`indexer-cli`. Les commandes approve et cancel prennent en entrée un tableau d'IDs d'actions.
+- Le worker d'exécution interroge régulièrement la file d'attente pour les actions approuvées. Il récupère les actions `approuvées` de la file d'attente, tente de les exécuter, et met à jour les valeurs dans la base de données en fonction du statut de l'exécution, `succès` ou `échec`.
+- Si une action est réussie, le worker s'assurera qu'il y a une règle d'indexation présente qui indique à l'agent comment gérer l'allocation à l'avenir, ce qui est utile pour prendre des actions manuelles lorsque l'agent est en mode `auto` ou `oversight`.
 - L'indexeur peut surveiller la file d'attente des actions pour consulter un historique de l'exécution des actions et, si nécessaire, réapprouver et mettre à jour les éléments d'action en cas d'échec de leur exécution. La file d'attente des actions fournit un historique de toutes les actions mises en file d'attente et entreprises.
 
 Modèle de données:
@@ -683,13 +683,13 @@ graph indexer actions execute approve
 
 Notez que les types d'actions pris en charge pour la gestion des allocations ont des exigences d'entrée différentes :
 
-- `Allocate` - allocate stake to a specific subgraph deployment
+- `Allocate` - alloue un staking à un déploiement spécifique de subgraph
 
   - paramètres d'action requis :
     - deploymentID
     - amount
 
-- `Unallocate` - close allocation, freeing up the stake to reallocate elsewhere
+- `Unallocate` - ferme l'allocation, libérant le staking pour le réallouer ailleurs
 
   - paramètres d'action requis :
     - ID d'allocation
@@ -698,7 +698,7 @@ Notez que les types d'actions pris en charge pour la gestion des allocations ont
     - poi
     - force (force l'utilisation du POI fourni même s'il ne correspond pas à ce que fournit le nœud graph)
 
-- `Reallocate` - atomically close allocation and open a fresh allocation for the same subgraph deployment
+- `Reallocate` - ferme atomiquement l'allocation et ouvre une nouvelle allocation pour le même déploiement de subgraph
 
   - paramètres d'action requis :
     - ID d'allocation
@@ -721,14 +721,14 @@ Une instruction est composée d'un prédicat, qui est utilisé pour faire corres
 Exemple de modèle de coût :
 
 ```
-# This statement captures the skip value,
-# uses a boolean expression in the predicate to match specific queries that use `skip`
-# and a cost expression to calculate the cost based on the `skip` value and the SYSTEM_LOAD global
-query { pairs(skip: $skip) { id } } when $skip > 2000 => 0.0001 * $skip * $SYSTEM_LOAD;
+# Cette instruction capture la valeur du saut,
+# utilise une expression booléenne dans le prédicat pour faire correspondre les requêtes spécifiques qui utilisent `skip`
+# et une expression de coût pour calculer le coût en fonction de la valeur `skip` et de la valeur globale SYSTEM_LOAD
+query { pairs(skip : $skip) { id } when $skip > 2000 => 0.0001 * $skip * $SYSTEM_LOAD ;
 
-# This default will match any GraphQL expression.
-# It uses a Global substituted into the expression to calculate cost
-default => 0.1 * $SYSTEM_LOAD;
+# Cette valeur par défaut correspondra à n'importe quelle expression GraphQL.
+# Il utilise un Global substitué dans l'expression pour calculer le coût
+default => 0.1 * $SYSTEM_LOAD ;
 ```
 
 Exemple de calcul des coûts de requête utilisant le modèle ci-dessus :
@@ -754,41 +754,41 @@ indexer cost set model my_model.agora
 
 Les premières étapes pour participer au réseau en tant qu'Indexeur sont d'approuver le protocole, de staker des fonds et (facultativement) de configurer une adresse opérateur pour les interactions quotidiennes avec le protocole.
 
-> Note: For the purposes of these instructions Remix will be used for contract interaction, but feel free to use your tool of choice ([OneClickDapp](https://oneclickdapp.com/), [ABItopic](https://abitopic.io/), and [MyCrypto](https://www.mycrypto.com/account) are a few other known tools).
+> Note : Pour les besoins de ces instructions, Remix sera utilisé pour l'interaction avec le contrat, mais vous pouvez utiliser l'outil de votre choix ([OneClickDapp](https://oneclickdapp.com/), [ABItopic](https://abitopic.io/), et [MyCrypto](https://www.mycrypto.com/account) sont quelques autres outils connus).
 
-Once an Indexer has staked GRT in the protocol, the [Indexer components](/indexing/overview/#indexer-components) can be started up and begin their interactions with the network.
+Une fois qu'un indexeur a staké des GRT dans le protocole, les [composants de l'indexeur](/indexing/overview/#indexer-components) peuvent être démarrés et commencer leurs interactions avec le réseau.
 
 #### Approuver les jetons
 
-1. Open the [Remix app](https://remix.ethereum.org/) in a browser
+1. Ouvrir l'[application Remix](https://remix.ethereum.org/) dans un navigateur
 
-2. In the `File Explorer` create a file named **GraphToken.abi** with the [token ABI](https://raw.githubusercontent.com/graphprotocol/contracts/mainnet-deploy-build/build/abis/GraphToken.json).
+2. Dans l'explorateur de fichiers, créez un fichier nommé **GraphToken.abi** avec le [token ABI](https://raw.githubusercontent.com/graphprotocol/contracts/mainnet-deploy-build/build/abis/GraphToken.json).
 
-3. With `GraphToken.abi` selected and open in the editor, switch to the `Deploy and run transactions` section in the Remix interface.
+3. Avec `GraphToken.abi` sélectionné et ouvert dans l'éditeur, passez à la section `Deploy and run transactions` dans l'interface Remix.
 
-4. Under environment select `Injected Web3` and under `Account` select your Indexer address.
+4. Sous environnement, sélectionnez `Injected Web3` et sous `Account` sélectionnez votre adresse d'Indexeur.
 
-5. Set the GraphToken contract address - Paste the GraphToken contract address (`0xc944E90C64B2c07662A292be6244BDf05Cda44a7`) next to `At Address` and click the `At address` button to apply.
+5. Définir l'adresse du contrat GraphToken - Collez l'adresse du contrat GraphToken (`0xc944E90C64B2c07662A292be6244BDf05Cda44a7`) à côté de `At address` et cliquez sur le bouton `At address` pour l'appliquer.
 
-6. Call the `approve(spender, amount)` function to approve the Staking contract. Fill in `spender` with the Staking contract address (`0xF55041E37E12cD407ad00CE2910B8269B01263b9`) and `amount` with the tokens to stake (in wei).
+6. Appeler la fonction `approve(spender, amount)` pour approuver le contrat de Staking. Remplissez `spender` avec l'adresse du contrat de staking (`0xF55041E37E12cD407ad00CE2910B8269B01263b9`) et `amount` avec les tokens à staker (en wei).
 
 #### Jetons de mise
 
-1. Open the [Remix app](https://remix.ethereum.org/) in a browser
+1. Ouvrir l'[application Remix](https://remix.ethereum.org/) dans un navigateur
 
-2. In the `File Explorer` create a file named **Staking.abi** with the staking ABI.
+2. Dans l'explorateur de fichiers, créez un fichier nommé **Staking.abi** avec l'ABI de staking.
 
-3. With `Staking.abi` selected and open in the editor, switch to the `Deploy and run transactions` section in the Remix interface.
+3. Avec `Staking.abi` sélectionné et ouvert dans l'éditeur, passez à la section `Deploy and run transactions` dans l'interface Remix.
 
-4. Under environment select `Injected Web3` and under `Account` select your Indexer address.
+4. Sous environnement, sélectionnez `Injected Web3` et sous `Account` sélectionnez votre adresse d'Indexeur.
 
-5. Set the Staking contract address - Paste the Staking contract address (`0xF55041E37E12cD407ad00CE2910B8269B01263b9`) next to `At Address` and click the `At address` button to apply.
+5. Définir l'adresse du contrat de staking - Collez l'adresse du contrat de staking (`0xF55041E37E12cD407ad00CE2910B8269B01263b9`) à côté de `At Address` et cliquez sur le bouton `At address` pour l'appliquer.
 
-6. Call `stake()` to stake GRT in the protocol.
+6. Appeler `stake()` pour staker des GRT dans le protocole.
 
-7. (Optional) Indexers may approve another address to be the operator for their Indexer infrastructure in order to separate the keys that control the funds from those that are performing day to day actions such as allocating on subgraphs and serving (paid) queries. In order to set the operator call `setOperator()` with the operator address.
+7. (Facultatif) Les indexeurs peuvent approuver une autre adresse pour être l'opérateur de leur infrastructure d'indexation afin de séparer les clés qui contrôlent les fonds de celles qui effectuent les actions quotidiennes telles que l'allocation sur les subgraphs et le service des requêtes (payées). Pour définir l'opérateur, il faut appeler `setOperator()` avec l'adresse de l'opérateur.
 
-8. (Optional) In order to control the distribution of rewards and strategically attract Delegators Indexers can update their delegation parameters by updating their indexingRewardCut (parts per million), queryFeeCut (parts per million), and cooldownBlocks (number of blocks). To do so call `setDelegationParameters()`. The following example sets the queryFeeCut to distribute 95% of query rebates to the Indexer and 5% to Delegators, set the indexingRewardCutto distribute 60% of indexing rewards to the Indexer and 40% to Delegators, and set `thecooldownBlocks` period to 500 blocks.
+8. (Facultatif) Afin de contrôler la distribution des récompenses et d'attirer stratégiquement les Déléguateurs, les Indexeurs peuvent mettre à jour leurs paramètres de délégation en mettant à jour leur indexingRewardCut (parts par million), queryFeeCut (parts par million), et cooldownBlocks (nombre de blocs). Pour ce faire, appelez `setDelegationParameters()`. L'exemple suivant définit le queryFeeCut pour distribuer 95% des remises de requêtes à l'indexeur et 5% aux Déléguateurs, définit l'indexingRewardCut pour distribuer 60% des récompenses d'indexation à l'indexeur et 40% aux Déléguateurs, et définit la période `thecooldownBlocks` à 500 blocs.
 
 ```
 setDelegationParameters(950000, 600000, 500)
@@ -796,13 +796,13 @@ setDelegationParameters(950000, 600000, 500)
 
 ### Définition des paramètres de délégation
 
-The `setDelegationParameters()` function in the [staking contract](https://github.com/graphprotocol/contracts/blob/main/packages/contracts/contracts/staking/Staking.sol) is essential for Indexers, allowing them to set parameters that define their interactions with Delegators, influencing their reward sharing and delegation capacity.
+La fonction `setDelegationParameters()` du [contrat de staking](https://github.com/graphprotocol/contracts/blob/main/packages/contracts/contracts/staking/Staking.sol) est essentielle pour les Indexeurs, car elle leur permet de définir les paramètres qui définissent leurs interactions avec les Déléguateurs, en influençant le partage des récompenses et la capacité de délégation.
 
 ### Comment définir les paramètres de délégation
 
 Pour définir les paramètres de délégation à l'aide de l'interface Graph Explorer, suivez ces étapes :
 
-1. Navigate to [Graph Explorer](https://thegraph.com/explorer/).
+1. Naviguez jusqu'à [Graph Explorer](https://thegraph.com/explorer/).
 2. Connectez votre portefeuille. Choisissez multisig (comme Gnosis Safe) puis sélectionnez mainnet. Note : Vous devrez répéter ce processus pour Arbitrum One.
 3. Connectez le portefeuille que vous avez en tant que signataire.
 4. Accédez à la section "Settings" puis sélectionnez "Delegation Parameters". Ces paramètres doivent être configurés afin d’obtenir un taux effectif dans la fourchette souhaitée. Une fois les valeurs saisies dans les champs prévus, l’interface calcule automatiquement ce taux effectif. Ajustez les valeurs selon vos besoins pour atteindre le pourcentage effectif désiré.
@@ -812,10 +812,10 @@ Pour définir les paramètres de délégation à l'aide de l'interface Graph Exp
 
 ### La durée de vie d'une allocation
 
-After being created by an Indexer a healthy allocation goes through two states.
+Après avoir été créée par un Indexeur, une allocation saine passe par deux états.
 
-- **Active** - Once an allocation is created onchain ([allocateFrom()](https://github.com/graphprotocol/contracts/blob/main/packages/contracts/contracts/staking/Staking.sol#L316)) it is considered **active**. A portion of the Indexer's own and/or delegated stake is allocated towards a subgraph deployment, which allows them to claim indexing rewards and serve queries for that subgraph deployment. The Indexer agent manages creating allocations based on the Indexer rules.
+- **Active** - Une fois qu'une allocation est créée onchain ([allocateFrom()](https://github.com/graphprotocol/contracts/blob/main/packages/contracts/contracts/staking/Staking.sol#L316)), elle est considérée comme **active**. Une partie de la participation propre et/ou déléguée de l'Indexeur est allouée au déploiement d'un subgraph, ce qui lui permet de réclamer des récompenses d'indexation et de servir des requêtes pour ce déploiement de subgraphs. L'agent de l'indexeur gère la création des allocations sur la base des règles de l'Indexeur.
 
-- **Closed** - An Indexer is free to close an allocation once 1 epoch has passed ([closeAllocation()](https://github.com/graphprotocol/contracts/blob/main/packages/contracts/contracts/staking/Staking.sol#L335)) or their Indexer agent will automatically close the allocation after the **maxAllocationEpochs** (currently 28 days). When an allocation is closed with a valid proof of indexing (POI) their indexing rewards are distributed to the Indexer and its Delegators ([learn more](/indexing/overview/#how-are-indexing-rewards-distributed)).
+- **Closed** - Un Indexeur est libre de clôturer une allocation une fois qu'une époque s'est écoulée ([closeAllocation()](https://github.com/graphprotocol/contracts/blob/main/packages/contracts/contracts/staking/Staking.sol#L335)) ou son agent indexeur clôturera automatiquement l'allocation après le **maxAllocationEpochs** (actuellement 28 jours). Lorsqu'une allocation est clôturée avec une preuve d'indexation (POI) valide, les récompenses d'indexation sont distribuées à l'Indexeur et à ses Déléguateurs ([en savoir plus](/indexing/overview/#how-are-indexing-rewards-distributed)).
 
-Indexers are recommended to utilize offchain syncing functionality to sync subgraph deployments to chainhead before creating the allocation onchain. This feature is especially useful for subgraphs that may take longer than 28 epochs to sync or have some chances of failing undeterministically.
+Il est recommandé aux Indexeurs d'utiliser la fonctionnalité de synchronisation offchain pour synchroniser les déploiements de subgraphs jusqu'à la tête de chaîne avant de créer l'allocation sur la onchain. Cette fonctionnalité est particulièrement utile pour les subgraphs dont la synchronisation peut prendre plus de 28 époques ou qui sont susceptibles d'échouer de manière indéterminée.
