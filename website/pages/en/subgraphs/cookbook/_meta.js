@@ -15,4 +15,5 @@ export default {
   'grafting-hotfix': 'Subgraph Best Practice 6: Grafting and Hotfixing',
   enums: '',
   'secure-api-keys-nextjs': '',
+  polymarket: 'Query Polymarket Data',
 }
