@@ -18,7 +18,7 @@ export default {
   },
   '###2': {
     type: 'heading',
-    title: 'Substreams powered Subgraphs',
+    title: 'Substreams-Powered Subgraphs',
   },
   sps: {
     type: 'children',
