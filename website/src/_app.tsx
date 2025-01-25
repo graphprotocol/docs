@@ -143,7 +143,7 @@ function Layout({ showLocaleSwitcher, children }: PropsWithChildren<{ showLocale
             children={(defaultChildren) => (
               <>
                 {defaultChildren}
-                {showLocaleSwitcher ? <ExperimentalLocaleSwitcher className="xs:hidden" /> : null}
+                {showLocaleSwitcher ? <ExperimentalLocaleSwitcher className="sm:hidden" /> : null}
               </>
             )}
             contentAfter={(defaultContentAfter) => (
@@ -182,7 +182,7 @@ function Layout({ showLocaleSwitcher, children }: PropsWithChildren<{ showLocale
                   placeholder={t('docsearch.button.buttonText')}
                 />
                 {showLocaleSwitcher ? (
-                  <ExperimentalLocaleSwitcher className="prop-display-format-short max-xs:hidden xl:prop-display-format-full" />
+                  <ExperimentalLocaleSwitcher className="prop-display-format-short max-sm:hidden xl:prop-display-format-full" />
                 ) : null}
                 {defaultContentAfter}
               </>
