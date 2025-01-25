@@ -1,4 +1,4 @@
-import { Locale, type NestedStrings, type Translations, useI18n as _useI18n } from '@edgeandnode/gds'
+import { Locale, type NestedStrings, type Translations, useI18n as useGdsI18n } from '@edgeandnode/gds'
 
 import ar from '@/pages/ar/translations'
 import cs from '@/pages/cs/translations'
@@ -90,4 +90,4 @@ export const translations = {
 
 export type AppTranslations = typeof translations
 
-export const useI18n = () => _useI18n<AppTranslations>()
+export const useI18n = () => useGdsI18n<AppTranslations>()

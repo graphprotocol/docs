@@ -1,4 +1,4 @@
-import type { Folder, MetaJsonFile, PageMapItem } from 'nextra'
+import type { Folder, MetaJsonFile } from 'nextra'
 import { buildDynamicMeta } from 'nextra/remote'
 
 import { Locale, translate } from '@edgeandnode/gds'
