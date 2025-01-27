@@ -18,9 +18,9 @@ export default {
   },
   '###2': {
     type: 'heading',
-    title: 'Substreams-Powered Subgraphs',
+    title: 'Substreams',
   },
-  sps: {
+  substreams: {
     type: 'children',
   },
   '---3': {
@@ -28,25 +28,15 @@ export default {
   },
   '###3': {
     type: 'heading',
-    title: 'Substreams',
+    title: 'Indexing',
   },
-  substreams: {
+  indexing: {
     type: 'children',
   },
   '---4': {
     type: 'separator',
   },
   '###4': {
-    type: 'heading',
-    title: 'Indexing',
-  },
-  indexing: {
-    type: 'children',
-  },
-  '---5': {
-    type: 'separator',
-  },
-  '###5': {
     type: 'heading',
     title: 'Resources',
   },
