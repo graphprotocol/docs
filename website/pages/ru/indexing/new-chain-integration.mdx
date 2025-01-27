@@ -25,17 +25,19 @@ title: Интеграция новых чейнов
 - `eth_getBlockByHash`
 - `net_version`
 - `eth_getTransactionReceipt` в пакетном запросе JSON-RPC
-- `trace_filter` _(необязателен для Graph Node для поддержки обработчиков вызовов)_
+- `trace_filter` _(limited tracing and optionally required for Graph Node)_
 
 ### 2. Интеграция Firehose
 
 [Firehose](https://firehose.streamingfast.io/firehose-setup/overview) — это слой извлечения нового поколения. Он собирает историю в плоских файлах и передает ее в реальном времени. Технология Firehose заменяет эти вызовы API опросов потоком данных с использованием модели push, которая быстрее отправляет данные на ноду индексирования. Это помогает увеличить скорость синхронизации и индексирования.
 
-Основной метод интеграции Firehose в чейны — использование стратегии опроса RPC. Наш алгоритм опроса предсказывает, когда поступит новый блок, и увеличивает скорость проверки наличия нового блока в ближайшее время, что делает его эффективным решением с очень низкой задержкой. За помощью по интеграции и обслуживанию Firehose обращайтесь к [команде StreamingFast] (https://www.streamingfast.io/firehose-integration-program). Новые чейны и их интеграторы по достоинству оценят [осведомленность о форках](https://substreams.streamingfast.io/documentation/consume/reliability-guarantees) и огромные возможности параллельного индексирования, которые Firehose и Substreams привносят в их экосистему.
-
 > ПРИМЕЧАНИЕ: Все интеграции, выполненные командой StreamingFast, включают обслуживание протокола репликации Firehose в кодовой базе чейна. StreamingFast отслеживает любые изменения и выпускает двоичные файлы, когда Вы изменяете код и когда StreamingFast изменяет код. Сюда входит выпуск двоичных файлов Firehose/Substreams для протокола, поддержка модулей Substreams для блочной модели чейна и выпуск двоичных файлов для ноды блокчейна с оснащением инструментами, если это необходимо.
 
-#### Специальное оснащение Firehose для чейнов EVM (`geth`)
+#### Integration for Non-EVM chains
+
+Основной метод интеграции Firehose в чейны — использование стратегии опроса RPC. Наш алгоритм опроса предсказывает, когда поступит новый блок, и увеличивает скорость проверки наличия нового блока в ближайшее время, что делает его эффективным решением с очень низкой задержкой. За помощью по интеграции и обслуживанию Firehose обращайтесь к [команде StreamingFast] (https://www.streamingfast.io/firehose-integration-program). Новые чейны и их интеграторы по достоинству оценят [осведомленность о форках](https://substreams.streamingfast.io/documentation/consume/reliability-guarantees) и огромные возможности параллельного индексирования, которые Firehose и Substreams привносят в их экосистему.
+
+#### Specific Instrumentation for EVM (`geth`) chains
 
 Для чейнов EVM существует более глубокий уровень данных, который может быть достигнут с помощью `geth` [live-tracer](https://github.com/ethereum/go-ethereum/releases/tag/v1.14.0), сотрудничества между Go-Ethereum и StreamingFast, для создания высокопроизводительной и богатой системы отслеживания транзакций. Live Tracer — наиболее комплексное решение, позволяющее получать [Расширенные](https://streamingfastio.medium.com/new-block-model-to-accelerate-chain-integration-9f65126e5425) детали блоков. Это позволяет использовать новые парадигмы индексирования, такие как сопоставление шаблонов событий на основе изменений состояния, вызовов, деревьев вызовов более высокого уровня или запуск событий на основе изменений фактических переменных в смарт-контракте.
 
@@ -57,23 +59,11 @@ title: Интеграция новых чейнов
 
 1. [Клонировать Graph Node](https://github.com/graphprotocol/graph-node)
 
-2. Измените [эту строку](https://github.com/graphprotocol/graph-node/blob/master/docker/docker-compose.yml#L22), включив в неё новое имя сети и URL-адрес, совместимый с EVM JSON-RPC
+2. Modify [this line](https://github.com/graphprotocol/graph-node/blob/master/docker/docker-compose.yml#L22) to include the new network name and the EVM JSON-RPC or Firehose compliant URL
 
    > Не меняйте само имя переменной env. Оно должно оставаться `ethereum`, даже если имя сети отличается.
 
 3. Запустите ноду IPFS или используйте ту, которая используется The Graph: https://api.thegraph.com/ipfs/
-
-### Тестирование EVM JSON-RPC посредством локального развертывания субграфа
-
-1. Установите [graph-cli](https://github.com/graphprotocol/graph-cli)
-2. Создайте простой пример субграфа. Несколько вариантов приведены ниже:
-   1. Предварительно упакованные смарт-контракт [Gravitar](https://github.com/graphprotocol/example-subgraph/tree/f89bdd4628efa4badae7367d4919b3f648083323) и субграф являются хорошей отправной точкой
-   2. Загрузите локальный субграф из любого существующего смарт-контракта или среды разработки Solidity [используя Hardhat с плагином Graph](https://github.com/graphprotocol/hardhat-graph)
-3. Адаптируйте полученный `subgraph.yaml`, изменив `dataSources.network` на то же имя, которое ранее было передано в Graph Node.
-4. Создайте свой субграф в Graph Node: `graph create $SUBGRAPH_NAME --node $GRAPH_NODE_ENDPOINT`
-5. Опубликуйте свой субграф в Graph Node: `graph deploy $SUBGRAPH_NAME --ipfs $IPFS_ENDPOINT --node $GRAPH_NODE_ENDPOINT`
-
-Graph нода должна синхронизировать развернутый субграф, если нет ошибок. Дайте ему время на синхронизацию, затем отправьте несколько запросов GraphQL на API-эндпоинт, указанный в логах.
 
 ## Субграфы, работающие на основе субпотоков (Substreams)
 
