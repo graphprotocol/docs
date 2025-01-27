@@ -25,17 +25,19 @@ Graph Node को EVM चेन से डेटा इन्गेस्ट क
 - `eth_getBlockByHash`
 - `net_version`
 - `eth_getTransactionReceipt`, in a JSON-RPC batch request
-- trace_filter (वैकल्पिक रूप से Graph Node को कॉल हैंडलर्स का समर्थन करने के लिए आवश्यक)
+- `trace_filter` _(limited tracing and optionally required for Graph Node)_
 
 ### 2. Firehose एकीकरण
 
 [Firehose](https://firehose.streamingfast.io/firehose-setup/overview) एक अगली पीढ़ी की निष्कर्षण परत है। यह फ्लैट फ़ाइलों में इतिहास एकत्र करता है और वास्तविक समय में स्ट्रीम करता है। Firehose तकनीक उन पॉलिंग API कॉल्स को एक डेटा स्ट्रीम से बदल देती है, जो एक पुश मॉडल का उपयोग करती है, जिससे डेटा को इंडेक्सिंग नोड तक तेजी से भेजा जा सके। यह सिंकिंग और इंडेक्सिंग की गति बढ़ाने में मदद करता है।
 
-फायरहोज़ को चेन में एकीकृत करने का प्राथमिक तरीका RPC पॉलिंग रणनीति का उपयोग करना है। हमारी पॉलिंग एल्गोरिदम नए ब्लॉक के आने का पूर्वानुमान लगाएगी और उस समय के करीब नए ब्लॉक के लिए जाँच करने की दर बढ़ा देगी, जिससे यह एक बहुत कम लेटेंसी और प्रभावी समाधान बन जाता है। फायरहोज़ के एकीकरण और रखरखाव में मदद के लिए, [स्ट्रीमिंगफास्ट टीम](https://www.streamingfast.io/firehose-integration-program) से संपर्क करें। नए चेन और उनके एकीकृतकर्ताओं को फायरहोज़ और सबस्ट्रीम द्वारा उनके पारिस्थितिकी तंत्र में लाए गए [फोर्क जागरूकता](https://substreams.streamingfast.io/documentation/consume/reliability-guarantees) और विशाल समानांतर इंडेक्सिंग क्षमताओं की सराहना होगी।
-
 > नोट: StreamingFast टीम द्वारा की गई सभी एकीकरणों में श्रृंखला के कोडबेस में Firehose प्रतिकृति प्रोटोकॉल के लिए रखरखाव शामिल है।StreamingFast किसी भी परिवर्तन को ट्रैक करता है और जब आप कोड बदलते हैं और जब StreamingFastकोड बदलता है, तो बाइनरी जारी करता है। इसमें प्रोटोकॉल के लिए Firehose/Substreamsबाइनरी जारी करना, श्रृंखला के ब्लॉक मॉडल के लिए Substreamsमॉड्यूल को बनाए रखना, और आवश्यकता होने पर ब्लॉकचेन नोड के लिए इंस्ट्रुमेंटेशन के साथ बाइनरी जारी करना शामिल है।
 
-#### ईवीएम (`geth`) चेन के लिए विशिष्ट फायरहोज़ इंस्ट्रूमेंटेशन
+#### Integration for Non-EVM chains
+
+फायरहोज़ को चेन में एकीकृत करने का प्राथमिक तरीका RPC पॉलिंग रणनीति का उपयोग करना है। हमारी पॉलिंग एल्गोरिदम नए ब्लॉक के आने का पूर्वानुमान लगाएगी और उस समय के करीब नए ब्लॉक के लिए जाँच करने की दर बढ़ा देगी, जिससे यह एक बहुत कम लेटेंसी और प्रभावी समाधान बन जाता है। फायरहोज़ के एकीकरण और रखरखाव में मदद के लिए, [स्ट्रीमिंगफास्ट टीम](https://www.streamingfast.io/firehose-integration-program) से संपर्क करें। नए चेन और उनके एकीकृतकर्ताओं को फायरहोज़ और सबस्ट्रीम द्वारा उनके पारिस्थितिकी तंत्र में लाए गए [फोर्क जागरूकता](https://substreams.streamingfast.io/documentation/consume/reliability-guarantees) और विशाल समानांतर इंडेक्सिंग क्षमताओं की सराहना होगी।
+
+#### Specific Instrumentation for EVM (`geth`) chains
 
 EVM चेन के लिए, एक गहरे स्तर के डेटा को प्राप्त करने के लिए `geth` [लाइव-ट्रेसर](https://github.com/ethereum/go-ethereum/releases/tag/v1.14.0) का उपयोग किया जाता है, जो गो-एथेरियम और स्ट्रीमिंगफास्ट के बीच सहयोग है, जो उच्च थ्रूपुट और समृद्ध लेनदेन ट्रेसिंग प्रणाली बनाने के लिए है। लाइव ट्रेसर सबसे व्यापक समाधान है, जो [विस्तारित](https://streamingfastio.medium.com/new-block-model-to-accelerate-chain-integration-9f65126e5425) ब्लॉक विवरण का परिणाम है। यह नए इंडेक्सिंग पैरेडाइम्स की अनुमति देता है, जैसे राज्य परिवर्तनों, कॉल्स, पैरेंट कॉल ट्रीज़ के आधार पर घटनाओं का पैटर्न मिलाना, या स्मार्ट कॉन्ट्रैक्ट में वास्तविक वेरिएबल्स में बदलाव के आधार पर घटनाओं को ट्रिगर करना।
 
@@ -57,23 +59,11 @@ While the JSON-RPC and Firehose are both suitable for subgraphs, a Firehose is a
 
 1. [Clone Graph Node](https://github.com/graphprotocol/graph-node)
 
-2. नए network नाम और EVM JSON RPC अनुरूप URL को शामिल करने के लिए [this line] (https://github.com/graphprotocol/graph-node/blob/master/docker/docker-compose.yml#L22) को संशोधित करें
+2. Modify [this line](https://github.com/graphprotocol/graph-node/blob/master/docker/docker-compose.yml#L22) to include the new network name and the EVM JSON-RPC or Firehose compliant URL
 
    > कृपया पर्यावरण चर ethereum को खुद नाम में बदलें नहीं। यही रहना चाहिए, चाहे network का नाम भिन्न हो।
 
 3. एक IPFS node चलाएं या उसे The Graph द्वारा उपयोग किया जाने वाले node का उपयोग करें: https://api.thegraph.com/ipfs/
-
-### EVM JSON-RPC का परीक्षण करने के लिए स्थानीय रूप से एक Subgraph तैनात करना
-
-1. [graph-cli] स्थापित करें(https://github.com/graphprotocol/graph-cli)
-2. Create a simple example subgraph. Some options are below:
-   1. Pre-packed [Gravitar](https://github.com/graphprotocol/example-subgraph/tree/f89bdd4628efa4badae7367d4919b3f648083323) smart contract और subgraph एक अच्छा शुरुआती बिंदु है
-   2. किसी भी मौजूदा smart contract या solidity dev वातावरण से एक local subgraph को Bootstrap करें [using Hardhat with a Graph plugin](https://github.com/graphprotocol/hardhat-graph)
-3. परिणामी `subgraph.yaml` को [`dataSources.network`](http://dataSources.network) को उसी नाम में बदलकर अनुकूलित करें जो पहले Graph Node पर दिया गया था।
-4. अपने subgraph को Graph Node में बनाएँ: graph create $SUBGRAPH_NAME --node $GRAPH_NODE_ENDPOINT
-5. अपने 'subgraph' को Graph Node पर प्रकाशित करें: graph deploy $SUBGRAPH_NAME --ipfs $IPFS_ENDPOINT --node $GRAPH_NODE_ENDPOINT
-
-Graph Node should be syncing the deployed subgraph if there are no errors. Give it time to sync, then send some GraphQL queries to the API endpoint printed in the logs.
 
 ## सबस्ट्रीम-संचालित सबग्राफ की सेवा
 
