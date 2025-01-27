@@ -9,7 +9,6 @@ import { useSet } from 'react-use'
 import type { ThemeUICSSObject } from 'theme-ui'
 
 import { Divider, type DividerProps, Flex, Icon, Spacing, useI18n } from '@edgeandnode/gds'
-import { NPSForm } from '@edgeandnode/go'
 
 import {
   Callout,
@@ -245,30 +244,6 @@ export default function NextraLayout({ children, pageOpts, pageProps }: NextraTh
 
             <div sx={{ mt: Spacing['64px'] }}>
               <MDXLayoutPagination />
-              {/* TODO: Uncomment when we're ready to add the NPS form to the docs
-              <NPSForm
-                key={fsPath}
-                question="Was this page helpful?"
-                choices={[
-                  {
-                    label: 'No',
-                    commentsLabel: 'How can we improve this page?',
-                    icon: <Icon.ThumbsDown title="No" size="24px" />,
-                    hideLabel: true,
-                    score: -1,
-                  },
-                  {
-                    label: 'Yes',
-                    commentsLabel: 'In what way did this page help you?',
-                    icon: <Icon.ThumbsUp title="Yes" size="24px" />,
-                    hideLabel: true,
-                    score: 1,
-                  },
-                ]}
-                chipSize="xlarge"
-                sx={{ mb: Spacing['32px'] }}
-              />
-              */}
             </div>
           </div>
 
