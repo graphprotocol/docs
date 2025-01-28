@@ -3,7 +3,7 @@ import nextra from 'nextra'
 const env = {
   ENVIRONMENT: process.env.ENVIRONMENT,
   ORIGIN: process.env.ORIGIN,
-  BASE_PATH: process.env.BASE_PATH ?? '/docs',
+  BASE_PATH: process.env.BASE_PATH,
   ALGOLIA_API_KEY: process.env.ALGOLIA_API_KEY,
   ALGOLIA_APP_ID: process.env.ALGOLIA_APP_ID,
   MIXPANEL_TOKEN:
