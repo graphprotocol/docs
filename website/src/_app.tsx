@@ -84,9 +84,10 @@ function MyApp({ Component, router, pageProps }: AppProps) {
           if (matches?.length) {
             const path = matches[1] ? (matches[1].startsWith('/') ? matches[1] : `/${matches[1]}`) : '/'
             const basePath = process.env.BASE_PATH ?? ''
-            if (path === basePath || path.startsWith(`${basePath}/`)) {
-              // If the link is a root-relative URL (or an absolute but internal URL), ensure it is relative to the base path
-              href = path.substring(basePath.length) || '/'
+            const pathIncludesBasePath = path === basePath || path.startsWith(`${basePath}/`)
+            if (href.startsWith('/') || pathIncludesBasePath) {
+              // If the link is a root-relative URL or an absolute but internal URL, ensure it is relative to the base path
+              href = pathIncludesBasePath ? path.substring(basePath.length) : path
               // Also ensure the link includes a locale
               const { locale: pathLocale, pathWithoutLocale } = extractLocaleFromPath(href, supportedLocales)
               href = `/${pathLocale ?? locale ?? defaultLocale}${pathWithoutLocale}`
