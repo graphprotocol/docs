@@ -27,8 +27,14 @@ import { supportedLocales, translations, useI18n } from '@/i18n'
 import '@edgeandnode/gds/style.css'
 import '@docsearch/css'
 
-const internalAbsoluteHrefRegex = /^(((https?:)?\/\/((www|staging)\.)?thegraph\.com)?\/docs\/|\/(?!\/))/i
-const externalHrefRegex = /^(?!(https?:)?\/\/((www|staging)\.)?thegraph\.com)([a-zA-Z0-9+.-]+:)?\/\//i
+// Match either:
+// 1. URLs that start with `/` followed by an optional path or query (root-relative URLs)
+// 2. URLs that start with `http(s)://(www.|staging.)thegraph.com`, followed by an optional path/query
+const rootRelativeOrTheGraphUrlRegex =
+  /^(?:\/(?!\/)|(?:(?:https?:)?\/\/(?:(?:www|staging)\.)?thegraph\.com)(?:$|\/|\?))(.+)?/i
+
+// Match URLs that start with a protocol/scheme or `//`
+const absoluteUrlRegex = /^(?:[a-zA-Z][a-zA-Z\d+.-]*:|\/\/)/
 
 const removeBasePathFromUrl = (url: string) => url.substring((process.env.BASE_PATH ?? '').length)
 
@@ -74,18 +80,24 @@ function MyApp({ Component, router, pageProps }: AppProps) {
 
           let { href, target } = props as ButtonOrLinkProps.ExternalLinkProps
 
-          // If the link is internal and absolute, ensure `href` is relative to the base path (i.e. starts with `/`,
-          // not `/docs/` or `https://...`) and includes a locale (by prepending the current locale if there is none)
-          const internalAbsoluteHrefMatches = internalAbsoluteHrefRegex.exec(href)
-          if (internalAbsoluteHrefMatches) {
-            href = href.substring(internalAbsoluteHrefMatches[0].length - 1)
-            const { locale: pathLocale, pathWithoutLocale } = extractLocaleFromPath(href, supportedLocales)
-            href = `/${pathLocale ?? locale ?? defaultLocale}${pathWithoutLocale}`
-          }
-
-          // If the link is external, default the target to `_blank`
-          if (externalHrefRegex.test(href)) {
-            target = target ?? '_blank'
+          const matches = rootRelativeOrTheGraphUrlRegex.exec(href)
+          if (matches?.length) {
+            const path = matches[1] ? (matches[1].startsWith('/') ? matches[1] : `/${matches[1]}`) : '/'
+            const basePath = process.env.BASE_PATH ?? ''
+            const pathIncludesBasePath = path === basePath || path.startsWith(`${basePath}/`)
+            if (href.startsWith('/') || pathIncludesBasePath) {
+              // If the link is a root-relative URL or an absolute but internal URL, ensure it is relative to the base path
+              href = pathIncludesBasePath ? path.substring(basePath.length) : path
+              // Also ensure the link includes a locale
+              const { locale: pathLocale, pathWithoutLocale } = extractLocaleFromPath(href, supportedLocales)
+              href = `/${pathLocale ?? locale ?? defaultLocale}${pathWithoutLocale}`
+            } else if (process.env.ORIGIN && rootRelativeOrTheGraphUrlRegex.test(process.env.ORIGIN)) {
+              // If the link is an absolute URL under (staging.)thegraph.com, ensure we don't switch between staging and production
+              href = `${process.env.ORIGIN}${path}`
+            }
+          } else if (absoluteUrlRegex.test(href)) {
+            // If the link is an external URL, default the target to `_blank`
+            target ??= '_blank'
           }
 
           return { ...props, href, target }
