@@ -7,12 +7,22 @@ export async function getSupportedNetworks() {
   const registry = await NetworksRegistry.fromLatestVersion()
 
   return registry.networks
-    .map((network) => ({
-      ...network,
-      subgraphs: Boolean(network.services.subgraphs?.length),
-      substreams: Boolean(network.services.substreams?.length),
-      firehose: Boolean(network.services.firehose?.length),
-    }))
+    .flatMap((network) => {
+      const subgraphs = Boolean(network.services.subgraphs?.length)
+      const substreams = Boolean(network.services.substreams?.length)
+      const firehose = Boolean(network.services.firehose?.length)
+      if (!subgraphs && !substreams && !firehose) {
+        return []
+      }
+      return [
+        {
+          ...network,
+          subgraphs,
+          substreams,
+          firehose,
+        },
+      ]
+    })
     .sort((a, b) => a.fullName.localeCompare(b.fullName))
 }
 
