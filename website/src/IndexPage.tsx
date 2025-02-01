@@ -214,17 +214,7 @@ export function SupportedNetworks() {
               <NetworkIcon caip2Id={network.caip2Id} size="40px" />
             </div>
             <Text.P14 as="div" align="center">
-              {(() => {
-                switch (network.id) {
-                  // TODO: The registry should probably not have the same short name for these two
-                  case 'arbitrum-one':
-                    return 'Arbitrum One'
-                  case 'arbitrum-nova':
-                    return 'Arbitrum Nova'
-                  default:
-                    return network.shortName
-                }
-              })()}
+              {network.shortName}
             </Text.P14>
           </Flex.Column>
         ))}
