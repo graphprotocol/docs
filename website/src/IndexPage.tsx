@@ -1,8 +1,8 @@
 import { Image, LinkInline } from '@graphprotocol/nextra-theme'
+import { NetworkType } from '@pinax/graph-networks-registry'
 import { useData } from 'nextra/data'
 
 import { BorderRadius, buildBorder, buildTransition, Flex, Link, Spacing, Text } from '@edgeandnode/gds'
-import { NetworkAbstract, NetworkCorn, NetworkSoneium } from '@edgeandnode/gds/dist/icons'
 import { NetworkIcon } from '@edgeandnode/go'
 
 import { useI18n } from '@/i18n'
@@ -200,30 +200,31 @@ export function SupportedNetworks() {
       }}
     >
       {supportedNetworks
-        .filter((network) => !network.testnet)
-        // Temporarily filter out networks we don't have icons for in GDS
-        .filter((network) => !['evm-81', 'evm-146', 'evm-43111', 'evm-994873017'].includes(network.uid))
+        // TODO: Don't filter out testnets that don't have a mainnet
+        .filter((network) => network.networkType === NetworkType.Mainnet)
+        // Filter out beacon chains
+        .filter((network) => !network.caip2Id.startsWith('beacon:'))
+        // Filter out networks that have the exact same logo and (almost) the same short name as another network
+        .filter((network) => !['boba-bnb', 'eos-evm', 'polygon-zkevm'].includes(network.id))
+        // TODO: Fix Zora mono logo in web3icons
+        .filter((network) => network.id !== 'zora')
         .map((network) => (
-          <Flex.Column key={network.uid} as="li" align="center" gap={Spacing['8px']} sx={{ color: 'White64' }}>
+          <Flex.Column key={network.id} as="li" align="center" gap={Spacing['8px']} sx={{ color: 'White64' }}>
             <div sx={{ height: '40px' }}>
-              {(() => {
-                const iconProps = {
-                  size: '40px' as const,
-                }
-                switch (network.uid) {
-                  case 'evm-2741':
-                    return <NetworkAbstract {...iconProps} />
-                  case 'evm-1868':
-                    return <NetworkSoneium {...iconProps} />
-                  case 'evm-21000000':
-                    return <NetworkCorn {...iconProps} />
-                  default:
-                    return <NetworkIcon chain={network.uid} {...iconProps} />
-                }
-              })()}
+              <NetworkIcon caip2Id={network.caip2Id} size="40px" />
             </div>
             <Text.P14 as="div" align="center">
-              {network.name}
+              {(() => {
+                switch (network.id) {
+                  // TODO: The registry should probably not have the same short name for these two
+                  case 'arbitrum-one':
+                    return 'Arbitrum One'
+                  case 'arbitrum-nova':
+                    return 'Arbitrum Nova'
+                  default:
+                    return network.shortName
+                }
+              })()}
             </Text.P14>
           </Flex.Column>
         ))}
