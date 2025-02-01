@@ -9,7 +9,8 @@ ENV ORIGIN=$ORIGIN
 ENV PNPM_HOME="/usr/bin"
 
 RUN apk add --no-cache git
-RUN npm install -g pnpm@10.0.0
+RUN npm install -g corepack@latest
+RUN corepack enable pnpm
 
 WORKDIR /app
 
