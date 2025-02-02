@@ -5,7 +5,6 @@ export default {
   arweave: '',
   grafting: '',
   'subgraph-uncrashable': '',
-  'substreams-powered-subgraphs': '',
   'transfer-to-the-graph': '',
   pruning: 'Subgraph Best Practice 1: Pruning with indexerHints',
   derivedfrom: 'Subgraph Best Practice 2: Manage Arrays with @derivedFrom',
@@ -15,4 +14,5 @@ export default {
   'grafting-hotfix': 'Subgraph Best Practice 6: Grafting and Hotfixing',
   enums: '',
   'secure-api-keys-nextjs': '',
+  polymarket: 'Query Polymarket Data',
 }

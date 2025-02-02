@@ -1,3 +1,4 @@
+import { NetworkType } from '@pinax/graph-networks-registry'
 import { useData } from 'nextra/hooks'
 
 import { BorderRadius, buildBorder, buildTransition, Flex, Link, Spacing, Text } from '@edgeandnode/gds'
@@ -203,14 +204,21 @@ export function SupportedNetworks() {
       }}
     >
       {supportedNetworks
-        .filter((network) => !network.testnet || ['evm-1946'].includes(network.uid))
+        // TODO: Don't filter out testnets that don't have a mainnet
+        .filter((network) => network.networkType === NetworkType.Mainnet)
+        // Filter out beacon chains
+        .filter((network) => !network.caip2Id.startsWith('beacon:'))
+        // Filter out networks that have the exact same logo and (almost) the same short name as another network
+        .filter((network) => !['boba-bnb', 'eos-evm', 'polygon-zkevm'].includes(network.id))
+        // TODO: Fix Zora mono logo in web3icons
+        .filter((network) => network.id !== 'zora')
         .map((network) => (
-          <Flex.Column key={network.uid} as="li" align="center" gap={Spacing['8px']} sx={{ color: 'White64' }}>
+          <Flex.Column key={network.id} as="li" align="center" gap={Spacing['8px']} sx={{ color: 'White64' }}>
             <div sx={{ height: '40px' }}>
-              <NetworkIcon chain={network as any} size="40px" />
+              <NetworkIcon caip2Id={network.caip2Id as any} size="40px" />
             </div>
             <Text.P14 as="div" align="center">
-              {network.name}
+              {network.shortName}
             </Text.P14>
           </Flex.Column>
         ))}

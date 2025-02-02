@@ -1,4 +1,6 @@
 export default {
+  'getting-started-substreams': 'Quick Start',
   introduction: 'Introduction',
-  sps: 'Substreams-Powered Subgraphs',
+  developing: 'Developing',
+  pubsubstreams: 'Publishing',
 }

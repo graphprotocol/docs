@@ -2,13 +2,15 @@ FROM node:20-alpine AS builder
 
 ARG ENVIRONMENT
 ARG ORIGIN
+
 ENV ENVIRONMENT=$ENVIRONMENT
 ENV ORIGIN=$ORIGIN
 
 ENV PNPM_HOME="/usr/bin"
 
 RUN apk add --no-cache git
-RUN npm install -g pnpm@9.14.4
+RUN npm install -g corepack@latest
+RUN corepack enable pnpm
 
 WORKDIR /app
 

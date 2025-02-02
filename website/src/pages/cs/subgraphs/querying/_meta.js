@@ -1,9 +1,5 @@
 import meta from '../../../en/subgraphs/querying/_meta.js'
 
-const clonedMeta = {
+export default {
   ...meta,
 }
-
-delete clonedMeta['graph-client']
-
-export default clonedMeta

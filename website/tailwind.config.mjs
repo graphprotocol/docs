@@ -12,6 +12,7 @@ const normalizeValue = (value) => {
 }
 
 export default buildTailwindConfig({
+  packages: ['@edgeandnode/go'],
   content: ['./src/**/*.{js,jsx,ts,tsx,mdx}'],
 
   theme: {
