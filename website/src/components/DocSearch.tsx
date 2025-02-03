@@ -1,6 +1,10 @@
-import { DocSearchModal, type DocSearchProps, useDocSearchKeyboardEvents } from '@docsearch/react'
+import {
+  DocSearchModal,
+  type DocSearchProps as OriginalDocSearchProps,
+  useDocSearchKeyboardEvents,
+} from '@docsearch/react'
 import { keyframes } from '@emotion/react'
-import { useCallback, useRef, useState } from 'react'
+import { type ReactNode, type RefObject, useCallback, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { Global } from 'theme-ui'
 
@@ -27,124 +31,36 @@ const animationFadeIn = keyframes({
   to: { opacity: 1 },
 })
 
-export function DocSearch(props: DocSearchProps) {
-  const searchButtonRef = useRef<HTMLButtonElement>(null)
-  const [isOpen, setIsOpen] = useState(false)
+export interface DocSearchProps extends OriginalDocSearchProps {
+  children: (renderProps: {
+    buttonRef: RefObject<HTMLButtonElement>
+    openModal: () => void
+    isModalOpen: boolean
+  }) => ReactNode
+}
+
+export function DocSearch({ children, ...props }: DocSearchProps) {
+  const buttonRef = useRef<HTMLButtonElement>(null)
+  const [isModalOpen, setIsModalOpen] = useState(false)
   const [initialQuery, setInitialQuery] = useState<string | undefined>(props.initialQuery || undefined)
   const { theme } = useTheme()
 
-  const onOpen = useCallback(() => {
-    setIsOpen(true)
-  }, [setIsOpen])
-
-  const onClose = useCallback(() => {
-    setIsOpen(false)
-  }, [setIsOpen])
-
-  const onInput = useCallback(
-    (event: KeyboardEvent) => {
-      setIsOpen(true)
+  useDocSearchKeyboardEvents({
+    isOpen: isModalOpen,
+    onOpen: () => setIsModalOpen(true),
+    onClose: () => setIsModalOpen(false),
+    onInput: (event) => {
+      setIsModalOpen(true)
       setInitialQuery(event.key)
     },
-    [setIsOpen, setInitialQuery],
-  )
-
-  useDocSearchKeyboardEvents({
-    isOpen,
-    onOpen,
-    onClose,
-    onInput,
-    searchButtonRef,
+    searchButtonRef: buttonRef,
   })
 
   return (
     <>
-      <Link.Area
-        ref={searchButtonRef}
-        onClick={onOpen}
-        innerFocusRing
-        sx={{
-          borderRadius: [BorderRadius.FULL, null, null, null, BorderRadius.S],
-          '&:focus-visible': {
-            outline: ['none', null, null, null, `${BorderWidth['4px']} solid ${theme.colors.Purple16}`],
-          },
-        }}
-      >
-        <Responsive.Multiple as="span" cases={['mobile', null, null, null, 'desktop']}>
-          {(caseName) => {
-            switch (caseName) {
-              case 'mobile':
-                return (
-                  <Link>
-                    <Icon.Search size="20px" />
-                  </Link>
-                )
-                break
-              case 'desktop':
-                return (
-                  <Flex.Row
-                    as="span"
-                    align="center"
-                    gap={Spacing['8px']}
-                    sx={{
-                      height: '32px',
-                      p: Spacing['8px'],
-                      borderRadius: BorderRadius.S,
-                      bg: 'White8',
-                      'button:hover &, button:focus-visible &': {
-                        bg: 'White16',
-                      },
-                      'button:active &': {
-                        bg: 'White4',
-                      },
-                      transition: buildTransition('COLORS'),
-                    }}
-                  >
-                    <Icon.Search
-                      title=""
-                      size="12px"
-                      color="White88"
-                      sx={{
-                        flexShrink: 0,
-                        'button:hover &, button:focus-visible &': { color: 'White' },
-                        'button:active &': { color: 'White64' },
-                        transition: buildTransition('COLORS'),
-                      }}
-                    />
-                    <Text.P14
-                      as="span"
-                      size="14px"
-                      color="White32"
-                      sx={{
-                        'button:hover &, button:focus-visible &': { color: 'White88' },
-                        'button:active &': { color: 'White48' },
-                        transition: buildTransition('COLORS'),
-                      }}
-                    >
-                      {props.translations?.button?.buttonText ?? 'Search'}
-                    </Text.P14>
-                    <Text.C14
-                      as="kbd"
-                      size="14px"
-                      color="White16"
-                      sx={{
-                        'button:hover &, button:focus-visible &': { color: 'White48' },
-                        'button:active &': { color: 'White16' },
-                        transition: buildTransition('COLORS'),
-                      }}
-                    >
-                      <abbr title="Command">⌘</abbr>
-                      <span>K</span>
-                    </Text.C14>
-                  </Flex.Row>
-                )
-                break
-            }
-          }}
-        </Responsive.Multiple>
-      </Link.Area>
+      {children({ buttonRef, openModal: (open = true) => setIsModalOpen(open), isModalOpen })}
 
-      {isOpen ? (
+      {isModalOpen ? (
         <>
           {createPortal(
             <DocSearchModal
@@ -152,7 +68,7 @@ export function DocSearch(props: DocSearchProps) {
               initialScrollY={window.scrollY}
               initialQuery={initialQuery}
               translations={props.translations?.modal}
-              onClose={onClose}
+              onClose={() => setIsModalOpen(false)}
             />,
             document.body,
           )}

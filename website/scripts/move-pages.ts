@@ -122,7 +122,7 @@ async function main() {
 
   // Validate moves in English locale
   const sourceDirectory = path.join(PAGES_DIRECTORY, SOURCE_LOCALE)
-  for (const { sourcePath, destinationPath } of filesToMove) {
+  for (const { destinationPath } of filesToMove) {
     // Allow _meta.js files to exist in destination since we skip them during move if they exist
     if (path.basename(destinationPath) === META_FILENAME) {
       continue

@@ -2,7 +2,7 @@ import { type HTMLAttributes, useContext } from 'react'
 
 import { Icon, Link, useI18n } from '@edgeandnode/gds'
 
-import { NavContext } from '../layout/NavContext'
+import { NavContext } from '@/layout/NavContext'
 
 export type EditPageLinkProps = {
   mobile?: boolean

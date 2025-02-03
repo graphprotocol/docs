@@ -6,8 +6,7 @@ import { NetworkIcon } from '@edgeandnode/go'
 
 import { Image } from '@/components'
 import { useI18n } from '@/i18n'
-
-import { getSupportedNetworks } from './supportedNetworks'
+import { getSupportedNetworks } from '@/supportedNetworks'
 
 export function Intro() {
   const { t } = useI18n()

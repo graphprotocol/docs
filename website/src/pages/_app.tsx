@@ -1,7 +1,6 @@
 import mixpanel from 'mixpanel-browser'
 import type { AppProps } from 'next/app'
 import NextLink from 'next/link'
-import { useRouter } from 'next/router'
 import { DefaultSeo } from 'next-seo'
 import type { PropsWithChildren } from 'react'
 import googleAnalytics from 'react-ga4'
@@ -10,18 +9,15 @@ import {
   AnalyticsProvider,
   type ButtonOrLinkProps,
   defaultLocale,
-  ExperimentalLocaleSwitcher,
   extractLocaleFromPath,
   extractLocaleFromRouter,
   GDSProvider,
   I18nProvider,
   Link,
-  type NestedStrings,
 } from '@edgeandnode/gds'
 import { CookieBanner } from '@edgeandnode/go'
 
-import { DocSearch } from '@/components'
-import { supportedLocales, translations, useI18n } from '@/i18n'
+import { supportedLocales, translations } from '@/i18n'
 
 import '@edgeandnode/gds/style.css'
 import '@docsearch/css'
@@ -42,7 +38,7 @@ const DocSearchHit = ({ hit, children }: PropsWithChildren<{ hit: { url: string 
   <Link.Unstyled href={removeBasePathFromUrl(hit.url)}>{children}</Link.Unstyled>
 )
 
-function MyApp({ Component, router, pageProps }: AppProps) {
+export default function MyApp({ Component, router, pageProps }: AppProps) {
   // TODO: Where is this used?
   const hideLocaleSwitcher = pageProps.hideLocaleSwitcher ?? false
   const { locale } = extractLocaleFromRouter(router, supportedLocales)
@@ -118,65 +114,11 @@ function MyApp({ Component, router, pageProps }: AppProps) {
               measurementId: process.env.GOOGLE_ANALYTICS_MEASUREMENT_ID ?? null,
             }}
           >
-            <Layout showLocaleSwitcher={!hideLocaleSwitcher}>
-              <Component {...pageProps} />
-            </Layout>
+            <CookieBanner />
+            <Component {...pageProps} />
           </AnalyticsProvider>
         </I18nProvider>
       </GDSProvider>
     </>
   )
 }
-
-function Layout({ showLocaleSwitcher, children }: PropsWithChildren<{ showLocaleSwitcher: boolean }>) {
-  const router = useRouter()
-  const { t, translations, locale } = useI18n()
-
-  return (
-    <div>
-      {/* TODO: Implement properly in the layout */}
-      {/*
-        <DocSearch
-          apiKey={process.env.ALGOLIA_API_KEY ?? ''}
-          appId={process.env.ALGOLIA_APP_ID ?? ''}
-          indexName="thegraph-docs"
-          searchParameters={{
-            facetFilters: [`language:${locale}`],
-          }}
-          disableUserPersonalization={true}
-          transformItems={(items: any) =>
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-return
-            items.map((item: any) => ({
-              ...item,
-              url: item.url.replace('https://thegraph.com/docs', process.env.BASE_PATH ?? ''),
-            }))
-          }
-          hitComponent={DocSearchHit}
-          navigator={{
-            navigate({ itemUrl }: { itemUrl: string }) {
-              void router.push(removeBasePathFromUrl(itemUrl))
-            },
-            navigateNewTab({ itemUrl }: { itemUrl: string }) {
-              const windowReference = window.open(itemUrl, '_blank', 'noopener')
-              if (windowReference) {
-                windowReference.focus()
-              }
-            },
-            navigateNewWindow({ itemUrl }: { itemUrl: string }) {
-              window.open(itemUrl, '_blank', 'noopener')
-            },
-          }}
-          translations={translations.docsearch as NestedStrings}
-          placeholder={t('docsearch.button.buttonText')}
-        />
-        {showLocaleSwitcher ? (
-          <ExperimentalLocaleSwitcher className="prop-display-format-short max-sm:hidden xl:prop-display-format-full" />
-        ) : null}
-      */}
-      <CookieBanner />
-      {children}
-    </div>
-  )
-}
-
-export default MyApp

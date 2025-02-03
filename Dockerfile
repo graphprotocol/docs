@@ -1,4 +1,4 @@
-FROM node:20-alpine AS builder
+FROM node:22-alpine AS builder
 
 ARG ENVIRONMENT
 ARG ORIGIN
@@ -17,7 +17,6 @@ WORKDIR /app
 COPY . ./
 
 RUN pnpm install --frozen-lockfile
-
 RUN pnpm build
 
 FROM nginx:1.16.0-alpine

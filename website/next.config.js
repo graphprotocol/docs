@@ -30,35 +30,39 @@ const withNextra = nextra({
   transformPageMap(pageMap) {
     const route = pageMap[0]?.route
     const locale = typeof route === 'string' ? route.slice(1, 3) : defaultLocale
-    const t = (key) => translate(translations, locale, `global.sidebar.${key}`)
+    const t = (key) => translate(translations, locale, key)
 
     const metaFile = {
-      index: '',
+      index: t('index.title'),
       about: '',
       'supported-networks': '',
       contracts: '',
       subgraphs: {
         type: 'children',
-        title: t('subgraphs'),
+        title: t('global.sidebar.subgraphs'),
       },
       substreams: {
         type: 'children',
-        title: t('substreams'),
+        title: t('global.sidebar.substreams'),
+      },
+      sps: {
+        type: 'children',
+        title: t('global.sidebar.sps'),
       },
       indexing: {
         type: 'children',
-        title: t('indexing'),
+        title: t('global.sidebar.indexing'),
       },
       '---1': {
         type: 'separator',
-        title: t('resources'),
+        title: t('global.sidebar.resources'),
       },
       resources: {
         type: 'children',
       },
       archived: {
         type: 'children',
-        title: t('archived'),
+        title: t('global.sidebar.archived'),
       },
     }
 

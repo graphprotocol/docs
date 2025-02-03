@@ -18,7 +18,8 @@ export default buildTailwindConfig({
   theme: {
     extend: {
       colors: {
-        background: '#0b091a',
+        background: '#080618',
+        text: '#c8c8cc',
       },
     },
   },

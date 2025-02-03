@@ -4,7 +4,7 @@ import { Fragment, type PropsWithChildren, useContext, useState } from 'react'
 
 import { BorderRadius, buildTransition, Flex, Icon, Spacing, Text, useI18n } from '@edgeandnode/gds'
 
-import { NavTree } from '../components'
+import { NavTree } from '@/components'
 
 import { NavContext } from './NavContext'
 
