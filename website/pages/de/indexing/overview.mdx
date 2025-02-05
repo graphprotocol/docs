@@ -543,31 +543,31 @@ Die **Indexer CLI** verbindet sich mit dem Indexer-Agenten, in der Regel über P
 
 - `graph indexer rules start [options] <deployment-id>` - Startet die Indizierung eines Subgraph-Einsatzes, wenn dieser verfügbar ist, und setzt seine `decisionBasis` auf `always`, so dass der Indexer-Agent sich immer für die Indizierung entscheidet. Wenn die globale Regel auf „always“ gesetzt ist, werden alle verfügbaren Subgraphen im Netzwerk indiziert.
 
-- `graph indexer rules stop [options] <deployment-id>` - Stop indexing a deployment and set its `decisionBasis` to never, so it will skip this deployment when deciding on deployments to index.
+- `graph indexer rules stop [options] <deployment-id->` - Stoppt die Indizierung eines Einsatzes und setzt seine `decisionBasis` auf never, so dass er diesen Einsatz bei der Entscheidung über die zu indizierenden Einsätze überspringt.
 
-- `graph indexer rules maybe [options] <deployment-id>` — Set the `decisionBasis` for a deployment to `rules`, so that the Indexer agent will use indexing rules to decide whether to index this deployment.
+- `graph indexer rules maybe [options] <deployment-id>` - Setzt die `decisionBasis` für ein Deployment auf `rules`, so dass der Indexer Agent Indizierungsregeln verwendet, um zu entscheiden, ob dieses Deployment indiziert werden soll.
 
-- `graph indexer actions get [options] <action-id>` - Fetch one or more actions using `all` or leave `action-id` empty to get all actions. An additional argument `--status` can be used to print out all actions of a certain status.
+- `graph indexer actions get [options] <action-id>` - Holt eine oder mehrere Aktionen mit `all` oder lässt `action-id` leer, um alle Aktionen zu erhalten. Ein zusätzliches Argument `--status` kann verwendet werden, um alle Aktionen mit einem bestimmten Status auszugeben.
 
-- `graph indexer action queue allocate <deployment-id> <allocation-amount>` - Queue allocation action
+- `graph indexer action queue allocate <deployment-id> <allocation-amount>` - Aktion zur Warteschlangenzuordnung
 
-- `graph indexer action queue reallocate <deployment-id> <allocation-id> <allocationAmount>` - Queue reallocate action
+- `graph indexer action queue reallocate <deployment-id> <allocation-id> <allocationAmount>` - Aktion zur Neuzuweisung der Warteschlange
 
-- `graph indexer action queue unallocate <deployment-id> <allocation-id>` - Queue unallocate action
+- `graph indexer action queue unallocate <deployment-id> <allocation-id>` - Aktion zum Aufheben der Warteschlangenzuordnung
 
-- `graph indexer actions cancel [<action-id> ...]` - Cancel all action in the queue if id is unspecified, otherwise cancel array of id with space as separator
+- `graph indexer actions cancel [<action-id> ...]` - Abbrechen aller Aktionen in der Warteschlange, wenn id nicht angegeben ist, sonst Abbrechen eines Arrays von id mit Leerzeichen als Trennzeichen
 
-- `graph indexer actions approve [<action-id> ...]` - Approve multiple actions for execution
+- `graph indexer actions approve [<action-id> ...]` - Mehrere Aktionen zur Ausführung freigeben
 
-- `graph indexer actions execute approve` - Force the worker to execute approved actions immediately
+- `graph indexer actions execute approve` - Erzwingt die sofortige Ausführung genehmigter Aktionen durch den Worker
 
-All commands which display rules in the output can choose between the supported output formats (`table`, `yaml`, and `json`) using the `-output` argument.
+Alle Befehle, die Regeln in der Ausgabe anzeigen, können zwischen den unterstützten Ausgabeformaten (`table`, `yaml` und `json`) mit dem Argument `-output` wählen.
 
 #### Indexing rules
 
-Indexing rules can either be applied as global defaults or for specific subgraph deployments using their IDs. The `deployment` and `decisionBasis` fields are mandatory, while all other fields are optional. When an indexing rule has `rules` as the `decisionBasis`, then the Indexer agent will compare non-null threshold values on that rule with values fetched from the network for the corresponding deployment. If the subgraph deployment has values above (or below) any of the thresholds it will be chosen for indexing.
+Indizierungsregeln können entweder als globale Standardwerte oder für bestimmte Subgraph-Einsätze unter Verwendung ihrer IDs angewendet werden. Die Felder `deployment` und `decisionBasis` sind obligatorisch, während alle anderen Felder optional sind. Wenn eine Indizierungsregel `rules` als `decisionBasis` hat, dann vergleicht der Indexer-Agent Nicht-Null-Schwellenwerte dieser Regel mit Werten, die aus dem Netzwerk für den entsprechenden Einsatz geholt wurden. Wenn der Subgraph-Einsatz Werte über (oder unter) einem der Schwellenwerte aufweist, wird er für die Indizierung ausgewählt.
 
-For example, if the global rule has a `minStake` of **5** (GRT), any subgraph deployment which has more than 5 (GRT) of stake allocated to it will be indexed. Threshold rules include `maxAllocationPercentage`, `minSignal`, `maxSignal`, `minStake`, and `minAverageQueryFees`.
+Wenn die globale Regel beispielsweise einen Wert von **5** (GRT) hat, werden alle Subgraph-Einsätze, denen mehr als 5 (GRT) zugewiesen wurden, indiziert. Zu den Schwellenwertregeln gehören `maxAllocationPercentage`, `minSignal`, `maxSignal`, `minStake`, und `minAverageQueryFees`.
 
 Data model:
 
@@ -617,15 +617,15 @@ graph indexer rules delete QmZfeJYR86UARzp9HiXbURWunYgC9ywvPvoePNbuaATrEK
 
 #### Actions queue CLI
 
-The indexer-cli provides an `actions` module for manually working with the action queue. It uses the **Graphql API** hosted by the indexer management server to interact with the actions queue.
+Das indexer-cli bietet ein `actions`-Modul für die manuelle Arbeit mit der Aktionswarteschlange. Es verwendet die **Graphql-API**, die vom Indexer-Verwaltungsserver gehostet wird, um mit der Aktions-Warteschlange zu interagieren.
 
-The action execution worker will only grab items from the queue to execute if they have `ActionStatus = approved`. In the recommended path actions are added to the queue with ActionStatus = queued, so they must then be approved in order to be executed onchain. The general flow will look like:
+Der Action Execution Worker holt sich nur dann Elemente aus der Warteschlange, um sie auszuführen, wenn sie den Status `ActionStatus = approved` haben. Im empfohlenen Pfad werden Aktionen der Warteschlange mit ActionStatus = queued hinzugefügt, so dass sie dann genehmigt werden müssen, um in der Kette ausgeführt zu werden. Der allgemeine Ablauf sieht dann wie folgt aus:
 
 - Action added to the queue by the 3rd party optimizer tool or indexer-cli user
-- Indexer can use the `indexer-cli` to view all queued actions
-- Indexer (or other software) can approve or cancel actions in the queue using the `indexer-cli`. The approve and cancel commands take an array of action ids as input.
-- The execution worker regularly polls the queue for approved actions. It will grab the `approved` actions from the queue, attempt to execute them, and update the values in the db depending on the status of execution to `success` or `failed`.
-- If an action is successful the worker will ensure that there is an indexing rule present that tells the agent how to manage the allocation moving forward, useful when taking manual actions while the agent is in `auto` or `oversight` mode.
+- Indexer kann die `indexer-cli` verwenden, um alle in der Warteschlange stehenden Aktionen zu sehen
+- Indexer (oder andere Software) kann Aktionen in der Warteschlange mit Hilfe des `indexer-cli` genehmigen oder abbrechen. Die Befehle approve und cancel nehmen ein Array von Aktions-IDs als Eingabe.
+- Der Ausführungsworker fragt die Warteschlange regelmäßig nach genehmigten Aktionen ab. Er holt die `approved` Aktionen aus der Warteschlange, versucht, sie auszuführen, und aktualisiert die Werte in der Datenbank je nach Ausführungsstatus auf `success` oder `failed`.
+- Ist eine Aktion erfolgreich, stellt der Worker sicher, dass eine Indizierungsregel vorhanden ist, die dem Agenten mitteilt, wie er die Zuweisung in Zukunft verwalten soll. Dies ist nützlich, wenn manuelle Aktionen durchgeführt werden, während sich der Agent im `auto`- oder `oversight`-Modus befindet.
 - The indexer can monitor the action queue to see a history of action execution and if needed re-approve and update action items if they failed execution. The action queue provides a history of all actions queued and taken.
 
 Data model:
@@ -683,13 +683,13 @@ graph indexer actions execute approve
 
 Note that supported action types for allocation management have different input requirements:
 
-- `Allocate` - allocate stake to a specific subgraph deployment
+- `Allocate` - Zuweisung eines Anteils an einen bestimmten Subgraph-Einsatz
 
   - required action params:
     - deploymentID
     - amount
 
-- `Unallocate` - close allocation, freeing up the stake to reallocate elsewhere
+- `Unallocate` - Beendigung der Zuweisung, wodurch der Einsatz für eine andere Zuweisung frei wird
 
   - required action params:
     - allocationID
@@ -698,7 +698,7 @@ Note that supported action types for allocation management have different input 
     - poi
     - force (forces using the provided POI even if it doesn’t match what the graph-node provides)
 
-- `Reallocate` - atomically close allocation and open a fresh allocation for the same subgraph deployment
+- `Reallocate` - Zuweisung atomar schließen und eine neue Zuweisung für denselben Subgraph-Einsatz öffnen
 
   - required action params:
     - allocationID
@@ -733,13 +733,13 @@ default => 0.1 * $SYSTEM_LOAD;
 
 Example query costing using the above model:
 
-| Query                                                                        | Price   |
-| ---------------------------------------------------------------------------- | ------- |
-| &#123; pairs(skip: 5000) &#123; id &#125; &#125;                             | 0.5 GRT |
-| &#123; tokens &#123; symbol &#125; &#125;                                    | 0.1 GRT |
-| &#123; pairs(skip: 5000) &#123; id &#125; tokens &#123; symbol &#125; &#125; | 0.6 GRT |
+| Abfrage                                                                        | Preis   |
+| ------------------------------------------------------------------------------ | ------- |
+| &#123; pairs(skip: 5000) &#123; id &#125; &#125;                               | 0.5 GRT |
+| &#123; tokens &#123; symbol &#125; &#125;                                      | 0.1 GRT |
+| &#123; pairs(skip: 5000) &#123; id &#125; tokens &#123; symbol &#125; &#125;   | 0.6 GRT |
 
-#### Anwendung des Kostenmodells
+#### Applying the cost model
 
 Cost models are applied via the Indexer CLI, which passes them to the Indexer Management API of the Indexer agent for storing in the database. The Indexer Service will then pick them up and serve the cost models to gateways whenever they ask for them.
 
@@ -752,70 +752,70 @@ indexer cost set model my_model.agora
 
 ### Stake in the protocol
 
-The first steps to participating in the network as an Indexer are to approve the protocol, stake funds, and (optionally) set up an operator address for day-to-day protocol interactions.
+Die ersten Schritte zur Teilnahme am Netzwerk als Indexer sind die Genehmigung des Protokolls, der Einsatz von Geldern und (optional) die Einrichtung einer Betreiberadresse für die täglichen Interaktionen mit dem Protokoll.
 
-> Note: For the purposes of these instructions Remix will be used for contract interaction, but feel free to use your tool of choice ([OneClickDapp](https://oneclickdapp.com/), [ABItopic](https://abitopic.io/), and [MyCrypto](https://www.mycrypto.com/account) are a few other known tools).
+> Hinweis: In dieser Anleitung wird Remix für die Interaktion mit dem Vertrag verwendet, aber Sie können auch das Tool Ihrer Wahl verwenden ([OneClickDapp](https://oneclickdapp.com/), [ABItopic](https://abitopic.io/) und [MyCrypto](https://www.mycrypto.com/account) sind einige andere bekannte Tools).
 
-Once an Indexer has staked GRT in the protocol, the [Indexer components](/indexing/overview/#indexer-components) can be started up and begin their interactions with the network.
+Sobald ein Indexer GRT im Protokoll verankert hat, können die [Indexer-Komponenten](/indexing/overview/#indexer-components) gestartet werden und ihre Interaktionen mit dem Netzwerk beginnen.
 
 #### Approve tokens
 
-1. Open the [Remix app](https://remix.ethereum.org/) in a browser
+1. Öffnen Sie die [Remix-App] (https://remix.ethereum.org/) in einem Browser
 
-2. In the `File Explorer` create a file named **GraphToken.abi** with the [token ABI](https://raw.githubusercontent.com/graphprotocol/contracts/mainnet-deploy-build/build/abis/GraphToken.json).
+2. Erstellen Sie im `File Explorer` eine Datei mit dem Namen **GraphToken.abi** mit dem [Token ABI](https://raw.githubusercontent.com/graphprotocol/contracts/mainnet-deploy-build/build/abis/GraphToken.json).
 
-3. With `GraphToken.abi` selected and open in the editor, switch to the `Deploy and run transactions` section in the Remix interface.
+3. Wählen Sie die Datei `GraphToken.abi` aus und öffnen Sie sie im Editor. Wechseln Sie in der Remix-Benutzeroberfläche zum Abschnitt `Deploy and run transactions`.
 
-4. Under environment select `Injected Web3` and under `Account` select your Indexer address.
+4. Wählen Sie unter environment die Option `Injected Web3` und unter `Account` die Adresse Ihres Indexers aus.
 
-5. Set the GraphToken contract address - Paste the GraphToken contract address (`0xc944E90C64B2c07662A292be6244BDf05Cda44a7`) next to `At Address` and click the `At address` button to apply.
+5. Legen Sie die GraphToken-Vertragsadresse fest - Fügen Sie die GraphToken-Vertragsadresse (`0xc944E90C64B2c07662A292be6244BDf05Cda44a7`) neben `At Address` ein und klicken Sie zum Anwenden auf die Schaltfläche `At address`.
 
-6. Call the `approve(spender, amount)` function to approve the Staking contract. Fill in `spender` with the Staking contract address (`0xF55041E37E12cD407ad00CE2910B8269B01263b9`) and `amount` with the tokens to stake (in wei).
+6. Rufen Sie die Funktion `approve(spender, amount)` auf, um den Einsatzvertrag zu genehmigen. Geben Sie in `spender` die Adresse des Einsatzvertrags (`0xF55041E37E12cD407ad00CE2910B8269B01263b9`) und in `amount` die zu setzenden Token (in wei) ein.
 
 #### Stake tokens
 
-1. Open the [Remix app](https://remix.ethereum.org/) in a browser
+1. Öffnen Sie die [Remix-App] (https://remix.ethereum.org/) in einem Browser
 
-2. In the `File Explorer` create a file named **Staking.abi** with the staking ABI.
+2. Erstellen Sie im `File Explorer` eine Datei mit dem Namen **Staking.abi** mit dem Staking-ABI.
 
-3. With `Staking.abi` selected and open in the editor, switch to the `Deploy and run transactions` section in the Remix interface.
+3. Wählen Sie die Datei `Staking.abi` aus und öffnen Sie sie im Editor. Wechseln Sie in der Remix-Benutzeroberfläche zum Abschnitt `Deploy and run transactions`.
 
-4. Under environment select `Injected Web3` and under `Account` select your Indexer address.
+4. Wählen Sie unter environment die Option `Injected Web3` und unter `Account` die Adresse Ihres Indexers aus.
 
-5. Set the Staking contract address - Paste the Staking contract address (`0xF55041E37E12cD407ad00CE2910B8269B01263b9`) next to `At Address` and click the `At address` button to apply.
+5. Legen Sie die Adresse des Abtretungsvertrags fest - Fügen Sie die Adresse des Abtretungsvertrags (`0xF55041E37E12cD407ad00CE2910B8269B01263b9`) neben `At Address` ein und klicken Sie auf die Schaltfläche `At address`, um sie anzuwenden.
 
-6. Call `stake()` to stake GRT in the protocol.
+6. Rufen Sie `stake()` auf, um GRT in das Protokoll aufzunehmen.
 
-7. (Optional) Indexers may approve another address to be the operator for their Indexer infrastructure in order to separate the keys that control the funds from those that are performing day to day actions such as allocating on subgraphs and serving (paid) queries. In order to set the operator call `setOperator()` with the operator address.
+7. (Optional) Indexer können eine andere Adresse als Operator für ihre Indexer-Infrastruktur genehmigen, um die Schlüssel, die die Fonds kontrollieren, von denen zu trennen, die alltägliche Aktionen wie die Zuweisung auf Subgraphen und die Bedienung (bezahlter) Abfragen durchführen. Um den Betreiber zu setzen, rufen Sie `setOperator()` mit der Betreiberadresse auf.
 
-8. (Optional) In order to control the distribution of rewards and strategically attract Delegators Indexers can update their delegation parameters by updating their indexingRewardCut (parts per million), queryFeeCut (parts per million), and cooldownBlocks (number of blocks). To do so call `setDelegationParameters()`. The following example sets the queryFeeCut to distribute 95% of query rebates to the Indexer and 5% to Delegators, set the indexingRewardCutto distribute 60% of indexing rewards to the Indexer and 40% to Delegators, and set `thecooldownBlocks` period to 500 blocks.
+8. (Optional) Um die Verteilung von Rewards zu steuern und Delegatoren strategisch anzuziehen, können Indexer ihre Delegationsparameter aktualisieren, indem sie ihren indexingRewardCut (Teile pro Million), queryFeeCut (Teile pro Million) und cooldownBlocks (Anzahl der Blöcke) aktualisieren. Dazu rufen Sie `setDelegationParameters()` auf. Im folgenden Datenbeispiel wird der queryFeeCut so eingestellt, dass 95 % der Abfragerabatte an den Indexer und 5 % an die Delegatoren verteilt werden, der indexingRewardCut so, dass 60 % der Rewards für die Indizierung an den Indexer und 40 % an die Delegatoren verteilt werden, und der Zeitraum `thecooldownBlocks` wird auf 500 Blöcke festgelegt.
 
 ```
 setDelegationParameters(950000, 600000, 500)
 ```
 
-### Setting delegation parameters
+### Einstellung der Delegationsparameter
 
-The `setDelegationParameters()` function in the [staking contract](https://github.com/graphprotocol/contracts/blob/main/packages/contracts/contracts/staking/Staking.sol) is essential for Indexers, allowing them to set parameters that define their interactions with Delegators, influencing their reward sharing and delegation capacity.
+Die Funktion `setDelegationParameters()` im [Staking Contract] (https://github.com/graphprotocol/contracts/blob/main/packages/contracts/contracts/staking/Staking.sol) ist für Indexer von entscheidender Bedeutung, da sie es ihnen ermöglicht, Parameter zu setzen, die ihre Interaktion mit Delegatoren definieren und ihre Reward-Aufteilung und Delegationskapazität beeinflussen.
 
-### How to set delegation parameters
+### Festlegen der Delegationsparameter
 
-To set the delegation parameters using Graph Explorer interface, follow these steps:
+Gehen Sie wie folgt vor, um die Delegationsparameter über die Graph Explorer-Schnittstelle einzustellen:
 
-1. Navigate to [Graph Explorer](https://thegraph.com/explorer/).
-2. Connect your wallet. Choose multisig (such as Gnosis Safe) and then select mainnet. Note: You will need to repeat this process for Arbitrum One.
-3. Connect the wallet you have as a signer.
-4. Navigate to the 'Settings' section and select 'Delegation Parameters'. These parameters should be configured to achieve an effective cut within the desired range. Upon entering values in the provided input fields, the interface will automatically calculate the effective cut. Adjust these values as necessary to attain the desired effective cut percentage.
-5. Submit the transaction to the network.
+1. Navigieren Sie zu [Graph Explorer] (https://thegraph.com/explorer/).
+2. Verbinden Sie Ihre Wallet. Wählen Sie Multisig (z. B. Gnosis Safe) und dann Mainnet aus. Hinweis: Sie müssen diesen Vorgang für Arbitrum One wiederholen.
+3. Verbinden Sie die Wallet, die Sie als Unterzeichner haben.
+4. Navigieren Sie zum Abschnitt 'Settings' und wählen Sie 'Delegation Parameters'. Diese Parameter sollten so konfiguriert werden, dass eine effektive Kürzung innerhalb des gewünschten Bereichs erreicht wird. Nach Eingabe der Werte in die vorgesehenen Eingabefelder berechnet die Schnittstelle automatisch den effektiven Anteil. Passen Sie diese Werte nach Bedarf an, um den gewünschten Prozentsatz der effektiven Kürzung zu erreichen.
+5. Übermitteln Sie die Transaktion an das Netz.
 
-> Note: This transaction will need to be confirmed by the multisig wallet signers.
+> Hinweis: Diese Transaktion muss von den Unterzeichnern der Multisig-Wallets bestätigt werden.
 
 ### The life of an allocation
 
-After being created by an Indexer a healthy allocation goes through two states.
+Nachdem sie von einem Indexer erstellt wurde, durchläuft eine ordnungsgemäße Zuordnung zwei Zustände.
 
-- **Active** - Once an allocation is created onchain ([allocateFrom()](https://github.com/graphprotocol/contracts/blob/main/packages/contracts/contracts/staking/Staking.sol#L316)) it is considered **active**. A portion of the Indexer's own and/or delegated stake is allocated towards a subgraph deployment, which allows them to claim indexing rewards and serve queries for that subgraph deployment. The Indexer agent manages creating allocations based on the Indexer rules.
+- **Aktiv** - Sobald eine Zuweisung in der Kette erstellt wurde ([allocateFrom()](https://github.com/graphprotocol/contracts/blob/main/packages/contracts/contracts/staking/Staking.sol#L316)), wird sie als **aktiv** betrachtet. Ein Teil des eigenen und/oder delegierten Einsatzes des Indexers wird einem Subgraph-Einsatz zugewiesen, was ihm erlaubt, Rewards für die Indizierung zu beanspruchen und Abfragen für diesen Subgraph-Einsatz zu bedienen. Der Indexer-Agent verwaltet die Erstellung von Zuweisungen basierend auf den Indexer-Regeln.
 
-- **Closed** - An Indexer is free to close an allocation once 1 epoch has passed ([closeAllocation()](https://github.com/graphprotocol/contracts/blob/main/packages/contracts/contracts/staking/Staking.sol#L335)) or their Indexer agent will automatically close the allocation after the **maxAllocationEpochs** (currently 28 days). When an allocation is closed with a valid proof of indexing (POI) their indexing rewards are distributed to the Indexer and its Delegators ([learn more](/indexing/overview/#how-are-indexing-rewards-distributed)).
+- **Geschlossen** - Ein Indexer kann eine Zuweisung schließen, sobald 1 Epoche vergangen ist ([closeAllocation()](https://github.com/graphprotocol/contracts/blob/main/packages/contracts/contracts/staking/Staking.sol#L335)) oder sein Indexer-Agent schließt die Zuweisung automatisch nach der **maxAllocationEpochs** (derzeit 28 Tage). Wenn eine Zuweisung mit einem gültigen Indizierungsnachweis (POI) geschlossen wird, werden die Rewards für die Indizierung an den Indexer und seine Delegatoren verteilt ([learn more](/indexing/overview/#how-are-indexing-rewards-distributed)).
 
-Indexers are recommended to utilize offchain syncing functionality to sync subgraph deployments to chainhead before creating the allocation onchain. This feature is especially useful for subgraphs that may take longer than 28 epochs to sync or have some chances of failing undeterministically.
+Indexern wird empfohlen, die Offchain-Synchronisierungsfunktion zu nutzen, um Subgraph-Einsätze mit dem Chainhead zu synchronisieren, bevor die Zuordnung Onchain erstellt wird. Diese Funktion ist besonders nützlich für Subgraphen, bei denen die Synchronisierung länger als 28 Epochen dauert oder die Gefahr eines unbestimmten Fehlers besteht.
