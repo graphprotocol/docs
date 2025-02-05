@@ -212,7 +212,9 @@ export default function NextraLayout({ children, pageOpts, pageProps }: NextraTh
     return result
   }, [fsPath, pageMap, locale])
 
+  const getRouteWithoutLocale = (route: string) => route.slice(3)
   const activeRoute = normalizePagesResult.activePath.at(-1)?.route ?? null
+  const activeRouteWithoutLocale = activeRoute ? getRouteWithoutLocale(activeRoute) : null
 
   type NavigationItem = WithOptional<(typeof normalizePagesResult.directories)[number], 'children'>
   type NavigationGroup = {
@@ -223,8 +225,8 @@ export default function NextraLayout({ children, pageOpts, pageProps }: NextraTh
     items: NavigationItem[]
   }
   const getNavigationItemIcon = (item: NavigationItem, active?: boolean) => {
-    const routeWithoutLocale = item.route.slice(3) || '/'
-    if (routeWithoutLocale === '/') {
+    const routeWithoutLocale = getRouteWithoutLocale(item.route)
+    if (routeWithoutLocale === '') {
       return <House variant={active ? 'fill' : 'regular'} alt="" />
     }
     if (routeWithoutLocale === '/about' || routeWithoutLocale.startsWith('/about/')) {
@@ -271,10 +273,13 @@ export default function NextraLayout({ children, pageOpts, pageProps }: NextraTh
       currentItem = currentItem.children[0]!
     }
   }
-  const getNavigationItemSelected = (route: string | undefined) => {
-    if (route && activeRoute) {
-      if (route === activeRoute) return true
-      if (activeRoute.startsWith(route)) return 'partially'
+  const getNavigationItemSelected = (route: string) => {
+    const routeWithoutLocale = getRouteWithoutLocale(route)
+    if (routeWithoutLocale === activeRouteWithoutLocale) {
+      return true
+    }
+    if (routeWithoutLocale && activeRouteWithoutLocale && activeRouteWithoutLocale.startsWith(routeWithoutLocale)) {
+      return 'partially'
     }
     return false
   }
@@ -474,7 +479,7 @@ export default function NextraLayout({ children, pageOpts, pageProps }: NextraTh
                         title={group.title}
                         icon={group.icon ?? getNavigationItemIcon(group.items[0]!)}
                         href={group.href ?? getNavigationItemHref(group.items[0]!)}
-                        selected={getNavigationItemSelected(group.route)}
+                        selected={group.route ? getNavigationItemSelected(group.route) : undefined}
                       >
                         {groupContent}
                       </NavigationItem>
