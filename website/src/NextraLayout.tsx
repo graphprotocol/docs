@@ -8,7 +8,6 @@ import {
   type ComponentPropsWithoutRef,
   type ReactElement,
   type ReactNode,
-  type RefObject,
   useCallback,
   useContext,
   useMemo,
@@ -29,8 +28,18 @@ import {
   Locale,
   type NestedStrings,
 } from '@edgeandnode/gds'
+import {
+  BookOpenText,
+  Files,
+  House,
+  RoleIndexer,
+  Stack,
+  Subgraph,
+  Substreams,
+  SubstreamsPoweredSubgraph,
+  TheGraph,
+} from '@edgeandnode/gds/icons'
 
-import { TheGraphLogo } from '@/assets/TheGraphLogo'
 import {
   Difficulty,
   DocSearch,
@@ -203,24 +212,50 @@ export default function NextraLayout({ children, pageOpts, pageProps }: NextraTh
     return result
   }, [fsPath, pageMap, locale])
 
+  const activeRoute = normalizePagesResult.activePath.at(-1)?.route ?? null
+
   type NavigationItem = WithOptional<(typeof normalizePagesResult.directories)[number], 'children'>
   type NavigationGroup = {
     title: string | undefined
+    icon: ReactNode | undefined
     route: string | undefined
     items: NavigationItem[]
   }
-  const navigationItemIsExpandable = (item: NavigationItem) => {
-    if (!item.children?.length) return false
-    switch (item.type) {
-      case 'children':
-        /**
-         * This is hacky: we want to render an item of type `children` without a `NavigationItem` wrapper only when
-         * it doesn't have a title, but Nextra defaults `title` to `name` so it's never actually empty.
-         */
-        return item.title !== item.name
-      default:
-        return true
+  const getNavigationItemIcon = (item: NavigationItem) => {
+    const routeWithoutLocale = item.route.slice(3) || '/'
+    if (routeWithoutLocale === '/') {
+      return <House variant="fill" alt="" />
     }
+    if (routeWithoutLocale === '/about' || routeWithoutLocale.startsWith('/about/')) {
+      return <TheGraph alt="" />
+    }
+    if (routeWithoutLocale === '/supported-networks' || routeWithoutLocale.startsWith('/supported-networks/')) {
+      return <Stack alt="" />
+    }
+    if (routeWithoutLocale === '/contracts' || routeWithoutLocale.startsWith('/contracts/')) {
+      return <Files alt="" />
+    }
+    if (routeWithoutLocale === '/subgraphs' || routeWithoutLocale.startsWith('/subgraphs/')) {
+      return <Subgraph alt="" />
+    }
+    if (routeWithoutLocale === '/substreams' || routeWithoutLocale.startsWith('/substreams/')) {
+      return <Substreams alt="" />
+    }
+    if (routeWithoutLocale === '/sps' || routeWithoutLocale.startsWith('/sps/')) {
+      return <SubstreamsPoweredSubgraph alt="" />
+    }
+    if (routeWithoutLocale === '/indexing' || routeWithoutLocale.startsWith('/indexing/')) {
+      return <RoleIndexer alt="" />
+    }
+    if (
+      routeWithoutLocale === '/resources' ||
+      routeWithoutLocale.startsWith('/resources/') ||
+      routeWithoutLocale === '/archived' ||
+      routeWithoutLocale.startsWith('/archived/')
+    ) {
+      return <BookOpenText alt="" />
+    }
+    return null
   }
   const getNavigationItemRoute = (item: NavigationItem) => {
     let currentItem = item
@@ -237,33 +272,55 @@ export default function NextraLayout({ children, pageOpts, pageProps }: NextraTh
   }
   const navigationGroups = normalizePagesResult.directories.reduce<NavigationGroup[]>(
     (groups, item: NavigationItem) => {
-      if (item.type === 'separator') {
-        groups.push({ title: item.title, route: undefined, items: [] })
-      } else {
+      const itemHasChildren = Boolean(item.children?.length)
+      if (item.type === 'children' && !itemHasChildren) return groups
+      /**
+       * When an item of type `children` doesn't have a title set in the meta file, we want to render it without a `NavigationItem` wrapper.
+       * Unfortunately, Nextra defaults `title` to `name`, so the way to check if it's empty is to check if it's equal to `name`, which should
+       * never happen with an explicitly set `title` because it should be title case whereas `name` will always be lowercase.
+       */
+      const itemHasNoWrapper = item.type === 'children' && item.title === item.name
+      let currentGroup = groups[groups.length - 1]
+      /**
+       * Create a new group if it's the first one, if the current item is a separator, or if the current group has some items but no title
+       * (meaning its items are rendered at the top level instead of in an expandable panel) while the current item has children and a wrapper.
+       */
+      if (
+        !currentGroup ||
+        item.type === 'separator' ||
+        (currentGroup.title === undefined && currentGroup.items.length > 0 && itemHasChildren && !itemHasNoWrapper)
+      ) {
+        groups.push({
+          title: item.type === 'separator' ? item.title : undefined,
+          icon: undefined,
+          route: undefined,
+          items: [],
+        })
+      }
+      if (item.type === 'separator') return groups
+      currentGroup = groups[groups.length - 1]!
+      if (currentGroup.title === undefined && currentGroup.items.length === 0 && itemHasChildren && !itemHasNoWrapper) {
+        /**
+         * If the group has no title and the first item we want to add to it has children and a wrapper, give the item's title, icon, route
+         * (if different from the first child's), and children to the group, instead of adding the item itself.
+         */
+        currentGroup.title = item.title
+        currentGroup.icon = getNavigationItemIcon(item)
         const route = getNavigationItemRoute(item)
-        let currentGroup = groups[groups.length - 1]
-        if (
-          !currentGroup ||
-          currentGroup.items.some(navigationItemIsExpandable) ||
-          (currentGroup.title === undefined && navigationItemIsExpandable(item))
-        ) {
-          groups.push({
-            title: undefined,
-            route,
-            items: [],
-          })
-        }
-        currentGroup = groups[groups.length - 1]!
+        const firstChildRoute = getNavigationItemRoute(item.children![0]!)
+        currentGroup.route = route !== firstChildRoute ? route : undefined
+        currentGroup.items.push(...item.children!)
+      } else if (itemHasNoWrapper) {
+        // Otherwise, if the first or next item to add to the group has no wrapper, just add its children to it
+        currentGroup.items.push(...(item.children ?? []))
+      } else {
+        // Otherwise, add the item (which may or may not have children) to the group
         currentGroup.items.push(item)
-        if (currentGroup.route === undefined && route !== undefined) {
-          currentGroup.route = route
-        }
       }
       return groups
     },
     [],
   )
-  const activeRoute = normalizePagesResult.activePath.at(-1)?.route ?? null
 
   // Provide `markOutlineItem` to the `DocumentContext` so child `Heading` components can mark outline items as "in or above view" or not
   const [
@@ -324,7 +381,7 @@ export default function NextraLayout({ children, pageOpts, pageProps }: NextraTh
           >
             <header className="flex h-16 items-center border-b border-white/8 pe-4 ps-6">
               <div>
-                <TheGraphLogo alt="" size={8} />
+                <TheGraph alt="" size={8} />
                 <ButtonOrLink href="https://thegraph.com" className="absolute -inset-2">
                   <span className="sr-only">The Graph</span>
                 </ButtonOrLink>
@@ -382,33 +439,33 @@ export default function NextraLayout({ children, pageOpts, pageProps }: NextraTh
                   </div>
                 )}
               </DocSearch>
-              {/* TODO: Add icons to some navigation items */}
               {navigationGroups.map((group, groupIndex) => {
                 if (group.items.length === 0) {
                   return null
                 }
                 const groupContent = group.items.map((groupItem) =>
-                  (function renderItem(item: typeof groupItem): ReactNode {
-                    const childrenContent = item.children?.length ? item.children.map(renderItem) : null
-                    if (childrenContent && !navigationItemIsExpandable(item)) {
-                      return childrenContent
-                    } else {
-                      return (
-                        <NavigationItem
-                          key={item.name}
-                          title={item.title}
-                          href={getNavigationItemRoute(item)}
-                          selected={item.route === activeRoute}
-                          children={childrenContent}
-                        />
-                      )
-                    }
+                  (function renderItem(item: typeof groupItem) {
+                    return (
+                      <NavigationItem
+                        key={item.name}
+                        title={item.title}
+                        icon={getNavigationItemIcon(item)}
+                        href={getNavigationItemRoute(item)}
+                        selected={item.route === activeRoute}
+                        children={item.children?.length ? <>{item.children.map(renderItem)}</> : undefined}
+                      />
+                    )
                   })(groupItem),
                 )
                 return (
                   <NavigationGroup key={groupIndex}>
                     {group.title !== undefined ? (
-                      <NavigationItem title={group.title} href={group.route}>
+                      <NavigationItem
+                        title={group.title}
+                        icon={group.icon ?? getNavigationItemIcon(group.items[0]!)}
+                        href={group.route ?? getNavigationItemRoute(group.items[0]!)}
+                        selected={group.route === activeRoute}
+                      >
                         {groupContent}
                       </NavigationItem>
                     ) : (

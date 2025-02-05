@@ -1,3 +1,5 @@
+// @ts-check
+
 import nextra from 'nextra'
 
 import { defaultLocale, translate } from '@edgeandnode/gds'
@@ -28,37 +30,57 @@ const withNextra = nextra({
   defaultShowCopyCode: false,
   readingTime: true,
   transformPageMap(pageMap) {
-    const route = pageMap[0]?.route
+    const route = pageMap[0] && 'route' in pageMap[0] ? pageMap[0].route : undefined
     const locale = typeof route === 'string' ? route.slice(1, 3) : defaultLocale
-    const t = (key) => translate(translations, locale, key)
+    /** @type {(key: string) => string} */
+    const t = (key) =>
+      translate(
+        translations,
+        /** @type {import('@edgeandnode/gds').Locale} */
+        (locale),
+        /** @type {any} */
+        (key),
+      )
 
     const metaFile = {
       index: t('index.title'),
       about: '',
       'supported-networks': '',
       contracts: '',
+      '---1': {
+        type: 'separator',
+      },
       subgraphs: {
         type: 'children',
         title: t('global.sidebar.subgraphs'),
+      },
+      '---2': {
+        type: 'separator',
       },
       substreams: {
         type: 'children',
         title: t('global.sidebar.substreams'),
       },
+      '---3': {
+        type: 'separator',
+      },
       sps: {
         type: 'children',
         title: t('global.sidebar.sps'),
+      },
+      '---4': {
+        type: 'separator',
       },
       indexing: {
         type: 'children',
         title: t('global.sidebar.indexing'),
       },
-      '---1': {
+      '---5': {
         type: 'separator',
-        title: t('global.sidebar.resources'),
       },
       resources: {
         type: 'children',
+        title: t('global.sidebar.resources'),
       },
       archived: {
         type: 'children',
@@ -94,7 +116,7 @@ export default withNextra({
   reactStrictMode: true,
   basePath: env.BASE_PATH,
   trailingSlash: true,
-  redirects: () => [
+  redirects: async () => [
     {
       source: '/',
       destination: '/en/',

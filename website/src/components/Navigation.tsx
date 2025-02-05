@@ -85,23 +85,23 @@ export const NavigationItem = ({ title, icon, onClick, className, children, ...p
             setExpanded(true)
             onClick?.(event)
           }}
-          className="flex flex-1 gap-1 p-2"
+          className="flex flex-1 gap-1.5 p-2 ps-1"
           {...props}
         >
           <span
             className={`
-              flex size-6 shrink-0 items-center justify-center text-text transition
+              flex size-6 shrink-0 items-center justify-center text-white/64 transition
               in-clickable-hocus-visible:text-white
               in-clickable-[[aria-current=true]]:text-purple
               in-clickable-[[aria-current=true]]:transition-none
               nested-icon:size-4
             `}
           >
-            {icon}
+            {depth === 0 ? icon : null}
           </span>
           <span
             className={`
-              text-p16 text-text transition
+              text-p16 text-white/64 transition
               in-clickable-hocus-visible:text-white
               in-clickable-[[aria-current=true]]:text-white
               in-clickable-[[aria-current=true]]:transition-none
@@ -110,7 +110,7 @@ export const NavigationItem = ({ title, icon, onClick, className, children, ...p
             {title}
           </span>
           {depth > 0 ? (
-            <span className="absolute inset-y-0 left-2 flex w-1.5 flex-col items-center gap-1">
+            <span className="absolute inset-y-0 left-3 flex w-1.5 flex-col items-center gap-1">
               <span
                 className={`
                   w-px flex-1 bg-white/8 transition duration-150
@@ -148,7 +148,7 @@ export const NavigationItem = ({ title, icon, onClick, className, children, ...p
             <CaretDown
               alt={expanded ? 'Collapse' : 'Expand'}
               size={3.5}
-              className="transition duration-300 in-clickable-[[aria-expanded=true]]:-rotate-180"
+              className="transition-transform duration-300 in-clickable-[[aria-expanded=true]]:-rotate-180 in-clickable-not-hocus-visible:prop-color-white/64"
             />
           </ExperimentalButton>
         ) : null}
@@ -171,14 +171,14 @@ export const NavigationItem = ({ title, icon, onClick, className, children, ...p
                 [--docs-previous-navigation-item-expanded:var(--docs-navigation-item-expanded)]
                 [--docs-previous-navigation-item-first:var(--docs-navigation-item-first)]
                 [--docs-previous-navigation-item-last:var(--docs-navigation-item-last)]
-                group-data-[depth=1]/navigation-list:pl-4
+                group-data-[depth=1]/navigation-list:ps-4
               `}
             >
               {expanded ? children : null}
             </NavigationList>
           </ExperimentalTransition>
           {depth > 0 ? (
-            <span className="absolute inset-y-0 left-2.5 z-10 w-[17px] translate-x-[0.5px]">
+            <span className="absolute inset-y-0 left-3.5 z-10 w-[17px] translate-x-[0.5px]">
               <svg
                 viewBox="0 0 17 17"
                 className={`
