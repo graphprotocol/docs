@@ -45,10 +45,11 @@ declare namespace NavigationItemProps {
   interface BaseProps {
     title: string
     icon?: ReactNode
+    selected?: boolean | 'partially'
   }
-  interface ButtonProps extends BaseProps, Omit<ButtonOrLinkProps.ButtonProps, 'title'> {}
-  interface ExternalLinkProps extends BaseProps, Omit<ButtonOrLinkProps.ExternalLinkProps, 'title'> {}
-  interface ClientLinkProps extends BaseProps, Omit<ButtonOrLinkProps.ClientLinkProps, 'title'> {}
+  interface ButtonProps extends BaseProps, Omit<ButtonOrLinkProps.ButtonProps, 'title' | 'selected'> {}
+  interface ExternalLinkProps extends BaseProps, Omit<ButtonOrLinkProps.ExternalLinkProps, 'title' | 'selected'> {}
+  interface ClientLinkProps extends BaseProps, Omit<ButtonOrLinkProps.ClientLinkProps, 'title' | 'selected'> {}
 }
 
 export type NavigationItemProps =
@@ -56,7 +57,15 @@ export type NavigationItemProps =
   | NavigationItemProps.ExternalLinkProps
   | NavigationItemProps.ClientLinkProps
 
-export const NavigationItem = ({ title, icon, onClick, className, children, ...props }: NavigationItemProps) => {
+export const NavigationItem = ({
+  title,
+  icon,
+  selected,
+  onClick,
+  className,
+  children,
+  ...props
+}: NavigationItemProps) => {
   const navigationListContext = useContext(NavigationListContext)
   const depth = navigationListContext?.depth ?? 0
   const [expandedIfChildren, setExpanded] = useState(false)
@@ -81,6 +90,8 @@ export const NavigationItem = ({ title, icon, onClick, className, children, ...p
       <div className="flex items-center">
         {/* TODO: Focus ring? */}
         <ButtonOrLink
+          selected={selected === true}
+          data-partially-selected={selected === 'partially' ? true : undefined}
           onClick={(event: MouseEvent<HTMLButtonElement & HTMLAnchorElement>) => {
             setExpanded(true)
             onClick?.(event)
@@ -93,6 +104,7 @@ export const NavigationItem = ({ title, icon, onClick, className, children, ...p
               flex size-6 shrink-0 items-center justify-center text-white/64 transition
               in-clickable-hocus-visible:text-white
               in-clickable-[[aria-current=true]]:text-purple
+              in-clickable-[[data-partially-selected]]:text-white
               in-clickable-[[aria-current=true]]:transition-none
               nested-icon:size-4
             `}
@@ -104,6 +116,7 @@ export const NavigationItem = ({ title, icon, onClick, className, children, ...p
               text-p16 text-white/64 transition
               in-clickable-hocus-visible:text-white
               in-clickable-[[aria-current=true]]:text-white
+              in-clickable-[[data-partially-selected]]:text-white
               in-clickable-[[aria-current=true]]:transition-none
             `}
           >
@@ -124,6 +137,7 @@ export const NavigationItem = ({ title, icon, onClick, className, children, ...p
                   size-2 rounded-full bg-white/8 transition
                   in-clickable-hocus-visible:bg-white/16
                   in-clickable-[[aria-current=true]]:bg-purple
+                  in-clickable-[[data-partially-selected]]:bg-white/16
                   in-clickable-[[aria-current=true]]:transition-none
                 `}
               />

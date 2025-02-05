@@ -218,22 +218,23 @@ export default function NextraLayout({ children, pageOpts, pageProps }: NextraTh
   type NavigationGroup = {
     title: string | undefined
     icon: ReactNode | undefined
-    route: string | undefined
+    route: string
+    href: string | undefined
     items: NavigationItem[]
   }
-  const getNavigationItemIcon = (item: NavigationItem) => {
+  const getNavigationItemIcon = (item: NavigationItem, active?: boolean) => {
     const routeWithoutLocale = item.route.slice(3) || '/'
     if (routeWithoutLocale === '/') {
-      return <House variant="fill" alt="" />
+      return <House variant={active ? 'fill' : 'regular'} alt="" />
     }
     if (routeWithoutLocale === '/about' || routeWithoutLocale.startsWith('/about/')) {
       return <TheGraph alt="" />
     }
     if (routeWithoutLocale === '/supported-networks' || routeWithoutLocale.startsWith('/supported-networks/')) {
-      return <Stack alt="" />
+      return <Stack variant={active ? 'fill' : 'regular'} alt="" />
     }
     if (routeWithoutLocale === '/contracts' || routeWithoutLocale.startsWith('/contracts/')) {
-      return <Files alt="" />
+      return <Files variant={active ? 'fill' : 'regular'} alt="" />
     }
     if (routeWithoutLocale === '/subgraphs' || routeWithoutLocale.startsWith('/subgraphs/')) {
       return <Subgraph alt="" />
@@ -253,11 +254,11 @@ export default function NextraLayout({ children, pageOpts, pageProps }: NextraTh
       routeWithoutLocale === '/archived' ||
       routeWithoutLocale.startsWith('/archived/')
     ) {
-      return <BookOpenText alt="" />
+      return <BookOpenText variant={active ? 'fill' : 'regular'} alt="" />
     }
     return null
   }
-  const getNavigationItemRoute = (item: NavigationItem) => {
+  const getNavigationItemHref = (item: NavigationItem) => {
     let currentItem = item
     // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
     while (true) {
@@ -269,6 +270,13 @@ export default function NextraLayout({ children, pageOpts, pageProps }: NextraTh
       }
       currentItem = currentItem.children[0]!
     }
+  }
+  const getNavigationItemSelected = (route: string | undefined) => {
+    if (route && activeRoute) {
+      if (route === activeRoute) return true
+      if (activeRoute.startsWith(route)) return 'partially'
+    }
+    return false
   }
   const navigationGroups = normalizePagesResult.directories.reduce<NavigationGroup[]>(
     (groups, item: NavigationItem) => {
@@ -293,7 +301,8 @@ export default function NextraLayout({ children, pageOpts, pageProps }: NextraTh
         groups.push({
           title: item.type === 'separator' ? item.title : undefined,
           icon: undefined,
-          route: undefined,
+          route: item.route,
+          href: undefined,
           items: [],
         })
       }
@@ -301,14 +310,15 @@ export default function NextraLayout({ children, pageOpts, pageProps }: NextraTh
       currentGroup = groups[groups.length - 1]!
       if (currentGroup.title === undefined && currentGroup.items.length === 0 && itemHasChildren && !itemHasNoWrapper) {
         /**
-         * If the group has no title and the first item we want to add to it has children and a wrapper, give the item's title, icon, route
-         * (if different from the first child's), and children to the group, instead of adding the item itself.
+         * If the group has no title and the first item we want to add to it has children and a wrapper, give the item's title, icon, route,
+         * href (if different from the first child's), and children to the group, instead of adding the item itself.
          */
         currentGroup.title = item.title
         currentGroup.icon = getNavigationItemIcon(item)
-        const route = getNavigationItemRoute(item)
-        const firstChildRoute = getNavigationItemRoute(item.children![0]!)
-        currentGroup.route = route !== firstChildRoute ? route : undefined
+        currentGroup.route = item.route
+        const href = getNavigationItemHref(item)
+        const firstChildHref = getNavigationItemHref(item.children![0]!)
+        currentGroup.href = href !== firstChildHref ? href : undefined
         currentGroup.items.push(...item.children!)
       } else if (itemHasNoWrapper) {
         // Otherwise, if the first or next item to add to the group has no wrapper, just add its children to it
@@ -449,9 +459,9 @@ export default function NextraLayout({ children, pageOpts, pageProps }: NextraTh
                       <NavigationItem
                         key={item.name}
                         title={item.title}
-                        icon={getNavigationItemIcon(item)}
-                        href={getNavigationItemRoute(item)}
-                        selected={item.route === activeRoute}
+                        icon={getNavigationItemIcon(item, item.route === activeRoute)}
+                        href={getNavigationItemHref(item)}
+                        selected={getNavigationItemSelected(item.route)}
                         children={item.children?.length ? <>{item.children.map(renderItem)}</> : undefined}
                       />
                     )
@@ -463,8 +473,8 @@ export default function NextraLayout({ children, pageOpts, pageProps }: NextraTh
                       <NavigationItem
                         title={group.title}
                         icon={group.icon ?? getNavigationItemIcon(group.items[0]!)}
-                        href={group.route ?? getNavigationItemRoute(group.items[0]!)}
-                        selected={group.route === activeRoute}
+                        href={group.href ?? getNavigationItemHref(group.items[0]!)}
+                        selected={getNavigationItemSelected(group.route)}
                       >
                         {groupContent}
                       </NavigationItem>
