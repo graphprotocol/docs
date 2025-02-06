@@ -1,4 +1,4 @@
 export default {
-  delegating: '',
+  delegating: 'Delegating',
   curating: '',
 }
