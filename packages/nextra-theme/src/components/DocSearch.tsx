@@ -65,7 +65,7 @@ export function DocSearch(props: DocSearchProps) {
         innerFocusRing
         sx={{
           borderRadius: [BorderRadius.FULL, null, null, BorderRadius.S],
-          '&:focus-visible': { outline: ['none', null, null, `${BorderWidth['4px']} solid ${theme.colors!.Purple16}`] },
+          '&:focus-visible': { outline: ['none', null, null, `${BorderWidth['4px']} solid ${theme.colors.Purple16}`] },
         }}
       >
         <Responsive.Multiple as="span" cases={['mobile', null, null, 'desktop']}>
@@ -158,17 +158,17 @@ export function DocSearch(props: DocSearchProps) {
             styles={{
               html: {
                 '--docsearch-spacing': '0 !important',
-                '--docsearch-container-background': `${theme.colors!.Midnight88} !important`,
+                '--docsearch-container-background': `${theme.colors.Midnight88} !important`,
                 '--docsearch-modal-width': 'min(calc(100vw - 32px), 840px) !important',
-                '--docsearch-modal-background': `${theme.colors!.Tooltip} !important`,
+                '--docsearch-modal-background': `${theme.colors.Tooltip} !important`,
                 '--docsearch-modal-shadow': 'none !important',
                 '--docsearch-searchbox-height': ['64px !important', null, '96px !important'],
                 '--docsearch-searchbox-focus-background': 'transparent !important',
                 '--docsearch-searchbox-shadow': 'none !important',
                 '--docsearch-hit-background': 'transparent !important',
-                '--docsearch-hit-color': `${theme.colors!.White88} !important`,
-                '--docsearch-hit-active-color': `${theme.colors!.White} !important`,
-                '--docsearch-highlight-color': `${theme.colors!.Purple} !important`,
+                '--docsearch-hit-color': `${theme.colors.White88} !important`,
+                '--docsearch-hit-active-color': `${theme.colors.White} !important`,
+                '--docsearch-highlight-color': `${theme.colors.Purple} !important`,
               },
               '.DocSearch-Container': {
                 animation: `${animationFadeIn} 150ms ease-in-out`,
