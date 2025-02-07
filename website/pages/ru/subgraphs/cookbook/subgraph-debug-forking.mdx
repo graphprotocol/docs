@@ -2,25 +2,25 @@
 title: Быстрая и простая отладка подграфа с использованием форков
 ---
 
-As with many systems processing large amounts of data, The Graph's Indexers (Graph Nodes) may take quite some time to sync-up your subgraph with the target blockchain. The discrepancy between quick changes with the purpose of debugging and long wait times needed for indexing is extremely counterproductive and we are well aware of that. This is why we are introducing **subgraph forking**, developed by [LimeChain](https://limechain.tech/), and in this article I will show you how this feature can be used to substantially speed-up subgraph debugging!
+Как и многие системы, обрабатывающие большие объемы данных, Индексаторы The Graph (Graph Nodes) могут занять достаточно много времени для синхронизации Вашего субграфа с целевым блокчейном. Несоответствие между быстрыми изменениями, направленными на отладку, и долгим временем ожидания, необходимым для индексирования, является крайне непродуктивным, и мы прекрасно осознаем эту проблему. Поэтому мы представляем **форкинг субграфа**, разработанный [LimeChain](https://limechain.tech/), и в этой статье я покажу, как эту функцию можно использовать для значительного ускорения отладки субграфов!
 
 ## И так, что это?
 
-**Subgraph forking** is the process of lazily fetching entities from _another_ subgraph's store (usually a remote one).
+**Форкинг субграфа** — это процесс ленивой загрузки объектов из _другого_ хранилища субграфа (обычно удалённого).
 
-In the context of debugging, **subgraph forking** allows you to debug your failed subgraph at block _X_ without needing to wait to sync-up to block _X_.
+В контексте отладки **форкинг субграфа** позволяет Вам отлаживать Ваш неудавшийся субграф на блоке _X_, не дожидаясь синхронизации с блоком _X_.
 
 ## Что? Как?
 
-When you deploy a subgraph to a remote Graph Node for indexing and it fails at block _X_, the good news is that the Graph Node will still serve GraphQL queries using its store, which is synced-up to block _X_. That's great! This means we can take advantage of this "up-to-date" store to fix the bugs arising when indexing block _X_.
+Когда Вы развертываете субграф на удалённой Graph Node для индексирования, и он терпит неудачу на блоке _X_, хорошая новость заключается в том, что Graph Node всё равно будет обслуживать запросы GraphQL, используя своё хранилище, которое синхронизировано с блоком _X_. Это здорово! Таким образом, мы можем воспользоваться этим "актуальным" хранилищем, чтобы исправить ошибки, возникающие при индексировании блока _X_.
 
-In a nutshell, we are going to _fork the failing subgraph_ from a remote Graph Node that is guaranteed to have the subgraph indexed up to block _X_ in order to provide the locally deployed subgraph being debugged at block _X_ an up-to-date view of the indexing state.
+Короче говоря, мы собираемся _форкать неработающий субграф_ с удалённой Graph Node, которая гарантированно имеет индексированный субграф до блока _X_, чтобы предоставить локально развернутому субграфу, который отлаживается на блоке _X_, актуальное состояние индексирования.
 
 ## Пожалуйста, покажите мне какой-нибудь код!
 
-To stay focused on subgraph debugging, let's keep things simple and run along with the [example-subgraph](https://github.com/graphprotocol/graph-tooling/tree/main/examples/ethereum-gravatar) indexing the Ethereum Gravity smart contract.
+Чтобы сосредоточиться на отладке субграфа, давайте упростим задачу и продолжим с [примером субграфа](https://github.com/graphprotocol/graph-tooling/tree/main/examples/ethereum-gravatar), который индексирует смарт-контракт Ethereum Gravity.
 
-Here are the handlers defined for indexing `Gravatar`s, with no bugs whatsoever:
+Вот обработчики, определённые для индексирования `Gravatar`, без каких-либо ошибок:
 
 ```tsx
 export function handleNewGravatar(event: NewGravatar): void {
@@ -44,22 +44,22 @@ export function handleUpdatedGravatar(event: UpdatedGravatar): void {
 }
 ```
 
-Oops, how unfortunate, when I deploy my perfect looking subgraph to [Subgraph Studio](https://thegraph.com/studio/) it fails with the _"Gravatar not found!"_ error.
+Ой, как неприятно! Когда я развертываю свой идеально выглядящий субграф в [Subgraph Studio](https://thegraph.com/studio/), он выдаёт ошибку _"Gravatar not found!"_.
 
 Обычный способ попытаться исправить это:
 
 1. Внести изменения в источник сопоставлений, которые, по вашему мнению, решат проблему (в то время как я знаю, что это не так).
-2. Re-deploy the subgraph to [Subgraph Studio](https://thegraph.com/studio/) (or another remote Graph Node).
+2. Перезапустите развертывание своего субграфа в [Subgraph Studio](https://thegraph.com/studio/) (или на другую удалённую Graph Node).
 3. Подождать, пока он синхронизируется.
 4. Если он снова сломается, вернуться к пункту 1, в противном случае: Ура!
 
-It is indeed pretty familiar to an ordinary debug process, but there is one step that horribly slows down the process: _3. Wait for it to sync-up._
+Действительно, это похоже на обычный процесс отладки, но есть один шаг, который ужасно замедляет процесс: _3. Ждите, пока завершится синхронизация._
 
-Using **subgraph forking** we can essentially eliminate this step. Here is how it looks:
+Используя **форк субграфа**, мы можем фактически устранить этот шаг. Вот как это выглядит:
 
-0. Spin-up a local Graph Node with the **_appropriate fork-base_** set.
+0. Запустите локальную Graph Node с помощью **_соответстсвующего набора fork-base_**.
 1. Внесите изменения в источник сопоставлений, которые, по вашему мнению, решат проблему.
-2. Deploy to the local Graph Node, **_forking the failing subgraph_** and **_starting from the problematic block_**.
+2. Произведите развертывание на локальной Graph Node, **_форкнув неудачно развернутый субграф_** и **_начав с проблемного блока_**.
 3. Если он снова сломается, вернитесь к пункту 1, в противном случае: Ура!
 
 Сейчас у вас может появиться 2 вопроса:
@@ -69,7 +69,7 @@ Using **subgraph forking** we can essentially eliminate this step. Here is how i
 
 И я вам отвечаю:
 
-1. `fork-base` is the "base" URL, such that when the _subgraph id_ is appended the resulting URL (`<fork-base>/<subgraph-id>`) is a valid GraphQL endpoint for the subgraph's store.
+1. `fork-base` - это «базовый» URL, при добавлении которого к _subgraph id_ результирующий URL (`<fork-base>/<subgraph-id>`) является действительной конечной точкой GraphQL для хранилища субграфа.
 2. Форк - это просто, особо не нужно потеть:
 
 ```bash
