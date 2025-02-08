@@ -425,14 +425,14 @@ export class Something {
 }
 ```
 
-The compiler will error because you either need to add an initializer for the properties that are classes, or add the `!` operator:
+Derleyici hata verecektir çünkü sınıf olan özellikler için ya bir ilklendirici eklemeniz ya da `!` operatörünü eklemeniz gerekmektedir:
 
 ```typescript
 export class Something {
   constructor(public value: Thing) {}
 }
 
-// or
+// veya
 
 export class Something {
   value: Thing
@@ -442,30 +442,30 @@ export class Something {
   }
 }
 
-// or
+// veya
 
 export class Something {
   value!: Thing
 }
 ```
 
-### Array initialization
+### Dizi ilklendirmesi
 
-The `Array` class still accepts a number to initialize the length of the list, however you should take care because operations like `.push` will actually increase the size instead of adding to the beginning, for example:
+`Array` sınıfı, listenin uzunluğunu ilklendirmek için bir sayı kabul etmeye devam eder. Ancak `.push` gibi işlemler başlangıca eklemek yerine boyutu gerçekten artıracağı için dikkatli olmalısınız, örneğin:
 
 ```typescript
 let arr = new Array<string>(5) // ["", "", "", "", ""]
 
-arr.push('something') // ["", "", "", "", "", "something"] // size 6 :(
+arr.push('something') // ["", "", "", "", "", "something"] // uzunluk 6 :(
 ```
 
-Depending on the types you're using, eg nullable ones, and how you're accessing them, you might encounter a runtime error like this one:
+Kullandığınız tiplere bağlı olarak -mesela null olabilen değerler kullanıyorsunuz- ve bu tiplere erişim şeklinize göre, aşağıdaki gibi bir çalıştırma hatasıyla karşılaşabilirsiniz:
 
 ```
 ERRO Handler skipped due to execution failure, error: Mapping aborted at ~lib/array.ts, line 110, column 40, with message: Element type must be nullable if array is holey  wasm backtrace:     0: 0x19c4 - <unknown>!~lib/@graphprotocol/graph-ts/index/format         1: 0x1e75 - <unknown>!~lib/@graphprotocol/graph-ts/common/collections/Entity#constructor        2: 0x30b9 - <unknown>!node_modules/@graphprotocol/graph-ts/global/global/id_of_type
 ```
 
-To actually push at the beginning you should either, initialize the `Array` with size zero, like this:
+Listenin başına "push" yapabilmek için, `Array`'i ya şu şekilde sıfır boyutla ilklendirmelisiniz:
 
 ```typescript
 let arr = new Array<string>(0) // []
@@ -473,7 +473,7 @@ let arr = new Array<string>(0) // []
 arr.push('something') // ["something"]
 ```
 
-Or you should mutate it via index:
+Ya da dizin kullanarak değiştirmelisiniz:
 
 ```typescript
 let arr = new Array<string>(5) // ["", "", "", "", ""]
@@ -481,24 +481,11 @@ let arr = new Array<string>(5) // ["", "", "", "", ""]
 arr[0] = 'something' // ["something", "", "", "", ""]
 ```
 
-### GraphQL schema
+### GraphQL şeması
 
-This is not a direct AssemblyScript change, but you may have to update your `schema.graphql` file.
+Bu doğrudan bir AssemblyScript değişikliği değildir. Ancak `schema.graphql` dosyanızı güncellemeniz gerekebilir.
 
-Now you no longer can define fields in your types that are Non-Nullable Lists. If you have a schema like this:
-
-```graphql
-type Something @entity {
-  id: Bytes!
-}
-
-type MyEntity @entity {
-  id: Bytes!
-  invalidField: [Something]! # no longer valid
-}
-```
-
-You'll have to add an `!` to the member of the List type, like this:
+Artık türlerinizde Non-Nullable Lists (Boş Olamayan Listeler) olarak alanlar tanımlayamazsınız. Eğer böyle bir şemanız varsa:
 
 ```graphql
 type Something @entity {
@@ -507,18 +494,31 @@ type Something @entity {
 
 type MyEntity @entity {
   id: Bytes!
-  invalidField: [Something!]! # valid
+  invalidField: [Something]! # artık geçerli değil
 }
 ```
 
-This changed because of nullability differences between AssemblyScript versions, and it's related to the `src/generated/schema.ts` file (default path, you might have changed this).
+Listenin tür üyesine şu şekilde `!` eklemeniz gerekecek:
+
+```graphql
+type Something @entity {
+  id: Bytes!
+}
+
+type MyEntity @entity {
+  id: Bytes!
+  invalidField: [Something!]! # geçerli
+}
+```
+
+Bu değişiklik, AssemblyScript sürümleri arasındaki null olabilme farklılıklarından dolayı oldu. Ve bu değişiklik `src/generated/schema.ts` dosyasıyla ilgilidir (varsayılan yol, bunu değiştirmiş olabilirsiniz).
 
 ### Diğer
 
-- Aligned `Map#set` and `Set#add` with the spec, returning `this` ([v0.9.2](https://github.com/AssemblyScript/assemblyscript/releases/tag/v0.9.2))
-- Arrays no longer inherit from ArrayBufferView, but are now distinct ([v0.10.0](https://github.com/AssemblyScript/assemblyscript/releases/tag/v0.10.0))
-- Classes initialized from object literals can no longer define a constructor ([v0.10.0](https://github.com/AssemblyScript/assemblyscript/releases/tag/v0.10.0))
+- `Map#set` ve `Set#add` ögelerini, `this` döndürecek şekilde spesifikasyonla uyumlu hale getirdik ([v0.9.2](https://github.com/AssemblyScript/assemblyscript/releases/tag/v0.9.2))
+- Diziler artık ArrayBufferView'den gelmek yerine artık farklı ([v0.10.0](https://github.com/AssemblyScript/assemblyscript/releases/tag/v0.10.0)) sürümünden geliyorlar
+- Nesne literalinden başlatılan sınıflar artık yapıcı bir metot tanımlayamaz ([v0.10.0](https://github.com/AssemblyScript/assemblyscript/releases/tag/v0.10.0))
 - The result of a `**` binary operation is now the common denominator integer if both operands are integers. Previously, the result was a float as if calling `Math/f.pow` ([v0.11.0](https://github.com/AssemblyScript/assemblyscript/releases/tag/v0.11.0))
-- Coerce `NaN` to `false` when casting to `bool` ([v0.14.9](https://github.com/AssemblyScript/assemblyscript/releases/tag/v0.14.9))
+- `bool` dönüşümünde `NaN`' değeri `false` değerine zorla dönüştürülür ([v0.14.9](https://github.com/AssemblyScript/assemblyscript/releases/tag/v0.14.9))
 - When shifting a small integer value of type `i8`/`u8` or `i16`/`u16`, only the 3 respectively 4 least significant bits of the RHS value affect the result, analogous to the result of an `i32.shl` only being affected by the 5 least significant bits of the RHS value. Example: `someI8 << 8` previously produced the value `0`, but now produces `someI8` due to masking the RHS as `8 & 7 = 0` (3 bits) ([v0.17.0](https://github.com/AssemblyScript/assemblyscript/releases/tag/v0.17.0))
-- Bug fix of relational string comparisons when sizes differ ([v0.17.8](https://github.com/AssemblyScript/assemblyscript/releases/tag/v0.17.8))
+- Boyutlar farklı olduğunda ilişkisel dize karşılaştırmalarında olan hatanın düzeltmesi ([v0.17.8](https://github.com/AssemblyScript/assemblyscript/releases/tag/v0.17.8))
