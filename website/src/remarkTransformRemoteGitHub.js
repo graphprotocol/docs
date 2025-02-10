@@ -57,7 +57,7 @@ export const remarkTransformRemoteGitHub = () => (tree, file) => {
     // Replace h1 with YAML frontmatter
     node.type = 'yaml'
     node.value = `title: "${node.children[0].value}"
-remoteFilePath: https://github.com/${user}/${repo}/tree/${branch}/${docsPath}${fileName}`
+remotePageUrl: https://github.com/${user}/${repo}/tree/${branch}/${docsPath}${fileName}`
     delete node.depth
     delete node.children
     delete node.position

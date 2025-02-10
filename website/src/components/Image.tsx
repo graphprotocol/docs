@@ -1,17 +1,24 @@
 import type NextImage from 'next/image'
-import type { ComponentProps, ImgHTMLAttributes } from 'react'
+import type { ComponentPropsWithoutRef } from 'react'
 
-export type ImageProps = {
-  src?: ComponentProps<typeof NextImage>['src']
-} & Omit<ImgHTMLAttributes<HTMLImageElement>, 'src' | 'children'>
+import { classNames } from '@edgeandnode/gds'
 
-export const Image = ({ src: passedSrc, ...props }: ImageProps) => {
-  let src = typeof passedSrc === 'object' ? ('default' in passedSrc ? passedSrc.default.src : passedSrc.src) : passedSrc
+interface ImageProps extends Omit<ComponentPropsWithoutRef<'img'>, 'src'> {
+  src?: ComponentPropsWithoutRef<typeof NextImage>['src']
+}
 
-  // If the URL is internal, automatically prepend the base path
-  if (src?.startsWith('/')) {
-    src = `${process.env.BASE_PATH ?? ''}${src}`
-  }
-
-  return <img src={src} alt="" {...props} />
+export const Image = ({ src: passedSrc, alt, className, ...props }: ImageProps) => {
+  const src =
+    typeof passedSrc === 'object' ? ('default' in passedSrc ? passedSrc.default.src : passedSrc.src) : passedSrc
+  return (
+    <figure
+      className={classNames([
+        'graph-docs-not-markdown rounded-8 bg-white/4 p-2 not-first:mt-8 not-last:mb-8',
+        className,
+      ])}
+    >
+      <img src={src} alt="" className="w-full rounded-4 bg-background" {...props} />
+      {alt ? <figcaption className="text-body-xsmall mt-2 px-1 text-center text-white/48">{alt}</figcaption> : null}
+    </figure>
+  )
 }

@@ -1,34 +1,43 @@
-import type { HTMLAttributes } from 'react'
+import type { ComponentPropsWithoutRef } from 'react'
 
-import { useI18n } from '@edgeandnode/gds'
+import { classNames } from '@edgeandnode/gds'
 
-export type VideoProps = (
-  | {
-      /** Video embed URL. */
-      src: string
-      youtube?: never
-    }
-  | {
-      /** YouTube video ID. */
-      youtube: string
-      src?: never
-    }
-) & {
-  /** Video title */
-  title?: string
-} & HTMLAttributes<HTMLElement>
+import { useI18n } from '@/i18n'
 
-export const VideoEmbed = ({ src, youtube, title, ...props }: VideoProps) => {
-  const { t } = useI18n<any>()
+declare namespace VideoEmbedProps {
+  interface BaseProps extends Omit<ComponentPropsWithoutRef<'iframe'>, 'src'> {
+    title: string
+  }
+  interface SrcProps extends BaseProps {
+    src: string
+    youtube?: never
+  }
+  interface YouTubeProps extends BaseProps {
+    src?: never
+    youtube: string
+  }
+}
+
+type VideoEmbedProps = VideoEmbedProps.SrcProps | VideoEmbedProps.YouTubeProps
+
+export const VideoEmbed = ({ title, src, youtube, className, ...props }: VideoEmbedProps) => {
+  const { t } = useI18n()
 
   return (
-    <figure sx={{ paddingBottom: `${100 / (16 / 9)}%` }} {...props}>
+    <figure
+      className={classNames([
+        'graph-docs-not-markdown rounded-8 bg-white/4 p-2 not-first:mt-8 not-last:mb-8',
+        className,
+      ])}
+    >
       <iframe
         src={src ?? `https://www.youtube.com/embed/${youtube}`}
-        title={`${t('global.video')}${title ? `: ${title}` : ''}`}
+        title={t('global.content.video')}
         allowFullScreen
-        sx={{ position: 'absolute', left: 0, top: 0, width: '100%', height: '100%' }}
+        className="aspect-video w-full rounded-4 bg-background"
+        {...props}
       />
+      {title ? <figcaption className="text-body-xsmall mt-2 px-1 text-center text-white/48">{title}</figcaption> : null}
     </figure>
   )
 }

@@ -1,3 +1,5 @@
+// @ts-check
+
 const isVSCode = Boolean(process.env.VSCODE_PID)
 
 /** @type {import('eslint').Linter.Config} */

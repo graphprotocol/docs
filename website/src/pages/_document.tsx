@@ -22,11 +22,15 @@ export default class MyDocument extends Document<MyDocumentProps> {
     return (
       <Html
         {...getHtmlAttributesForLocale(locale)}
+        // For Docsearch
         data-theme="dark"
-        style={{
-          // TODO: Update GDS background color
-          backgroundColor: '#0b091a',
-        }}
+        /**
+         * We would set `bg-background` here instead of on `body`, but our Tailwind setup generates selectors prefixed with `:scope ` for
+         * specificity reasons, which means `html` will never be matched. But by setting it on `body`, we're not overriding GDS's default
+         * `html` background color, which we can see outside the bounds of the page (e.g. when using rubber band scrolling). So we reset
+         * the `html` background color to `initial`, which has the special behavior of using same background color as `body`.
+         */
+        style={{ backgroundColor: 'initial' }}
       >
         <Head>
           <link
@@ -37,7 +41,7 @@ export default class MyDocument extends Document<MyDocumentProps> {
           <link rel="icon" type="image/png" sizes="64x64" href="https://storage.thegraph.com/favicons/64x64.png" />
           <link rel="icon" type="image/png" sizes="256x256" href="https://storage.thegraph.com/favicons/256x256.png" />
         </Head>
-        <body>
+        <body className="bg-background">
           <Main />
           <NextScript />
         </body>

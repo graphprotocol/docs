@@ -1,95 +1,73 @@
-import * as VisuallyHidden from '@radix-ui/react-visually-hidden'
-import { type ElementType, useContext } from 'react'
+import { type ComponentPropsWithoutRef, type ElementType, useContext, useEffect } from 'react'
 import { useInView } from 'react-intersection-observer'
-import { useDebounce } from 'react-use'
 
-import { buildTransition, Link, Opacity, Spacing, Text, type TextProps, useI18n } from '@edgeandnode/gds'
+import { classNames, Link } from '@edgeandnode/gds'
+import { Link as LinkIcon } from '@edgeandnode/gds/icons'
 
-import { DocumentContext } from '@/layout'
+import { useI18n } from '@/i18n'
+import { MDXContentContext } from '@/Layout'
 
-export type HeadingProps = TextProps & {
-  level: 1 | 2 | 3 | 4 | 5 | 6
+interface HeadingProps extends ComponentPropsWithoutRef<'h1'> {
+  as?: ElementType
 }
 
-const BaseHeading = ({ level, id, children, ...props }: HeadingProps) => {
-  const { markOutlineItem } = useContext(DocumentContext)!
+const BaseHeading = ({ as: Element = 'h1', id, className, children, ...props }: HeadingProps) => {
+  const { markHeading } = useContext(MDXContentContext)!
+  const { t } = useI18n()
 
   const { ref, inView: inOrAboveView } = useInView({
-    rootMargin: '99999px 0px -80% 0px', // consider it "in or above view" if it's anywhere above 20% from the top of the viewport
+    rootMargin: '99999px 0px -60% 0px', // consider it "in or above view" if it's above 60% from the bottom of the viewport
   })
 
-  useDebounce(
+  useEffect(
     () => {
-      if (id) {
-        markOutlineItem(id, inOrAboveView)
-      }
+      if (!id) return
+      markHeading(id, inOrAboveView)
     },
-    100,
-    [id, inOrAboveView, markOutlineItem],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [id, inOrAboveView],
   )
 
-  const Heading: ElementType = `h${level}`
-
-  const { t } = useI18n<any>()
-
   return (
-    <Text ref={ref} id={id} weight="SEMIBOLD" color="White" {...props}>
-      <Heading sx={{ display: 'inline' }}>{children}</Heading>
+    // Undoing `text-balance` in Safari because of a weird rendering bug when changing pages
+    <Element ref={ref} id={id} className={classNames(['group/heading +:safari:text-wrap', className])} {...props}>
+      {children}
       {id ? (
-        <span
-          sx={{
-            marginInlineStart: '0.35em',
-            opacity: Opacity['0%'],
-            [`*:hover > &, &:focus-within`]: { opacity: Opacity['100%'] },
-            transition: buildTransition('OPACITY'),
-          }}
-        >
+        <span className="ms-[0.35em] opacity-0 transition safari:will-change-[opacity] group-hocus-visible-within/heading:opacity-100">
           {/* Zero-width non-breaking space, to prevent a line break between the `#` and the previous word */}
           &#8288;
-          <Link.Inline href={`#${id}`}>
-            <span aria-hidden="true">#</span>
-            <VisuallyHidden.Root>{t('global.linkToThisSection')}</VisuallyHidden.Root>
-          </Link.Inline>
+          {/* TODO: Use `ExperimentalLink` */}
+          <Link inline underline={false} href={`#${id}`}>
+            <LinkIcon alt={t('global.page.linkToThisSection')} className="prop-size-[0.85em]" />
+          </Link>
         </span>
       ) : null}
-    </Text>
+    </Element>
   )
 }
 
-export type HeadingSpecificProps = Omit<HeadingProps, 'level' | 'color'>
-
-const H1 = (props: HeadingSpecificProps) => {
-  return <BaseHeading level={1} size="48px" sx={{ mb: Spacing['16px'] }} {...props} />
+const H1 = (props: HeadingProps) => {
+  return <BaseHeading as="h1" {...props} />
 }
 
-const H2 = (props: HeadingSpecificProps) => {
-  return (
-    <BaseHeading
-      level={2}
-      size="32px"
-      sx={{
-        mt: Spacing['48px'],
-        mb: Spacing['24px'],
-      }}
-      {...props}
-    />
-  )
+const H2 = (props: HeadingProps) => {
+  return <BaseHeading as="h2" {...props} />
 }
 
-const H3 = (props: HeadingSpecificProps) => {
-  return <BaseHeading level={3} size="24px" sx={{ mt: Spacing['32px'], mb: Spacing['24px'] }} {...props} />
+const H3 = (props: HeadingProps) => {
+  return <BaseHeading as="h3" {...props} />
 }
 
-const H4 = (props: HeadingSpecificProps) => {
-  return <BaseHeading level={4} size="20px" sx={{ mt: Spacing['32px'], mb: Spacing['16px'] }} {...props} />
+const H4 = (props: HeadingProps) => {
+  return <BaseHeading as="h4" {...props} />
 }
 
-const H5 = (props: HeadingSpecificProps) => {
-  return <BaseHeading level={5} size="18px" sx={{ mt: Spacing['32px'], mb: Spacing['16px'] }} {...props} />
+const H5 = (props: HeadingProps) => {
+  return <BaseHeading as="h5" {...props} />
 }
 
-const H6 = (props: HeadingSpecificProps) => {
-  return <BaseHeading level={6} size="16px" sx={{ mt: Spacing['32px'], mb: Spacing['16px'] }} {...props} />
+const H6 = (props: HeadingProps) => {
+  return <BaseHeading as="h6" {...props} />
 }
 
 const Heading = Object.assign({}, BaseHeading, {

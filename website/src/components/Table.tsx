@@ -1,32 +1,34 @@
-import type { TableHTMLAttributes } from 'react'
+import type { ComponentPropsWithoutRef } from 'react'
 
-import { buildBorder, buildColor, FontWeight, Spacing, Text } from '@edgeandnode/gds'
+import { classNames, Text } from '@edgeandnode/gds'
 
-export type TableProps = Omit<TableHTMLAttributes<HTMLTableElement>, 'color'>
+interface TableProps extends ComponentPropsWithoutRef<'table'> {}
 
-export const Table = ({ children, ...props }: TableProps) => {
+export const Table = ({ className, children, ...props }: TableProps) => {
   return (
-    <Text as="div" size="16px" sx={{ mt: Spacing['24px'], mb: Spacing['32px'], overflowX: 'auto' }}>
+    <div
+      className={classNames([
+        'gradient-mask-x overflow-x-auto overflow-y-clip not-first:mt-8 not-last:mb-8',
+        className,
+      ])}
+    >
       <table
-        sx={{
-          '&, & th, & td': {
-            p: Spacing['16px'],
-            // Border color has to be opaque because collapsed borders overlap
-            border: buildBorder(buildColor(['Background', 'White16'])),
-          },
-          '& th': {
-            bg: 'White4',
-            fontWeight: FontWeight.SEMIBOLD,
-            textAlign: 'center',
-          },
-          '& tr:has(.highlight-row) td, & td:has(.highlight-cell)': {
-            bg: 'Purple8',
-          },
-        }}
+        className={`
+          min-w-full
+          nested-[th,td]:border
+          nested-[th,td]:border-white-8
+          nested-[td:has(.highlight-cell)]:bg-purple/4
+          nested-[th]:bg-white/4
+          nested-[tr:has(.highlight-row)_td]:bg-purple/4
+          nested-[th,td]:px-4
+          nested-[th,td]:py-3
+          nested-[th]:text-center
+          nested-[th]:font-semibold
+        `}
         {...props}
       >
         {children}
       </table>
-    </Text>
+    </div>
   )
 }

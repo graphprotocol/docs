@@ -1,6 +1,7 @@
 // @ts-check
 
 import nextra from 'nextra'
+import rehypeUnwrapImages from 'rehype-unwrap-images'
 
 import { defaultLocale, translate } from '@edgeandnode/gds'
 
@@ -24,7 +25,7 @@ const env = {
 }
 
 const withNextra = nextra({
-  theme: './src/NextraLayout.tsx',
+  theme: './src/Layout.tsx',
   search: false,
   codeHighlight: false,
   defaultShowCopyCode: false,
@@ -32,8 +33,7 @@ const withNextra = nextra({
   transformPageMap(pageMap) {
     const route = pageMap[0] && 'route' in pageMap[0] ? pageMap[0].route : undefined
     const locale = typeof route === 'string' ? route.slice(1, 3) : defaultLocale
-    /** @type {(key: string) => string} */
-    const t = (key) =>
+    const t = (/** @type {string} */ key) =>
       translate(
         translations,
         /** @type {import('@edgeandnode/gds').Locale} */
@@ -52,39 +52,39 @@ const withNextra = nextra({
       },
       subgraphs: {
         type: 'children',
-        title: t('global.sidebar.subgraphs'),
+        title: t('global.navigation.subgraphs'),
       },
       '---2': {
         type: 'separator',
       },
       substreams: {
         type: 'children',
-        title: t('global.sidebar.substreams'),
+        title: t('global.navigation.substreams'),
       },
       '---3': {
         type: 'separator',
       },
       sps: {
         type: 'children',
-        title: t('global.sidebar.sps'),
+        title: t('global.navigation.sps'),
       },
       '---4': {
         type: 'separator',
       },
       indexing: {
         type: 'children',
-        title: t('global.sidebar.indexing'),
+        title: t('global.navigation.indexing'),
       },
       '---5': {
         type: 'separator',
       },
       resources: {
         type: 'children',
-        title: t('global.sidebar.resources'),
+        title: t('global.navigation.resources'),
       },
       archived: {
         type: 'children',
-        title: t('global.sidebar.archived'),
+        title: t('global.navigation.archived'),
       },
     }
 
@@ -100,6 +100,7 @@ const withNextra = nextra({
   },
   mdxOptions: {
     remarkPlugins: [remarkTransformRemoteGitHub],
+    rehypePlugins: [rehypeUnwrapImages],
   },
 })
 

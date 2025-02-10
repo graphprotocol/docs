@@ -1,9 +1,8 @@
 import ContractAddresses from '@graphprotocol/contracts/addresses.json'
 
 import { getAddressLink } from '@edgeandnode/common'
-import { Link } from '@edgeandnode/gds'
 
-import { Table } from '@/components'
+import { Link, Table } from '@/components'
 
 type ValueOf<T> = T[keyof T]
 const contractsByNetworkId = ContractAddresses as Record<string, ValueOf<typeof ContractAddresses>>

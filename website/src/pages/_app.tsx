@@ -2,7 +2,6 @@ import mixpanel from 'mixpanel-browser'
 import type { AppProps } from 'next/app'
 import NextLink from 'next/link'
 import { DefaultSeo } from 'next-seo'
-import type { PropsWithChildren } from 'react'
 import googleAnalytics from 'react-ga4'
 
 import {
@@ -13,7 +12,6 @@ import {
   extractLocaleFromRouter,
   GDSProvider,
   I18nProvider,
-  Link,
 } from '@edgeandnode/gds'
 import { CookieBanner } from '@edgeandnode/go'
 
@@ -32,15 +30,7 @@ const rootRelativeOrTheGraphUrlRegex =
 // Match URLs that start with a protocol/scheme or `//`
 const absoluteUrlRegex = /^(?:[a-zA-Z][a-zA-Z\d+.-]*:|\/\/)/
 
-const removeBasePathFromUrl = (url: string) => url.substring((process.env.BASE_PATH ?? '').length)
-
-const DocSearchHit = ({ hit, children }: PropsWithChildren<{ hit: { url: string } }>) => (
-  <Link.Unstyled href={removeBasePathFromUrl(hit.url)}>{children}</Link.Unstyled>
-)
-
 export default function MyApp({ Component, router, pageProps }: AppProps) {
-  // TODO: Where is this used?
-  const hideLocaleSwitcher = pageProps.hideLocaleSwitcher ?? false
   const { locale } = extractLocaleFromRouter(router, supportedLocales)
 
   return (
@@ -84,7 +74,7 @@ export default function MyApp({ Component, router, pageProps }: AppProps) {
             const pathIncludesBasePath = path === basePath || path.startsWith(`${basePath}/`)
             if (href.startsWith('/') || pathIncludesBasePath) {
               // If the link is a root-relative URL or an absolute but internal URL, ensure it is relative to the base path
-              href = pathIncludesBasePath ? path.substring(basePath.length) : path
+              href = (pathIncludesBasePath ? path.substring(basePath.length) : path) || '/'
               // Also ensure the link includes a locale
               const { locale: pathLocale, pathWithoutLocale } = extractLocaleFromPath(href, supportedLocales)
               href = `/${pathLocale ?? locale ?? defaultLocale}${pathWithoutLocale}`
@@ -99,7 +89,7 @@ export default function MyApp({ Component, router, pageProps }: AppProps) {
 
           return { ...props, href, target }
         }}
-        // TODO: Remove this when possible
+        // TODO: Remove when we stop using components that require Theme UI (notably the legacy `Link` component)
         useThemeUI
       >
         <I18nProvider supportedLocales={supportedLocales} translations={translations}>

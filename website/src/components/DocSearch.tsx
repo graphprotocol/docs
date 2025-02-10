@@ -4,25 +4,19 @@ import {
   useDocSearchKeyboardEvents,
 } from '@docsearch/react'
 import { keyframes } from '@emotion/react'
-import { type ReactNode, type RefObject, useCallback, useRef, useState } from 'react'
+import { type ReactNode, type RefObject, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { Global } from 'theme-ui'
 
 import {
   BorderRadius,
-  BorderWidth,
   buildBorder,
   buildTransition,
-  Flex,
   FontSize,
   FontWeight,
-  Icon,
   LineHeight,
-  Link,
   Opacity,
-  Responsive,
   Spacing,
-  Text,
   useTheme,
 } from '@edgeandnode/gds'
 
@@ -31,7 +25,7 @@ const animationFadeIn = keyframes({
   to: { opacity: 1 },
 })
 
-export interface DocSearchProps extends OriginalDocSearchProps {
+interface DocSearchProps extends OriginalDocSearchProps {
   children: (renderProps: {
     buttonRef: RefObject<HTMLButtonElement>
     openModal: () => void

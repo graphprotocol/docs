@@ -2,7 +2,7 @@ import type { GetStaticProps, GetStaticPropsResult } from 'next'
 
 import { getSupportedNetworks } from '@/supportedNetworks'
 
-export const buildGetStaticProps = (fileName: string, overrides?: GetStaticProps) => {
+export const buildGetStaticProps = (_fileName: string, overrides?: GetStaticProps) => {
   const getStaticProps: GetStaticProps = async (context) => {
     const overrideStaticProps: GetStaticPropsResult<Record<string, any>> = overrides
       ? await overrides(context)
