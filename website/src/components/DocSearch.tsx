@@ -194,7 +194,7 @@ export function DocSearch({ children, ...props }: DocSearchProps) {
               },
               '.DocSearch-Hit-title': {
                 fontSize: FontSize['16px'],
-                fontWeight: FontWeight.SEMIBOLD,
+                fontWeight: FontWeight.MEDIUM,
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
               },

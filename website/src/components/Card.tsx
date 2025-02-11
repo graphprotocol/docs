@@ -55,10 +55,12 @@ export const Card = ({
       ])}
       {...props}
     >
-      <div className="flex h-full flex-col gap-6 nested-icon:default-size-6">
-        {icon && iconPosition === 'top' ? <div className="shrink-0 grow-[9999]">{icon}</div> : null}
+      <div className="flex h-full flex-col gap-6">
+        {icon && iconPosition === 'top' ? (
+          <div className="shrink-0 grow-[9999] nested-icon:default-size-6">{icon}</div>
+        ) : null}
         <div className="flex grow gap-4">
-          {icon && iconPosition === 'side' ? <div className="shrink-0">{icon}</div> : null}
+          {icon && iconPosition === 'side' ? <div className="shrink-0 nested-icon:default-size-6">{icon}</div> : null}
           <div className="flex flex-col gap-1">
             {slotAboveTitle}
             <h3 className="text-body-small font-medium text-white/88">{title}</h3>

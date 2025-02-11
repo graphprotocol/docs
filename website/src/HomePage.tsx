@@ -16,7 +16,7 @@ export default function HomePage() {
   return (
     <>
       <div className="graph-docs-not-markdown grid grid-cols-subgrid">
-        <div className="absolute inset-x-0 -top-8 flex h-90 justify-center">
+        <div className="pointer-events-none absolute inset-x-0 -top-8 flex h-72 justify-center xs:h-90">
           <img alt="" src={`${process.env.BASE_PATH}/img/home-bg.svg`} className="h-full max-w-none" />
         </div>
         <div className="col-[container] py-20 xs:py-30">
@@ -25,7 +25,7 @@ export default function HomePage() {
               {t('index.hero.title')}
             </h1>
             <p className="mt-2">{t('index.hero.description')}</p>
-            <ExperimentalButtonGroup className="mt-4">
+            <ExperimentalButtonGroup className="mt-4 prop-orientation-vertical xs:prop-orientation-horizontal">
               <ExperimentalButton href="/about">{t('index.hero.cta1')}</ExperimentalButton>
               <ExperimentalButton href="/subgraphs/quick-start">{t('index.hero.cta2')}</ExperimentalButton>
             </ExperimentalButtonGroup>

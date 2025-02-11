@@ -39,13 +39,14 @@ export const Link = forwardRef(
           {...(props.href === undefined ? { asSpan: true } : {})}
           className={`
             group/link -mx-1 whitespace-nowrap rounded-4 border border-transparent box-decoration-clone px-1 py-0.5 text-[#4c9eff] outline-none transition
-            hover:text-[#70b1ff]
+            hocus-visible:text-[#70b1ff]
             focus-visible:border-current
             active:text-[#3f80d1]
             active:transition-none
             +:disabled:text-white/48
             nested-icon:top-[0.075em]
             nested-icon:inline-block
+            +:nested-icon:default-size-[1em] ${/* This is the default, but it prevents an ancestor from overriding it accidentally */ ''}
           `}
           {...props}
         >

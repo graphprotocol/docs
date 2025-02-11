@@ -14,6 +14,7 @@ import {
   type ReactNode,
   useContext,
   useEffect,
+  useLayoutEffect,
   useState,
 } from 'react'
 import { useSet } from 'react-use'
@@ -33,7 +34,6 @@ import {
   BookOpenText,
   Files,
   House,
-  List,
   MagnifyingGlass,
   RoleIndexer,
   SidebarSimple,
@@ -43,7 +43,6 @@ import {
   Substreams,
   SubstreamsPoweredSubgraph,
   TheGraph,
-  X,
 } from '@edgeandnode/gds/icons'
 
 import {
@@ -104,10 +103,19 @@ export default function Layout({ pageOpts, children }: NextraThemeLayoutProps<Fr
   const [sidebarExpandedOnDesktop, setSidebarExpandedOnDesktop] = useState(true)
 
   // Collapse the sidebar on mobile when the route changes
-  // TODO: Also collapse it when clicking outside the sidebar
   useEffect(() => {
     setSidebarExpandedOnMobile(false)
   }, [router.pathname])
+
+  // TODO: Create `useTailwindScreen` hook in GDS, with usage like `const screen = useTailwindScreen()` and then you can check `screen.md`, etc.
+  const [mobile, setMobile] = useState(false)
+  useLayoutEffect(() => {
+    const mediaQueryList = matchMedia('(min-width: 768px)')
+    setMobile(!mediaQueryList.matches)
+    const onChange = (event: MediaQueryListEvent) => setMobile(!event.matches)
+    mediaQueryList.addEventListener('change', onChange)
+    return () => mediaQueryList.removeEventListener('change', onChange)
+  }, [])
 
   const normalizedPages = normalizePages({
     list: pageMap,
@@ -297,93 +305,80 @@ export default function Layout({ pageOpts, children }: NextraThemeLayoutProps<Fr
 
       <div
         className={`
-          isolate overflow-x-clip
+          isolate
           [--graph-docs-content-padding-bottom:theme(spacing.12)]
           [--graph-docs-content-padding-top:theme(spacing.12)]
           [--graph-docs-content-padding:theme(spacing.6)]
-          [--graph-docs-header-height:theme(spacing.14)]
+          [--graph-docs-header-height:theme(spacing.16)]
           [--graph-docs-header-padding:theme(spacing.4)]
           [--graph-docs-layout-transition-duration:300ms]
           [--graph-docs-sidebar-width:theme(spacing.64)]
           [--graph-docs-toc-width:theme(spacing.66)]
-          xs:[--graph-docs-header-height:theme(spacing.16)]
-          xs:[--graph-docs-header-padding:theme(spacing.6)]
           md:[--graph-docs-content-padding-bottom:theme(spacing.16)]
           md:[--graph-docs-content-padding:theme(spacing.16)]
+          md:[--graph-docs-header-padding:theme(spacing.6)]
         `}
       >
         <header
           className={`
-            sticky top-0 z-10 grid h-[var(--graph-docs-header-height)] grid-cols-[1fr_auto_1fr] border-b border-white/8 bg-background
+            sticky top-0 z-10 grid h-[var(--graph-docs-header-height)] grid-cols-[1fr_auto_1fr] items-center border-b border-white/8 bg-background
             md:grid-cols-[var(--graph-docs-sidebar-width),auto]
           `}
         >
-          <div className="flex items-center px-[var(--graph-docs-header-padding)] md:hidden">
-            {/* TODO: Use tertiary `ExperimentalButton` after new design is implemented */}
-            <button
-              type="button"
-              data-sidebar-expanded={sidebarExpandedOnMobile || undefined}
-              className={`
-                flex size-8 items-center justify-center text-white/88 transition
-                hocus-visible:text-white
-                active:text-white/64
-                active:transition-none
-              `}
-              onClick={() => {
-                setSidebarExpandedOnMobile((expanded) => !expanded)
-              }}
-            >
-              <List
-                alt={t('global.navigation.show')}
-                variant="regular"
-                className="prop-size-5 in-clickable-[[data-sidebar-expanded]]:hidden xs:prop-size-6"
-              />
-              <X
-                alt={t('global.navigation.hide')}
-                className="prop-size-5 in-clickable-not-[[data-sidebar-expanded]]:hidden xs:prop-size-6"
-              />
-            </button>
-          </div>
-          <div className="flex items-center justify-center md:ps-[var(--graph-docs-header-padding)]">
-            <ButtonOrLink href="https://thegraph.com" className="outline-offset-2">
+          <div className="contents md:flex md:items-center md:justify-center md:ps-[var(--graph-docs-header-padding)]">
+            <ButtonOrLink href="https://thegraph.com" className="outline-offset-2 md:-ms-1.5">
               <span className="absolute -inset-2" />
-              <TheGraph className="prop-size-6 xs:prop-size-7" />
+              <TheGraph size={7} />
             </ButtonOrLink>
-            <div className="me-4.5 ms-3.5 h-7 w-px shrink-0 bg-white/8 xs:h-9" />
-            <div className="text-body-small me-auto text-text xs:text-body-large">Docs</div>
+            <div className="me-auto hidden md:flex md:items-center">
+              <div className="me-4.5 ms-3.5 h-9 w-px shrink-0 bg-white/8" />
+              <div className="text-body-large text-text">Docs</div>
+            </div>
             {/* TODO: Use naked `ExperimentalButton` after new design is implemented */}
-            <button
-              type="button"
-              data-sidebar-expanded={sidebarExpandedOnDesktop || undefined}
-              className={`
-                hidden size-8 items-center justify-center text-white/88 transition
-                hocus-visible:text-white
-                active:text-white/64
-                active:transition-none
-                md:flex
-              `}
-              onClick={() => {
-                if (!sidebarExpandedOnDesktop) {
-                  setSidebarExpandedOnDesktop(true)
-                } else {
-                  setSidebarExpandedOnDesktop(false)
-                  setSidebarExpandedOnMobile(false)
-                }
-              }}
-            >
-              <SidebarSimple
-                alt={t('global.navigation.show')}
-                variant="regular"
-                size={6}
-                className="in-clickable-[[data-sidebar-expanded]]:hidden"
-              />
-              <SidebarSimple
-                alt={t('global.navigation.hide')}
-                variant="fill"
-                size={6}
-                className="in-clickable-not-[[data-sidebar-expanded]]:hidden"
-              />
-            </button>
+            <div className="order-first px-[var(--graph-docs-header-padding)] md:order-none md:px-0">
+              <button
+                type="button"
+                data-sidebar-expanded-on-mobile={sidebarExpandedOnMobile || undefined}
+                data-sidebar-expanded-on-desktop={sidebarExpandedOnDesktop || undefined}
+                className={`
+                  flex size-8 items-center justify-center text-white/88 transition
+                  hocus-visible:text-white
+                  active:text-white/64
+                  active:transition-none
+                `}
+                onClick={() => {
+                  if (mobile) {
+                    setSidebarExpandedOnMobile((expanded) => !expanded)
+                  } else {
+                    if (!sidebarExpandedOnDesktop) {
+                      setSidebarExpandedOnDesktop(true)
+                    } else {
+                      setSidebarExpandedOnDesktop(false)
+                      setSidebarExpandedOnMobile(false)
+                    }
+                  }
+                }}
+              >
+                <SidebarSimple
+                  alt={t('global.navigation.show')}
+                  variant="regular"
+                  size={6}
+                  className={`
+                    max-md:in-clickable-[[data-sidebar-expanded-on-mobile]]:hidden
+                    md:in-clickable-[[data-sidebar-expanded-on-desktop]]:hidden
+                  `}
+                />
+                <SidebarSimple
+                  alt={t('global.navigation.hide')}
+                  variant="fill"
+                  size={6}
+                  className={`
+                    max-md:in-clickable-not-[[data-sidebar-expanded-on-mobile]]:hidden
+                    md:in-clickable-not-[[data-sidebar-expanded-on-desktop]]:hidden
+                  `}
+                />
+              </button>
+            </div>
             <div className="ms-3.5 hidden h-9 w-px shrink-0 bg-white/8 md:block" />
           </div>
           <div className="flex items-center gap-4 px-[var(--graph-docs-header-padding)]">
@@ -441,6 +436,7 @@ export default function Layout({ pageOpts, children }: NextraThemeLayoutProps<Fr
                 </button>
               )}
             </DocSearch>
+            {/* TODO: Implement new design */}
             <ExperimentalLocaleSwitcher className="prop-display-format-short lg:prop-display-format-full" />
             {/* TODO: Fix app launcher */}
             {/* <ExperimentalAppLauncher /> */}
@@ -457,6 +453,16 @@ export default function Layout({ pageOpts, children }: NextraThemeLayoutProps<Fr
             md:data-[sidebar-expanded-on-desktop]:grid-cols-[var(--graph-docs-sidebar-width),auto]
           `}
         >
+          <div
+            onClick={() => setSidebarExpandedOnMobile(false)}
+            className={`
+              pointer-events-none absolute inset-0 z-10 hidden bg-background/64 opacity-0
+              transition-[opacity,display] duration-[var(--graph-docs-layout-transition-duration)] transition-allow-discrete +:starting:opacity-0
+              max-md:group-data-[sidebar-expanded-on-mobile]/layout-sidebar-grid:pointer-events-auto
+              max-md:group-data-[sidebar-expanded-on-mobile]/layout-sidebar-grid:block
+              max-md:group-data-[sidebar-expanded-on-mobile]/layout-sidebar-grid:opacity-100
+            `}
+          />
           <div className="sticky top-[var(--graph-docs-header-height)] z-10 h-[calc(100vh-var(--graph-docs-header-height))]">
             <nav
               aria-label={t('global.navigation.title')}
@@ -604,7 +610,7 @@ function MDXContent({ toc: headings, children }: ComponentPropsWithoutRef<Nextra
       <main
         data-hide-table-of-contents={frontMatter.hideTableOfContents || undefined}
         className={`
-          group/layout-toc-grid grid grid-cols-[auto,0]
+          group/layout-toc-grid grid grid-cols-[auto,0] overflow-x-clip
           transition-[grid-template-columns]
           duration-[var(--graph-docs-layout-transition-duration)]
           xl:not-data-[hide-table-of-contents]:grid-cols-[auto,var(--graph-docs-toc-width)]
@@ -683,6 +689,7 @@ function MDXContent({ toc: headings, children }: ComponentPropsWithoutRef<Nextra
               mdx-[hr]:bg-white/8
               mdx-[li]:ps-1.5
               mdx-[ul,ol]:ps-5
+              mdx-[b,strong]:font-medium
               mdx-[b,strong]:text-white
               mdx-[h2,h3,h4,h5,h6]:text-white
               mdx-[ul>li]:after:absolute

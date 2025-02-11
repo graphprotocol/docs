@@ -23,7 +23,7 @@ export const Table = ({ className, children, ...props }: TableProps) => {
           nested-[th,td]:px-4
           nested-[th,td]:py-3
           nested-[th]:text-center
-          nested-[th]:font-semibold
+          nested-[th]:font-medium
         `}
         {...props}
       >
