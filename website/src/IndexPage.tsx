@@ -121,7 +121,7 @@ export function NetworkRoles() {
           title: t('index.networkRoles.roles.delegator.title'),
           description: t('index.networkRoles.roles.delegator.description'),
           image: '/img/roles/delegator.png',
-          href: '/resources/roles/delegating/',
+          href: '/resources/roles/delegating/delegating/',
         },
       ].map((role, index) => (
         <Flex.Column as="li" key={index}>
