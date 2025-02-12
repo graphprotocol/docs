@@ -24,12 +24,7 @@ export const VideoEmbed = ({ title, src, youtube, className, ...props }: VideoEm
   const { t } = useI18n()
 
   return (
-    <figure
-      className={classNames([
-        'graph-docs-not-markdown rounded-8 bg-white/4 p-2 not-first:mt-8 not-last:mb-8',
-        className,
-      ])}
-    >
+    <figure className={classNames(['graph-docs-not-markdown mt-8 rounded-8 bg-white/4 p-2 not-last:mb-8', className])}>
       <iframe
         src={src ?? `https://www.youtube.com/embed/${youtube}`}
         title={t('global.content.video')}

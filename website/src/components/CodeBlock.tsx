@@ -28,7 +28,7 @@ export const CodeBlock = ({ className, children, ...props }: CodeBlockProps) => 
     <ExperimentalCodeBlock
       language={language as ExperimentalCodeBlockProps['language']}
       lineNumbers={lineCount > 1}
-      className={classNames(['graph-docs-not-markdown not-first:mt-8 not-last:mb-8', className])}
+      className={classNames(['graph-docs-not-markdown mt-8 not-last:mb-8', className])}
       {...(props as ComponentPropsWithoutRef<'div'>)}
     >
       {code}

@@ -14,7 +14,6 @@ import {
   type ReactNode,
   useContext,
   useEffect,
-  useLayoutEffect,
   useState,
 } from 'react'
 import { useSet } from 'react-use'
@@ -23,10 +22,13 @@ import type { WithOptional } from '@edgeandnode/common'
 import {
   ButtonOrLink,
   Code,
+  ExperimentalButton,
   ExperimentalDivider,
   ExperimentalLocaleSwitcher,
+  ExperimentalNavLink,
   Link as LegacyLink,
   type NestedStrings,
+  useIsomorphicLayoutEffect,
 } from '@edgeandnode/gds'
 import {
   ArrowLeft,
@@ -37,7 +39,10 @@ import {
   MagnifyingGlass,
   RoleIndexer,
   SidebarSimple,
+  SocialDiscord,
   SocialGitHub,
+  SocialTelegram,
+  SocialX,
   Stack,
   Subgraph,
   Substreams,
@@ -109,7 +114,7 @@ export default function Layout({ pageOpts, children }: NextraThemeLayoutProps<Fr
 
   // TODO: Create `useTailwindScreen` hook in GDS, with usage like `const screen = useTailwindScreen()` and then you can check `screen.md`, etc.
   const [mobile, setMobile] = useState(false)
-  useLayoutEffect(() => {
+  useIsomorphicLayoutEffect(() => {
     const mediaQueryList = matchMedia('(min-width: 768px)')
     setMobile(!mediaQueryList.matches)
     const onChange = (event: MediaQueryListEvent) => setMobile(!event.matches)
@@ -128,6 +133,7 @@ export default function Layout({ pageOpts, children }: NextraThemeLayoutProps<Fr
     children: NavigationItem[]
     group: NavigationGroup
     ancestors: NavigationItem[]
+    frontMatter?: FrontMatter
   }
 
   type NavigationGroup = {
@@ -177,7 +183,7 @@ export default function Layout({ pageOpts, children }: NextraThemeLayoutProps<Fr
 
   const getNavigationItemHref = (item: NavigationItem) => {
     let currentItem = item
-    while (currentItem.children.length > 0 && !currentItem.withIndexPage) {
+    while (currentItem.children.length > 0 && (!currentItem.withIndexPage || !currentItem.frontMatter?.title)) {
       currentItem = currentItem.children[0]!
     }
     return currentItem.route
@@ -273,7 +279,8 @@ export default function Layout({ pageOpts, children }: NextraThemeLayoutProps<Fr
   const socialImage =
     frontMatter.socialImage ??
     (frontMatter.title
-      ? `https://thegraph-docs-opengraph-image.the-guild.dev?title=${encodeURI(frontMatter.title)}`
+      ? // TODO: Use `vercel/og` instead
+        `https://thegraph-docs-opengraph-image.the-guild.dev?title=${encodeURI(frontMatter.title)}`
       : null)
   let seo: NextSeoProps = {
     title: `${frontMatter.title ? `${frontMatter.title} | ` : ''}Docs | The Graph`,
@@ -305,35 +312,37 @@ export default function Layout({ pageOpts, children }: NextraThemeLayoutProps<Fr
 
       <div
         className={`
-          isolate
-          [--graph-docs-content-padding-bottom:theme(spacing.12)]
-          [--graph-docs-content-padding-top:theme(spacing.12)]
+          isolate ${/* Without this, the locale switcher's menu appears below the header */ ''}
           [--graph-docs-content-padding:theme(spacing.6)]
+          [--graph-docs-footer-padding:theme(spacing.6)]
           [--graph-docs-header-height:theme(spacing.16)]
           [--graph-docs-header-padding:theme(spacing.4)]
           [--graph-docs-layout-transition-duration:300ms]
           [--graph-docs-sidebar-width:theme(spacing.64)]
           [--graph-docs-toc-width:theme(spacing.66)]
-          md:[--graph-docs-content-padding-bottom:theme(spacing.16)]
           md:[--graph-docs-content-padding:theme(spacing.16)]
+          md:[--graph-docs-footer-padding:theme(spacing.8)]
           md:[--graph-docs-header-padding:theme(spacing.6)]
         `}
       >
         <header
           className={`
             sticky top-0 z-10 grid h-[var(--graph-docs-header-height)] grid-cols-[1fr_auto_1fr] items-center border-b border-white/8 bg-background
-            md:grid-cols-[var(--graph-docs-sidebar-width),auto]
+            md:grid-cols-[var(--graph-docs-sidebar-width)_auto]
           `}
         >
           <div className="contents md:flex md:items-center md:justify-center md:ps-[var(--graph-docs-header-padding)]">
-            <ButtonOrLink href="https://thegraph.com" className="outline-offset-2 md:-ms-1.5">
+            <ButtonOrLink
+              href="/"
+              className="text-body-large flex items-center text-text outline-offset-2 transition hocus-visible:text-white md:-ms-1 md:me-auto"
+            >
               <span className="absolute -inset-2" />
-              <TheGraph size={7} />
+              <TheGraph size={7} color="white" />
+              <span className="flex items-center max-md:hidden">
+                <span className="me-4.5 ms-3.5 h-9 w-px shrink-0 bg-white/8" />
+                <span>Docs</span>
+              </span>
             </ButtonOrLink>
-            <div className="me-auto hidden md:flex md:items-center">
-              <div className="me-4.5 ms-3.5 h-9 w-px shrink-0 bg-white/8" />
-              <div className="text-body-large text-text">Docs</div>
-            </div>
             {/* TODO: Use naked `ExperimentalButton` after new design is implemented */}
             <div className="order-first px-[var(--graph-docs-header-padding)] md:order-none md:px-0">
               <button
@@ -379,11 +388,11 @@ export default function Layout({ pageOpts, children }: NextraThemeLayoutProps<Fr
                 />
               </button>
             </div>
-            <div className="ms-3.5 hidden h-9 w-px shrink-0 bg-white/8 md:block" />
+            <div className="ms-3.5 h-9 w-px shrink-0 bg-white/8 max-md:hidden" />
           </div>
           <div className="flex items-center gap-4 px-[var(--graph-docs-header-padding)]">
             {/* TODO: Add breadcrumbs */}
-            {/* TODO: When the page is scrolled down and the search modal opens, the header and sidebar stop being sticky */}
+            {/* TODO: Fix broken search modal when scrolled down on mobile */}
             <DocSearch
               apiKey={process.env.ALGOLIA_API_KEY ?? ''}
               appId={process.env.ALGOLIA_APP_ID ?? ''}
@@ -427,10 +436,10 @@ export default function Layout({ pageOpts, children }: NextraThemeLayoutProps<Fr
                   `}
                 >
                   <MagnifyingGlass alt="" className="prop-size-4 lg:prop-size-3" />
-                  <span className="text-body-xsmall hidden flex-1 truncate lg:block">
+                  <span className="text-body-xsmall flex-1 truncate max-lg:hidden">
                     {t('docsearch.button.buttonText')}
                   </span>
-                  <span className="hidden text-12 lg:block">
+                  <span className="text-12 max-lg:hidden">
                     <kbd>⌘</kbd> <kbd>K</kbd>
                   </span>
                 </button>
@@ -447,10 +456,9 @@ export default function Layout({ pageOpts, children }: NextraThemeLayoutProps<Fr
           data-sidebar-expanded-on-mobile={sidebarExpandedOnMobile || undefined}
           data-sidebar-expanded-on-desktop={sidebarExpandedOnDesktop || undefined}
           className={`
-            group/layout-sidebar-grid grid grid-cols-[0,auto]
-            transition-[grid-template-columns]
-            duration-[var(--graph-docs-layout-transition-duration)]
-            md:data-[sidebar-expanded-on-desktop]:grid-cols-[var(--graph-docs-sidebar-width),auto]
+            group/layout-sidebar-grid isolate grid grid-cols-[0_auto]
+            transition-[grid-template-columns] duration-[var(--graph-docs-layout-transition-duration)]
+            md:data-[sidebar-expanded-on-desktop]:grid-cols-[var(--graph-docs-sidebar-width)_auto]
           `}
         >
           <div
@@ -467,81 +475,146 @@ export default function Layout({ pageOpts, children }: NextraThemeLayoutProps<Fr
             <nav
               aria-label={t('global.navigation.title')}
               className={`
-                invisible absolute inset-y-0 end-0 w-[var(--graph-docs-sidebar-width)] overflow-y-auto overflow-x-clip border-e border-white/8 bg-background
-                transition-[transform,visibility]
-                duration-[var(--graph-docs-layout-transition-duration)]
-                scrollbar-thin
+                invisible absolute inset-y-0 end-0 w-[var(--graph-docs-sidebar-width)] border-e border-white/8 bg-background
+                transition-[transform,visibility] duration-[var(--graph-docs-layout-transition-duration)]
                 max-md:group-data-[sidebar-expanded-on-mobile]/layout-sidebar-grid:visible
                 max-md:group-data-[sidebar-expanded-on-mobile]/layout-sidebar-grid:translate-x-full
                 md:group-data-[sidebar-expanded-on-desktop]/layout-sidebar-grid:visible
               `}
             >
-              {navigationGroups.map((group, groupIndex) => {
-                if (group.items.length === 0) {
-                  return null
-                }
-                const groupContent = group.items.map((groupItem) =>
-                  (function renderItem(item: typeof groupItem) {
-                    return (
-                      <NavigationItem
-                        key={item.name}
-                        title={item.title}
-                        icon={getNavigationItemIcon(item)}
-                        href={getNavigationItemHref(item)}
-                        selected={getNavigationItemSelected(item.route)}
-                        children={item.children.length > 0 ? <>{item.children.map(renderItem)}</> : undefined}
-                      />
-                    )
-                  })(groupItem),
-                )
-                return (
-                  <NavigationGroup key={groupIndex}>
-                    {group.title !== undefined ? (
-                      <NavigationItem
-                        title={group.title}
-                        icon={getNavigationItemIcon(group.items[0]!)}
-                        href={group.href ?? getNavigationItemHref(group.items[0]!)}
-                        selected={group.route ? getNavigationItemSelected(group.route) : undefined}
-                      >
-                        {groupContent}
-                      </NavigationItem>
-                    ) : (
-                      groupContent
-                    )}
-                  </NavigationGroup>
-                )
-              })}
+              <div className="gradient-mask-y h-full overflow-y-auto overflow-x-clip scrollbar-thin">
+                {/* TODO: Auto-expand the current item's ancestors on load and when the route changes? */}
+                {navigationGroups.map((group, groupIndex) => {
+                  if (group.items.length === 0) {
+                    return null
+                  }
+                  const groupContent = group.items.map((groupItem) =>
+                    (function renderItem(item: typeof groupItem) {
+                      return (
+                        <NavigationItem
+                          key={item.name}
+                          title={item.title}
+                          icon={getNavigationItemIcon(item)}
+                          href={getNavigationItemHref(item)}
+                          selected={getNavigationItemSelected(item.route)}
+                          children={item.children.length > 0 ? <>{item.children.map(renderItem)}</> : undefined}
+                        />
+                      )
+                    })(groupItem),
+                  )
+                  return (
+                    <NavigationGroup key={groupIndex}>
+                      {group.title !== undefined ? (
+                        <NavigationItem
+                          title={group.title}
+                          icon={getNavigationItemIcon(group.items[0]!)}
+                          href={group.href ?? getNavigationItemHref(group.items[0]!)}
+                          selected={group.route ? getNavigationItemSelected(group.route) : undefined}
+                        >
+                          {groupContent}
+                        </NavigationItem>
+                      ) : (
+                        groupContent
+                      )}
+                    </NavigationGroup>
+                  )
+                })}
+              </div>
             </nav>
           </div>
 
-          <MDXProvider
-            components={{
-              a: Link as ComponentType<Omit<LinkProps, 'type'>>,
-              Link,
-              blockquote: Callout,
-              // TODO: Build and use `ExperimentalCodeInline`
-              code: Code.Inline as any,
-              h1: Heading.H1,
-              h2: Heading.H2,
-              h3: Heading.H3,
-              h4: Heading.H4,
-              h5: Heading.H5,
-              h6: Heading.H6,
-              img: Image,
-              // TODO: Fix "Language X not found, you may need to load it first" errors (e.g. `toml`)
-              // TODO: Fix "[Shiki] X instances have been created. Shiki is supposed to be used as a singleton" warnings
-              pre: CodeBlock,
-              // TODO: Build and use `ExperimentalTable`
-              table: Table,
-              VideoEmbed,
-              wrapper: MDXContent,
-            }}
-          >
-            {children}
-          </MDXProvider>
-        </div>
+          <div>
+            <MDXProvider
+              components={{
+                a: Link as ComponentType<Omit<LinkProps, 'type'>>,
+                Link,
+                blockquote: Callout,
+                // TODO: Build and use `ExperimentalCodeInline`
+                code: Code.Inline as any,
+                h1: Heading.H1,
+                h2: Heading.H2,
+                h3: Heading.H3,
+                h4: Heading.H4,
+                h5: Heading.H5,
+                h6: Heading.H6,
+                img: Image,
+                // TODO: Fix "Language X not found, you may need to load it first" errors (e.g. `toml`)
+                // TODO: Fix "[Shiki] X instances have been created. Shiki is supposed to be used as a singleton" warnings
+                pre: CodeBlock,
+                // TODO: Build and use `ExperimentalTable`
+                table: Table,
+                VideoEmbed,
+                wrapper: MDXContent,
+              }}
+            >
+              {children}
+            </MDXProvider>
 
-        {/* TODO: Add footer */}
+            {/* TODO: Finish designing footer and update the link */}
+            <footer className="border-t border-white/8 px-[var(--graph-docs-footer-padding)] py-8">
+              <nav className="flex flex-wrap items-center gap-x-6 gap-y-4">
+                <ExperimentalNavLink variant="secondary" href="https://thegraph.com/" target="_self">
+                  {t('global.footer.theGraphHome')}
+                </ExperimentalNavLink>
+                <ExperimentalNavLink variant="secondary" href="https://thegraph.com/blog/" target="_self">
+                  {t('components.globalFooter.blog')}
+                </ExperimentalNavLink>
+                <ExperimentalNavLink variant="secondary" href="https://status.thegraph.com/" target="_self">
+                  {t('components.globalFooter.status')}
+                </ExperimentalNavLink>
+                <ExperimentalNavLink variant="secondary" href="https://testnet.thegraph.com/" target="_self">
+                  {t('components.globalFooter.testnet')}
+                </ExperimentalNavLink>
+                <ExperimentalNavLink variant="secondary" href="https://thegraph.com/privacy/" target="_self">
+                  {t('components.globalFooter.privacyPolicy')}
+                </ExperimentalNavLink>
+                <ExperimentalNavLink variant="secondary" href="https://thegraph.com/terms-of-service/" target="_self">
+                  {t('components.globalFooter.termsOfService')}
+                </ExperimentalNavLink>
+                <ExperimentalNavLink variant="secondary" href="https://thegraph.com/brand/" target="_self">
+                  {t('components.globalFooter.brandAssets')}
+                </ExperimentalNavLink>
+                <ExperimentalNavLink
+                  variant="secondary"
+                  href="https://thegraph.typeform.com/to/rhYddDRu"
+                  target="_self"
+                >
+                  {t('components.globalFooter.partnershipRequests')}
+                </ExperimentalNavLink>
+                <ExperimentalNavLink variant="secondary" href="https://forum.thegraph.com/" target="_self">
+                  {t('components.globalFooter.forum')}
+                </ExperimentalNavLink>
+                <ExperimentalNavLink variant="secondary" href="https://immunefi.com/bounty/thegraph/" target="_self">
+                  {t('components.globalFooter.security')}
+                </ExperimentalNavLink>
+                <div className="flex w-full items-center gap-2 md:ms-auto md:w-auto">
+                  <ExperimentalButton
+                    variant="tertiary"
+                    size="small"
+                    href="https://github.com/graphprotocol"
+                    target="_self"
+                  >
+                    <SocialGitHub />
+                  </ExperimentalButton>
+                  <ExperimentalButton variant="tertiary" size="small" href="https://x.com/graphprotocol" target="_self">
+                    <SocialX />
+                  </ExperimentalButton>
+                  <ExperimentalButton
+                    variant="tertiary"
+                    size="small"
+                    href="https://discord.gg/graphprotocol"
+                    target="_self"
+                  >
+                    <SocialDiscord />
+                  </ExperimentalButton>
+                  <ExperimentalButton variant="tertiary" size="small" href="https://t.me/graphprotocol" target="_self">
+                    <SocialTelegram />
+                  </ExperimentalButton>
+                </div>
+              </nav>
+            </footer>
+          </div>
+        </div>
       </div>
     </LayoutContext.Provider>
   )
@@ -610,10 +683,9 @@ function MDXContent({ toc: headings, children }: ComponentPropsWithoutRef<Nextra
       <main
         data-hide-table-of-contents={frontMatter.hideTableOfContents || undefined}
         className={`
-          group/layout-toc-grid grid grid-cols-[auto,0] overflow-x-clip
-          transition-[grid-template-columns]
-          duration-[var(--graph-docs-layout-transition-duration)]
-          xl:not-data-[hide-table-of-contents]:grid-cols-[auto,var(--graph-docs-toc-width)]
+          group/layout-toc-grid grid grid-cols-[auto_0] overflow-x-clip
+          transition-[grid-template-columns] duration-[var(--graph-docs-layout-transition-duration)]
+          xl:not-data-[hide-table-of-contents]:grid-cols-[auto_var(--graph-docs-toc-width)]
         `}
       >
         <article
@@ -623,8 +695,7 @@ function MDXContent({ toc: headings, children }: ComponentPropsWithoutRef<Nextra
             grid-cols-[1fr_[container-start]_minmax(auto,theme(spacing.192))_[container-end]_1fr]
             gap-x-[var(--graph-docs-content-padding)]
             text-text
-            transition-[gap]
-            duration-[var(--graph-docs-layout-transition-duration)]
+            transition-[gap] duration-[var(--graph-docs-layout-transition-duration)]
           `}
         >
           {/* TODO: Merge into the breadcrumbs? */}
@@ -632,7 +703,7 @@ function MDXContent({ toc: headings, children }: ComponentPropsWithoutRef<Nextra
             <div className="graph-docs-current-group hidden">{activePath.map((item) => item.title).join(' > ')}</div>
           ) : null}
           {!frontMatter.hideContentHeader ? (
-            <header className="col-[container] pt-8 transition-[padding] duration-[var(--graph-docs-layout-transition-duration)] md:pt-12">
+            <header className="col-[container] pt-12 transition-[padding] duration-[var(--graph-docs-layout-transition-duration)]">
               {frontMatter.title ? (
                 <h1 className="text-heading-large text-white xs:text-heading-xlarge">{frontMatter.title}</h1>
               ) : null}
@@ -663,7 +734,7 @@ function MDXContent({ toc: headings, children }: ComponentPropsWithoutRef<Nextra
           ) : null}
           <section
             className={`
-              col-[container] pb-[var(--graph-docs-content-padding-bottom)] pt-[var(--graph-docs-content-padding-top)]
+              col-[container] pb-12
               mdx-[h2]:text-heading-medium
               mdx-[h3]:text-heading-small
               mdx-[h4,h5,h6]:text-heading-xsmall
@@ -673,12 +744,12 @@ function MDXContent({ toc: headings, children }: ComponentPropsWithoutRef<Nextra
               group-data-[unwrap-content]/layout-content-grid:col-span-full
               group-data-[unwrap-content]/layout-content-grid:grid
               group-data-[unwrap-content]/layout-content-grid:grid-cols-subgrid
+              -:first:*:mt-6
               -:group-data-[unwrap-content]/layout-content-grid:*:col-span-full
-              +:group-data-[unwrap-content]/layout-content-grid:py-0
               mdx-[hr]:my-12
-              mdx-[:is(h2,h3):not(:first-child)]:mt-12
+              mdx-[:is(h2,h3)]:mt-12
               mdx-[:is(h2,h3,h4,h5,h6):not(:last-child)]:mb-3
-              mdx-[:is(h4,h5,h6):not(:first-child)]:mt-8
+              mdx-[:is(h4,h5,h6)]:mt-8
               mdx-[:is(p,ul,ol):not(:last-child,:is(ul,ol)_*)]:mb-6
               mdx-[:is(ul,ol)_:is(ul,ol,p+p)]:mt-2
               mdx-[ul,ol]:flex
@@ -699,6 +770,7 @@ function MDXContent({ toc: headings, children }: ComponentPropsWithoutRef<Nextra
               mdx-[ul>li]:after:w-3
               mdx-[ul>li]:after:bg-white/32
               mdx-[ul>li]:after:content-['']
+              md:pb-16
               md:mdx-[hr]:my-16
             `}
           >
@@ -717,14 +789,14 @@ function MDXContent({ toc: headings, children }: ComponentPropsWithoutRef<Nextra
                 {previousPage ? (
                   <ButtonOrLink href={previousPage.route} className="outline-offset-2">
                     <span className="absolute -inset-2" />
-                    <ArrowLeft alt={t('global.page.previous')} />
+                    <ArrowLeft alt={t('global.page.previous')} size={4} />
                     <span className="line-clamp-2 text-ellipsis">{previousPage.title}</span>
                   </ButtonOrLink>
                 ) : null}
                 {nextPage ? (
                   <ButtonOrLink href={nextPage.route} className="ms-auto items-end text-end outline-offset-2">
                     <span className="absolute -inset-2" />
-                    <ArrowRight alt={t('global.page.next')} />
+                    <ArrowRight alt={t('global.page.next')} size={4} />
                     <span className="line-clamp-2 text-ellipsis">{nextPage.title}</span>
                   </ButtonOrLink>
                 ) : null}
@@ -733,63 +805,68 @@ function MDXContent({ toc: headings, children }: ComponentPropsWithoutRef<Nextra
           ) : null}
         </article>
 
-        <div className="sticky top-[var(--graph-docs-header-height)] h-[calc(100vh-var(--graph-docs-header-height))]">
+        <div>
           <aside
             className={`
-              text-body-xsmall invisible absolute inset-y-0 start-0 w-[var(--graph-docs-toc-width)] overflow-y-auto overflow-x-clip py-12 pe-6
-              transition-[visibility]
-              duration-[var(--graph-docs-layout-transition-duration)]
-              scrollbar-thin
+              text-body-xsmall invisible absolute inset-y-0 start-0 w-[var(--graph-docs-toc-width)]
+              transition-[visibility] duration-[var(--graph-docs-layout-transition-duration)]
               group-data-[hide-table-of-contents]/layout-toc-grid:hidden
               xl:group-not-data-[hide-table-of-contents]/layout-toc-grid:visible
             `}
           >
-            <header className="mb-4 flex gap-4">
-              <div>{t('global.page.onThisPage')}</div>
-              {/* TODO: Use `ExperimentalLink` */}
-              <LegacyLink variant="secondary" href={editPageUrl} target="_blank" size="14px">
-                <SocialGitHub alt="" />
-                {t('global.page.edit')}
-              </LegacyLink>
-            </header>
-            {headings.length > 0 ? (
-              <nav
-                aria-label={t('global.page.tableOfContents')}
-                className="flow-root overflow-y-clip border-s border-white/8 text-white/48"
-              >
-                <ul className="-my-1 -ms-px">
-                  {headings.map((heading, headingIndex) => {
-                    if (heading.depth > MAX_HEADING_DEPTH) {
-                      return null
-                    }
-                    const active = heading.id === highlightedHeadingId
-                    return (
-                      <li key={headingIndex}>
-                        {active ? (
-                          <motion.span
-                            className="absolute inset-y-0 start-0 w-px bg-purple"
-                            // Using the page's `activeIndex` to ensure the indicator doesn't transition between pages
-                            layoutId={`active-heading-indicator-${activeIndex}`}
-                          />
-                        ) : null}
-                        <ButtonOrLink
-                          href={`#${heading.id}`}
-                          data-active={active ? 'true' : undefined}
-                          className={`
-                            block py-1 ps-[calc((var(--depth)-1)*theme(spacing.3))] text-white/48 transition
-                            hocus-visible:text-white
-                            data-[active]:text-white/88
-                          `}
-                          style={{ '--depth': heading.depth } as CSSProperties}
-                        >
-                          {removeLinks(heading.value)}
-                        </ButtonOrLink>
-                      </li>
-                    )
-                  })}
-                </ul>
-              </nav>
-            ) : null}
+            <div
+              className={`
+                gradient-mask-y sticky top-[var(--graph-docs-header-height)] max-h-[calc(100vh-var(--graph-docs-header-height))]
+                overflow-y-auto overflow-x-clip py-12 pe-6 scrollbar-thin
+              `}
+            >
+              <header className="mb-4 flex gap-4">
+                <div>{t('global.page.onThisPage')}</div>
+                {/* TODO: Use `ExperimentalLink` */}
+                <LegacyLink variant="secondary" href={editPageUrl} target="_blank" size="14px">
+                  <SocialGitHub alt="" />
+                  {t('global.page.edit')}
+                </LegacyLink>
+              </header>
+              {headings.length > 0 ? (
+                <nav
+                  aria-label={t('global.page.tableOfContents')}
+                  className="flow-root overflow-y-clip border-s border-white/8 text-white/48"
+                >
+                  <ul className="-my-1 -ms-px">
+                    {headings.map((heading, headingIndex) => {
+                      if (heading.depth > MAX_HEADING_DEPTH) {
+                        return null
+                      }
+                      const active = heading.id === highlightedHeadingId
+                      return (
+                        <li key={headingIndex}>
+                          {active ? (
+                            <motion.span
+                              className="absolute inset-y-0 start-0 w-px bg-purple"
+                              // Using the page's `activeIndex` to ensure the indicator doesn't transition between pages
+                              layoutId={`active-heading-indicator-${activeIndex}`}
+                            />
+                          ) : null}
+                          <ButtonOrLink
+                            href={`#${heading.id}`}
+                            data-active={active ? 'true' : undefined}
+                            className={`
+                              block py-1 ps-[calc((var(--depth)-1)*theme(spacing.3))] text-white/48 transition
+                              hocus-visible:text-white
+                              data-[active]:text-white/88
+                            `}
+                            style={{ '--depth': heading.depth } as CSSProperties}
+                          >
+                            {removeLinks(heading.value)}
+                          </ButtonOrLink>
+                        </li>
+                      )
+                    })}
+                  </ul>
+                </nav>
+              ) : null}
+            </div>
           </aside>
         </div>
       </main>

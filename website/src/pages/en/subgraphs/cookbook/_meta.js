@@ -1,4 +1,5 @@
 export default {
+  // TODO: Use `sidebarTitle` instead of `_meta.js`
   'subgraph-debug-forking': '',
   near: '',
   cosmos: '',

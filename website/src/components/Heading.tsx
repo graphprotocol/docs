@@ -29,14 +29,17 @@ const BaseHeading = ({ as: Element = 'h1', id, className, children, ...props }: 
   )
 
   return (
-    // Undoing `text-balance` in Safari because of a weird rendering bug when changing pages
-    <Element ref={ref} id={id} className={classNames(['group/heading +:safari:text-wrap', className])} {...props}>
+    <Element ref={ref} id={id} className={classNames(['group/heading', className])} {...props}>
       {children}
       {id ? (
-        <span className="ms-[0.35em] opacity-0 transition safari:will-change-[opacity] group-hocus-visible-within/heading:opacity-100">
-          {/* Zero-width non-breaking space, to prevent a line break between the `#` and the previous word */}
-          &#8288;
-          {/* TODO: Use `ExperimentalLink` */}
+        <span
+          className={`
+            absolute end-[calc(100%+theme(spacing.3))] top-0 opacity-0 transition
+            group-hocus-visible-within/heading:opacity-100
+            max-md:hidden
+          `}
+        >
+          {/* TODO: Use `ExperimentalLink` or naked `ExperimentalButton` */}
           <Link inline underline={false} href={`#${id}`}>
             <LinkIcon alt={t('global.page.linkToThisSection')} className="prop-size-[0.85em]" />
           </Link>

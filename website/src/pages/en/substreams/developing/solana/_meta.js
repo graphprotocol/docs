@@ -1,4 +1,5 @@
 export default {
+  // TODO: Use `sidebarTitle` instead of `_meta.js`
   transactions: 'Transactions and Instructions',
-  accountchanges: 'Account Changes',
+  'account-changes': 'Account Changes',
 }

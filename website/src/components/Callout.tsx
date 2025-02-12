@@ -14,7 +14,7 @@ export const Callout = ({ className, children, ...props }: CalloutProps) => {
   return (
     <div
       className={classNames([
-        'flex gap-2 rounded-8 border border-blue/48 bg-blue/8 p-4 ps-3 not-first:mt-8 not-last:mb-8',
+        'mt-8 flex gap-2 rounded-8 border border-blue/48 bg-blue/8 p-4 ps-3 not-last:mb-8',
         className,
       ])}
       {...(props as ComponentPropsWithoutRef<'div'>)}

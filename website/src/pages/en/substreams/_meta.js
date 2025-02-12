@@ -1,6 +1,7 @@
 export default {
-  'getting-started-substreams': 'Quick Start',
+  // TODO: Use `sidebarTitle` instead of `_meta.js`
+  'quick-start': 'Quick Start',
   introduction: 'Introduction',
   developing: 'Developing',
-  pubsubstreams: 'Publishing',
+  publishing: 'Publishing',
 }
