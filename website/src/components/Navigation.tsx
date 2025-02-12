@@ -83,11 +83,11 @@ export const NavigationItem = ({
         first:[--docs-navigation-item-first:1]
         last:[--docs-navigation-item-last:1]
         data-[expanded]:[--docs-navigation-item-expanded:1]
-        nearest-group-[&>li:has(ul:not(:scope_ul_*,[inert]_*)>li:last-child[data-expanded])+]/navigation-list:[--docs-navigation-item-no-top-line:1]`,
+        nearest-group-[>li:has(ul:not(:scope_ul_*,[inert]_*)>li:last-child[data-expanded])+]/navigation-list:[--docs-navigation-item-no-top-line:1]`,
         className,
       ])}
     >
-      <div data-selected={selected || undefined} className="group/navigation-item-trigger flex items-center">
+      <div data-selected={selected || undefined} className="group/navigation-item-trigger flex items-center py-0.5">
         <ButtonOrLink
           selected={selected === true}
           onClick={(event: MouseEvent<HTMLButtonElement & HTMLAnchorElement>) => {
@@ -95,7 +95,7 @@ export const NavigationItem = ({
             onClick?.(event)
           }}
           className={`
-            text-body-small flex flex-1 gap-1.5 p-2 ps-1 text-white/64 transition
+            text-body-small flex flex-1 gap-1.5 py-1.5 pe-2 ps-1 text-white/64 transition
             hocus-visible:text-white
             group-data-[selected]/navigation-item-trigger:text-white
             group-data-[selected]/navigation-item-trigger:transition-none
@@ -106,36 +106,36 @@ export const NavigationItem = ({
             {depth === 0 ? icon : null}
           </span>
           <span>{title}</span>
-          {depth > 0 ? (
-            <span className="absolute inset-y-0 start-3 flex w-1.5 flex-col items-center gap-1">
-              <span
-                className={`
-                  w-px flex-1 bg-white/8 transition duration-150
-                  @style-[--docs-navigation-item-no-top-line=1]:opacity-0
-                  @style-[--docs-navigation-item-no-top-line=1]:delay-150
-                  @style-[--docs-navigation-item-first=1]:not-in-group-data-[depth=2]/navigation-list:opacity-0
-                `}
-              />
-              <span
-                className={`
-                  size-2 rounded-full bg-white/8 transition
-                  in-clickable-hocus-visible:bg-white/16
-                  +:group-data-[selected=partially]/navigation-item-trigger:bg-white/32
-                  +:group-data-[selected=true]/navigation-item-trigger:bg-purple
-                  +:group-data-[selected]/navigation-item-trigger:transition-none
-                `}
-              />
-              <span
-                className={`
-                  w-px flex-1 bg-white/8 transition duration-150
-                  @style-[--docs-navigation-item-expanded=0]:@style-[--docs-navigation-item-last:1]:@style-[--docs-previous-navigation-item-last:1]:opacity-0
-                  @style-[--docs-navigation-item-expanded=0]:@style-[--docs-navigation-item-last:1]:@style-[--docs-previous-navigation-item-last:1]:delay-150
-                  @style-[--docs-navigation-item-expanded=0]:@style-[--docs-navigation-item-last:1]:@style-[--docs-previous-navigation-item-last:1]:duration-300
-                `}
-              />
-            </span>
-          ) : null}
         </ButtonOrLink>
+        {depth > 0 ? (
+          <span className="absolute inset-y-0 start-3 flex w-1.5 flex-col items-center gap-1">
+            <span
+              className={`
+                w-px flex-1 bg-white/8 transition duration-150
+                @style-[--docs-navigation-item-no-top-line=1]:opacity-0
+                @style-[--docs-navigation-item-no-top-line=1]:delay-150
+                @style-[--docs-navigation-item-first=1]:not-in-group-data-[depth=2]/navigation-list:opacity-0
+              `}
+            />
+            <span
+              className={`
+                size-2 rounded-full bg-white/8 transition
+                in-clickable-hocus-visible:bg-white/16
+                +:group-data-[selected=partially]/navigation-item-trigger:bg-white/32
+                +:group-data-[selected=true]/navigation-item-trigger:bg-purple
+                +:group-data-[selected]/navigation-item-trigger:transition-none
+              `}
+            />
+            <span
+              className={`
+                w-px flex-1 bg-white/8 transition duration-150
+                @style-[--docs-navigation-item-expanded=0]:@style-[--docs-navigation-item-last:1]:@style-[--docs-previous-navigation-item-last:1]:opacity-0
+                @style-[--docs-navigation-item-expanded=0]:@style-[--docs-navigation-item-last:1]:@style-[--docs-previous-navigation-item-last:1]:delay-150
+                @style-[--docs-navigation-item-expanded=0]:@style-[--docs-navigation-item-last:1]:@style-[--docs-previous-navigation-item-last:1]:duration-300
+              `}
+            />
+          </span>
+        ) : null}
         {children ? (
           <ExperimentalButton
             variant="tertiary"
@@ -216,8 +216,8 @@ export const NavigationItem = ({
                 className={`
                   absolute -bottom-2 start-0 aspect-square w-full origin-[start] bg-background fill-none stroke-white/8 transition duration-150
                   safari:delay-150
-                  nearest-group-[&:has(ul:not(:scope_ul_*,[inert]_*)>li:last-child[data-expanded])]/navigation-item:opacity-0
-                  nearest-group-[&:has(ul:not(:scope_ul_*,[inert]_*)>li:last-child[data-expanded])]/navigation-item:delay-150
+                  nearest-group-[:has(ul:not(:scope_ul_*,[inert]_*)>li:last-child[data-expanded])]/navigation-item:opacity-0
+                  nearest-group-[:has(ul:not(:scope_ul_*,[inert]_*)>li:last-child[data-expanded])]/navigation-item:delay-150
                   @style-[--docs-navigation-item-expanded=0]:opacity-0
                   @style-[--docs-navigation-item-last=1]:opacity-0
                   @style-[--docs-navigation-item-expanded=0]:safari:delay-0

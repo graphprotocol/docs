@@ -337,14 +337,14 @@ export default function Layout({ pageOpts, children }: NextraThemeLayoutProps<Fr
               className="text-body-large flex items-center text-text outline-offset-2 transition hocus-visible:text-white md:-ms-1 md:me-auto"
             >
               <span className="absolute -inset-2" />
-              <TheGraph size={7} color="white" />
+              <TheGraph color="white" className="prop-size-8 md:prop-size-7" />
               <span className="flex items-center max-md:hidden">
                 <span className="me-4.5 ms-3.5 h-9 w-px shrink-0 bg-white/8" />
                 <span>Docs</span>
               </span>
             </ButtonOrLink>
-            {/* TODO: Use naked `ExperimentalButton` after new design is implemented */}
             <div className="order-first px-[var(--graph-docs-header-padding)] md:order-none md:px-0">
+              {/* TODO: Use `ExperimentalButton` after new design is implemented (tertiary on mobile, naked on desktop) */}
               <button
                 type="button"
                 data-sidebar-expanded-on-mobile={sidebarExpandedOnMobile || undefined}
@@ -424,6 +424,7 @@ export default function Layout({ pageOpts, children }: NextraThemeLayoutProps<Fr
               translations={translations.docsearch as NestedStrings}
             >
               {({ buttonRef, openModal }) => (
+                // TODO: Use tertiary `ExperimentalButton` after new design is implemented, at least on mobile
                 <button
                   ref={buttonRef}
                   type="button"
@@ -435,7 +436,7 @@ export default function Layout({ pageOpts, children }: NextraThemeLayoutProps<Fr
                     lg:w-60 lg:border lg:text-white/64 lg:outline-none lg:hocus-visible:text-white/88 lg:hover:border-white/32
                   `}
                 >
-                  <MagnifyingGlass alt="" className="prop-size-4 lg:prop-size-3" />
+                  <MagnifyingGlass alt="" className="prop-size-5 lg:prop-size-3" />
                   <span className="text-body-xsmall flex-1 truncate max-lg:hidden">
                     {t('docsearch.button.buttonText')}
                   </span>
@@ -445,7 +446,7 @@ export default function Layout({ pageOpts, children }: NextraThemeLayoutProps<Fr
                 </button>
               )}
             </DocSearch>
-            {/* TODO: Implement new design */}
+            {/* TODO: Use tertiary `ExperimentalButton` in `children` after new design is implemented */}
             <ExperimentalLocaleSwitcher className="prop-display-format-short lg:prop-display-format-full" />
             {/* TODO: Fix app launcher */}
             {/* <ExperimentalAppLauncher /> */}
@@ -503,6 +504,7 @@ export default function Layout({ pageOpts, children }: NextraThemeLayoutProps<Fr
                     })(groupItem),
                   )
                   return (
+                    // TODO: Auto-collapse other groups when opening one via the title?
                     <NavigationGroup key={groupIndex}>
                       {group.title !== undefined ? (
                         <NavigationItem
@@ -530,6 +532,7 @@ export default function Layout({ pageOpts, children }: NextraThemeLayoutProps<Fr
                 Link,
                 blockquote: Callout,
                 // TODO: Build and use `ExperimentalCodeInline`
+                // TODO: Test `ExperimentalCodeInline` and `ExperimentalLink` together
                 code: Code.Inline as any,
                 h1: Heading.H1,
                 h2: Heading.H2,
@@ -828,6 +831,7 @@ function MDXContent({ toc: headings, children }: ComponentPropsWithoutRef<Nextra
                   {t('global.page.edit')}
                 </LegacyLink>
               </header>
+              {/* TODO: How do we / should we handle inline code and links in headings? */}
               {headings.length > 0 ? (
                 <nav
                   aria-label={t('global.page.tableOfContents')}
