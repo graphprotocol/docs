@@ -3,8 +3,8 @@
  */
 
 /**
- * This is a private fork of https://github.com/rehypejs/rehype-unwrap-images
- * TODO: If https://github.com/rehypejs/rehype-unwrap-images/pull/1 gets merged and released, use the official package.
+ * This is a private fork of https://github.com/rehypejs/rehype-unwrap-images to work around a Nextra bug.
+ * See https://github.com/rehypejs/rehype-unwrap-images/pull/1 for why this won't be merged upstream.
  */
 
 import { interactive } from 'hast-util-interactive'

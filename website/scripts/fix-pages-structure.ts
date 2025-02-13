@@ -96,12 +96,7 @@ async function main() {
     const sourceMetaPath = path.join(sourceDirectory, directory, META_FILENAME)
     if (FORCE_META || !(await fileExists(sourceMetaPath))) {
       const filesInDirectory = sourceStructure.files
-        .filter(
-          (file) =>
-            path.dirname(file) === directory &&
-            isContentFile(path.basename(file), true) &&
-            (file.endsWith('.md') || file.endsWith('.mdx')),
-        )
+        .filter((file) => path.dirname(file) === directory && isContentFile(path.basename(file), true))
         .map((file) => path.basename(file, path.extname(file)))
       console.log(`Creating meta file ${path.join(SOURCE_LOCALE, directory, META_FILENAME)}`)
       await fs.writeFile(

@@ -5,7 +5,6 @@ import type { Heading as NextraHeading, NextraMDXContent, NextraThemeLayoutProps
 import { useFSRoute, useRouter } from 'nextra/hooks'
 import { MDXProvider } from 'nextra/mdx'
 import { normalizePages } from 'nextra/normalize-pages'
-import { removeLinks } from 'nextra/remove-links'
 import {
   type ComponentPropsWithoutRef,
   type ComponentType,
@@ -28,6 +27,7 @@ import {
   ExperimentalNavLink,
   Link as LegacyLink,
   type NestedStrings,
+  reactNodeToString,
   useIsomorphicLayoutEffect,
 } from '@edgeandnode/gds'
 import {
@@ -392,7 +392,6 @@ export default function Layout({ pageOpts, children }: NextraThemeLayoutProps<Fr
           </div>
           <div className="flex items-center gap-4 px-[var(--graph-docs-header-padding)]">
             {/* TODO: Add breadcrumbs */}
-            {/* TODO: Fix broken search modal when scrolled down on mobile */}
             <DocSearch
               apiKey={process.env.ALGOLIA_API_KEY ?? ''}
               appId={process.env.ALGOLIA_APP_ID ?? ''}
@@ -472,7 +471,7 @@ export default function Layout({ pageOpts, children }: NextraThemeLayoutProps<Fr
               max-md:group-data-[sidebar-expanded-on-mobile]/layout-sidebar-grid:opacity-100
             `}
           />
-          <div className="sticky top-[var(--graph-docs-header-height)] z-10 h-[calc(100vh-var(--graph-docs-header-height))]">
+          <div className="sticky top-[var(--graph-docs-header-height)] z-10 h-[calc(100dvh-var(--graph-docs-header-height))]">
             <nav
               aria-label={t('global.navigation.title')}
               className={`
@@ -484,7 +483,13 @@ export default function Layout({ pageOpts, children }: NextraThemeLayoutProps<Fr
               `}
             >
               <div className="gradient-mask-y h-full overflow-y-auto overflow-x-clip scrollbar-thin">
-                {/* TODO: Auto-expand the current item's ancestors on load and when the route changes? */}
+                {/**
+                 * TODOs about the navigation system:
+                 * - Auto-expand the current item's ancestors on load and when the route changes
+                 * - Remember which groups/items are expanded at every level, so that closing and re-expanding an ancestor doesn't affect its children's state
+                 * - Remember if groups/items were manually expanded (with the caret) or auto-expanded (either by clicking on its title or by navigating to it
+                 *   or one of its children), then auto-close those that were auto-expanded when the user navigates to a different group/item
+                 */}
                 {navigationGroups.map((group, groupIndex) => {
                   if (group.items.length === 0) {
                     return null
@@ -504,7 +509,6 @@ export default function Layout({ pageOpts, children }: NextraThemeLayoutProps<Fr
                     })(groupItem),
                   )
                   return (
-                    // TODO: Auto-collapse other groups when opening one via the title?
                     <NavigationGroup key={groupIndex}>
                       {group.title !== undefined ? (
                         <NavigationItem
@@ -541,7 +545,6 @@ export default function Layout({ pageOpts, children }: NextraThemeLayoutProps<Fr
                 h5: Heading.H5,
                 h6: Heading.H6,
                 img: Image,
-                // TODO: Fix "Language X not found, you may need to load it first" errors (e.g. `toml`)
                 // TODO: Fix "[Shiki] X instances have been created. Shiki is supposed to be used as a singleton" warnings
                 pre: CodeBlock,
                 // TODO: Build and use `ExperimentalTable`
@@ -553,11 +556,10 @@ export default function Layout({ pageOpts, children }: NextraThemeLayoutProps<Fr
               {children}
             </MDXProvider>
 
-            {/* TODO: Finish designing footer and update the link */}
             <footer className="border-t border-white/8 px-[var(--graph-docs-footer-padding)] py-8">
               <nav className="flex flex-wrap items-center gap-x-6 gap-y-4">
                 <ExperimentalNavLink variant="secondary" href="https://thegraph.com/" target="_self">
-                  {t('global.footer.theGraphHome')}
+                  The Graph
                 </ExperimentalNavLink>
                 <ExperimentalNavLink variant="secondary" href="https://thegraph.com/blog/" target="_self">
                   {t('components.globalFooter.blog')}
@@ -779,6 +781,13 @@ function MDXContent({ toc: headings, children }: ComponentPropsWithoutRef<Nextra
           >
             {children}
           </section>
+          <div className="col-[container] flex justify-end pb-12 group-data-[hide-table-of-contents]/layout-toc-grid:hidden xl:hidden">
+            {/* TODO: Use `ExperimentalLink` */}
+            <LegacyLink variant="secondary" href={editPageUrl} target="_blank" size="14px">
+              <SocialGitHub alt="" />
+              {t('global.page.edit')}
+            </LegacyLink>
+          </div>
           {!frontMatter.hideContentFooter ? (
             <footer className="col-[container]">
               <ExperimentalDivider variant="subtle" />
@@ -819,7 +828,7 @@ function MDXContent({ toc: headings, children }: ComponentPropsWithoutRef<Nextra
           >
             <div
               className={`
-                gradient-mask-y sticky top-[var(--graph-docs-header-height)] max-h-[calc(100vh-var(--graph-docs-header-height))]
+                gradient-mask-y sticky top-[var(--graph-docs-header-height)] max-h-[calc(100dvh-var(--graph-docs-header-height))]
                 overflow-y-auto overflow-x-clip py-12 pe-6 scrollbar-thin
               `}
             >
@@ -831,7 +840,6 @@ function MDXContent({ toc: headings, children }: ComponentPropsWithoutRef<Nextra
                   {t('global.page.edit')}
                 </LegacyLink>
               </header>
-              {/* TODO: How do we / should we handle inline code and links in headings? */}
               {headings.length > 0 ? (
                 <nav
                   aria-label={t('global.page.tableOfContents')}
@@ -839,6 +847,7 @@ function MDXContent({ toc: headings, children }: ComponentPropsWithoutRef<Nextra
                 >
                   <ul className="-my-1 -ms-px">
                     {headings.map((heading, headingIndex) => {
+                      console.log({ heading })
                       if (heading.depth > MAX_HEADING_DEPTH) {
                         return null
                       }
@@ -862,7 +871,8 @@ function MDXContent({ toc: headings, children }: ComponentPropsWithoutRef<Nextra
                             `}
                             style={{ '--depth': heading.depth } as CSSProperties}
                           >
-                            {removeLinks(heading.value)}
+                            {/* Calling `reactNodeToString` because the types are lying and `heading.value` can be a `ReactNode` that contains links, inline code, etc. */}
+                            {reactNodeToString(heading.value)}
                           </ButtonOrLink>
                         </li>
                       )

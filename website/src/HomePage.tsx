@@ -88,10 +88,12 @@ export default function HomePage() {
         <section>
           <Heading.H2 id="supported-networks">{t('index.supportedNetworks.title')}</Heading.H2>
           <p>
-            {t('index.supportedNetworks.description', [
-              '90+',
+            {t('index.supportedNetworks.description.base', [
+              <Link key="link-1" href="/supported-networks/">
+                90+ {t('index.supportedNetworks.description.networks')}
+              </Link>,
               <Link key="link" href="https://edgeandnode.typeform.com/to/b3507xSL">
-                {t('index.supportedNetworks.cta')}
+                {t('index.supportedNetworks.description.completeThisForm')}
               </Link>,
             ])}
           </p>

@@ -138,7 +138,7 @@ export function DocSearch({ children, ...props }: DocSearchProps) {
                 color: 'inherit',
               },
               '.DocSearch-Dropdown': {
-                maxHeight: ['calc(100vh - 96px)', null, 'max(192px, calc(100vh - 288px))'],
+                maxHeight: ['calc(100dvh - 96px)', null, 'max(192px, calc(100dvh - 288px))'],
                 scrollPaddingTop: '32px',
               },
               '.DocSearch-Dropdown-Container': {
