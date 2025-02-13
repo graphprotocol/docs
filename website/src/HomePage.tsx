@@ -3,7 +3,16 @@ import { useData } from 'nextra/hooks'
 import type { ComponentPropsWithoutRef } from 'react'
 
 import { classNames, Link as LegacyLink, Tooltip } from '@edgeandnode/gds'
-import { Clock, Firehose, GraphExplorer, GraphNode, SocialYouTube, Subgraph, Substreams, SubstreamsPoweredSubgraph } from '@edgeandnode/gds/icons'
+import {
+  Clock,
+  Firehose,
+  GraphExplorer,
+  GraphNode,
+  SocialYouTube,
+  Subgraph,
+  Substreams,
+  SubstreamsPoweredSubgraph,
+} from '@edgeandnode/gds/icons'
 import { NetworkIcon } from '@edgeandnode/go'
 
 import { Card, Heading, Link } from '@/components'
@@ -21,9 +30,7 @@ export default function HomePage() {
         </div>
         <div className="col-[container] py-20 xs:py-30">
           <div className="flex max-w-120 flex-col">
-            <h1 className="text-heading-xlarge text-white">
-              {t('index.hero.title')}
-            </h1>
+            <h1 className="text-heading-xlarge text-white">{t('index.hero.title')}</h1>
             <p className="mt-2">{t('index.hero.description')}</p>
             {/*
               <ExperimentalButtonGroup className="mt-4 prop-orientation-vertical xs:prop-orientation-horizontal">
