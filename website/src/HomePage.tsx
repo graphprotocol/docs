@@ -41,7 +41,7 @@ export default function HomePage() {
           </div>
         </div>
       </div>
-      <div className="col-[container]">
+      <div className="col-[container] nested-[p:empty]:hidden">
         <section>
           <Heading.H2 id="products">{t('index.products.title')}</Heading.H2>
           <p>{t('index.products.description')}</p>

@@ -120,7 +120,7 @@ export const NavigationItem = ({
             <span
               className={`
                 size-2 rounded-full bg-white/8 transition
-                in-clickable-hocus-visible:bg-white/16
+                nearest-group-[:has(:is(a,button):is(:hover,:focus-visible))]/navigation-item:bg-white/16
                 +:group-data-[selected=partially]/navigation-item-trigger:bg-white/32
                 +:group-data-[selected=true]/navigation-item-trigger:bg-purple
                 +:group-data-[selected]/navigation-item-trigger:transition-none

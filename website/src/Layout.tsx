@@ -446,7 +446,11 @@ export default function Layout({ pageOpts, children }: NextraThemeLayoutProps<Fr
               )}
             </DocSearch>
             {/* TODO: Use tertiary `ExperimentalButton` in `children` after new design is implemented */}
-            <ExperimentalLocaleSwitcher className="prop-display-format-short lg:prop-display-format-full" />
+            <ExperimentalLocaleSwitcher
+              className={`
+                prop-display-format-short nested-nav-link:prop-variant-primary lg:prop-display-format-full lg:nested-nav-link:prop-variant-secondary
+              `}
+            />
             {/* TODO: Fix app launcher */}
             {/* <ExperimentalAppLauncher /> */}
           </div>
@@ -557,42 +561,34 @@ export default function Layout({ pageOpts, children }: NextraThemeLayoutProps<Fr
             </MDXProvider>
 
             <footer className="border-t border-white/8 px-[var(--graph-docs-footer-padding)] py-8">
-              <nav className="flex flex-wrap items-center gap-x-6 gap-y-4">
-                <ExperimentalNavLink variant="secondary" href="https://thegraph.com/" target="_self">
-                  The Graph
-                </ExperimentalNavLink>
-                <ExperimentalNavLink variant="secondary" href="https://thegraph.com/blog/" target="_self">
-                  {t('components.globalFooter.blog')}
-                </ExperimentalNavLink>
-                <ExperimentalNavLink variant="secondary" href="https://status.thegraph.com/" target="_self">
-                  {t('components.globalFooter.status')}
-                </ExperimentalNavLink>
-                <ExperimentalNavLink variant="secondary" href="https://testnet.thegraph.com/" target="_self">
-                  {t('components.globalFooter.testnet')}
-                </ExperimentalNavLink>
-                <ExperimentalNavLink variant="secondary" href="https://thegraph.com/privacy/" target="_self">
-                  {t('components.globalFooter.privacyPolicy')}
-                </ExperimentalNavLink>
-                <ExperimentalNavLink variant="secondary" href="https://thegraph.com/terms-of-service/" target="_self">
-                  {t('components.globalFooter.termsOfService')}
-                </ExperimentalNavLink>
-                <ExperimentalNavLink variant="secondary" href="https://thegraph.com/brand/" target="_self">
-                  {t('components.globalFooter.brandAssets')}
-                </ExperimentalNavLink>
-                <ExperimentalNavLink
-                  variant="secondary"
-                  href="https://thegraph.typeform.com/to/rhYddDRu"
-                  target="_self"
-                >
-                  {t('components.globalFooter.partnershipRequests')}
-                </ExperimentalNavLink>
-                <ExperimentalNavLink variant="secondary" href="https://forum.thegraph.com/" target="_self">
-                  {t('components.globalFooter.forum')}
-                </ExperimentalNavLink>
-                <ExperimentalNavLink variant="secondary" href="https://immunefi.com/bounty/thegraph/" target="_self">
-                  {t('components.globalFooter.security')}
-                </ExperimentalNavLink>
-                <div className="flex w-full items-center gap-2 md:ms-auto md:w-auto">
+              <nav className="flex flex-col gap-x-6 gap-y-4 md:flex-row md:items-start">
+                <div className="flex flex-1 flex-wrap items-center gap-x-6 gap-y-4 md:py-2">
+                  <ExperimentalNavLink variant="secondary" href="https://thegraph.com/" target="_self">
+                    The Graph
+                  </ExperimentalNavLink>
+                  <ExperimentalNavLink variant="secondary" href="https://status.thegraph.com/" target="_self">
+                    {t('components.globalFooter.status')}
+                  </ExperimentalNavLink>
+                  <ExperimentalNavLink variant="secondary" href="https://testnet.thegraph.com/" target="_self">
+                    {t('components.globalFooter.testnet')}
+                  </ExperimentalNavLink>
+                  <ExperimentalNavLink variant="secondary" href="https://thegraph.com/brand/" target="_self">
+                    {t('components.globalFooter.brandAssets')}
+                  </ExperimentalNavLink>
+                  <ExperimentalNavLink variant="secondary" href="https://forum.thegraph.com/" target="_self">
+                    {t('components.globalFooter.forum')}
+                  </ExperimentalNavLink>
+                  <ExperimentalNavLink variant="secondary" href="https://immunefi.com/bounty/thegraph/" target="_self">
+                    {t('components.globalFooter.security')}
+                  </ExperimentalNavLink>
+                  <ExperimentalNavLink variant="secondary" href="https://thegraph.com/privacy/" target="_self">
+                    {t('components.globalFooter.privacyPolicy')}
+                  </ExperimentalNavLink>
+                  <ExperimentalNavLink variant="secondary" href="https://thegraph.com/terms-of-service/" target="_self">
+                    {t('components.globalFooter.termsOfService')}
+                  </ExperimentalNavLink>
+                </div>
+                <div className="flex items-center gap-2">
                   <ExperimentalButton
                     variant="tertiary"
                     size="small"
@@ -688,7 +684,7 @@ function MDXContent({ toc: headings, children }: ComponentPropsWithoutRef<Nextra
       <main
         data-hide-table-of-contents={frontMatter.hideTableOfContents || undefined}
         className={`
-          group/layout-toc-grid grid grid-cols-[auto_0] overflow-x-clip
+          group/layout-toc-grid grid min-h-[calc(100dvh-var(--graph-docs-header-height))] grid-cols-[auto_0] overflow-x-clip
           transition-[grid-template-columns] duration-[var(--graph-docs-layout-transition-duration)]
           xl:not-data-[hide-table-of-contents]:grid-cols-[auto_var(--graph-docs-toc-width)]
         `}
@@ -751,6 +747,8 @@ function MDXContent({ toc: headings, children }: ComponentPropsWithoutRef<Nextra
               group-data-[unwrap-content]/layout-content-grid:grid-cols-subgrid
               -:first:*:mt-6
               -:group-data-[unwrap-content]/layout-content-grid:*:col-span-full
+              nested-[div:has(>svg.flowchart):not(:last-child)]:mb-8
+              nested-[div:has(>svg.flowchart)]:mt-8
               mdx-[hr]:my-12
               mdx-[:is(h2,h3)]:mt-12
               mdx-[:is(h2,h3,h4,h5,h6):not(:last-child)]:mb-3
