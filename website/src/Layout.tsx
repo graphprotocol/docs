@@ -847,7 +847,6 @@ function MDXContent({ toc: headings, children }: ComponentPropsWithoutRef<Nextra
                 >
                   <ul className="-my-1 -ms-px">
                     {headings.map((heading, headingIndex) => {
-                      console.log({ heading })
                       if (heading.depth > MAX_HEADING_DEPTH) {
                         return null
                       }
