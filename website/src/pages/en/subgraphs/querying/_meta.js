@@ -1,3 +1,5 @@
+import titles from './_meta-titles.json'
+
 export default {
   introduction: '',
   'managing-api-keys': '',
@@ -6,6 +8,6 @@ export default {
   'distributed-systems': '',
   'graphql-api': '',
   'subgraph-id-vs-deployment-id': '',
-  'graph-client': '',
+  'graph-client': titles['graph-client'],
   python: '',
 }

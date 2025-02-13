@@ -1,5 +1,5 @@
-import meta from '../../../../en/subgraphs/querying/graph-client/_meta.js'
+import titles from './_meta-titles.json'
 
 export default {
-  ...meta,
+  README: titles.README,
 }

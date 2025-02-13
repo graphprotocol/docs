@@ -1,5 +1,10 @@
-import meta from '../../en/indexing/_meta.js'
+import titles from './_meta-titles.json'
 
 export default {
-  ...meta,
+  overview: '',
+  tooling: titles.tooling,
+  tap: '',
+  'supported-network-requirements': '',
+  'chain-integration-overview': '',
+  'new-chain-integration': '',
 }

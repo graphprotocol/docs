@@ -183,7 +183,7 @@ export default function Layout({ pageOpts, children }: NextraThemeLayoutProps<Fr
 
   const getNavigationItemHref = (item: NavigationItem) => {
     let currentItem = item
-    while (currentItem.children.length > 0 && (!currentItem.withIndexPage || !currentItem.frontMatter?.title)) {
+    while (currentItem.children.length > 0 && !currentItem.withIndexPage) {
       currentItem = currentItem.children[0]!
     }
     return currentItem.route
@@ -701,7 +701,12 @@ function MDXContent({ toc: headings, children }: ComponentPropsWithoutRef<Nextra
         >
           {/* TODO: Merge into the breadcrumbs? */}
           {activePath.length > 1 ? (
-            <div className="graph-docs-current-group hidden">{activePath.map((item) => item.title).join(' > ')}</div>
+            <div className="graph-docs-current-group hidden">
+              {activePath
+                .slice(0, -1)
+                .map((item) => item.title)
+                .join(' > ')}
+            </div>
           ) : null}
           {!frontMatter.hideContentHeader ? (
             <header className="col-[container] pt-12 transition-[padding] duration-[var(--graph-docs-layout-transition-duration)]">

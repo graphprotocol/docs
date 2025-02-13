@@ -1,5 +1,9 @@
-import meta from '../../en/resources/_meta.js'
+import titles from './_meta-titles.json'
 
 export default {
-  ...meta,
+  glossary: '',
+  tokenomics: '',
+  benefits: '',
+  roles: titles.roles,
+  'release-notes': titles['release-notes'],
 }

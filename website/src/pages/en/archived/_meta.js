@@ -1,4 +1,6 @@
+import titles from './_meta-titles.json'
+
 export default {
   sunrise: '',
-  arbitrum: '',
+  arbitrum: titles.arbitrum,
 }

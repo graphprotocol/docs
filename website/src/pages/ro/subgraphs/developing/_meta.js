@@ -1,5 +1,11 @@
-import meta from '../../../en/subgraphs/developing/_meta.js'
+import titles from './_meta-titles.json'
 
 export default {
-  ...meta,
+  introduction: '',
+  subgraphs: '',
+  creating: titles.creating,
+  deploying: titles.deploying,
+  publishing: titles.publishing,
+  managing: titles.managing,
+  'developer-faq': '',
 }

@@ -1,5 +1,5 @@
-import meta from '../../../en/archived/arbitrum/_meta.js'
-
 export default {
-  ...meta,
+  'arbitrum-faq': '',
+  'l2-transfer-tools-faq': '',
+  'l2-transfer-tools-guide': '',
 }

@@ -1,5 +1,6 @@
-import meta from '../../en/archived/_meta.js'
+import titles from './_meta-titles.json'
 
 export default {
-  ...meta,
+  sunrise: '',
+  arbitrum: titles.arbitrum,
 }

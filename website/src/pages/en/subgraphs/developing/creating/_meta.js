@@ -1,3 +1,5 @@
+import titles from './_meta-titles.json'
+
 export default {
   'starting-your-subgraph': '',
   'install-the-cli': '',
@@ -5,6 +7,6 @@ export default {
   'ql-schema': '',
   'assemblyscript-mappings': '',
   advanced: '',
-  'graph-ts': '',
+  'graph-ts': titles['graph-ts'],
   'unit-testing-framework': '',
 }

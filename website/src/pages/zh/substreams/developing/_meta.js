@@ -1,5 +1,7 @@
-import meta from '../../../en/substreams/developing/_meta.js'
+import titles from './_meta-titles.json'
 
 export default {
-  ...meta,
+  'dev-container': '',
+  solana: titles.solana,
+  sinks: titles.sinks,
 }

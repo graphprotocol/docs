@@ -1,5 +1,10 @@
-import meta from '../../en/subgraphs/_meta.js'
+import titles from './_meta-titles.json'
 
 export default {
-  ...meta,
+  'quick-start': '',
+  explorer: '',
+  querying: titles.querying,
+  developing: titles.developing,
+  billing: '',
+  cookbook: titles.cookbook,
 }

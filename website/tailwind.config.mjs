@@ -33,31 +33,31 @@ export default buildTailwindConfig({
       // TODO: Change the default line heights in GDS to match some of the ones below?
       addComponents({
         '.text-heading-xlarge': {
-          '@apply font-medium text-balance text-40': '',
+          '@apply text-pretty font-medium text-40': '',
         },
         '.text-heading-large': {
-          '@apply font-medium text-balance text-32 leading-11': '',
+          '@apply text-pretty font-medium text-32 leading-11': '',
         },
         '.text-heading-medium': {
-          '@apply font-medium text-balance text-24 leading-9': '',
+          '@apply text-pretty font-medium text-24 leading-9': '',
         },
         '.text-heading-small': {
-          '@apply font-medium text-balance text-20 leading-8': '',
+          '@apply text-pretty font-medium text-20 leading-8': '',
         },
         '.text-heading-xsmall': {
-          '@apply font-medium text-balance text-18 leading-7': '',
+          '@apply text-pretty font-medium text-18 leading-7': '',
         },
         '.text-body-large': {
-          '@apply font-regular text-pretty text-20 leading-9': '',
+          '@apply text-pretty font-regular text-20 leading-9': '',
         },
         '.text-body-medium': {
-          '@apply font-regular text-pretty text-18 leading-8': '',
+          '@apply text-pretty font-regular text-18 leading-8': '',
         },
         '.text-body-small': {
-          '@apply font-regular text-pretty text-16': '',
+          '@apply text-pretty font-regular text-16': '',
         },
         '.text-body-xsmall': {
-          '@apply font-regular text-pretty text-14': '',
+          '@apply text-pretty font-regular text-14': '',
         },
       })
 

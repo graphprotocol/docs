@@ -1,5 +1,7 @@
+import titles from './_meta-titles.json'
+
 export default {
-  README: 'Introduction',
-  api: 'API Reference',
-  'common-issues': 'Common Issues',
+  README: titles.README,
+  api: titles.api,
+  'common-issues': titles['common-issues'],
 }

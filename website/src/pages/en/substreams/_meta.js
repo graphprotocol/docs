@@ -1,6 +1,8 @@
+import titles from './_meta-titles.json'
+
 export default {
   'quick-start': '',
   introduction: '',
-  developing: '',
+  developing: titles.developing,
   publishing: '',
 }

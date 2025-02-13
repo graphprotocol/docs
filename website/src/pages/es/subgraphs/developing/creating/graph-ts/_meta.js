@@ -1,5 +1,7 @@
-import meta from '../../../../../en/subgraphs/developing/creating/graph-ts/_meta.js'
+import titles from './_meta-titles.json'
 
 export default {
-  ...meta,
+  README: titles.README,
+  api: titles.api,
+  'common-issues': titles['common-issues'],
 }

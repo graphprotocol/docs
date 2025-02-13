@@ -1,5 +1,12 @@
-import meta from '../../../../en/subgraphs/developing/creating/_meta.js'
+import titles from './_meta-titles.json'
 
 export default {
-  ...meta,
+  'starting-your-subgraph': '',
+  'install-the-cli': '',
+  'subgraph-manifest': '',
+  'ql-schema': '',
+  'assemblyscript-mappings': '',
+  advanced: '',
+  'graph-ts': titles['graph-ts'],
+  'unit-testing-framework': '',
 }

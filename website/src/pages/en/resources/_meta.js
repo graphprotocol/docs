@@ -1,7 +1,9 @@
+import titles from './_meta-titles.json'
+
 export default {
   glossary: '',
   tokenomics: '',
   benefits: '',
-  roles: '',
-  'release-notes': '',
+  roles: titles.roles,
+  'release-notes': titles['release-notes'],
 }

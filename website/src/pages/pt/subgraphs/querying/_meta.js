@@ -1,5 +1,13 @@
-import meta from '../../../en/subgraphs/querying/_meta.js'
+import titles from './_meta-titles.json'
 
 export default {
-  ...meta,
+  introduction: '',
+  'managing-api-keys': '',
+  'best-practices': '',
+  'from-an-application': '',
+  'distributed-systems': '',
+  'graphql-api': '',
+  'subgraph-id-vs-deployment-id': '',
+  'graph-client': titles['graph-client'],
+  python: '',
 }

@@ -1,5 +1,6 @@
-import meta from '../../en/sps/_meta.js'
-
 export default {
-  ...meta,
+  introduction: '',
+  triggers: '',
+  tutorial: '',
+  'sps-faq': '',
 }

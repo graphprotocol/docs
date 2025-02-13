@@ -1,5 +1,4 @@
-import meta from '../../../../en/subgraphs/developing/managing/_meta.js'
-
 export default {
-  ...meta,
+  'transferring-a-subgraph': '',
+  'deleting-a-subgraph': '',
 }

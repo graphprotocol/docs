@@ -1,5 +1,8 @@
-import meta from '../../en/substreams/_meta.js'
+import titles from './_meta-titles.json'
 
 export default {
-  ...meta,
+  'quick-start': '',
+  introduction: '',
+  developing: titles.developing,
+  publishing: '',
 }

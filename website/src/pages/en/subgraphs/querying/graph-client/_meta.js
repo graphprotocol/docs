@@ -1,3 +1,5 @@
+import titles from './_meta-titles.json'
+
 export default {
-  README: 'Introduction',
+  README: titles.README,
 }

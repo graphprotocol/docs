@@ -1,5 +1,7 @@
+import titles from './_meta-titles.json'
+
 export default {
   'dev-container': '',
-  solana: '',
-  sinks: '',
+  solana: titles.solana,
+  sinks: titles.sinks,
 }
