@@ -3,7 +3,16 @@ import { useData } from 'nextra/hooks'
 import type { ComponentPropsWithoutRef } from 'react'
 
 import { classNames, Link as LegacyLink, Tooltip } from '@edgeandnode/gds'
-import { Clock, GraphExplorer, SocialYouTube, Subgraph, Substreams } from '@edgeandnode/gds/icons'
+import {
+  Clock,
+  Firehose,
+  GraphExplorer,
+  GraphNode,
+  SocialYouTube,
+  Subgraph,
+  Substreams,
+  SubstreamsPoweredSubgraph,
+} from '@edgeandnode/gds/icons'
 import { NetworkIcon } from '@edgeandnode/go'
 
 import { Card, Heading, Link } from '@/components'
@@ -20,10 +29,8 @@ export default function HomePage() {
           <img alt="" src={`${process.env.BASE_PATH}/img/home-bg.svg`} className="h-full max-w-none" />
         </div>
         <div className="col-[container] py-20 xs:py-30">
-          <div className="mx-auto flex max-w-120 flex-col items-center text-center">
-            <h1 className="text-heading-large bg-gradient-to-r from-white to-[#7061c8] bg-clip-text text-transparent xs:text-heading-xlarge">
-              {t('index.hero.title')}
-            </h1>
+          <div className="max-w-120">
+            <h1 className="text-heading-xlarge text-white">{t('index.hero.title')}</h1>
             <p className="mt-2">{t('index.hero.description')}</p>
             {/*
               <ExperimentalButtonGroup className="mt-4 prop-orientation-vertical xs:prop-orientation-horizontal">
@@ -68,16 +75,31 @@ export default function HomePage() {
                 title={t('index.products.sps.title')}
                 description={t('index.products.sps.description')}
                 cta={<Link href="/sps/tutorial/">{t('index.products.sps.cta')}</Link>}
+                icon={
+                  <div className="flex size-8 items-center justify-center rounded-4 bg-white-8 text-white">
+                    <SubstreamsPoweredSubgraph size={4} />
+                  </div>
+                }
               />
               <Card
                 title={t('index.products.graphNode.title')}
                 description={t('index.products.graphNode.description')}
                 cta={<Link href="/indexing/tooling/graph-node/">{t('index.products.graphNode.cta')}</Link>}
+                icon={
+                  <div className="flex size-8 items-center justify-center rounded-4 bg-white-8 text-white">
+                    <GraphNode size={4} />
+                  </div>
+                }
               />
               <Card
                 title={t('index.products.firehose.title')}
                 description={t('index.products.firehose.description')}
                 cta={<Link href="/indexing/tooling/firehose/">{t('index.products.firehose.cta')}</Link>}
+                icon={
+                  <div className="flex size-8 items-center justify-center rounded-4 bg-white-8 text-white">
+                    <Firehose size={4} />
+                  </div>
+                }
               />
             </div>
           </div>

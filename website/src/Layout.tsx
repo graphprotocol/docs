@@ -316,7 +316,7 @@ export default function Layout({ pageOpts, children }: NextraThemeLayoutProps<Fr
           [--graph-docs-content-padding:theme(spacing.6)]
           [--graph-docs-footer-padding:theme(spacing.6)]
           [--graph-docs-header-height:theme(spacing.16)]
-          [--graph-docs-header-padding:theme(spacing.4)]
+          [--graph-docs-header-padding:theme(spacing.5)]
           [--graph-docs-layout-transition-duration:300ms]
           [--graph-docs-sidebar-width:theme(spacing.64)]
           [--graph-docs-toc-width:theme(spacing.66)]
@@ -339,7 +339,7 @@ export default function Layout({ pageOpts, children }: NextraThemeLayoutProps<Fr
               <span className="absolute -inset-2" />
               <TheGraph color="white" className="prop-size-8 md:prop-size-7" />
               <span className="flex items-center max-md:hidden">
-                <span className="me-4.5 ms-3.5 h-9 w-px shrink-0 bg-white/8" />
+                <span className="me-4.5 ms-3.5 h-5 w-px shrink-0 bg-white/16" />
                 <span>Docs</span>
               </span>
             </ButtonOrLink>
@@ -388,7 +388,7 @@ export default function Layout({ pageOpts, children }: NextraThemeLayoutProps<Fr
                 />
               </button>
             </div>
-            <div className="ms-3.5 h-9 w-px shrink-0 bg-white/8 max-md:hidden" />
+            <div className="ms-3.5 h-[var(--graph-docs-header-height)] w-px shrink-0 bg-white/8 max-md:hidden" />
           </div>
           <div className="flex items-center gap-4 px-[var(--graph-docs-header-padding)]">
             {/* TODO: Add breadcrumbs */}
