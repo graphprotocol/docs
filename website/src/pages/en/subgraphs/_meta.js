@@ -1,9 +1,8 @@
 export default {
-  // TODO: Use `sidebarTitle` instead of `_meta.js`
   'quick-start': '',
   explorer: '',
-  querying: 'Querying',
-  developing: 'Developing',
+  querying: '',
+  developing: '',
   billing: '',
-  cookbook: 'Cookbook',
+  cookbook: '',
 }

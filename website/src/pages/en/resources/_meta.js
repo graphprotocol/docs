@@ -1,8 +1,7 @@
 export default {
-  // TODO: Use `sidebarTitle` instead of `_meta.js`
   glossary: '',
-  tokenomics: 'Tokenomics',
+  tokenomics: '',
   benefits: '',
-  roles: 'Additional Roles',
-  'release-notes': 'Release Notes & Upgrade Guides',
+  roles: '',
+  'release-notes': '',
 }

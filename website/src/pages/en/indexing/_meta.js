@@ -1,7 +1,6 @@
 export default {
-  // TODO: Use `sidebarTitle` instead of `_meta.js`
-  overview: 'Overview',
-  tooling: 'Indexer Tooling',
+  overview: '',
+  tooling: '',
   tap: '',
   'supported-network-requirements': '',
   'chain-integration-overview': '',

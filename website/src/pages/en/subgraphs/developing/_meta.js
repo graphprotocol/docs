@@ -1,10 +1,9 @@
 export default {
-  // TODO: Use `sidebarTitle` instead of `_meta.js`
-  introduction: 'Introduction',
+  introduction: '',
   subgraphs: '',
-  creating: 'Creating',
-  deploying: 'Deploying',
-  publishing: 'Publishing',
-  managing: 'Managing',
-  'developer-faq': 'FAQ',
+  creating: '',
+  deploying: '',
+  publishing: '',
+  managing: '',
+  'developer-faq': '',
 }

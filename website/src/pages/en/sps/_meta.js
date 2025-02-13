@@ -1,7 +1,6 @@
 export default {
-  // TODO: Use `sidebarTitle` instead of `_meta.js`
-  introduction: 'Introduction',
+  introduction: '',
   triggers: '',
-  tutorial: 'Tutorial',
-  'sps-faq': 'FAQ',
+  tutorial: '',
+  'sps-faq': '',
 }
