@@ -29,7 +29,7 @@ export default function HomePage() {
           <img alt="" src={`${process.env.BASE_PATH}/img/home-bg.svg`} className="h-full max-w-none" />
         </div>
         <div className="col-[container] py-20 xs:py-30">
-          <div className="flex max-w-120 flex-col">
+          <div className="max-w-120">
             <h1 className="text-heading-xlarge text-white">{t('index.hero.title')}</h1>
             <p className="mt-2">{t('index.hero.description')}</p>
             {/*
