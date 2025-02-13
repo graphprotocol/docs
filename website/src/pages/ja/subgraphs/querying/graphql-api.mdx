@@ -1,0 +1,432 @@
+---
+title: GraphQL API
+---
+
+Learn about the GraphQL Query API used in The Graph.
+
+## What is GraphQL?
+
+[GraphQL](https://graphql.org/learn/) is a query language for APIs and a runtime for executing those queries with your existing data. The Graph uses GraphQL to query subgraphs.
+
+To understand the larger role that GraphQL plays, review [developing](/subgraphs/developing/introduction/) and [creating a subgraph](/developing/creating-a-subgraph/).
+
+## Queries with GraphQL
+
+In your subgraph schema you define types called `Entities`. For each `Entity` type, `entity` and `entities` fields will be generated on the top-level `Query` type.
+
+> Note: `query` does not need to be included at the top of the `graphql` query when using The Graph.
+
+### 例
+
+スキーマで定義された 1 つの`Token`エンティティに対するクエリ:
+
+```graphql
+{
+  token(id: "1") {
+    id
+    owner
+  }
+}
+```
+
+> Note: When querying for a single entity, the `id` field is required, and it must be writen as a string.
+
+すべての `Token` エンティティをクエリします。
+
+```graphql
+{
+  tokens {
+    id
+    owner
+  }
+}
+```
+
+### 並べ替え
+
+When querying a collection, you may:
+
+- Use the `orderBy` parameter to sort by a specific attribute.
+- Use the `orderDirection` to specify the sort direction, `asc` for ascending or `desc` for descending.
+
+#### 例
+
+```graphql
+{
+  tokens(orderBy: price, orderDirection: asc) {
+    id
+    owner
+  }
+}
+```
+
+#### ネストされたエンティティの並べ替えの例
+
+グラフ ノード [`v0.30.0`](https://github.com/graphprotocol/graph-node/releases/tag/v0.30.0) の時点で、エンティティを並べ替えることができますネストされたエンティティに基づいています。
+
+The following example shows tokens sorted by the name of their owner:
+
+```graphql
+{
+  tokens(orderBy: owner__name, orderDirection: asc) {
+    id
+    owner {
+      name
+    }
+  }
+}
+```
+
+> 現在、`@entity` および `@derivedFrom` フィールドで、1 レベルの深い `String` または `ID` 型で並べ替えることができます。残念ながら、[1 レベルの深さのエンティティのインターフェイスによる並べ替え](https://github.com/graphprotocol/graph-node/pull/4058)、配列およびネストされたエンティティであるフィールドによる並べ替えは、まだサポートされていません。
+
+### ページネーション
+
+When querying a collection, it's best to:
+
+- Use the `first` parameter to paginate from the beginning of the collection.
+  - The default sort order is by `ID` in ascending alphanumeric order, **not** by creation time.
+- Use the `skip` parameter to skip entities and paginate. For instance, `first:100` shows the first 100 entities and `first:100, skip:100` shows the next 100 entities.
+- Avoid using `skip` values in queries because they generally perform poorly. To retrieve a large number of items, it's best to page through entities based on an attribute as shown in the previous example above.
+
+#### `first` を使用した例
+
+最初の 10 個のトークンを照会します。
+
+```graphql
+{
+  tokens(first: 10) {
+    id
+    owner
+  }
+}
+```
+
+コレクションの途中にあるエンティティのグループをクエリするには、`skip` パラメータを `first` パラメータと組み合わせて使用​​して、最初から指定された数のエンティティをスキップできます。コレクションの。
+
+#### `first` と `skip` を使用した例
+
+コレクションの先頭から 10 桁ずれた 10 個の `Token` エンティティをクエリします。
+
+```graphql
+{
+  tokens(first: 10, skip: 10) {
+    id
+    owner
+  }
+}
+```
+
+#### `first` と `id_ge` を使用した例
+
+If a client needs to retrieve a large number of entities, it's more performant to base queries on an attribute and filter by that attribute. For example, a client could retrieve a large number of tokens using this query:
+
+```graphql
+query manyTokens($lastID: String) {
+  tokens(first: 1000, where: { id_gt: $lastID }) {
+    id
+    owner
+  }
+}
+```
+
+The first time, it would send the query with `lastID = ""`, and for subsequent requests it would set `lastID` to the `id` attribute of the last entity in the previous request. This approach will perform significantly better than using increasing `skip` values.
+
+### フィルタリング
+
+- You can use the `where` parameter in your queries to filter for different properties.
+- You can filter on multiple values within the `where` parameter.
+
+#### `where` を使用した例
+
+`failed` 結果のクエリ チャレンジ:
+
+```graphql
+{
+  challenges(where: { outcome: "failed" }) {
+    challenger
+    outcome
+    application {
+      id
+    }
+  }
+}
+```
+
+値の比較には、`_gt`、`_lte` などのサフィックスを使用できます。
+
+#### 範囲フィルタリングの例
+
+```graphql
+{
+  applications(where: { deposit_gt: "10000000000" }) {
+    id
+    whitelisted
+    deposit
+  }
+}
+```
+
+#### ブロックフィルタリングの例
+
+You can also filter entities that were updated in or after a specified block with `_change_block(number_gte: Int)`.
+
+これは、前回のポーリング以降など、変更されたエンティティのみをフェッチする場合に役立ちます。または、サブグラフでエンティティがどのように変化しているかを調査またはデバッグするのに役立ちます (ブロック フィルターと組み合わせると、特定のブロックで変更されたエンティティのみを分離できます)。
+
+```graphql
+{
+  applications(where: { _change_block: { number_gte: 100 } }) {
+    id
+    whitelisted
+    deposit
+  }
+}
+```
+
+#### ネストされたエンティティ フィルタリングの例
+
+`_` サフィックスが付いたフィールドでは、ネストされたエンティティに基づくフィルタリングが可能です。
+
+これは、子レベルのエンティティが指定された条件を満たすエンティティのみをフェッチする場合に役立ちます。
+
+```graphql
+{
+  challenges(where: { application_: { id: 1 } }) {
+    challenger
+    outcome
+    application {
+      id
+    }
+  }
+}
+```
+
+#### 論理演算子
+
+Graph Node [`v0.30.0`](https://github.com/graphprotocol/graph-node/releases/tag/v0.30.0) の時点で、複数のグループをグループ化できます同じ `where` 引数で `and` または `or` 演算子を使用して複数の基準に基づいて結果をフィルタリングします。
+
+##### `AND` 演算子
+
+The following example filters for challenges with `outcome` `succeeded` and `number` greater than or equal to `100`.
+
+```graphql
+{
+  challenges(where: { and: [{ number_gte: 100 }, { outcome: "succeeded" }] }) {
+    challenger
+    outcome
+    application {
+      id
+    }
+  }
+}
+```
+
+> **シンタックス シュガー:** コンマで区切られた部分式を渡すことで `and` 演算子を削除することで、上記のクエリを簡素化できます。
+>
+> ```graphql
+> {
+>   challenges(where: { number_gte: 100, outcome: "succeeded" }) {
+>     challenger
+>     outcome
+>     application {
+>       id
+>     }
+>   }
+> }
+> ```
+
+##### `OR` 演算子
+
+The following example filters for challenges with `outcome` `succeeded` or `number` greater than or equal to `100`.
+
+```graphql
+{
+  challenges(where: { or: [{ number_gte: 100 }, { outcome: "succeeded" }] }) {
+    challenger
+    outcome
+    application {
+      id
+    }
+  }
+}
+```
+
+> **注意**：クエリを構築する際には、`または`演算子の使用によるパフォーマンスへの影響を考慮することが重要です。`または`は検索結果を広げるための便利なツールとなり得ますが、重要なコストも伴います。`または`の主な問題の1つは、クエリの遅延を引き起こす可能性があることです。これは、`または`がデータベースに複数のインデックスをスキャンする必要があるため、時間のかかるプロセスとなるからです。これらの問題を避けるために、開発者は可能な限りまたはの代わりにかつ演算子を使用することが推奨されます。これにより、より正確なフィルタリングが可能となり、より高速で正確なクエリが実行できるでしょう。
+
+#### すべてのフィルター
+
+パラメータのサフィックスの全リスト:
+
+```
+_
+_not
+_gt
+_lt
+_gte
+_lte
+_in
+_not_in
+_contains
+_contains_nocase
+_not_contains
+_not_contains_nocase
+_starts_with
+_starts_with_nocase
+_ends_with
+_ends_with_nocase
+_not_starts_with
+_not_starts_with_nocase
+_not_ends_with
+_not_ends_with_nocase
+```
+
+> 一部の接尾辞は、特定のタイプでのみサポートされていることに注意してください。たとえば、`Boolean` は `_not`、`_in`、および `_not_in` のみをサポートしますが、`_` はサポートしません。オブジェクト型とインターフェイス型でのみ使用できます。
+
+さらに、次のグローバル フィルターを `where` 引数の一部として使用できます。
+
+```graphql
+_change_block(number_gte: Int)
+```
+
+### タイムトラベル クエリ
+
+デフォルトである最新のブロックだけでなく、過去の任意のブロックについてもエンティティの状態を照会できます。クエリが発生するブロックは、クエリのトップレベル フィールドに `block` 引数を含めることで、ブロック番号またはブロック ハッシュのいずれかで指定できます。
+
+The result of such a query will not change over time, i.e., querying at a certain past block will return the same result no matter when it is executed, with the exception that if you query at a block very close to the head of the chain, the result might change if that block turns out to **not** be on the main chain and the chain gets reorganized. Once a block can be considered final, the result of the query will not change.
+
+> Note: The current implementation is still subject to certain limitations that might violate these guarantees. The implementation can not always tell that a given block hash is not on the main chain at all, or if a query result by a block hash for a block that is not yet considered final could be influenced by a block reorganization running concurrently with the query. They do not affect the results of queries by block hash when the block is final and known to be on the main chain. [This issue](https://github.com/graphprotocol/graph-node/issues/1405) explains what these limitations are in detail.
+
+#### 例
+
+```graphql
+{
+  challenges(block: { number: 8000000 }) {
+    challenger
+    outcome
+    application {
+      id
+    }
+  }
+}
+```
+
+このクエリは、ブロック番号 8,000,000 を処理した直後に存在していた Challenge エンティティとそれに関連する Application エンティティを返します。
+
+#### 例
+
+```graphql
+{
+  challenges(block: { hash: "0x5a0b54d5dc17e0aadc383d2db43b0a0d3e029c4c" }) {
+    challenger
+    outcome
+    application {
+      id
+    }
+  }
+}
+```
+
+このクエリは `Challenge` エンティティとそれに関連付けられた `Application` エンティティを返します。これは、指定されたハッシュでブロックを処理した直後に存在していたためです。
+
+### 全文検索クエリ
+
+フルテキスト検索クエリフィールドは、サブグラフスキーマに追加してカスタマイズできる、表現力豊かなテキスト検索 API を提供します。サブグラフにフルテキスト検索を追加するには、「[Defining Fulltext Search Fields](/developing/creating-a-subgraph/#defining-fulltext-search-fields)」を参照してください。
+
+全文検索クエリには、検索語を提供するための必須フィールド `text` が 1 つあります。この `text` 検索フィールドでは、いくつかの特別な全文演算子を使用できます。
+
+全文検索演算子:
+
+| シンボル | オペレーター | 説明書き |
+| --- | --- | --- |
+| `&` | `と` | 複数の検索語を組み合わせて、指定したすべての検索語を含むエンティティをフィルタリングします。 |
+| &#x7c; | `Or` | 複数の検索語をオペレーターで区切って検索すると、指定した語のいずれかにマッチするすべてのエンティティが返されます。 |
+| `<->` | `Follow by` | 2 つの単語の間の距離を指定します。 |
+| `:*` | `プレフィックス` | プレフィックス検索語を使って、プレフィックスが一致する単語を検索します（2 文字必要） |
+
+#### 例
+
+`or` 演算子を使用すると、このクエリはフルテキスト フィールドに「anarchism」または「crumpet」のいずれかのバリエーションを持つブログ エンティティにフィルター処理されます。
+
+```graphql
+{
+  blogSearch(text: "anarchism | crumpets") {
+    id
+    title
+    body
+    author
+  }
+}
+```
+
+`follow by` 演算子は、フルテキスト ドキュメント内で特定の距離だけ離れた単語を指定します。次のクエリは、"decentralize" の後に "philosophy" が続くすべてのブログを返します。
+
+```graphql
+{
+  blogSearch(text: "decentralized <-> philosophy") {
+    id
+    title
+    body
+    author
+  }
+}
+```
+
+全文演算子を組み合わせて、より複雑なフィルターを作成します。口実検索演算子を follow by このサンプル クエリと組み合わせて使用​​すると、"lou" で始まり、その後に "music" が続く単語を持つすべてのブログ エンティティが一致します。
+
+```graphql
+{
+  blogSearch(text: "lou:* <-> music") {
+    id
+    title
+    body
+    author
+  }
+}
+```
+
+### 認証
+
+グラフ ノードは、受信した GraphQL クエリの [仕様ベース](https://spec.graphql.org/October2021/#sec-Validation) の検証を実装します[graphql-tools-rs](https://github.com/dotansimha/graphql-tools-rs#validation-rules),これはに基づいています[graphql-js リファレンス実装](https://github.com/graphql/graphql-js/tree/main/src/validation).検証ルールに失敗したクエリは、標準エラーで失敗します - にアクセスしてください詳細については、[GraphQL 仕様](https://spec.graphql.org/October2021/#sec-Validation)をご覧ください。
+
+## スキーマ
+
+The schema of your dataSources, i.e. the entity types, values, and relationships that are available to query, are defined through the [GraphQL Interface Definition Langauge (IDL)](https://facebook.github.io/graphql/draft/#sec-Type-System).
+
+GraphQL schemas generally define root types for `queries`, `subscriptions` and `mutations`. The Graph only supports `queries`. The root `Query` type for your subgraph is automatically generated from the GraphQL schema that's included in your [subgraph manifest](/developing/creating-a-subgraph/#components-of-a-subgraph).
+
+> Note: Our API does not expose mutations because developers are expected to issue transactions directly against the underlying blockchain from their applications.
+
+### エンティティ
+
+スキーマ内の `@entity` ディレクティブを持つすべての GraphQL タイプはエンティティとして扱われ、 `ID` フィールドが必要です。
+
+> **注:** 現在、スキーマ内のすべてのタイプに `@entity` ディレクティブが必要です。将来的には、`@entity` ディレクティブのない型を値オブジェクトとして扱いますが、これはまだサポートされていません。
+
+### サブグラフ メタデータ
+
+すべてのサブグラフには、サブグラフ メタデータへのアクセスを提供する、自動生成された `_Meta_` オブジェクトがあります。これは、次のように照会できます。
+
+```graphQL
+{
+  _meta(block: { number: 123987 }) {
+    block {
+      number
+      hash
+      timestamp
+    }
+    deployment
+    hasIndexingErrors
+  }
+}
+```
+
+ブロックが提供されている場合、メタデータはそのブロックのものであり、そうでない場合は、最新のインデックス付きブロックが使用されます。提供される場合、ブロックはサブグラフの開始ブロックの後にあり、最後にインデックス付けされたブロック以下でなければなりません。
+
+`deployment` は、`subgraph.yaml` ファイルの IPFS CID に対応する一意の ID です。
+
+`block` は、最新のブロックに関する情報を提供します (`_meta` に渡されたブロック制約を考慮します):
+
+- hash: ブロックのハッシュ
+- number: ブロック番号
+- timestamp: 可能であれば、ブロックのタイムスタンプ (これは現在、EVMネットワークのインデックスを作成するサブグラフでのみ利用可能)
+
+`hasIndexingErrors` は、サブグラフが過去のブロックでインデックス作成エラーに遭遇したかどうかを識別するブール値です

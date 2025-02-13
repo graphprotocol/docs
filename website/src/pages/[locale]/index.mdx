@@ -1,0 +1,40 @@
+{/* We use `index.mdx` instead of `index.tsx` to render the page in the Nextra theme's `Layout` */}
+
+import { translate } from '@edgeandnode/gds'
+import { RemoteContent } from 'nextra/components'
+import { buildDynamicMDX } from 'nextra/remote'
+
+import HomePage from '@/HomePage'
+import { supportedLocales, translations } from '@/i18n'
+import { getSupportedNetworks } from '@/supportedNetworks'
+
+export const getStaticPaths = () => {
+  return {
+    paths: supportedLocales.map((locale) => ({ params: { locale } })),
+    fallback: false,
+  }
+}
+
+export const getStaticProps = async ({ params: { locale } }) => {
+  const t = (key) => translate(translations, locale, key)
+  const rawMdx = `---
+title: ${t('index.title')}
+hideTableOfContents: true
+hideContentHeader: true
+unwrapContent: true
+---
+<HomePage />`
+  const mdx = await buildDynamicMDX(rawMdx, { codeHighlight: false })
+  const { pageMap } = await import(`.next/static/chunks/nextra-page-map-${locale}.mjs`)
+  return {
+    props: {
+      ...mdx,
+      __nextra_pageMap: pageMap,
+      ssg: {
+        supportedNetworks: await getSupportedNetworks(),
+      },
+    },
+  }
+}
+
+<RemoteContent components={{ HomePage }} />

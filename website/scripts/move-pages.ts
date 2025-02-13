@@ -9,7 +9,7 @@
  * 2. Moves files in all locales:
  *    - Creates destination directories as needed
  *    - Skips files that don't exist or would be overwritten
- *    - When moving a directory, moves _meta.js in English and recreates it in other locales
+ *    - When moving a directory, moves _meta.js in English (it will be recreated in other locales by `fix-pages-structure`)
  *
  * 3. Runs `fix-pages-structure` to:
  *    - Clean up any orphaned directories
@@ -24,7 +24,7 @@ import { promisify } from 'node:util'
 
 const execFileAsync = promisify(execFile)
 
-const PAGES_DIRECTORY = path.join(process.cwd(), 'pages')
+const PAGES_DIRECTORY = path.join(process.cwd(), 'src/pages')
 const SOURCE_LOCALE = 'en'
 const META_FILENAME = '_meta.js'
 
@@ -120,9 +120,9 @@ async function main() {
     }
   })
 
-  // Validate moves in English locale
+  // Validate moves in the source locale
   const sourceDirectory = path.join(PAGES_DIRECTORY, SOURCE_LOCALE)
-  for (const { sourcePath, destinationPath } of filesToMove) {
+  for (const { destinationPath } of filesToMove) {
     // Allow _meta.js files to exist in destination since we skip them during move if they exist
     if (path.basename(destinationPath) === META_FILENAME) {
       continue
@@ -159,7 +159,7 @@ async function main() {
       }
 
       // For translations, skip _meta.js (they'll be recreated by `fix-pages-structure`)
-      // For English, move _meta.js to preserve customizations
+      // For the source locale, move _meta.js to preserve customizations
       if (locale !== SOURCE_LOCALE && path.basename(destinationPath) === META_FILENAME) {
         continue
       }

@@ -23,9 +23,7 @@
 import fs from 'node:fs/promises'
 import path from 'node:path'
 
-const FORCE_META = process.argv.includes('--force-meta')
-
-const PAGES_DIRECTORY = path.join(process.cwd(), 'pages')
+const PAGES_DIRECTORY = path.join(process.cwd(), 'src/pages')
 const SOURCE_LOCALE = 'en'
 const META_FILENAME = '_meta.js'
 const CATCH_ALL_PREFIX = '[[...'
@@ -90,17 +88,13 @@ async function main() {
     .filter((directory) => /^[a-z]{2}$/.test(directory))
     .filter((directory) => directory !== SOURCE_LOCALE)
 
-  // Create/update meta files in source locale directories
+  // Create/update meta files in source locale directories, except in the root
   for (const directory of sourceStructure.contentDirectories) {
+    if (directory === '.') continue
     const sourceMetaPath = path.join(sourceDirectory, directory, META_FILENAME)
-    if (FORCE_META || !(await fileExists(sourceMetaPath))) {
+    if (!(await fileExists(sourceMetaPath))) {
       const filesInDirectory = sourceStructure.files
-        .filter(
-          (file) =>
-            path.dirname(file) === directory &&
-            isContentFile(path.basename(file), true) &&
-            (file.endsWith('.md') || file.endsWith('.mdx')),
-        )
+        .filter((file) => path.dirname(file) === directory && isContentFile(path.basename(file), true))
         .map((file) => path.basename(file, path.extname(file)))
       console.log(`Creating meta file ${path.join(SOURCE_LOCALE, directory, META_FILENAME)}`)
       await fs.writeFile(
@@ -115,16 +109,33 @@ async function main() {
     const localeDirectory = path.join(PAGES_DIRECTORY, locale)
     const localeStructure = await getPagesStructure(locale)
 
-    // Create directories and meta files
+    // Create directories and copy meta files from the source locale
     for (const directory of sourceStructure.contentDirectories) {
+      if (directory === '.') continue
       const translatedDirectory = path.join(localeDirectory, directory)
       await fs.mkdir(translatedDirectory, { recursive: true })
+      const sourceMetaPath = path.join(sourceDirectory, directory, META_FILENAME)
       const translatedMetaPath = path.join(translatedDirectory, META_FILENAME)
-      if (FORCE_META || !(await fileExists(translatedMetaPath))) {
-        const depth = path.relative(PAGES_DIRECTORY, translatedDirectory).split(path.sep).length
-        const importPath = path.posix.join('../'.repeat(depth), SOURCE_LOCALE, directory, META_FILENAME)
-        console.log(`Creating meta file ${path.join(locale, directory, META_FILENAME)}`)
-        await fs.writeFile(translatedMetaPath, `import meta from '${importPath}'\n\nexport default {\n  ...meta,\n}\n`)
+      let shouldCopy = true
+      if (await fileExists(translatedMetaPath)) {
+        try {
+          const sourceContent = await fs.readFile(sourceMetaPath, 'utf8')
+          const translatedContent = await fs.readFile(translatedMetaPath, 'utf8')
+          shouldCopy = sourceContent !== translatedContent
+        } catch {
+          // If there's any error reading the files, we'll copy to be safe
+          shouldCopy = true
+        }
+      }
+      if (shouldCopy) {
+        console.log(
+          `Copying meta file from ${path.join(SOURCE_LOCALE, directory, META_FILENAME)} to ${path.join(
+            locale,
+            directory,
+            META_FILENAME,
+          )}`,
+        )
+        await fs.copyFile(sourceMetaPath, translatedMetaPath)
       }
     }
 
@@ -155,8 +166,7 @@ async function main() {
   for (const locale of [SOURCE_LOCALE, ...translatedLocales]) {
     const { directories } = await getPagesStructure(locale)
     for (const directory of directories) {
-      // Delete directory if it has no content files in source language
-      // AND none of its subdirectories have content files
+      // Delete directory if it has no content files in source language AND none of its subdirectories have content files
       const existsInSource =
         sourceStructure.contentDirectories.has(directory) ||
         Array.from(sourceStructure.contentDirectories).some((sourceDir) => sourceDir.startsWith(directory + '/'))

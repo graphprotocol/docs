@@ -1,4 +1,4 @@
-FROM node:20-alpine as builder
+FROM node:22-alpine AS builder
 
 ARG ENVIRONMENT
 ARG ORIGIN
@@ -14,14 +14,11 @@ RUN corepack enable pnpm
 
 WORKDIR /app
 
-COPY . .
+COPY . ./
 
-# install the packages
-RUN pnpm install --frozen-lockfile --ignore-scripts
-
+RUN pnpm install --frozen-lockfile
 RUN pnpm build
 
-## production environment
 FROM nginx:1.16.0-alpine
 
 COPY --from=builder ./app/nginx.conf /etc/nginx/

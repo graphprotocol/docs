@@ -1,27 +1,16 @@
-import path from 'path'
-
 import type { GetStaticProps, GetStaticPropsResult } from 'next'
 
-import { Locale } from '@edgeandnode/gds'
+import { getSupportedNetworks } from '@/supportedNetworks'
 
-import { getPageMap } from '@/src/getPageMap'
-import { getSupportedNetworks } from '@/src/supportedNetworks'
-
-export const buildGetStaticProps = (fileName: string, overrides?: GetStaticProps) => {
+export const buildGetStaticProps = (_fileName: string, overrides?: GetStaticProps) => {
   const getStaticProps: GetStaticProps = async (context) => {
     const overrideStaticProps: GetStaticPropsResult<Record<string, any>> = overrides
       ? await overrides(context)
       : { props: {} }
-
-    const pagesDir = path.join(process.cwd(), '.next', 'server', 'pages')
-    const pagePath = path.relative(pagesDir, fileName)
-    const locale = pagePath.slice(0, 2) as Locale
-
     return {
       ...overrideStaticProps,
       props: {
         ...('props' in overrideStaticProps && overrideStaticProps.props),
-        __nextra_pageMap: await getPageMap(locale),
       },
     }
   }

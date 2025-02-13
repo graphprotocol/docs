@@ -1,13 +1,15 @@
 import ContractAddresses from '@graphprotocol/contracts/addresses.json'
-import { Table } from '@graphprotocol/nextra-theme'
 
 import { getAddressLink } from '@edgeandnode/common'
-import { Link } from '@edgeandnode/gds'
+
+import { Link, Table } from '@/components'
+import { useI18n } from '@/i18n'
 
 type ValueOf<T> = T[keyof T]
 const contractsByNetworkId = ContractAddresses as Record<string, ValueOf<typeof ContractAddresses>>
 
 export function ProtocolContractsTable({ networkId }: { networkId: number }) {
+  const { t } = useI18n()
   const contracts = Object.entries(contractsByNetworkId[`${networkId}`] ?? {}).map(([name, contract]) => ({
     ...contract,
     name,
@@ -16,19 +18,17 @@ export function ProtocolContractsTable({ networkId }: { networkId: number }) {
     <Table>
       <tbody>
         <tr>
-          <th>{'Contract'}</th>
-          <th>{'Address'}</th>
+          <th>{t('contracts.contract')}</th>
+          <th>{t('contracts.address')}</th>
         </tr>
-        {contracts.map((contract) => {
-          return (
-            <tr key={contract.name}>
-              <td>{contract.name}</td>
-              <td>
-                <Link href={getAddressLink(contract.address, networkId)}>{contract.address}</Link>
-              </td>
-            </tr>
-          )
-        })}
+        {contracts.map((contract) => (
+          <tr key={contract.name}>
+            <td>{contract.name}</td>
+            <td>
+              <Link href={getAddressLink(contract.address, networkId)}>{contract.address}</Link>
+            </td>
+          </tr>
+        ))}
       </tbody>
     </Table>
   )

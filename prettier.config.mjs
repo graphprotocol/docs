@@ -1,3 +1,5 @@
+// @ts-check
+
 /** @type {import('prettier').Options} */
 export default {
   singleQuote: true,
@@ -8,12 +10,4 @@ export default {
   tailwindConfig: './website/tailwind.config.mjs',
   tailwindPreserveWhitespace: true,
   tailwindFunctions: ['classNames'],
-  overrides: [
-    {
-      files: ['**/tsconfig.json'],
-      options: {
-        trailingComma: 'none', // temporary fix for "JSON does not support trailing commas" errors on `nextra-theme` build
-      },
-    },
-  ],
 }

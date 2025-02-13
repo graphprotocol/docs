@@ -8,7 +8,7 @@ Please read [`CONTRIBUTING.md`](https://github.com/graphprotocol/docs/blob/main/
 
 ## Local Setup
 
-This project is built on [Next.js](https://nextjs.org/). You can run it on your machine, provided you have [Node 20+](https://nodejs.org/en/) and [`pnpm`](https://pnpm.io) installed.
+This project is built on [Next.js](https://nextjs.org/). You can run it on your machine, provided you have [Node 22+](https://nodejs.org/en/) and [`pnpm`](https://pnpm.io) installed.
 
 First, clone the repo:
 

@@ -1,4 +1,13 @@
+// @ts-check
+
 import nextra from 'nextra'
+import rehypeUnwrapImages from 'rehype-unwrap-images'
+
+import { defaultLocale, translate } from '@edgeandnode/gds'
+
+// Compile `i18n.ts` to `i18n.js` since we can't import `ts` files in `next.config.js`
+import { translations } from './dist/i18n.js'
+import { remarkTransformRemoteGitHub } from './src/remarkTransformRemoteGitHub.js'
 
 const env = {
   ENVIRONMENT: process.env.ENVIRONMENT,
@@ -16,25 +25,82 @@ const env = {
 }
 
 const withNextra = nextra({
-  theme: '@graphprotocol/nextra-theme',
-  staticImage: true,
-  flexsearch: false,
+  theme: './src/Layout.tsx',
+  search: false,
   codeHighlight: false,
   defaultShowCopyCode: false,
   readingTime: true,
-  transform(result, { route }) {
-    if (route && !result.includes('getStaticProps')) {
-      const banner = `
-import { getPageMap } from '@/src/getPageMap'
+  transformPageMap(pageMap) {
+    const route = pageMap[0] && 'route' in pageMap[0] ? pageMap[0].route : undefined
+    const locale = typeof route === 'string' ? route.slice(1, 3) : defaultLocale
+    const t = (/** @type {string} */ key) =>
+      translate(
+        translations,
+        /** @type {import('@edgeandnode/gds').Locale} */
+        (locale),
+        /** @type {any} */
+        (key),
+      )
 
-export const getStaticProps = async context => ({
-  props: {
-    __nextra_pageMap: await getPageMap('${route.split('/')[1]}')
-  }
-})`
-      result += banner
+    const metaFile = {
+      index: t('index.title'),
+      about: '',
+      'supported-networks': '',
+      contracts: '',
+      '---1': {
+        type: 'separator',
+      },
+      subgraphs: {
+        type: 'children',
+        title: t('global.navigation.subgraphs'),
+      },
+      '---2': {
+        type: 'separator',
+      },
+      substreams: {
+        type: 'children',
+        title: t('global.navigation.substreams'),
+      },
+      '---3': {
+        type: 'separator',
+      },
+      sps: {
+        type: 'children',
+        title: t('global.navigation.sps'),
+      },
+      '---4': {
+        type: 'separator',
+      },
+      indexing: {
+        type: 'children',
+        title: t('global.navigation.indexing'),
+      },
+      '---5': {
+        type: 'separator',
+      },
+      resources: {
+        type: 'children',
+        title: t('global.navigation.resources'),
+      },
+      archived: {
+        type: 'children',
+        title: t('global.navigation.archived'),
+      },
     }
-    return result
+
+    return [
+      { data: metaFile },
+      {
+        route: `/${locale}`,
+        name: 'index',
+        frontMatter: {},
+      },
+      ...pageMap,
+    ]
+  },
+  mdxOptions: {
+    remarkPlugins: [remarkTransformRemoteGitHub],
+    rehypePlugins: [rehypeUnwrapImages],
   },
 })
 
@@ -51,7 +117,7 @@ export default withNextra({
   reactStrictMode: true,
   basePath: env.BASE_PATH,
   trailingSlash: true,
-  redirects: () => [
+  redirects: async () => [
     {
       source: '/',
       destination: '/en/',
@@ -61,5 +127,9 @@ export default withNextra({
   ],
   images: {
     unoptimized: true,
+  },
+  i18n: {
+    defaultLocale,
+    locales: Object.keys(translations),
   },
 })
