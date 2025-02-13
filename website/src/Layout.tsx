@@ -654,7 +654,7 @@ function MDXContent({ toc: headings, children }: ComponentPropsWithoutRef<Nextra
     (() => {
       const [_src, _pages, locale, ...segments] = filePath.split('/')
       // If the current page is in a language other than English, link to the English version, as translations are handled by Crowdin
-      return `https://github.com/graphprotocol/docs/blob/main/website/src/pages/${
+      return `https://github.com/graphprotocol/docs/blob/main/website/pages/${
         locale === 'en' || locale === '[locale]' ? encodeURIComponent(locale) : 'en'
       }/${segments.join('/')}`
     })()
