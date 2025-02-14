@@ -2,20 +2,20 @@
 title: 在 NEAR 上构建子图
 ---
 
-本指南介绍了如何在[NEAR 区块链](https://docs.near.org/)上构建索引智能合约的子图。
+This guide is an introduction to building subgraphs indexing smart contracts on the [NEAR blockchain](https://docs.near.org/).
 
-## NEAR 是什么？
+## What is NEAR?
 
 [NEAR](https://near.org/) is a smart contract platform for building decentralized applications. Visit the [official documentation](https://docs.near.org/concepts/basics/protocol) for more information.
 
-## NEAR 子图是什么？
+## What are NEAR subgraphs?
 
-Graph 为开发人员提供了一种被称为子图的工具，利用这个工具，开发人员能够处理区块链事件，并通过 GraphQL API 提供结果数据。 [Graph 节点](https://github.com/graphprotocol/graph-node)现在能够处理 NEAR 事件，这意味着 NEAR 开发人员现在可以构建子图来索引他们的智能合约。
+The Graph gives developers tools to process blockchain events and make the resulting data easily available via a GraphQL API, known individually as a subgraph. [Graph Node](https://github.com/graphprotocol/graph-node) is now able to process NEAR events, which means that NEAR developers can now build subgraphs to index their smart contracts.
 
-子图是基于事件的，这意味着子图可以侦听并处理链上事件。 NEAR 子图目前支持两种类型的处理程序：
+Subgraphs are event-based, which means that they listen for and then process onchain events. There are currently two types of handlers supported for NEAR subgraphs:
 
-- 区块处理器: 这些处理程序在每个新区块上运行。
-- 收据处理器: 每次在指定账户上一个消息被执行时运行。
+- Block handlers: these are run on every new block
+- Receipt handlers: run every time a message is executed at a specified account
 
 [From the NEAR documentation](https://docs.near.org/build/data-infrastructure/lake-data-structures/receipt):
 
@@ -23,19 +23,19 @@ Graph 为开发人员提供了一种被称为子图的工具，利用这个工�
 
 ## 构建 NEAR 子图
 
-`@graphprotocol/graph-cli`是一个用于构建和部署子图的命令行工具。
+`@graphprotocol/graph-cli` is a command-line tool for building and deploying subgraphs.
 
-`@graphprotocol/graph-ts` 是子图特定类型的库。
+`@graphprotocol/graph-ts` is a library of subgraph-specific types.
 
-NEAR 子图开发需要`0.23.0`以上版本的`graph-cli`，以及 `0.23.0`以上版本的`graph-ts`。
+NEAR subgraph development requires `graph-cli` above version `0.23.0`, and `graph-ts` above version `0.23.0`.
 
 > 构建 NEAR 子图与构建索引以太坊的子图非常相似。
 
 子图定义包括三个方面：
 
-**subgraph.yaml:** 子图清单，定义感兴趣的数据源以及如何处理它们。 NEAR 是一种全新`类型`数据源。
+**subgraph.yaml:** the subgraph manifest, defining the data sources of interest, and how they should be processed. NEAR is a new `kind` of data source.
 
-**schema.graphql:** 一个模式文件，定义子图存储的数据以及如何通过 GraphQL 查询数据。NEAR 子图的要求已经在[现有的文档](/developing/creating-a-subgraph/#the-graphql-schema)中介绍了。
+**schema.graphql:** a schema file that defines what data is stored for your subgraph, and how to query it via GraphQL. The requirements for NEAR subgraphs are covered by [the existing documentation](/developing/creating-a-subgraph/#the-graphql-schema).
 
 **AssemblyScript Mappings:** [AssemblyScript code](/subgraphs/developing/creating/graph-ts/api/) that translates from the event data to the entities defined in your schema. NEAR support introduces NEAR-specific data types and new JSON parsing functionality.
 
@@ -48,7 +48,7 @@ $ graph build # 从 AssemblyScript 文件生成 Web Assembly，并在 /build 文
 
 ### 子图清单定义
 
-子图清单(`subgraph.yaml`)标识子图的数据源、感兴趣的触发器以及响应这些触发器而运行的函数。 以下是一个 NEAR 的子图清单的例子：
+The subgraph manifest (`subgraph.yaml`) identifies the data sources for the subgraph, the triggers of interest, and the functions that should be run in response to those triggers. See below for an example subgraph manifest for a NEAR subgraph:
 
 ```yaml
 specVersion: 0.0.2
@@ -70,10 +70,10 @@ dataSources:
       file: ./src/mapping.ts # link to the file with the Assemblyscript mappings
 ```
 
-- NEAR 子图引入了一种新的 `kind` 数据源（`near`）。
+- NEAR subgraphs introduce a new `kind` of data source (`near`)
 - The `network` should correspond to a network on the hosting Graph Node. On Subgraph Studio, NEAR's mainnet is `near-mainnet`, and NEAR's testnet is `near-testnet`
 - NEAR data sources introduce an optional `source.account` field, which is a human-readable ID corresponding to a [NEAR account](https://docs.near.org/concepts/protocol/account-model). This can be an account or a sub-account.
-- NEAR 数据源引入了一个替代的可选 `source. account` 字段，其中包含可选的后缀和前缀。至少必须指定前缀或后缀，它们将分别与以值列表开始或结束的任何账户匹配。下面的例子将匹配: `[ app | good]。* [ morning.near | morning.testnet]`.如果只需要一个前缀或后缀列表，则可以省略其他字段。
+- NEAR data sources introduce an alternative optional `source.accounts` field, which contains optional suffixes and prefixes. At least prefix or suffix must be specified, they will match the any account starting or ending with the list of values respectively. The example below would match: `[app|good].*[morning.near|morning.testnet]`. If only a list of prefixes or suffixes is necessary the other field can be omitted.
 
 ```yaml
 accounts:
@@ -85,18 +85,18 @@ accounts:
     - morning.testnet
 ```
 
-NEAR 数据源支持两种类型的处理程序：
+NEAR data sources support two types of handlers:
 
-- `blockHandlers`：在每个新的 NEAR 区块上运行。 不需要 `source.account`。
+- `blockHandlers`: run on every new NEAR block. No `source.account` is required.
 - `receiptHandlers`: run on every receipt where the data source's `source.account` is the recipient. Note that only exact matches are processed ([subaccounts](https://docs.near.org/tutorials/crosswords/basics/add-functions-call#create-a-subaccount) must be added as independent data sources).
 
 ### 模式定义
 
-模式定义描述了生成的子图数据库结构以及实体之间的关系。这与原始数据源是不可知的。[这里](/developing/creating-a-subgraph/#the-graphql-schema)有更多关于子图模式定义的细节。
+Schema definition describes the structure of the resulting subgraph database and the relationships between entities. This is agnostic of the original data source. There are more details on subgraph schema definition [here](/developing/creating-a-subgraph/#the-graphql-schema).
 
 ### AssemblyScript 映射
 
-处理事件的处理程序是用 [AssemblyScript](https://www.assemblyscript.org/) 编写的。
+The handlers for processing events are written in [AssemblyScript](https://www.assemblyscript.org/).
 
 NEAR indexing introduces NEAR-specific data types to the [AssemblyScript API](/subgraphs/developing/creating/graph-ts/api/).
 
@@ -160,10 +160,10 @@ class ReceiptWithOutcome {
   }
 ```
 
-这些类型被传递给区块 & 收据处理程序：
+These types are passed to block & receipt handlers:
 
-- 块处理程序将收到 `Block`
-- 收据处理程序将收到 `ReceiptWithOutcome`
+- Block handlers will receive a `Block`
+- Receipt handlers will receive a `ReceiptWithOutcome`
 
 Otherwise, the rest of the [AssemblyScript API](/subgraphs/developing/creating/graph-ts/api/) is available to NEAR subgraph developers during mapping execution.
 
@@ -171,18 +171,18 @@ This includes a new JSON parsing function - logs on NEAR are frequently emitted 
 
 ## 部署 NEAR 子图
 
-构建子图后，就可以将其部署到 Graph节点以进行索引了。 NEAR 子图可以部署到任何图节点 `>=v0.26.x`（此版本尚未标记和发布）。
+Once you have a built subgraph, it is time to deploy it to Graph Node for indexing. NEAR subgraphs can be deployed to any Graph Node `>=v0.26.x` (this version has not yet been tagged & released).
 
 Subgraph Studio and the upgrade Indexer on The Graph Network currently supports indexing NEAR mainnet and testnet in beta, with the following network names:
 
-- `near-主网`
-- `near-测试网`
+- `near-mainnet`
+- `near-testnet`
 
 More information on creating and deploying subgraphs on Subgraph Studio can be found [here](/deploying/deploying-a-subgraph-to-studio/).
 
 As a quick primer - the first step is to "create" your subgraph - this only needs to be done once. On Subgraph Studio, this can be done from [your Dashboard](https://thegraph.com/studio/): "Create a subgraph".
 
-创建子图后，您可以使用 `graph deploy` CLI 命令部署子图：
+Once your subgraph has been created, you can deploy your subgraph by using the `graph deploy` CLI command:
 
 ```sh
 $ graph create --node <graph-node-url> <subgraph-name> # creates a subgraph on a local Graph Node (on Subgraph Studio, this is done via the UI)
@@ -228,17 +228,17 @@ graph deploy --node http://localhost:8020/ --ipfs http://localhost:5001 <subgrap
 
 ## 查询 NEAR 子图
 
-NEAR 子图的 GraphQL 端点由模式定义和现有的 API 接口决定。更多信息，请访问 [GraphQLAPI文档](/subgraphs/querying/graphql-api/)。
+The GraphQL endpoint for NEAR subgraphs is determined by the schema definition, with the existing API interface. Please visit the [GraphQL API documentation](/subgraphs/querying/graphql-api/) for more information.
 
 ## 示例子图
 
 Here are some example subgraphs for reference:
 
-[NEAR块](https://github.com/graphprotocol/graph-tooling/tree/main/examples/near-blocks)
+[NEAR Blocks](https://github.com/graphprotocol/graph-tooling/tree/main/examples/near-blocks)
 
-[NEAR收据](https://github.com/graphprotocol/graph-tooling/tree/main/examples/near-receipts)
+[NEAR Receipts](https://github.com/graphprotocol/graph-tooling/tree/main/examples/near-receipts)
 
-## 常见问题
+## FAQ
 
 ### 测试版是如何工作的？
 
@@ -254,7 +254,7 @@ NEAR 支持处于测试阶段，这意味着随着我们继续致力于改进集
 
 ### 接受处理程序会触发账户及其子账户吗？
 
-如果指定了`账户`，那么它将只与确切的账户名匹配。可以通过指定`accounts`字段来匹配子账户，并指定`后缀`和`前缀`来匹配账户和子账户，例如，下面将匹配所有 `mintbase1.near` 子账户:
+If an `account` is specified, that will only match the exact account name. It is possible to match sub-accounts by specifying an `accounts` field, with `suffixes` and `prefixes` specified to match accounts and sub-accounts, for example the following would match all `mintbase1.near` sub-accounts:
 
 ```yaml
 accounts:
@@ -278,6 +278,6 @@ NEAR 子图尚不支持挂起的功能。 在此期间，您可以将新版本�
 
 If it is a general question about subgraph development, there is a lot more information in the rest of the [Developer documentation](/subgraphs/quick-start/). Otherwise please join [The Graph Protocol Discord](https://discord.gg/graphprotocol) and ask in the #near channel or email near@thegraph.com.
 
-## 参考
+## References
 
-- [NEAR 开发者文档](https://docs.near.org/tutorials/crosswords/basics/set-up-skeleton)
+- [NEAR developer documentation](https://docs.near.org/tutorials/crosswords/basics/set-up-skeleton)
