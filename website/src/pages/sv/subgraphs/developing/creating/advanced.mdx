@@ -1,5 +1,5 @@
 ---
-title: Advance Subgraph Features
+title: Advanced Subgraph Features
 ---
 
 ## Översikt
@@ -29,9 +29,13 @@ dataSources: ...
 
 ## Timeseries and Aggregations
 
-Timeseries and aggregations enable your subgraph to track statistics like daily average price, hourly total transfers, etc.
+Prerequisites:
 
-This feature introduces two new types of subgraph entity. Timeseries entities record data points with timestamps. Aggregation entities perform pre-declared calculations on the Timeseries data points on an hourly or daily basis, then store the results for easy access via GraphQL.
+- Subgraph specVersion must be ≥1.1.0.
+
+Timeseries and aggregations enable your subgraph to track statistics like daily average price, hourly total transfers, and more.
+
+This feature introduces two new types of subgraph entity. Timeseries entities record data points with timestamps. Aggregation entities perform pre-declared calculations on the timeseries data points on an hourly or daily basis, then store the results for easy access via GraphQL.
 
 ### Example Schema
 
@@ -49,11 +53,19 @@ type Stats @aggregation(intervals: ["hour", "day"], source: "Data") {
 }
 ```
 
-### Defining Timeseries and Aggregations
+### How to Define Timeseries and Aggregations
 
-Timeseries entities are defined with `@entity(timeseries: true)` in schema.graphql. Every timeseries entity must have a unique ID of the int8 type, a timestamp of the Timestamp type, and include data that will be used for calculation by aggregation entities. These Timeseries entities can be saved in regular trigger handlers, and act as the “raw data” for the Aggregation entities.
+Timeseries entities are defined with `@entity(timeseries: true)` in the GraphQL schema. Every timeseries entity must:
 
-Aggregation entities are defined with `@aggregation` in schema.graphql. Every aggregation entity defines the source from which it will gather data (which must be a Timeseries entity), sets the intervals (e.g., hour, day), and specifies the aggregation function it will use (e.g., sum, count, min, max, first, last). Aggregation entities are automatically calculated on the basis of the specified source at the end of the required interval.
+- have a unique ID of the int8 type
+- have a timestamp of the Timestamp type
+- include data that will be used for calculation by aggregation entities.
+
+These Timeseries entities can be saved in regular trigger handlers, and act as the “raw data” for the aggregation entities.
+
+Aggregation entities are defined with `@aggregation` in the GraphQL schema. Every aggregation entity defines the source from which it will gather data (which must be a timeseries entity), sets the intervals (e.g., hour, day), and specifies the aggregation function it will use (e.g., sum, count, min, max, first, last).
+
+Aggregation entities are automatically calculated on the basis of the specified source at the end of the required interval.
 
 #### Available Aggregation Intervals
 
@@ -80,10 +92,6 @@ Aggregation entities are defined with `@aggregation` in schema.graphql. Every ag
   }
 }
 ```
-
-Note:
-
-To use Timeseries and Aggregations, a subgraph must have a spec version ≥1.1.0. Note that this feature might undergo significant changes that could affect backward compatibility.
 
 [Read more](https://github.com/graphprotocol/graph-node/blob/master/docs/aggregations.md) about Timeseries and Aggregations.
 
@@ -272,36 +280,36 @@ Nu kan du skapa filbaserade datakällor under utförandet av kedjebaserade hante
 - Import the template from the auto-generated `templates`
 - call `TemplateName.create(cid: string)` from within a mapping, where the cid is a valid content identifier for IPFS or Arweave
 
-For IPFS, Graph Node supports [v0 and v1 content identifiers](https://docs.ipfs.tech/concepts/content-addressing/), and content identifers with directories (e.g. `bafyreighykzv2we26wfrbzkcdw37sbrby4upq7ae3aqobbq7i4er3tnxci/metadata.json`).
+For IPFS, Graph Node supports [v0 and v1 content identifiers](https://docs.ipfs.tech/concepts/content-addressing/), and content identifiers with directories (e.g. `bafyreighykzv2we26wfrbzkcdw37sbrby4upq7ae3aqobbq7i4er3tnxci/metadata.json`).
 
 For Arweave, as of version 0.33.0 Graph Node can fetch files stored on Arweave based on their [transaction ID](https://docs.arweave.org/developers/arweave-node-server/http-api#transactions) from an Arweave gateway ([example file](https://bdxujjl5ev5eerd5ouhhs6o4kjrs4g6hqstzlci5pf6vhxezkgaa.arweave.net/CO9EpX0lekJEfXUOeXncUmMuG8eEp5WJHXl9U9yZUYA)). Arweave supports transactions uploaded via Irys (previously Bundlr), and Graph Node can also fetch files based on [Irys manifests](https://docs.irys.xyz/overview/gateways#indexing).
 
 Exempel:
 
 ```typescript
-import { TokenMetadata as TokenMetadataTemplate } from '../generated/templates'
+import { TokenMetadata as TokenMetadataTemplate } from "../generated/templates";
 
-const ipfshash = 'QmaXzZhcYnsisuue5WRdQDH6FDvqkLQX1NckLqBYeYYEfm'
+const ipfshash = "QmaXzZhcYnsisuue5WRdQDH6FDvqkLQX1NckLqBYeYYEfm";
 //Denna exempelkod är för en undergraf för kryptosamverkan. Ovanstående ipfs-hash är en katalog med tokenmetadata för alla kryptosamverkande NFT:er.
 
 export function handleTransfer(event: TransferEvent): void {
-  let token = Token.load(event.params.tokenId.toString())
+  let token = Token.load(event.params.tokenId.toString());
   if (!token) {
-    token = new Token(event.params.tokenId.toString())
-    token.tokenID = event.params.tokenId
+    token = new Token(event.params.tokenId.toString());
+    token.tokenID = event.params.tokenId;
 
-    token.tokenURI = '/' + event.params.tokenId.toString() + '.json'
-    const tokenIpfsHash = ipfshash + token.tokenURI
+    token.tokenURI = "/" + event.params.tokenId.toString() + ".json";
+    const tokenIpfsHash = ipfshash + token.tokenURI;
     //Detta skapar en sökväg till metadata för en enskild Crypto coven NFT. Den konkaterar katalogen med "/" + filnamn + ".json"
 
-    token.ipfsURI = tokenIpfsHash
+    token.ipfsURI = tokenIpfsHash;
 
-    TokenMetadataTemplate.create(tokenIpfsHash)
+    TokenMetadataTemplate.create(tokenIpfsHash);
   }
 
-  token.updatedAtTimestamp = event.block.timestamp
-  token.owner = event.params.to.toHexString()
-  token.save()
+  token.updatedAtTimestamp = event.block.timestamp;
+  token.owner = event.params.to.toHexString();
+  token.save();
 }
 ```
 
@@ -542,14 +550,14 @@ When a subgraph whose manifest contains a `graft` block is deployed, Graph Node 
 
 Eftersom ympning kopierar data istället för att indexera basdata går det mycket snabbare att få delgrafen till det önskade blocket än att indexera från början, även om den initiala datorkopieringen fortfarande kan ta flera timmar för mycket stora delgrafer. Medan den ympade delgrafen initialiseras kommer Graph Node att logga information om de entitetstyper som redan har kopierats.
 
-Den ympade delgrafen kan använda ett GraphQL-schema som inte är identiskt med basdelgrafens, men bara kompatibelt med den. Det måste vara ett giltigt delgrafschema i sig själv, men kan avvika från basdelgrafens schema på följande sätt:
+Den ympade subgrafen kan använda ett GraphQL-schema som inte är identiskt med det i bas subgrafen, utan bara är kompatibelt med det. Det måste vara ett giltigt subgraf schema i sig, men kan avvika från bas undergrafens schema på följande sätt:
 
 - Den lägger till eller tar bort entitetstyper
-- Den tar bort attribut från entitetstyper
-- Den lägger till nollställbara attribut till entitetstyper
-- Den gör icke-nollställbara attribut till nollställbara attribut
-- Den lägger till värden till enum
+- Det tar bort attribut från entitetstyper
+- Det tar bort attribut från entitetstyper
+- Det förvandlar icke-nullbara attribut till nullbara attribut
+- Det lägger till värden till enums
 - Den lägger till eller tar bort gränssnitt
-- Den ändrar vilka entitetstyper som ett gränssnitt är implementerat för
+- Det ändrar för vilka entitetstyper ett gränssnitt implementeras
 
 > **[Feature Management](#experimental-features):** `grafting` must be declared under `features` in the subgraph manifest.
