@@ -6,9 +6,9 @@ As with many systems processing large amounts of data, The Graph's Indexers (Gra
 
 ## ठीक आहे, ते काय आहे?
 
-**सबग्राफ फोर्किंग** ही _दुसऱ्या_ सबग्राफच्या स्टोअरमधून (सामान्यत: रिमोट एक) घटक आणण्याची प्रक्रिया आहे.
+**Subgraph forking** is the process of lazily fetching entities from _another_ subgraph's store (usually a remote one).
 
-डीबगिंगच्या संदर्भात, **सबग्राफ फोर्किंग** तुम्हाला तुमचा अयशस्वी सबग्राफ ब्लॉक _X_ येथे वाट न पाहता डीबग करण्याची अनुमती देते _X_ ला ब्लॉक करण्यासाठी सिंक-अप करण्यासाठी.
+In the context of debugging, **subgraph forking** allows you to debug your failed subgraph at block _X_ without needing to wait to sync-up to block _X_.
 
 ## काय?! कसे?
 
@@ -18,9 +18,9 @@ In a nutshell, we are going to _fork the failing subgraph_ from a remote Graph N
 
 ## कृपया, मला काही कोड दाखवा!
 
-सबग्राफ डीबगिंगवर लक्ष केंद्रित करण्यासाठी, चला गोष्टी सोप्या ठेवूया आणि [उदाहरण-सबग्राफ< सोबत चालवूया ](https://github.com/graphprotocol/graph-tooling/tree/main/examples/ethereum-gravatar) इथरियम ग्रॅविटी स्मार्ट कॉन्ट्रॅक्टचे अनुक्रमणिका.
+To stay focused on subgraph debugging, let's keep things simple and run along with the [example-subgraph](https://github.com/graphprotocol/graph-tooling/tree/main/examples/ethereum-gravatar) indexing the Ethereum Gravity smart contract.
 
-कोणत्याही बगशिवाय `Gravatar`s अनुक्रमित करण्यासाठी परिभाषित हँडलर येथे आहेत:
+Here are the handlers defined for indexing `Gravatar`s, with no bugs whatsoever:
 
 ```tsx
 export function handleNewGravatar(event: NewGravatar): void {
@@ -53,9 +53,9 @@ Oops, how unfortunate, when I deploy my perfect looking subgraph to [Subgraph St
 3. ते समक्रमित होण्याची प्रतीक्षा करा.
 4. तो पुन्हा खंडित झाल्यास 1 वर परत जा, अन्यथा: हुर्रे!
 
-सामान्य डीबग प्रक्रियेसाठी हे खरोखरच परिचित आहे, परंतु एक पायरी आहे जी प्रक्रिया अत्यंत मंद करते: _3. ते समक्रमित होण्याची प्रतीक्षा करा._
+It is indeed pretty familiar to an ordinary debug process, but there is one step that horribly slows down the process: _3. Wait for it to sync-up._
 
-**सबग्राफ फोर्किंग** वापरून आम्ही मूलत: ही पायरी काढून टाकू शकतो. ते कसे दिसते ते येथे आहे:
+Using **subgraph forking** we can essentially eliminate this step. Here is how it looks:
 
 0. Spin-up a local Graph Node with the **_appropriate fork-base_** set.
 1. मॅपिंग स्त्रोतामध्ये बदल करा, जो तुम्हाला विश्वास आहे की समस्या सोडवेल.
@@ -69,14 +69,14 @@ Oops, how unfortunate, when I deploy my perfect looking subgraph to [Subgraph St
 
 आणि मी उत्तर देतो:
 
-1. `फोर्क-बेस` ही "बेस" URL आहे, जसे की जेव्हा _सबग्राफ आयडी_ जोडली जाते तेव्हा परिणामी URL (`<fork- बेस>/<subgraph-id>`) हा सबग्राफ स्टोअरसाठी एक वैध GraphQL एंडपॉइंट आहे.
+1. `fork-base` is the "base" URL, such that when the _subgraph id_ is appended the resulting URL (`<fork-base>/<subgraph-id>`) is a valid GraphQL endpoint for the subgraph's store.
 2. काटा काढणे सोपे आहे, घाम गाळण्याची गरज नाही:
 
 ```bash
-$ आलेख तैनात <subgraph-name> --debug-fork <subgraph-id> --ipfs http://localhost:5001 --node http://localhost:8020
+$ graph deploy <subgraph-name> --debug-fork <subgraph-id> --ipfs http://localhost:5001 --node http://localhost:8020
 ```
 
-तसेच, सबग्राफ मॅनिफेस्टमधील `dataSources.source.startBlock` फील्ड समस्याग्रस्त ब्लॉकच्या संख्येवर सेट करण्यास विसरू नका, जेणेकरून तुम्ही अनावश्यक ब्लॉक्सची अनुक्रमणिका वगळू शकता आणि फोर्कचा फायदा घेऊ शकता!
+Also, don't forget to set the `dataSources.source.startBlock` field in the subgraph manifest to the number of the problematic block, so you can skip indexing unnecessary blocks and take advantage of the fork!
 
 तर, मी काय करतो ते येथे आहे:
 
