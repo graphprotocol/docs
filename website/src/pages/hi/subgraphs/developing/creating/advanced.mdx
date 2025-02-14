@@ -1,5 +1,5 @@
 ---
-title: Advance Subgraph Features
+title: Advanced Subgraph Features
 ---
 
 ## अवलोकन
@@ -29,9 +29,13 @@ dataSources: ...
 
 ## Timeseries और Aggregations
 
-Timeseries और aggregations आपके subgraph को दैनिक औसत मूल्य, घंटेवारी कुल स्थानांतरण आदि जैसे आंकड़े ट्रैक करने में सक्षम बनाते हैं।
+Prerequisites:
 
-यह विशेषता दो नए प्रकार की 'subgraph' इकाई पेश करती है। 'Timeseries' इकाइयाँ डेटा बिंदुओं को समय की छाप के साथ रिकॉर्ड करती हैं। 'Aggregation' इकाइयाँ 'Timeseries' डेटा बिंदुओं पर पूर्व-घोषित गणनाएँ करती हैं, जो प्रति घंटे या प्रति दिन होती हैं, फिर परिणामों को GraphQL के माध्यम से आसान पहुँच के लिए संग्रहीत करती हैं।
+- Subgraph specVersion must be ≥1.1.0.
+
+Timeseries and aggregations enable your subgraph to track statistics like daily average price, hourly total transfers, and more.
+
+This feature introduces two new types of subgraph entity. Timeseries entities record data points with timestamps. Aggregation entities perform pre-declared calculations on the timeseries data points on an hourly or daily basis, then store the results for easy access via GraphQL.
 
 ### उदाहरण स्कीमा
 
@@ -49,11 +53,19 @@ type Stats @aggregation(intervals: ["hour", "day"], source: "Data") {
 }
 ```
 
-### टाइमसीरीज और एग्रीगेशन्स को परिभाषित करना
+### How to Define Timeseries and Aggregations
 
-Timeseries entities are defined with `@entity(timeseries: true)` in schema.graphql. Every timeseries entity must have a unique ID of the int8 type, a timestamp of the Timestamp type, and include data that will be used for calculation by aggregation entities. These Timeseries entities can be saved in regular trigger handlers, and act as the “raw data” for the Aggregation entities.
+Timeseries entities are defined with `@entity(timeseries: true)` in the GraphQL schema. Every timeseries entity must:
 
-Aggregation entities are defined with `@aggregation` in schema.graphql. Every aggregation entity defines the source from which it will gather data (which must be a Timeseries entity), sets the intervals (e.g., hour, day), and specifies the aggregation function it will use (e.g., sum, count, min, max, first, last). Aggregation entities are automatically calculated on the basis of the specified source at the end of the required interval.
+- have a unique ID of the int8 type
+- have a timestamp of the Timestamp type
+- include data that will be used for calculation by aggregation entities.
+
+These Timeseries entities can be saved in regular trigger handlers, and act as the “raw data” for the aggregation entities.
+
+Aggregation entities are defined with `@aggregation` in the GraphQL schema. Every aggregation entity defines the source from which it will gather data (which must be a timeseries entity), sets the intervals (e.g., hour, day), and specifies the aggregation function it will use (e.g., sum, count, min, max, first, last).
+
+Aggregation entities are automatically calculated on the basis of the specified source at the end of the required interval.
 
 #### उपलब्ध Aggregation अंतराल
 
@@ -81,17 +93,13 @@ Aggregation entities are defined with `@aggregation` in schema.graphql. Every ag
 }
 ```
 
-नोट:
-
-Timeseries और Aggregations का उपयोग करने के लिए, एक subgraph का spec version ≥1.1.0 होना चाहिए। ध्यान दें कि यह सुविधा महत्वपूर्ण परिवर्तनों का सामना कर सकती है जो पीछे की संगतता को प्रभावित कर सकती है।
-
-[Read more](https://github.com/graphprotocol/graph-node/blob/master/docs/aggregations.md) about Timeseries and Aggregations.
+[और पढ़ें](https://github.com/graphprotocol/graph-node/blob/master/docs/aggregations.md) समय श्रृंखला और संक्षेपण के बारे में।
 
 ## गैर-घातक त्रुटियाँ
 
 पहले से सिंक किए गए सबग्राफ पर इंडेक्सिंग त्रुटियां, डिफ़ॉल्ट रूप से, सबग्राफ को विफल कर देंगी और सिंक करना बंद कर देंगी। सबग्राफ को वैकल्पिक रूप से त्रुटियों की उपस्थिति में समन्वयन जारी रखने के लिए कॉन्फ़िगर किया जा सकता है, हैंडलर द्वारा किए गए परिवर्तनों को अनदेखा करके त्रुटि उत्पन्न हुई। यह सबग्राफ लेखकों को अपने सबग्राफ को ठीक करने का समय देता है, जबकि नवीनतम ब्लॉक के विरुद्ध प्रश्नों को जारी रखा जाता है, हालांकि त्रुटि के कारण बग के कारण परिणाम असंगत हो सकते हैं। ध्यान दें कि कुछ त्रुटियाँ अभी भी हमेशा घातक होती हैं। गैर-घातक होने के लिए, त्रुटि नियतात्मक होने के लिए जानी जानी चाहिए।
 
-> **Note:** The Graph Network does not yet support non-fatal errors, and developers should not deploy subgraphs using that functionality to the network via the Studio.
+> **ध्यान दें:** The Graph Network अभी तक गैर-घातक त्रुटियों non-fatal errors का समर्थन नहीं करता है, और डेवलपर्स को Studio के माध्यम से उस कार्यक्षमता का उपयोग करके सबग्राफ को नेटवर्क पर परिनियोजित (deploy) नहीं करना चाहिए।
 
 गैर-घातक त्रुटियों को सक्षम करने के लिए सबग्राफ मेनिफ़ेस्ट पर निम्न फ़ीचर फ़्लैग सेट करने की आवश्यकता होती है:
 
@@ -103,7 +111,7 @@ features:
     ...
 ```
 
-The query must also opt-in to querying data with potential inconsistencies through the `subgraphError` argument. It is also recommended to query `_meta` to check if the subgraph has skipped over errors, as in the example:
+Queries को संभावित असंगतियों वाले डेटा को queries करने के लिए `subgraphError` आर्ग्यूमेंट के माध्यम से ऑप्ट-इन करना होगा। यह भी अनुशंसा की जाती है कि `_meta` को queries करें यह जांचने के लिए कि subgraph ने त्रुटियों को स्किप किया है या नहीं, जैसे इस उदाहरण में:
 
 ```graphql
 foos(first: 100, subgraphError: allow) {
@@ -115,7 +123,7 @@ _meta {
 }
 ```
 
-If the subgraph encounters an error, that query will return both the data and a graphql error with the message `"indexing_error"`, as in this example response:
+यदि subgraph में कोई त्रुटि आती है, तो वह queries डेटा और एक graphql त्रुटि के साथ `"indexing_error"` संदेश लौटाएगी, जैसा कि इस उदाहरण उत्तर में दिखाया गया है:
 
 ```graphql
 "data": {
@@ -145,15 +153,15 @@ If the subgraph encounters an error, that query will return both the data and a 
 
 "लाइन" में हैंडलर कार्यान्वयन के दौरान फ़ाइलों को लाने के बजाय, यह टेम्पलेट्स को पेश करता है जिन्हें एक दिए गए फ़ाइल पहचानकर्ता के लिए नए डेटा स्रोतों के रूप में उत्पन्न किया जा सकता है। ये नए डेटा स्रोत फ़ाइलों को लाते हैं, यदि वे असफल होते हैं तो पुनः प्रयास करते हैं, और जब फ़ाइल मिलती है तो एक समर्पित हैंडलर चलाते हैं।
 
-This is similar to the [existing data source templates](/developing/creating-a-subgraph/#data-source-templates), which are used to dynamically create new chain-based data sources.
+यह [ existing data साधन templates](/developing/creating-a-subgraph/#data-source-templates) के समान है, जिन्हें नए chain-based data साधन को डायनामिक रूप से बनाने के लिए उपयोग किया जाता है।
 
-> This replaces the existing `ipfs.cat` API
+> यह मौजूदा `ipfs.cat` API को प्रतिस्थापित करता है।
 
 ### अपग्रेड गाइड
 
-#### Update `graph-ts` and `graph-cli`
+#### `graph-ts` और `graph-cli` को अपडेट करें
 
-File data sources requires graph-ts >=0.29.0 and graph-cli >=0.33.1
+फ़ाइल डेटा साधन के लिए graph-ts >=0.29.0 और graph-cli >=0.33.1 की आवश्यकता होती है।
 
 #### एक नया इकाई प्रकार जोड़ें जो फ़ाइलें मिलने पर अपडेट किया जाएगा
 
@@ -202,9 +210,9 @@ type TokenMetadata @entity {
 
 यदि पैरेंट इकाई और परिणामी फ़ाइल डेटा स्रोत इकाई के बीच संबंध 1:1 है, तो सबसे सरल पैटर्न मूल इकाई को लुकअप के रूप में IPFS CID का उपयोग करके परिणामी फ़ाइल इकाई से लिंक करना है। यदि आपको अपनी नई फ़ाइल-आधारित संस्थाओं को मॉडलिंग करने में कठिनाई हो रही है, तो डिस्कॉर्ड पर संपर्क करें!
 
-> You can use [nested filters](/subgraphs/querying/graphql-api/#example-for-nested-entity-filtering) to filter parent entities on the basis of these nested entities.
+> आप [nested filters](/subgraphs/querying/graphql-api/#example-for-nested-entity-filtering) का उपयोग करके parent entities को इन nested entities के आधार पर फ़िल्टर कर सकते हैं।
 
-#### Add a new templated data source with `kind: file/ipfs` or `kind: file/arweave`
+#### एक नया टेम्पलेटेड डेटा साधन स्रोत जोड़ें जिसमें `kind: file/ipfs` या `kind: file/arweave` हो।
 
 यह वह डेटा स्रोत है जो ब्याज की फ़ाइल की पहचान होने पर उत्पन्न होगा।
 
@@ -224,15 +232,15 @@ templates:
           file: ./abis/Token.json
 ```
 
-> Currently `abis` are required, though it is not possible to call contracts from within file data sources
+> वर्तमान में `abis` की आवश्यकता होती है, हालांकि फ़ाइल डेटा साधन के भीतर से अनुबंधों को कॉल contract करना संभव नहीं है।
 
-The file data source must specifically mention all the entity types which it will interact with under `entities`. See [limitations](#limitations) for more details.
+फाइल डेटा साधन को विशेष रूप से उन सभी entities प्रकारों का उल्लेख करना चाहिए जिनके साथ यह `entities`. के तहत इंटरएक्ट करेगा। अधिक विवरण के लिए [ limitations] (#limitations) देखें।
 
 #### फ़ाइलों को संसाधित करने के लिए एक नया हैंडलर बनाएँ
 
-This handler should accept one `Bytes` parameter, which will be the contents of the file, when it is found, which can then be processed. This will often be a JSON file, which can be processed with `graph-ts` helpers ([documentation](/subgraphs/developing/creating/graph-ts/api/#json-api)).
+यह handler एक `Bytes` पैरामीटर स्वीकार करना चाहिए, जो उस फ़ाइल की सामग्री होगी, जब यह पाई जाएगी, जिसे फिर से प्रोसेस किया जा सकेगा। यह अक्सर एक JSON फ़ाइल होगी, जिसे `graph-ts` हेल्पर्स के साथ प्रोसेस किया जा सकता है ([documentation](/subgraphs/developing/creating/graph-ts/api/#json-api)).
 
-The CID of the file as a readable string can be accessed via the `dataSource` as follows:
+फ़ाइल का CID एक पठनीय स्ट्रिंग के रूप में `dataSource` के माध्यम से निम्नलिखित तरीके से प्राप्त किया जा सकता है:
 
 ```typescript
 const cid = dataSource.stringParam()
@@ -269,10 +277,10 @@ export function handleMetadata(content: Bytes): void {
 
 अब आप चेन-आधारित हैंडलर के निष्पादन के दौरान फ़ाइल डेटा स्रोत बना सकते हैं:
 
-- Import the template from the auto-generated `templates`
+- ऑटो-जनरेटेड `templates` से टेम्पलेट आयात करें।
 - call `TemplateName.create(cid: string)` from within a mapping, where the cid is a valid content identifier for IPFS or Arweave
 
-For IPFS, Graph Node supports [v0 and v1 content identifiers](https://docs.ipfs.tech/concepts/content-addressing/), and content identifers with directories (e.g. `bafyreighykzv2we26wfrbzkcdw37sbrby4upq7ae3aqobbq7i4er3tnxci/metadata.json`).
+For IPFS, Graph Node supports [v0 and v1 content identifiers](https://docs.ipfs.tech/concepts/content-addressing/), and content identifiers with directories (e.g. `bafyreighykzv2we26wfrbzkcdw37sbrby4upq7ae3aqobbq7i4er3tnxci/metadata.json`).
 
 For Arweave, as of version 0.33.0 Graph Node can fetch files stored on Arweave based on their [transaction ID](https://docs.arweave.org/developers/arweave-node-server/http-api#transactions) from an Arweave gateway ([example file](https://bdxujjl5ev5eerd5ouhhs6o4kjrs4g6hqstzlci5pf6vhxezkgaa.arweave.net/CO9EpX0lekJEfXUOeXncUmMuG8eEp5WJHXl9U9yZUYA)). Arweave supports transactions uploaded via Irys (previously Bundlr), and Graph Node can also fetch files based on [Irys manifests](https://docs.irys.xyz/overview/gateways#indexing).
 
@@ -521,6 +529,7 @@ calls:
 ```yaml
 calls:
   - ERC20DecimalsToken0: ERC20[event.params.token0].decimals()
+
 ```
 
 ### मौजूदा सबग्राफ पर ग्राफ्टिंग
@@ -542,10 +551,10 @@ When a subgraph whose manifest contains a `graft` block is deployed, Graph Node 
 
 क्योंकि आधार डेटा को अनुक्रमित करने के बजाय प्रतियों को ग्राफ्ट करना, स्क्रैच से अनुक्रमणित करने की तुलना में सबग्राफ को वांछित ब्लॉक में प्राप्त करना बहुत तेज है, हालांकि बहुत बड़े सबग्राफ के लिए प्रारंभिक डेटा कॉपी में अभी भी कई घंटे लग सकते हैं। जबकि ग्राफ्टेड सबग्राफ को इनिशियलाइज़ किया जा रहा है, ग्राफ़ नोड उन एंटिटी प्रकारों के बारे में जानकारी लॉग करेगा जो पहले ही कॉपी किए जा चुके हैं।
 
-ग्राफ्टेड सबग्राफ एक ग्राफक्यूएल स्कीमा का उपयोग कर सकता है जो बेस सबग्राफ के समान नहीं है, लेकिन इसके साथ केवल संगत है। यह अपने आप में एक मान्य सबग्राफ स्कीमा होना चाहिए, लेकिन निम्नलिखित तरीकों से बेस सबग्राफ के स्कीमा से विचलित हो सकता है:
+ग्राफ्टेड सबग्राफ एक ग्राफक्यूएल स्कीमा का उपयोग कर सकता है जो बेस सबग्राफ के समान नहीं है, लेकिन इसके अनुकूल हो। यह अपने आप में एक मान्य सबग्राफ स्कीमा होना चाहिए, लेकिन निम्नलिखित तरीकों से बेस सबग्राफ के स्कीमा से विचलित हो सकता है:
 
-- यह इकाई प्रकार जोड़ता या हटाता है
-- यह इकाई प्रकारों से विशेषताएँ निकालता है
+- यह इकाई के प्रकारों को जोड़ या हटा सकता है|
+- यह इकाई प्रकारों में से गुणों को हटाता है|
 - यह प्रभावहीन गुणों को इकाई प्रकारों में जोड़ता है|
 - यह प्रभाव वाले गुणों को प्रभावहीन गुणों में बदल देता है|
 - यह इनम्स में महत्व देता है|
