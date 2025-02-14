@@ -6,9 +6,9 @@ As with many systems processing large amounts of data, The Graph's Indexers (Gra
 
 ## ¿Bien, qué es?
 
-**Subgraph forking** es el proceso de obtener entidades de _otro_ almacén de subgrafos (por lo general uno remoto).
+**Subgraph forking** is the process of lazily fetching entities from _another_ subgraph's store (usually a remote one).
 
-En el contexto de la depuración, **subgraph forking** te permite depurar tu subgrafo fallido en el bloque _X_ sin necesidad de esperar a sincronizar para bloquear _X_.
+In the context of debugging, **subgraph forking** allows you to debug your failed subgraph at block _X_ without needing to wait to sync-up to block _X_.
 
 ## ¡¿Qué?! ¿Cómo?
 
@@ -18,9 +18,9 @@ In a nutshell, we are going to _fork the failing subgraph_ from a remote Graph N
 
 ## ¡Por favor, muéstrame algo de código!
 
-Para mantenernos enfocados en el debugging de subgrafos, simplifiquemos las cosas y sigamos con el [example-subgraph](https://github.com/graphprotocol/graph-tooling/tree/main/examples/ethereum-gravatar) que indexa el contrato inteligente Ethereum Gravity.
+To stay focused on subgraph debugging, let's keep things simple and run along with the [example-subgraph](https://github.com/graphprotocol/graph-tooling/tree/main/examples/ethereum-gravatar) indexing the Ethereum Gravity smart contract.
 
-Estos son los handlers definidos para indexar `Gravatar`s, sin errores de ningún tipo:
+Here are the handlers defined for indexing `Gravatar`s, with no bugs whatsoever:
 
 ```tsx
 export function handleNewGravatar(event: NewGravatar): void {
@@ -53,9 +53,9 @@ La forma habitual de intentar una solución es:
 3. Espera a que se sincronice.
 4. Si se vuelve a romper vuelve a 1, de lo contrario: ¡Hurra!
 
-De hecho, es bastante familiar para un proceso de depuración ordinario, pero hay un paso que ralentiza terriblemente el proceso: _3. Espera a que se sincronice._
+It is indeed pretty familiar to an ordinary debug process, but there is one step that horribly slows down the process: _3. Wait for it to sync-up._
 
-Usando **bifurcación de subgrafo** podemos eliminar esencialmente este paso. Así es como se ve:
+Using **subgraph forking** we can essentially eliminate this step. Here is how it looks:
 
 0. Spin-up a local Graph Node with the **_appropriate fork-base_** set.
 1. Realiza un cambio en la fuente de mapeos, que crees que resolverá el problema.
@@ -69,14 +69,14 @@ Ahora, puedes tener 2 preguntas:
 
 Y yo respondo:
 
-1. `fork-base` es la URL "base", de modo que cuando se agrega el _id de subgrafo_, la URL resultante (`<fork- base>/<subgraph-id>`) es un punto final de GraphQL válido para la tienda del subgrafo.
+1. `fork-base` is the "base" URL, such that when the _subgraph id_ is appended the resulting URL (`<fork-base>/<subgraph-id>`) is a valid GraphQL endpoint for the subgraph's store.
 2. Bifurcar es fácil, no hay necesidad de sudar:
 
 ```bash
 $ graph deploy <subgraph-name> --debug-fork <subgraph-id> --ipfs http://localhost:5001 --node http://localhost:8020
 ```
 
-Además, no olvides configurar el campo `dataSources.source.startBlock` en el manifiesto del subgrafo con el número del bloque problemático, para que puedas omitir la indexación de bloques innecesarios y aprovechar la bifurcación!
+Also, don't forget to set the `dataSources.source.startBlock` field in the subgraph manifest to the number of the problematic block, so you can skip indexing unnecessary blocks and take advantage of the fork!
 
 Entonces, esto es lo que hago:
 
@@ -90,7 +90,7 @@ $ cargo run -p graph-node --release -- \
     --fork-base https://api.thegraph.com/subgraphs/id/
 ```
 
-2. Después de una inspección cuidadosa, noté que hay una falta de coincidencia en las representaciones de `id` utilizadas al indexar `Gravatar` en mis dos handlers. Mientras que `handleNewGravatar` lo convierte en hexadecimal (`event.params.id.toHex()`), `handleUpdatedGravatar` usa un int32 (`event. params.id.toI32()`) que hace que `handleUpdatedGravatar` entre en pánico con "¡Gravatar no encontrado!". Hago que ambos conviertan el `id` en un hexadecimal.
+2. After careful inspection I notice that there is a mismatch in the `id` representations used when indexing `Gravatar`s in my two handlers. While `handleNewGravatar` converts it to a hex (`event.params.id.toHex()`), `handleUpdatedGravatar` uses an int32 (`event.params.id.toI32()`) which causes the `handleUpdatedGravatar` to panic with "Gravatar not found!". I make them both convert the `id` to a hex.
 3. After I made the changes I deploy my subgraph to the local Graph Node, **_forking the failing subgraph_** and setting `dataSources.source.startBlock` to `6190343` in `subgraph.yaml`:
 
 ```bash
