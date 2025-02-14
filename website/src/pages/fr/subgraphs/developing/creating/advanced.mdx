@@ -1,20 +1,20 @@
 ---
-title: Advance Subgraph Features
+title: Fonctionnalités avancées des subgraphs
 ---
 
 ## Aperçu
 
-Add and implement advanced subgraph features to enhanced your subgraph's built.
+Ajoutez et implémentez des fonctionnalités avancées de subgraph pour améliorer la construction de votre subgraph.
 
-Starting from `specVersion` `0.0.4`, subgraph features must be explicitly declared in the `features` section at the top level of the manifest file, using their `camelCase` name, as listed in the table below:
+À partir de `specVersion` `0.0.4`, les fonctionnalités de subgraph doivent être explicitement déclarées dans la section `features` au niveau supérieur du fichier de manifeste, en utilisant leur nom en `camelCase` comme indiqué dans le tableau ci-dessous :
 
-| Feature                                              | Name             |
-| ---------------------------------------------------- | ---------------- |
-| [Non-fatal errors](#non-fatal-errors)                | `nonFatalErrors` |
-| [Full-text Search](#defining-fulltext-search-fields) | `fullTextSearch` |
-| [Grafting](#grafting-onto-existing-subgraphs)        | `grafting`       |
+| Fonctionnalité                                              | Nom              |
+| ----------------------------------------------------------- | ---------------- |
+| [Erreurs non fatales](#non-fatal-errors)                    | `nonFatalErrors` |
+| [Recherche plein texte](#defining-fulltext-search-fields)   | `fullTextSearch` |
+| [Greffage](#grafting-onto-existing-subgraphs)               | `grafting`       |
 
-For instance, if a subgraph uses the **Full-Text Search** and the **Non-fatal Errors** features, the `features` field in the manifest should be:
+Par exemple, si un subgraph utilise les fonctionnalités **Full-Text Search** et **Non-fatal Errors**, le champ `features` dans le manifeste devrait être :
 
 ```yaml
 specVersion: 0.0.4
@@ -25,13 +25,17 @@ features:
 dataSources: ...
 ```
 
-> Note that using a feature without declaring it will incur a **validation error** during subgraph deployment, but no errors will occur if a feature is declared but not used.
+> Notez que L'utilisation d'une fonctionnalité sans la déclarer entraînera une **validation error** lors du déploiement du subgraph, mais aucune erreur ne se produira si une fonctionnalité est déclarée mais non utilisée.
 
 ## Séries chronologiques et agrégations
 
-Les séries chronologiques et les agrégations permettent à votre subgraph de suivre des statistiques telles que le prix moyen journalier, le total des transferts par heure, etc.
+Prerequisites:
 
-Cette fonctionnalité introduit deux nouveaux types d'entités de subgraph. Les entités de séries chronologiques enregistrent des points de données avec des horodatages. Les entités d'agrégation effectuent des calculs pré-déclarés sur les points de données des séries chronologiques sur une base horaire ou quotidienne, puis stockent les résultats pour un accès facile via GraphQL.
+- Subgraph specVersion must be ≥1.1.0.
+
+Timeseries and aggregations enable your subgraph to track statistics like daily average price, hourly total transfers, and more.
+
+This feature introduces two new types of subgraph entity. Timeseries entities record data points with timestamps. Aggregation entities perform pre-declared calculations on the timeseries data points on an hourly or daily basis, then store the results for easy access via GraphQL.
 
 ### Exemple de schéma
 
@@ -49,25 +53,33 @@ type Stats @aggregation(intervals: ["hour", "day"], source: "Data") {
 }
 ```
 
-### Définition des Séries Chronologiques et des Agrégations
+### How to Define Timeseries and Aggregations
 
-Timeseries entities are defined with `@entity(timeseries: true)` in schema.graphql. Every timeseries entity must have a unique ID of the int8 type, a timestamp of the Timestamp type, and include data that will be used for calculation by aggregation entities. These Timeseries entities can be saved in regular trigger handlers, and act as the “raw data” for the Aggregation entities.
+Timeseries entities are defined with `@entity(timeseries: true)` in the GraphQL schema. Every timeseries entity must:
 
-Aggregation entities are defined with `@aggregation` in schema.graphql. Every aggregation entity defines the source from which it will gather data (which must be a Timeseries entity), sets the intervals (e.g., hour, day), and specifies the aggregation function it will use (e.g., sum, count, min, max, first, last). Aggregation entities are automatically calculated on the basis of the specified source at the end of the required interval.
+- have a unique ID of the int8 type
+- have a timestamp of the Timestamp type
+- include data that will be used for calculation by aggregation entities.
+
+These Timeseries entities can be saved in regular trigger handlers, and act as the “raw data” for the aggregation entities.
+
+Aggregation entities are defined with `@aggregation` in the GraphQL schema. Every aggregation entity defines the source from which it will gather data (which must be a timeseries entity), sets the intervals (e.g., hour, day), and specifies the aggregation function it will use (e.g., sum, count, min, max, first, last).
+
+Aggregation entities are automatically calculated on the basis of the specified source at the end of the required interval.
 
 #### Intervalles d'Agrégation disponibles
 
-- `hour`: sets the timeseries period every hour, on the hour.
-- `day`: sets the timeseries period every day, starting and ending at 00:00.
+- `hour`: définit la période de séries chronologiques toutes les heures, à l'heure pile.
+- `day`: définit la période de séries chronologiques chaque jour, commençant et se terminant à 00:00.
 
 #### Fonctions d'Agrégation disponibles
 
-- `sum`: Total of all values.
-- `count`: Number of values.
-- `min`: Minimum value.
-- `max`: Maximum value.
-- `first`: First value in the period.
-- `last`: Last value in the period.
+- `sum`: Total de toutes les valeurs.
+- `count`: Nombre de valeurs.
+- `min`: Valeur minimum.
+- `max`: Valeur maximum.
+- `first`: Première valeur de la période.
+- `last` : Dernière valeur de la période.
 
 #### Exemple de requête d'Agrégations
 
@@ -81,17 +93,13 @@ Aggregation entities are defined with `@aggregation` in schema.graphql. Every ag
 }
 ```
 
-Remarque:
-
-Pour utiliser les Séries Chronologiques et les Agrégations, un subgraph doit avoir une spec Version ≥1.1.0. Notez que cette fonctionnalité pourrait subir des changements significatifs affectant la compatibilité rétroactive.
-
-[Read more](https://github.com/graphprotocol/graph-node/blob/master/docs/aggregations.md) about Timeseries and Aggregations.
+[En savoir plus](https://github.com/graphprotocol/graph-node/blob/master/docs/aggregations.md) sur les séries chronologiques et Agrégations.
 
 ## Erreurs non fatales
 
 Les erreurs d'indexation sur les subgraphs déjà synchronisés entraîneront, par défaut, l'échec du subgraph et l'arrêt de la synchronisation. Les subgraphs peuvent également être configurés pour continuer la synchronisation en présence d'erreurs, en ignorant les modifications apportées par le gestionnaire qui a provoqué l'erreur. Cela donne aux auteurs de subgraphs le temps de corriger leurs subgraphs pendant que les requêtes continuent d'être traitées sur le dernier bloc, bien que les résultats puissent être incohérents en raison du bogue à l'origine de l'erreur. Notez que certaines erreurs sont toujours fatales. Pour être non fatale, l'erreur doit être connue pour être déterministe.
 
-> **Note:** The Graph Network does not yet support non-fatal errors, and developers should not deploy subgraphs using that functionality to the network via the Studio.
+> **Note:** The Graph Network ne supporte pas encore les erreurs non fatales, et les développeurs ne doivent pas déployer de subgraphs utilisant cette fonctionnalité sur le réseau via le Studio.
 
 L'activation des erreurs non fatales nécessite la définition de l'indicateur de fonctionnalité suivant sur le manifeste du subgraph :
 
@@ -103,7 +111,7 @@ features:
     ...
 ```
 
-The query must also opt-in to querying data with potential inconsistencies through the `subgraphError` argument. It is also recommended to query `_meta` to check if the subgraph has skipped over errors, as in the example:
+La requête doit également opter pour l'interrogation de données avec des incohérences potentielles via l'argument `subgraphError`. Il est également recommandé d'interroger `_meta` pour vérifier si le subgraph a ignoré des erreurs, comme dans l'exemple :
 
 ```graphql
 foos(first: 100, subgraphError: allow) {
@@ -115,7 +123,7 @@ _meta {
 }
 ```
 
-If the subgraph encounters an error, that query will return both the data and a graphql error with the message `"indexing_error"`, as in this example response:
+Si le subgraph rencontre une erreur, cette requête renverra à la fois les données et une erreur graphql avec le message `"indexing_error"`, comme dans cet exemple de réponse :
 
 ```graphql
 "data": {
@@ -145,15 +153,15 @@ Les sources de données de fichiers sont une nouvelle fonctionnalité de subgrap
 
 Plutôt que de récupérer les fichiers "ligne par ligne" pendant l'exécution du gestionnaire, ceci introduit des modèles qui peuvent être générés comme nouvelles sources de données pour un identifiant de fichier donné. Ces nouvelles sources de données récupèrent les fichiers, réessayant en cas d'échec, et exécutant un gestionnaire dédié lorsque le fichier est trouvé.
 
-This is similar to the [existing data source templates](/developing/creating-a-subgraph/#data-source-templates), which are used to dynamically create new chain-based data sources.
+Cela est similaire aux [modèles de source de données existants](/developing/creating-a-subgraph/#data-source-templates), qui sont utilisés pour créer dynamiquement de nouvelles sources de données basées sur la blockchain.
 
-> This replaces the existing `ipfs.cat` API
+> Cela remplace l'API `ipfs.cat` existante
 
 ### Guide de mise à niveau
 
-#### Update `graph-ts` and `graph-cli`
+#### Mise à jour de `graph-ts` et `graph-cli`
 
-File data sources requires graph-ts >=0.29.0 and graph-cli >=0.33.1
+Les fichiers sources de données requièrent graph-ts >=0.29.0 et graph-cli >=0.33.1
 
 #### Ajouter un nouveau type d'entité qui sera mis à jour lorsque des fichiers seront trouvés
 
@@ -202,9 +210,9 @@ type TokenMetadata @entity {
 
 Si la relation est 1:1 entre l'entité parent et l'entité de source de données de fichier résultante, le modèle le plus simple consiste à lier l'entité parent à une entité de fichier résultante en utilisant le CID IPFS comme recherche. Contactez Discord si vous rencontrez des difficultés pour modéliser vos nouvelles entités basées sur des fichiers !
 
-> You can use [nested filters](/subgraphs/querying/graphql-api/#example-for-nested-entity-filtering) to filter parent entities on the basis of these nested entities.
+> Vous pouvez utiliser [les filtres imbriqués](/subgraphs/querying/graphql-api/#example-for-nested-entity-filtering) pour filtrer les entités parents sur la base de ces entités imbriquées.
 
-#### Add a new templated data source with `kind: file/ipfs` or `kind: file/arweave`
+#### Ajouter une nouvelle source de données modélisée avec `kind : file/ipfs` ou `kind : file/arweave`
 
 Il s'agit de la source de données qui sera générée lorsqu'un fichier d'intérêt est identifié.
 
@@ -224,15 +232,15 @@ templates:
           file: ./abis/Token.json
 ```
 
-> Currently `abis` are required, though it is not possible to call contracts from within file data sources
+> Actuellement, les `abis` sont nécessaires, bien qu'il ne soit pas possible d'appeler des contrats à partir de fichiers sources de données
 
-The file data source must specifically mention all the entity types which it will interact with under `entities`. See [limitations](#limitations) for more details.
+Le fichier source de données doit mentionner spécifiquement tous les types d'entités avec lesquels elle interagira sous `entities`. Voir [limitations](#limitations) pour plus de détails.
 
 #### Créer un nouveau gestionnaire pour traiter les fichiers
 
-This handler should accept one `Bytes` parameter, which will be the contents of the file, when it is found, which can then be processed. This will often be a JSON file, which can be processed with `graph-ts` helpers ([documentation](/subgraphs/developing/creating/graph-ts/api/#json-api)).
+Ce gestionnaire devrait accepter un paramètre `Bytes`, qui sera le contenu du fichier, lorsqu'il sera trouvé, il pourra alors être traité. Il s'agira souvent d'un fichier JSON, qui peut être traité à l'aide des utilitaires de `graph-ts` ([documentation](/subgraphs/developing/creating/graph-ts/api/#json-api)).
 
-The CID of the file as a readable string can be accessed via the `dataSource` as follows:
+Le CID du fichier sous forme de chaîne de caractères lisible est accessible via `dataSource` de la manière suivante :
 
 ```typescript
 const cid = dataSource.stringParam()
@@ -269,12 +277,12 @@ export function handleMetadata(content: Bytes): void {
 
 Vous pouvez désormais créer des sources de données de fichiers lors de l'exécution de gestionnaires basés sur une chaîne :
 
-- Import the template from the auto-generated `templates`
-- call `TemplateName.create(cid: string)` from within a mapping, where the cid is a valid content identifier for IPFS or Arweave
+- Importer le modèle à partir du fichier `templates` généré automatiquement
+- appeler `TemplateName.create(cid : string)` à partir d'un mappage, où le cid est un identifiant de contenu valide pour IPFS ou Arweave
 
-For IPFS, Graph Node supports [v0 and v1 content identifiers](https://docs.ipfs.tech/concepts/content-addressing/), and content identifers with directories (e.g. `bafyreighykzv2we26wfrbzkcdw37sbrby4upq7ae3aqobbq7i4er3tnxci/metadata.json`).
+Pour IPFS, Graph Node prend en charge [les identifiants de contenu v0 et v1](https://docs.ipfs.tech/concepts/content-addressing/), et les identifiants de contenu avec des répertoires (par exemple, `bafyreighykzv2we26wfrbzkcdw37sbrby4upq7ae3aqobbq7i4er3tnxci/metadata.json`).
 
-For Arweave, as of version 0.33.0 Graph Node can fetch files stored on Arweave based on their [transaction ID](https://docs.arweave.org/developers/arweave-node-server/http-api#transactions) from an Arweave gateway ([example file](https://bdxujjl5ev5eerd5ouhhs6o4kjrs4g6hqstzlci5pf6vhxezkgaa.arweave.net/CO9EpX0lekJEfXUOeXncUmMuG8eEp5WJHXl9U9yZUYA)). Arweave supports transactions uploaded via Irys (previously Bundlr), and Graph Node can also fetch files based on [Irys manifests](https://docs.irys.xyz/overview/gateways#indexing).
+Pour Arweave, à partir de la version 0.33.0, Graph Node peut récupérer des fichiers stockés sur Arweave sur la base de leur [identifiant de transaction](https://docs.arweave.org/developers/arweave-node-server/http-api#transactions) à partir d'une passerelle Arweave ([exemple de fichier](https://bdxujjl5ev5eerd5ouhhs6o4kjrs4g6hqstzlci5pf6vhxezkgaa.arweave.net/CO9EpX0lekJEfXUOeXncUmMuG8eEp5WJHXl9U9yZUYA)). Arweave prend en charge les transactions téléchargées via Irys (anciennement Bundlr), et Graph Node peut également récupérer des fichiers sur la base les [manifestes Irys](https://docs.irys.xyz/overview/gateways#indexing).
 
 L'exemple:
 
@@ -284,7 +292,7 @@ import { TokenMetadata as TokenMetadataTemplate } from '../generated/templates'
 const ipfshash = 'QmaXzZhcYnsisuue5WRdQDH6FDvqkLQX1NckLqBYeYYEfm'
 //Cet exemple de code concerne un sous-graphe de Crypto coven. Le hachage ipfs ci-dessus est un répertoire contenant les métadonnées des jetons pour toutes les NFT de l'alliance cryptographique.
 
-export function handleTransfer(event: TransferEvent): void {
+export function handleTransfer(event : TransferEvent) : void {
   let token = Token.load(event.params.tokenId.toString())
   if (!token) {
     token = new Token(event.params.tokenId.toString())
@@ -307,15 +315,15 @@ export function handleTransfer(event: TransferEvent): void {
 
 Cela créera une nouvelle source de données de fichier, qui interrogera le point d'extrémité IPFS ou Arweave configuré du nœud de graphique, en réessayant si elle n'est pas trouvée. Lorsque le fichier est trouvé, le gestionnaire de la source de données de fichier est exécuté.
 
-This example is using the CID as the lookup between the parent `Token` entity and the resulting `TokenMetadata` entity.
+Cet exemple utilise le CID comme référence entre l'entité parent `Token` et l'entité résultante `TokenMetadata`.
 
-> Previously, this is the point at which a subgraph developer would have called `ipfs.cat(CID)` to fetch the file
+> Auparavant, c'est à ce stade qu'un développeur de subgraphs aurait appelé `ipfs.cat(CID)` pour récupérer le fichier
 
 Félicitations, vous utilisez des sources de données de fichiers !
 
 #### Déployer vos subgraphs
 
-You can now `build` and `deploy` your subgraph to any Graph Node >=v0.30.0-rc.0.
+Vous pouvez maintenant `construire` et `déployer` votre subgraph sur n'importe quel Graph Node >=v0.30.0-rc.0.
 
 #### Limitations
 
@@ -333,29 +341,29 @@ En outre, il n'est pas possible de créer des sources de données à partir d'un
 
 Si vous liez des métadonnées NFT aux jetons correspondants, utilisez le hachage IPFS des métadonnées pour référencer une entité Metadata à partir de l'entité Token. Enregistrez l'entité Metadata en utilisant le hachage IPFS comme identifiant.
 
-You can use [DataSource context](/subgraphs/developing/creating/graph-ts/api/#entity-and-datasourcecontext) when creating File Data Sources to pass extra information which will be available to the File Data Source handler.
+Vous pouvez utiliser [Le contexte de DataSource](/subgraphs/developing/creating/graph-ts/api/#entity-and-datasourcecontext) lors de la création de fichiers sources de données(File Data Sources) pour transmettre des informations supplémentaires qui seront disponibles pour le gestionnaire de la File Data Source.
 
-If you have entities which are refreshed multiple times, create unique file-based entities using the IPFS hash & the entity ID, and reference them using a derived field in the chain-based entity.
+Si vous avez des entités qui sont actualisées plusieurs fois, créez des entités uniques basées sur des fichiers en utilisant le hash IPFS & l'ID de l'entité, puis référencez-les en utilisant un champ dérivé dans l'entité basée sur la chaîne.
 
 > Nous travaillons à l'amélioration de la recommandation ci-dessus, afin que les requêtes ne renvoient que la version "la plus récente"
 
 #### Problèmes connus
 
-File data sources currently require ABIs, even though ABIs are not used ([issue](https://github.com/graphprotocol/graph-cli/issues/961)). Workaround is to add any ABI.
+Les fichiers sources de données nécessitent actuellement des ABI, même si les ABI ne sont pas utilisées ([problème](https://github.com/graphprotocol/graph-cli/issues/961)). La solution consiste à ajouter n'importe quel ABI.
 
-Handlers for File Data Sources cannot be in files which import `eth_call` contract bindings, failing with "unknown import: `ethereum::ethereum.call` has not been defined" ([issue](https://github.com/graphprotocol/graph-node/issues/4309)). Workaround is to create file data source handlers in a dedicated file.
+Les gestionnaires pour les fichiers sources de données ne peuvent pas être dans des fichiers qui importent des liaisons de contrat `eth_call`, échouant avec "unknown import : `ethereum::ethereum.call` n'a pas été défini" ([problème](https://github.com/graphprotocol/graph-node/issues/4309)). La solution consiste à créer des gestionnaires de fichiers de sources de données dans un fichier dédié.
 
 #### Exemples
 
-[Crypto Coven Subgraph migration](https://github.com/azf20/cryptocoven-api/tree/file-data-sources-refactor)
+[migration de subgraph Crypto Coven ](https://github.com/azf20/cryptocoven-api/tree/file-data-sources-refactor)
 
 #### Les Références
 
-[GIP File Data Sources](https://forum.thegraph.com/t/gip-file-data-sources/2721)
+[fichier sources de données GIP](https://forum.thegraph.com/t/gip-file-data-sources/2721)
 
 ## Filtres d'Arguments indexés / Filtres de Topics
 
-> **Requires**: [SpecVersion](#specversion-releases) >= `1.2.0`
+> **Nécessite** : [SpecVersion](#specversion-releases) >= `1.2.0`
 
 Les filtres de topics, également connus sous le nom de filtres d'arguments indexés, sont une fonctionnalité puissante dans les subgraphs qui permettent aux utilisateurs de filtrer précisément les événements de la blockchain en fonction des valeurs de leurs arguments indexés.
 
@@ -367,7 +375,7 @@ Les filtres de topics, également connus sous le nom de filtres d'arguments inde
 
 Lorsqu'un contrat intelligent émet un événement, tous les arguments marqués comme indexés peuvent être utilisés comme filtres dans le manifeste d'un subgraph. Ceci permet au subgraph d'écouter de façon sélective les événements qui correspondent à ces arguments indexés.
 
-- The event's first indexed argument corresponds to `topic1`, the second to `topic2`, and so on, up to `topic3`, since the Ethereum Virtual Machine (EVM) allows up to three indexed arguments per event.
+- Le premier argument indexé de l'événement correspond à `topic1`, le second à `topic2`, et ainsi de suite, jusqu'à `topic3`, puisque la machine virtuelle Ethereum (EVM) autorise jusqu'à trois arguments indexés par événement.
 
 ```solidity
 // SPDX-License-Identifier: MIT
@@ -387,9 +395,9 @@ contract Token {
 
 Dans cet exemple:
 
-- The `Transfer` event is used to log transactions of tokens between addresses.
-- The `from` and `to` parameters are indexed, allowing event listeners to filter and monitor transfers involving specific addresses.
-- The `transfer` function is a simple representation of a token transfer action, emitting the Transfer event whenever it is called.
+- L'événement `Transfer` est utilisé pour enregistrer les transactions de jetons entre adresses.
+- Les paramètres `from` et `to` sont indexés, ce qui permet aux auditeurs d'événements de filtrer et de surveiller les transferts impliquant des adresses spécifiques.
+- La fonction `transfer` est une représentation simple d'une action de transfert de jeton, émettant l'événement Transfer à chaque fois qu'elle est appelée.
 
 #### Configuration dans les subgraphs
 
@@ -406,7 +414,7 @@ eventHandlers:
 
 Dans cette configuration :
 
-- `topic1` corresponds to the first indexed argument of the event, `topic2` to the second, and `topic3` to the third.
+- `topic1` correspond au premier argument indexé de l'événement, `topic2` au deuxième et `topic3` au troisième.
 - Chaque topic peut avoir une ou plusieurs valeurs, et un événement n'est traité que s'il correspond à l'une des valeurs de chaque rubrique spécifiée.
 
 #### Logique des Filtres
@@ -426,9 +434,9 @@ eventHandlers:
 
 Dans cette configuration:
 
-- `topic1` is configured to filter `Transfer` events where `0xAddressA` is the sender.
-- `topic2` is configured to filter `Transfer` events where `0xAddressB` is the receiver.
-- The subgraph will only index transactions that occur directly from `0xAddressA` to `0xAddressB`.
+- `topic1` est configuré pour filtrer les événements `Transfer` dont l'expéditeur est `0xAddressA`.
+- `topic2` est configuré pour filtrer les événements `Transfer` dont `0xAddressB` est le destinataire.
+- Le subgraph n'indexera que les transactions qui se produisent directement de `0xAddressA` à `0xAddressB`.
 
 #### Exemple 2 : Suivi des transactions dans les deux sens entre deux ou plusieurs adresses
 
@@ -442,15 +450,15 @@ eventHandlers:
 
 Dans cette configuration:
 
-- `topic1` is configured to filter `Transfer` events where `0xAddressA`, `0xAddressB`, `0xAddressC` is the sender.
-- `topic2` is configured to filter `Transfer` events where `0xAddressB` and `0xAddressC` is the receiver.
+- `topic1` est configuré pour filtrer les événements `Transfer` dont l'expéditeur est `0xAddressA`, `0xAddressB`, `0xAddressC`.
+- `topic2` est configuré pour filtrer les événements `Transfer` où `0xAddressB` et `0xAddressC` sont les destinataires.
 - Le subgraph indexera les transactions qui se produisent dans les deux sens entre plusieurs adresses, permettant une surveillance complète des interactions impliquant toutes les adresses.
 
 ## Déclaration eth_call
 
 > Remarque : Il s'agit d'une fonctionnalité expérimentale qui n'est pas encore disponible dans une version stable de Graph Node. Vous ne pouvez l'utiliser que dans Subgraph Studio ou sur votre nœud auto-hébergé.
 
-Declarative `eth_calls` are a valuable subgraph feature that allows `eth_calls` to be executed ahead of time, enabling `graph-node` to execute them in parallel.
+Les `eth_calls' déclaratifs sont une caractéristique précieuse des subgraphs qui permet aux `eth_calls' d'être exécutés à l'avance, ce qui permet à `graph-node` de les exécuter en parallèle.
 
 Cette fonctionnalité permet de :
 
@@ -460,11 +468,11 @@ Cette fonctionnalité permet de :
 
 ### Concepts clés
 
-- Declarative `eth_calls`: Ethereum calls that are defined to be executed in parallel rather than sequentially.
+- Les `eth_calls` déclaratifs : Appels Ethereum qui sont définis pour être exécutés en parallèle plutôt que séquentiellement.
 - Exécution en parallèle : Au lieu d'attendre la fin d'un appel avant de commencer le suivant, plusieurs appels peuvent être initiés simultanément.
 - Efficacité temporelle : Le temps total nécessaire pour tous les appels passe de la somme des temps d'appel individuels (séquentiels) au temps pris par l'appel le plus long (parallèle).
 
-#### Scenario without Declarative `eth_calls`
+#### Scénario sans `eth_calls` déclaratifs
 
 Imaginez que vous ayez un subgraph qui doit effectuer trois appels Ethereum pour récupérer des données sur les transactions, le solde et les avoirs en jetons d'un utilisateur.
 
@@ -476,7 +484,7 @@ Traditionnellement, ces appels pourraient être effectués de manière séquenti
 
 Temps total pris = 3 + 2 + 4 = 9 secondes
 
-#### Scenario with Declarative `eth_calls`
+#### Scénario avec `eth_calls` déclaratif
 
 Avec cette fonctionnalité, vous pouvez déclarer que ces appels soient exécutés en parallèle :
 
@@ -496,9 +504,9 @@ Temps total pris = max (3, 2, 4) = 4 secondes
 
 #### Exemple de configuration dans le manifeste du subgraph
 
-Declared `eth_calls` can access the `event.address` of the underlying event as well as all the `event.params`.
+Les `eth_calls` déclarés peuvent accéder à l'adresse `event.address` de l'événement sous-jacent ainsi qu'à tous les paramètres `event.params`.
 
-`Subgraph.yaml` using `event.address`:
+`Subgraph.yaml` utilisant `event.address` :
 
 ```yaml
 eventHandlers:
@@ -511,12 +519,12 @@ calls:
 
 Détails pour l'exemple ci-dessus :
 
-- `global0X128` is the declared `eth_call`.
-- The text (`global0X128`) is the label for this `eth_call` which is used when logging errors.
-- The text (`Pool[event.address].feeGrowthGlobal0X128()`) is the actual `eth_call` that will be executed, which is in the form of `Contract[address].function(arguments)`
-- The `address` and `arguments` can be replaced with variables that will be available when the handler is executed.
+- `global0X128` est le nom déclaré de `eth_call`.
+- Le texte (`global0X128`) est le label de ce `eth_call` qui est utilisé lors de la journalisation des erreurs.
+- Le texte (`Pool[event.address].feeGrowthGlobal0X128()`) est le `eth_call` réel qui sera exécuté, et est sous la forme de `Contract[address].function(arguments)`
+- L'adresse et les arguments peuvent être remplacés par des variables qui seront disponibles lorsque le gestionnaire sera exécuté.
 
-`Subgraph.yaml` using `event.params`
+`Subgraph.yaml` utilisant `event.params`
 
 ```yaml
 calls:
@@ -525,11 +533,11 @@ calls:
 
 ### Greffe sur des subgraphs existants
 
-> **Note:** it is not recommended to use grafting when initially upgrading to The Graph Network. Learn more [here](/subgraphs/cookbook/grafting/#important-note-on-grafting-when-upgrading-to-the-network).
+> **Note:** il n'est pas recommandé d'utiliser le greffage lors de l'upgrade initial vers The Graph Network. Pour en savoir plus [ici](/subgraphs/cookbook/grafting/#important-note-on-grafting-when-upgrading-to-the-network).
 
-When a subgraph is first deployed, it starts indexing events at the genesis block of the corresponding chain (or at the `startBlock` defined with each data source) In some circumstances; it is beneficial to reuse the data from an existing subgraph and start indexing at a much later block. This mode of indexing is called _Grafting_. Grafting is, for example, useful during development to get past simple errors in the mappings quickly or to temporarily get an existing subgraph working again after it has failed.
+Lorsqu'un subgraph est déployé pour la première fois, il commence à indexer les événements au bloc de initial de la blockchain correspondante (ou au `startBlock` défini avec chaque source de données). Dans certaines circonstances, il est avantageux de réutiliser les données d'un subgraph existant et de commencer l'indexation à un bloc beaucoup plus tardif. Ce mode d'indexation est appelé _Grafting_. Le greffage (grafting) est, par exemple, utile pendant le développement pour surmonter rapidement de simples erreurs dans les mappages ou pour faire fonctionner temporairement un subgraph existant après qu'il ait échoué.
 
-A subgraph is grafted onto a base subgraph when the subgraph manifest in `subgraph.yaml` contains a `graft` block at the top-level:
+Un subgraph est greffé sur un subgraph de base lorsque le manifeste du subgraph dans `subgraph.yaml` contient un bloc `graft` au niveau supérieur :
 
 ```yaml
 description: ...
@@ -538,18 +546,18 @@ graft:
   block: 7345624 # Block number
 ```
 
-When a subgraph whose manifest contains a `graft` block is deployed, Graph Node will copy the data of the `base` subgraph up to and including the given `block` and then continue indexing the new subgraph from that block on. The base subgraph must exist on the target Graph Node instance and must have indexed up to at least the given block. Because of this restriction, grafting should only be used during development or during an emergency to speed up producing an equivalent non-grafted subgraph.
+Lorsqu'un subgraph dont le manifeste contient un bloc `graft` est déployé, Graph Node copiera les données du subgraph `de base` jusqu'au bloc spécifié inclus, puis continuera à indexer le nouveau subgraph à partir de ce bloc. Le subgraph de base doit exister sur l'instance cible de Graph Node et doit avoir indexé au moins jusqu'au bloc spécifié. En raison de cette restriction, le greffage ne doit être utilisé que pendant le développement ou en cas d'urgence pour accélérer la production d'un subgraph équivalent non greffé.
 
 Étant donné que le greffage copie plutôt que l'indexation des données de base, il est beaucoup plus rapide d'amener le susgraph dans le bloc souhaité que l'indexation à partir de zéro, bien que la copie initiale des données puisse encore prendre plusieurs heures pour de très gros subgraphs. Pendant l'initialisation du subgraph greffé, le nœud graphique enregistrera des informations sur les types d'entités qui ont déjà été copiés.
 
-Le subgraph greffé peut utiliser un schéma GraphQL qui n'est pas identique à celui du subgraph de base, mais simplement compatible avec celui-ci. Il doit s'agir d'un schéma de subgraph valide à part entière, mais il peut s'écarter du schéma du subgraph de base des manières suivantes :
+Le subgraph greffé peut utiliser un schema GraphQL qui n'est pas identique à celui du subgraph de base, mais simplement compatible avec lui. Il doit s'agir d'un schema de subgraph valide en tant que tel, mais il peut s'écarter du schema du subgraph de base de la manière suivante :
 
-- Il ajoute ou supprime des types d'entités
-- Il supprime les attributs des types d'entités
+- Il ajoute ou supprime des types d'entité
+- Il supprime les attributs des types d'entité
 - Il ajoute des attributs nullables aux types d'entités
-- Il transforme les attributs non nullables en attributs nullables
-- Il ajoute des valeurs aux énumérations
+- Il transforme les attributs non nullables en attributs nuls
+- Cela ajoute des valeurs aux énumérations
 - Il ajoute ou supprime des interfaces
 - Cela change pour quels types d'entités une interface est implémentée
 
-> **[Feature Management](#experimental-features):** `grafting` must be declared under `features` in the subgraph manifest.
+> **[Gestion des fonctionnalités](#experimental-features):** `grafting` doit être déclaré sous `features` dans le manifeste du subgraph.
