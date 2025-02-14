@@ -1,5 +1,4 @@
 export default {
-  'using-subgraph-studio': '',
-  'subgraph-studio-faq': '',
-  'multiple-networks': '',
+  'using-subgraph-studio': 'Deploying with Subgraph Studio',
+  'multiple-networks': 'Deploying to Multiple Networks',
 }
