@@ -127,11 +127,16 @@ export const NavigationItem = ({
               `}
             />
             <span
+              /**
+               * TODO: When all browsers support style queries, get rid of this and use `@style-[--docs-navigation-item-expanded=0]`
+               * instead of `not-data-[expanded]` below.
+               */
+              data-expanded={expanded || undefined}
               className={`
                 w-px flex-1 bg-white/8 transition duration-150
-                @style-[--docs-navigation-item-expanded=0]:@style-[--docs-navigation-item-last:1]:@style-[--docs-previous-navigation-item-last:1]:opacity-0
-                @style-[--docs-navigation-item-expanded=0]:@style-[--docs-navigation-item-last:1]:@style-[--docs-previous-navigation-item-last:1]:delay-150
-                @style-[--docs-navigation-item-expanded=0]:@style-[--docs-navigation-item-last:1]:@style-[--docs-previous-navigation-item-last:1]:duration-300
+                @style-[--docs-navigation-item-last:1]:@style-[--docs-previous-navigation-item-last:1]:not-data-[expanded]:opacity-0
+                @style-[--docs-navigation-item-last:1]:@style-[--docs-previous-navigation-item-last:1]:not-data-[expanded]:delay-150
+                @style-[--docs-navigation-item-last:1]:@style-[--docs-previous-navigation-item-last:1]:not-data-[expanded]:duration-300
               `}
             />
           </span>
@@ -173,7 +178,6 @@ export const NavigationItem = ({
             <NavigationList
               key={expanded ? 'expanded' : 'collapsed'}
               className={`
-                [--docs-previous-navigation-item-expanded:var(--docs-navigation-item-expanded)]
                 [--docs-previous-navigation-item-first:var(--docs-navigation-item-first)]
                 [--docs-previous-navigation-item-last:var(--docs-navigation-item-last)]
                 group-data-[depth=1]/navigation-list:ps-4
@@ -186,51 +190,76 @@ export const NavigationItem = ({
             <span className="absolute inset-y-0 start-3.5 z-10 w-[17px] translate-x-[0.5px] rtl:translate-x-[-0.5px]">
               <svg
                 viewBox="0 0 17 17"
+                /**
+                 * TODO: When all browsers support style queries, get rid of this and use `@style-[--docs-navigation-item-expanded=0]`
+                 * instead of `not-data-[expanded]` below.
+                 */
+                data-expanded={expanded || undefined}
                 className={`
                   absolute -top-2 start-0 z-10 aspect-square w-full origin-[start] bg-background fill-none stroke-white/8 transition duration-150
                   safari:delay-150
-                  @style-[--docs-navigation-item-expanded=0]:opacity-0
-                  @style-[--docs-navigation-item-expanded=0]:safari:delay-0
+                  not-data-[expanded]:opacity-0
+                  not-data-[expanded]:safari:delay-0
                   rtl:-scale-x-100
                 `}
               >
                 <path
                   d="M 0.5 0 C 0.5 13, 16.5 4, 16.5 17"
+                  /**
+                   * TODO: When all browsers support style queries, get rid of this and use `@style-[--docs-navigation-item-expanded=1]`
+                   * instead of `data-[expanded]` below.
+                   */
+                  data-expanded={expanded || undefined}
                   className={`
                     transition-all duration-150
                     [d:path('M_0.5_0_C_0.5_13,_0.5_4,_0.5_17')]
-                    @style-[--docs-navigation-item-expanded=1]:delay-150
-                    @style-[--docs-navigation-item-expanded=1]:[d:path('M_0.5_0_C_0.5_13,_16.5_4,_16.5_17')]
+                    data-[expanded]:delay-150
+                    data-[expanded]:[d:path('M_0.5_0_C_0.5_13,_16.5_4,_16.5_17')]
                   `}
                 />
               </svg>
               <span
+                /**
+                 * TODO: When all browsers support style queries, get rid of this and use `@style-[--docs-navigation-item-expanded=1]`
+                 * instead of `data-[expanded]` below.
+                 */
+                data-expanded={expanded || undefined}
                 className={`
                   absolute inset-y-0 start-0 w-px bg-white/8 transition delay-75 duration-75
-                  @style-[--docs-navigation-item-expanded=1]:opacity-0
-                  @style-[--docs-navigation-item-expanded=1]:delay-150
+                  data-[expanded]:opacity-0
+                  data-[expanded]:delay-150
                 `}
               />
               <svg
                 viewBox="0 0 17 17"
+                /**
+                 * TODO: When all browsers support style queries, get rid of this and use `@style-[--docs-navigation-item-expanded=0]`
+                 * instead of `not-data-[expanded]` below.
+                 */
+                data-expanded={expanded || undefined}
                 className={`
                   absolute -bottom-2 start-0 aspect-square w-full origin-[start] bg-background fill-none stroke-white/8 transition duration-150
                   safari:delay-150
+                  not-data-[expanded]:opacity-0
+                  not-data-[expanded]:safari:delay-0
                   nearest-group-[:has(ul:not(:scope_ul_*,[inert]_*)>li:last-child[data-expanded])]/navigation-item:opacity-0
                   nearest-group-[:has(ul:not(:scope_ul_*,[inert]_*)>li:last-child[data-expanded])]/navigation-item:delay-150
-                  @style-[--docs-navigation-item-expanded=0]:opacity-0
                   @style-[--docs-navigation-item-last=1]:opacity-0
-                  @style-[--docs-navigation-item-expanded=0]:safari:delay-0
                   rtl:-scale-x-100
                 `}
               >
                 <path
                   d="M 16.5 0 C 16.5 13, 0.5 4, 0.5 17"
+                  /**
+                   * TODO: When all browsers support style queries, get rid of this and use `@style-[--docs-navigation-item-expanded=1]`
+                   * instead of `data-[expanded]` below.
+                   */
+                  data-expanded={expanded || undefined}
                   className={`
                     transition-all duration-150
                     [d:path('M_0.5_0_C_0.5_13,_0.5_4,_0.5_17')]
-                    @style-[--docs-navigation-item-expanded=1]:delay-150
-                    @style-[--docs-navigation-item-expanded=1]:[d:path('M_16.5_0_C_16.5_13,_0.5_4,_0.5_17')]
+                    data-[expanded]:delay-150
+                    data-[expanded]:[d:path('M_16.5_0_C_16.5_13,_0.5_4,_0.5_17')]
                   `}
                 />
               </svg>
