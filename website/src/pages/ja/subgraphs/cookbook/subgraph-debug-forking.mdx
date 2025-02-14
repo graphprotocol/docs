@@ -6,9 +6,9 @@ As with many systems processing large amounts of data, The Graph's Indexers (Gra
 
 ## さて、それは何でしょうか？
 
-**サブグラフのフォーク**とは、*他*のサブグラフのストア(通常はリモート) からエンティティをフェッチするプロセスです。
+**Subgraph forking** is the process of lazily fetching entities from _another_ subgraph's store (usually a remote one).
 
-デバッグの文脈では、**サブグラフのフォーク**により、ブロック*X*への同期を待つことなく、ブロック*X*で失敗したサブグラフのデバッグを行うことができます。
+In the context of debugging, **subgraph forking** allows you to debug your failed subgraph at block _X_ without needing to wait to sync-up to block _X_.
 
 ## その方法は？
 
@@ -18,9 +18,9 @@ In a nutshell, we are going to _fork the failing subgraph_ from a remote Graph N
 
 ## コードを見てみましょう
 
-サブグラフのデバッグに集中し続けるために、物事をシンプルにして、Ethereum Gravity スマート コントラクトのインデックスを作成する [example-subgraph](https://github.com/graphprotocol/graph-tooling/tree/main/examples/ethereum-gravatar) を実行してみましょう。
+To stay focused on subgraph debugging, let's keep things simple and run along with the [example-subgraph](https://github.com/graphprotocol/graph-tooling/tree/main/examples/ethereum-gravatar) indexing the Ethereum Gravity smart contract.
 
-以下は、`Gravatar`のインデックスを作成するために定義されたハンドラで、バグが全くありません。
+Here are the handlers defined for indexing `Gravatar`s, with no bugs whatsoever:
 
 ```tsx
 export function handleNewGravatar(event: NewGravatar): void {
@@ -53,9 +53,9 @@ Oops, how unfortunate, when I deploy my perfect looking subgraph to [Subgraph St
 3. 同期を待つ
 4. 再び問題が発生した場合は、1に戻る
 
-このように、通常のデバッグ処理とほぼ同じですが、1つだけ、処理を恐ろしく遅くするステップがあります：_3. 同期を待つ_
+It is indeed pretty familiar to an ordinary debug process, but there is one step that horribly slows down the process: _3. Wait for it to sync-up._
 
-**サブグラフのフォーク**を利用することで、このステップを実質的に省略することができます。その方法は次の通りです：
+Using **subgraph forking** we can essentially eliminate this step. Here is how it looks:
 
 0. Spin-up a local Graph Node with the **_appropriate fork-base_** set.
 1. マッピングのソースを変更し、問題を解決する
@@ -69,14 +69,14 @@ Oops, how unfortunate, when I deploy my perfect looking subgraph to [Subgraph St
 
 回答：
 
-1. `fork-base`は「ベース」URLで、*subgraph id*が追加されたときのURL (`<fork-base>/<subgraph-id>`) はサブグラフのストアに対する有効な GraphQL endpoint であることを示します。
+1. `fork-base` is the "base" URL, such that when the _subgraph id_ is appended the resulting URL (`<fork-base>/<subgraph-id>`) is a valid GraphQL endpoint for the subgraph's store.
 2. フォーキングは簡単であり煩雑な手間はありません
 
 ```bash
 $ graph deploy <subgraph-name> --debug-fork <subgraph-id> --ipfs http://localhost:5001 --node http://localhost:8020
 ```
 
-また、サブグラフマニフェストの`dataSources.source.startBlock`フィールドを問題のあるブロックの番号に設定することを忘れないでください。そうすれば、不要なブロックのインデックス作成を省略して、フォークを利用することができます。
+Also, don't forget to set the `dataSources.source.startBlock` field in the subgraph manifest to the number of the problematic block, so you can skip indexing unnecessary blocks and take advantage of the fork!
 
 そこで、以下の通りです：
 
@@ -90,7 +90,7 @@ $ cargo run -p graph-node --release -- \
     --fork-base https://api.thegraph.com/subgraphs/id/
 ```
 
-2. よく調べてみると、2つのハンドラで `Gravatar` をインデックスする際に使用される `id` 表現にミスマッチがあることに気づきました。`handleNewGravatar` はそれを hex (`event.params.id.toHex()`) に変換しますが、`handleUpdatedGravatar` は int32 (`event.params.id.toI32()`) を使用するので `handleUpdatedGravatar` は "Gravatar not found!" でパニックになってしまうのです。両方とも`id`を16進数に変換するようにしています。
+2. After careful inspection I notice that there is a mismatch in the `id` representations used when indexing `Gravatar`s in my two handlers. While `handleNewGravatar` converts it to a hex (`event.params.id.toHex()`), `handleUpdatedGravatar` uses an int32 (`event.params.id.toI32()`) which causes the `handleUpdatedGravatar` to panic with "Gravatar not found!". I make them both convert the `id` to a hex.
 3. After I made the changes I deploy my subgraph to the local Graph Node, **_forking the failing subgraph_** and setting `dataSources.source.startBlock` to `6190343` in `subgraph.yaml`:
 
 ```bash
