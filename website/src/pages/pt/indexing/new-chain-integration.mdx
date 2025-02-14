@@ -25,15 +25,17 @@ Para que o Graph Node possa ingerir dados de uma chain EVM, o node RPC deve expo
 - `eth_getBlockByHash`
 - `net_version`
 - `eth_getTransactionReceipt`, em um pedido conjunto em JSON-RPC
-- `trace_filter` (opcional, para que o Graph Node tenha apoio a handlers de chamada)\*
+- `trace_filter` *(tracing limitado, e opcionalmente necessário, para o Graph Node)*
 
 ### 2. Integração do Firehose
 
 O [Firehose](https://firehose.streamingfast.io/firehose-setup/overview) é uma camada de extração de última geração, que coleta históricos em streams e arquivos planos em tempo real. A tecnologia do Firehose substitui estas chamadas de API com um fluxo de dados que utilizam um modelo de empurrão que envia dados ao node de indexação mais rapidamente. Isto ajuda a aumentar a velocidade da sincronização e da indexação.
 
-O método principal de integrar o Firehose a chains é uma estratégia de polling de RPC. O nosso algoritmo de polling preverá quando um bloco novo irá chegar, e aumentará o ritmo em que ele verifica por um novo bloco quando se aproximar daquela hora, o que o faz uma solução de baixa latência muito eficiente. Para ajuda com a integração e a manutenção do Firehose, contacte a [equipa do StreamingFast](https://www.streamingfast.io/firehose-integration-program). Novas chains e os seus integrantes apreciarão a [consciência de fork](https://substreams.streamingfast.io/documentation/consume/reliability-guarantees) e as capacidades imensas de indexação paralelizada que o Firehose e os Substreams trazem ao seu ecossistema.
-
 > NOTA: Todas as integrações feitas pela equipa da StreamingFast incluem manutenção para o protocolo de réplica do Firehose no banco de código da chain. O StreamingFast rastreia todas as mudanças e lança binários quando o código é mudado, pelo programador ou pela StreamingFast. Isto inclui o lançamento de binários do Firehose/Substreams para o protocolo, a manutenção dos módulos de Substreams para o modelo de bloco da chain, e o lançamento de binários para o node da blockchain com a instrumentação, caso necessária.
+
+#### Integração para Chains sem ser EVM (Máquina Virtual de Ethereum)
+
+O método principal de integrar o Firehose a chains é uma estratégia de polling de RPC. O nosso algoritmo de polling preverá quando um bloco novo irá chegar, e aumentará o ritmo em que ele verifica por um novo bloco quando se aproximar daquela hora, o que o faz uma solução de baixa latência muito eficiente. Para ajuda com a integração e a manutenção do Firehose, contacte a [equipa do StreamingFast](https://www.streamingfast.io/firehose-integration-program). Novas chains e os seus integrantes apreciarão a [consciência de fork](https://substreams.streamingfast.io/documentation/consume/reliability-guarantees) e as capacidades imensas de indexação paralelizada que o Firehose e os Substreams trazem ao seu ecossistema.
 
 #### Instrumentação Específica do Firehose para chains EVM (`geth`)
 
@@ -45,7 +47,7 @@ Para chains EVM, há um nível mais profundo de dados que podem ser alcançados 
 
 ## Considerações de EVM - Diferença entre JSON-RPC e Firehose
 
-Enquanto ambos o JSON-RPC e o Firehose são próprios para subgraphs, um Firehose é sempre necessário para programadores que querem construir com [Substreams](https://substreams.streamingfast.io). Apoiar os Substreams permite que programadores construam [subgraphs movidos a Substreams](/subgraphs/cookbook/substreams-powered-subgraphs/) para a nova chain, e tem o potencial de melhorar o desempenho dos seus subgraphs. Além disto, o Firehose — como um substituto pronto para a camada de extração JSON-RPC do `graph-node` — reduz em 90% o número de chamadas RPC exigidas para indexação geral.
+Enquanto ambos o JSON-RPC e o Firehose são próprios para subgraphs, um Firehose é sempre necessário para programadores que querem construir com [Substreams](https://substreams.streamingfast.io). Apoiar o Substreams permite que programadores construam [subgraphs movidos a Substreams](/subgraphs/cookbook/substreams-powered-subgraphs/) para a nova chain, e tem o potencial de melhorar o desempenho dos seus subgraphs. Além disto, o Firehose — como um substituto pronto para a camada de extração JSON-RPC do `graph-node` — reduz em 90% o número de RPCs (chamadas de procedimento remoto) exigidas para indexação geral.
 
 - Todas essas chamadas `getLogs` e roundtrips são substituídas por um único fluxo que chega no coração do `graph-node`, um modelo de bloco único para todos os subgraphs que processa.
 
@@ -57,24 +59,12 @@ Configurar um Graph Node é tão fácil quanto preparar o seu ambiente local. Qu
 
 1. [Clone o Graph Node](https://github.com/graphprotocol/graph-node)
 
-2. Modifique [esta linha](https://github.com/graphprotocol/graph-node/blob/master/docker/docker-compose.yml#L22) para ela incluir o nome da nova rede e a URL do EVM JSON-RPC
+2. Modifique [esta linha](https://github.com/graphprotocol/graph-node/blob/master/docker/docker-compose.yml#L22) para incluir o nome da nova rede e a URL do JSON-RPC da EVM; ou uma compatível com o Firehose
 
    > Não mude o nome do env var. Ele deve permanecer como `ethereum` mesmo se o nome da rede for diferente.
 
 3. Execute um node IPFS ou use aquele usado pelo The Graph: https://api.thegraph.com/ipfs/
 
-### Como testar um JSON-RPC com a edição local de um subgraph
-
-1. Instale a [graph-cli](https://github.com/graphprotocol/graph-cli)
-2. Crie um subgraph de exemplo simples. Aqui estão algumas opções:
-   1. O contrato inteligente e o subgraph [Gravitar](https://github.com/graphprotocol/example-subgraph/tree/f89bdd4628efa4badae7367d4919b3f648083323) pré-inclusos são bons pontos de partida
-   2. Inicie um subgraph local a partir de qualquer contrato inteligente existente ou de um ambiente de programação em solidity [com o uso do Hardhat com um plugin do Graph](https://github.com/graphprotocol/hardhat-graph)
-3. Adapte o `subgraph.yaml` resultante com a mudança do  `dataSources.network` para o mesmo nome passado anteriormente ao Graph Node.
-4. Crie o seu subgraph no Graph Node: `graph create $SUBGRAPH_NAME --node $GRAPH_NODE_ENDPOINT`
-5. Edite o seu subgraph no Graph Node: `graph deploy $SUBGRAPH_NAME --ipfs $IPFS_ENDPOINT --node $GRAPH_NODE_ENDPOINT`
-
-O Graph Node deve então sincronizar o subgraph lançado caso não haja erros. Deixe-o sincronizar por um tempo, e depois envie alguns queries em GraphQL ao endpoint da API produzido pelos logs.
-
 ## Subgraphs movidos por Substreams
 
-For StreamingFast-led Firehose/Substreams integrations, basic support for foundational Substreams modules (e.g. decoded transactions, logs and smart-contract events) and Substreams codegen tools are included. These tools enable the ability to enable [Substreams-powered subgraphs](/substreams/sps/introduction/). Follow the [How-To Guide](https://substreams.streamingfast.io/documentation/how-to-guides/intro-your-first-application) and run `substreams codegen subgraph` to experience the codegen tools for yourself.
+Para integrações do Substreams ou Firehose movidas ao StreamingFast, são inclusos: apoio básico a módulos do Substreams (por exemplo: transações, logs, e eventos de contrato inteligente decodificados); e ferramentas de geração de código do Substreams. Estas ferramentas permitem a habilidade de ativar [subgraphs movidos pelo Substreams](/substreams/sps/introduction/). Siga o [Passo-a-Passo](https://substreams.streamingfast.io/documentation/how-to-guides/intro-your-first-application) e execute `substreams codegen subgraph` para sentir um gostinho das ferramentas.

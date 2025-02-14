@@ -1,24 +1,25 @@
 ---
-title: Subgraph Best Practice 4 - Improve Indexing Speed by Avoiding eth_calls
+title: Meilleure Pratique Subgraph 4 - Améliorer la Vitesse d'Indexation en Évitant les eth_calls
+sidebarTitle: 'Subgraph Best Practice 4: Avoiding eth_calls'
 ---
 
 ## TLDR
 
-`eth_calls` are calls that can be made from a subgraph to an Ethereum node. These calls take a significant amount of time to return data, slowing down indexing. If possible, design smart contracts to emit all the data you need so you don’t need to use `eth_calls`.
+Les `eth_calls` sont des appels qui peuvent être faits depuis un subgraph vers un nœud Ethereum. Ces appels prennent un temps considérable pour renvoyer des données, ralentissant ainsi l'indexation. Si possible, concevez des smart contracts pour émettre toutes les données dont vous avez besoin afin de ne pas avoir à utiliser des `eth_calls`.
 
-## Why Avoiding `eth_calls` Is a Best Practice
+## Pourquoi Éviter les `eth_calls` est une Bonne Pratique
 
-Subgraphs are optimized to index event data emitted from smart contracts. A subgraph can also index the data coming from an `eth_call`, however, this can significantly slow down subgraph indexing as `eth_calls` require making external calls to smart contracts. The responsiveness of these calls relies not on the subgraph but on the connectivity and responsiveness of the Ethereum node being queried. By minimizing or eliminating eth_calls in our subgraphs, we can significantly improve our indexing speed.
+Les subgraphs sont optimisés pour indexer les données des événements émis par les smart contracts. Un subgraph peut également indexer les données provenant d'un `eth_call`, cependant, cela peut considérablement ralentir l'indexation du subgraph car les `eth_call` nécessitent de faire des appels externes aux smart contracts. La réactivité de ces appels dépend non pas du subgraph mais de la connectivité et de la réactivité du nœud Ethereum interrogé. En minimisant ou en éliminant les `eth_call` dans nos subgraphs, nous pouvons améliorer considérablement notre vitesse d'indexation.
 
-### What Does an eth_call Look Like?
+### À quoi ressemble un eth_call ?
 
-`eth_calls` are often necessary when the data required for a subgraph is not available through emitted events. For example, consider a scenario where a subgraph needs to identify whether ERC20 tokens are part of a specific pool, but the contract only emits a basic `Transfer` event and does not emit an event that contains the data that we need:
+Les `eth_calls` sont souvent nécessaires lorsque les données requises pour un subgraph ne sont pas disponibles par le biais d'événements émis. Par exemple, considérons un scénario où un subgraph doit identifier si les tokens ERC20 font partie d'un pool spécifique, mais le contrat n'émet qu'un événement `Transfer` de base et n'émet pas un événement contenant les données dont nous avons besoin :
 
 ```yaml
 event Transfer(address indexed from, address indexed to, uint256 value);
 ```
 
-Suppose the tokens' pool membership is determined by a state variable named `getPoolInfo`. In this case, we would need to use an `eth_call` to query this data:
+Supposons que l'appartenance au pool des tokens soit déterminée par une variable d'état nommée `getPoolInfo`. Dans ce cas, nous devrions utiliser un `eth_call` pour interroger ces données :
 
 ```typescript
 import { Address } from '@graphprotocol/graph-ts'
@@ -28,10 +29,10 @@ import { TokenTransaction } from '../generated/schema'
 export function handleTransfer(event: Transfer): void {
   let transaction = new TokenTransaction(event.transaction.hash.toHex())
 
-  // Bind the ERC20 contract instance to the given address:
+  // Liez l'instance du contrat ERC20 à l'adresse donnée:
   let instance = ERC20.bind(event.address)
 
-  // Retrieve pool information via eth_call
+  // Récupérez les informations du pool via eth_call
   let poolInfo = instance.getPoolInfo(event.params.to)
 
   transaction.pool = poolInfo.toHexString()
@@ -43,17 +44,17 @@ export function handleTransfer(event: Transfer): void {
 }
 ```
 
-This is functional, however is not ideal as it slows down our subgraph’s indexing.
+Cela fonctionne, mais ce n'est pas idéal car cela ralentit l'indexation de notre subgraph.
 
-## How to Eliminate `eth_calls`
+## Comment Éliminer les `eth_calls`
 
-Ideally, the smart contract should be updated to emit all necessary data within events. For instance, modifying the smart contract to include pool information in the event could eliminate the need for `eth_calls`:
+Idéalement, le smart contract devrait être mis à jour pour émettre toutes les données nécessaires dans les événements. Par exemple, modifier le smart contract pour inclure les informations du pool dans l'événement pourrait éliminer le besoin de `eth_calls`:
 
 ```
 event TransferWithPool(address indexed from, address indexed to, uint256 value, bytes32 indexed poolInfo);
 ```
 
-With this update, the subgraph can directly index the required data without external calls:
+Avec cette mise à jour, le subgraph peut indexer directement les données requises sans appels externes :
 
 ```typescript
 import { Address } from '@graphprotocol/graph-ts'
@@ -72,17 +73,17 @@ export function handleTransferWithPool(event: TransferWithPool): void {
 }
 ```
 
-This is much more performant as it has eliminated the need for `eth_calls`.
+Ceci est beaucoup plus performant car cela a éliminé le besoin de `eth_calls`.
 
-## How to Optimize `eth_calls`
+## Comment Optimiser les `eth_calls`
 
-If modifying the smart contract is not possible and `eth_calls` are required, read “[Improve Subgraph Indexing Performance Easily: Reduce eth_calls](https://thegraph.com/blog/improve-subgraph-performance-reduce-eth-calls/)” by Simon Emanuel Schmid to learn various strategies on how to optimize `eth_calls`.
+Si la modification du smart contract n'est pas possible et que les `eth_calls` sont nécessaires, lisez "[Améliorer les Performances d'Indexation du Subgraph Facilement : Réduire les eth_calls](https://thegraph.com/blog/improve-subgraph-performance-reduce-eth-calls/)” par Simon Emanuel Schmid pour apprendre diverses stratégies sur la façon d'optimiser les `eth_calls`.
 
-## Reducing the Runtime Overhead of `eth_calls`
+## Réduire le Surcharge d'Exécution des `eth_calls`
 
-For the `eth_calls` that can not be eliminated, the runtime overhead they introduce can be minimized by declaring them in the manifest. When `graph-node` processes a block it performs all declared `eth_calls` in parallel before handlers are run. Calls that are not declared are executed sequentially when handlers run. The runtime improvement comes from performing calls in parallel rather than sequentially - that helps reduce the total time spent in calls but does not eliminate it completely.
+Pour les `eth_calls` qui ne peuvent pas être éliminés, la surcharge d'exécution qu'ils introduisent peut être minimisée en les déclarant dans le manifeste. Lorsque `graph-node` traite un bloc, il exécute tous les `eth_calls` déclarés en parallèle avant que les gestionnaires (handlers) soient exécutés. Les appels qui ne sont pas déclarés sont exécutés séquentiellement lorsque les gestionnaires sont exécutés. L'amélioration de la durée d'exécution vient du fait que les appels sont effectués en parallèle plutôt que séquentiellement - cela aide à réduire le temps total passé en appels mais ne l'élimine pas complètement.
 
-Currently, `eth_calls` can only be declared for event handlers. In the manifest, write
+Actuellement, les `eth_calls` ne peuvent être déclarés que pour les gestionnaires d'événements. Dans le manifeste, écrivez
 
 ```yaml
 event: TransferWithPool(address indexed, address indexed, uint256, bytes32 indexed)
@@ -91,11 +92,11 @@ calls:
   ERC20.poolInfo: ERC20[event.address].getPoolInfo(event.params.to)
 ```
 
-The portion highlighted in yellow is the call declaration. The part before the colon is simply a text label that is only used for error messages. The part after the colon has the form `Contract[address].function(params)`. Permissible values for address and params are `event.address` and `event.params.<name>`.
+La partie mise en évidence en jaune est la déclaration d'appel. La partie avant le deux-points est simplement une étiquette de texte utilisée uniquement pour les messages d'erreur. La partie après le deux-points a la forme `Contract[address].function(params)`. Les valeurs permises pour l'adresse et les paramètres sont `event.address` et `event.params.<name>`.
 
-The handler itself accesses the result of this `eth_call` exactly as in the previous section by binding to the contract and making the call. graph-node caches the results of declared `eth_calls` in memory and the call from the handler will retrieve the result from this in memory cache instead of making an actual RPC call.
+Le handler lui-même accède au résultat de ce `eth_call` exactement comme dans la section précédente en se liant au contrat et en effectuant l'appel. graph-node met en cache les résultats des `eth_calls` déclarés en mémoire et l'appel depuis le handler récupérera le résultat depuis ce cache en mémoire au lieu d'effectuer un appel RPC réel.
 
-Note: Declared eth_calls can only be made in subgraphs with specVersion >= 1.2.0.
+Note : Les eth_calls déclarés ne peuvent être effectués que dans les subgraphs avec specVersion >= 1.2.0.
 
 ## Conclusion
 

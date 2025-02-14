@@ -2,25 +2,25 @@
 title: Rychlé a snadné ladění podgrafů pomocí vidliček
 ---
 
-Stejně jako u mnoha systémů zpracovávajících velké množství dat může indexerům grafu (Graph Nodes) trvat poměrně dlouho, než synchronizují váš podgraf s cílovým blockchainem. Nesoulad mezi rychlými změnami za účelem ladění a dlouhými čekacími dobami potřebnými pro indexaci je extrémně kontraproduktivní a jsme si toho dobře vědomi. To je důvod, proč představujeme **rozvětvování podgrafů**, vyvinutý společností [LimeChain](https://limechain.tech/), a v tomto článku Ukážu vám, jak lze tuto funkci použít k podstatnému zrychlení ladění podgrafů!
+As with many systems processing large amounts of data, The Graph's Indexers (Graph Nodes) may take quite some time to sync-up your subgraph with the target blockchain. The discrepancy between quick changes with the purpose of debugging and long wait times needed for indexing is extremely counterproductive and we are well aware of that. This is why we are introducing **subgraph forking**, developed by [LimeChain](https://limechain.tech/), and in this article I will show you how this feature can be used to substantially speed-up subgraph debugging!
 
 ## Ok, co to je?
 
-**podgraf vidličkování** je proces líného načítání entit z _úložiště jiného_ subgrafu (obvykle vzdáleného).
+**Subgraph forking** is the process of lazily fetching entities from _another_ subgraph's store (usually a remote one).
 
-V kontextu ladění vám ** vidličkování podgrafů** umožňuje ladit neúspěšný podgraf v bloku _X_, aniž byste museli čekat k synchronizaci zablokovat _X_.
+In the context of debugging, **subgraph forking** allows you to debug your failed subgraph at block _X_ without needing to wait to sync-up to block _X_.
 
 ## Co?! Jak?
 
-Když nasadíte podgraf do vzdáleného uzlu Graf pro indexování a ten selže v bloku _X_, dobrou zprávou je, že uzel Graf bude stále obsluhovat dotazy GraphQL pomocí svého úložiště, které je synchronizováno s blokem _X_. To je skvělé! To znamená, že můžeme využít tohoto "aktuálního" úložiště k opravě chyb vznikajících při indexování bloku _X_.
+When you deploy a subgraph to a remote Graph Node for indexing and it fails at block _X_, the good news is that the Graph Node will still serve GraphQL queries using its store, which is synced-up to block _X_. That's great! This means we can take advantage of this "up-to-date" store to fix the bugs arising when indexing block _X_.
 
-Stručně řečeno, _rozvětvíme neúspěšný podgraf_ ze vzdáleného uzlu grafu, u kterého je zaručeno, že podgraf bude indexován až do bloku _X_, abychom lokálně nasazenému podgrafu laděnému v bloku _X_ poskytli aktuální pohled na stav indexování.
+In a nutshell, we are going to _fork the failing subgraph_ from a remote Graph Node that is guaranteed to have the subgraph indexed up to block _X_ in order to provide the locally deployed subgraph being debugged at block _X_ an up-to-date view of the indexing state.
 
 ## Ukažte mi prosím nějaký kód!
 
-Abychom se soustředili na ladění podgrafů, zůstaňme u jednoduchých věcí a projděme si [příkladový podgraf](https://github.com/graphprotocol/graph-tooling/tree/main/examples/ethereum-gravatar) indexující inteligentní kontrakt Ethereum Gravity.
+To stay focused on subgraph debugging, let's keep things simple and run along with the [example-subgraph](https://github.com/graphprotocol/graph-tooling/tree/main/examples/ethereum-gravatar) indexing the Ethereum Gravity smart contract.
 
-Zde jsou definovány obslužné programy pro indexování `Gravatarů` bez jakýchkoli chyb:
+Here are the handlers defined for indexing `Gravatar`s, with no bugs whatsoever:
 
 ```tsx
 export function handleNewGravatar(event: NewGravatar): void {
@@ -44,22 +44,22 @@ export function handleUpdatedGravatar(event: UpdatedGravatar): void {
 }
 ```
 
-Oops, jak nešťastné, když jsem nasadil můj perfektně vypadající podgraf do [Podgraf Studio](https://thegraph.com/studio/), selhalo to s chybou _"Gravatar nenalezen!"_.
+Oops, how unfortunate, when I deploy my perfect looking subgraph to [Subgraph Studio](https://thegraph.com/studio/) it fails with the _"Gravatar not found!"_ error.
 
 Obvyklý způsob, jak se pokusit o opravu, je:
 
 1. Proveďte změnu ve zdroji mapování, která podle vás problém vyřeší (zatímco já vím, že ne).
-2. Znovu nasaďte podgraf do [Subgraph Studio](https://thegraph.com/studio/) (nebo jiného vzdáleného uzlu Graf).
+2. Re-deploy the subgraph to [Subgraph Studio](https://thegraph.com/studio/) (or another remote Graph Node).
 3. Počkejte na synchronizaci.
 4. Pokud se opět rozbije, vraťte se na 1, jinak: Hurá!
 
-Je to skutečně docela podobné běžnému procesu ladění, ale existuje jedna fáze, která ho strašně zpomaluje: _3. Počkejte, až se synchronizuje._
+It is indeed pretty familiar to an ordinary debug process, but there is one step that horribly slows down the process: _3. Wait for it to sync-up._
 
-Pomocí **vidličkování podgrafů** můžeme tento krok v podstatě eliminovat. Takto to vypadá:
+Using **subgraph forking** we can essentially eliminate this step. Here is how it looks:
 
 0. Spin-up a local Graph Node with the **_appropriate fork-base_** set.
 1. Proveďte změnu ve zdroji mapování, která podle vás problém vyřeší.
-2. Nasazení do místního uzlu Graf, **_forking selhávajícího podgrafu_** a **_zahájení od problematického bloku_**.
+2. Deploy to the local Graph Node, **_forking the failing subgraph_** and **_starting from the problematic block_**.
 3. Pokud se opět rozbije, vraťte se na 1, jinak: Hurá!
 
 Nyní můžete mít 2 otázky:
@@ -69,18 +69,18 @@ Nyní můžete mít 2 otázky:
 
 A já odpovídám:
 
-1. `fork-base` je "base" adresa URL, takže když je připojeno _identifikátor podgrafu_, výsledná adresa URL (`<fork-base>/<subgraph-id>`) je platným koncovým bodem GraphQL pro úložiště podgrafu.
+1. `fork-base` is the "base" URL, such that when the _subgraph id_ is appended the resulting URL (`<fork-base>/<subgraph-id>`) is a valid GraphQL endpoint for the subgraph's store.
 2. Vidličkování je snadné, není třeba se potit:
 
 ```bash
 $ graph deploy <subgraph-name> --debug-fork <subgraph-id> --ipfs http://localhost:5001 --node http://localhost:8020
 ```
 
-Nezapomeňte také nastavit pole `dataSources.source.startBlock` v manifestu podgrafu na číslo problematického bloku, abyste mohli vynechat indexování nepotřebných bloků a využít výhod vidličkování!
+Also, don't forget to set the `dataSources.source.startBlock` field in the subgraph manifest to the number of the problematic block, so you can skip indexing unnecessary blocks and take advantage of the fork!
 
 Takže to dělám takhle:
 
-1. Spustím místní uzel Graf ([zde je návod, jak to udělat](https://github.com/graphprotocol/graph-node#running-a-local-graph-node)) s volbou `fork-base` nastavenou na: `https://api.thegraph.com/subgraphs/id/`, protože budu forkovat podgraf, ten chybný, který jsem nasadil dříve, z [Podgraph Studio](https://thegraph.com/studio/).
+1. I spin-up a local Graph Node ([here is how to do it](https://github.com/graphprotocol/graph-node#running-a-local-graph-node)) with the `fork-base` option set to: `https://api.thegraph.com/subgraphs/id/`, since I will fork a subgraph, the buggy one I deployed earlier, from [Subgraph Studio](https://thegraph.com/studio/).
 
 ```
 $ cargo run -p graph-node --release -- \
@@ -90,8 +90,8 @@ $ cargo run -p graph-node --release -- \
     --fork-base https://api.thegraph.com/subgraphs/id/
 ```
 
-2. Po pečlivém prozkoumání si všímám, že existuje nesoulad v reprezentacích `id`, které se používají při indexaci `Gravatar` v mých dvou obslužných funkcích. Zatímco `handleNewGravatar` ho převede na hex (`event.params.id.toHex()`), `handleUpdatedGravatar` používá int32 (`event.params.id.toI32()`), což způsobuje, že `handleUpdatedGravatar` selže s chybou "Gravatar nenalezen!". Udělám, aby obě převedly `id` na hex.
-3. Po provedení změn jsem nasadil svůj podgraf do místního uzlu Graf, **_rozvětveníl selhávající podgraf_** a nastavil `dataSources.source.startBlock` na `6190343` v `subgraph.yaml`:
+2. After careful inspection I notice that there is a mismatch in the `id` representations used when indexing `Gravatar`s in my two handlers. While `handleNewGravatar` converts it to a hex (`event.params.id.toHex()`), `handleUpdatedGravatar` uses an int32 (`event.params.id.toI32()`) which causes the `handleUpdatedGravatar` to panic with "Gravatar not found!". I make them both convert the `id` to a hex.
+3. After I made the changes I deploy my subgraph to the local Graph Node, **_forking the failing subgraph_** and setting `dataSources.source.startBlock` to `6190343` in `subgraph.yaml`:
 
 ```bash
 $ graph deploy gravity --debug-fork QmNp169tKvomnH3cPXTfGg4ZEhAHA6kEq5oy1XDqAxqHmW --ipfs http://localhost:5001 --node http://localhost:8020
