@@ -2,13 +2,13 @@
 title: AssemblyScript マイグレーションガイド
 ---
 
-これまでサブグラフは、[AssemblyScript の最初のバージョン](https://github.com/AssemblyScript/assemblyscript/tree/v0.6) （v0.6）を使用していました。 ついに[最新のバージョン](https://github.com/AssemblyScript/assemblyscript/tree/v0.19.10)(v0.19.10) のサポートを追加しました! 🎉
+Up until now, subgraphs have been using one of the [first versions of AssemblyScript](https://github.com/AssemblyScript/assemblyscript/tree/v0.6) (v0.6). Finally we've added support for the [newest one available](https://github.com/AssemblyScript/assemblyscript/tree/v0.19.10) (v0.19.10)! 🎉
 
 これにより、サブグラフの開発者は、AS 言語と標準ライブラリの新しい機能を使用できるようになります。
 
-このガイドは、バージョン`0.22.0`以下の`graph-cli`/`graph-ts` をお使いの方に適用されます。 もしあなたがすでにそれ以上のバージョンにいるなら、あなたはすでに AssemblyScript のバージョン`0.19.10` を使っています。
+This guide is applicable for anyone using `graph-cli`/`graph-ts` below version `0.22.0`. If you're already at a higher than (or equal) version to that, you've already been using version `0.19.10` of AssemblyScript 🙂
 
-> 注：`0.24.0`以降、`graph-node`はサブグラフマニフェストで指定された`apiVersion`に応じて、両方のバージョンをサポートしています。
+> Note: As of `0.24.0`, `graph-node` can support both versions, depending on the `apiVersion` specified in the subgraph manifest.
 
 ## 特徴
 
@@ -44,7 +44,7 @@ title: AssemblyScript マイグレーションガイド
 
 ## アップグレードの方法
 
-1. `subgraph.yaml`のマッピングの`apiVersion`を`0.0.6`に変更してください。
+1. Change your mappings `apiVersion` in `subgraph.yaml` to `0.0.6`:
 
 ```yaml
 ...
@@ -56,7 +56,7 @@ dataSources:
       ...
 ```
 
-2. 使用している`graph-cli`を`最新版`に更新するには、次のように実行します。
+2. Update the `graph-cli` you're using to the `latest` version by running:
 
 ```bash
 # if you have it globally installed
@@ -66,14 +66,14 @@ npm install --global @graphprotocol/graph-cli@latest
 npm install --save-dev @graphprotocol/graph-cli@latest
 ```
 
-3. `graph-ts`についても同様ですが、グローバルにインストールするのではなく、メインの依存関係に保存します。
+3. Do the same for `graph-ts`, but instead of installing globally, save it in your main dependencies:
 
 ```bash
 npm install --save @graphprotocol/graph-ts@latest
 ```
 
 4. ガイドの残りの部分に従って、言語の変更を修正します。
-5. `codegen`を実行し、再度`deploy`します。
+5. Run `codegen` and `deploy` again.
 
 ## 変更点
 
@@ -110,7 +110,7 @@ maybeValue.aMethod()
 
 ### 変数シャドウイング
 
-以前は、[変数のシャドウイング](https://en.wikipedia.org/wiki/Variable_shadowing)を行うことができ、次のようなコードが動作していました。
+Before you could do [variable shadowing](https://en.wikipedia.org/wiki/Variable_shadowing) and code like this would work:
 
 ```typescript
 et a = 10
@@ -141,7 +141,7 @@ ERROR TS2322: Type '~lib/@graphprotocol/graph-ts/common/numbers/BigInt | null' i
  in src/mappings/file.ts(41,21)
 ```
 
-解決するには、 `if` 文を以下のように変更するだけです。
+To solve you can simply change the `if` statement to something like this:
 
 ```typescript
   if (!decimals) {
@@ -155,7 +155,7 @@ ERROR TS2322: Type '~lib/@graphprotocol/graph-ts/common/numbers/BigInt | null' i
 
 ### 鋳造
 
-以前の一般的なキャストの方法は、次のように`as`キーワードを使うだけでした。
+The common way to do casting before was to just use the `as` keyword, like this:
 
 ```typescript
 let byteArray = new ByteArray(10)
@@ -164,7 +164,7 @@ let uint8Array = byteArray as Uint8Array // equivalent to: <Uint8Array>byteArray
 
 しかし、これは 2 つのシナリオでしか機能しません。
 
-- プリミティブなキャスト(between types such as `u8`, `i32`, `bool`; eg: `let b: isize = 10; b as usize`);
+- Primitive casting (between types such as `u8`, `i32`, `bool`; eg: `let b: isize = 10; b as usize`);
 - クラス継承のアップキャスティング（サブクラス → スーパークラス）
 
 例
@@ -184,7 +184,7 @@ let bytes = new Bytes(2)
 // <Uint8Array>bytes // same as: bytes as Uint8Array
 ```
 
-キャストしたくても、`as`/`<T>var`を使うと**安全ではない**というシナリオが 2 つあります。
+There are two scenarios where you may want to cast, but using `as`/`<T>var` **isn't safe**:
 
 - クラス継承のダウンキャスト（スーパークラス → サブクラス）
 - スーパークラスを共有する 2 つの型の間
@@ -206,7 +206,7 @@ let bytes = new Bytes(2)
 // <ByteArray>bytes // breaks in runtime :(
 ```
 
-このような場合には、`changetype<T>`関数を使用します。
+For those cases, you can use the `changetype<T>` function:
 
 ```typescript
 // downcasting on class inheritance
@@ -225,7 +225,7 @@ let bytes = new Bytes(2)
 changetype<ByteArray>(bytes) // works :)
 ```
 
-単に null 性を除去したいだけなら、`as` オペレーター(or `<T>variable`)を使い続けることができますが、値が null ではないことを確認しておかないと壊れてしまいます。
+If you just want to remove nullability, you can keep using the `as` operator (or `<T>variable`), but make sure you know that value can't be null, otherwise it will break.
 
 ```typescript
 // remove nullability
@@ -238,7 +238,7 @@ if (previousBalance != null) {
 let newBalance = new AccountBalance(balanceId)
 ```
 
-Nullability については、[nullability check feature](https://www.assemblyscript.org/basics.html#nullability-checks)を利用することをお勧めします。それはあなたのコードをよりきれいにします🙂
+For the nullability case we recommend taking a look at the [nullability check feature](https://www.assemblyscript.org/basics.html#nullability-checks), it will make your code cleaner 🙂
 
 また、キャストを容易にするために、いくつかの型にスタティックメソッドを追加しました。
 
@@ -249,7 +249,7 @@ Nullability については、[nullability check feature](https://www.assemblysc
 
 ### プロパティアクセスによる Nullability チェック
 
-[nullability check feature](https://www.assemblyscript.org/basics.html#nullability-checks)を使用するには、次のように`if`文や三項演算子(`?` and `:`) を使用します。
+To use the [nullability check feature](https://www.assemblyscript.org/basics.html#nullability-checks) you can use either `if` statements or the ternary operator (`?` and `:`) like this:
 
 ```typescript
 let something: string | null = 'data'
@@ -267,7 +267,7 @@ if (something) {
 }
 ```
 
-しかし、これは、以下のように、プロパティのアクセスではなく、変数に対して`if`/ternary を行っている場合にのみ機能します。
+However that only works when you're doing the `if` / ternary on a variable, not on a property access, like this:
 
 ```typescript
 class Container {
@@ -381,7 +381,7 @@ if (total === null) {
 total.amount = total.amount + BigInt.fromI32(1)
 ```
 
-`total.amount`の値を確実に初期化する必要があります。なぜなら、最後の行の sum のようにアクセスしようとすると、クラッシュしてしまうからです。 そのため、最初に初期化する必要があります。
+You'll need to make sure to initialize the `total.amount` value, because if you try to access like in the last line for the sum, it will crash. So you either initialize it first:
 
 ```typescript
 let total = Total.load('latest')
@@ -394,7 +394,7 @@ if (total === null) {
 total.tokens = total.tokens + BigInt.fromI32(1)
 ```
 
-あるいは、このプロパティに nullable 型を使用しないように GraphQL スキーマを変更することもできます。そうすれば、`コード生成`の段階でゼロとして初期化されます。😉
+Or you can just change your GraphQL schema to not use a nullable type for this property, then we'll initialize it as zero on the `codegen` step 😉
 
 ```graphql
 type Total @entity {
@@ -425,7 +425,7 @@ export class Something {
 }
 ```
 
-コンパイラがエラーになるのは、クラスであるプロパティにイニシャライザを追加するか、`!` オペレーターを追加する必要があるからです。
+The compiler will error because you either need to add an initializer for the properties that are classes, or add the `!` operator:
 
 ```typescript
 export class Something {
@@ -451,7 +451,7 @@ export class Something {
 
 ### 配列の初期化
 
-`Array`クラスは、リストの長さを初期化するための数値を依然として受け取ります。しかし、例えば`.push`のような操作は、先頭に追加するのではなく、実際にサイズを大きくするので、注意が必要です。
+The `Array` class still accepts a number to initialize the length of the list, however you should take care because operations like `.push` will actually increase the size instead of adding to the beginning, for example:
 
 ```typescript
 let arr = new Array<string>(5) // ["", "", "", "", ""]
@@ -465,7 +465,7 @@ arr.push('something') // ["", "", "", "", "", "something"] // size 6 :(
 ERRO Handler skipped due to execution failure, error: Mapping aborted at ~lib/array.ts, line 110, column 40, with message: Element type must be nullable if array is holey  wasm backtrace:     0: 0x19c4 - <unknown>!~lib/@graphprotocol/graph-ts/index/format         1: 0x1e75 - <unknown>!~lib/@graphprotocol/graph-ts/common/collections/Entity#constructor        2: 0x30b9 - <unknown>!node_modules/@graphprotocol/graph-ts/global/global/id_of_type
 ```
 
-実際に最初にプッシュするには、以下のように、サイズゼロの `Array`を初期化する必要があります：
+To actually push at the beginning you should either, initialize the `Array` with size zero, like this:
 
 ```typescript
 let arr = new Array<string>(0) // []
@@ -483,7 +483,7 @@ arr[0] = 'something' // ["something", "", "", "", ""]
 
 ### GraphQLスキーマ
 
-これは直接のAssemblyScriptの変更ではありませんが、`schema.graphql` ファイルを更新する必要があるかもしれません。
+This is not a direct AssemblyScript change, but you may have to update your `schema.graphql` file.
 
 この変更により、Non-Nullable Listのフィールドを型に定義することができなくなりました。仮に、以下のようなスキーマがあった場合：
 
@@ -498,7 +498,7 @@ type MyEntity @entity {
 }
 ```
 
-List タイプのメンバーには、以下のように`!` を付ける必要があります：
+You'll have to add an `!` to the member of the List type, like this:
 
 ```graphql
 type Something @entity {
@@ -511,7 +511,7 @@ type MyEntity @entity {
 }
 ```
 
-これはAssemblyScriptのバージョンによるNullabilityの違いで変わったもので、`src/generated/schema.ts`ファイル（デフォルトパス、変更されているかもしれません）に関連しています。
+This changed because of nullability differences between AssemblyScript versions, and it's related to the `src/generated/schema.ts` file (default path, you might have changed this).
 
 ### その他
 
@@ -520,5 +520,5 @@ type MyEntity @entity {
 - Classes initialized from object literals can no longer define a constructor ([v0.10.0](https://github.com/AssemblyScript/assemblyscript/releases/tag/v0.10.0))
 - The result of a `**` binary operation is now the common denominator integer if both operands are integers. Previously, the result was a float as if calling `Math/f.pow` ([v0.11.0](https://github.com/AssemblyScript/assemblyscript/releases/tag/v0.11.0))
 - Coerce `NaN` to `false` when casting to `bool` ([v0.14.9](https://github.com/AssemblyScript/assemblyscript/releases/tag/v0.14.9))
-- タイプ `i8`/`u8` または `i16`/`u16` の小さな整数値をシフトする場合、最小の 3 つ、それぞれ 4 つだけRHS 値の上位 5 ビットのみが影響を受ける `i32.shl` の結果と同様に、RHS 値の有効ビットが結果に影響します。例: `someI8 << 8` は以前は値 `0` を生成していましたが、RHS を `8 & 7 = 0` としてマスクするため、`someI8` を生成するようになりました。(3 ビット) ([v0.17.0](https://github.com/AssemblyScript/assemblyscript/releases/tag/v0.17.0))
+- When shifting a small integer value of type `i8`/`u8` or `i16`/`u16`, only the 3 respectively 4 least significant bits of the RHS value affect the result, analogous to the result of an `i32.shl` only being affected by the 5 least significant bits of the RHS value. Example: `someI8 << 8` previously produced the value `0`, but now produces `someI8` due to masking the RHS as `8 & 7 = 0` (3 bits) ([v0.17.0](https://github.com/AssemblyScript/assemblyscript/releases/tag/v0.17.0))
 - Bug fix of relational string comparisons when sizes differ ([v0.17.8](https://github.com/AssemblyScript/assemblyscript/releases/tag/v0.17.8))
