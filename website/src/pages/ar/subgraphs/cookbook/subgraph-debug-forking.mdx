@@ -6,9 +6,9 @@ As with many systems processing large amounts of data, The Graph's Indexers (Gra
 
 ## حسنا، ما هو؟
 
-**Subgraph forking** هي عملية جلب الكيانات بشكل lazily من مخزن subgraph _آخر_ (عادةً ما يكون بعيدًا).
+**Subgraph forking** is the process of lazily fetching entities from _another_ subgraph's store (usually a remote one).
 
-يسمح لك **subgraph forking** بتصحيح أخطاء الـ subgraph الفاشل في الكتلة(block) _ X _ دون الحاجة للانتظار للمزامنة للكتلة _ X _.
+In the context of debugging, **subgraph forking** allows you to debug your failed subgraph at block _X_ without needing to wait to sync-up to block _X_.
 
 ## ماذا؟! كيف؟
 
@@ -20,7 +20,7 @@ In a nutshell, we are going to _fork the failing subgraph_ from a remote Graph N
 
 To stay focused on subgraph debugging, let's keep things simple and run along with the [example-subgraph](https://github.com/graphprotocol/graph-tooling/tree/main/examples/ethereum-gravatar) indexing the Ethereum Gravity smart contract.
 
-فيما يلي المعالجات المعرفة لفهرسة `Gravatar` ، بدون أخطاء على الإطلاق:
+Here are the handlers defined for indexing `Gravatar`s, with no bugs whatsoever:
 
 ```tsx
 export function handleNewGravatar(event: NewGravatar): void {
@@ -53,9 +53,9 @@ Oops, how unfortunate, when I deploy my perfect looking subgraph to [Subgraph St
 3. الانتظار حتى تتم المزامنة.
 4. إذا حدثت المشكلة مرة أخرى ، فارجع إلى 1!
 
-كما ترى ، فهده الطريقة تشبه عملية تصحيح الأخطاء العادية ، ولكن هناك خطوة واحدة تؤدي إلى إبطاء العملية بشكل رهيب: _ 3. الانتظار حتى تتم المزامنة. _
+It is indeed pretty familiar to an ordinary debug process, but there is one step that horribly slows down the process: _3. Wait for it to sync-up._
 
-باستخدام **subgraph forking** يمكننا التخلص من تلك الخطوة. إليك كيف يبدو:
+Using **subgraph forking** we can essentially eliminate this step. Here is how it looks:
 
 0. Spin-up a local Graph Node with the **_appropriate fork-base_** set.
 1. قم بإجراء تغيير في مصدر الـ mappings ، والذي تعتقد أنه سيحل المشكلة.
@@ -69,14 +69,14 @@ Oops, how unfortunate, when I deploy my perfect looking subgraph to [Subgraph St
 
 وأنا أجيب:
 
-1. `fork-base` هو عنوان URL "الأساسي" ،فمثلا عند إلحاق _subgraph id_ ، يكون عنوان URL الناتج (`<fork-base>/<subgraph-id>`) هو GraphQL endpoint صالح لمخزن الـ subgraph.
+1. `fork-base` is the "base" URL, such that when the _subgraph id_ is appended the resulting URL (`<fork-base>/<subgraph-id>`) is a valid GraphQL endpoint for the subgraph's store.
 2. الـتفريع سهل ، فلا داعي للقلق:
 
 ```bash
 $ graph deploy <subgraph-name> --debug-fork <subgraph-id> --ipfs http://localhost:5001 --node http://localhost:8020
 ```
 
-أيضًا ، لا تنس تعيين حقل `dataSources.source.startBlock` في subgraph manifest لرقم الكتلة(block) التي بها المشكلة، حتى تتمكن من تخطي فهرسة الكتل الغير ضرورية والاستفادة من التفريع!
+Also, don't forget to set the `dataSources.source.startBlock` field in the subgraph manifest to the number of the problematic block, so you can skip indexing unnecessary blocks and take advantage of the fork!
 
 لذلك ، هذا ما أفعله:
 
@@ -90,7 +90,7 @@ $ cargo run -p graph-node --release -- \
     --fork-base https://api.thegraph.com/subgraphs/id/
 ```
 
-2. بعد فحص دقيق ، لاحظت أن هناك عدم تطابق في تمثيلات الـ `id` المستخدمة عند فهرسة `Gravatar` في المعالجين الخاصين بي. بينما `handleNewGravatar` يحول (`event.params.id.toHex()`) إلى سداسي ، `handleUpdatedGravatar` يستخدم int32 (`event.params.id.toI32()`) مما يجعل `handleUpdatedGravatar` قلقا من "Gravatar not found!". أنا أجعلهم كلاهما يحولان `id` إلى سداسي.
+2. After careful inspection I notice that there is a mismatch in the `id` representations used when indexing `Gravatar`s in my two handlers. While `handleNewGravatar` converts it to a hex (`event.params.id.toHex()`), `handleUpdatedGravatar` uses an int32 (`event.params.id.toI32()`) which causes the `handleUpdatedGravatar` to panic with "Gravatar not found!". I make them both convert the `id` to a hex.
 3. After I made the changes I deploy my subgraph to the local Graph Node, **_forking the failing subgraph_** and setting `dataSources.source.startBlock` to `6190343` in `subgraph.yaml`:
 
 ```bash
