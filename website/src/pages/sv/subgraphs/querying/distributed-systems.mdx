@@ -29,22 +29,22 @@ Att resonera kring följderna av distribuerade system är svårt, men lösningen
 
 ## Polla efter uppdaterad data
 
-The Graph tillhandahåller API`block: { number_gte: $minBlock }`, vilket säkerställer att svaret gäller ett enskilt block som är lika med eller högre än `$minBlock`. Om förfrågan görs till en instans av `graph-node` och det minsta blocket ännu inte har synkroniserats, kommer `graph-node` att returnera ett fel. Om `graph-node` har synkroniserat det minsta blocket kommer det att köra svaret för det senaste blocket. Om förfrågan görs till en Edge & Node Gateway kommer Gatewayen att filtrera bort Indexers som ännu inte har synkroniserat det minsta blocket och göra förfrågan för det senaste blocket som Indexern har synkroniserat.
+The Graph provides the `block: { number_gte: $minBlock }` API, which ensures that the response is for a single block equal or higher to `$minBlock`. If the request is made to a `graph-node` instance and the min block is not yet synced, `graph-node` will return an error. If `graph-node` has synced min block, it will run the response for the latest block. If the request is made to an Edge & Node Gateway, the Gateway will filter out any Indexers that have not yet synced min block and make the request for the latest block the Indexer has synced.
 
-Vi kan använda `number_gte` för att säkerställa att tiden aldrig går bakåt när vi pollar efter data i en loop. Här är ett exempel:
+We can use `number_gte` to ensure that time never travels backward when polling for data in a loop. Here is an example:
 
 ```javascript
-/// Uppdaterar variabeln protocol.paused till det senaste
-/// kända värdet i en loop genom att hämta det med The Graph.
+/// Updates the protocol.paused variable to the latest
+/// known value in a loop by fetching it using The Graph.
 async function updateProtocolPaused() {
-  // Det är okej att börja med minBlock på 0. Förfrågan kommer att serveras
-  // med den senaste tillgängliga blocket. Att sätta minBlock till 0 är detsamma som
-  // att utelämna det argumentet.
+  // It's ok to start with minBlock at 0. The query will be served
+  // using the latest block available. Setting minBlock to 0 is the
+  // same as leaving out that argument.
   let minBlock = 0
 
   for (;;) {
-    // Schemalägg ett löfte som kommer vara redo så snart
-    // nästa Ethereum-block sannolikt kommer att vara tillgängligt.
+    // Schedule a promise that will be ready once
+    // the next Ethereum block will likely be available.
     const nextBlock = new Promise((f) => {
       setTimeout(f, 14000)
     })
@@ -65,10 +65,10 @@ async function updateProtocolPaused() {
     const response = await graphql(query, variables)
     minBlock = response._meta.block.number
 
-    // TODO: Gör något med svarsdatan här istället för att logga den.
+    // TODO: Do something with the response data here instead of logging it.
     console.log(response.protocol.paused)
 
-    // Vänta för att nästa block ska behandlas
+    // Sleep to wait for the next block
     await nextBlock
   }
 }
@@ -78,7 +78,7 @@ async function updateProtocolPaused() {
 
 Ett annat användningsfall är att hämta en stor uppsättning eller mer generellt att hämta relaterade objekt över flera förfrågningar. Till skillnad från fallet med att hämta uppdaterade data (där önskad konsekvens var att gå framåt i tiden), är önskad konsekvens här att få data från en enda tidpunkt.
 
-Här kommer vi att använda argumentet `block: { hash: $blockHash }` för att binda alla våra resultat till samma block.
+Here we will use the `block: { hash: $blockHash }` argument to pin all of our results to the same block.
 
 ```javascript
 /// Gets a list of domain names from a single block using pagination
