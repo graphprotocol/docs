@@ -1,26 +1,26 @@
 ---
-title: Быстрая и простая отладка подграфа с использованием форков
+title: Быстрая и простая отладка субграфа с использованием форков
 ---
 
-As with many systems processing large amounts of data, The Graph's Indexers (Graph Nodes) may take quite some time to sync-up your subgraph with the target blockchain. The discrepancy between quick changes with the purpose of debugging and long wait times needed for indexing is extremely counterproductive and we are well aware of that. This is why we are introducing **subgraph forking**, developed by [LimeChain](https://limechain.tech/), and in this article I will show you how this feature can be used to substantially speed-up subgraph debugging!
+Как и многие системы, обрабатывающие большие объемы данных, Индексаторы The Graph (Graph Nodes) могут занять достаточно много времени для синхронизации Вашего субграфа с целевым блокчейном. Несоответствие между быстрыми изменениями, направленными на отладку, и долгим временем ожидания, необходимым для индексирования, является крайне непродуктивным, и мы прекрасно осознаем эту проблему. Поэтому мы представляем **форкинг субграфа**, разработанный [LimeChain](https://limechain.tech/), и в этой статье я покажу, как эту функцию можно использовать для значительного ускорения отладки субграфов!
 
 ## И так, что это?
 
-**Subgraph forking** - это процесс ленивой выборки объектов из _ хранилища другого _ подграфа (обычно удаленного).
+**Форкинг субграфа** — это процесс ленивой загрузки объектов из _другого_ хранилища субграфа (обычно удалённого).
 
-В контексте отладки **форкинга подграфа** позволяет вам отлаживать ваш проблемный подграф в блоке _X_ без необходимости ждать синхронизации с блоком _X_.
+В контексте отладки **форкинг субграфа** позволяет Вам отлаживать Ваш неудавшийся субграф на блоке _X_, не дожидаясь синхронизации с блоком _X_.
 
 ## Что? Как?
 
-When you deploy a subgraph to a remote Graph Node for indexing and it fails at block _X_, the good news is that the Graph Node will still serve GraphQL queries using its store, which is synced-up to block _X_. That's great! This means we can take advantage of this "up-to-date" store to fix the bugs arising when indexing block _X_.
+Когда Вы развертываете субграф на удалённой Graph Node для индексирования, и он терпит неудачу на блоке _X_, хорошая новость заключается в том, что Graph Node всё равно будет обслуживать запросы GraphQL, используя своё хранилище, которое синхронизировано с блоком _X_. Это здорово! Таким образом, мы можем воспользоваться этим "актуальным" хранилищем, чтобы исправить ошибки, возникающие при индексировании блока _X_.
 
-In a nutshell, we are going to _fork the failing subgraph_ from a remote Graph Node that is guaranteed to have the subgraph indexed up to block _X_ in order to provide the locally deployed subgraph being debugged at block _X_ an up-to-date view of the indexing state.
+Короче говоря, мы собираемся _форкать неработающий субграф_ с удалённой Graph Node, которая гарантированно имеет индексированный субграф до блока _X_, чтобы предоставить локально развернутому субграфу, который отлаживается на блоке _X_, актуальное состояние индексирования.
 
 ## Пожалуйста, покажите мне какой-нибудь код!
 
-To stay focused on subgraph debugging, let's keep things simple and run along with the [example-subgraph](https://github.com/graphprotocol/graph-tooling/tree/main/examples/ethereum-gravatar) indexing the Ethereum Gravity smart contract.
+Чтобы сосредоточиться на отладке субграфа, давайте упростим задачу и продолжим с [примером субграфа](https://github.com/graphprotocol/graph-tooling/tree/main/examples/ethereum-gravatar), который индексирует смарт-контракт Ethereum Gravity.
 
-Вот обработчики, установленные для индексирования `Gravatar`s, совершенно без ошибок:
+Вот обработчики, определённые для индексирования `Gravatar`, без каких-либо ошибок:
 
 ```tsx
 export function handleNewGravatar(event: NewGravatar): void {
@@ -44,43 +44,43 @@ export function handleUpdatedGravatar(event: UpdatedGravatar): void {
 }
 ```
 
-Oops, how unfortunate, when I deploy my perfect looking subgraph to [Subgraph Studio](https://thegraph.com/studio/) it fails with the _"Gravatar not found!"_ error.
+Ой, как неприятно! Когда я развертываю свой идеально выглядящий субграф в [Subgraph Studio](https://thegraph.com/studio/), он выдаёт ошибку _"Gravatar not found!"_.
 
 Обычный способ попытаться исправить это:
 
-1. Внести изменения в источник сопоставлений, которые, по вашему мнению, решат проблему (в то время как я знаю, что это не так).
-2. Re-deploy the subgraph to [Subgraph Studio](https://thegraph.com/studio/) (or another remote Graph Node).
+1. Внести изменения в источник мэппингов, которые, по Вашему мнению, решат проблему (в то время как я знаю, что это не так).
+2. Перезапустить развертывание своего субграфа в [Subgraph Studio](https://thegraph.com/studio/) (или на другую удалённую Graph Node).
 3. Подождать, пока он синхронизируется.
 4. Если он снова сломается, вернуться к пункту 1, в противном случае: Ура!
 
-Это действительно довольно знакомо для обычного процесса отладки, но есть один шаг, который ужасно замедляет процесс: _3. Подождите, пока он синхронизируется._
+Действительно, это похоже на обычный процесс отладки, но есть один шаг, который ужасно замедляет процесс: _3. Ждите, пока завершится синхронизация._
 
-Используя **форк подграфа**, мы можем существенно исключить этот шаг. Вот как это выглядит:
+Используя **форк субграфа**, мы можем фактически устранить этот шаг. Вот как это выглядит:
 
-0. Spin-up a local Graph Node with the **_appropriate fork-base_** set.
-1. Внесите изменения в источник сопоставлений, которые, по вашему мнению, решат проблему.
-2. Deploy to the local Graph Node, **_forking the failing subgraph_** and **_starting from the problematic block_**.
+0. Запустите локальную Graph Node с помощью **_соответстсвующего набора fork-base_**.
+1. Внесите изменения в источник мэппингов, которые, по Вашему мнению, решат проблему.
+2. Произведите развертывание на локальной Graph Node, **_форкнув неудачно развернутый субграф_** и **_начав с проблемного блока_**.
 3. Если он снова сломается, вернитесь к пункту 1, в противном случае: Ура!
 
-Сейчас у вас может появиться 2 вопроса:
+Сейчас у Вас может появиться 2 вопроса:
 
-1. fork-base что???
+1. fork-base - что это???
 2. Форкнуть кого?!
 
 И я вам отвечаю:
 
-1. `fork-base` - это "базовый" URL, такой, что при добавлении _идентификатора подграфа_ результирующий URL (`<fork-base>/<subgraph-id>`) является допустимым эндпоинтом GraphQL для хранилища подграфа.
-2. Форк - это просто, особо не нужно потеть:
+1. `fork-base` - это «базовый» URL, при добавлении которого к _subgraph id_ результирующий URL (`<fork-base>/<subgraph-id>`) является действительной конечной точкой GraphQL для хранилища субграфа.
+2. Форкнуть легко, не нужно напрягаться:
 
 ```bash
 $ graph deploy <subgraph-name> --debug-fork <subgraph-id> --ipfs http://localhost:5001 --node http://localhost:8020
 ```
 
-Кроме того, не забудьте установить в поле `DataSources.source.startBlock` в манифесте подграфа номер проблемного блока, чтобы вы могли пропустить индексацию ненужных блоков и воспользоваться преимуществами fork!
+Также не забудьте установить поле `dataSources.source.startBlock` в манифесте субграфа на номер проблемного блока, чтобы пропустить индексирование ненужных блоков и воспользоваться преимуществами форка!
 
 Итак, вот что я делаю:
 
-1. I spin-up a local Graph Node ([here is how to do it](https://github.com/graphprotocol/graph-node#running-a-local-graph-node)) with the `fork-base` option set to: `https://api.thegraph.com/subgraphs/id/`, since I will fork a subgraph, the buggy one I deployed earlier, from [Subgraph Studio](https://thegraph.com/studio/).
+1. Я запускаю локальную Graph Node ([вот как это сделать](https://github.com/graphprotocol/graph-node#running-a-local-graph-node)) с опцией `fork-base`, установленной в: `https://api.thegraph.com/subgraphs/id/`, поскольку я буду форкать субграф, тот самый, который я ранее развертывал, с [Subgraph Studio](https://thegraph.com/studio/).
 
 ```
 $ cargo run -p graph-node --release -- \
@@ -90,12 +90,12 @@ $ cargo run -p graph-node --release -- \
     --fork-base https://api.thegraph.com/subgraphs/id/
 ```
 
-2. После тщательной проверки я замечаю, что существует несоответствие в представлениях `id`, используемых при индексации `Gravatar`s в моих двух обработчиках. В то время как `handleNewGravatar` преобразует его в шестнадцатеричное значение (`event.params.id.toHex()`), `handleUpdatedGravatar` использует int32 (`event.params.id.toI32()`), который вызывает `handleUpdatedGravatar` панику с сообщением "Gravatar not found!". Я заставляю их обоих преобразовать `идентификатор` в шестнадцатеричное значение.
-3. After I made the changes I deploy my subgraph to the local Graph Node, **_forking the failing subgraph_** and setting `dataSources.source.startBlock` to `6190343` in `subgraph.yaml`:
+2. После тщательной проверки я замечаю, что существует несоответствие в представлениях `id`, используемых при индексировании `Gravatar` в двух моих обработчиках. В то время как `handleNewGravatar` конвертирует его в hex (`event.params.id.toHex()`), `handleUpdatedGravatar` использует int32 (`event.params.id.toI32()`), что приводит к тому, что `handleUpdatedGravatar` завершается ошибкой и появляется сообщение "Gravatar not found!". Я заставляю оба обработчика конвертировать `id` в hex.
+3. После внесения изменений я развертываю свой субграф на локальной Graph Node, **выполняя форк неудавшегося субграфа** и устанавливаю значение `dataSources.source.startBlock` равным `6190343` в файле `subgraph.yaml`:
 
 ```bash
 $ graph deploy gravity --debug-fork QmNp169tKvomnH3cPXTfGg4ZEhAHA6kEq5oy1XDqAxqHmW --ipfs http://localhost:5001 --node http://localhost:8020
 ```
 
-4. I inspect the logs produced by the local Graph Node and, Hooray!, everything seems to be working.
-5. I deploy my now bug-free subgraph to a remote Graph Node and live happily ever after! (no potatoes tho)
+4. Я проверяю логи, созданные локальной Graph Node, и, ура!, кажется, все работает.
+5. Я развертываю свой теперь свободный от ошибок субграф на удаленной Graph Node и живу долго и счастливо! (но без картошки)
