@@ -1,0 +1,539 @@
+---
+title: GraphQL Validations Migration Guide
+---
+
+很快，“graph-节点”将支持[GraphQL验证规范]的100%覆盖率(https://spec.graphql.org/June2018/#sec-验证）。
+
+“graph-节点”的早期版本不支持所有验证，并提供了更优雅的响应——因此，在出现歧义的情况下，“graph-节点”会忽略无效的GraphQL操作组件。
+
+GraphQL验证支持是即将推出的新功能和The Graph网络规模性能的支柱。
+
+它还将确保查询响应的确定性，这是The Graph网络的一个关键要求。
+
+**启用GraphQL验证将中断发送到Graph API的一些现有查询**。
+
+为了符合这些验证，请遵循迁移指南。
+
+> > ⚠️ 如果您不在验证推出之前迁移查询，它们将返回错误，并可能破坏您的前端/客户端。
+
+## 迁移指南
+
+您可以使用CLI迁移工具查找GraphQL操作中的任何问题并进行修复。或者，您可以更新GraphQL客户端的端点，以使用`https://api-next.thegraph.com/subgraphs/name/$GITHUB_USER/$SUBGRAPH_NAME`端点。针对此端点测试查询将帮助您发现查询中的问题。
+
+> > 如果您使用[GraphQL ESlint]，并不是所有的子图都需要迁移(https://the-guild.dev/graphql/eslint/docs)或[GraphQL代码生成器](https://the-guild.dev/graphql/codegen)，它们已经确保了您的查询是有效的。
+
+## 迁移CLI工具
+
+**大多数GraphQL操作错误都可以提前在代码库中找到**
+
+因此，我们在开发过程中或在CI中为验证GraphQL操作提供了流畅的体验。
+
+[`@graphql验证/cli`](https://github.com/saihaj/graphql-validate)是一个简单的CLI工具，有助于根据给定的模式验证GraphQL操作。
+
+### **入门**
+
+您可以按如下方式运行该工具：
+
+```bash
+npx@graphql验证/cli-shttps://api-npx @graphql-validate/cli -s https://api-next.thegraph.com/subgraphs/name/$GITHUB_USER/$SUBGRAPH_NAME -o *.graphql
+```
+
+**注意事项：**
+
+- \-使用适当的值设置或替换$GITHUB_USER、$SUBGRAPH_NAME。类似：[`artblocks/artblocks`](https://api.thegraph.com/subgraphs/name/artblocks/art-blocks)
+- \-预览架构URL(https://api-next.thegraph.com/)所提供的是速率严重受限，并且一旦所有用户都迁移到新版本，就将是逐步关闭期。**不要在生产中使用它**
+- \-操作在具有以下扩展名的文件中标识[`.graphql`，](https://www.graphql-tools.com/docs/schema-loading#graphql-文件加载器）[`.ts`，`.tsx`，`.js`，`jsx`](https://www.graphql-tools.com/docs/schema-loading#code-文件加载程序）（“-o”选项）。
+
+### CLI输出
+
+`[@graphql-validate/cli](https://github.com/saihaj/graphql-validate)`CLI工具将输出任何GraphQL操作错误，如下所示：
+
+![Error output from CLI](https://i.imgur.com/x1cBdhq.png)
+
+对于每个错误，您都会找到一个描述、文件路径和位置，以及到解决方案示例的链接（请参阅以下部分）。
+
+## 根据预览模式运行本地查询
+
+我们提供了一个端点`https://api-next.thegraph.com/`它运行一个启用了验证的“graph-节点”版本。
+
+您可以尝试将查询发送到：
+
+- `https://api-next.thegraph.com/subgraphs/id<Qm...>`
+
+或者
+
+- `https://api-next.thegraph.com/subgraphs/name/<GITHUB_USER>/<SUBGRAPH_NAME>`
+
+要处理标记为存在验证错误的查询，可以使用您最喜欢的GraphQL查询工具，如Altair或[GraphiQL](https://cloud.hasura.io/public/graphiql)，然后尝试您的查询。这些工具还会在用户界面中标记这些错误，甚至在您运行之前。
+
+## 如何解决问题
+
+下面，您将发现现有GraphQL操作中可能发生的所有GraphQL验证错误。
+
+### GraphQL变量、操作、片段或参数必须是唯一的
+
+我们应用了规则来确保操作包含一组唯一的GraphQL变量、操作、片段和参数。
+
+GraphQL操作只有在不包含任何歧义的情况下才有效。
+
+为了实现这一点，我们需要确保GraphQL操作中的某些组件必须是唯一的。
+
+以下是一些违反这些规则的无效操作的示例：
+
+**重复查询名称（#UniqueOperationNamesRule）**
+
+```graphql
+#以下操作违反了UniqueOperationName
+#规则，因为我们有一个带有2个查询的单个操作
+#具有相同的名称
+query myData {
+  id
+}
+
+query myData {
+  name
+}
+```
+
+_解决方案:_
+
+```graphql
+query myData {
+  id
+}
+
+query myData2 {
+  # 重新给第二个查询命名
+  name
+}
+```
+
+**重复操作名称（#UniqueOperationNamesRule）**
+
+```graphql
+#以下操作违反了UniqueOperationName
+#规则。
+query myData {
+  id
+  ...MyFields
+}
+
+fragment MyFields {
+  metadata
+}
+
+fragment MyFields {
+  name
+}
+```
+
+_解决方案:_
+
+```graphql
+query myData {
+  id
+  ...MyFieldsName
+  ...MyFieldsMetadata
+}
+
+fragment MyFieldsMetadata { # assign a unique name to fragment
+  metadata
+}
+
+fragment MyFieldsName { # assign a unique name to fragment
+  name
+}
+```
+
+**重复变量名称（#UniqueOperationNamesRule）**
+
+```graphql
+#以下操作违反了UniqueVariables
+query myData($id: String, $id: Int) {
+  id
+  ...MyFields
+}
+```
+
+_解决方案:_
+
+```graphql
+query myData($id: String) {
+  # 保持相关变量(这里是: `$id: String`)
+  id
+  ...MyFields
+}
+```
+
+**重复参数名称（#UniqueOperationNamesRule）**
+
+```graphql
+#以下操作违反了UniqueArguments
+query myData($id: ID!) {
+  userById(id: $id, id: "1") {
+    id
+  }
+}
+```
+
+_解决方案:_
+
+```graphql
+query myData($id: ID!) {
+  userById(id: $id) {
+    id
+  }
+}
+```
+
+**重复的匿名查询（#LoneAnonymousOperationRule）**
+
+此外，由于响应结构中的冲突，使用两个匿名操作将违反“LoneAnonymousOperation”规则：
+
+```graphql
+#如果在中一起执行，则此操作将失败
+#具有以下两个查询的单个操作：
+query {
+  someField
+}
+
+query {
+  otherField
+}
+```
+
+_解决方案:_
+
+```graphql
+query {
+  someField
+  otherField
+}
+```
+
+或者命名两个查询：
+
+```graphql
+query FirstQuery {
+  someField
+}
+
+query SecondQuery {
+  otherField
+}
+```
+
+### 重叠域
+
+GraphQL选择集只有在正确解析最终结果集时才被视为有效。
+
+如果特定的选择集或字段由于所选字段或使用的参数而产生歧义，GraphQL服务将无法验证该操作。
+
+以下是一些违反这些规则的无效操作的示例：
+
+**字段别名冲突（#OverlappingFieldsCanBeMergedRule）**
+
+```graphql
+#别名字段可能会导致冲突，或者
+#存在的其他别名或其他字段
+#在GraphQL模式上。
+query {
+  dogs {
+    name: nickname
+    name
+  }
+}
+```
+
+_解决方案:_
+
+```graphql
+query {
+  dogs {
+    name: nickname
+    originalName: name # 是原名 `name` 的别名
+  }
+}
+```
+
+**参数字段冲突（#OverlappingFieldsCanBeMergedRule）**
+
+```graphql
+#不同的参数可能导致不同的数据，
+#所以我们不能假设字段是相同的。
+query {
+  dogs {
+    doesKnowCommand(dogCommand: SIT)
+    doesKnowCommand(dogCommand: HEEL)
+  }
+}
+```
+
+_解决方案:_
+
+```graphql
+query {
+  dogs {
+    knowsHowToSit: doesKnowCommand(dogCommand: SIT)
+    knowsHowToHeel: doesKnowCommand(dogCommand: HEEL)
+  }
+}
+```
+
+此外，在更复杂的用例中，您可能会使用两个片段来违反此规则，这两个片段可能会在最终预期的集合中引起冲突：
+
+```graphql
+query {
+  # 最终，我们有两个"x"的定义，指向
+  # 不同的域!
+  ...A
+  ...B
+}
+
+fragment A on Type {
+  x: a
+}
+
+fragment B on Type {
+  x: b
+}
+```
+
+除此之外，客户端GraphQL指令（如“@skip”和“@include”）可能会导致歧义，例如：
+
+```graphql
+fragment mergeSameFieldsWithSameDirectives on Dog {
+  name @include(if: true)
+  name @include(if: false)
+}
+```
+
+[您可以在此处阅读有关算法的更多信息。](https://spec.graphql.org/June2018/#sec-字段选择合并）
+
+### 未使用的变量或片段
+
+只有当使用了所有操作定义的组件（变量、片段）时，GraphQL操作才被认为是有效的。
+
+以下是一些违反这些规则的无效操作的示例：
+
+**未使用的变量**（#NoUnusedVariablesRule）
+
+````graphql
+#无效，因为从未使用过$someVar。
+查询某物（$someVar: String）{
+某些数据
+}
+
+```
+````
+
+_解决方案:_
+
+```graphql
+query something {
+  someData
+}
+```
+
+**未使用的片段**（#NoUnusedFragmentsRule）
+
+```graphql
+#无效，因为片段AllFields从未使用过。
+询问某事{
+  someData
+}
+fragment AllFields { # unused :(
+  name
+  age
+}
+```
+
+_解决方案:_
+
+```graphql
+#无效，因为片段AllFields从未使用过。
+询问某事{
+  someData
+}
+
+#删除`AllFields'片段
+```
+
+### 无效或缺少选择集（#ScalarLeafsRule）
+
+此外，GraphQL字段选择只有在以下内容得到验证时才有效：
+
+- 指定了对象字段的必备选择集。
+- 边缘字段（标量、枚举）不能指定选择集。
+
+以下是下列模式违反这些规则的几个示例：
+
+```graphql
+type Image {
+  url: String!
+}
+
+type User {
+  id: ID!
+  avatar: Image!
+}
+
+type Query {
+  user: User!
+}
+```
+
+**无效的选择集**
+
+```graphql
+query {
+  user {
+    id { # 无效, 因为"id"是ID类型且没有子域
+
+    }
+  }
+}
+```
+
+_解决方案:_
+
+```graphql
+query {
+  user {
+    id
+  }
+}
+```
+
+**缺少选择集**
+
+```graphql
+query {
+  user {
+    id
+    image # `image`需要一个子域的选择集
+  }
+}
+```
+
+_解决方案:_
+
+```graphql
+query {
+  user {
+    id
+    image {
+      src
+    }
+  }
+}
+```
+
+### 参数值不正确（#VariablesInAllowedPositionRule）
+
+根据模式中定义的值，将硬编码值传递给参数的GraphQL操作必须有效。
+
+以下是一些违反这些规则的无效操作的示例：
+
+```graphql
+query purposes {
+  # 如果“name”在模式中被定义为“String”，
+  #此查询将在验证过程中失败。
+  purpose(name: 1) {
+    id
+  }
+}
+
+#当定义了不正确的变量时，也可能发生这种情况：
+
+query purposes($name: Int!) {
+  #如果“name”在模式中被定义为“String”，
+  #此查询将在验证期间失败，因为
+  #使用的变量类型为`Int`
+  purpose(name: $name) {
+    id
+  }
+}
+```
+
+### 未知类型、变量、片段或指令（#UnknownX）
+
+如果使用任何未知类型、变量、片段或指令，GraphQLAPI将引发错误。
+
+必须修复这些未知引用：
+
+- 如果是打字错误，请重命名
+- 否则，请删除
+
+### 片段：无效的排列或定义
+
+**无效的片段排列（#PossibleFragmentSpreadsRule）**
+
+片段不能在不适用的类型上展开。
+
+例如，我们不能将“Cat”片段应用于“Dog”类型：
+
+```graphql
+query {
+	dog {
+		...CatSimple
+  }
+}
+
+fragment CatSimple on Cat {
+  # ...
+}
+```
+
+**片段定义无效（#FragmentsOnCompositeTypesRule）**
+
+所有Fragment都必须在复合类型上定义（使用“on…”），简而言之：对象、接口或并集。
+
+以下示例无效，因为在标量上定义fragment是无效的。
+
+```graphql
+fragment fragOnScalar on Int {
+  # 不能在标量`int`上定义`fragment`
+  something
+}
+
+fragment inlineFragOnScalar on Dog {
+  ... on Boolean {
+    # `Boolean` 不是`Dog`的子类型
+    somethingElse
+  }
+}
+```
+
+### 指令使用
+
+**指令不能在此位置使用（#KnownDirectivesRule）**
+
+只能使用Graph API支持的GraphQL指令（`@…`）。
+
+以下是GraphQL支持的指令示例：
+
+```graphql
+query {
+  dog {
+    name @include(true)
+    age @skip(true)
+  }
+}
+```
+
+_注意：不支持“@stream”、“@live”和“@defer”_
+
+**指令在此位置只能使用一次（#UniqueDirectivesPerLocationRule）**
+
+The Graph支持的指令在每个位置只能使用一次。
+
+以下内容无效（并且是多余的）：
+
+```graphql
+query {
+  dog {
+    name @include(true) @include(true)
+  }
+}
+```
