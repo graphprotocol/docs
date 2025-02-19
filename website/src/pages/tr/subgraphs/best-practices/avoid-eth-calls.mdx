@@ -1,0 +1,117 @@
+---
+title: Subgraph Örnek Uygulamalar 4 - eth_calls Kullanımından Kaçınarak Endeksleme Hızını Artırma
+sidebarTitle: Avoiding eth_calls
+---
+
+## Özet
+
+`eth_calls`, bir subgraph'ten bir Ethereum düğümüne yapılan çağrılardır. Bu çağrıların veri döndürmesi ciddi miktarda zaman alır ve endekslemeyi yavaşlatır. Mümkünse akıllı sözleşmelerinizi ihtiyacınız olan tüm verileri yayacak şekilde tasarlayın. Böylece eth_calls kullanmanız gerekmez.
+
+## `eth_calls` Kullanımından Kaçınmanın Önemi
+
+Subgraph'ler, akıllı sözleşmelerden yayılan olay verilerini endekslemek için optimize edilmiştir. Subgraph'ler bir `eth_call` üzerinden gelen verileri de endeksleyebilir. Ancak, `eth_calls`'ın akıllı sözleşmelere harici çağrılar gerektirmesi nedeniyle, bu durum endekslemeyi önemli ölçüde yavaşlatabilir. Bu çağrıların yanıt verme süresi, subgraph'ten ziyade sorgulanan Ethereum düğümünün bağlantısına ve yanıt hızına bağlıdır. Subgraph'lerimizde `eth_calls`ı en aza indirerek veya ortadan kaldırarak, endeksleme hızımızı önemli ölçüde artırabiliriz.
+
+### Bir `eth_call` Nasıl Görünür?
+
+`eth_calls`, gerekli veriler olaylar aracılığıyla sağlanmadığında durumlarda genellikle gereklidir. Örneğin, bir subgraph'in ERC20 token'larının belirli bir havuza ait olup olmadığını belirlemesi gerektiğini, ancak sözleşmenin yalnızca temel bir `Transfer` olayı yaydığını ve ihtiyacımız olan verileri içeren bir olay yaymadığını varsayalım:
+
+```yaml
+event Transfer(address indexed from, address indexed to, uint256 value);
+```
+
+Diyelim ki token'ların havuz üyeliği, `getPoolInfo` adlı bir durum değişkeni ile belirleniyor. Bu verileri sorgulamak için şu tarz bir `eth_call` kullanmamız gerekir:
+
+```typescript
+import { Address } from '@graphprotocol/graph-ts'
+import { ERC20, Transfer } from '../generated/ERC20/ERC20'
+import { TokenTransaction } from '../generated/schema'
+
+export function handleTransfer(event: Transfer): void {
+  let transaction = new TokenTransaction(event.transaction.hash.toHex())
+
+  // Belirtilen adrese ERC20 sözleşme örneğini bağla:
+  let instance = ERC20.bind(event.address)
+
+  // eth_call aracılığıyla havuz bilgilerini al
+  let poolInfo = instance.getPoolInfo(event.params.to)
+
+  transaction.pool = poolInfo.toHexString()
+  transaction.from = event.params.from.toHexString()
+  transaction.to = event.params.to.toHexString()
+  transaction.value = event.params.value
+
+  transaction.save()
+}
+```
+
+Bu kod işlevsel olacaktır; ancak subgraph'imizin endekslenmesini yavaşlattığı için ideal değildir.
+
+## `eth_calls`'ı Ortadan Kaldırma
+
+İdeal olarak, akıllı sözleşme gerekli tüm verileri olaylar içinde yayacak şekilde güncellenmelidir. Örneğin, havuz bilgilerini olaya dahil edecek şekilde akıllı sözleşmeyi değiştirmek, `eth_calls` ihtiyacını ortadan kaldırabilir:
+
+```
+event TransferWithPool(address indexed from, address indexed to, uint256 value, bytes32 indexed poolInfo);
+```
+
+Bu güncellemeyle, subgraph harici çağrılara ihtiyaç duymadan gerekli verileri doğrudan endeksleyebilir:
+
+```typescript
+import { Address } from '@graphprotocol/graph-ts'
+import { ERC20, TransferWithPool } from '../generated/ERC20/ERC20'
+import { TokenTransaction } from '../generated/schema'
+
+export function handleTransferWithPool(event: TransferWithPool): void {
+  let transaction = new TokenTransaction(event.transaction.hash.toHex())
+
+  transaction.pool = event.params.poolInfo.toHexString()
+  transaction.from = event.params.from.toHexString()
+  transaction.to = event.params.to.toHexString()
+  transaction.value = event.params.value
+
+  transaction.save()
+}
+```
+
+Bu metot `eth_calls` ihtiyacını ortadan kaldırdığı için çok daha verimlidir.
+
+## `eth_calls`'ı Optimize Etme
+
+Eğer akıllı sözleşmeyi değiştirmek mümkün değilse ve `eth_calls` kullanmak gerekli ise, Simon Emanuel Schmid tarafından yazılan “[Subgraph Endeksleme Performansını Kolayca İyileştirin: eth_calls'ı Azaltın](https://thegraph.com/blog/improve-subgraph-performance-reduce-eth-calls/)” makalesini okuyarak eth_calls'i optimize etmenin çeşitli stratejilerini öğrenebilirsiniz.
+
+## `eth_call` Çağrılarının Fazla Çalışma Yükünü Azaltma
+
+Kaldırılamayan `eth_calls`'lar manifesto içinde deklare edilerek sebep oldukları çalışma zamanı yükü en aza indirilebilir. `graph-node` bir bloğu işlerken, belirtilen tüm eth_calls'ı işleyiciler çalıştırılmadan önce paralel olarak gerçekleştirir. Deklare edilmeyen çağrılar ise işleyiciler çalıştırıldığında sıralı olarak yürütülür. Paralel çağrılar, çağrılara harcanan toplam süreyi azaltmaya yardımcı olur; ancak bu süreyi tamamen ortadan kaldıramaz.
+
+Şu anda `eth_calls` yalnızca olay işleyicileri için deklare edilebilir. Manifesto içerisinde şu şekilde yazılabilir:
+
+```yaml
+event: TransferWithPool(address indexed, address indexed, uint256, bytes32 indexed)
+handler: handleTransferWithPool
+calls:
+  ERC20.poolInfo: ERC20[event.address].getPoolInfo(event.params.to)
+```
+
+Sarıyla vurgulanan bölüm çağrı deklarasyonudur. İki nokta üst üste öncesindeki kısım yalnızca hata mesajları için kullanılan bir metin etiketidir. İki noktadan sonraki kısım ise `Contract[address].function(params)` formundadır. Adres ve parametreler için izin verilen değerler `event.address` ve `event.params.<name>` şeklindedir.
+
+İşleyici, bu `eth_call` sonucuna bir önceki bölümde olduğu gibi sözleşmeye bağlanarak ve çağrıyı yaparak erişir. graph-node, deklare edilen `eth_calls` sonuçlarını bellekte önbelleğe alır. İşleyiciden yapılan çağrı, sonuçları gerçek bir RPC çağrısı yapıp almak yerine, önbellekten alır.
+
+Not: Deklare edilen `eth_calls`, yalnızca specVersion >= 1.2.0 olan subgraph'lerde kullanılabilir.
+
+## Sonuç
+
+Subgraph'lerinizde `eth_calls`'ı en aza indirerek endeksleme performansını önemli ölçüde artırabilirsiniz.
+
+## Subgraph Örnek Uygulamalar 1-6
+
+1. [Improve Query Speed with Subgraph Pruning](/subgraphs/best-practices/pruning/)
+
+2. [Improve Indexing and Query Responsiveness by Using @derivedFrom](/subgraphs/best-practices/derivedfrom/)
+
+3. [Improve Indexing and Query Performance by Using Immutable Entities and Bytes as IDs](/subgraphs/best-practices/immutable-entities-bytes-as-ids/)
+
+4. [Improve Indexing Speed by Avoiding `eth_calls`](/subgraphs/best-practices/avoid-eth-calls/)
+
+5. [Simplify and Optimize with Timeseries and Aggregations](/subgraphs/best-practices/timeseries/)
+
+6. [Use Grafting for Quick Hotfix Deployment](/subgraphs/best-practices/grafting-hotfix/)
