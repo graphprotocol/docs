@@ -1,0 +1,524 @@
+---
+title: AssemblyScript Geçiş Rehberi
+---
+
+Şu ana kadar subgraph'ler, [AssemblyScript'in ilk versiyonlarından birini](https://github.com/AssemblyScript/assemblyscript/tree/v0.6) (v0.6) kullanıyordu. Nihayet, [en yeni versiyonu](https://github.com/AssemblyScript/assemblyscript/tree/v0.19.10) (v0.19.10) için destek ekledik! 🎉
+
+Bu, subgraph geliştiricilerinin AS dilinin ve standart kütüphanenin daha yeni özelliklerini kullanmasını sağlayacak.
+
+Bu rehber, `graph-cli`/`graph-ts` araçlarının `0.22.0` ve öncesi versiyonlarını kullanan herkes için geçerlidir. Eğer halihazırda bu versiyonun üstünde (veya ona eşit) bir versiyon kullanıyorsanız, zaten AssemblyScript'in `0.19.10` versiyonunu kullanıyorsunuz demektir 🙂
+
+> Not: `0.24.0` itibarıyla, `graph-node`, subgraph manifestosunda belirtilen `apiVersion`'e bağlı olarak her iki versiyonu da destekleyebilir.
+
+## Özellikler
+
+### Yeni işlevsellik
+
+- `TypedArray`'ler artık [`wrap` isimli yeni statik metot](https://www.assemblyscript.org/stdlib/typedarray.html#static-members) ([v0.8.1](https://github.com/AssemblyScript/assemblyscript/releases/tag/v0.8.1)) kullanılarak `ArrayBuffer`'lardan oluşturulabilir
+- Yeni standart kütüphane fonksiyonları: `String#toUpperCase`, `String#toLowerCase`, `String#localeCompare` ve `TypedArray#set` ([v0.9.0](https://github.com/AssemblyScript/assemblyscript/releases/tag/v0.9.0))
+- GenericClass'in bir örneğini doğrulamak için x instanceof GenericClass desteği eklendi ([v0.9.2](https://github.com/AssemblyScript/assemblyscript/releases/tag/v0.9.2))
+- Daha verimli bir dizi çeşidi olan `StaticArray<T>` eklendi, ([v0.9.3](https://github.com/AssemblyScript/assemblyscript/releases/tag/v0.9.3))
+- `Array<T>#flat` eklendi ([v0.10.0](https://github.com/AssemblyScript/assemblyscript/releases/tag/v0.10.0))
+- `Number#toString` fonksiyonunda `radix` argümanı desteklenmeye başlandı ([v0.10.1](https://github.com/AssemblyScript/assemblyscript/releases/tag/v0.10.1))
+- Kayan nokta literallerinde ayırıcılar için destek eklendi ([v0.13.7](https://github.com/AssemblyScript/assemblyscript/releases/tag/v0.13.7))
+- İlk sınıf fonksiyonlar için destek eklendi ([v0.14.0](https://github.com/AssemblyScript/assemblyscript/releases/tag/v0.14.0))
+- Yerleşikler eklendi: `i32/i64/f32/f64.add/sub/mul` ([v0.14.13](https://github.com/AssemblyScript/assemblyscript/releases/tag/v0.14.13))
+- `Array/TypedArray/String#at`' fonksiyonu geliştirildi ([v0.18.2](https://github.com/AssemblyScript/assemblyscript/releases/tag/v0.18.2))
+- Şablon literal dizeleri için destek eklendi ([v0.18.17](https://github.com/AssemblyScript/assemblyscript/releases/tag/v0.18.17))
+- `encodeURI(Component)` ve `decodeURI(Component)` eklendi ([v0.18.27](https://github.com/AssemblyScript/assemblyscript/releases/tag/v0.18.27))
+- `toString`, `toDateString` ve `toTimeString` metodları `Date`'e eklendi ([v0.18.29](https://github.com/AssemblyScript/assemblyscript/releases/tag/v0.18.29))
+- `Date` için `toUTCString` eklendi ([v0.18.30](https://github.com/AssemblyScript/assemblyscript/releases/tag/v0.18.30))
+- `nonnull/NonNullable` yerleşik türü eklendi ([v0.19.2](https://github.com/AssemblyScript/assemblyscript/releases/tag/v0.19.2))
+
+### Optimizasyonlar
+
+- `Math` fonksiyonları olan `exp`, `exp2`, `log`, `log2` ve `pow`, daha hızlı varyantlarla değiştirildi ([v0.9.0](https://github.com/AssemblyScript/assemblyscript/releases/tag/v0.9.0))
+- `Math.mod`' fonksiyonu biraz optimize edildi ([v0.17.1](https://github.com/AssemblyScript/assemblyscript/releases/tag/v0.17.1))
+- std Map ve Set'te daha fazla alan erişiminin önbelleğe alınması sağlandı ([v0.17.8](https://github.com/AssemblyScript/assemblyscript/releases/tag/v0.17.8))
+- İkinin katları için `ipow32/64` optimizasyonu ([v0.18.2](https://github.com/AssemblyScript/assemblyscript/releases/tag/v0.18.2))
+
+### Diğer
+
+- Bir dizi literalinin türü artık içeriğinden çıkarsanabilir ([v0.9.0](https://github.com/AssemblyScript/assemblyscript/releases/tag/v0.9.0))
+- stdlib Unicode 13.0.0'a güncellendi ([v0.10.0](https://github.com/AssemblyScript/assemblyscript/releases/tag/v0.10.0))
+
+## Nasıl yükseltilir?
+
+1. Eşlemlerinizdeki `apiVersion` değerini `subgraph.yaml` dosyasında `0.0.6` olarak değiştirin:
+
+```yaml
+...
+dataSources:
+  ...
+    mapping:
+      ...
+      apiVersion: 0.0.6
+      ...
+```
+
+2. Kullanmakta olduğunuz `graph-cli`yi `latest` (en son) sürüme güncellemek için şu komutu çalıştırın:
+
+```bash
+# Eğer `graph-cli` global olarak yüklüyse
+npm install --global @graphprotocol/graph-cli@latest 
+
+# veya `subgraph` içinde bir geliştirme gereksinimi olarak yüklüyse
+npm install --save-dev @graphprotocol/graph-cli@latest
+```
+
+3. Aynısını `graph-ts` için de yapın, ancak global olarak kurmak yerine ana gereksinimlerinizde kaydedin:
+
+```bash
+npm install --save @graphprotocol/graph-ts@latest
+```
+
+4. Dildeki uyumsuzluk sorunlarını düzeltmek için rehberin geri kalanını takip edin.
+5. `codegen` ve `deploy` komutlarını tekrar çalıştırın.
+
+## Uyumsuz değişiklikler
+
+### Null olabilme durumu
+
+AssemblyScript'in eski bir sürümünde şu şekilde kod oluşturabilirdiniz:
+
+```typescript
+function load(): Value | null { ... }
+
+let maybeValue = load();
+maybeValue.aMethod();
+```
+
+Ancak, daha yeni sürümde değer null olabildiği için bunu kontrol etmenizi gerektirir, aşağıdaki gibi:
+
+```typescript
+let maybeValue = load()
+
+if (maybeValue) {
+  maybeValue.aMethod() // `maybeValue` artık null değil
+}
+```
+
+Veya bunu şu şekilde zorlayın:
+
+```typescript
+let maybeValue = load()! // Değer null ise çalıştırma esnasında hata verir
+
+maybeValue.aMethod()
+```
+
+Emin olamadığınızda daima güvenli sürümü kullanmanızı öneririz. Değer mevcut değilse, subgraph işleyicinizde erken bir if kontrolü yaparak işlemi sonlandırabilirsiniz.
+
+### Değişken Gölgeleme
+
+Daha önce [değişken gölgeleme](https://en.wikipedia.org/wiki/Variable_shadowing) yapabiliyordunuz ve aşağıdaki gibi bir kod çalışıyordu:
+
+```typescript
+let a = 10
+let b = 20
+let a = a + b
+```
+
+Ancak bu artık mümkün değil ve bu kodu derlemeye çalışırsanız derleyici şu hatayı verir:
+
+```typescript
+ERROR TS2451: Cannot redeclare block-scoped variable 'a'
+
+ let a = a + b;
+ ~~~~~~~~~~~~~
+in assembly/index.ts(4,3)
+```
+
+Eğer değişken gölgeleme yapıyorsanız, yinelenen değişkenlerinizi yeniden adlandırmanız gerekecek.
+
+### Null Karşılaştırmaları
+
+Subgraph'inizi yükselttikten sonra bazı noktalarda şu tür hatalar alabilirsiniz:
+
+```typescript
+ERROR TS2322: Type '~lib/@graphprotocol/graph-ts/common/numbers/BigInt | null' is not assignable to type '~lib/@graphprotocol/graph-ts/common/numbers/BigInt'.
+     if (decimals == null) {
+                     ~~~~
+ in src/mappings/file.ts(41,21)
+```
+
+Bu hatayı çözmek için `if` ifadesini şu şekilde değiştirebilirsiniz:
+
+```typescript
+  if (!decimals) {
+
+  // veya
+
+  if (decimals === null) {
+```
+
+Aynısı == yerine != kullandığınızda da geçerlidir.
+
+### Dönüştürme
+
+Önceden dönüştürme yapmanın yaygın yolu, `as` kelimesini şöyle kullanmaktı:
+
+```typescript
+let byteArray = new ByteArray(10)
+let uint8Array = byteArray as Uint8Array // equivalent to: <Uint8Array>byteArray
+```
+
+Ancak bu sadece iki senaryoda çalışır:
+
+- Temel tür dönüşümü (`u8`, `i32`, `bool` gibi veri türleri arasında; örneğin: `let b: isize = 10; b as usize`);
+- Sınıf kalıtımında yukarı doğru dönüşüm (alt sınıf → üst sınıf)
+
+Örnekler:
+
+```typescript
+// temel tür dönüşümü
+let a: usize = 10
+let b: isize = 5
+let c: usize = a + (b as usize)
+```
+
+```typescript
+// sınıf kalıtımında yukarı doğru dönüşüm
+class Bytes extends Uint8Array {}
+
+let bytes = new Bytes(2)
+// <Uint8Array>bytes // // aynı şöyle: bytes as Uint8Array
+```
+
+`as`/`<T>var` kullanmanın **güvenli olmadığı** iki dönüşüm senaryosu vardır:
+
+- Sınıf kalıtımında aşağı doğru dönüşüm (üst sınıf → alt sınıf)
+- Ortak bir üst sınıfa sahip iki tür arasında dönüşüm
+
+```typescript
+// sınıf kalıtımında aşağı doğru dönüşüm
+class Bytes extends Uint8Array {}
+
+let uint8Array = new Uint8Array(2)
+// <Bytes>uint8Array // çalıştırma esnasında kırılır :(
+```
+
+```typescript
+// aynı üst sınıfı paylaşan iki tür arasında
+class Bytes extends Uint8Array {}
+class ByteArray extends Uint8Array {}
+
+let bytes = new Bytes(2)
+// <ByteArray>bytes // çalıştırma esnasında kırılır :(
+```
+
+Bu durumlar için `changetype<T>` fonksiyonunu kullanabilirsiniz:
+
+```typescript
+// sınıf kalıtımında aşağı doğru dönüşüm
+class Bytes extends Uint8Array {}
+
+let uint8Array = new Uint8Array(2)
+changetype<Bytes>(uint8Array) // çalışır :)
+```
+
+```typescript
+// Aynı üst sınıfı paylaşan iki tür arasında
+class Bytes extends Uint8Array {}
+class ByteArray extends Uint8Array {}
+
+let bytes = new Bytes(2)
+changetype<ByteArray>(bytes) // çalışır :)
+```
+
+Sadece null olabilmeyi kaldırmak istiyorsanız, `as` operatörünü (veya `<T>variable`) kullanmaya devam edebilirsiniz. Ancak değerin null olamayacağını bilmeniz gerekir. Aksi halde bu sorun yaratır.
+
+```typescript
+// null olabilmeyi kaldırma
+let previousBalance = AccountBalance.load(balanceId) // AccountBalance | null
+
+if (previousBalance != null) {
+  return previousBalance as AccountBalance // güvenli null kaldırma
+}
+
+let newBalance = new AccountBalance(balanceId)
+```
+
+Null olabilme durumu için [null olabilme kontrolü özelliğine](https://www.assemblyscript.org/basics.html#nullability-checks) göz atmanızı öneririz. Bu özellikleri uygulamak, kodunuzu daha temiz hale getirecektir 🙂
+
+Ayrıca, dönüştürme işlemlerini kolaylaştırmak için bazı türlere birkaç statik metot daha ekledik, bunlar:
+
+- Bytes.fromByteArray
+- Bytes.fromUint8Array
+- BigInt.fromByteArray
+- ByteArray.fromBigInt
+
+### Özellik erişimi ile null olabilme kontrolü
+
+[Null kontrolü özelliğini](https://www.assemblyscript.org/basics.html#nullability-checks) kullanmak için, `if` ifadelerini veya üçlü operatörünü (`?` ve `:`) şu şekilde kullanabilirsiniz:
+
+```typescript
+let something: string | null = 'data'
+
+let somethingOrElse = something ? something : 'else'
+
+// veya
+
+let somethingOrElse
+
+if (something) {
+  somethingOrElse = something
+} else {
+  somethingOrElse = 'else'
+}
+```
+
+Ancak bu yalnızca bir değişken üzerinde `if` / üçlü operatör kullandığınızda çalışır, bir özellik erişiminde değil:
+
+```typescript
+class Container {
+  data: string | null
+}
+
+let container = new Container()
+container.data = 'data'
+
+let somethingOrElse: string = container.data ? container.data : 'else' // derlemede hata verir
+```
+
+Bu hata çıktısını verir:
+
+```typescript
+ERROR TS2322: Type '~lib/string/String | null' is not assignable to type '~lib/string/String'.
+
+   let somethingOrElse: string = container.data ? container.data : "else";
+                                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
+
+Bu hatayı çözmek için, özellik erişimini bir değişkene atayarak derleyicinin null kontrolünü yapabilmesini sağlayabilirsiniz:
+
+```typescript
+class Container {
+  data: string | null
+}
+
+let container = new Container()
+container.data = 'data'
+
+let data = container.data
+
+let somethingOrElse: string = data ? data : 'else' // sorunsuz bir şekilde derlenir :)
+```
+
+### Özellik erişimi ile operatör aşırı yükleme
+
+Bir özelliğe erişimden gelen bir null değere izin veren bir türü, null olmayan bir türle toplamaya çalışırsanız AssemblyScript derleyicisi, bu değerlerden birinin null değere izin verdiği konusunda derleme zamanı uyarısı vermez. Bunun yerine, sadece sessiz bir şekilde derlemeye devam eder ve çalışma sırasında kodun kırılmasına yol açar.
+
+```typescript
+class BigInt extends Uint8Array {
+  @operator('+')
+  plus(other: BigInt): BigInt {
+    // ...
+  }
+}
+
+class Wrapper {
+  public constructor(public n: BigInt | null) {}
+}
+
+let x = BigInt.fromI32(2)
+let y: BigInt | null = null
+
+x + y // null değer alabilme hakkında derleme hatası verir
+
+let wrapper = new Wrapper(y)
+
+wrapper.n = wrapper.n + x // olması gerektiği gibi derleme hatası vermez
+```
+
+AssemblyScript derleyicisine bu sorunu bildirdik. Ancak subgraph eşlemlerinizde bu tür işlemleri yapıyorsanız, şimdilik önce bir null değer kontrolü yapacak şekilde kodunuzu değiştirmelisiniz.
+
+```typescript
+let wrapper = new Wrapper(y)
+
+if (!wrapper.n) {
+  wrapper.n = BigInt.fromI32(0)
+}
+
+wrapper.n = wrapper.n + x // şimdi `n`'nin bir BigInt olduğu garanti edilmiştir
+```
+
+### Değer ilklendirme
+
+Bunun gibi bir koda sahipseniz:
+
+```typescript
+var value: Type // null
+value.x = 10
+value.y = 'content'
+```
+
+Kod derlenir ancak çalıştırma esnasında kırılır. Bu da değerin ilklendirilmemiş olmasından kaynaklanır. Bu yüzden subgraph'inizin değerlerini aşağıdaki gibi ilklendirdiğinden emin olun:
+
+```typescript
+var value = new Type() // ilklendirme
+value.x = 10
+value.y = 'content'
+```
+
+Ayrıca, bir GraphQL varlığında şunun gibi null olabilen özellikleriniz varsa:
+
+```graphql
+type Total @entity {
+  id: Bytes!
+  amount: BigInt
+}
+```
+
+Ve bu koda benzer bir koda sahipseniz:
+
+```typescript
+let total = Total.load('latest')
+
+if (total === null) {
+  total = new Total('latest')
+}
+
+total.amount = total.amount + BigInt.fromI32(1)
+```
+
+`total.amount` değerini ilklendirdiğinizden emin olmanız gerekecek, çünkü toplama işlemi için son satırda erişmeye çalışırsanız, uygulama çöker. Bu yüzden ya önce ilklendirin:
+
+```typescript
+let total = Total.load('latest')
+
+if (total === null) {
+  total = new Total('latest')
+  total.amount = BigInt.fromI32(0)
+}
+
+total.tokens = total.tokens + BigInt.fromI32(1)
+```
+
+Ya da GraphQL şemanızı bu özellik için null olabilen bir tür kullanmayacak şekilde değiştirin. Böylece `codegen` adımında bu değer sıfır olarak ilklendirilir 😉
+
+```graphql
+type Total @entity {
+  id: Bytes!
+  amount: BigInt!
+}
+```
+
+```typescript
+let total = Total.load('latest')
+
+if (total === null) {
+  total = new Total('latest') // null olamayan özellikleri ilklendirir
+}
+
+total.amount = total.amount + BigInt.fromI32(1)
+```
+
+### Sınıf özelliği ilklendirme
+
+Eğer (kendi tarafınızdan veya standart kütüphane tarafından bildirilen) başka sınıfları içeren özelliklere sahip sınıfları şu şekilde dışa aktarırsanız:
+
+```typescript
+class Thing {}
+
+export class Something {
+  value: Thing
+}
+```
+
+Derleyici hata verecektir çünkü sınıf olan özellikler için ya bir ilklendirici eklemeniz ya da `!` operatörünü eklemeniz gerekmektedir:
+
+```typescript
+export class Something {
+  constructor(public value: Thing) {}
+}
+
+// veya
+
+export class Something {
+  value: Thing
+
+  constructor(value: Thing) {
+    this.value = value
+  }
+}
+
+// veya
+
+export class Something {
+  value!: Thing
+}
+```
+
+### Dizi ilklendirmesi
+
+`Array` sınıfı, listenin uzunluğunu ilklendirmek için bir sayı kabul etmeye devam eder. Ancak `.push` gibi işlemler başlangıca eklemek yerine boyutu gerçekten artıracağı için dikkatli olmalısınız, örneğin:
+
+```typescript
+let arr = new Array<string>(5) // ["", "", "", "", ""]
+
+arr.push('something') // ["", "", "", "", "", "something"] // uzunluk 6 :(
+```
+
+Kullandığınız tiplere bağlı olarak -mesela null olabilen değerler kullanıyorsunuz- ve bu tiplere erişim şeklinize göre, aşağıdaki gibi bir çalıştırma hatasıyla karşılaşabilirsiniz:
+
+```
+ERRO Handler skipped due to execution failure, error: Mapping aborted at ~lib/array.ts, line 110, column 40, with message: Element type must be nullable if array is holey  wasm backtrace:     0: 0x19c4 - <unknown>!~lib/@graphprotocol/graph-ts/index/format         1: 0x1e75 - <unknown>!~lib/@graphprotocol/graph-ts/common/collections/Entity#constructor        2: 0x30b9 - <unknown>!node_modules/@graphprotocol/graph-ts/global/global/id_of_type
+```
+
+Listenin başına "push" yapabilmek için, `Array`'i ya şu şekilde sıfır boyutla ilklendirmelisiniz:
+
+```typescript
+let arr = new Array<string>(0) // []
+
+arr.push('something') // ["something"]
+```
+
+Ya da dizin kullanarak değiştirmelisiniz:
+
+```typescript
+let arr = new Array<string>(5) // ["", "", "", "", ""]
+
+arr[0] = 'something' // ["something", "", "", "", ""]
+```
+
+### GraphQL şeması
+
+Bu doğrudan bir AssemblyScript değişikliği değildir. Ancak `schema.graphql` dosyanızı güncellemeniz gerekebilir.
+
+Artık türlerinizde Non-Nullable Lists (Boş Olamayan Listeler) olarak alanlar tanımlayamazsınız. Eğer böyle bir şemanız varsa:
+
+```graphql
+type Something @entity {
+  id: Bytes!
+}
+
+type MyEntity @entity {
+  id: Bytes!
+  invalidField: [Something]! # artık geçerli değil
+}
+```
+
+Listenin tür üyesine şu şekilde `!` eklemeniz gerekecek:
+
+```graphql
+type Something @entity {
+  id: Bytes!
+}
+
+type MyEntity @entity {
+  id: Bytes!
+  invalidField: [Something!]! # geçerli
+}
+```
+
+Bu değişiklik, AssemblyScript sürümleri arasındaki null olabilme farklılıklarından dolayı oldu. Ve bu değişiklik `src/generated/schema.ts` dosyasıyla ilgilidir (varsayılan yol, bunu değiştirmiş olabilirsiniz).
+
+### Diğer
+
+- `Map#set` ve `Set#add` ögelerini, `this` döndürecek şekilde spesifikasyonla uyumlu hale getirdik ([v0.9.2](https://github.com/AssemblyScript/assemblyscript/releases/tag/v0.9.2))
+- Diziler artık ArrayBufferView'den gelmek yerine artık farklı ([v0.10.0](https://github.com/AssemblyScript/assemblyscript/releases/tag/v0.10.0)) sürümünden geliyorlar
+- Nesne literalinden başlatılan sınıflar artık yapıcı bir metot tanımlayamaz ([v0.10.0](https://github.com/AssemblyScript/assemblyscript/releases/tag/v0.10.0))
+- Bir `**` ikili işleminin sonucu artık her iki işlenen de tamsayı ise ortak payda tamsayısıdır. Önceden, sonuç `Math/f.pow` çağrılmış gibi bir float'tı ([v0.11.0](https://github.com/AssemblyScript/assemblyscript/releases/tag/v0.11.0))
+- `bool` dönüşümünde `NaN`' değeri `false` değerine zorla dönüştürülür ([v0.14.9](https://github.com/AssemblyScript/assemblyscript/releases/tag/v0.14.9))
+- `i8`/`u8` ya da `i16`/`u16` tipindeki küçük tamsayı değerlerini kaydırırken, RHS değerinin yalnızca sırasıyla en düşük 3 ve 4 anlamlı biti sonucu etkiler. Bu, bir `i32.shl` sonucu yalnızca RHS değerinin 5 en düşük anlamlı bitinden etkilenmesine benzer. Örnek: `someI8 << 8` önceden `0` değerini üretirken, şimdi RHS'ın `8 & 7 = 0` (3 bit) olarak maskelenmesinden dolayı `someI8` değerini üretir ([v0.17.0](https://github.com/AssemblyScript/assemblyscript/releases/tag/v0.17.0))
+- Boyutlar farklı olduğunda ilişkisel dize karşılaştırmalarında olan hatanın düzeltmesi ([v0.17.8](https://github.com/AssemblyScript/assemblyscript/releases/tag/v0.17.8))
