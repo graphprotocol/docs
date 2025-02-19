@@ -1,0 +1,191 @@
+---
+title: Subgraph Örnek Uygulama 3 - Değişmez Varlıklar ve Byte'ları Kimlik Olarak Kullanarak Endeksleme ve Sorgu Performansını İyileştirin
+sidebarTitle: 'Subgraph Best Practice 3: Immutable Entities and Bytes as IDs'
+---
+
+## Özet
+
+`schema.graphql` dosyamızda Kimlikler için Değişmez Varlıklar ve Byte'lar kullanmak endeksleme hızını ve sorgu performansını [önemli ölçüde](https://thegraph.com/blog/two-simple-subgraph-performance-improvements/) arttırır.
+
+## Değişmez Varlıklar
+
+Bir varlığı değişmez hale getirmek için, varlığa `(immutable: true)` ekleriz.
+
+```graphql
+type Transfer @entity(immutable: true) {
+  id: Bytes!
+  from: Bytes!
+  to: Bytes!
+  value: BigInt!
+}
+```
+
+`Transfer` varlığını değişmez hale getirerek, graph-node'un varlığı daha verimli bir şekilde işlemesini sağlayabiliriz. Bu da endeksleme hızını ve sorgu yanıt verebilirliğini artırır.
+
+Değişmez Varlıkların yapıları gelecekte değişmeyecektir. "Değişmez Varlık" haline getirilecek ideal bir varlık, doğrudan zincir üstü olay verilerini kaydeden bir varlık, (örneğin bir `Transfer` olayının `Transfer` varlığı olarak kaydedilmesi) gibi olabilir.
+
+### Detaylı İnceleme
+
+Değişebilir varlıkların geçerliliklerini belirten bir 'blok aralığı' bulunur. Bu varlıkları güncellemek, Graph Düğümü'nün önceki versiyonların blok aralığını ayarlamasını gerektirir. Bu da veritabanı iş yükünü artırır. Sorguların da yalnızca canlı ögeleri bulmak için filtrelenmesi gerekir. Değişmez ögeler daha hızlıdır. Çünkü hepsi canlıdır ve değişmeyeceklerinden dolayı, yazma sırasında herhangi bir kontrol veya güncellemeye gerek yoktur. Ayrıca, sorgular sırasında herhangi bir filtrelemeye de gerek kalmaz.
+
+### Değişmez Varlıklar ne zaman kullanmamalı
+
+Eğer zamanla değiştirilmesi gereken `status` gibi bir alanınız varsa, varlığı değişmez yapmamalısınız. Bunun dışında mümkünse değişmez varlıklar kullanmalısınız.
+
+## ID (Kimlik Numarası) Olarak Bytes
+
+Her varlığın bir ID'si olmalıdır. Önceki örnekte, ID'nin zaten Bytes türünde olduğunu görebiliriz.
+
+```graphql
+type Transfer @entity(immutable: true) {
+  id: Bytes!
+  from: Bytes!
+  to: Bytes!
+  value: BigInt!
+}
+```
+
+ID'ler için String ve Int8 gibi başka türler kullanmak mümkün olsa da, tüm ID'ler için Bytes türünün kullanılması önerilir. Çünkü karakter dizileri ikili (binary) verileri saklamak için Bayt dizilerinden iki kat fazla yer kaplar. Ayrıca, UTF-8 karakter dizilerinin karşılaştırmaları, yerel ayarı hesaba katması gerekliliğinden ötürü, Bayt dizilerinin karşılaştırmalarında kullanılan bayt temelli (bytewise) karşılaştırmalardan çok daha maliyetlidir.
+
+### ID Olarak Bytes Kullanmama Nedenleri
+
+1. Eğer varlık ID'leri otomatik artırılan sayısal ID'ler veya okunabilir dizeler gibi insan tarafından okunabilir olmalıysa, ID için Bytes kullanılmamalıdır.
+2. Bir subgraph'in verilerini Bytes'ı ID olarak kullanmayan başka bir veri modeliyle entegre ediyorsanız, ID için Bayt kullanılmamalıdır.
+3. Endeksleme ve sorgulama gibi performans iyileştirmeleri istenmiyorsa.
+
+### ID Olarak Bytes'ı Başka Bir Özellikle Birleştirme
+
+Birçok subgraph'te, bir olayın iki özelliğini tek bir ID'de birleştirmek için dizi birleştirme kullanmak yaygın bir uygulamadır: örneğin, `event.transaction.hash.toHex() + "-" + event.logIndex.toString()` gibi. Ancak, bu bir dizi döndürdüğü için, subgraph endeksleme ve sorgulama performansını önemli ölçüde engeller.
+
+Bunun yerine, olay özelliklerini birleştirmek için `concatI32()` metodunu kullanmalıyız. Bu strateji, çok daha iyi çalışan bir `Bytes` ID ile sonuçlanır.
+
+```typescript
+export function handleTransfer(event: TransferEvent): void {
+  let entity = new Transfer(event.transaction.hash.concatI32(event.logIndex.toI32()))
+  entity.from = event.params.from
+  entity.to = event.params.to
+  entity.value = event.params.value
+
+  entity.blockNumber = event.block.number
+  entity.blockTimestamp = event.block.timestamp
+  entity.transactionHash = event.transaction.hash
+
+  entity.save()
+}
+```
+
+### Bytes'ı ID Olarak Kullanarak Sıralama
+
+Bytes'ı ID olarak kullanarak sıralama yapmak, bu örnek sorgu ve yanıtında gördüğümüz gibi ideal değildir.
+
+Sorgu:
+
+```graphql
+{
+  transfers(first: 3, orderBy: id) {
+    id
+    from
+    to
+    value
+  }
+}
+```
+
+Sorgu yanıtı:
+
+```json
+{
+  "data": {
+    "transfers": [
+      {
+        "id": "0x00010000",
+        "from": "0xabcd...",
+        "to": "0x1234...",
+        "value": "256"
+      },
+      {
+        "id": "0x00020000",
+        "from": "0xefgh...",
+        "to": "0x5678...",
+        "value": "512"
+      },
+      {
+        "id": "0x01000000",
+        "from": "0xijkl...",
+        "to": "0x9abc...",
+        "value": "1"
+      }
+    ]
+  }
+}
+```
+
+ID'ler onaltılık (hex) olarak döndürülür.
+
+Sıralamayı geliştirmek için varlık üzerinde BigInt türünde başka bir alan oluşturmalıyız.
+
+```graphql
+type Transfer @entity {
+  id: Bytes!
+  from: Bytes! # address
+  to: Bytes! # address
+  value: BigInt! # unit256
+  tokenId: BigInt! # uint256
+}
+```
+
+Bu alanı oluşturmak, sıralamanın ardışık olarak optimize edilmesine olanak tanıyacaktır.
+
+Sorgu:
+
+```graphql
+{
+  transfers(first: 3, orderBy: tokenId) {
+    id
+    tokenId
+  }
+}
+```
+
+Sorgu Yanıtı:
+
+```json
+{
+  "data": {
+    "transfers": [
+      {
+        "id": "0x…",
+        "tokenId": "1"
+      },
+      {
+        "id": "0x…",
+        "tokenId": "2"
+      },
+      {
+        "id": "0x…",
+        "tokenId": "3"
+      }
+    ]
+  }
+}
+```
+
+## Sonuç
+
+Hem Değişmez Varlıklar hem de ID olarak, Bytes kullanmanın subgraph verimliliğini önemli ölçüde artırdığı gösterilmiştir. Özellikle, testlerde sorgu performansında %28'e kadar artış ve endeksleme hızlarında %48'e kadar hızlanma göze çarpmaktadır.
+
+Değişmez Varlıkları ve ID olarak Bytes kullanmak hakkında daha fazla bilgiyi Edge & Node'da Yazılım Mühendisi olan David Lutterkort'un bu blog yazısında bulabilirsiniz: [İki Basit Subgraph Performans İyileştirmesi](https://thegraph.com/blog/two-simple-subgraph-performance-improvements/).
+
+## Subgraph Örnek Uygulamalar 1-6
+
+1. [Subgraph Budama ile Sorgu Hızını İyileştirin](/subgraphs/best-practices/pruning/)
+
+2. [@derivedFrom Kullanarak Endeksleme ve Sorgu Yanıt Hızını Artırın](/subgraphs/best-practices/derivedfrom/)
+
+3. [Değişmez Varlıklar ve Bytes ID'ler Kullanarak Endeksleme ve Sorgu Performansını Artırın](/subgraphs/best-practices/immutable-entities-bytes-as-ids/)
+
+4. [Endeksleme Hızını `eth_calls`'den Kaçınarak İyileştirin](/subgraphs/best-practices/avoid-eth-calls/)
+
+5. [Zaman Serileri ve Bütünleştirme ile Basitleştirin ve Optimize Edin](/subgraphs/best-practices/timeseries/)
+
+6. [Hızlı Düzeltme Dağıtımı için Aşılama Kullanın](/subgraphs/best-practices/grafting-hotfix/)
