@@ -1,0 +1,539 @@
+---
+title: GraphQL Validations Migration Guide
+---
+
+जल्द ही `ग्राफ़-नोड` [ग्राफ़क्यूएल सत्यापन विनिर्देश] (https://spec.graphql.org/June2018/#sec-Validation) के 100% कवरेज का समर्थन करेगा।
+
+`ग्राफ़-नोड` के पिछले संस्करण सभी सत्यापनों का समर्थन नहीं करते थे और अधिक सुंदर प्रतिक्रियाएँ प्रदान करते थे - इसलिए, अस्पष्टता के मामलों में, `ग्राफ़-नोड` अमान्य ग्राफ़क्यूएल संचालन घटकों की अनदेखी कर रहा था।
+
+ग्राफक्यूएल सत्यापन समर्थन आगामी नई सुविधाओं और ग्राफ नेटवर्क के पैमाने पर प्रदर्शन के लिए स्तंभ है।
+
+यह क्वेरी प्रतिक्रियाओं के निर्धारण को भी सुनिश्चित करेगा, जो कि ग्राफ नेटवर्क पर एक प्रमुख आवश्यकता है।
+
+**GraphQL Validations को सक्षम करने से कुछ मौजूदा क्वेरीज़ टूट जाएंगी** जो ग्राफ़ API को भेजी गई हैं।
+
+उन मान्यताओं का अनुपालन करने के लिए, कृपया माइग्रेशन गाइड का पालन करें।
+
+> ⚠️ यदि आप सत्यापन शुरू होने से पहले अपने प्रश्नों को माइग्रेट नहीं करते हैं, तो वे त्रुटियां लौटाएंगे और संभवत: आपके फ़्रंटएंड/क्लाइंट को तोड़ देंगे।
+
+## प्रवासन गाइड
+
+आप अपने ग्राफक्यूएल संचालन में किसी भी समस्या का पता लगाने और उन्हें ठीक करने के लिए सीएलआई माइग्रेशन टूल का उपयोग कर सकते हैं। वैकल्पिक रूप से आप `https://api-next.thegraph.com/subgraphs/name/$GITHUB_USER/$SUBGRAPH_NAME` समापन बिंदु का उपयोग करने के लिए अपने ग्राफ़िकल क्लाइंट के समापन बिंदु को अपडेट कर सकते हैं। इस समापन बिंदु के विरुद्ध अपने प्रश्नों का परीक्षण करने से आपको अपने प्रश्नों में समस्याओं का पता लगाने में मदद मिलेगी।
+
+> अगर आप [GraphQL ESlint](https://the-guild.dev/graphql/eslint/docs) या [GraphQL Code Generator](https://the-guild.dev) का इस्तेमाल कर रहे हैं, तो सभी सबग्राफ को माइग्रेट करने की ज़रूरत नहीं है /graphql/codegen), वे पहले से ही सुनिश्चित करते हैं कि आपके प्रश्न मान्य हैं।
+
+## माइग्रेशन सीएलआई टूल
+
+**ज्यादातर ग्राफक्यूएल संचालन त्रुटियां समय से पहले आपके कोडबेस में पाई जा सकती हैं।**
+
+इस कारण से, हम विकास के दौरान या सीआई में आपके ग्राफक्यूएल संचालन को मान्य करने के लिए एक सहज अनुभव प्रदान करते हैं।
+
+[`@graphql-validate/cli`](https://github.com/saihaj/graphql-validate) एक सरल सीएलआई उपकरण है जो किसी दिए गए स्कीमा के खिलाफ ग्राफक्यूएल संचालन को मान्य करने में मदद करता है।
+
+### शुरू करना
+
+आप टूल को निम्नानुसार चला सकते हैं:
+
+```bash
+npx @graphql-validate/cli -s https://api-next.thegraph.com/subgraphs/name/$GITHUB_USER/$SUBGRAPH_NAME -o *.graphql
+```
+
+**टिप्पणियाँ:**
+
+- $GITHUB_USER, $SUBGRAPH_NAME को उपयुक्त मानों के साथ सेट करें या बदलें। जैसे: [`artblocks/art-blocks`](https://api.thegraph.com/subgraphs/name/artblocks/art-blocks)
+- प्रदान किया गया पूर्वावलोकन स्कीमा URL (https://api-next.thegraph.com/) अत्यधिक दर-सीमित है और एक बार सभी उपयोगकर्ताओं के नए संस्करण में माइग्रेट हो जाने के बाद समाप्त हो जाएगा। **उत्पादन में इसका उपयोग न करें।**
+- निम्नलिखित एक्सटेंशन वाली फाइलों में संचालन की पहचान की जाती है [`.graphql`,](https://www.graphql-tools.com/docs/schema-loading#graphql-file-loader)[`.ts`, `.tsx `, `.js`, `jsx`](https://www.graphql-tools.com/docs/schema-loading#code-file-loader) (`-o` विकल्प)।
+
+### सीएलआई आउटपुट
+
+`[@graphql-validate/cli](https://github.com/saihaj/graphql-validate)` सीएलआई टूल किसी भी ग्राफक्यूएल संचालन त्रुटियों को निम्नानुसार आउटपुट करेगा:
+
+![सीएलआई से त्रुटि आउटपुट](https://i.imgur.com/x1cBdhq.png)
+
+प्रत्येक त्रुटि के लिए, आपको विवरण, फ़ाइल पथ और स्थिति, और समाधान उदाहरण के लिए एक लिंक मिलेगा (निम्न अनुभाग देखें)।
+
+## अपने स्थानीय प्रश्नों को पूर्वावलोकन स्कीमा के विरुद्ध चलाएँ
+
+We provide an endpoint `https://api-next.thegraph.com/` that runs a `graph-node` version that has validations turned on.
+
+आप उन्हें भेजकर प्रश्नों को आज़मा सकते हैं:
+
+- `https://api-next.thegraph.com/subgraphs/id/<Qm...>`
+
+या
+
+- `https://api-next.thegraph.com/subgraphs/name/<GITHUB_USER>/<SUBGRAPH_NAME>`
+
+उन प्रश्नों पर काम करने के लिए जिन्हें सत्यापन त्रुटियों के रूप में फ़्लैग किया गया है, आप Altair या [GraphiQL](https://cloud.hasura.io/public/graphiql) जैसे अपने पसंदीदा ग्राफ़क्यूएल क्वेरी टूल का उपयोग कर सकते हैं, और अपनी क्वेरी को आज़मा सकते हैं। वे उपकरण आपके चलाने से पहले ही उन त्रुटियों को उनके UI में चिह्नित कर देंगे।
+
+## मुद्दों को कैसे हल करें
+
+नीचे, आपको वे सभी ग्राफ़िकल सत्यापन त्रुटियां मिलेंगी जो आपके मौजूदा ग्राफ़िकल ऑपरेशंस पर हो सकती हैं।
+
+### ग्राफक्यूएल चर, संचालन, टुकड़े या तर्क अद्वितीय होने चाहिए
+
+हमने यह सुनिश्चित करने के लिए नियम लागू किए हैं कि एक ऑपरेशन में ग्राफक्यूएल चर, संचालन, टुकड़े और तर्कों का एक अनूठा सेट शामिल है।
+
+एक ग्राफकॉल ऑपरेशन तभी मान्य होता है जब उसमें कोई अस्पष्टता न हो।
+
+इसे प्राप्त करने के लिए, हमें यह सुनिश्चित करने की आवश्यकता है कि आपके ग्राफकॉल ऑपरेशन में कुछ घटक अद्वितीय होने चाहिए।
+
+इन नियमों का उल्लंघन करने वाली कुछ अमान्य कार्रवाइयों का उदाहरण यहां दिया गया है:
+
+**Duplicate Query name (#UniqueOperationNamesRule)**
+
+```graphql
+# The following operation violated the UniqueOperationName
+# rule, since we have a single operation with 2 queries
+# with the same name
+query myData {
+  id
+}
+
+query myData {
+  name
+}
+```
+
+_Solution:_
+
+```graphql
+query myData {
+  id
+}
+
+query myData2 {
+  # rename the second query
+  name
+}
+```
+
+**Duplicate Fragment name (#UniqueFragmentNamesRule)**
+
+```graphql
+# The following operation violated the UniqueFragmentName
+# rule.
+query myData {
+  id
+  ...MyFields
+}
+
+fragment MyFields {
+  metadata
+}
+
+fragment MyFields {
+  name
+}
+```
+
+_Solution:_
+
+```graphql
+query myData {
+  id
+  ...MyFieldsName
+  ...MyFieldsMetadata
+}
+
+fragment MyFieldsMetadata { # assign a unique name to fragment
+  metadata
+}
+
+fragment MyFieldsName { # assign a unique name to fragment
+  name
+}
+```
+
+**Duplicate variable name (#UniqueVariableNamesRule)**
+
+```graphql
+# The following operation violates the UniqueVariables
+query myData($id: String, $id: Int) {
+  id
+  ...MyFields
+}
+```
+
+_Solution:_
+
+```graphql
+query myData($id: String) {
+  # keep the relevant variable (here: `$id: String`)
+  id
+  ...MyFields
+}
+```
+
+**Duplicate argument name (#UniqueArgument)**
+
+```graphql
+# The following operation violated the UniqueArguments
+query myData($id: ID!) {
+  userById(id: $id, id: "1") {
+    id
+  }
+}
+```
+
+_Solution:_
+
+```graphql
+query myData($id: ID!) {
+  userById(id: $id) {
+    id
+  }
+}
+```
+
+**Duplicate anonymous query (#LoneAnonymousOperationRule)**
+
+Also, using two anonymous operations will violate the `LoneAnonymousOperation` rule due to conflict in the response structure:
+
+```graphql
+# This will fail if executed together in
+# a single operation with the following two queries:
+query {
+  someField
+}
+
+query {
+  otherField
+}
+```
+
+_Solution:_
+
+```graphql
+query {
+  someField
+  otherField
+}
+```
+
+Or name the two queries:
+
+```graphql
+query FirstQuery {
+  someField
+}
+
+query SecondQuery {
+  otherField
+}
+```
+
+### ओवरलैपिंग फील्ड्स
+
+एक ग्राफक्यूएल चयन सेट को तभी वैध माना जाता है जब वह अंतिम परिणाम सेट को सही ढंग से हल करता है।
+
+यदि कोई विशिष्ट चयन सेट, या कोई फ़ील्ड, चयनित फ़ील्ड या उपयोग किए गए तर्कों द्वारा अस्पष्टता बनाता है, तो ग्राफ़कॉल सेवा ऑपरेशन को मान्य करने में विफल हो जाएगी।
+
+इस नियम का उल्लंघन करने वाली अमान्य कार्रवाइयों के कुछ उदाहरण यहां दिए गए हैं:
+
+**Conflicting fields aliases (#OverlappingFieldsCanBeMergedRule)**
+
+```graphql
+# Aliasing fields might cause conflicts, either with
+# other aliases or other fields that exist on the
+# GraphQL schema.
+query {
+  dogs {
+    name: nickname
+    name
+  }
+}
+```
+
+_Solution:_
+
+```graphql
+query {
+  dogs {
+    name: nickname
+    originalName: name # alias the original `name` field
+  }
+}
+```
+
+**Conflicting fields with arguments (#OverlappingFieldsCanBeMergedRule)**
+
+```graphql
+# Different arguments might lead to different data,
+# so we can't assume the fields will be the same.
+query {
+  dogs {
+    doesKnowCommand(dogCommand: SIT)
+    doesKnowCommand(dogCommand: HEEL)
+  }
+}
+```
+
+_Solution:_
+
+```graphql
+query {
+  dogs {
+    knowsHowToSit: doesKnowCommand(dogCommand: SIT)
+    knowsHowToHeel: doesKnowCommand(dogCommand: HEEL)
+  }
+}
+```
+
+साथ ही, अधिक जटिल उपयोग-मामले में, आप दो टुकड़ों का उपयोग करके इस नियम का उल्लंघन कर सकते हैं जो अंततः अपेक्षित सेट में विरोध का कारण बन सकता है:
+
+```graphql
+query {
+  # Eventually, we have two "x" definitions, pointing
+  # to different fields!
+  ...A
+  ...B
+}
+
+fragment A on Type {
+  x: a
+}
+
+fragment B on Type {
+  x: b
+}
+```
+
+In addition to that, client-side GraphQL directives like `@skip` and `@include` might lead to ambiguity, for example:
+
+```graphql
+fragment mergeSameFieldsWithSameDirectives on Dog {
+  name @include(if: true)
+  name @include(if: false)
+}
+```
+
+[एल्गोरिथ्म के बारे में आप यहां और पढ़ सकते हैं।](https://spec.graphql.org/June2018/#sec-Field-Selection-Merging)
+
+### अप्रयुक्त चर या टुकड़े
+
+एक ग्राफक्यूएल ऑपरेशन को भी केवल तभी वैध माना जाता है जब सभी ऑपरेशन-परिभाषित घटकों (चर, टुकड़े) का उपयोग किया जाता है।
+
+इन नियमों का उल्लंघन करने वाले ग्राफ़िकल ऑपरेशंस के कुछ उदाहरण यहां दिए गए हैं:
+
+**Unused variable** (#NoUnusedVariablesRule)
+
+```graphql
+# Invalid, because $someVar is never used.
+query something($someVar: String) {
+  someData
+}
+```
+
+_Solution:_
+
+```graphql
+query something {
+  someData
+}
+```
+
+**Unused Fragment** (#NoUnusedFragmentsRule)
+
+```graphql
+# Invalid, because fragment AllFields is never used.
+query something {
+  someData
+}
+
+fragment AllFields { # unused :(
+  name
+  age
+}
+```
+
+_Solution:_
+
+```graphql
+No translations matched your search
+# Invalid, because fragment AllFields is never used.
+query something {
+  someData
+}
+
+# remove the `AllFields` fragment
+```
+
+### Invalid or missing Selection-Set (#ScalarLeafsRule)
+
+इसके अलावा, एक ग्राफक्यूएल फ़ील्ड चयन केवल तभी मान्य होता है जब निम्नलिखित मान्य हो:
+
+- ऑब्जेक्ट फ़ील्ड में चयन सेट निर्दिष्ट होना चाहिए।
+- एक एज फ़ील्ड (स्केलर, एनम) में निर्दिष्ट चयन सेट नहीं होना चाहिए।
+
+निम्नलिखित स्कीमा के साथ इन नियमों के उल्लंघन के कुछ उदाहरण यहां दिए गए हैं:
+
+```graphql
+type Image {
+  url: String!
+}
+
+type User {
+  id: ID!
+  avatar: Image!
+}
+
+type Query {
+  user: User!
+}
+```
+
+**Invalid Selection-Set**
+
+```graphql
+query {
+  user {
+    id { # Invalid, because "id" is of type ID and does not have sub-fields
+
+    }
+  }
+}
+```
+
+_Solution:_
+
+```graphql
+query {
+  user {
+    id
+  }
+}
+```
+
+**Missing Selection-Set**
+
+```graphql
+query {
+  user {
+    id
+    image # `image` requires a Selection-Set for sub-fields!
+  }
+}
+```
+
+_Solution:_
+
+```graphql
+query {
+  user {
+    id
+    image {
+      src
+    }
+  }
+}
+```
+
+### Incorrect Arguments values (#VariablesInAllowedPositionRule)
+
+स्कीमा में परिभाषित मान के आधार पर तर्कों के लिए हार्ड-कोडेड मानों को पास करने वाले ग्राफ़िकल ऑपरेशंस को मान्य होना चाहिए।
+
+यहां इन नियमों का उल्लंघन करने वाली अमान्य कार्रवाइयों के कुछ उदाहरण दिए गए हैं:
+
+```graphql
+query purposes {
+  # If "name" is defined as "String" in the schema,
+  # this query will fail during validation.
+  purpose(name: 1) {
+    id
+  }
+}
+
+# This might also happen when an incorrect variable is defined:
+
+query purposes($name: Int!) {
+  # If "name" is defined as `String` in the schema,
+  # this query will fail during validation, because the
+  # variable used is of type `Int`
+  purpose(name: $name) {
+    id
+  }
+}
+```
+
+### Unknown Type, Variable, Fragment, or Directive (#UnknownX)
+
+यदि किसी अज्ञात प्रकार, चर, खंड या निर्देश का उपयोग किया जाता है, तो ग्राफकलाइन एपीआई एक त्रुटि उत्पन्न करेगा।
+
+उन अज्ञात संदर्भों को ठीक किया जाना चाहिए:
+
+- नाम बदलें अगर यह एक टाइपो था
+- अन्यथा हटा दें
+
+### फ़्रैगमेंट: अमान्य फैलाव या परिभाषा
+
+**Invalid Fragment spread (#PossibleFragmentSpreadsRule)**
+
+एक फ़्रैगमेंट को गैर-लागू प्रकार पर नहीं फैलाया जा सकता है।
+
+Example, we cannot apply a `Cat` fragment to the `Dog` type:
+
+```graphql
+query {
+	dog {
+		...CatSimple
+  }
+}
+
+fragment CatSimple on Cat {
+  # ...
+}
+```
+
+**Invalid Fragment definition (#FragmentsOnCompositeTypesRule)**
+
+सभी फ़्रैगमेंट को परिभाषित किया जाना चाहिए (`on ...` का उपयोग करके) एक समग्र प्रकार, संक्षेप में: ऑब्जेक्ट, इंटरफ़ेस, या यूनियन।
+
+निम्नलिखित उदाहरण अमान्य हैं, क्योंकि स्केलर्स पर अंशों को परिभाषित करना अमान्य है।
+
+```graphql
+fragment fragOnScalar on Int {
+  # we cannot define a fragment upon a scalar (`Int`)
+  something
+}
+
+fragment inlineFragOnScalar on Dog {
+  ... on Boolean {
+    # `Boolean` is not a subtype of `Dog`
+    somethingElse
+  }
+}
+```
+
+### Directives usage
+
+**Directive cannot be used at this location (#KnownDirectivesRule)**
+
+Only GraphQL directives (`@...`) supported by The Graph API can be used.
+
+यहाँ द ग्राफक्यूएल समर्थित निर्देशों के साथ एक उदाहरण दिया गया है:
+
+```graphql
+query {
+  dog {
+    name @include(true)
+    age @skip(true)
+  }
+}
+```
+
+_Note: `@stream`, `@live`, `@defer` are not supported._
+
+**Directive can only be used once at this location (#UniqueDirectivesPerLocationRule)**
+
+ग्राफ़ द्वारा समर्थित निर्देश प्रति स्थान केवल एक बार उपयोग किए जा सकते हैं।
+
+The following is invalid (and redundant):
+
+```graphql
+query {
+  dog {
+    name @include(true) @include(true)
+  }
+}
+```
