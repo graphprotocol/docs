@@ -1,0 +1,538 @@
+---
+title: GraphQL Validations Migration Guide
+---
+
+Snart kommer `graph-node` att stödja 100 % täckning av [GraphQL Valideringsspecifikationen](https://spec.graphql.org/June2018/#sec-Validation).
+
+Tidigare versioner av `graph-node` stödde inte alla valideringar och gav mer graciösa svar - så, i fall av oklarheter, ignorerade `graph-node` ogiltiga komponenter för GraphQL-operationer.
+
+Stöd för GraphQL Validering är grundläggande för de kommande nya funktionerna och prestanda vid skala för The Graph Network.
+
+Det kommer också att säkerställa determinism för frågesvar, en nyckelkrav på The Graph Nätverk.
+
+**Att aktivera GraphQL Validering kommer att bryta några befintliga frågor** som skickas till The Graph API.
+
+För att vara i linje med dessa valideringar, följ migrationsguiden.
+
+> ⚠️ Om du inte migrerar dina frågor innan valideringarna tas i bruk kommer de att returnera fel och eventuellt bryta dina frontends/klienter.
+
+## Migrationsguide
+
+Du kan använda CLI-migrationsverktyget för att hitta eventuella problem i dina GraphQL-operationer och åtgärda dem. Alternativt kan du uppdatera ändpunkten för din GraphQL-klient att använda ändpunkten `https://api-next.thegraph.com/subgraphs/name/$GITHUB_USER/$SUBGRAPH_NAME`. Att testa dina frågor mot denna ändpunkt kommer att hjälpa dig att hitta problemen i dina frågor.
+
+> Inte alla subgrafer behöver migreras, om du använder [GraphQL ESlint](https://the-guild.dev/graphql/eslint/docs) eller [GraphQL Code Generator](https://the-guild.dev/graphql/codegen), ser de redan till att dina frågor är giltiga.
+
+## Migrations-CLI-verktyg
+
+**De flesta felen i GraphQL-operationer kan hittas i din kodbas i förväg.**
+
+Av den anledningen erbjuder vi en smidig upplevelse för validering av dina GraphQL-operationer under utveckling eller i CI.
+
+[`@graphql-validate/cli`](https://github.com/saihaj/graphql-validate) är ett enkelt CLI-verktyg som hjälper till att validera GraphQL-operationer mot ett givet schema.
+
+### **Komma igång**
+
+Du kan köra verktyget enligt följande:
+
+```bash
+npx @graphql-validate/cli -s https://api-next.thegraph.com/subgraphs/name/$GITHUB_USER/$SUBGRAPH_NAME -o *.graphql
+```
+
+**Noteringar:**
+
+- Ange eller ersätt $GITHUB_USER, $SUBGRAPH_NAME med lämpliga värden. Som: [`artblocks/art-blocks`](https://api.thegraph.com/subgraphs/name/artblocks/art-blocks)
+- Förhandsgranskningsschema-URL:en (https://api-next.thegraph.com/) som tillhandahålls har en hög begränsning för antal begäranden och kommer att fasas ut när alla användare har migrerat till den nya versionen. **Använd den inte i produktion.**
+- Operationer identifieras i filer med följande filändelser [`.graphql`,](https://www.graphql-tools.com/docs/schema-loading#graphql-file-loader)[`.ts`, `.tsx`, `.js`, `jsx`](https://www.graphql-tools.com/docs/schema-loading#code-file-loader) (`-o` alternativ).
+
+### CLI-utdata
+
+Verktyget `[@graphql-validate/cli](https://github.com/saihaj/graphql-validate)` för CLI kommer att ge utdata för eventuella fel i GraphQL-operationer enligt följande:
+
+![Felutdata från CLI](https://i.imgur.com/x1cBdhq.png)
+
+För varje fel hittar du en beskrivning, filväg och position, samt en länk till ett exempel på lösning (se följande avsnitt).
+
+## Kör dina lokala frågor mot förhandsgranskningschemat
+
+Vi tillhandahåller en ändpunkt `https://api-next.thegraph.com/` som kör en `graph-node`-version med aktiverad validering.
+
+Du kan prova att skicka frågor till:
+
+- `https://api-next.thegraph.com/subgraphs/id/<Qm...>`
+
+eller
+
+- `https://api-next.thegraph.com/subgraphs/name/<GITHUB_USER>/<SUBGRAPH_NAME>`
+
+För att arbeta med frågor som har markerats med valideringsfel kan du använda din favorit-GraphQL-frågeverktyg, som Altair eller [GraphiQL](https://cloud.hasura.io/public/graphiql), och testa din fråga. Dessa verktyg kommer även att markera dessa fel i sitt användargränssnitt, även innan du kör det.
+
+## Hur man löser problem
+
+Här nedan finner du alla fel för validering av GraphQL som kan uppstå i dina befintliga GraphQL-operationer.
+
+### GraphQL-variabler, operationer, fragment eller argument måste vara unika
+
+Vi har tillämpat regler för att säkerställa att en operation inkluderar en unik uppsättning GraphQL-variabler, operationer, fragment och argument.
+
+En GraphQL-operation är endast giltig om den inte innehåller någon oklarhet.
+
+För att uppnå detta måste vi säkerställa att vissa komponenter i din GraphQL-operation måste vara unika.
+
+Här är ett exempel på några ogiltiga operationer som bryter mot dessa regler:
+
+**Dubbel frågenamn (#UniqueOperationNamesRule)**
+
+```graphql
+# Följande åtgärd bröt mot UniqueOperationName
+# regeln, eftersom vi har en enda åtgärd med 2 frågor
+# med samma namn
+query myData {
+  id
+}
+
+query myData {
+  name
+}
+```
+
+_Solution:_
+
+```graphql
+query myData {
+  id
+}
+
+query myData2 {
+  # Byt namn på den andra sökningen
+  namn
+}
+```
+
+**Duplikat Fragmentets namn (#UniqueFragmentNamesRule)**
+
+```graphql
+# Följande åtgärd bröt mot regeln UniqueFragmentName
+# regel.
+query myData {
+  id
+  ...MyFields
+}
+
+fragment MyFields {
+  metadata
+}
+
+fragment MyFields {
+  name
+}
+```
+
+_Solution:_
+
+```graphql
+query myData {
+  id
+  ...MyFieldsName
+  ...MyFieldsMetadata
+}
+
+fragment MyFieldsMetadata { # tilldela ett unikt namn till fragmentet
+  metadata
+}
+
+fragment MyFieldsName { # tilldela ett unikt namn till fragmentet
+  namn
+}
+```
+
+**Dubbla variabelnamn (#UniqueVariableNamesRule)**
+
+```graphql
+# Följande operation strider mot UniqueVariables
+query myData($id: String, $id: Int) {
+  id
+  ...MyFields
+}
+```
+
+_Solution:_
+
+```graphql
+query myData($id: String) {
+  # behålla den relevanta variabeln (here: `$id: String`)
+  id
+  ...MyFields
+}
+```
+
+**Dubbelnamn på argument (#UniqueArgument)**
+
+```graphql
+# Följande åtgärd bröt mot UniqueArguments
+query myData($id: ID!) {
+  userById(id: $id, id: "1") {
+    id
+  }
+}
+```
+
+_Solution:_
+
+```graphql
+query myData($id: ID!) {
+  userById(id: $id) {
+    id
+  }
+}
+```
+
+**Dubbel anonym fråga (#LoneAnonymousOperationRule)**
+
+Att använda två anonyma operationer bryter också mot regeln `LoneAnonymousOperation` på grund av konflikt i svarsstrukturen:
+
+```graphql
+# Detta kommer att misslyckas om det utförs tillsammans i
+# en enda operation med följande två frågor:
+query {
+  someField
+}
+
+query {
+  otherField
+}
+```
+
+_Solution:_
+
+```graphql
+query {
+  someField
+  otherField
+}
+```
+
+Eller namnge de två frågorna:
+
+```graphql
+query FirstQuery {
+  someField
+}
+
+query SecondQuery {
+  otherField
+}
+```
+
+### Överlappande fält
+
+En GraphQL-urvalsuppsättning anses endast vara giltig om den korrekt löser den slutliga resultatuppsättningen.
+
+Om en specifik urvalsuppsättning, eller ett fält, skapar tvetydighet antingen genom det valda fältet eller genom de argument som används, kommer GraphQL-tjänsten att misslyckas med att validera operationen.
+
+Här är några exempel på ogiltiga operationer som bryter mot denna regel:
+
+**Aliaser för motstridiga fält (#OverlappingFieldsCanBeMergedRule)**
+
+```graphql
+# Aliasfält kan orsaka konflikter, antingen med
+# andra alias eller andra fält som finns i
+# GraphQL-schema.
+query {
+  dogs {
+    name: nickname
+    name
+  }
+}
+```
+
+_Solution:_
+
+```graphql
+query {
+  dogs {
+    name: nickname
+    originalName: name # alias the original `name` field
+  }
+}
+```
+
+**Motstridiga fält med argument (#OverlappingFieldsCanBeMergedRule)**
+
+```graphql
+# Olika argument kan leda till olika data,
+# så vi kan inte anta att fälten kommer att vara desamma.
+query {
+  dogs {
+    doesKnowCommand(dogCommand: SIT)
+    doesKnowCommand(dogCommand: HEEL)
+  }
+}
+```
+
+_Solution:_
+
+```graphql
+query {
+  dogs {
+    knowsHowToSit: doesKnowCommand(dogCommand: SIT)
+    knowsHowToHeel: doesKnowCommand(dogCommand: HEEL)
+  }
+}
+```
+
+I mer komplexa användningsfall kan du också bryta mot denna regel genom att använda två fragment som kan orsaka en konflikt i den slutligen förväntade uppsättningen:
+
+```graphql
+query {
+  # Till slut har vi två "x"-definitioner, som pekar
+  # till olika fält!
+  ...A
+  ...B
+}
+
+fragment A on Type {
+  x: a
+}
+
+fragment B on Type {
+  x: b
+}
+```
+
+Dessutom kan GraphQL-direktiv på klientsidan som `@skip` och `@include` leda till tvetydigheter, till exempel:
+
+```graphql
+fragment mergeSameFieldsWithSameDirectives on Dog {
+  name @include(if: true)
+  name @include(if: false)
+}
+```
+
+[Du kan läsa mer om algoritmen här] (https://spec.graphql.org/June2018/#sec-Field-Selection-Merging)
+
+### Oanvända variabler eller fragment
+
+En GraphQL-operation anses också vara giltig endast om alla operationsdefinierade komponenter (variabler, fragment) används.
+
+Här är några exempel på GraphQL-operationer som bryter mot dessa regler:
+
+**Oanvänd variabel** (#NoUnusedVariablesRule)
+
+```graphql
+# Ogiltig, eftersom $someVar aldrig används.
+query something($someVar: String) {
+  someData
+}
+```
+
+_Solution:_
+
+```graphql
+query something {
+  someData
+}
+```
+
+**Oanvänt fragment** (#NoUnusedFragmentsRule)
+
+```graphql
+# Invalid, eftersom fragmentet AllFields aldrig används.
+query something {
+  someData
+}
+
+fragment AllFields { # unused :(
+  name
+  age
+}
+```
+
+_Solution:_
+
+```graphql
+# Invalid, eftersom fragmentet AllFields aldrig används.
+query something {
+  someData
+}
+
+# ta bort `AllFields` fragmentet
+```
+
+### Ogiltig eller saknad urvalsuppsättning (#ScalarLeafsRule)
+
+Dessutom är ett GraphQL-fältval endast giltigt om följande är validerat:
+
+- Ett objektfält måste ha en valuppsättning angiven.
+- Ett edge-fält (scalar, enum) får inte ha en specificerad urvalsuppsättning.
+
+Här är några exempel på brott mot dessa regler med följande Schema:
+
+```graphql
+type Image {
+  url: String!
+}
+
+type User {
+  id: ID!
+  avatar: Image!
+}
+
+type Query {
+  user: User!
+}
+```
+
+**Ogiltig urvalsuppsättning**
+
+```graphql
+query {
+  user {
+    id { # Invalid, eftersom "id" är av typen ID och inte xhar underfält
+
+    }
+  }
+}
+```
+
+_Solution:_
+
+```graphql
+query {
+  user {
+    id
+  }
+}
+```
+
+**Missande urvalsgrupp**
+
+```graphql
+query {
+  user {
+    id
+    image # `image` kräver en urvalssats för underfält!
+  }
+}
+```
+
+_Solution:_
+
+```graphql
+query {
+  user {
+    id
+    image {
+      src
+    }
+  }
+}
+```
+
+### Felaktiga argumentvärden (#VariablesInAllowedPositionRule)
+
+GraphQL-operationer som skickar hårdkodade värden till argument måste vara giltiga, baserat på det värde som definieras i schemat.
+
+Här följer några exempel på ogiltiga operationer som bryter mot dessa regler:
+
+```graphql
+query purposes {
+  # Om "name" är definierat som "String" i schemat,
+  # kommer denna fråga att misslyckas under valideringen.
+  purpose(name: 1) {
+    id
+  }
+}
+
+# Detta kan också hända när en felaktig variabel definieras:
+
+query purposes($name: Int!) {
+  # Om "name" är definierat som `String` i schemat,
+  # kommer denna fråga att misslyckas under valideringen, eftersom
+  # variabeln som används är av typen `Int`
+  purpose(name: $name) {
+    id
+  }
+}
+```
+
+### Okänd typ, variabel, fragment eller direktiv (#UnknownX)
+
+GraphQL API kommer att ge ett felmeddelande om någon okänd typ, variabel, fragment eller direktiv används.
+
+Dessa okända referenser måste åtgärdas:
+
+- Byt namn om det var ett stavfel
+- annars, ta bort
+
+### Fragment: ogiltig spridning eller definition
+
+**Ogiltig spridning av fragment (#PossibleFragmentSpreadsRule)**
+
+Ett Fragment kan inte spridas på en icke tillämplig typ.
+
+Exempel: Vi kan inte tillämpa ett `Cat`-fragment på `Dog`-typen:
+
+```graphql
+query {
+	dog {
+		...CatSimple
+  }
+}
+
+fragment CatSimple on Cat {
+  # ...
+}
+```
+
+**Ogiltig fragmentdefinition (#FragmentsOnCompositeTypesRule)**
+
+Alla Fragment måste definieras på (med `on ...`) en sammansatt typ, kort sagt: objekt, gränssnitt eller union.
+
+Följande exempel är ogiltiga, eftersom det är ogiltigt att definiera fragment på skalärer.
+
+```graphql
+fragment fragOnScalar on Int {
+# vi kan inte definiera ett fragment på en skalär (`Int`)
+  något
+}
+
+fragment inlineFragOnScalar on Dog {
+  ... on Boolean {
+    # `Boolean` är inte en subtyp av `Dog`
+    somethingElse
+  }
+}
+```
+
+### Användning av direktiv
+
+**Direktiv kan inte användas på denna plats (#KnownDirectivesRule)**
+
+Endast GraphQL-direktiv (`@...`) som stöds av The Graph API kan användas.
+
+Här är ett exempel med de GraphQL-direktiv som stöds:
+
+```graphql
+query {
+  dog {
+    name @include(true)
+    age @skip(true)
+  }
+}
+```
+
+_Note: `@stream`, `@live`, `@defer` stöds inte._
+
+**Direktivet kan endast användas en gång på denna plats (#UniqueDirectivesPerLocationRule)**
+
+De direktiv som stöds av The Graf kan endast användas en gång per plats.
+
+Följande är ogiltigt (och överflödigt):
+
+```graphql
+query {
+  dog {
+    name @include(true) @include(true)
+  }
+}
+```
