@@ -1,0 +1,538 @@
+---
+title: GraphQL Validations Migration Guide
+---
+
+Brzy bude `graph-node` podporovat 100% pokrytí [GraphQL Validations specifikace](https://spec.graphql.org/June2018/#sec-Validation).
+
+Předchozí verze `graph-node` nepodporovaly všechny validace a neposkytovaly šetrnější odpovědi - v případě nejednoznačnosti tak `graph-node` ignoroval neplatné komponenty operací GraphQL.
+
+Podpora ověřování GraphQL je pilířem pro nadcházející nové funkce a výkon v měřítku Síť Graph.
+
+Zajistí také determinismus odpovědí na dotazy, což je klíčový požadavek sítě Graf.
+
+**Povolení ověřování GraphQL naruší některé existující dotazy** odeslané do Grafu API.
+
+Chcete-li být v souladu s těmito validacemi, postupujte podle průvodce migrací.
+
+> ⚠️ Pokud neprovedete migraci dotazů před zavedením validací, budou vracet chyby a možná rozbijí vaše frontends/klienty.
+
+## Průvodce migrací
+
+Pomocí migračního nástroje CLI můžete najít případné problémy v operacích GraphQL a opravit je. Případně můžete aktualizovat koncový bod svého klienta GraphQL tak, aby používal koncový bod `https://api-next.thegraph.com/subgraphs/name/$GITHUB_USER/$SUBGRAPH_NAME`. Testování dotazů proti tomuto koncovému bodu vám pomůže najít problémy ve vašich dotazech.
+
+> Není nutné migrovat všechny podgrafy, pokud používáte [GraphQL ESlint](https://the-guild.dev/graphql/eslint/docs) nebo [GraphQL Code Generator](https://the-guild.dev/graphql/codegen), ty již zajistí, že vaše dotazy jsou platné.
+
+## Migrační nástroj CLI
+
+**Většinu chyb při operacích GraphQL můžete najít ve své kódové základně předem.**
+
+Z tohoto důvodu poskytujeme hladký průběh ověřování operací GraphQL během vývoje nebo v CI.
+
+[`@graphql-validate/cli`](https://github.com/saihaj/graphql-validate) je jednoduchý nástroj CLI, který pomáhá ověřovat operace GraphQL proti danému schéma.
+
+### **začínáme**
+
+Nástroj můžete spustit následujícím způsobem:
+
+```bash
+npx @graphql-validate/cli -s https://api-next.thegraph.com/subgraphs/name/$GITHUB_USER/$SUBGRAPH_NAME -o *.graphql
+```
+
+**Poznámky:**
+
+- Nastavte nebo nahraďte $GITHUB_USER, $SUBGRAPH_NAME příslušnými hodnotami. Jako např: [`artblocks/art-blocks`](https://api.thegraph.com/subgraphs/name/artblocks/art-blocks)
+- Poskytnutá adresa URL náhledového schématu (https://api-next.thegraph.com/) je silně omezená a po přechodu všech uživatelů na novou verzi bude ukončena. **Nepoužívejte jej v produkčním provozu**
+- Operace jsou identifikovány v souborech s následujícími příponami [`.graphql`,](https://www.graphql-tools.com/docs/schema-loading#graphql-file-loader)[`.ts`, `.tsx`, `.js`, `jsx`](https://www.graphql-tools.com/docs/schema-loading#code-file-loader) (`-o` option).
+
+### Výstup CLI
+
+Nástroj `[@graphql-validate/cli](https://github.com/saihaj/graphql-validate)` CLI vypíše všechny chyby operací GraphQL takto:
+
+![Error output from CLI](https://i.imgur.com/x1cBdhq.png)
+
+U každé chyby naleznete popis, cestu a pozici souboru a odkaz na příklad řešení (viz následující část).
+
+## Spouštění místních dotazů proti schéma náhledu
+
+Poskytujeme koncový bod `https://api-next.thegraph.com/`, který spouští verzi `graph-node` se zapnutými validacemi.
+
+Dotazy si můžete vyzkoušet zasláním na:
+
+- `https://api-next.thegraph.com/subgraphs/id/<Qm...>`
+
+nebo
+
+- `https://api-next.thegraph.com/subgraphs/name/<GITHUB_USER>/<SUBGRAPH_NAME>`
+
+Chcete-li pracovat s dotazy, které byly označeny jako dotazy s chybami validace, můžete použít svůj oblíbený nástroj pro dotazy GraphQL, například Altair nebo [GraphiQL](https://cloud.hasura.io/public/graphiql), a vyzkoušet svůj dotaz. Tyto nástroje také tyto chyby označí ve svém uživatelském rozhraní, a to ještě předtím, než jej spustíte.
+
+## Jak řešit problémy
+
+Níže naleznete všechny chyby validace GraphQL, které se mohou vyskytnout u vašich stávajících operací GraphQL.
+
+### Proměnné, operace, fragmenty nebo argumenty jazyka GraphQL musí být jedinečné
+
+Použili jsme pravidla pro zajištění toho, aby operace obsahovala jedinečnou sadu proměnných GraphQL, operací, fragmentů a argumentů.
+
+Operace GraphQL je platná pouze tehdy, pokud neobsahuje žádnou nejednoznačnost.
+
+Abychom toho dosáhli, musíme zajistit, aby některé součásti operace GraphQL byly jedinečné.
+
+Zde je příklad několika neplatných operací, které porušují tato pravidla:
+
+**Duplicitní název dotazu (#UniqueOperationNamesRule)**
+
+```graphql
+# The following operation violated the UniqueOperationName
+# rule, since we have a single operation with 2 queries
+# with the same name
+query myData {
+  id
+}
+
+query myData {
+  name
+}
+```
+
+_Řešení:_
+
+```graphql
+query myData {
+  id
+}
+
+query myData2 {
+  # rename the second query
+  name
+}
+```
+
+**Duplicitní název fragmentu (#UniqueFragmentNamesRule)**
+
+```graphql
+# The following operation violated the UniqueFragmentName
+# rule.
+query myData {
+  id
+  ...MyFields
+}
+
+fragment MyFields {
+  metadata
+}
+
+fragment MyFields {
+  name
+}
+```
+
+_Řešení:_
+
+```graphql
+query myData {
+  id
+  ...MyFieldsName
+  ...MyFieldsMetadata
+}
+
+fragment MyFieldsMetadata { # assign a unique name to fragment
+  metadata
+}
+
+fragment MyFieldsName { # assign a unique name to fragment
+  name
+}
+```
+
+**Duplicitní název proměnné (#UniqueVariableNamesRule)**
+
+```graphql
+# The following operation violates the UniqueVariables
+query myData($id: String, $id: Int) {
+  id
+  ...MyFields
+}
+```
+
+_Řešení:_
+
+```graphql
+query myData($id: String) {
+  # keep the relevant variable (here: `$id: String`)
+  id
+  ...MyFields
+}
+```
+
+**Duplicate argument name (#UniqueArgument)**
+
+```graphql
+# The following operation violated the UniqueArguments
+query myData($id: ID!) {
+  userById(id: $id, id: "1") {
+    id
+  }
+}
+```
+
+_Řešení:_
+
+```graphql
+query myData($id: ID!) {
+  userById(id: $id) {
+    id
+  }
+}
+```
+
+**Duplicitní anonymní dotaz (#LoneAnonymousOperationRule)**
+
+Použitím dvou anonymních operací se také poruší pravidlo `LoneAnonymousOperation` kvůli konfliktu ve struktuře odpovědi:
+
+```graphql
+# This will fail if executed together in
+# a single operation with the following two queries:
+query {
+  someField
+}
+
+query {
+  otherField
+}
+```
+
+_Řešení:_
+
+```graphql
+query {
+  someField
+  otherField
+}
+```
+
+Nebo tyto dva dotazy pojmenujte:
+
+```graphql
+query FirstQuery {
+  someField
+}
+
+query SecondQuery {
+  otherField
+}
+```
+
+### Překrývající pole
+
+Výběrová sada GraphQL je považována za platnou, pouze pokud správně řeší případnou sadu výsledků.
+
+Pokud konkrétní výběrová sada nebo pole způsobí nejednoznačnost buď vybraného pole, nebo použitých argumentů, služba GraphQL operaci neověří.
+
+Zde je několik příkladů neplatných operací, které toto pravidlo porušují:
+
+**Překrývající se aliasy polí (#OverlappingFieldsCanBeMergedRule)**
+
+```graphql
+# Aliasing fields might cause conflicts, either with
+# other aliases or other fields that exist on the
+# GraphQL schema.
+query {
+  dogs {
+    name: nickname
+    name
+  }
+}
+```
+
+_Řešení:_
+
+```graphql
+query {
+  dogs {
+    name: nickname
+    originalName: name # alias the original `name` field
+  }
+}
+```
+
+**Konfliktní pole s argumenty (#OverlappingFieldsCanBeMergedRule)**
+
+```graphql
+# Different arguments might lead to different data,
+# so we can't assume the fields will be the same.
+query {
+  dogs {
+    doesKnowCommand(dogCommand: SIT)
+    doesKnowCommand(dogCommand: HEEL)
+  }
+}
+```
+
+_Řešení:_
+
+```graphql
+query {
+  dogs {
+    knowsHowToSit: doesKnowCommand(dogCommand: SIT)
+    knowsHowToHeel: doesKnowCommand(dogCommand: HEEL)
+  }
+}
+```
+
+Ve složitějších případech použití můžete toto pravidlo porušit také použitím dvou fragmentů, které by mohly způsobit konflikt v očekávané sadě:
+
+```graphql
+query {
+  # Eventually, we have two "x" definitions, pointing
+  # to different fields!
+  ...A
+  ...B
+}
+
+fragment A on Type {
+  x: a
+}
+
+fragment B on Type {
+  x: b
+}
+```
+
+Kromě toho mohou vést k nejasnostem například direktivy GraphQL na straně klienta jako `@skip` a `@include`:
+
+```graphql
+fragment mergeSameFieldsWithSameDirectives on Dog {
+  name @include(if: true)
+  name @include(if: false)
+}
+```
+
+[Více informací o algoritmu najdete zde.](https://spec.graphql.org/June2018/#sec-Field-Selection-Merging)
+
+### Nepoužívané proměnné nebo fragmenty
+
+Operace GraphQL je také považována za platnou, pouze pokud jsou použity všechny součásti definované operací (proměnné, fragmenty).
+
+Zde je několik příkladů operací GraphQL, které tato pravidla porušují:
+
+**Nepoužitá proměnná** (#NoUnusedVariablesRule)
+
+```graphql
+# Invalid, because $someVar is never used.
+query something($someVar: String) {
+  someData
+}
+```
+
+_Řešení:_
+
+```graphql
+query something {
+  someData
+}
+```
+
+**Nepoužitý fragment**(#NoUnusedFragmentsRule)
+
+```graphql
+# Invalid, because fragment AllFields is never used.
+query something {
+  someData
+}
+
+fragment AllFields { # unused :(
+  name
+  age
+}
+```
+
+_Řešení:_
+
+```graphql
+# Invalid, because fragment AllFields is never used.
+query something {
+  someData
+}
+
+# remove the `AllFields` fragment
+```
+
+### Neplatná nebo chybějící výběrová sada (#ScalarLeafsRule)
+
+Výběr pole GraphQL je také platný pouze v případě, že je potvrzeno následující:
+
+- Pole objektu musí mít zadanou výběrovou sadu.
+- Okrajové pole (skalár, enum) nesmí mít zadanou výběrovou sadu.
+
+Zde je několik příkladů porušení těchto pravidel s následujícím schématem:
+
+```graphql
+type Image {
+  url: String!
+}
+
+type User {
+  id: ID!
+  avatar: Image!
+}
+
+type Query {
+  user: User!
+}
+```
+
+**Neplatná výběrová sada**
+
+```graphql
+query {
+  user {
+    id { # Invalid, because "id" is of type ID and does not have sub-fields
+
+    }
+  }
+}
+```
+
+_Řešení:_
+
+```graphql
+query {
+  user {
+    id
+  }
+}
+```
+
+**Chybějící výběrová sada**
+
+```graphql
+query {
+  user {
+    id
+    image # `image` requires a Selection-Set for sub-fields!
+  }
+}
+```
+
+_Řešení:_
+
+```graphql
+query {
+  user {
+    id
+    image {
+      src
+    }
+  }
+}
+```
+
+### Nesprávné hodnoty argumentů (#VariablesInAllowedPositionRule)
+
+Operace GraphQL, které předávají pevně zadané hodnoty argumentů, musí být platné na základě hodnoty definované ve schéma.
+
+Zde je několik příkladů neplatných operací, které porušují tato pravidla:
+
+```graphql
+query purposes {
+  # If "name" is defined as "String" in the schema,
+  # this query will fail during validation.
+  purpose(name: 1) {
+    id
+  }
+}
+
+# This might also happen when an incorrect variable is defined:
+
+query purposes($name: Int!) {
+  # If "name" is defined as `String` in the schema,
+  # this query will fail during validation, because the
+  # variable used is of type `Int`
+  purpose(name: $name) {
+    id
+  }
+}
+```
+
+### Neznámý typ, proměnná, fragment nebo směrnice (#UnknownX)
+
+Pokud je použit neznámý typ, proměnná, fragment nebo direktiva, rozhraní GraphQL API vyhodí chybu.
+
+Tyto neznámé odkazy je třeba opravit:
+
+- přejmenovat, pokud se jedná o překlep
+- v opačném případě odstraňte
+
+### Fragment: neplatné rozšíření nebo definice
+
+**Neplatné rozložení fragmentů (#PossibleFragmentSpreadsRule)**
+
+Fragment nelze rozložit na nepoužitelný typ.
+
+Příklad: fragment `Kočka` nemůžeme použít na typ `Pes`:
+
+```graphql
+query {
+	dog {
+		...CatSimple
+  }
+}
+
+fragment CatSimple on Cat {
+  # ...
+}
+```
+
+**Neplatná definice fragmentu (#FragmentsOnCompositeTypesRule)**
+
+Všechny fragmenty musí být definovány na (pomocí `on ...`) složeném typu, zkráceně: objektu, rozhraní nebo svazu.
+
+Následující příklady jsou neplatné, protože definování fragmentů na skalárech je neplatné.
+
+```graphql
+fragment fragOnScalar on Int {
+  # we cannot define a fragment upon a scalar (`Int`)
+  something
+}
+
+fragment inlineFragOnScalar on Dog {
+  ... on Boolean {
+    # `Boolean` is not a subtype of `Dog`
+    somethingElse
+  }
+}
+```
+
+### Použití směrnic
+
+**Direktiv nelze na tomto místě použít (#KnownDirectivesRule)**
+
+Lze použít pouze direktivy GraphQL (`@...`) podporované Graf API.
+
+Zde je příklad s direktivami podporovanými GraphQL:
+
+```graphql
+query {
+  dog {
+    name @include(true)
+    age @skip(true)
+  }
+}
+```
+
+_Poznámka: `@stream`, `@live`, `@defer` nejsou podporovány._
+
+**Direktiv lze v tomto umístění použít pouze jednou (#UniqueDirectivesPerLocationRule)**
+
+Směrnice podporované nástrojem Grafu lze v jednom umístění použít pouze jednou.
+
+Následující text je neplatný (a nadbytečný):
+
+```graphql
+query {
+  dog {
+    name @include(true) @include(true)
+  }
+}
+```
