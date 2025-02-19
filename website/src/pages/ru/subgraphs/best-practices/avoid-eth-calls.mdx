@@ -1,0 +1,117 @@
+---
+title: Лучшая практика субграфа 4 — увеличение скорости индексирования за счет избегания eth_calls
+sidebarTitle: 'Subgraph Best Practice 4: Avoiding eth_calls'
+---
+
+## Краткое содержание
+
+`eth_calls` — это вызовы, которые могут выполняться из субграфа к ноде Ethereum. Эти вызовы требуют значительного количества времени для возврата данных, что замедляет индексирование. По возможности, проектируйте смарт-контракты так, чтобы они отправляли все необходимые Вам данные, чтобы избежать использования `eth_calls`.
+
+## Почему избегание `eth_calls` является наилучшей практикой
+
+Субграфы оптимизированы для индексирования данных событий, которые исходят из смарт-контрактов. Субграф также может индексировать данные из `eth_call`, однако это значительно замедляет процесс индексирования, так как `eth_calls` требуют выполнения внешних вызовов к смарт-контрактам. Скорость реагирования этих вызовов зависит не от субграфа, а от подключения и скорости ответа ноды Ethereum, к которой отправлен запрос. Минимизируя или полностью исключая `eth_calls` в наших субграфах, мы можем значительно повысить скорость индексирования.
+
+### Что из себя представляет eth_call?
+
+`eth_calls` часто необходимы, когда данные, требуемые для субграфа, недоступны через сгенерированные события. Например, рассмотрим ситуацию, когда субграфу нужно определить, являются ли токены ERC20 частью определенного пула, но контракт генерирует только базовое событие `Transfer` и не создает событие, содержащее нужные нам данные:
+
+```yaml
+event Transfer(address indexed from, address indexed to, uint256 value);
+```
+
+Предположим, что принадлежность токенов к пулу определяется переменной состояния с именем `getPoolInfo`. В этом случае нам потребуется использовать `eth_call`, чтобы запросить эти данные:
+
+```typescript
+import { Address } from '@graphprotocol/graph-ts'
+import { ERC20, Transfer } from '../generated/ERC20/ERC20'
+import { TokenTransaction } from '../generated/schema'
+
+export function handleTransfer(event: Transfer): void {
+  let transaction = new TokenTransaction(event.transaction.hash.toHex())
+
+  // Привязка экземпляра контракта ERC20 к указанному адресу:
+  let instance = ERC20.bind(event.address)
+
+  // Получение информации о пуле с помощью eth_call
+  let poolInfo = instance.getPoolInfo(event.params.to)
+
+  transaction.pool = poolInfo.toHexString()
+  transaction.from = event.params.from.toHexString()
+  transaction.to = event.params.to.toHexString()
+  transaction.value = event.params.value
+
+  transaction.save()
+}
+```
+
+Это функционально, однако не идеально, так как замедляет индексирование нашего субграфа.
+
+## Как устранить `eth_calls`
+
+В идеале смарт-контракт должен быть обновлён, чтобы эмитировать все необходимые данные внутри событий. Например, модификация смарт-контракта для включения информации о пуле в событие может устранить необходимость в `eth_calls`:
+
+```
+event TransferWithPool(address indexed from, address indexed to, uint256 value, bytes32 indexed poolInfo);
+```
+
+С этим обновлением субграф может напрямую индексировать необходимые данные без внешних вызовов:
+
+```typescript
+import { Address } from '@graphprotocol/graph-ts'
+import { ERC20, TransferWithPool } from '../generated/ERC20/ERC20'
+import { TokenTransaction } from '../generated/schema'
+
+export function handleTransferWithPool(event: TransferWithPool): void {
+  let transaction = new TokenTransaction(event.transaction.hash.toHex())
+
+  transaction.pool = event.params.poolInfo.toHexString()
+  transaction.from = event.params.from.toHexString()
+  transaction.to = event.params.to.toHexString()
+  transaction.value = event.params.value
+
+  transaction.save()
+}
+```
+
+Это значительно повышает производительность, так как устраняет потребность в `eth_calls`.
+
+## Как оптимизировать `eth_calls`
+
+Если изменение смарт-контракта невозможно, и `eth_calls` необходимы, прочитайте статью "[Как легко улучшить производительность индексирования субграфа: сокращение eth_calls](https://thegraph.com/blog/improve-subgraph-performance-reduce-eth-calls/)" Саймона Эмануэля Шмида, чтобы изучить различные стратегии оптимизации `eth_calls`.
+
+## Сокращение времени выполнения `eth_calls`
+
+Для тех `eth_calls`, которые нельзя устранить, накладные расходы на их выполнение можно минимизировать, объявив их в манифесте. Когда `graph-node` обрабатывает блок, все объявленные `eth_calls` выполняются параллельно до запуска обработчиков. Вызовы, не объявленные в манифесте, выполняются последовательно во время работы обработчиков. Улучшение производительности достигается за счет параллельного выполнения вызовов, а не последовательного, что помогает сократить общее время, затраченное на вызовы, но не устраняет его полностью.
+
+В настоящее время `eth_calls` можно объявлять только для обработчиков событий. В манифесте нужно написать
+
+```yaml
+event: TransferWithPool(address indexed, address indexed, uint256, bytes32 indexed)
+handler: handleTransferWithPool
+calls:
+  ERC20.poolInfo: ERC20[event.address].getPoolInfo(event.params.to)
+```
+
+Часть, выделенная желтым, — это объявление вызова. Часть до двоеточия — это текстовая метка, которая используется только в сообщениях об ошибках. Часть после двоеточия имеет форму `Contract[address].function(params)`. Допустимыми значениями для адреса и параметров являются `event.address` и `event.params.<name>`.
+
+Обработчик сам получает результат этого `eth_call`, как и в предыдущем разделе, привязываясь к контракту и выполняя вызов. `graph-node` кеширует результаты объявленных `eth_calls` в памяти, а вызов из обработчика будет извлекать результат из этого кеша в памяти, вместо того чтобы выполнять фактический RPC-вызов.
+
+Примечание: Объявленные `eth_calls` могут быть выполнены только в субграфах с версией спецификации >= 1.2.0.
+
+## Заключение
+
+Вы можете значительно улучшить производительность индексирования, минимизируя или исключая `eth_calls` в своих субграфах.
+
+## Лучшие практики для субграфов 1-6
+
+1. [Увеличение скорости запросов с помощью обрезки субграфов](/subgraphs/best-practices/pruning/)
+
+2. [Улучшение индексирования и отклика запросов с использованием @derivedFrom](/subgraphs/best-practices/derivedfrom/)
+
+3. [Улучшение индексирования и производительности запросов с использованием неизменяемых объектов и байтов в качестве идентификаторов](/subgraphs/best-practices/immutable-entities-bytes-as-ids/)
+
+4. [Увеличение скорости индексирования путем избегания `eth_calls`](/subgraphs/best-practices/avoid-eth-calls/)
+
+5. [Упрощение и оптимизация с помощью временных рядов и агрегаций](/subgraphs/best-practices/timeseries/)
+
+6. [Использование переноса (графтинга) для быстрого развертывания исправлений](/subgraphs/best-practices/grafting-hotfix/)
