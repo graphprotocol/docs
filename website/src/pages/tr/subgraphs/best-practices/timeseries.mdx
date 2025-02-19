@@ -1,0 +1,199 @@
+---
+title: Subgraph Örnek Uygulama 5 - Zaman serileri ve Toplulaştırma ile Basitleştirip Optimize Edin
+sidebarTitle: Zaman Serileri ve Toplulaştırmalar
+---
+
+## Özet
+
+Subgraph'lerdeki yeni zaman serisi ve toplulaştırma özelliğini kullanmak, hem endeksleme hızını hem de sorgu performansını önemli ölçüde artırabilir.
+
+## Genel Bakış
+
+Zaman serisi ve toplulaştırmalar, toplulaştırma hesaplamalarını veritabanına aktararak ve eşleme kodunu basitleştirerek, veri işleme yükünü azaltır ve sorguları hızlandırır. Bu yaklaşım, özellikle büyük hacimli zamana dayalı verilerle başa çıkarken etkilidir.
+
+## Zaman Serisi ve Toplulaştırmaların Faydaları
+
+1. İyileştirilmiş Endeksleme Süresi
+
+- Yüklenmesi Gereken Daha Az Veri: Ham veri noktaları değiştirilemez zaman serisi varlıkları olarak depolandığı için, eşlemeler daha az veri işler.
+- Veritabanı Tarafından Yönetilen Toplulaştırmalar: Toplulaştırmalar otomatik olarak veritabanı tarafından hesaplanır, bu da eşlemeler üzerindeki yükü azaltır.
+
+2. Basitleştirilmiş Eşleme Kodu
+
+- Manuel Hesaplama Olmaması: Geliştiriciler artık eşlemelerde karmaşık toplulaştırma mantığı yazmak zorunda değildir.
+- Azaltılmış Karmaşıklık: Kod bakımını basitleştirir ve hata olasılığını en aza indirir.
+
+3. Çok Daha Hızlı Sorgular
+
+- Değişmez Veri: Tüm zaman serisi verileri değişmezdir. Bu da verimli depolama ve geri çağırmayı mümkün kılar.
+- Verimli Veri Ayrımı: Toplulaştırmalar, ham zaman serisi verilerinden ayrı olarak depolanır, bu da sorguların önemli ölçüde —genellikle birkaç büyüklük derecesi— daha az veri işlemesine olanak tanır.
+
+### Önemli Hususlar
+
+- Değişmez Veri: Zaman serisi verileri yazıldıktan sonra değiştirilemez, bu da veri bütünlüğünü sağlar ve endekslemeyi basitleştirir.
+- Otomatik Kimlık Numarası ve Zaman Damgası Yönetimi: id (kimlik numarası) ve timestamp (zaman damgası) alanları graph-node tarafından otomatik olarak yönetilir, potansiyel hataları azaltır.
+- Verimli Veri Depolama: Ham verileri toplulaştırmalardan ayırarak, depolama optimize edilir ve sorgular daha hızlı çalışır.
+
+## Zaman Serisi ve Toplulaştırmaları Nasıl Uygulanır
+
+### Prerequisites
+
+You need `spec version 1.1.0` for this feature.
+
+### Zaman Serisi Varlıklarının Tanımlanması
+
+Bir zaman serisi varlığı, zaman içinde toplanan ham veri noktalarını temsil eder. `@entity(timeseries: true)` notasyonu ile tanımlanır. Ana gereksinimler:
+
+- Değişmezlik: Zaman serisi varlıkları her zaman değişmezdir.
+- Zorunlu Alanlar:
+  - `id`: `Int8!` türünde olmalı ve otomatik olarak artmalıdır.
+  - `timestamp`: `Timestamp!` türünde olmalı ve blok zaman damgasına otomatik olarak ayarlanmalıdır.
+
+Örnek:
+
+```graphql
+type Data @entity(timeseries: true) {
+  id: Int8!
+  timestamp: Timestamp!
+  amount: BigDecimal!
+}
+```
+
+### Toplulaştırma Varlıklarını Tanımlama
+
+Bir toplulaştırma varlığı, bir zaman serisi kaynağından toplulaştırılmış değerleri hesaplar. `@aggregation` ile tanımlanır. Ana bileşenler:
+
+- Açıklama Argümanları:
+  - `intervals`: Zaman aralıklarını belirtir (örneğin, `["hour", "day"]`).
+
+Örnek:
+
+```graphql
+type Stats @aggregation(intervals: ["hour", "day"], source: "Data") {
+  id: Int8!
+  timestamp: Timestamp!
+  sum: BigDecimal! @aggregate(fn: "sum", arg: "amount")
+}
+```
+
+In this example, Stats aggregates the amount field from Data over hourly and daily intervals, computing the sum.
+
+### Toplulaştırılmış Verileri Sorgulama
+
+Toplulaştırmalar, boyut ve zaman aralıklarına göre filtreleme ve geri alma imkanı sağlayan sorgu alanları aracılığıyla dışarı sunulur.
+
+Örnek:
+
+```graphql
+{
+  tokenStats(
+    interval: "hour"
+    where: { token: "0x1234567890abcdef", timestamp_gte: "1704164640000000", timestamp_lt: "1704251040000000" }
+  ) {
+    id
+    timestamp
+    token {
+      id
+    }
+    totalVolume
+    priceUSD
+    count
+  }
+}
+```
+
+### Toplulaştırmalarda Boyutların Kullanımı
+
+Boyutlar, veri noktalarını gruplamak için kullanılan toplulaştırılmamış alanlardır. Belirli kriterlere dayalı toplulaştırmalar sağlarlar. Mesela, bir finansal uygulamadaki belirli bir token'a ait toplulaştırmaları elde etmek için kullanılırlar.
+
+Örnek:
+
+### Zaman Serisi Varlığı
+
+```graphql
+type TokenData @entity(timeseries: true) {
+  id: Int8!
+  timestamp: Timestamp!
+  token: Token!
+  amount: BigDecimal!
+  priceUSD: BigDecimal!
+}
+```
+
+### Boyut Kullanan Toplulaştırma Varlığı
+
+```graphql
+type TokenStats @aggregation(intervals: ["hour", "day"], source: "TokenData") {
+  id: Int8!
+  timestamp: Timestamp!
+  token: Token!
+  totalVolume: BigDecimal! @aggregate(fn: "sum", arg: "amount")
+  priceUSD: BigDecimal! @aggregate(fn: "last", arg: "priceUSD")
+  count: Int8! @aggregate(fn: "count", cumulative: true)
+}
+```
+
+- Boyut Alanı: Token, verileri gruplar. Bu nedenle toplulaştırmalar her token için hesaplanır.
+- Toplulaştırmalar:
+  - totalVolume: Miktarın (amount alanının) toplamı.
+  - priceUSD: Kayıtlı son priceUSD.
+  - count: Kayıtların kümülatif sayısı.
+
+### Toplulaştırma Fonksiyonları ve İfadeleri
+
+Desteklenen toplulaştırma fonksiyonları:
+
+- sum (toplama)
+- count (sayma)
+- min (asgari)
+- max (azami)
+- first (ilk)
+- last (son)
+
+### @aggregate içindeki arg (argüman) şunlar olabilir
+
+- Zaman serisi varlığındaki bir alan adı.
+- Alanlar ve sabit değerler kullanılarak oluşturulan bir ifade.
+
+### Toplulaştırma İfadeleri Örnekleri
+
+- Token Değerini Topla: @aggregate(fn: "sum", arg: "priceUSD \_ amount")
+- Azami Pozitif Tutar: @aggregate(fn: "max", arg: "greatest(amount0, amount1, 0)")
+- Koşullu Toplama: @aggregate(fn: "sum", arg: "case when amount0 > amount1 then amount0 else 0 end")
+
+Desteklenen operatörler ve fonksiyonlar arasında temel aritmetik (+, -, \_, /) operatörleri, karşılaştırma operatörleri, mantıksal operatörler (and, or, not) ve SQL fonksiyonları (örneğin greatest, least, coalesce) bulunur.
+
+### Sorgu Parametreleri
+
+- interval: Zaman aralığını belirtir (ör., "hour").
+- where: Boyutlara ve zaman damgası aralıklarına göre filtreler.
+- timestamp_gte / timestamp_lt: Başlangıç ve bitiş zamanları için filtreler (dönem başlangıcından itibaren geçen mikrosaniye cinsinden).
+
+### Notlar
+
+- Sıralama: Sonuçlar otomatik olarak zaman damgası ve id'ye göre azalan sırada sıralanır.
+- Mevcut Veriler: Opsiyonel mevcut argüman, mevcut, kısmen doldurulmuş aralığı içerebilir.
+
+### Sonuç
+
+Zaman serileri ve toplulaştırmaların subgraph'lerde uygulanması, zamana dayalı veri ile çalışan projeler için örnek bir uygulamadır. Bu yaklaşım:
+
+- Performansı Artırır: Veri işleme yükünü azaltarak endeksleme ve sorgulamayı hızlandırır.
+- Geliştirmeyi Basitleştirir: Eşlemelerde manuel toplulaştırma mantığı ihtiyacını ortadan kaldırır.
+- Verimli Ölçeklenir: Hız veya yanıt verme süresinden ödün vermeden büyük hacimli verileri işler.
+
+Bu modeli benimseyerek, geliştiriciler daha verimli ve ölçeklenebilir subgraph'ler oluşturabilir ve son kullanıcılara daha hızlı ve güvenilir veri erişimi sağlayabilirler. Zaman serileri ve toplulaştırmaların uygulanması hakkında daha fazla bilgi için [Zaman Serileri ve Toplulaştırmalar](https://github.com/graphprotocol/graph-node/blob/master/docs/aggregations.md) belgesini inceleyin. Bu özelliği subgraph'lerinizde denemeyi de düşünebilirsiniz.
+
+## Subgraph Örnek Uygulamalar 1-6
+
+1. [Improve Query Speed with Subgraph Pruning](/subgraphs/best-practices/pruning/)
+
+2. [Improve Indexing and Query Responsiveness by Using @derivedFrom](/subgraphs/best-practices/derivedfrom/)
+
+3. [Improve Indexing and Query Performance by Using Immutable Entities and Bytes as IDs](/subgraphs/best-practices/immutable-entities-bytes-as-ids/)
+
+4. [Improve Indexing Speed by Avoiding `eth_calls`](/subgraphs/best-practices/avoid-eth-calls/)
+
+5. [Simplify and Optimize with Timeseries and Aggregations](/subgraphs/best-practices/timeseries/)
+
+6. [Use Grafting for Quick Hotfix Deployment](/subgraphs/best-practices/grafting-hotfix/)
