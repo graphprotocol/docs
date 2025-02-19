@@ -1,0 +1,56 @@
+---
+title: Лучшая практика субграфа 1 — Улучшение скорости запросов с помощью сокращения (Pruning) субграфа
+sidebarTitle: Pruning with indexerHints
+---
+
+## Краткое содержание
+
+[Pruning](/developing/creating-a-subgraph/#prune) удаляет архивные элементы из базы данных субграфа до заданного блока, а удаление неиспользуемых элементов из базы данных субграфа улучшает производительность запросов, зачастую значительно. Использование `indexerHints` — это простой способ выполнить сокращение субграфа.
+
+## Как сократить субграф с помощью `indexerHints`
+
+Добавьте раздел с названием 'indexerHints' в манифест.
+
+`indexerHints` имеет три опции `prune`:
+
+- `prune: auto`: Сохраняет минимально необходимую историю, установленную Индексатором, оптимизируя производительность запросов. Это рекомендуется как основная настройка и является настройкой по умолчанию для всех субграфов, созданных с помощью `graph-cli` версии >= 0.66.0.
+- `prune: <Number of blocks to retain>`: Устанавливает пользовательский предел на количество исторических блоков, которые следует сохранить.
+- `prune: never`: без сокращения исторических данных; сохраняет всю историю и является значением по умолчанию, если раздел `indexerHints` отсутствует. `prune: never` следует выбрать, если требуются [Запросы на путешествия во времени](/subgraphs/querying/graphql-api/#time-travel-queries).
+
+Мы можем добавить `indexerHints` в наши субграфы, обновив наш файл `subgraph.yaml`:
+
+```yaml
+specVersion: 1.0.0
+schema:
+  file: ./schema.graphql
+indexerHints:
+  prune: auto
+dataSources:
+  - kind: ethereum/contract
+    name: Contract
+    network: mainnet
+```
+
+## Важные замечания
+
+- Если требуются [Запросы на путешествия во времени](/subgraphs/querying/graphql-api/#time-travel-queries) и при этом нужно выполнить сокращение данных, сокращение необходимо выполнить точно, чтобы сохранить функциональность запросов на путешествия во времени. По этой причине обычно не рекомендуется использовать `indexerHints: prune: auto` с запросами на путешествия во времени. Вместо этого следует выполнить сокращение, используя `indexerHints: prune: <Number of blocks to retain>`, чтобы выполнить точное сокращение до высоты блока, которое сохранит исторические данные, необходимые для запросов на путешествия во времени, или использовать `prune: never`, чтобы сохранить все данные.
+
+- Невозможно выполнить [графтинг](/subgraphs/cookbook/grafting/) на высоте блока, который был сокращен. Если графтинг выполняется регулярно и требуется сокращение данных, рекомендуется использовать `indexerHints: prune: <Number of blocks to retain>`, чтобы точно сохранить необходимое количество блоков (например, достаточное для шести месяцев).
+
+## Заключение
+
+Сокращение с использованием `indexerHints` — это наилучшая практика при разработке субграфов, обеспечивающая значительное улучшение производительности запросов.
+
+## Лучшие практики для субграфов 1-6
+
+1. [Improve Query Speed with Subgraph Pruning](/subgraphs/best-practices/pruning/)
+
+2. [Improve Indexing and Query Responsiveness by Using @derivedFrom](/subgraphs/best-practices/derivedfrom/)
+
+3. [Improve Indexing and Query Performance by Using Immutable Entities and Bytes as IDs](/subgraphs/best-practices/immutable-entities-bytes-as-ids/)
+
+4. [Improve Indexing Speed by Avoiding `eth_calls`](/subgraphs/best-practices/avoid-eth-calls/)
+
+5. [Simplify and Optimize with Timeseries and Aggregations](/subgraphs/best-practices/timeseries/)
+
+6. [Use Grafting for Quick Hotfix Deployment](/subgraphs/best-practices/grafting-hotfix/)
