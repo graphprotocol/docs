@@ -1,0 +1,191 @@
+---
+title: सबग्राफ सर्वश्रेष्ठ प्रथा 3 - अपरिवर्तनीय संस्थाओं और बाइट्स को आईडी के रूप में उपयोग करके अनुक्रमण और क्वेरी प्रदर्शन में सुधार करें।
+sidebarTitle: 'Subgraph Best Practice 3: Immutable Entities and Bytes as IDs'
+---
+
+## TLDR
+
+हमारे schema.graphql फ़ाइल में अमूर्त एंटिटीज और आईडी के लिए बाइट्स का उपयोग सूचक गति और क्वेरी प्रदर्शन में [महत्वपूर्ण सुधार](https://thegraph.com/blog/two-simple-subgraph-performance-improvements/) करता है।
+
+## अमूर्त एंटिटीज
+
+एक एंटिटी को अमूर्त बनाने के लिए, हम बस एंटिटी में (immutable: true) जोड़ते हैं।
+
+```graphql
+type Transfer @entity(immutable: true) {
+  id: Bytes!
+  from: Bytes!
+  to: Bytes!
+  value: BigInt!
+}
+```
+
+Transfer एंटिटी को अमूर्त बनाने से, graph-node एंटिटी को अधिक कुशलता से संसाधित कर सकता है, जिससे indexing गति और क्वेरी की प्रतिक्रिया में सुधार होता है।
+
+Immutable Entities structures will not change in the future. An ideal entity to become an Immutable Entity would be an entity that is directly logging onchain event data, such as a `Transfer` event being logged as a `Transfer` entity.
+
+### हुड के नीचे
+
+परिवर्तनीय एंटिटियों में एक ‘ब्लॉक रेंज’ होती है जो उनकी वैधता को इंगित करती है। इन एंटिटियों को अपडेट करने के लिए ग्राफ नोड को पिछले संस्करणों की ब्लॉक रेंज को समायोजित करना पड़ता है, जिससे डेटाबेस का कार्यभार बढ़ जाता है। क्वेरियों को भी केवल जीवित एंटिटियों को खोजने के लिए फ़िल्टर करने की आवश्यकता होती है। अमूर्त एंटिटियाँ तेज होती हैं क्योंकि ये सभी जीवित होती हैं और चूंकि ये नहीं बदलेंगी, लिखते समय किसी भी चेक या अपडेट की आवश्यकता नहीं होती, और क्वेरियों के दौरान कोई फ़िल्टरिंग की आवश्यकता नहीं होती।
+
+### अमूर्त एंटिटीज का उपयोग कब न करें
+
+अगर आपके पास एक ऐसा फ़ील्ड है जैसे status जिसे समय के साथ संशोधित करने की आवश्यकता है, तो आपको एंटिटी को अमूर्त नहीं बनाना चाहिए। अन्यथा, आपको जब भी संभव हो, अमूर्त एंटिटीज का उपयोग करना चाहिए।
+
+## Bytes को IDs के रूप में
+
+हर एंटिटी के लिए एक ID की आवश्यकता होती है। पिछले उदाहरण में, हम देख सकते हैं कि ID पहले से ही Bytes प्रकार की है।
+
+```graphql
+type Transfer @entity(immutable: true) {
+  id: Bytes!
+  from: Bytes!
+  to: Bytes!
+  value: BigInt!
+}
+```
+
+हालांकि IDs के लिए अन्य प्रकार संभव हैं, जैसे String और Int8, लेकिन सभी IDs के लिए Bytes प्रकार का उपयोग करने की सिफारिश की जाती है क्योंकि चरित्र स्ट्रिंग्स को बाइनरी डेटा संग्रहीत करने के लिए बाइट स्ट्रिंग्स की तुलना में दोगुना स्थान चाहिए, और UTF-8 चरित्र स्ट्रिंग्स की तुलना करते समय स्थानीय भाषा का ध्यान रखना आवश्यक है, जो बाइट स्ट्रिंग्स की तुलना के लिए उपयोग की जाने वाली बाइटवाइज तुलना की तुलना में बहुत अधिक महंगा है।
+
+### IDs के रूप में Bytes का उपयोग न करने के कारण
+
+1. यदि एंटिटी IDs मानव-पठनीय होने चाहिए, जैसे कि ऑटो-इंक्रीमेंटेड न्यूमेरिकल IDs या पठनीय स्ट्रिंग्स, तो IDs के लिए Bytes का उपयोग नहीं किया जाना चाहिए।
+2. यदि किसी subgraph के डेटा को दूसरे डेटा मॉडल के साथ एकीकृत किया जा रहा है जो IDs के रूप में Bytes का उपयोग नहीं करता है, तो Bytes के रूप में IDs का उपयोग नहीं किया जाना चाहिए।
+3. Indexing और क्वेरीिंग प्रदर्शन में सुधार की आवश्यकता नहीं है।
+
+### Bytes के रूप में IDs के साथ जोड़ना
+
+बहुत से subgraphs में एक ID में दो प्रॉपर्टीज को जोड़ने के लिए स्ट्रिंग संयोजन का उपयोग करना एक सामान्य प्रथा है, जैसे कि event.transaction.hash.toHex() + "-" + event.logIndex.toString() का उपयोग करना। हालांकि, चूंकि यह एक स्ट्रिंग लौटाता है, यह subgraph इंडेक्सिंग और क्वेरी प्रदर्शन में महत्वपूर्ण रूप से बाधा डालता है।
+
+इसके बजाय, हमें event properties को जोड़ने के लिए concatI32() method का उपयोग करना चाहिए। यह रणनीति एक Bytes ID उत्पन्न करती है जो बहुत अधिक performant होती है।
+
+```typescript
+export function handleTransfer(event: TransferEvent): void {
+  let entity = new Transfer(event.transaction.hash.concatI32(event.logIndex.toI32()))
+  entity.from = event.params.from
+  entity.to = event.params.to
+  entity.value = event.params.value
+
+  entity.blockNumber = event.block.number
+  entity.blockTimestamp = event.block.timestamp
+  entity.transactionHash = event.transaction.hash
+
+  entity.save()
+}
+```
+
+### Bytes के रूप में IDs के साथ क्रमबद्ध करना
+
+Bytes को IDs के रूप में उपयोग करके क्रमबद्ध करना इस उदाहरण क्वेरी और प्रतिक्रिया में देखे गए अनुसार उपयुक्त नहीं है।
+
+Query:
+
+```graphql
+{
+  transfers(first: 3, orderBy: id) {
+    id
+    from
+    to
+    value
+  }
+}
+```
+
+प्रश्न प्रतिक्रिया:
+
+```json
+{
+  "data": {
+    "transfers": [
+      {
+        "id": "0x00010000",
+        "from": "0xabcd...",
+        "to": "0x1234...",
+        "value": "256"
+      },
+      {
+        "id": "0x00020000",
+        "from": "0xefgh...",
+        "to": "0x5678...",
+        "value": "512"
+      },
+      {
+        "id": "0x01000000",
+        "from": "0xijkl...",
+        "to": "0x9abc...",
+        "value": "1"
+      }
+    ]
+  }
+}
+```
+
+IDs,hex के रूप में वापस किए जाते हैं।
+
+क्रमबद्धता में सुधार करने के लिए, हमें इकाई पर एक और फ़ील्ड बनानी चाहिए जो एक BigInt हो।
+
+```graphql
+type Transfer @entity {
+  id: Bytes!
+  from: Bytes! # address
+  to: Bytes! # address
+  value: BigInt! # unit256
+  tokenId: BigInt! # uint256
+}
+```
+
+इससे क्रमबद्धता को क्रमिक रूप से अनुकूलित करने की अनुमति मिलेगी।
+
+Query:
+
+```graphql
+{
+  transfers(first: 3, orderBy: tokenId) {
+    id
+    tokenId
+  }
+}
+```
+
+प्रश्न प्रतिक्रिया:
+
+```json
+{
+  "data": {
+    "transfers": [
+      {
+        "id": "0x…",
+        "tokenId": "1"
+      },
+      {
+        "id": "0x…",
+        "tokenId": "2"
+      },
+      {
+        "id": "0x…",
+        "tokenId": "3"
+      }
+    ]
+  }
+}
+```
+
+## निष्कर्ष
+
+Immutable Entities और Bytes को IDs के रूप में उपयोग करने से subgraph की दक्षता में उल्लेखनीय सुधार हुआ है। विशेष रूप से, परीक्षणों ने क्वेरी प्रदर्शन में 28% तक की वृद्धि और indexing स्पीड में 48% तक की तेजी को उजागर किया है।
+
+इस ब्लॉग पोस्ट में, Edge & Node के सॉफ़्टवेयर इंजीनियर डेविड लुटरकोर्ट द्वारा Immutable Entities और Bytes को IDs के रूप में उपयोग करने के बारे में और अधिक पढ़ें: [दो सरल Subgraph प्रदर्शन सुधार।](https://thegraph.com/blog/two-simple-subgraph-performance-improvements/).
+
+## Subgraph Best Practices 1-6
+
+1. [Improve Query Speed with Subgraph Pruning](/subgraphs/best-practices/pruning/)
+
+2. [Improve Indexing and Query Responsiveness by Using @derivedFrom](/subgraphs/best-practices/derivedfrom/)
+
+3. [Improve Indexing and Query Performance by Using Immutable Entities and Bytes as IDs](/subgraphs/best-practices/immutable-entities-bytes-as-ids/)
+
+4. [Improve Indexing Speed by Avoiding `eth_calls`](/subgraphs/best-practices/avoid-eth-calls/)
+
+5. [Simplify and Optimize with Timeseries and Aggregations](/subgraphs/best-practices/timeseries/)
+
+6. [Use Grafting for Quick Hotfix Deployment](/subgraphs/best-practices/grafting-hotfix/)

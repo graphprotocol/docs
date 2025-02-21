@@ -1,0 +1,89 @@
+---
+title: Subgraph Örnek Uygulamalar 2 - @derivedFrom Kullanarak Endeksleme ve Sorgu Performansını İyileştirin
+sidebarTitle: 'Subgraph Best Practice 2: Arrays with @derivedFrom'
+---
+
+## Özet
+
+Şemanızdaki diziler, binlerce girişin ötesine geçtiğinde subgraph performansını ciddi şekilde yavaşlatabilir. Mümkünse `@derivedFrom` yönergesi kullanılmalıdır. Bu yaklaşım; büyük dizilerin oluşmasını önler, işleyicileri basitleştirir ve bireysel varlıkların boyutunu küçülterek endeksleme hızını ve sorgu performansını önemli ölçüde artırır.
+
+## `@derivedFrom` Yönergesi Nasıl Kullanılır
+
+Şemanızdaki dizinin ardına @derivedFrom yönergesini eklemeniz yeterlidir. Örnek:
+
+```graphql
+comments: [Comment!]! @derivedFrom(field: "post")
+```
+
+`@derivedFrom`, verimli bir şekilde birden çoka ilişkiler oluşturur. Böylece bir varlığın, ilgili alan temelinde birden fazla ilişkili varlıklarla dinamik olarak ilişkilendirilmesini sağlar. Bu yaklaşım, ilişkinin her iki tarafının da yinelenen verileri saklama gerekliliğini ortadan kaldırarak subgraph'i daha verimli hale getirir.
+
+### `@derivedFrom`'ın Örnek Kullanımı
+
+Dinamik olarak büyüyen dizilere örnek olarak, bir "Post"un (gönderinin) birçok "Comment" (yorum) içerebileceği bir blog platformu verilebilir.
+
+`Post` ve `Comment` olmak üzere iki varlıkla başlayalım
+
+Optimizasyon olmadan, bunu bir dizi ile şu şekilde uygulayabilirsiniz:
+
+```graphql
+type Post @entity {
+  id: Bytes!
+  title: String!
+  content: String!
+  comments: [Comment!]!
+}
+
+type Comment @entity {
+  id: Bytes!
+  content: String!
+}
+```
+
+Bu tür diziler, fiilen, ilişkinin "Post" tarafında fazladan "Comments" verisi depolar.
+
+`@derivedFrom` kullanarak optimize edilmiş bir sürüm şu şekilde görünür:
+
+```graphql
+type Post @entity {
+  id: Bytes!
+  title: String!
+  content: String!
+  comments: [Comment!]! @derivedFrom(field: "post")
+}
+
+type Comment @entity {
+  id: Bytes!
+  content: String!
+  post: Post!
+}
+```
+
+Sadece `@derivedFrom` yönergesini ekleyerek bu şema, ilişkinin “Post” tarafında değil, yalnızca “Comments” tarafında “Comments” verilerini depolamış olur. Diziler bireysel satırlara yayıldığı için önemli ölçüde genişleyebilir. Bu durum, büyüme sınırsız olduğunda büyük boyutlara yol açabilir.
+
+Bu yalnızca subgraph'imizi daha verimli hale getirmekle kalmayacak, aynı zamanda şu üç özelliği de kullanmamıza olanak tanıyacaktır:
+
+1. `Post`'u sorgulayarak tüm yorumlarını görebiliriz.
+
+2. Herhangi bir `Comment`'te tersine arama yapabilir ve hangi gönderiden geldiğini sorgulayabiliriz.
+
+3. [Türetilmiş Alan Yükleyicileri](/subgraphs/developing/creating/graph-ts/api/#looking-up-derived-entities) kullanarak, sanal ilişkilerden gelen verilere doğrudan erişim ve manipülasyon yapma yeteneğini subgraph eşlemelerinde etkinleştirebiliriz.
+
+## Sonuç
+
+`@derivedFrom` direktifini subgraph'lerde dinamik olarak büyüyen dizileri etkili bir şekilde yönetmek için kullanın. Bu direktif endeksleme verimliliğini ve veri alımını artırır.
+
+Büyük dizilerden kaçınma stratejilerinin daha ayrıntılı bir açıklaması için Kevin Jones'un blog yazısına göz atın: [Subgraph Geliştiriminde Örnek Uygulamalar: Büyük Dize Kümelerinden Kaçınmak](https://thegraph.com/blog/improve-subgraph-performance-avoiding-large-arrays/).
+
+## Subgraph Örnek Uygulamalar 1-6
+
+1. [Subgraph Budama ile Sorgu Hızını İyileştirin](/subgraphs/best-practices/pruning/)
+
+2. [@derivedFrom Kullanarak Endeksleme ve Sorgu Yanıt Hızını Artırın](/subgraphs/best-practices/derivedfrom/)
+
+3. [Değişmez Varlıklar ve Bytes ID'ler Kullanarak Endeksleme ve Sorgu Performansını Artırın](/subgraphs/best-practices/immutable-entities-bytes-as-ids/)
+
+4. [Endeksleme Hızını `eth_calls`'den Kaçınarak İyileştirin](/subgraphs/best-practices/avoid-eth-calls/)
+
+5. [Zaman Serileri ve Bütünleştirme ile Basitleştirin ve Optimize Edin](/subgraphs/best-practices/timeseries/)
+
+6. [Hızlı Düzeltme Dağıtımı için Aşılama Kullanın](/subgraphs/best-practices/grafting-hotfix/)

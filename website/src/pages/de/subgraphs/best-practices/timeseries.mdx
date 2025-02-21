@@ -1,0 +1,195 @@
+---
+title: Subgraph Best Practice 5 - Simplify and Optimize with Timeseries and Aggregations
+sidebarTitle: 'Subgraph Best Practice 5: Timeseries and Aggregations'
+---
+
+## TLDR
+
+Leveraging the new time-series and aggregations feature in subgraphs can significantly enhance both indexing speed and query performance.
+
+## Überblick
+
+Timeseries and aggregations reduce data processing overhead and accelerate queries by offloading aggregation computations to the database and simplifying mapping code. This approach is particularly effective when handling large volumes of time-based data.
+
+## Benefits of Timeseries and Aggregations
+
+1. Improved Indexing Time
+
+- Less Data to Load: Mappings handle less data since raw data points are stored as immutable timeseries entities.
+- Database-Managed Aggregations: Aggregations are automatically computed by the database, reducing the workload on the mappings.
+
+2. Simplified Mapping Code
+
+- No Manual Calculations: Developers no longer need to write complex aggregation logic in mappings.
+- Reduced Complexity: Simplifies code maintenance and minimizes the potential for errors.
+
+3. Dramatically Faster Queries
+
+- Immutable Data: All timeseries data is immutable, enabling efficient storage and retrieval.
+- Efficient Data Separation: Aggregates are stored separately from raw timeseries data, allowing queries to process significantly less data—often several orders of magnitude less.
+
+### Important Considerations
+
+- Immutable Data: Timeseries data cannot be altered once written, ensuring data integrity and simplifying indexing.
+- Automatic ID and Timestamp Management: id and timestamp fields are automatically managed by graph-node, reducing potential errors.
+- Efficient Data Storage: By separating raw data from aggregates, storage is optimized, and queries run faster.
+
+## How to Implement Timeseries and Aggregations
+
+### Defining Timeseries Entities
+
+A timeseries entity represents raw data points collected over time. It is defined with the `@entity(timeseries: true)` annotation. Key requirements:
+
+- Immutable: Timeseries entities are always immutable.
+- Mandatory Fields:
+  - `id`: Must be of type `Int8!` and is auto-incremented.
+  - `timestamp`: Must be of type `Timestamp!` and is automatically set to the block timestamp.
+
+Example:
+
+```graphql
+type Data @entity(timeseries: true) {
+  id: Int8!
+  timestamp: Timestamp!
+  price: BigDecimal!
+}
+```
+
+### Defining Aggregation Entities
+
+An aggregation entity computes aggregated values from a timeseries source. It is defined with the `@aggregation` annotation. Key components:
+
+- Annotation Arguments:
+  - `intervals`: Specifies time intervals (e.g., `["hour", "day"]`).
+
+Example:
+
+```graphql
+type Stats @aggregation(intervals: ["hour", "day"], source: "Data") {
+  id: Int8!
+  timestamp: Timestamp!
+  sum: BigDecimal! @aggregate(fn: "sum", arg: "price")
+}
+```
+
+In this example, Stats aggregates the price field from Data over hourly and daily intervals, computing the sum.
+
+### Querying Aggregated Data
+
+Aggregations are exposed via query fields that allow filtering and retrieval based on dimensions and time intervals.
+
+Example:
+
+```graphql
+{
+  tokenStats(
+    interval: "hour"
+    where: { token: "0x1234567890abcdef", timestamp_gte: "1704164640000000", timestamp_lt: "1704251040000000" }
+  ) {
+    id
+    timestamp
+    token {
+      id
+    }
+    totalVolume
+    priceUSD
+    count
+  }
+}
+```
+
+### Using Dimensions in Aggregations
+
+Dimensions are non-aggregated fields used to group data points. They enable aggregations based on specific criteria, such as a token in a financial application.
+
+Example:
+
+### Timeseries Entity
+
+```graphql
+type TokenData @entity(timeseries: true) {
+  id: Int8!
+  timestamp: Timestamp!
+  token: Token!
+  amount: BigDecimal!
+  priceUSD: BigDecimal!
+}
+```
+
+### Aggregation Entity with Dimension
+
+```graphql
+type TokenStats @aggregation(intervals: ["hour", "day"], source: "TokenData") {
+  id: Int8!
+  timestamp: Timestamp!
+  token: Token!
+  totalVolume: BigDecimal! @aggregate(fn: "sum", arg: "amount")
+  priceUSD: BigDecimal! @aggregate(fn: "last", arg: "priceUSD")
+  count: Int8! @aggregate(fn: "count", cumulative: true)
+}
+```
+
+- Dimension Field: token groups the data, so aggregates are computed per token.
+- Aggregates:
+  - totalVolume: Sum of amount.
+  - priceUSD: Last recorded priceUSD.
+  - count: Cumulative count of records.
+
+### Aggregation Functions and Expressions
+
+Supported aggregation functions:
+
+- sum
+- count
+- min
+- max
+- first
+- last
+
+### The arg in @aggregate can be
+
+- A field name from the timeseries entity.
+- An expression using fields and constants.
+
+### Examples of Aggregation Expressions
+
+- Sum Token Value: @aggregate(fn: "sum", arg: "priceUSD \_ amount")
+- Maximum Positive Amount: @aggregate(fn: "max", arg: "greatest(amount0, amount1, 0)")
+- Conditional Sum: @aggregate(fn: "sum", arg: "case when amount0 > amount1 then amount0 else 0 end")
+
+Supported operators and functions include basic arithmetic (+, -, \_, /), comparison operators, logical operators (and, or, not), and SQL functions like greatest, least, coalesce, etc.
+
+### Query Parameters
+
+- interval: Specifies the time interval (e.g., "hour").
+- where: Filters based on dimensions and timestamp ranges.
+- timestamp_gte / timestamp_lt: Filters for start and end times (microseconds since epoch).
+
+### Notes
+
+- Sorting: Results are automatically sorted by timestamp and id in descending order.
+- Current Data: An optional current argument can include the current, partially filled interval.
+
+### Conclusion
+
+Implementing timeseries and aggregations in subgraphs is a best practice for projects dealing with time-based data. This approach:
+
+- Enhances Performance: Speeds up indexing and querying by reducing data processing overhead.
+- Simplifies Development: Eliminates the need for manual aggregation logic in mappings.
+- Scales Efficiently: Handles large volumes of data without compromising on speed or responsiveness.
+
+By adopting this pattern, developers can build more efficient and scalable subgraphs, providing faster and more reliable data access to end-users. To learn more about implementing timeseries and aggregations, refer to the [Timeseries and Aggregations Readme](https://github.com/graphprotocol/graph-node/blob/master/docs/aggregations.md) and consider experimenting with this feature in your subgraphs.
+
+## Subgraph Best Practices 1-6
+
+1. [Improve Query Speed with Subgraph Pruning](/subgraphs/best-practices/pruning/)
+
+2. [Improve Indexing and Query Responsiveness by Using @derivedFrom](/subgraphs/best-practices/derivedfrom/)
+
+3. [Improve Indexing and Query Performance by Using Immutable Entities and Bytes as IDs](/subgraphs/best-practices/immutable-entities-bytes-as-ids/)
+
+4. [Improve Indexing Speed by Avoiding `eth_calls`](/subgraphs/best-practices/avoid-eth-calls/)
+
+5. [Simplify and Optimize with Timeseries and Aggregations](/subgraphs/best-practices/timeseries/)
+
+6. [Use Grafting for Quick Hotfix Deployment](/subgraphs/best-practices/grafting-hotfix/)

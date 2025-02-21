@@ -34,4 +34,4 @@ Then, run the project:
 pnpm dev
 ```
 
-That’s it! Go to http://localhost:3000 to see it in action. Any change you make to a file in `pages` should be refreshed automatically in your browser.
+That’s it! Go to http://localhost:3000/docs to see it in action. Any change you make to a file in `website/src/pages` should be refreshed automatically in your browser.

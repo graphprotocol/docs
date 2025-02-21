@@ -7,4 +7,5 @@ export default {
   developing: titles.developing,
   billing: '',
   cookbook: titles.cookbook,
+  'best-practices': titles['best-practices'],
 }

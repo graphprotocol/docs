@@ -318,7 +318,7 @@ export default function Layout({ pageOpts, children }: NextraThemeLayoutProps<Fr
           [--graph-docs-header-height:theme(spacing.16)]
           [--graph-docs-header-padding:theme(spacing.5)]
           [--graph-docs-layout-transition-duration:300ms]
-          [--graph-docs-sidebar-width:theme(spacing.64)]
+          [--graph-docs-sidebar-width:theme(spacing.72)]
           [--graph-docs-toc-width:theme(spacing.66)]
           md:[--graph-docs-content-padding:theme(spacing.16)]
           md:[--graph-docs-footer-padding:theme(spacing.8)]
