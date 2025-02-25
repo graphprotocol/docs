@@ -2,13 +2,13 @@
 title: Remplacer un contrat et conserver son historique grâce au « greffage »
 ---
 
-Dans ce guide, vous apprendrez à construire et à déployer de nouveaux subgraphs en utilisant le greffage sur des subgraphs existants.
+In this guide, you will learn how to build and deploy new Subgraphs by grafting existing Subgraphs.
 
 ## Qu'est-ce qu'une greffe ?
 
-C'est une méthode qui réutilise les données d'un subgraph existant et commence à les indexer à un bloc ultérieur. Elle est utile lors du développement pour contourner rapidement les erreurs simples dans les mappings ou pour remettre temporairement en service un subgraph existant qui a échoué. Elle peut également être utilisée pour ajouter une fonctionnalité à un subgraphe dont l'indexation depuis la genèse prend un temps considérable.
+Grafting reuses the data from an existing Subgraph and starts indexing it at a later block. This is useful during development to get past simple errors in the mappings quickly or to temporarily get an existing Subgraph working again after it has failed. Also, it can be used when adding a feature to a Subgraph that takes long to index from scratch.
 
-Le subgraph greffé peut utiliser un schema GraphQL qui n'est pas identique à celui du subgraph de base, mais simplement compatible avec lui. Il doit s'agir d'un schema de subgraph valide en tant que tel, mais il peut s'écarter du schema du subgraph de base de la manière suivante :
+The grafted Subgraph can use a GraphQL schema that is not identical to the one of the base Subgraph, but merely compatible with it. It has to be a valid Subgraph schema in its own right, but may deviate from the base Subgraph's schema in the following ways:
 
 - Il ajoute ou supprime des types d'entité
 - Il supprime les attributs des types d'entité
@@ -22,35 +22,35 @@ Pour plus d’informations, vous pouvez vérifier :
 
 - [Greffage](/developing/creating-a-subgraph/#grafting-onto-existing-subgraphs)
 
-Dans ce tutoriel, nous couvrirons un cas d'utilisation de base. Nous remplacerons un contrat existant par un contrat identique (avec une nouvelle adresse, mais le même code). Ensuite, nous grefferons le subgraph existant sur le subgraph "de base" qui suit le nouveau contrat.
+In this tutorial, we will be covering a basic use case. We will replace an existing contract with an identical contract (with a new address, but the same code). Then, graft the existing Subgraph onto the "base" Subgraph that tracks the new contract.
 
 ## Remarque importante sur le greffage lors de la mise à niveau vers le réseau
 
-> **Attention** : Il est recommandé de ne pas utiliser le greffage pour les subgraphs publiés sur The Graph Network
+> **Caution**: It is recommended to not use grafting for Subgraphs published to The Graph Network
 
 ### Pourquoi est-ce important?
 
-Le greffage est une fonctionnalité puissante qui vous permet de "greffer" un subgraph sur un autre, transférant efficacement les données historiques du subgraph existant vers une nouvelle version. Il n'est pas possible de greffer un subgraph de The Graph Network vers Subgraph Studio.
+Grafting is a powerful feature that allows you to "graft" one Subgraph onto another, effectively transferring historical data from the existing Subgraph to a new version. It is not possible to graft a Subgraph from The Graph Network back to Subgraph Studio.
 
 ### Les meilleures pratiques
 
-**Migration initiale** : lorsque vous déployez pour la première fois votre subgraph sur le réseau décentralisé, faites-le sans greffe. Assurez-vous que le subgraph est stable et fonctionne comme prévu.
+**Initial Migration**: when you first deploy your Subgraph to the decentralized network, do so without grafting. Ensure that the Subgraph is stable and functioning as expected.
 
-**Mises à jour ultérieures** : une fois que votre subgraph est en ligne et stable sur le réseau décentralisé, vous pouvez utiliser le greffage pour les versions ultérieures afin de faciliter la transition et de préserver les données historiques.
+**Subsequent Updates**: once your Subgraph is live and stable on the decentralized network, you may use grafting for future versions to make the transition smoother and to preserve historical data.
 
 En respectant ces lignes directrices, vous minimisez les risques et vous vous assurez que le processus de migration se déroule sans heurts.
 
 ## Création d'un subgraph existant
 
-La construction de subgraph est une partie essentielle de The Graph, décrite plus en profondeur [ici](/subgraphs/quick-start/). Pour pouvoir construire et déployer le subgrpah existant utilisé dans ce tutoriel, le repo suivant est fourni :
+Building Subgraphs is an essential part of The Graph, described more in depth [here](/subgraphs/quick-start/). To be able to build and deploy the existing Subgraph used in this tutorial, the following repo is provided:
 
 - [Dépôt d'exemples de subgraphs](https://github.com/Shiyasmohd/grafting-tutorial)
 
-> Remarque : le contrat utilisé dans le subgraph est tiré ce [Kit de démarrage du Hackathon](https://github.com/schmidsi/hackathon-starterkit).
+> Note: The contract used in the Subgraph was taken from the following [Hackathon Starterkit](https://github.com/schmidsi/hackathon-starterkit).
 
 ## Définition du manifeste du subgraph
 
-Le manifeste du subgraph `subgraph.yaml` identifie les sources de données pour le subgraph, les déclencheurs intéressants, et les fonctions qui doivent être exécutées en réponse à ces déclencheurs. Vous trouverez ci-dessous un exemple de manifeste de subgraph que vous utiliserez :
+The Subgraph manifest `subgraph.yaml` identifies the data sources for the Subgraph, the triggers of interest, and the functions that should be run in response to those triggers. See below for an example Subgraph manifest that you will use:
 
 ```yaml
 specVersion: 0.0.4
@@ -85,27 +85,27 @@ dataSources:
 
 ## Définition de manifeste de greffage
 
-Le greffage nécessite l'ajout de deux nouveaux éléments au manifeste du subgraph original :
+Grafting requires adding two new items to the original Subgraph manifest:
 
 ```yaml
 ---
 features:
-  - grafting # nom de la fonctionnalité
+  - grafting # feature name
 graft:
-  base: Qm... # ID du subgraph de base
-  block: 5956000 # numéro du bloc
+  base: Qm... # Subgraph ID of base Subgraph
+  block: 5956000 # block number
 ```
 
 - `features:` est une liste de tous les [noms de fonctionnalités](/developing/creating-a-subgraph/#experimental-features) utilisées.
-- `graft:` est une carte du subgraph `base` et du bloc sur lequel se greffer. Le `bloc` est le numéro du bloc à partir duquel l'indexation doit commencer. The Graph copiera les données du subgraph de base jusqu'au bloc donné inclus, puis continuera à indexer le nouveau subgraph à partir de ce bloc.
+- `graft:` is a map of the `base` Subgraph and the block to graft on to. The `block` is the block number to start indexing from. The Graph will copy the data of the base Subgraph up to and including the given block and then continue indexing the new Subgraph from that block on.
 
-Les valeurs `base` et `block` peuvent être trouvées en déployant deux subgraphs : l'un pour l'indexation de base et l'autre avec le greffage
+The `base` and `block` values can be found by deploying two Subgraphs: one for the base indexing and one with grafting
 
 ## Déploiement du subgraph de base
 
-1. Allez sur [Subgraph Studio](https://thegraph.com/studio/) et créez un subgraph sur le réseau de test Sepolia appelé `graft-example`
-2. Suivez les instructions de la section `AUTH & DEPLOY` sur la page de votre subgraph dans le dossier `graft-example` du dépôt
-3. Une fois terminé, vérifiez que le subgraph s'indexe correctement. Si vous exécutez la commande suivante dans The Graph Playground
+1. Go to [Subgraph Studio](https://thegraph.com/studio/) and create a Subgraph on Sepolia testnet called `graft-example`
+2. Follow the directions in the `AUTH & DEPLOY` section on your Subgraph page in the `graft-example` folder from the repo
+3. Once finished, verify the Subgraph is indexing properly. If you run the following command in The Graph Playground
 
 ```graphql
 {
@@ -138,16 +138,16 @@ Cela renvoie quelque chose comme ceci :
 }
 ```
 
-Une fois que vous avez vérifié que le subgraph s'indexe correctement, vous pouvez rapidement le mettre à jour grâce à la méthode du graffage.
+Once you have verified the Subgraph is indexing properly, you can quickly update the Subgraph with grafting.
 
 ## Déploiement du subgraph greffé
 
 Le subgraph.yaml de remplacement du greffon aura une nouvelle adresse de contrat. Cela peut arriver lorsque vous mettez à jour votre dapp, redéployez un contrat, etc.
 
-1. Allez sur [Subgraph Studio](https://thegraph.com/studio/) et créez un subgraph sur le réseau test de Sepolia appelé `graft-replacement`
-2. Créer un nouveau manifeste. Le `subgraph.yaml` de `graph-replacement` contient une adresse de contrat différente et de nouvelles informations sur la façon dont il doit se greffer. Ils sont le `block` du [dernier événement émis](https://sepolia.etherscan.io/tx/0xea1cee35036f2cacb72f2a336be3e54ab911f5bebd58f23400ebb8ecc5cfc452) qui vous intéresse dans l'ancien contrat et la `base` de l'ancien subgraph. L'ID du subgraph `base` est l'ID de déploiement de votre subgraph original `graph-example`. Vous pouvez le trouver dans Subgraph Studio.
-3. Suivez les instructions de la section `AUTH & DEPLOY` sur la page de votre subgraph dans le dossier `graft-replacement` du dépôt
-4. Une fois terminé, vérifiez que le subgraph s'indexe correctement. Si vous exécutez la commande suivante dans The Graph Playground
+1. Go to [Subgraph Studio](https://thegraph.com/studio/) and create a Subgraph on Sepolia testnet called `graft-replacement`
+2. Create a new manifest. The `subgraph.yaml` for `graph-replacement` contains a different contract address and new information about how it should graft. These are the `block` of the [last event emitted](https://sepolia.etherscan.io/tx/0xea1cee35036f2cacb72f2a336be3e54ab911f5bebd58f23400ebb8ecc5cfc452) you care about by the old contract and the `base` of the old Subgraph. The `base` Subgraph ID is the `Deployment ID` of your original `graph-example` Subgraph. You can find this in Subgraph Studio.
+3. Follow the directions in the `AUTH & DEPLOY` section on your Subgraph page in the `graft-replacement` folder from the repo
+4. Once finished, verify the Subgraph is indexing properly. If you run the following command in The Graph Playground
 
 ```graphql
 {
@@ -185,9 +185,9 @@ Le résultat devrait être le suivant :
 }
 ```
 
-Vous pouvez voir que le subgraph `graft-replacement` indexe les anciennes données du `graph-example` et les nouvelles données de la nouvelle adresse du contrat. Le contrat original a émis deux événements `Withdrawal`, [Event 1](https://sepolia.etherscan.io/tx/0xe8323d21c4f104607b10b0fff9fc24b9612b9488795dea8196b2d5f980d3dc1d) et [Event 2](https://sepolia.etherscan.io/tx/0xea1cee35036f2cacb72f2a336be3e54ab911f5bebd58f23400ebb8ecc5cfc452). Le nouveau contrat a émis un seul événement de retrait, [Event 3](https://sepolia.etherscan.io/tx/0x2410475f76a44754bae66d293d14eac34f98ec03a3689cbbb56a716d20b209af). Les deux transactions précédemment indexées (événements 1 et 2) et la nouvelle transaction (événement 3) ont été combinées ensemble dans le subgraph `graft-replacement`.
+You can see that the `graft-replacement` Subgraph is indexing from older `graph-example` data and newer data from the new contract address. The original contract emitted two `Withdrawal` events, [Event 1](https://sepolia.etherscan.io/tx/0xe8323d21c4f104607b10b0fff9fc24b9612b9488795dea8196b2d5f980d3dc1d) and [Event 2](https://sepolia.etherscan.io/tx/0xea1cee35036f2cacb72f2a336be3e54ab911f5bebd58f23400ebb8ecc5cfc452). The new contract emitted one `Withdrawal` after, [Event 3](https://sepolia.etherscan.io/tx/0x2410475f76a44754bae66d293d14eac34f98ec03a3689cbbb56a716d20b209af). The two previously indexed transactions (Event 1 and 2) and the new transaction (Event 3) were combined together in the `graft-replacement` Subgraph.
 
-Félicitations ! Vous avez réussi à greffer un subgraph sur un autre subgraph.
+Congrats! You have successfully grafted a Subgraph onto another Subgraph.
 
 ## Ressources supplémentaires
 
