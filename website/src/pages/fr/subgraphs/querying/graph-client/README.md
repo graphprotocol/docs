@@ -16,23 +16,23 @@ This library is intended to simplify the network aspect of data consumption for 
 
 | Status | Feature                                                          | Notes                                                                                                                            |
 | :----: | ---------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
-|   ✅   | Multiple indexers                                                | based on fetch strategies                                                                                                        |
-|   ✅   | Fetch Strategies                                                 | timeout, retry, fallback, race, highestValue                                                                                     |
-|   ✅   | Build time validations & optimizations                           |                                                                                                                                  |
-|   ✅   | Client-Side Composition                                          | with improved execution planner (based on GraphQL-Mesh)                                                                          |
-|   ✅   | Cross-chain Subgraph Handling                                    | Use similar subgraphs as a single source                                                                                         |
-|   ✅   | Raw Execution (standalone mode)                                  | without a wrapping GraphQL client                                                                                                |
-|   ✅   | Local (client-side) Mutations                                    |                                                                                                                                  |
-|   ✅   | [Automatic Block Tracking](../packages/block-tracking/README.md) | tracking block numbers [as described here](https://thegraph.com/docs/en/developer/distributed-systems/#polling-for-updated-data) |
-|   ✅   | [Automatic Pagination](../packages/auto-pagination/README.md)    | doing multiple requests in a single call to fetch more than the indexer limit                                                    |
-|   ✅   | Integration with `@apollo/client`                                |                                                                                                                                  |
-|   ✅   | Integration with `urql`                                          |                                                                                                                                  |
-|   ✅   | TypeScript support                                               | with built-in GraphQL Codegen and `TypedDocumentNode`                                                                            |
-|   ✅   | [`@live` queries](./live.md)                                     | Based on polling                                                                                                                 |
+|    ✅   | Multiple indexers                                                | based on fetch strategies                                                                                                        |
+|    ✅   | Fetch Strategies                                                 | timeout, retry, fallback, race, highestValue                                                                                     |
+|    ✅   | Build time validations & optimizations       |                                                                                                                                  |
+|    ✅   | Client-Side Composition                                          | with improved execution planner (based on GraphQL-Mesh)                                                       |
+|    ✅   | Cross-chain Subgraph Handling                                    | Use similar subgraphs as a single source                                                                                         |
+|    ✅   | Raw Execution (standalone mode)               | without a wrapping GraphQL client                                                                                                |
+|    ✅   | Local (client-side) Mutations                 |                                                                                                                                  |
+|    ✅   | [Automatic Block Tracking](../packages/block-tracking/README.md) | tracking block numbers [as described here](https://thegraph.com/docs/en/developer/distributed-systems/#polling-for-updated-data) |
+|    ✅   | [Automatic Pagination](../packages/auto-pagination/README.md)    | doing multiple requests in a single call to fetch more than the indexer limit                                                    |
+|    ✅   | Integration with `@apollo/client`                                |                                                                                                                                  |
+|    ✅   | Integration with `urql`                                          |                                                                                                                                  |
+|    ✅   | TypeScript support                                               | with built-in GraphQL Codegen and `TypedDocumentNode`                                                                            |
+|    ✅   | [`@live` queries](./live.md)                                     | Based on polling                                                                                                                 |
 
 > You can find an [extended architecture design here](./architecture.md)
 
-## Getting Started
+## Introduction
 
 You can follow [Episode 45 of `graphql.wtf`](https://graphql.wtf/episodes/45-the-graph-client) to learn more about Graph Client:
 
@@ -48,7 +48,7 @@ npm install --save-dev @graphprotocol/client-cli
 
 > The CLI is installed as dev dependency since we are using it to produce optimized runtime artifacts that can be loaded directly from your app!
 
-Create a configuration file (called `.graphclientrc.yml`) and point to your GraphQL endpoints provided by The Graph, for example:
+Créez un fichier de configuration (appelé `.graphclientrc.yml`) et pointez vers vos endpoints GraphQL fournis par The Graph, par exemple :
 
 ```yml
 # .graphclientrc.yml
@@ -138,7 +138,7 @@ graphclient serve-dev
 
 And open http://localhost:4000/ to use GraphiQL. You can now experiment with your Graph client-side GraphQL schema locally! 🥳
 
-#### Examples
+#### Exemples
 
 You can also refer to [examples directory in this repo](../examples), for more advanced examples and integration examples:
 
@@ -308,8 +308,8 @@ sources:
 
 <details>
   <summary>`highestValue`</summary>
-  
-  This strategy allows you to send parallel requests to different endpoints for the same source and choose the most updated.
+
+This strategy allows you to send parallel requests to different endpoints for the same source and choose the most updated.
 
 This is useful if you want to choose most synced data for the same Subgraph over different indexers/sources.
 
@@ -373,7 +373,7 @@ sources:
 
 #### Automatic Pagination
 
-With most subgraphs, the number of records you can fetch is limited. In this case, you have to send multiple requests with pagination.
+With most Subgraphs, the number of records you can fetch is limited. In this case, you have to send multiple requests with pagination.
 
 ```graphql
 query {
