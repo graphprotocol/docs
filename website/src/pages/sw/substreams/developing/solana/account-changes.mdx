@@ -1,0 +1,63 @@
+---
+title: Solana Account Changes
+sidebarTitle: Account Changes
+---
+
+Learn how to consume Solana account change data using Substreams.
+
+## Introduction
+
+This guide walks you through the process of setting up your environment, configuring your first Substreams stream, and consuming account changes efficiently. By the end of this guide, you will have a working Substreams feed that allows you to track real-time account changes on the Solana blockchain, as well as historical account change data.
+
+> NOTE: History for the Solana Account Changes dates as of 2025, block 310629601.
+
+For each Substreams Solana account block, only the latest update per account is recorded, see the [Protobuf Referece](https://buf.build/streamingfast/firehose-solana/file/main:sf/solana/type/v1/account.proto). If an account is deleted, a payload with `deleted == True` is provided. Additionally, events of low importance ware omitted, such as those with the special owner “Vote11111111…” account or changes that do not affect the account data (ex: lamport changes).
+
+> NOTE: To test Substreams latency for Solana accounts, measured as block-head drift, install the [Substreams CLI](https://docs.substreams.dev/reference-material/substreams-cli/installing-the-cli) and running `substreams run solana-common blocks_without_votes -s -1 -o clock`.
+
+## Getting Started
+
+### Prerequisites
+
+Before you begin, ensure that you have the following:
+
+1. [Substreams CLI](https://docs.substreams.dev/reference-material/substreams-cli/installing-the-cli) installed.
+2. A [Substreams key](https://docs.substreams.dev/reference-material/substreams-cli/authentication) for access to the Solana Account Change data.
+3. Basic knowledge of [how to use](https://docs.substreams.dev/reference-material/substreams-cli/command-line-interface) the command line interface (CLI).
+
+### Step 1: Set Up a Connection to Solana Account Change Substreams
+
+Now that you have Substreams CLI installed, you can set up a connection to the Solana Account Change Substreams feed.
+
+- Using the [Solana Accounts Foundational Module](https://substreams.dev/packages/solana-accounts-foundational/latest), you can choose to stream data directly or use the GUI for a more visual experience. The following `gui` example filters for Honey Token account data.
+
+```bash
+ substreams gui  solana-accounts-foundational filtered_accounts -t +10 -p filtered_accounts="owner:TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA || account:4vMsoUT2BWatFweudnQM1xedRLfJgJ7hswhcpz4xgBTy"
+```
+
+- This command will stream account changes directly to your terminal.
+
+```bash
+substreams run  solana-accounts-foundational filtered_accounts -s -1 -o clock
+```
+
+The Foundational Module has support for filtering on specific accounts and/or owners. You can adjust the query based on your needs.
+
+### Step 2: Sink the Substreams
+
+Consume the account stream [directly in your application](https://docs.substreams.dev/how-to-guides/sinks/stream) using a callback or make it queryable by using the [SQL-DB sink](https://docs.substreams.dev/how-to-guides/sinks/sql-sink).
+
+### Step 3: Setting up a Reconnection Policy
+
+[Cursor Management](https://docs.substreams.dev/reference-material/reliability-guarantees) ensures seamless continuity and retraceability by allowing you to resume from the last consumed block if the connection is interrupted. This functionality prevents data loss and maintains a persistent stream.
+
+When creating or using a sink, the user's primary responsibility is to provide implementations of BlockScopedDataHandler and a BlockUndoSignalHandler implementation(s) which has the following interface:
+
+```go
+import (
+	pbsubstreamsrpc "github.com/streamingfast/substreams/pb/sf/substreams/rpc/v2"
+)
+
+type BlockScopedDataHandler = func(ctx context.Context, cursor *Cursor, data *pbsubstreamsrpc.BlockScopedData) error
+type BlockUndoSignalHandler = func(ctx context.Context, cursor *Cursor, undoSignal *pbsubstreamsrpc.BlockUndoSignal) error
+```
