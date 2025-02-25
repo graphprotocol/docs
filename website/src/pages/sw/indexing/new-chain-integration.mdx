@@ -1,0 +1,70 @@
+---
+title: New Chain Integration
+---
+
+Chains can bring Subgraph support to their ecosystem by starting a new `graph-node` integration. Subgraphs are a powerful indexing tool opening a world of possibilities for developers. Graph Node already indexes data from the chains listed here. If you are interested in a new integration, there are 2 integration strategies:
+
+1. **EVM JSON-RPC**
+2. **Firehose**: All Firehose integration solutions include Substreams, a large-scale streaming engine based off Firehose with native `graph-node` support, allowing for parallelized transforms.
+
+> Note that while the recommended approach is to develop a new Firehose for all new chains, it is only required for non-EVM chains.
+
+## Integration Strategies
+
+### 1. EVM JSON-RPC
+
+If the blockchain is EVM equivalent and the client/node exposes the standard EVM JSON-RPC API, Graph Node should be able to index the new chain.
+
+#### Testing an EVM JSON-RPC
+
+For Graph Node to be able to ingest data from an EVM chain, the RPC node must expose the following EVM JSON-RPC methods:
+
+- `eth_getLogs`
+- `eth_call` (for historical blocks, with EIP-1898 - requires archive node)
+- `eth_getBlockByNumber`
+- `eth_getBlockByHash`
+- `net_version`
+- `eth_getTransactionReceipt`, in a JSON-RPC batch request
+- `trace_filter` _(limited tracing and optionally required for Graph Node)_
+
+### 2. Firehose Integration
+
+[Firehose](https://firehose.streamingfast.io/firehose-setup/overview) is a next-generation extraction layer. It collects history in flat files and streams in real time. Firehose technology replaces those polling API calls with a stream of data utilizing a push model that sends data to the indexing node faster. This helps increase the speed of syncing and indexing.
+
+> NOTE: All integrations done by the StreamingFast team include maintenance for the Firehose replication protocol into the chain's codebase. StreamingFast tracks any changes and releases binaries when you change code and when StreamingFast changes code. This includes releasing Firehose/Substreams binaries for the protocol, maintaining Substreams modules for the block model of the chain, and releasing binaries for the blockchain node with instrumentation if need be.
+
+#### Integration for Non-EVM chains
+
+The primary method to integrate the Firehose into chains is to use an RPC polling strategy. Our polling algorithm will predict when a new block will arrive and increase the rate at which it checks for a new block near that time, making it a very low-latency and efficient solution. For help with the integration and maintenance of the Firehose, contact the [StreamingFast team](https://www.streamingfast.io/firehose-integration-program). New chains and their integrators will appreciate the [fork awareness](https://substreams.streamingfast.io/documentation/consume/reliability-guarantees) and massive parallelized indexing capabilities that Firehose and Substreams bring to their ecosystem.
+
+#### Specific Instrumentation for EVM (`geth`) chains
+
+For EVM chains, there exists a deeper level of data that can be achieved through the `geth` [live-tracer](https://github.com/ethereum/go-ethereum/releases/tag/v1.14.0), a collaboration between Go-Ethereum and StreamingFast, in building a high-throughput and rich transaction tracing system. The Live Tracer is the most comprehensive solution, resulting in [Extended](https://streamingfastio.medium.com/new-block-model-to-accelerate-chain-integration-9f65126e5425) block details. This enables new indexing paradigms, like pattern matching of events based on state changes, calls, parent call trees, or triggering of events based on changes to the actual variables in a smart contract.
+
+![Base block vs Extended block](/img/extended-vs-base-substreams-blocks.png)
+
+> NOTE: This improvement upon the Firehose requires chains make use of the EVM engine `geth version 1.13.0` and up.
+
+## EVM considerations - Difference between JSON-RPC & Firehose
+
+While the JSON-RPC and Firehose are both suitable for Subgraphs, a Firehose is always required for developers wanting to build with [Substreams](https://substreams.streamingfast.io). Supporting Substreams allows developers to build [Substreams-powered Subgraphs](/subgraphs/cookbook/substreams-powered-subgraphs/) for the new chain, and has the potential to improve the performance of your Subgraphs. Additionally, Firehose — as a drop-in replacement for the JSON-RPC extraction layer of `graph-node` — reduces by 90% the number of RPC calls required for general indexing.
+
+- All those `getLogs` calls and roundtrips get replaced by a single stream arriving into the heart of `graph-node`; a single block model for all Subgraphs it processes.
+
+> NOTE: A Firehose-based integration for EVM chains will still require Indexers to run the chain's archive RPC node to properly index Subgraphs. This is due to the Firehose's inability to provide smart contract state typically accessible by the `eth_call` RPC method. (It's worth reminding that `eth_calls` are not a good practice for developers)
+
+## Graph Node Configuration
+
+Configuring Graph Node is as easy as preparing your local environment. Once your local environment is set, you can test the integration by locally deploying a Subgraph.
+
+1. [Clone Graph Node](https://github.com/graphprotocol/graph-node)
+
+2. Modify [this line](https://github.com/graphprotocol/graph-node/blob/master/docker/docker-compose.yml#L22) to include the new network name and the EVM JSON-RPC or Firehose compliant URL
+
+   > Do not change the env var name itself. It must remain `ethereum` even if the network name is different.
+
+3. Run an IPFS node or use the one used by The Graph: https://api.thegraph.com/ipfs/
+
+## Substreams-powered Subgraphs
+
+For StreamingFast-led Firehose/Substreams integrations, basic support for foundational Substreams modules (e.g. decoded transactions, logs and smart-contract events) and Substreams codegen tools are included. These tools enable the ability to enable [Substreams-powered Subgraphs](/substreams/sps/introduction/). Follow the [How-To Guide](https://substreams.streamingfast.io/documentation/how-to-guides/intro-your-first-application) and run `substreams codegen subgraph` to experience the codegen tools for yourself.
