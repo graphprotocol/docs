@@ -2,13 +2,13 @@
 title: Bir Sözleşmeyi Değiştirin ve Graftlama ile Geçmişini Koruyun
 ---
 
-Bu rehberde, mevcut subgraphları graftlayarak yeni subgraphları nasıl oluşturacağınızı ve dağıtacağınızı öğreneceksiniz.
+In this guide, you will learn how to build and deploy new Subgraphs by grafting existing Subgraphs.
 
 ## Graftlama Nedir?
 
-Graftlama, mevcut bir subgraph'daki verileri yeniden kullanır ve daha sonraki bir blokta indekslemeye başlar. Bu, geliştirme sırasında eşleştirmelerdeki basit hataları hızlı bir şekilde geçmek veya mevcut bir subgraph'ın başarısız olduktan sonra geçici olarak tekrar çalışmasını sağlamak için kullanışlıdır. Ayrıca, sıfırdan indekslenmesi uzun süren bir subgraph'a bir özellik eklerken de kullanılabilir.
+Grafting reuses the data from an existing Subgraph and starts indexing it at a later block. This is useful during development to get past simple errors in the mappings quickly or to temporarily get an existing Subgraph working again after it has failed. Also, it can be used when adding a feature to a Subgraph that takes long to index from scratch.
 
-Graftlanan subgraph, temel subgraphla tamamen aynı olmayan, ancak onunla uyumlu olan bir GraphQL şeması kullanabilir. Kendi başına geçerli bir subgraph şeması olmalıdır, ancak şu şekillerde temel subgraph şemasından sapabilir:
+The grafted Subgraph can use a GraphQL schema that is not identical to the one of the base Subgraph, but merely compatible with it. It has to be a valid Subgraph schema in its own right, but may deviate from the base Subgraph's schema in the following ways:
 
 - Varlık türlerini ekler veya kaldırır
 - Varlık türlerinden öznitelikleri kaldırır
@@ -22,35 +22,35 @@ Daha fazla bilgi için kontrol edebilirsiniz:
 
 - [Aşılama](/developing/creating-a-subgraph/#grafting-onto-existing-subgraphs)
 
-Bu eğitimde, temel bir kullanım senaryosunu ele alacağız. Mevcut bir sözleşmeyi özdeş bir sözleşme (aynı koda sahip ancak adresi farklı bir sözleşme) ile değiştireceğiz. Ardından, mevcut subgraph'i yeni sözleşmeyi izleyen "temel" subgraph'e aşılayacağız.
+In this tutorial, we will be covering a basic use case. We will replace an existing contract with an identical contract (with a new address, but the same code). Then, graft the existing Subgraph onto the "base" Subgraph that tracks the new contract.
 
 ## Ağa Yükseltme Durumunda Graftlamaya İlişkin Önemli Not
 
-> **Dikkat**: Aşılamanın The Graph Ağına yayımlanan subgraph'ler için kullanılmaması önerilir
+> **Caution**: It is recommended to not use grafting for Subgraphs published to The Graph Network
 
 ### Bu Neden Önemli?
 
-Aşılama, bir subgraph'i diğerine "aşılayarak" mevcut subgraph'ten yeni bir versiyona tarihi verileri etkin bir şekilde aktarmanıza olanak tanıyan güçlü bir özelliktir. Bir subgraph'i The Graph Ağından Subgraph Studio'ya geri aşılamak mümkün değildir.
+Grafting is a powerful feature that allows you to "graft" one Subgraph onto another, effectively transferring historical data from the existing Subgraph to a new version. It is not possible to graft a Subgraph from The Graph Network back to Subgraph Studio.
 
 ### En İyi Uygulamalar
 
-**İlk Geçiş**: Subgraph'inizi ilk kez merkeziyetsiz ağa dağıttığınızda aşılama yapmayın. Subgraph'in stabil ve beklendiği gibi çalıştığından emin olun.
+**Initial Migration**: when you first deploy your Subgraph to the decentralized network, do so without grafting. Ensure that the Subgraph is stable and functioning as expected.
 
-**Sonraki Güncellemeler**: Subgraph'iniz merkeziyetsiz ağda canlı ve stabil olduğunda, gelecekteki versiyonlar için aşılama kullanarak geçişi daha sorunsuz hale getirebilir ve tarihi verileri koruyabilirsiniz.
+**Subsequent Updates**: once your Subgraph is live and stable on the decentralized network, you may use grafting for future versions to make the transition smoother and to preserve historical data.
 
 Bu yönergelere uyarak riskleri en aza indirebilir ve daha sorunsuz bir taşıma süreci geçirebilirsiniz.
 
 ## Mevcut Bir Subgraph'ı Oluşturma
 
-Subgraph oluşturmak, The Graph'in önemli bir parçasıdır. Bu konu daha detaylı olarak [burada](/subgraphs/quick-start/) açıklanmıştır. Bu eğitimde kullanılan mevcut subgraph'i inşa etmek ve dağıtmak için aşağıdaki depo sağlanmıştır:
+Building Subgraphs is an essential part of The Graph, described more in depth [here](/subgraphs/quick-start/). To be able to build and deploy the existing Subgraph used in this tutorial, the following repo is provided:
 
 - [Subgraph örnek deposu](https://github.com/Shiyasmohd/grafting-tutorial)
 
-> Not: Subgraph'te kullanılan sözleşme, [Hackathon Başlangıç Kiti](https://github.com/schmidsi/hackathon-starterkit)'nden alınmıştır.
+> Note: The contract used in the Subgraph was taken from the following [Hackathon Starterkit](https://github.com/schmidsi/hackathon-starterkit).
 
 ## Subgraph Manifest Tanımı
 
-Subgraph manifestosu `subgraph.yaml`, subgraph için veri kaynaklarını, ilgili tetikleyicileri ve bu tetikleyicilere yanıt olarak çalıştırılması gereken fonksiyonları tanımlar. Kullanacağınız bir subgraph manifestosu örneği aşağıda verilmiştir:
+The Subgraph manifest `subgraph.yaml` identifies the data sources for the Subgraph, the triggers of interest, and the functions that should be run in response to those triggers. See below for an example Subgraph manifest that you will use:
 
 ```yaml
 specVersion: 0.0.4
@@ -85,27 +85,27 @@ dataSources:
 
 ## Graftlama Manifest Tanımı
 
-Graftlama, orijinal subgraph bildirimine iki yeni öğe eklemeyi gerektirir:
+Grafting requires adding two new items to the original Subgraph manifest:
 
 ```yaml
 ---
 features:
-  - grafting # özellik adı
+  - grafting # feature name
 graft:
-  base: Qm... # Asıl subgraph'in kimlik numarası
-  block: 5956000 # blok numarası
+  base: Qm... # Subgraph ID of base Subgraph
+  block: 5956000 # block number
 ```
 
 - `features:` tüm kullanılan [özellik adlarının](/developing/creating-a-subgraph/#experimental-features) bir listesidir.
-- `graft:` `base` subgraph ve üzerine bağlanılacak bloktan oluşan bir eşlemedir. `block`, endekslemenin başlanacağı blok numarasıdır. The Graph, belirtilen bloka kadar olan temel subgraph'in verisini kopyalayıp bu bloka kadar olan kısmı dahil edecek ve ardından yeni subgraph'i bu bloktan itibaren endekslemeye devam edecek.
+- `graft:` is a map of the `base` Subgraph and the block to graft on to. The `block` is the block number to start indexing from. The Graph will copy the data of the base Subgraph up to and including the given block and then continue indexing the new Subgraph from that block on.
 
-`base` ve `block` değerleri, iki subgraph dağıtılarak bulunabilir: Biri temel endeksleme için, diğeri ise aşılama için olan subgraph
+The `base` and `block` values can be found by deploying two Subgraphs: one for the base indexing and one with grafting
 
 ## Temel Subgraph'ı Dağıtma
 
-1. [Subgraph Studio](https://thegraph.com/studio/) adresine gidip Sepolia testnet üzerinde `graft-example` adlı bir subgraph oluşturun
-2. Depodan `graft-example` klasöründeki `AUTH & DEPLOY` bölümündeki yönergeleri izleyin
-3. Tamamlandığında, subgraph'ın doğru bir şekilde indekslendiğinden emin olun. Eğer aşağıdaki komutu Graph Test Alanında(Playground) çalıştırırsanız
+1. Go to [Subgraph Studio](https://thegraph.com/studio/) and create a Subgraph on Sepolia testnet called `graft-example`
+2. Follow the directions in the `AUTH & DEPLOY` section on your Subgraph page in the `graft-example` folder from the repo
+3. Once finished, verify the Subgraph is indexing properly. If you run the following command in The Graph Playground
 
 ```graphql
 {
@@ -138,16 +138,16 @@ graft:
 }
 ```
 
-Subgraph'ın düzgün bir şekilde indekslendiğini doğruladıktan sonra, subgraph'ı graftlama ile hızlı bir şekilde güncelleyebilirsiniz.
+Once you have verified the Subgraph is indexing properly, you can quickly update the Subgraph with grafting.
 
 ## Graftlama Subgraph'ını Dağıtma
 
 Graft yerine geçen subgraph.yaml yeni bir sözleşme adresine sahip olacaktır. Bu, merkeziyetsiz uygulamanızı güncellediğinizde, bir sözleşmeyi yeniden dağıttığınızda vb. gerçekleşebilir.
 
-1. [Subgraph Studio](https://thegraph.com/studio/) adresine gidin ve Sepolia testnet üzerinde `graft-replacement` adlı bir subgraph oluşturun
-2. Yeni bir manifesto dosyası oluşturun. `graph-replacement` subgraph'ine ait `subgraph.yaml` dosyası, farklı bir sözleşme adresi ve nasıl aşılanması gerektiğiyle ilgili yeni bilgiler içermektedir. Bunlar, eski sözleşme tarafından ilgilendiğiniz [son yayılan olayın](https://sepolia.etherscan.io/tx/0xea1cee35036f2cacb72f2a336be3e54ab911f5bebd58f23400ebb8ecc5cfc452) `blok`u ve eski subgraph'in `base`'idir (temelidir). `base` subgraph kimliği, orijinal `graph-example` subgraph'inizin `Deployment ID`'sidir (dağıtım kimliğidir). Bunu Subgraph Studio'da bulabilirsiniz.
-3. `graft-replacement` klasöründeki subgraph sayfanızda, `AUTH & DEPLOY` bölümündeki talimatları izleyin
-4. Tamamlandığında, subgraph'ın doğru bir şekilde indekslendiğinden emin olun. Eğer aşağıdaki komutu Graph Test Alanında(Playground) çalıştırırsanız
+1. Go to [Subgraph Studio](https://thegraph.com/studio/) and create a Subgraph on Sepolia testnet called `graft-replacement`
+2. Create a new manifest. The `subgraph.yaml` for `graph-replacement` contains a different contract address and new information about how it should graft. These are the `block` of the [last event emitted](https://sepolia.etherscan.io/tx/0xea1cee35036f2cacb72f2a336be3e54ab911f5bebd58f23400ebb8ecc5cfc452) you care about by the old contract and the `base` of the old Subgraph. The `base` Subgraph ID is the `Deployment ID` of your original `graph-example` Subgraph. You can find this in Subgraph Studio.
+3. Follow the directions in the `AUTH & DEPLOY` section on your Subgraph page in the `graft-replacement` folder from the repo
+4. Once finished, verify the Subgraph is indexing properly. If you run the following command in The Graph Playground
 
 ```graphql
 {
@@ -185,9 +185,9 @@ Aşağıdakileri döndürmelidir:
 }
 ```
 
-`graft-replacement` subgraph'inin eski `graph-example` verilerini ve yeni sözleşme adresinden gelen yeni verileri endekslediğini görebilirsiniz. Orijinal sözleşme, iki `Withdrawal` olayı yaydı: [Olay 1](https://sepolia.etherscan.io/tx/0xe8323d21c4f104607b10b0fff9fc24b9612b9488795dea8196b2d5f980d3dc1d) ve [Olay 2](https://sepolia.etherscan.io/tx/0xea1cee35036f2cacb72f2a336be3e54ab911f5bebd58f23400ebb8ecc5cfc452). Yeni sözleşme, sonrasında bir `Withdrawal` olayı yaydı, [Olay 3](https://sepolia.etherscan.io/tx/0x2410475f76a44754bae66d293d14eac34f98ec03a3689cbbb56a716d20b209af). Önceden endekslenmiş iki işlem (Olay 1 ve 2) ve yeni işlem (Olay 3), `graft-replacement` subgraph'inde birleştirildi.
+You can see that the `graft-replacement` Subgraph is indexing from older `graph-example` data and newer data from the new contract address. The original contract emitted two `Withdrawal` events, [Event 1](https://sepolia.etherscan.io/tx/0xe8323d21c4f104607b10b0fff9fc24b9612b9488795dea8196b2d5f980d3dc1d) and [Event 2](https://sepolia.etherscan.io/tx/0xea1cee35036f2cacb72f2a336be3e54ab911f5bebd58f23400ebb8ecc5cfc452). The new contract emitted one `Withdrawal` after, [Event 3](https://sepolia.etherscan.io/tx/0x2410475f76a44754bae66d293d14eac34f98ec03a3689cbbb56a716d20b209af). The two previously indexed transactions (Event 1 and 2) and the new transaction (Event 3) were combined together in the `graft-replacement` Subgraph.
 
-Tebrikler! Bir subgraph'i başka bir subgraph'e başarıyla aşıladınız.
+Congrats! You have successfully grafted a Subgraph onto another Subgraph.
 
 ## Ek Kaynaklar
 
