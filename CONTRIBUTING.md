@@ -27,7 +27,7 @@ When you add new page, you should also add it to the sidebar navigation. Here's 
 
 ## Moving or renaming pages or directories
 
-If you want to move or rename pages or directories, you should use the following script:
+If you want to move or rename pages or directories, you should use the `move-pages` script:
 
 - `cd website`
 - `pnpm run move-pages` (example usage is provided when running the script with no arguments)
