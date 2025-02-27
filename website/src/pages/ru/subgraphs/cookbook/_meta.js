@@ -8,4 +8,5 @@ export default {
   enums: '',
   'secure-api-keys-nextjs': '',
   polymarket: '',
+  'subgraph-composition-three-sources': '',
 }
