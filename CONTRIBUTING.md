@@ -29,8 +29,9 @@ When you add new page, you should also add it to the sidebar navigation. Here's 
 
 If you want to move or rename pages or directories, you should use the following script:
 
-- Run `pnpm run move-pages` in the `website` package (`cd website && pnpm run move-pages`; example usage is provided when running the script with no arguments).
-  - This will move/rename files/directories in all languages simultaneously, which is necessary to prevent build errors.
+- `cd website`
+- `pnpm run move-pages` (example usage is provided when running the script with no arguments)
+- Files/directories will be moved/renamed in all languages simultaneously, which is necessary to prevent build errors.
 
 > [!NOTE]
 >
