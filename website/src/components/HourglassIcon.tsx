@@ -6,9 +6,9 @@ interface HourglassIconProps extends ComponentPropsWithoutRef<'svg'> {
 
 export const HourglassIcon = ({ value = 0 }: HourglassIconProps) => {
   return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <svg width="16" height="16" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
       <mask
-        id="hourglassMask"
+        id="hourglass-mask"
         style={{ maskType: 'alpha' }}
         maskUnits="userSpaceOnUse"
         x="3"
@@ -22,7 +22,7 @@ export const HourglassIcon = ({ value = 0 }: HourglassIconProps) => {
         />
       </mask>
 
-      <g mask="url(#hourglassMask)">
+      <g mask="url(#hourglass-mask)">
         <rect x="3.5" y={15 - value} width="9" height={value} fill="currentColor" />
       </g>
 
