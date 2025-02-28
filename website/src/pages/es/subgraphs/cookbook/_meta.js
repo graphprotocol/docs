@@ -1,4 +1,5 @@
 export default {
+  'subgraph-composition-three-sources': '',
   'subgraph-debug-forking': '',
   near: '',
   arweave: '',
@@ -8,5 +9,4 @@ export default {
   enums: '',
   'secure-api-keys-nextjs': '',
   polymarket: '',
-  'subgraph-composition-three-sources': '',
 }
