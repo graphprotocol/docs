@@ -65,6 +65,8 @@ import {
 } from '@/components'
 import { useI18n } from '@/i18n'
 
+import { HourglassIcon } from './components/HourglassIcon'
+
 const MAX_HEADING_DEPTH = 3
 
 const removeBasePathFromUrl = (url: string) => url.substring((process.env.BASE_PATH ?? '').length)
@@ -710,6 +712,15 @@ function MDXContent({ toc: headings, children }: ComponentPropsWithoutRef<Nextra
           ) : null}
           {!frontMatter.hideContentHeader ? (
             <header className="col-[container] pt-12 transition-[padding] duration-[var(--graph-docs-layout-transition-duration)]">
+              {readingTime ? (
+                // TODO: Use space-600 from the new colors when GDS is updated
+                <span className="flex items-center gap-1 text-text mb-3">
+                  <HourglassIcon value={Math.ceil(readingTime.minutes)} />
+                  <p className="text-body-small">
+                    {Math.ceil(readingTime.minutes)} {t('global.page.readingTime.minutes')}
+                  </p>
+                </span>
+              ) : null}
               {frontMatter.title ? (
                 <h1 className="text-heading-large text-white xs:text-heading-xlarge">{frontMatter.title}</h1>
               ) : null}
@@ -728,12 +739,6 @@ function MDXContent({ toc: headings, children }: ComponentPropsWithoutRef<Nextra
                       year: 'numeric',
                     })}
                   </time>
-                </p>
-              ) : null}
-              {readingTime ? (
-                <p className="text-body-small mt-3 text-white/48">
-                  {t('global.page.readingTime.title')}: {Math.ceil(readingTime.minutes)}{' '}
-                  {t('global.page.readingTime.minutes')}
                 </p>
               ) : null}
             </header>
