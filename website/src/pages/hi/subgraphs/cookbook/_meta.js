@@ -1,4 +1,5 @@
 export default {
+  'subgraph-composition-three-sources': '',
   'subgraph-debug-forking': '',
   near: '',
   arweave: '',
