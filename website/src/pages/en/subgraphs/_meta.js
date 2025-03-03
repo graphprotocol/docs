@@ -6,6 +6,6 @@ export default {
   querying: titles.querying,
   developing: titles.developing,
   billing: '',
-  guides: 'How-to Guides',
+  guides: titles.guides,
   'best-practices': titles['best-practices'],
 }

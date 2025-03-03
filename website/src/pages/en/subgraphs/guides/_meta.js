@@ -3,7 +3,6 @@ export default {
   near: '',
   arweave: '',
   grafting: '',
-  'subgraph-uncrashable': '',
   'transfer-to-the-graph': '',
   enums: '',
   'secure-api-keys-nextjs': '',
