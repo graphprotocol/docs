@@ -2,13 +2,13 @@
 title: Замените контракт и сохраните его историю с помощью Grafting
 ---
 
-Из этого руководства Вы узнаете, как создавать и развертывать новые субграфы путем графтинга (переноса) существующих субграфов.
+In this guide, you will learn how to build and deploy new Subgraphs by grafting existing Subgraphs.
 
 ## Что такое Grafting?
 
-При графтинге (переносе) повторно используются данные из существующего субрафа и начинается их индексация в более позднем блоке. Это может быть полезно в период разработки, чтобы быстро устранить простые ошибки в мэппинге или временно восстановить работу существующего субграфа после его сбоя. Кроме того, его можно использовать при добавлении в субграф функции, индексация которой с нуля занимает много времени.
+Grafting reuses the data from an existing Subgraph and starts indexing it at a later block. This is useful during development to get past simple errors in the mappings quickly or to temporarily get an existing Subgraph working again after it has failed. Also, it can be used when adding a feature to a Subgraph that takes long to index from scratch.
 
-Перенесённый субграф может использовать схему GraphQL, которая не идентична схеме базового субграфа, а просто совместима с ней. Это должна быть автономно действующая схема субграфа, но она может отличаться от схемы базового субграфа следующим образом:
+The grafted Subgraph can use a GraphQL schema that is not identical to the one of the base Subgraph, but merely compatible with it. It has to be a valid Subgraph schema in its own right, but may deviate from the base Subgraph's schema in the following ways:
 
 - Она добавляет или удаляет типы объектов
 - Она удаляет атрибуты из типов объектов
@@ -22,35 +22,35 @@ title: Замените контракт и сохраните его истор
 
 - [Графтинг](/developing/creating-a-subgraph/#grafting-onto-existing-subgraphs)
 
-В этом руководстве мы рассмотрим базовый случай использования. Мы заменим существующий контракт идентичным (с новым адресом, но с тем же кодом). Затем подключим существующий субграф к "базовому" субграфу, который отслеживает новый контракт.
+In this tutorial, we will be covering a basic use case. We will replace an existing contract with an identical contract (with a new address, but the same code). Then, graft the existing Subgraph onto the "base" Subgraph that tracks the new contract.
 
 ## Важное примечание о Grafting при обновлении до сети
 
-> **Предупреждение**: Рекомендуется не использовать графтинг для субграфов, опубликованных в сети The Graph
+> **Caution**: It is recommended to not use grafting for Subgraphs published to The Graph Network
 
 ### Почему это важно?
 
-Grafting — это мощная функция, которая позволяет «переносить» один субграф в другой, фактически перенося исторические данные из существующего субграфа в новую версию. Однако перенос субграфа из The Graph Network обратно в Subgraph Studio невозможен.
+Grafting is a powerful feature that allows you to "graft" one Subgraph onto another, effectively transferring historical data from the existing Subgraph to a new version. It is not possible to graft a Subgraph from The Graph Network back to Subgraph Studio.
 
 ### Лучшие практики
 
-**Первоначальная миграция**: при первом развертывании субграфа в децентрализованной сети рекомендуется не использовать графтинг. Убедитесь, что субграф стабилен и работает должным образом.
+**Initial Migration**: when you first deploy your Subgraph to the decentralized network, do so without grafting. Ensure that the Subgraph is stable and functioning as expected.
 
-**Последующие обновления**: когда Ваш субграф будет развернут и стабилен в децентрализованной сети, Вы можете использовать графтинг для будущих версий, чтобы облегчить переход и сохранить исторические данные.
+**Subsequent Updates**: once your Subgraph is live and stable on the decentralized network, you may use grafting for future versions to make the transition smoother and to preserve historical data.
 
 Соблюдая эти рекомендации, Вы минимизируете риски и обеспечите более плавный процесс миграции.
 
 ## Создание существующего субграфа
 
-Создание субграфов — это важная часть работы с The Graph, более подробно описанная [здесь](/subgraphs/quick-start/). Для того чтобы иметь возможность создать и развернуть существующий субграф, используемый в этом руководстве, предоставлен следующий репозиторий:
+Building Subgraphs is an essential part of The Graph, described more in depth [here](/subgraphs/quick-start/). To be able to build and deploy the existing Subgraph used in this tutorial, the following repo is provided:
 
 - [Пример репозитория субграфа](https://github.com/Shiyasmohd/grafting-tutorial)
 
-> Примечание: Контракт, используемый в субграфе, был взят из следующего [стартового набора Hackathon](https://github.com/schmidsi/hackathon-starterkit).
+> Note: The contract used in the Subgraph was taken from the following [Hackathon Starterkit](https://github.com/schmidsi/hackathon-starterkit).
 
 ## Определение манифеста субграфа
 
-Манифест субграфа `subgraph.yaml` определяет источники данных для субграфа, триггеры, которые представляют интерес, и функции, которые должны быть выполнены в ответ на эти триггеры. Ниже приведен пример манифеста субграфа, который Вы будете использовать:
+The Subgraph manifest `subgraph.yaml` identifies the data sources for the Subgraph, the triggers of interest, and the functions that should be run in response to those triggers. See below for an example Subgraph manifest that you will use:
 
 ```yaml
 specVersion: 0.0.4
@@ -85,27 +85,27 @@ dataSources:
 
 ## Определение Манифеста Grafting
 
-Grafting требует добавления двух новых элементов в исходный манифест субграфа:
+Grafting requires adding two new items to the original Subgraph manifest:
 
 ```yaml
 ---
 features:
-  - grafting # наименование функции
+  - grafting # feature name
 graft:
-  base: Qm... # идентификатор субграфа базового субграфа
-  block: 5956000 # номер блока
+  base: Qm... # Subgraph ID of base Subgraph
+  block: 5956000 # block number
 ```
 
 - `features:` — это список всех используемых [имен функций](/developing/creating-a-subgraph/#experimental-features).
-- `graft:` — это отображение базового субграфа и блока, к которому применяется графтинг (перенос). `block` — это номер блока, с которого нужно начать индексирование. The Graph скопирует данные из базового субграфа до указанного блока включительно, а затем продолжит индексирование нового субграфа с этого блока.
+- `graft:` is a map of the `base` Subgraph and the block to graft on to. The `block` is the block number to start indexing from. The Graph will copy the data of the base Subgraph up to and including the given block and then continue indexing the new Subgraph from that block on.
 
-Значения `base` и `block` можно найти, развернув два субграфа: один для базового индексирования и один с графтингом
+The `base` and `block` values can be found by deploying two Subgraphs: one for the base indexing and one with grafting
 
 ## Развертывание базового субграфа
 
-1. Перейдите в [Subgraph Studio](https://thegraph.com/studio/) и создайте субграф в тестнете Sepolia с названием `graft-example`
-2. Следуйте инструкциям в разделе `AUTH & DEPLOY` на странице своего субграфа в папке `graft-example` репозитория
-3. После завершения убедитесь, что субграф правильно индексируется. Если Вы запустите следующую команду в The Graph Playground
+1. Go to [Subgraph Studio](https://thegraph.com/studio/) and create a Subgraph on Sepolia testnet called `graft-example`
+2. Follow the directions in the `AUTH & DEPLOY` section on your Subgraph page in the `graft-example` folder from the repo
+3. Once finished, verify the Subgraph is indexing properly. If you run the following command in The Graph Playground
 
 ```graphql
 {
@@ -138,16 +138,16 @@ graft:
 }
 ```
 
-Убедившись, что субграф индексируется правильно, Вы можете быстро обновить его с помощью графтинга.
+Once you have verified the Subgraph is indexing properly, you can quickly update the Subgraph with grafting.
 
 ## Развертывание grafting субграфа
 
 Замененный subgraph.yaml будет иметь новый адрес контракта. Это может произойти, когда Вы обновите свое децентрализованное приложение, повторно развернете контракт и т. д.
 
-1. Перейдите в [Subgraph Studio](https://thegraph.com/studio/) и создайте субграф в тестнете Sepolia с названием `graft-replacement`
-2. Создайте новый манифест. `subgraph.yaml` для `graph-replacement` содержит другой адрес контракта и новую информацию о том, как он должен быть присоединен. Это `block` [последнего сгенерированного события], которое Вас интересует, вызванного старым контрактом, и `base` старого субграфа. Идентификатор субграфа `base` — это `Deployment ID` Вашего исходного субграфа `graph-example`. Вы можете найти его в Subgraph Studio.
-3. Следуйте инструкциям в разделе `AUTH & DEPLOY` на странице своего субграфа в папке `graft-replacement` репозитория
-4. После завершения убедитесь, что субграф правильно индексируется. Если Вы запустите следующую команду в The Graph Playground
+1. Go to [Subgraph Studio](https://thegraph.com/studio/) and create a Subgraph on Sepolia testnet called `graft-replacement`
+2. Create a new manifest. The `subgraph.yaml` for `graph-replacement` contains a different contract address and new information about how it should graft. These are the `block` of the [last event emitted](https://sepolia.etherscan.io/tx/0xea1cee35036f2cacb72f2a336be3e54ab911f5bebd58f23400ebb8ecc5cfc452) you care about by the old contract and the `base` of the old Subgraph. The `base` Subgraph ID is the `Deployment ID` of your original `graph-example` Subgraph. You can find this in Subgraph Studio.
+3. Follow the directions in the `AUTH & DEPLOY` section on your Subgraph page in the `graft-replacement` folder from the repo
+4. Once finished, verify the Subgraph is indexing properly. If you run the following command in The Graph Playground
 
 ```graphql
 {
@@ -185,9 +185,9 @@ graft:
 }
 ```
 
-Вы можете увидеть, что субграф `graft-replacement` индексирует данные как из старого субграфа `graph-example`, так и из новых данных из нового адреса контракта. Исходный контракт сгенерировал два события `Withdrawal`, [Событие 1](https://sepolia.etherscan.io/tx/0xe8323d21c4f104607b10b0fff9fc24b9612b9488795dea8196b2d5f980d3dc1d) и [Событие 2](https://sepolia.etherscan.io/tx/0xea1cee35036f2cacb72f2a336be3e54ab911f5bebd58f23400ebb8ecc5cfc452). Новый контракт сгенерировал одно событие `Withdrawal` после этого, [Событие 3](https://sepolia.etherscan.io/tx/0x2410475f76a44754bae66d293d14eac34f98ec03a3689cbbb56a716d20b209af). Две ранее индексируемые транзакции (События 1 и 2) и новая транзакция (Событие 3) были объединены в субграфе `graft-replacement`.
+You can see that the `graft-replacement` Subgraph is indexing from older `graph-example` data and newer data from the new contract address. The original contract emitted two `Withdrawal` events, [Event 1](https://sepolia.etherscan.io/tx/0xe8323d21c4f104607b10b0fff9fc24b9612b9488795dea8196b2d5f980d3dc1d) and [Event 2](https://sepolia.etherscan.io/tx/0xea1cee35036f2cacb72f2a336be3e54ab911f5bebd58f23400ebb8ecc5cfc452). The new contract emitted one `Withdrawal` after, [Event 3](https://sepolia.etherscan.io/tx/0x2410475f76a44754bae66d293d14eac34f98ec03a3689cbbb56a716d20b209af). The two previously indexed transactions (Event 1 and 2) and the new transaction (Event 3) were combined together in the `graft-replacement` Subgraph.
 
-Поздравляем! Вы успешно перенесли один субграф в другой.
+Congrats! You have successfully grafted a Subgraph onto another Subgraph.
 
 ## Дополнительные ресурсы
 

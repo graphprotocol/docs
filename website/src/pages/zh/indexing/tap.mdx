@@ -1,74 +1,74 @@
 ---
-title: TAP Migration Guide
+title: TAP迁移指南
 ---
 
-Learn about The Graph’s new payment system, **Timeline Aggregation Protocol, TAP**. This system provides fast, efficient microtransactions with minimized trust.
+了解Graph的新支付系统**时间线聚合协议TAP**。该系统提供快速、高效的微交易，并将信任降至最低（信任最小化）。
 
-## 概述
+## Overview
 
-[TAP](https://docs.rs/tap_core/latest/tap_core/index.html) is a drop-in replacement to the Scalar payment system currently in place. It provides the following key features:
+[TAP](https://docs.rs/tap_core/latest/tap_core/index.html)是目前实施的Scalar支付系统的直接替代品。它提供了以下关键功能：
 
-- Efficiently handles micropayments.
-- Adds a layer of consolidations to onchain transactions and costs.
-- Allows Indexers control of receipts and payments, guaranteeing payment for queries.
-- It enables decentralized, trustless gateways and improves `indexer-service` performance for multiple senders.
+- 高效处理小额支付。
+- 为链上交易和成本添加一层整合。
+- 允许索引人控制收款和付款，保证查询付款。
+- 支持去中心化、去信任的网关，并提高了多个发送者的`索引人服务`性能。
 
-## Specifics
+## 详情
 
-TAP allows a sender to make multiple payments to a receiver, **TAP Receipts**, which aggregates these payments into a single payment, a **Receipt Aggregate Voucher**, also known as a **RAV**. This aggregated payment can then be verified on the blockchain, reducing the number of transactions and simplifying the payment process.
+TAP允许发送方向接收方进行多次付款，**TAP收据**将这些付款聚合为一次付款，即**收据聚合凭证**，也称为**RAV**。然后可以在区块链上验证这种聚合支付，减少交易数量并简化支付过程。
 
-For each query, the gateway will send you a `signed receipt` that is stored on your database. Then, these queries will be aggregated by a `tap-agent` through a request. Afterwards, you’ll receive a RAV. You can update a RAV by sending it with newer receipts and this will generate a new RAV with an increased value.
+对于每个查询，网关将向您发送一个存储在数据库中的`签名收据`。然后，这些查询将由`tap代理`通过请求聚合。之后，您将收到RAV。您可以通过发送带有较新收据的RAV来更新它，这将生成一个价值增加的新RAV。
 
-### RAV Details
+### RAV详情
 
-- It’s money that is waiting to be sent to the blockchain.
+- 这是等待发送到区块链的钱。
 
 - It will continue to send requests to aggregate and ensure that the total value of non-aggregated receipts does not exceed the `amount willing to lose`.
 
 - Each RAV can be redeemed once in the contracts, which is why they are sent after the allocation is closed.
 
-### Redeeming RAV
+### 兑换RAV
 
-As long as you run `tap-agent` and `indexer-agent`, everything will be executed automatically. The following provides a detailed breakdown of the process:
+只要您运行`tap代理`和`索引人代理`，所有操作都将自动执行。以下提供了该过程的详细分解：
 
-1. An Indexer closes allocation.
+1. 索引人关闭分配。
 
-2. `<recently-closed-allocation-buffer> period, tap-agent` takes all pending receipts for that specific allocation and requests an aggregation into a RAV, marking it as `last`.
+2. `<recently-closed-allocation-buffer> 在此期间，tap代理`会获取该特定分配的所有待处理收据，并请求将其聚合到RAV中，将其标记为`最后一次`。
 
 3. `indexer-agent` takes all the last RAVS and sends redeem requests to the blockchain, which will update the value of `redeem_at`.
 
-4. During the `<finality-time>` period, `indexer-agent` monitors if the blockchain has any reorganizations that revert the transaction.
+4. 在`<finality-time>`期间，`索引人代理`监控区块链是否有任何重组来恢复交易。
 
    - If it was reverted, the RAV is resent to the blockchain. If it was not reverted, it gets marked as `final`.
 
-## Blockchain Addresses
+## 区块链地址
 
-### Contracts
+### 合约
 
-| Contract            | Arbitrum Mainnet (42161)                     | Arbitrum Sepolia (421614)                    |
+| 合约                  | Arbitrum 主网 (42161)                          | Arbitrum Sepolia (421614)                    |
 | ------------------- | -------------------------------------------- | -------------------------------------------- |
 | TAP Verifier        | `0x33f9E93266ce0E108fc85DdE2f71dab555A0F05a` | `0xfC24cE7a4428A6B89B52645243662A02BA734ECF` |
 | AllocationIDTracker | `0x5B2F33d7Ca6Ec88f5586f2528f58c20843D9FE7c` | `0xAaC28a10d707bbc6e02029f1bfDAEB5084b2aD11` |
 | Escrow              | `0x8f477709eF277d4A880801D01A140a9CF88bA0d3` | `0x1e4dC4f9F95E102635D8F7ED71c5CdbFa20e2d02` |
 
-### Gateway
+### 网关
 
-| Component  | Edge and Node Mainnet (Arbitrum Mainnet)      | Edge and Node Testnet (Arbitrum Sepolia)      |
+| 组件         | Edge and Node Mainnet (Arbitrum Mainnet)      | Edge and Node Testnet (Arbitrum Sepolia)      |
 | ---------- | --------------------------------------------- | --------------------------------------------- |
-| Sender     | `0xDDE4cfFd3D9052A9cb618fC05a1Cd02be1f2F467`  | `0xC3dDf37906724732FfD748057FEBe23379b0710D`  |
-| Signers    | `0xfF4B7A5EfD00Ff2EC3518D4F250A27e4c29A2211`  | `0xFb142dE83E261e43a81e9ACEADd1c66A0DB121FE`  |
+| 发送人        | `0xDDE4cfFd3D9052A9cb618fC05a1Cd02be1f2F467`  | `0xC3dDf37906724732FfD748057FEBe23379b0710D`  |
+| 签字人        | `0xfF4B7A5EfD00Ff2EC3518D4F250A27e4c29A2211`  | `0xFb142dE83E261e43a81e9ACEADd1c66A0DB121FE`  |
 | Aggregator | `https://tap-aggregator.network.thegraph.com` | `https://tap-aggregator.testnet.thegraph.com` |
 
 ### 要求
 
-In addition to the typical requirements to run an indexer, you’ll need a `tap-escrow-subgraph` endpoint to query TAP updates. You can use The Graph Network to query or host yourself on your `graph-node`.
+除了运行索引人的典型要求外，您还需要一个`tap托管子图`端点来查询tap更新。您可以使用Graph网络在`graph-节点`上查询或托管自己。
 
-- [Graph TAP Arbitrum Sepolia subgraph (for The Graph testnet)](https://thegraph.com/explorer/subgraphs/7ubx365MiqBH5iUz6XWXWT8PTof5BVAyEzdb8m17RvbD)
-- [Graph TAP Arbitrum One subgraph (for The Graph mainnet)](https://thegraph.com/explorer/subgraphs/4sukbNVTzGELnhdnpyPqsf1QqtzNHEYKKmJkgaT8z6M1)
+- [Graph TAP Arbitrum Sepolia Subgraph (for The Graph testnet)](https://thegraph.com/explorer/subgraphs/7ubx365MiqBH5iUz6XWXWT8PTof5BVAyEzdb8m17RvbD)
+- [Graph TAP Arbitrum One Subgraph (for The Graph mainnet)](https://thegraph.com/explorer/subgraphs/4sukbNVTzGELnhdnpyPqsf1QqtzNHEYKKmJkgaT8z6M1)
 
-> Note: `indexer-agent` does not currently handle the indexing of this subgraph like it does for the network subgraph deployment. As a result, you have to index it manually.
+> Note: `indexer-agent` does not currently handle the indexing of this Subgraph like it does for the network Subgraph deployment. As a result, you have to index it manually.
 
-## Migration Guide
+## 迁移指南
 
 ### Software versions
 
@@ -128,18 +128,18 @@ query_url = "<http://graph-node:8000>"
 status_url = "<http://graph-node:8000/graphql>"
 
 [subgraphs.network]
-# Query URL for the Graph Network subgraph.
+# Query URL for the Graph Network Subgraph.
 query_url = "<http://example.com/network-subgraph>"
 # Optional, deployment to look for in the local `graph-node`, if locally indexed.
-# Locally indexing the subgraph is recommended.
+# Locally indexing the Subgraph is recommended.
 # NOTE: Use `query_url` or `deployment_id` only
 deployment_id = "Qmaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
 
 [subgraphs.escrow]
-# Query URL for the Escrow subgraph.
+# Query URL for the Escrow Subgraph.
 query_url = "<http://example.com/network-subgraph>"
 # Optional, deployment to look for in the local `graph-node`, if locally indexed.
-# Locally indexing the subgraph is recommended.
+# Locally indexing the Subgraph is recommended.
 # NOTE: Use `query_url` or `deployment_id` only
 deployment_id = "Qmaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
 
