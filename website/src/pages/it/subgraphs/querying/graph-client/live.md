@@ -2,7 +2,7 @@
 
 Graph-Client implements a custom `@live` directive that can make every GraphQL query work with real-time data.
 
-## Getting Started
+## Per cominciare
 
 Start by adding the following configuration to your `.graphclientrc.yml` file:
 

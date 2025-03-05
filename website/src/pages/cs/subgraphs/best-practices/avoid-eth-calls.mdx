@@ -1,19 +1,19 @@
 ---
 title: Doporučený postup pro podgraf 4 - Zlepšení rychlosti indexování vyhnutím se eth_calls
-sidebarTitle: 'Subgraph Best Practice 4: Avoiding eth_calls'
+sidebarTitle: Avoiding eth_calls
 ---
 
 ## TLDR
 
-`eth_calls` jsou volání, která lze provést z podgrafu do uzlu Ethereum. Tato volání zabírají značnou dobu, než vrátí data, což zpomaluje indexování. Pokud je to možné, navrhněte chytré kontrakty tak, aby emitovaly všechna potřebná data, takže nebudete muset používat `eth_calls`.
+`eth_calls` are calls that can be made from a Subgraph to an Ethereum node. These calls take a significant amount of time to return data, slowing down indexing. If possible, design smart contracts to emit all the data you need so you don’t need to use `eth_calls`.
 
 ## Proč je dobré se vyhnout `eth_calls`
 
-Podgraf jsou optimalizovány pro indexování dat událostí emitovaných z chytré smlouvy. Podgraf může také indexovat data pocházející z `eth_call`, což však může indexování podgrafu výrazně zpomalit, protože `eth_calls` vyžadují externí volání chytrých smluv. Odezva těchto volání nezávisí na podgrafu, ale na konektivitě a odezvě dotazovaného uzlu Ethereum. Minimalizací nebo eliminací eth_calls v našich podgrafech můžeme výrazně zvýšit rychlost indexování.
+Subgraphs are optimized to index event data emitted from smart contracts. A Subgraph can also index the data coming from an `eth_call`, however, this can significantly slow down Subgraph indexing as `eth_calls` require making external calls to smart contracts. The responsiveness of these calls relies not on the Subgraph but on the connectivity and responsiveness of the Ethereum node being queried. By minimizing or eliminating eth_calls in our Subgraphs, we can significantly improve our indexing speed.
 
 ### Jak vypadá eth_call?
 
-`eth_calls` jsou často nutné, pokud data potřebná pro podgraf nejsou dostupná prostřednictvím emitovaných událostí. Uvažujme například scénář, kdy podgraf potřebuje zjistit, zda jsou tokeny ERC20 součástí určitého poolu, ale smlouva emituje pouze základní událost `Transfer` a neemituje událost, která by obsahovala data, která potřebujeme:
+`eth_calls` are often necessary when the data required for a Subgraph is not available through emitted events. For example, consider a scenario where a Subgraph needs to identify whether ERC20 tokens are part of a specific pool, but the contract only emits a basic `Transfer` event and does not emit an event that contains the data that we need:
 
 ```yaml
 event Transfer(address indexed from, address indexed to, uint256 value);
@@ -44,7 +44,7 @@ export function handleTransfer(event: Transfer): void {
 }
 ```
 
-To je funkční, ale není to ideální, protože to zpomaluje indexování našeho podgrafu.
+This is functional, however is not ideal as it slows down our Subgraph’s indexing.
 
 ## Jak odstranit `eth_calls`
 
@@ -54,7 +54,7 @@ V ideálním případě by měl být inteligentní kontrakt aktualizován tak, a
 event TransferWithPool(address indexed from, address indexed to, uint256 value, bytes32 indexed poolInfo);
 ```
 
-Díky této aktualizaci může podgraf přímo indexovat požadovaná data bez externích volání:
+With this update, the Subgraph can directly index the required data without external calls:
 
 ```typescript
 import { Address } from '@graphprotocol/graph-ts'
@@ -96,11 +96,11 @@ calls:
 
 Samotná obslužná rutina přistupuje k výsledku tohoto `eth_call` přesně tak, jak je uvedeno v předchozí části, a to navázáním na smlouvu a provedením volání. graph-node cachuje výsledky deklarovaných `eth_call` v paměti a volání obslužné rutiny získá výsledek z této paměťové cache místo skutečného volání RPC.
 
-Poznámka: Deklarované eth_calls lze provádět pouze v podgraf s verzí specVersion >= 1.2.0.
+Note: Declared eth_calls can only be made in Subgraphs with specVersion >= 1.2.0.
 
 ## Závěr
 
-You can significantly improve indexing performance by minimizing or eliminating `eth_calls` in your subgraphs.
+You can significantly improve indexing performance by minimizing or eliminating `eth_calls` in your Subgraphs.
 
 ## Subgraph Best Practices 1-6
 
