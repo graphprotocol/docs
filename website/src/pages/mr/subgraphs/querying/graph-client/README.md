@@ -373,7 +373,7 @@ sources:
 
 #### Automatic Pagination
 
-With most Subgraphs, the number of records you can fetch is limited. In this case, you have to send multiple requests with pagination.
+With most subgraphs, the number of records you can fetch is limited. In this case, you have to send multiple requests with pagination.
 
 ```graphql
 query {
