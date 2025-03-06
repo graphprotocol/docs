@@ -1,9 +1,6 @@
 export default {
-<<<<<<< source-example
   'subgraph-composition-three-sources': '',
-=======
   'subgraph-composition': '',
->>>>>>> main
   'subgraph-debug-forking': '',
   near: '',
   arweave: '',
