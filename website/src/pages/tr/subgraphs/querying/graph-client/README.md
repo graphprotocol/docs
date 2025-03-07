@@ -235,7 +235,7 @@ All `fetch` strategies can be combined to create the ultimate execution flow.
 
 The `retry` mechanism allow you to specify the retry attempts for a single GraphQL endpoint/source.
 
-The retry flow will execute in both conditions: a netword error, or due to a runtime error (indexing issue/inavailability of the indexer).
+The retry flow will execute in both conditions: a network error, or due to a runtime error (indexing issue/unavailability of the indexer).
 
 ```yaml
 sources:
