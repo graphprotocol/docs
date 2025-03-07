@@ -2,10 +2,11 @@ import type { WithOptional } from '@edgeandnode/common'
 import { ExperimentalIcon as Icon, type ExperimentalIconProps as IconProps } from '@edgeandnode/gds'
 
 interface HourglassIconProps extends WithOptional<IconProps, 'alt'> {
-  fillPercent?: number
+  readingTime?: number
 }
 
-export const HourglassIcon = ({ fillPercent = 0, ...props }: HourglassIconProps) => {
+// TODO: move to gds
+export const HourglassIcon = ({ readingTime = 0, ...props }: HourglassIconProps) => {
   return (
     <Icon alt="Hourglass Icon" {...props}>
       <svg viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
@@ -25,7 +26,7 @@ export const HourglassIcon = ({ fillPercent = 0, ...props }: HourglassIconProps)
         </mask>
 
         <g mask="url(#hourglass-mask)">
-          <rect x="3.5" y={15 - fillPercent} width="9" height={fillPercent} fill="currentColor" />
+          <rect x="3.5" y={15 - readingTime} width="9" height={readingTime} fill="currentColor" />
         </g>
 
         <path

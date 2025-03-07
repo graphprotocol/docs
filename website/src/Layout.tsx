@@ -715,7 +715,7 @@ function MDXContent({ toc: headings, children }: ComponentPropsWithoutRef<Nextra
               {readingTime ? (
                 // TODO: Use space-600 from the new colors when GDS is updated
                 <span className="mb-3 flex items-center gap-1 text-text">
-                  <HourglassIcon fillPercent={Math.ceil(readingTime.minutes)} />
+                  <HourglassIcon readingTime={Math.ceil(readingTime.minutes)} />
                   <p className="text-body-small">
                     {Math.ceil(readingTime.minutes)} {t('global.page.readingTime.minutes')}
                   </p>
