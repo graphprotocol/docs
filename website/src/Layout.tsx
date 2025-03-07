@@ -51,10 +51,12 @@ import {
 } from '@edgeandnode/gds/icons'
 
 import {
+  CalendarIcon,
   Callout,
   CodeBlock,
   DocSearch,
   Heading,
+  HourglassIcon,
   Image,
   Link,
   type LinkProps,
@@ -710,31 +712,17 @@ function MDXContent({ toc: headings, children }: ComponentPropsWithoutRef<Nextra
           ) : null}
           {!frontMatter.hideContentHeader ? (
             <header className="col-[container] pt-12 transition-[padding] duration-[var(--graph-docs-layout-transition-duration)]">
+              {readingTime ? (
+                // TODO: Use space-600 from the new colors when GDS is updated
+                <span className="mb-3 flex items-center gap-1 text-text">
+                  <HourglassIcon readingTime={Math.ceil(readingTime.minutes)} />
+                  <p className="text-body-small">
+                    {Math.ceil(readingTime.minutes)} {t('global.page.readingTime.minutes')}
+                  </p>
+                </span>
+              ) : null}
               {frontMatter.title ? (
                 <h1 className="text-heading-large text-white xs:text-heading-xlarge">{frontMatter.title}</h1>
-              ) : null}
-              {/* TODO: Design "last updated" and "reading time" */}
-              {lastUpdated ? (
-                <p className="text-body-small mt-3 text-white/48">
-                  <span>{t('global.page.lastUpdated')}:</span>{' '}
-                  <time
-                    dateTime={lastUpdated.toISOString()}
-                    // Removes hydration errors because `toLocaleDateString` show different results in Node.js and in browser for some languages like `ar`
-                    suppressHydrationWarning
-                  >
-                    {lastUpdated.toLocaleDateString(locale, {
-                      month: 'long',
-                      day: 'numeric',
-                      year: 'numeric',
-                    })}
-                  </time>
-                </p>
-              ) : null}
-              {readingTime ? (
-                <p className="text-body-small mt-3 text-white/48">
-                  {t('global.page.readingTime.title')}: {Math.ceil(readingTime.minutes)}{' '}
-                  {t('global.page.readingTime.minutes')}
-                </p>
               ) : null}
             </header>
           ) : null}
@@ -784,7 +772,26 @@ function MDXContent({ toc: headings, children }: ComponentPropsWithoutRef<Nextra
           >
             {children}
           </section>
-          <div className="col-[container] flex justify-end pb-12 group-data-[hide-table-of-contents]/layout-toc-grid:hidden xl:hidden">
+          <div className="col-[container] flex items-center justify-between pb-12">
+            {lastUpdated ? (
+              <span className="flex items-center gap-1 text-text">
+                <CalendarIcon date={lastUpdated.getDate()} />
+                {/* TODO: Use space-600 from the new colors when GDS is updated */}
+                <p className="text-body-xsmall">
+                  <time
+                    dateTime={lastUpdated.toISOString()}
+                    // Removes hydration errors because `toLocaleDateString` show different results in Node.js and in browser for some languages like `ar`
+                    suppressHydrationWarning
+                  >
+                    {lastUpdated.toLocaleDateString(locale, {
+                      month: 'long',
+                      day: 'numeric',
+                      year: 'numeric',
+                    })}
+                  </time>
+                </p>
+              </span>
+            ) : null}
             {/* TODO: Use `ExperimentalLink` */}
             <LegacyLink variant="secondary" href={editPageUrl} target="_blank" size="14px">
               <SocialGitHub alt="" />
@@ -837,11 +844,6 @@ function MDXContent({ toc: headings, children }: ComponentPropsWithoutRef<Nextra
             >
               <header className="mb-4 flex gap-4">
                 <div>{t('global.page.onThisPage')}</div>
-                {/* TODO: Use `ExperimentalLink` */}
-                <LegacyLink variant="secondary" href={editPageUrl} target="_blank" size="14px">
-                  <SocialGitHub alt="" />
-                  {t('global.page.edit')}
-                </LegacyLink>
               </header>
               {headings.length > 0 ? (
                 <nav
