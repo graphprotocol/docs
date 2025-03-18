@@ -1,0 +1,139 @@
+---
+title: Melhore a Construção do Seu Subgraph Usando a Composição com o Sushiswap v3 na Base
+sidebarTitle: Como Compor um Subgraph com o Sushiswap v3 na Base
+---
+
+Alavanque a composição de um subgraph para acelerar o tempo de desenvolvimento. Crie um subgraph de base com dados essenciais, e em seguida, crie mais subgraphs em cima dele.
+
+> Avisos Importantes:
+>
+> - A composição de um subgraph está incorporada à CLI, e você pode implantar com o [Subgraph Studio](https://thegraph.com/studio/).
+> - Você pode usar Subgraphs existentes, mas eles devem ser implantados novamente com `specVersion` 1.3.0, que não exige a programação de código novo.
+> - Vale reestruturar o seu subgraph para dividir a lógica à conforme você começa a compor subgraphs.
+
+## Introdução
+
+Subgraphs compostos permitem que você combine fontes de dados de vários subgraphs num novo, deixando a programação de subgraphs mais rápida e flexível. A composição de subgraphs permite que você crie e mantenha subgraphs menores e mais concentrados, que formam coletivamente um conjunto de dados maior, interconectado.
+
+### Vantagens da Composição
+
+A composição de subgraphs é um recurso poderoso para fins de dimensionamento, permitindo:
+
+- Reciclagem, mistura, e combinação de dados existentes
+- Otimização de programação e queries
+- Uso de múltiplas fontes de dados (até cinco subgraphs de origem)
+- Sincronização acelerada do seu Subgraph
+- Solução de erros e otimização da ressincronização
+
+## Visão Geral da Arquitetura
+
+A configuração deste exemplo envolve dois Subgraphs:
+
+1. **Subgraph de Origem**: Rastreia os dados do evento como entidades.
+2. **Subgraph Dependente**: Usa o Subgraph de origem como uma fonte de dados.
+
+Esses exemplos podem ser encontrados nos diretórios `source` e `dependent`.
+
+- O **subgraph de origem** é um subgraph básico de rastreamento de eventos, que regista eventos emitidos por contratos relevantes.
+- O **subgraph dependente** faz referência ao subgraph de origem como uma fonte de dados, usando as entidades da fonte como gatilhos.
+
+Embora o subgraph de origem seja um Subgraph padrão, o dependente usa o recurso de composição de Subgraphs.
+
+### Subgraph de Origem
+
+O Subgraph de origem rastreia os eventos do Subgraph do Sushiswap v3 na chain Base. O arquivo de configuração deste Subgraph é `source/subgraph.yaml`.
+
+> O `source/subgraph.yaml` emprega o recurso avançado de Subgraphs, [declarative `eth_calls`](https://thegraph.com/docs/en/subgraphs/developing/creating/advanced/#declared-eth_call). Para rever o código deste `source/subgraph.yaml`, confira o [repositório de exemplo do Subgraph de origem](https://github.com/incrypto32/subgraph-composition-sample-subgraph/blob/a5f13cb4b961f92d5c5631dca589c54feb1c0a19/source/subgraph.yaml).
+
+### Subgraph Dependente
+
+O Subgraph dependente está no arquivo `dependent/subgraph.yaml`, que especifica o Subgraph de origem como fonte de dados. Este subgraph usa entidades da fonte para acionar ações específicas com base em alterações nessas entidades.
+
+> Para rever o código para este `dependent/subgraph.yaml`, confira o [repositório de exemplo de Subgraph dependente](https://github.com/incrypto32/subgraph-composition-sample-subgraph/blob/main/dependant/subgraph.yaml).
+
+## Como Começar
+
+A seguir, veja um guia que ilustra como usar um Subgraph como uma fonte de dados para outro. Este exemplo usa:
+
+- Subgraph do Sushiswap v3 na chain Base
+- Dois Subgraphs (com a possibilidade de usar até **5 Subgraphs de origem** na sua programação).
+
+### Passo 1. Configure o seu Subgraph de Origem
+
+Para definir o Subgraph de origem como fonte de dados no Subgraph dependente, inclua o seguinte em `subgraph.yaml`:
+
+```yaml
+specVersion: 1.3.0
+schema:
+  file: ./schema.graphql
+dataSources:
+  - kind: subgraph
+    name: Factory
+    network: base
+    source:
+      address: 'QmdXu8byAFCGSDWsB5gMQjWr6GUvEVB7S1hemfxNuomerz'
+      startBlock: 82522
+```
+
+Aqui, `source.address` se refere ao ID de implantação do Subgraph de origem, e `startBlock` especifica o bloco a partir do qual a indexação deve começar.
+
+### Passo 2. Defina Handlers no Subgraph Dependente
+
+Veja abaixo um exemplo de definição de handlers no Subgraph dependente:
+
+```typescript
+export function handleInitialize(trigger: EntityTrigger<Initialize>): void {
+  if (trigger.operation === EntityOp.Create) {
+    let entity = trigger.data
+    let poolAddressParam = Address.fromBytes(entity.poolAddress)
+
+    // Atualização de preços e ticks - raiz quadrada do pool
+    let pool = Pool.load(poolAddressParam.toHexString()) as Pool
+    pool.sqrtPrice = entity.sqrtPriceX96
+    pool.tick = BigInt.fromI32(entity.tick)
+    pool.save()
+
+    // Atualização de preços do token
+    let token0 = Token.load(pool.token0) as Token
+    let token1 = Token.load(pool.token1) as Token
+
+    // Atualização de preços de ETH em USD
+    let bundle = Bundle.load('1') as Bundle
+    bundle.ethPriceUSD = getEthPriceInUSD()
+    bundle.save()
+
+    updatePoolDayData(entity)
+    updatePoolHourData(entity)
+
+    // Atualização de preço derivado do ETH para tokens
+    token0.derivedETH = findEthPerToken(token0)
+    token1.derivedETH = findEthPerToken(token1)
+    token0.save()
+    token1.save()
+  }
+}
+```
+
+Neste exemplo, a função `handleInitialize` é acionada quando uma nova entidade `Initialize` é criada no subgraph de origem, passada como `EntityTrigger<Initialize>`. O handler atualiza o pool e as entidades do token, com base em dados da nova entidade `Initialize`.
+
+`EntityTrigger` possui três campos:
+
+1. `operation`: Especifica o tipo de operação, que pode ser `Create`, `Modify`, ou `Remove`.
+2. `type`: Indica o tipo de entidade.
+3. `data`: Contém os dados da entidade.
+
+Os programadores podem então determinar ações específicas para os dados das entidades, com base no tipo de operação.
+
+## Conclusão
+
+- Use esta ferramenta poderosa para escalar rapidamente a sua programação de Subgraphs e reutilizar os dados existentes.
+- A configuração inclui os seguintes atos: criar um Subgraph de origem e referenciá-lo num Subgraph dependente.
+- Os handlers são definidos no Subgraph dependente para executar ações, com base nas alterações nas entidades do Subgraph de origem.
+
+Este método abre portas para composição e escalabilidade, e simplifica a eficiência tanto na programação como na manutenção.
+
+## Outros Recursos
+
+Para usar outros recursos avançados do seu Subgraph, confira os [recursos avançados do Subgraph](/developing/creating/advanced/) e [este repositório de composição do Subgraph](https://github.com/incrypto32/subgraph-composition-sample-subgraph).
+
+Para saber mais sobre como definir três Subgraphs de origem, confira [este repositório de composição de Subgraphs](https://github.com/isum/subgraph-composition-example).
