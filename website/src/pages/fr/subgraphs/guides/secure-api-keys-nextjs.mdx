@@ -1,0 +1,123 @@
+---
+title: Comment sécuriser les clés d'API en utilisant les composants serveur de Next.js
+---
+
+## Aperçu
+
+We can use [Next.js server components](https://nextjs.org/docs/app/building-your-application/rendering/server-components) to properly secure our API key from exposure in the frontend of our dapp. To further increase our API key security, we can also [restrict our API key to certain Subgraphs or domains in Subgraph Studio](/cookbook/upgrading-a-subgraph/#securing-your-api-key).
+
+In this cookbook, we will go over how to create a Next.js server component that queries a Subgraph while also hiding the API key from the frontend.
+
+### Mise en garde
+
+- Les composants serveur de Next.js ne protègent pas les clés API contre les attaques de déni de service.
+- Les passerelles de The Graph Network disposent de stratégies de détection et d'atténuation des attaques de déni de service, cependant, l'utilisation des composants serveur peut affaiblir ces protections.
+- Les composants serveur de Next.js introduisent des risques de centralisation car le serveur peut tomber en panne.
+
+### Pourquoi est-ce nécessaire
+
+Dans une application React standard, les clés API incluses dans le code frontend peuvent être exposées du côté client, posant un risque de sécurité. Bien que les fichiers `.env` soient couramment utilisés, ils ne protègent pas complètement les clés car le code de React est exécuté côté client, exposant ainsi la clé API dans les headers. Les composants serveur Next.js résolvent ce problème en gérant les opérations sensibles côté serveur.
+
+### Using client-side rendering to query a Subgraph
+
+![rendu côté client](/img/api-key-client-side-rendering.png)
+
+### Prérequis
+
+- Une clé API provenant de [Subgraph Studio](https://thegraph.com/studio)
+- Une connaissance de base de Next.js et React.
+- Un projet Next.js existant qui utilise l'[App Router](https://nextjs.org/docs/app).
+
+## Guide étape par étape
+
+### Étape 1 : Configurer les Variables d'Environnement
+
+1. À la racine de notre projet Next.js, créer un fichier `.env.local` .
+2. Ajouter notre clé API :: `API_KEY=<cle_api_ici>`.
+
+### Étape 2 : Créer un Composant Serveur
+
+1. Dans notre répertoire`components` , créer un nouveau fichier, `ServerComponent.js`.
+2. Utiliser le code exemple fourni pour configurer le composant serveur.
+
+### Étape 3 : Implémenter la Requête API Côté Serveur
+
+Dans `ServerComponent.js`, ajouter le code suivant :
+
+```javascript
+const API_KEY = process.env.API_KEY
+
+export default async function ServerComponent() {
+  const response = await fetch(
+    `https://gateway-arbitrum.network.thegraph.com/api/${API_KEY}/subgraphs/id/HUZDsRpEVP2AvzDCyzDHtdc64dyDxx8FQjzsmqSg4H3B`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        query: /* GraphQL */ `
+          {
+            factories(first: 5) {
+              id
+              poolCount
+              txCount
+              totalVolumeUSD
+            }
+          }
+        `,
+      }),
+    },
+  )
+
+  const responseData = await response.json()
+  const data = responseData.data
+
+  return (
+    <div>
+      <h1>Server Component</h1>
+      {data ? (
+        <ul>
+          {data.factories.map((factory) => (
+            <li key={factory.id}>
+              <p>ID: {factory.id}</p>
+              <p>Pool Count: {factory.poolCount}</p>
+              <p>Transaction Count: {factory.txCount}</p>
+              <p>Total Volume USD: {factory.totalVolumeUSD}</p>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p>Loading data...</p>
+      )}
+    </div>
+  )
+}
+```
+
+### Étape 4 : Utiliser le Composant Serveur
+
+1. Dans notre fichier de page (par exemple, `pages/index.js`), importer `ServerComponent`.
+2. Rendu du composant:
+
+```javascript
+import ServerComponent from './components/ServerComponent'
+
+export default function Home() {
+  return (
+    <main>
+      <ServerComponent />
+    </main>
+  )
+}
+```
+
+### Étape 5 : Lancer et tester notre Dapp
+
+Démarrez notre application Next.js en utilisant `npm run dev`. Vérifiez que le composant serveur récupère les données sans exposer la clé API.
+
+![Rendu côté serveur](/img/api-key-server-side-rendering.png)
+
+### Conclusion
+
+En utilisant les composants serveur de Next.js, nous avons effectivement caché la clé API du côté client, améliorant ainsi la sécurité de notre application. Cette méthode garantit que les opérations sensibles sont traitées côté serveur, à l'abri des vulnérabilités potentielles côté client. Enfin, n'oubliez pas d'explorer [d'autres mesures de sécurité des clés d'API](/subgraphs/querying/managing-api-keys/) pour renforcer encore davantage la sécurité de vos clés d'API.
