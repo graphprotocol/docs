@@ -1,0 +1,101 @@
+---
+title: Быстрая и простая отладка субграфа с использованием форков
+---
+
+As with many systems processing large amounts of data, The Graph's Indexers (Graph Nodes) may take quite some time to sync-up your Subgraph with the target blockchain. The discrepancy between quick changes with the purpose of debugging and long wait times needed for indexing is extremely counterproductive and we are well aware of that. This is why we are introducing **Subgraph forking**, developed by [LimeChain](https://limechain.tech/), and in this article I will show you how this feature can be used to substantially speed-up Subgraph debugging!
+
+## И так, что это?
+
+**Subgraph forking** is the process of lazily fetching entities from _another_ Subgraph's store (usually a remote one).
+
+In the context of debugging, **Subgraph forking** allows you to debug your failed Subgraph at block _X_ without needing to wait to sync-up to block _X_.
+
+## Что? Как?
+
+When you deploy a Subgraph to a remote Graph Node for indexing and it fails at block _X_, the good news is that the Graph Node will still serve GraphQL queries using its store, which is synced-up to block _X_. That's great! This means we can take advantage of this "up-to-date" store to fix the bugs arising when indexing block _X_.
+
+In a nutshell, we are going to _fork the failing Subgraph_ from a remote Graph Node that is guaranteed to have the Subgraph indexed up to block _X_ in order to provide the locally deployed Subgraph being debugged at block _X_ an up-to-date view of the indexing state.
+
+## Пожалуйста, покажите мне какой-нибудь код!
+
+To stay focused on Subgraph debugging, let's keep things simple and run along with the [example-Subgraph](https://github.com/graphprotocol/graph-tooling/tree/main/examples/ethereum-gravatar) indexing the Ethereum Gravity smart contract.
+
+Вот обработчики, определённые для индексирования `Gravatar`, без каких-либо ошибок:
+
+```tsx
+export function handleNewGravatar(event: NewGravatar): void {
+  let gravatar = new Gravatar(event.params.id.toHex().toString())
+  gravatar.owner = event.params.owner
+  gravatar.displayName = event.params.displayName
+  gravatar.imageUrl = event.params.imageUrl
+  gravatar.save()
+}
+
+export function handleUpdatedGravatar(event: UpdatedGravatar): void {
+  let gravatar = Gravatar.load(event.params.id.toI32().toString())
+  if (gravatar == null) {
+    log.critical('Gravatar not found!', [])
+    return
+  }
+  gravatar.owner = event.params.owner
+  gravatar.displayName = event.params.displayName
+  gravatar.imageUrl = event.params.imageUrl
+  gravatar.save()
+}
+```
+
+Oops, how unfortunate, when I deploy my perfect looking Subgraph to [Subgraph Studio](https://thegraph.com/studio/) it fails with the _"Gravatar not found!"_ error.
+
+Обычный способ попытаться исправить это:
+
+1. Внести изменения в источник мэппингов, которые, по Вашему мнению, решат проблему (в то время как я знаю, что это не так).
+2. Re-deploy the Subgraph to [Subgraph Studio](https://thegraph.com/studio/) (or another remote Graph Node).
+3. Подождать, пока он синхронизируется.
+4. Если он снова сломается, вернуться к пункту 1, в противном случае: Ура!
+
+Действительно, это похоже на обычный процесс отладки, но есть один шаг, который ужасно замедляет процесс: _3. Ждите, пока завершится синхронизация._
+
+Using **Subgraph forking** we can essentially eliminate this step. Here is how it looks:
+
+0. Запустите локальную Graph Node с помощью **_соответстсвующего набора fork-base_**.
+1. Внесите изменения в источник мэппингов, которые, по Вашему мнению, решат проблему.
+2. Deploy to the local Graph Node, **_forking the failing Subgraph_** and **_starting from the problematic block_**.
+3. Если он снова сломается, вернитесь к пункту 1, в противном случае: Ура!
+
+Сейчас у Вас может появиться 2 вопроса:
+
+1. fork-base - что это???
+2. Форкнуть кого?!
+
+И я вам отвечаю:
+
+1. `fork-base` is the "base" URL, such that when the _subgraph id_ is appended the resulting URL (`<fork-base>/<subgraph-id>`) is a valid GraphQL endpoint for the Subgraph's store.
+2. Форкнуть легко, не нужно напрягаться:
+
+```bash
+$ graph deploy <subgraph-name> --debug-fork <subgraph-id> --ipfs http://localhost:5001 --node http://localhost:8020
+```
+
+Also, don't forget to set the `dataSources.source.startBlock` field in the Subgraph manifest to the number of the problematic block, so you can skip indexing unnecessary blocks and take advantage of the fork!
+
+Итак, вот что я делаю:
+
+1. I spin-up a local Graph Node ([here is how to do it](https://github.com/graphprotocol/graph-node#running-a-local-graph-node)) with the `fork-base` option set to: `https://api.thegraph.com/subgraphs/id/`, since I will fork a Subgraph, the buggy one I deployed earlier, from [Subgraph Studio](https://thegraph.com/studio/).
+
+```
+$ cargo run -p graph-node --release -- \
+    --postgres-url postgresql://USERNAME[:PASSWORD]@localhost:5432/graph-node \
+    --ethereum-rpc NETWORK_NAME:[CAPABILITIES]:URL \
+    --ipfs 127.0.0.1:5001
+    --fork-base https://api.thegraph.com/subgraphs/id/
+```
+
+2. После тщательной проверки я замечаю, что существует несоответствие в представлениях `id`, используемых при индексировании `Gravatar` в двух моих обработчиках. В то время как `handleNewGravatar` конвертирует его в hex (`event.params.id.toHex()`), `handleUpdatedGravatar` использует int32 (`event.params.id.toI32()`), что приводит к тому, что `handleUpdatedGravatar` завершается ошибкой и появляется сообщение "Gravatar not found!". Я заставляю оба обработчика конвертировать `id` в hex.
+3. After I made the changes I deploy my Subgraph to the local Graph Node, **_forking the failing Subgraph_** and setting `dataSources.source.startBlock` to `6190343` in `subgraph.yaml`:
+
+```bash
+$ graph deploy gravity --debug-fork QmNp169tKvomnH3cPXTfGg4ZEhAHA6kEq5oy1XDqAxqHmW --ipfs http://localhost:5001 --node http://localhost:8020
+```
+
+4. Я проверяю логи, созданные локальной Graph Node, и, ура!, кажется, все работает.
+5. I deploy my now bug-free Subgraph to a remote Graph Node and live happily ever after! (no potatoes tho)
