@@ -1,0 +1,239 @@
+---
+title: Construindo Subgraphs no Arweave
+---
+
+> O apoio ao Arweave no Graph Node, e no Subgraph Studio, está em fase beta: por favor nos contacte no [Discord](https://discord.gg/graphprotocol) se tiver dúvidas sobre como construir subgraphs no Arweave!
+
+Neste guia, você aprenderá como construir e lançar Subgraphs para indexar a blockchain Arweave.
+
+## O que é o Arweave?
+
+O protocolo Arweave permite que programadores armazenem dados permanentemente. Esta é a grande diferença entre o Arweave e o IPFS, considerando que o IPFS não tem esta característica; a permanência, e os arquivos armazenados no Arweave, não podem ser mudados ou apagados.
+
+O Arweave já construiu várias bibliotecas para integrar o protocolo num número de línguas de programação diferentes. Para mais informações, pode-se conferir:
+
+- [Arwiki](https://arwiki.wiki/#/en/main)
+- [Recursos do Arweave](https://www.arweave.org/build)
+
+## O que são Subgraphs no Arweave?
+
+The Graph permite a construção de APIs abertas e personalizadas chamadas "Subgraphs", que servem para contar aos indexadores (operadores de servidor) quais dados devem ser indexados em uma blockchain e guardados nos seus servidores para serem consultados a qualquer hora em queries pelo [GraphQL](https://graphql.org/).
+
+O [Graph Node](https://github.com/graphprotocol/graph-node) é atualmente capaz de indexar dados no protocolo Arweave. A integração atual indexa apenas o Arweave como uma blockchain (blocos e transações), mas no momento, não indexa os arquivos armazenados.
+
+## Construindo um Subgraph no Arweave
+
+Para construir e lançar Subgraphs no Arweave, são necessários dois pacotes:
+
+1. `@graphprotocol/graph-cli` acima da versão 0.30.2 — Esta é uma ferramenta de linha de comandos para a construção e implantação de subgraphs. [Clique aqui](https://www.npmjs.com/package/@graphprotocol/graph-cli) para baixá-la com o `npm`.
+2. `@graphprotocol/graph-ts` acima da versão 0.27.0 — Uma biblioteca de tipos específicos de subgraphs. [Clique aqui](https://www.npmjs.com/package/@graphprotocol/graph-ts) para baixar com `npm`.
+
+## Os componentes de um subgraph
+
+Um subgraph tem três componentes:
+
+### 1. Manifest - `subgraph.yaml`
+
+Define as fontes de dados de interesse, e como elas devem ser processadas. O Arweave é uma nova categoria de fontes de dados.
+
+### 2. Schema - `schema.graphql`
+
+Aqui é possível definir quais dados queres consultar após indexar o seu subgraph utilizando o GraphQL. Isto é como um modelo para uma API, onde o modelo define a estrutura de um órgão de requisito.
+
+Os requisitos para subgraphs do Arweave estão cobertos pela [documentação](/developing/creating-a-subgraph/#the-graphql-schema).
+
+### 3. Mapeamentos de AssemblyScript - `mapping.ts`
+
+Esta é a lógica que determina como os dados devem ser retirados e armazenados quando alguém interage com as fontes de dados que estás a escutar. Os dados são traduzidos e armazenados baseados no schema que listaste.
+
+During Subgraph development there are two key commands:
+
+```
+$ graph codegen # generates types from the schema file identified in the manifest
+$ graph build # generates Web Assembly from the AssemblyScript files, and prepares all the Subgraph files in a /build folder
+```
+
+## Definição de Manifest de Subgraph
+
+O manifest do subgraph `subgraph.yaml` identifica as fontes de dados para o subgraph, os gatilhos de interesse, e as funções que devem ser executadas em resposta a tais gatilhos. Veja abaixo um exemplo de um manifest, para um subgraph no Arweave:
+
+```yaml
+specVersion: 1.3.0
+description: Arweave Blocks Indexing
+schema:
+  file: ./schema.graphql # link to the schema file
+dataSources:
+  - kind: arweave
+    name: arweave-blocks
+    network: arweave-mainnet # The Graph only supports Arweave Mainnet
+    source:
+      owner: 'ID-OF-AN-OWNER' # The public key of an Arweave wallet
+      startBlock: 0 # set this to 0 to start indexing from chain genesis
+    mapping:
+      apiVersion: 0.0.9
+      language: wasm/assemblyscript
+      file: ./src/blocks.ts # link to the file with the Assemblyscript mappings
+      entities:
+        - Block
+        - Transaction
+      blockHandlers:
+        - handler: handleBlock # the function name in the mapping file
+      transactionHandlers:
+        - handler: handleTx # the function name in the mapping file
+```
+
+- Subgraphs no Arweave introduzem uma nova categoria de fonte de dados (`arweave`)
+- A rede deve corresponder a uma rede no Graph Node que a hospeda. No Subgraph Studio, a mainnet do Arweave é `arweave-mainnet`
+- Fontes de dados no Arweave introduzem um campo <code>source.owner</code> opcional, a chave pública de uma carteira no Arweave
+
+Fontes de dados no Arweave apoiam duas categorias de <i>handlers</i>:
+
+- `blockHandlers` — Executar em cada bloco novo no Arweave. Nenhum `source.owner` necessário.
+- `transactionHandlers` — Executar em todas as transações cujo dono é o source.owner da fonte de dados. Atualmente, é necessário ter um dono para o transactionHandlers; caso um utilizador queira processar todas as transações, ele deve providenciar "" como o `source.owner`
+
+> O <code>source.owner</code> pode ser o endereço do dono, ou sua Chave Pública.
+>
+> Transações são os blocos de construção da permaweb do Arweave, além de serem objetos criados para utilizadores finais.
+>
+> Nota: No momento, não há apoio para transações no [Irys (antigo Bundlr)](https://irys.xyz/).
+
+## Definição de Schema
+
+A definição de Schema descreve a estrutura do banco de dados resultado do subgraph, e os relacionamentos entre entidades. Isto é agnóstico da fonte de dados original. Para mais detalhes sobre a definição de schema de subgraph, [clique aqui](/developing/creating-a-subgraph/#the-graphql-schema).
+
+## Mapeamentos em AssemblyScript
+
+Os handlers para processamento de eventos estão escritos em [AssemblyScript](https://www.assemblyscript.org/).
+
+A indexação do Arweave introduz tipos de dados específicos para esse ecossistema à [API do AssemblyScript](/subgraphs/developing/creating/graph-ts/api/).
+
+```tsx
+class Block {
+  timestamp: u64
+  lastRetarget: u64
+  height: u64
+  indepHash: Bytes
+  nonce: Bytes
+  previousBlock: Bytes
+  diff: Bytes
+  hash: Bytes
+  txRoot: Bytes
+  txs: Bytes[]
+  walletList: Bytes
+  rewardAddr: Bytes
+  tags: Tag[]
+  rewardPool: Bytes
+  weaveSize: Bytes
+  blockSize: Bytes
+  cumulativeDiff: Bytes
+  hashListMerkle: Bytes
+  poa: ProofOfAccess
+}
+
+class Transaction {
+  format: u32
+  id: Bytes
+  lastTx: Bytes
+  owner: Bytes
+  tags: Tag[]
+  target: Bytes
+  quantity: Bytes
+  data: Bytes
+  dataSize: Bytes
+  dataRoot: Bytes
+  signature: Bytes
+  reward: Bytes
+}
+```
+
+Handlers de bloco recebem um `Block`, enquanto transações recebem um `Transaction`.
+
+Escrever os mapeamentos de um Subgraph no Arweave é parecido com a escrita dos mapeamentos de um Subgraph no Ethereum. Para mais informações, clique [aqui](/developing/creating-a-subgraph/#writing-mappings).
+
+## Como lançar um Subgraph no Arweave ao Subgraph Studio
+
+Após criar o seu Subgraph no painel de controlo do Subgraph Studio, este pode ser implantado com o comando `graph deploy`.
+
+```bash
+graph deploy --access-token <your-access-token>
+```
+
+## Consultando um Subgraph no Arweave
+
+O endpoint do GraphQL para subgraphs no Arweave é determinado pela definição do schema, com a interface existente da API. Visite a [documentação da API da GraphQL](/subgraphs/querying/graphql-api/) para mais informações.
+
+## Exemplos de Subgraphs
+
+Aqui está um exemplo de subgraph para referência:
+
+- [Exemplo de subgraph para o Arweave](https://github.com/graphprotocol/graph-tooling/tree/main/examples/arweave-blocks-transactions)
+
+## Perguntas Frequentes
+
+### Um subgraph pode indexar o Arweave e outras chains?
+
+No, a Subgraph can only support data sources from one chain/network.
+
+### Posso indexar os arquivos armazenados no Arweave?
+
+Atualmente, The Graph apenas indexa o Arweave como uma blockchain (seus blocos e transações).
+
+### Posso identificar pacotes do Bundlr no meu subgraph?
+
+Isto não é apoiado no momento.
+
+### Como posso filtrar transações para uma conta específica?
+
+O <code>source.owner</code> pode ser a chave pública ou o endereço da conta do utilizador.
+
+### Qual é o formato atual de encriptação?
+
+Os dados são geralmente passados aos mapeamentos como Bytes, que, se armazenados diretamente, são retornados ao subgraph em um formato `hex` (por ex. hashes de transações e blocos). Vale converter estes em um formato compatível com `base64` ou `base64 URL` em seus mapeamentos, para combinar com o que é exibido em exploradores de blocos, como o [Arweave Explorer](https://viewblock.io/arweave/).
+
+A seguinte função de helper `bytesToBase64(bytes: Uint8Array, urlSafe: boolean): string` pode ser usada, e será adicionada ao `graph-ts`:
+
+```
+const base64Alphabet = [
+	"A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M",
+	"N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z",
+	"a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m",
+	"n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z",
+	"0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "+", "/"
+];
+
+const base64UrlAlphabet = [
+	"A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M",
+	"N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z",
+	"a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m",
+	"n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z",
+	"0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "-", "_"
+];
+
+function bytesToBase64(bytes: Uint8Array, urlSafe: boolean): string {
+	let alphabet = urlSafe? base64UrlAlphabet : base64Alphabet;
+
+	let result = '', i: i32, l = bytes.length;
+	for (i = 2; i < l; i += 3) {
+		result += alphabet[bytes[i - 2] >> 2];
+		result += alphabet[((bytes[i - 2] & 0x03) << 4) | (bytes[i - 1] >> 4)];
+		result += alphabet[((bytes[i - 1] & 0x0F) << 2) | (bytes[i] >> 6)];
+		result += alphabet[bytes[i] & 0x3F];
+	}
+	if (i === l + 1) { // 1 octet yet to write
+		result += alphabet[bytes[i - 2] >> 2];
+		result += alphabet[(bytes[i - 2] & 0x03) << 4];
+		if (!urlSafe) {
+			result += "==";
+		}
+	}
+	if (!urlSafe && i === l) { // 2 octets yet to write
+		result += alphabet[bytes[i - 2] >> 2];
+		result += alphabet[((bytes[i - 2] & 0x03) << 4) | (bytes[i - 1] >> 4)];
+		result += alphabet[(bytes[i - 1] & 0x0F) << 2];
+		if (!urlSafe) {
+			result += "=";
+		}
+	}
+	return result;
+}
+```
