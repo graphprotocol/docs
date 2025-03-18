@@ -1,0 +1,123 @@
+---
+title: Jak zabezpečit klíče API pomocí komponent serveru Next.js
+---
+
+## Přehled
+
+We can use [Next.js server components](https://nextjs.org/docs/app/building-your-application/rendering/server-components) to properly secure our API key from exposure in the frontend of our dapp. To further increase our API key security, we can also [restrict our API key to certain Subgraphs or domains in Subgraph Studio](/cookbook/upgrading-a-subgraph/#securing-your-api-key).
+
+In this cookbook, we will go over how to create a Next.js server component that queries a Subgraph while also hiding the API key from the frontend.
+
+### Upozornění
+
+- Součásti serveru Next.js nechrání klíče API před odčerpáním pomocí útoků typu odepření služby.
+- Brány Graf síť mají zavedené strategie detekce a zmírňování odepření služby, avšak použití serverových komponent může tyto ochrany oslabit.
+- Server komponenty Next.js přinášejí rizika centralizace, protože může dojít k výpadku serveru.
+
+### Proč je to důležité
+
+Ve standardní aplikaci React mohou být klíče API obsažené v kódu frontendu vystaveny na straně klienta, což představuje bezpečnostní riziko. Soubory `.env` se sice běžně používají, ale plně klíče nechrání, protože kód Reactu se spouští na straně klienta a vystavuje klíč API v hlavičkách. Serverové komponenty Next.js tento problém řeší tím, že citlivé operace zpracovávají na straně serveru.
+
+### Using client-side rendering to query a Subgraph
+
+![Client-side rendering](/img/api-key-client-side-rendering.png)
+
+### Prerequisites
+
+- Klíč API od [Subgraph Studio](https://thegraph.com/studio)
+- Základní znalosti Next.js a React.
+- Existující projekt Next.js, který používá [App Router](https://nextjs.org/docs/app).
+
+## Kuchařka krok za krokem
+
+### Krok 1: Nastavení proměnných prostředí
+
+1. V kořeni našeho projektu Next.js vytvořte soubor `.env.local`.
+2. Přidejte náš klíč API: `API_KEY=<api_key_here>`.
+
+### Krok 2: Vytvoření součásti serveru
+
+1. V adresáři `components` vytvořte nový soubor `ServerComponent.js`.
+2. K nastavení komponenty serveru použijte přiložený ukázkový kód.
+
+### Krok 3: Implementace požadavku API na straně serveru
+
+Do souboru `ServerComponent.js` přidejte následující kód:
+
+```javascript
+const API_KEY = process.env.API_KEY
+
+export default async function ServerComponent() {
+  const response = await fetch(
+    `https://gateway-arbitrum.network.thegraph.com/api/${API_KEY}/subgraphs/id/HUZDsRpEVP2AvzDCyzDHtdc64dyDxx8FQjzsmqSg4H3B`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        query: /* GraphQL */ `
+          {
+            factories(first: 5) {
+              id
+              poolCount
+              txCount
+              totalVolumeUSD
+            }
+          }
+        `,
+      }),
+    },
+  )
+
+  const responseData = await response.json()
+  const data = responseData.data
+
+  return (
+    <div>
+      <h1>Server Component</h1>
+      {data ? (
+        <ul>
+          {data.factories.map((factory) => (
+            <li key={factory.id}>
+              <p>ID: {factory.id}</p>
+              <p>Pool Count: {factory.poolCount}</p>
+              <p>Transaction Count: {factory.txCount}</p>
+              <p>Total Volume USD: {factory.totalVolumeUSD}</p>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p>Loading data...</p>
+      )}
+    </div>
+  )
+}
+```
+
+### Krok 4: Použití komponenty serveru
+
+1. V našem souboru stránky (např. `pages/index.js`) importujte `ServerComponent`.
+2. Vykreslení komponenty:
+
+```javascript
+import ServerComponent from './components/ServerComponent'
+
+export default function Home() {
+  return (
+    <main>
+      <ServerComponent />
+    </main>
+  )
+}
+```
+
+### Krok 5: Spusťte a otestujte náš Dapp
+
+Spusťte naši aplikaci Next.js pomocí `npm run dev`. Ověřte, že serverová komponenta načítá data bez vystavení klíče API.
+
+![Server-side rendering](/img/api-key-server-side-rendering.png)
+
+### Závěr
+
+By utilizing Next.js Server Components, we've effectively hidden the API key from the client-side, enhancing the security of our application. This method ensures that sensitive operations are handled server-side, away from potential client-side vulnerabilities. Finally, be sure to explore [other API key security measures](/subgraphs/querying/managing-api-keys/) to increase your API key security even further.
