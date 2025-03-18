@@ -42,6 +42,7 @@ const withNextra = nextra({
         (key),
       )
 
+    // TODO: Move back to `src/pages/en/_meta.js` and add `src/pages/en/_meta-titles.json` for the translations
     const metaFile = {
       index: t('index.title'),
       about: '',

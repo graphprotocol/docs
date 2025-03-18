@@ -2,7 +2,7 @@ import { NetworkType } from '@pinax/graph-networks-registry'
 import { useData } from 'nextra/hooks'
 import type { ComponentPropsWithoutRef } from 'react'
 
-import { classNames, Link as LegacyLink, Tooltip } from '@edgeandnode/gds'
+import { classNames, ExperimentalLink, Tooltip } from '@edgeandnode/gds'
 import {
   Clock,
   Firehose,
@@ -15,7 +15,7 @@ import {
 } from '@edgeandnode/gds/icons'
 import { NetworkIcon } from '@edgeandnode/go'
 
-import { Card, Heading, Link } from '@/components'
+import { Card, Heading } from '@/components'
 import { useI18n } from '@/i18n'
 import { getSupportedNetworks } from '@/supportedNetworks'
 
@@ -25,7 +25,7 @@ export default function HomePage() {
   return (
     <>
       <div className="graph-docs-not-markdown grid grid-cols-subgrid">
-        <div className="pointer-events-none absolute inset-x-0 -top-8 flex h-72 justify-center xs:h-90">
+        <div className="absolute inset-x-0 -top-8 flex h-72 justify-center pointer-events-none xs:h-90">
           <img alt="" src={`${process.env.BASE_PATH}/img/home-bg.svg`} className="h-full max-w-none" />
         </div>
         <div className="col-[container] py-20 xs:py-30">
@@ -50,9 +50,13 @@ export default function HomePage() {
               <Card
                 title={t('index.products.subgraphs.title')}
                 description={t('index.products.subgraphs.description')}
-                cta={<Link href="/subgraphs/quick-start/">{t('index.products.subgraphs.cta')}</Link>}
+                cta={
+                  <ExperimentalLink href="/subgraphs/quick-start/">
+                    {t('index.products.subgraphs.cta')}
+                  </ExperimentalLink>
+                }
                 icon={
-                  <div className="top-0.5 flex size-8 items-center justify-center rounded-4 bg-purple text-white">
+                  <div className="flex size-8 items-center justify-center rounded-4 bg-purple text-white">
                     <Subgraph size={4} />
                   </div>
                 }
@@ -61,9 +65,13 @@ export default function HomePage() {
               <Card
                 title={t('index.products.substreams.title')}
                 description={t('index.products.substreams.description')}
-                cta={<Link href="/substreams/quick-start/">{t('index.products.substreams.cta')}</Link>}
+                cta={
+                  <ExperimentalLink href="/substreams/quick-start/">
+                    {t('index.products.substreams.cta')}
+                  </ExperimentalLink>
+                }
                 icon={
-                  <div className="top-0.5 flex size-8 items-center justify-center rounded-4 bg-pink text-white">
+                  <div className="flex size-8 items-center justify-center rounded-4 bg-pink text-white">
                     <Substreams size={4} />
                   </div>
                 }
@@ -74,9 +82,9 @@ export default function HomePage() {
               <Card
                 title={t('index.products.sps.title')}
                 description={t('index.products.sps.description')}
-                cta={<Link href="/sps/tutorial/">{t('index.products.sps.cta')}</Link>}
+                cta={<ExperimentalLink href="/sps/tutorial/">{t('index.products.sps.cta')}</ExperimentalLink>}
                 icon={
-                  <div className="flex size-8 items-center justify-center rounded-4 bg-white-8 text-white">
+                  <div className="flex size-8 items-center justify-center rounded-4 bg-space-1400 text-white">
                     <SubstreamsPoweredSubgraph size={4} />
                   </div>
                 }
@@ -84,9 +92,13 @@ export default function HomePage() {
               <Card
                 title={t('index.products.graphNode.title')}
                 description={t('index.products.graphNode.description')}
-                cta={<Link href="/indexing/tooling/graph-node/">{t('index.products.graphNode.cta')}</Link>}
+                cta={
+                  <ExperimentalLink href="/indexing/tooling/graph-node/">
+                    {t('index.products.graphNode.cta')}
+                  </ExperimentalLink>
+                }
                 icon={
-                  <div className="flex size-8 items-center justify-center rounded-4 bg-white-8 text-white">
+                  <div className="flex size-8 items-center justify-center rounded-4 bg-space-1400 text-white">
                     <GraphNode size={4} />
                   </div>
                 }
@@ -94,9 +106,13 @@ export default function HomePage() {
               <Card
                 title={t('index.products.firehose.title')}
                 description={t('index.products.firehose.description')}
-                cta={<Link href="/indexing/tooling/firehose/">{t('index.products.firehose.cta')}</Link>}
+                cta={
+                  <ExperimentalLink href="/indexing/tooling/firehose/">
+                    {t('index.products.firehose.cta')}
+                  </ExperimentalLink>
+                }
                 icon={
-                  <div className="flex size-8 items-center justify-center rounded-4 bg-white-8 text-white">
+                  <div className="flex size-8 items-center justify-center rounded-4 bg-space-1400 text-white">
                     <Firehose size={4} />
                   </div>
                 }
@@ -111,12 +127,12 @@ export default function HomePage() {
           <Heading.H2 id="supported-networks">{t('index.supportedNetworks.title')}</Heading.H2>
           <p>
             {t('index.supportedNetworks.description.base', [
-              <Link key="link-1" href="/supported-networks/">
+              <ExperimentalLink key="link-1" href="/supported-networks/">
                 90+ {t('index.supportedNetworks.description.networks')}
-              </Link>,
-              <Link key="link" href="https://edgeandnode.typeform.com/to/b3507xSL">
+              </ExperimentalLink>,
+              <ExperimentalLink key="link" href="https://edgeandnode.typeform.com/to/b3507xSL">
                 {t('index.supportedNetworks.description.completeThisForm')}
-              </Link>,
+              </ExperimentalLink>,
             ])}
           </p>
           <SupportedNetworks className="mt-8" />
@@ -130,50 +146,50 @@ export default function HomePage() {
           <div className="graph-docs-not-markdown mt-8 grid gap-4">
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
               <Card
+                href="/subgraphs/explorer/"
                 title={t('index.guides.explorer.title')}
                 description={t('index.guides.explorer.description')}
-                href="/subgraphs/explorer/"
                 icon={<GraphExplorer alt="" />}
                 slotAboveTitle={<Time variant="reading" minutes={10} />}
               />
               <Card
+                href="/subgraphs/developing/publishing/publishing-a-subgraph/"
                 title={t('index.guides.publishASubgraph.title')}
                 description={t('index.guides.publishASubgraph.description')}
-                href="/subgraphs/developing/publishing/publishing-a-subgraph/"
                 icon={<Subgraph alt="" />}
                 slotAboveTitle={<Time variant="reading" minutes={3} />}
               />
               <Card
+                href="/substreams/publishing/"
                 title={t('index.guides.publishSubstreams.title')}
                 description={t('index.guides.publishSubstreams.description')}
-                href="/substreams/publishing/"
                 icon={<Substreams alt="" />}
                 slotAboveTitle={<Time variant="duration" minutes={3} />}
               />
             </div>
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
               <Card
+                href="/subgraphs/querying/best-practices/"
                 title={t('index.guides.queryingBestPractices.title')}
                 description={t('index.guides.queryingBestPractices.description')}
-                href="/subgraphs/querying/best-practices/"
                 slotAboveTitle={<Time variant="reading" minutes={9} />}
               />
               <Card
+                href="/subgraphs/cookbook/timeseries/"
                 title={t('index.guides.timeseries.title')}
                 description={t('index.guides.timeseries.description')}
-                href="/subgraphs/cookbook/timeseries/"
                 slotAboveTitle={<Time variant="reading" minutes={4} />}
               />
               <Card
+                href="/subgraphs/querying/managing-api-keys/"
                 title={t('index.guides.apiKeyManagement.title')}
                 description={t('index.guides.apiKeyManagement.description')}
-                href="/subgraphs/querying/managing-api-keys/"
                 slotAboveTitle={<Time variant="reading" minutes={2} />}
               />
               <Card
+                href="/subgraphs/cookbook/transfer-to-the-graph/"
                 title={t('index.guides.transferToTheGraph.title')}
                 description={t('index.guides.transferToTheGraph.description')}
-                href="/subgraphs/cookbook/transfer-to-the-graph/"
                 slotAboveTitle={<Time variant="reading" minutes={3} />}
               />
             </div>
@@ -187,38 +203,35 @@ export default function HomePage() {
             <Heading.H2 id="videos" className="+:m-0">
               {t('index.videos.title')}
             </Heading.H2>
-            {/* TODO: Use `ExperimentalLink` */}
-            <LegacyLink
-              variant="secondary"
+            <ExperimentalLink
               href="https://www.youtube.com/@GraphProtocol"
               target="_blank"
-              size="14px"
-              className="-top-1"
+              iconBefore={<SocialYouTube alt="" />}
+              className="top-[-3px] text-14 text-space-200"
             >
-              <SocialYouTube alt="" className="+:max-lg:hidden" />
               <span className="max-lg:hidden">{t('index.videos.watchOnYouTube')}</span>
               <span className="lg:hidden">YouTube</span>
-            </LegacyLink>
+            </ExperimentalLink>
           </div>
           <div className="graph-docs-not-markdown mt-8 grid grid-cols-1 gap-4">
             <Card
+              href="https://www.youtube.com/watch?v=hn-sJUpZ_aM"
               title={t('index.videos.theGraphExplained.title')}
               description={t('index.videos.theGraphExplained.description')}
-              href="https://www.youtube.com/watch?v=hn-sJUpZ_aM"
               slotBelowDescription={<Time variant="duration" minutes={1} className="mt-1" />}
               videoThumbnailSrc={`${process.env.BASE_PATH}/img/video-theGraphExplained.jpg`}
             />
             <Card
+              href="https://www.youtube.com/watch?v=VACg8bitnVc"
               title={t('index.videos.whatIsDelegating.title')}
               description={t('index.videos.whatIsDelegating.description')}
-              href="https://www.youtube.com/watch?v=VACg8bitnVc"
               slotBelowDescription={<Time variant="duration" minutes={4} className="mt-1" />}
               videoThumbnailSrc={`${process.env.BASE_PATH}/img/video-whatIsDelegating.jpg`}
             />
             <Card
+              href="https://www.youtube.com/watch?v=RmKi-Nq9E_A"
               title={t('index.videos.howToIndexSolana.title')}
               description={t('index.videos.howToIndexSolana.description')}
-              href="https://www.youtube.com/watch?v=RmKi-Nq9E_A"
               slotBelowDescription={<Time variant="duration" minutes={5} className="mt-1" />}
               videoThumbnailSrc={`${process.env.BASE_PATH}/img/video-howToIndexSolana.jpg`}
             />
@@ -237,7 +250,7 @@ interface TimeProps extends ComponentPropsWithoutRef<'div'> {
 function Time({ variant, minutes, className, ...props }: TimeProps) {
   const { t } = useI18n()
   return (
-    <div className={classNames(['flex items-center gap-1', className])} {...props}>
+    <div className={classNames(['flex items-center gap-1 leading-none', className])} {...props}>
       <Clock
         alt={variant === 'reading' ? t('index.time.reading') : t('index.time.duration')}
         variant="fill"
@@ -253,10 +266,10 @@ function SupportedNetworks({ className, ...props }: ComponentPropsWithoutRef<'di
 
   return (
     <div
-      className={classNames(['graph-docs-not-markdown overflow-clip rounded-8 border border-white/8', className])}
+      className={classNames(['graph-docs-not-markdown overflow-clip rounded-8 border border-space-1500', className])}
       {...props}
     >
-      <ul className="grid grid-cols-auto-fill-16 gap-px text-white/64">
+      <ul className="grid grid-cols-auto-fill-16 gap-px text-space-500">
         {supportedNetworks
           // TODO: Don't filter out testnets that don't have a mainnet
           .filter((network) => network.networkType === NetworkType.Mainnet)
@@ -272,8 +285,8 @@ function SupportedNetworks({ className, ...props }: ComponentPropsWithoutRef<'di
             <Tooltip key={network.id} content={network.shortName}>
               <li
                 className={`
-                  -mb-px -mr-px flex aspect-square items-center justify-center border-b border-r border-white/8
-                  bg-clip-padding transition hover:bg-white/8
+                  -mb-px -mr-px flex aspect-square items-center justify-center border-b border-r border-space-1500
+                  bg-clip-padding transition hover:bg-space-1500
                 `}
               >
                 <NetworkIcon caip2Id={network.caip2Id as any} size={6} />

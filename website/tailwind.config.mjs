@@ -17,47 +17,43 @@ const normalizeValue = (value) => {
 
 export default buildTailwindConfig({
   packages: ['@edgeandnode/go'],
-  content: ['./src/**/*.{js,jsx,ts,tsx,mdx}'],
-
-  theme: {
-    extend: {
-      colors: {
-        background: '#080618',
-        text: '#c8c8cc',
-      },
-    },
-  },
+  content: ['./src/**/*.{js,jsx,ts,tsx,md,mdx}'],
 
   plugins: [
     plugin(({ addComponents, matchVariant }) => {
-      // TODO: Change the default line heights in GDS to match some of the ones below?
       addComponents({
         '.text-heading-xlarge': {
-          '@apply text-pretty font-medium text-40': '',
+          '@apply text-h40': '',
         },
         '.text-heading-large': {
-          '@apply text-pretty font-medium text-32 leading-11': '',
+          '@apply text-h32': '',
         },
         '.text-heading-medium': {
-          '@apply text-pretty font-medium text-24 leading-9': '',
+          '@apply text-h24': '',
         },
         '.text-heading-small': {
-          '@apply text-pretty font-medium text-20 leading-8': '',
+          '@apply text-h20': '',
         },
         '.text-heading-xsmall': {
-          '@apply text-pretty font-medium text-18 leading-7': '',
+          '@apply text-h18': '',
         },
         '.text-body-large': {
-          '@apply text-pretty font-regular text-20 leading-9': '',
+          '@apply text-p20': '',
         },
         '.text-body-medium': {
-          '@apply text-pretty font-regular text-18 leading-8': '',
+          '@apply text-p18': '',
         },
         '.text-body-small': {
-          '@apply text-pretty font-regular text-16': '',
+          '@apply text-p16': '',
+        },
+        '.text-body-small-tight': {
+          '@apply text-p16 leading-6': '',
         },
         '.text-body-xsmall': {
-          '@apply text-pretty font-regular text-14': '',
+          '@apply text-p14': '',
+        },
+        '.text-body-xsmall-tight': {
+          '@apply text-p14 leading-5': '',
         },
       })
 

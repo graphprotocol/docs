@@ -1,8 +1,9 @@
 import ContractAddresses from '@graphprotocol/contracts/addresses.json'
 
 import { getAddressLink } from '@edgeandnode/common'
+import { ExperimentalLink } from '@edgeandnode/gds'
 
-import { Link, Table } from '@/components'
+import { Table } from '@/components'
 import { useI18n } from '@/i18n'
 
 type ValueOf<T> = T[keyof T]
@@ -25,7 +26,7 @@ export function ProtocolContractsTable({ networkId }: { networkId: number }) {
           <tr key={contract.name}>
             <td>{contract.name}</td>
             <td>
-              <Link href={getAddressLink(contract.address, networkId)}>{contract.address}</Link>
+              <ExperimentalLink href={getAddressLink(contract.address, networkId)}>{contract.address}</ExperimentalLink>
             </td>
           </tr>
         ))}
