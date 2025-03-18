@@ -1,0 +1,101 @@
+---
+title: Debugging de Subgraphs Rápido e Fácil Com Forks
+---
+
+Assim como vários sistemas que processam uma abundância de dados, os Indexadores do Graph (Graph Nodes) podem demorar um pouco para sincronizar o seu subgraph com a blockchain de destino. A discrepância entre mudanças rápidas para fins de solução de problemas e os longos tempos de espera necessários para o indexing é extremamente contraprodutiva, e nós sabemos muito bem disso. É por isso que introduzimos o **forking de subgraphs**, programado pela [LimeChain](https://limechain.tech/); neste artigo. Veja como dá para acelerar bastante o processo de debug de subgraphs!
+
+## Ok, o que é isso?
+
+O **forking de subgraphs** é o processo de retirar entidades tranquilamente do armazenamento de _outro_ subgraph (normalmente, remoto).
+
+No contexto do debug, o **forking de subgraphs** permite debugar o seu subgraph falho no bloco _X_ sem precisar esperar que ele sincronize até o bloco _X_.
+
+## O quê?! Como?!
+
+Quando um subgraph é implementado em um Graph Node remoto para indexação, e ele falha no bloco _X_, a boa notícia é que o Graph Node ainda servirá queries GraphQL com o seu armazenamento, que é sincronizado até o bloco _X_. Ótimo! Podemos aproveitar este armazenamento "atualizado" para consertar os bugs que surgem ao indexar o bloco _X_.
+
+Resumindo, faremos um _fork do subgraph falho_ de um Graph Node remoto para garantir que o subgraph seja indexado até o bloco _X_, para fornecer ao subgraph implantado localmente uma visão atualizada do estado da indexação; sendo este debugado no bloco _X_.
+
+## Por favor, quero ver códigos!
+
+Para manter o foco no debug de subgraphs, vamos começar com coisas simples: siga o [example-subgraph](https://github.com/graphprotocol/graph-tooling/tree/main/examples/ethereum-gravatar) a indexar o contrato inteligente Ethereum Gravity.
+
+Aqui estão os handlers definidos para a indexação dos `Gravatars`, sem qualquer bug:
+
+```tsx
+export function handleNewGravatar(event: NewGravatar): void {
+  let gravatar = new Gravatar(event.params.id.toHex().toString())
+  gravatar.owner = event.params.owner
+  gravatar.displayName = event.params.displayName
+  gravatar.imageUrl = event.params.imageUrl
+  gravatar.save()
+}
+
+export function handleUpdatedGravatar(event: UpdatedGravatar): void {
+  let gravatar = Gravatar.load(event.params.id.toI32().toString())
+  if (gravatar == null) {
+    log.critical('Gravatar not found!', [])
+    return
+  }
+  gravatar.owner = event.params.owner
+  gravatar.displayName = event.params.displayName
+  gravatar.imageUrl = event.params.imageUrl
+  gravatar.save()
+}
+```
+
+Que pena! Quando eu implanto o meu lindo subgraph no Subgraph Studio, ele apresenta o erro "Gravatar not found" (Gravatar não encontrado).
+
+A maneira mais comum de tentar consertar este erro é:
+
+1. Fazer uma mudança na fonte dos mapeamentos, que talvez possa resolver o problema (mas é claro que não vai).
+2. Implante o subgraph novamente no [Subgraph Studio](https://thegraph.com/studio/) (ou outro Graph Node remoto).
+3. Esperar que ele se sincronize.
+4. Se quebrar novamente, volte ao passo 1. Se não: Eba!
+
+É um típico processo ordinário de debug, mas há um passo que atrasa muito o processo: _3. Esperar que ele se sincronize._
+
+Com o **forking de subgraphs**, essencialmente, podemos eliminar este passo. É mais ou menos assim:
+
+0. Crie um Graph Node local com o conjunto de **_fork-base apropriado_**.
+1. Faça uma mudança na fonte dos mapeamentos, que talvez possa resolver o problema.
+2. Implante-o no Graph Node local, **faça um fork do subgraph falho**, e **comece do bloco problemático_**.
+3. Se quebrar novamente, volte ao passo 1. Se não: Eba!
+
+Agora, você deve ter duas perguntas:
+
+1. Que fork-base???
+2. Forkar quem?!
+
+E eu respondo:
+
+1. `fork-base` é o URL "base", tal que quando a _id de subgraph_ é atrelada, o URL resultante (`<fork-base>/<subgraph-id>`) se torna um endpoint válido da GraphQL para o armazenamento do subgraph.
+2. Forking é fácil, não precisa se preocupar:
+
+```bash
+$ graph deploy <subgraph-name> --debug-fork <subgraph-id> --ipfs http://localhost:5001 --node http://localhost:8020
+```
+
+Aliás, não esqueça de preencher o campo `dataSources.source.startBlock` no manifest do subgraph com o número do bloco problemático, para pular a indexação de blocos desnecessários e tomar vantagem do fork!
+
+Aqui está o que eu faço:
+
+1. Eu monto um Graph Node local ([veja como](https://github.com/graphprotocol/graph-node#running-a-local-graph-node)) com a opção `fork-base` de `https://api.thegraph.com/subgraphs/id/`, já que eu vou forkar um subgraph, o bugado que eu lancei anteriormente, do [Subgraph Studio](https://thegraph.com/studio/).
+
+```
+$ cargo run -p graph-node --release -- \
+    --postgres-url postgresql://USERNAME[:PASSWORD]@localhost:5432/graph-node \
+    --ethereum-rpc NETWORK_NAME:[CAPABILITIES]:URL \
+    --ipfs 127.0.0.1:5001
+    --fork-base https://api.thegraph.com/subgraphs/id/
+```
+
+2. Após vistoriar com cuidado, percebo uma discrepância nas representações de `id` usadas ao indexar `Gravatar`s nos meus dois handlers. Enquanto `handleNewGravatar` o converte a um hex (`event.params.id.toHex()`), o `handleUpdatedGravatar` usa um int32 (`event.params.id.toI32()`). Assim, o `handleUpdatedGravatar` entra em pânico com o "Gravatar não encontrado!". Eu faço os dois converterem o `id` em um hex.
+3. Após ter feito as mudanças, implanto o meu subgraph no Graph Node local, **_fazendo um fork do subgraph falho_** e programando o `dataSources.source.startBlock` em `6190343` no `subgraph.yaml`:
+
+```bash
+$ graph deploy gravity --debug-fork QmNp169tKvomnH3cPXTfGg4ZEhAHA6kEq5oy1XDqAxqHmW --ipfs http://localhost:5001 --node http://localhost:8020
+```
+
+4. Eu verifico os logs produzidos pelo Graph Node local e... eba! Parece que deu tudo certo.
+5. Agora que o meu subgraph está livre de bugs, o implantarei num Graph Node remoto e viverei feliz para sempre! (mas sem batatas)
