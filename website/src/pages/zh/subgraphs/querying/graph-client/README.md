@@ -231,7 +231,7 @@ It's a common practice to use more than one indexer in dApps, so to achieve the 
 All `fetch` strategies can be combined to create the ultimate execution flow.
 
 <details>
- <summary>`retry`</summary>
+ <summary>"重试"</summary>
 
 The `retry` mechanism allow you to specify the retry attempts for a single GraphQL endpoint/source.
 
