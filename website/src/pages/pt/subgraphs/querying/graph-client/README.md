@@ -1,4 +1,4 @@
-# The Graph Client Tools
+# Ferramentas do The Graph Client
 
 This repo is the home for [The Graph](https://thegraph.com) consumer-side tools (for both browser and NodeJS environments).
 
