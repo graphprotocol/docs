@@ -7,7 +7,6 @@ import { MDXProvider } from 'nextra/mdx'
 import { normalizePages } from 'nextra/normalize-pages'
 import {
   type ComponentPropsWithoutRef,
-  type ComponentType,
   createContext,
   type CSSProperties,
   type ReactNode,
@@ -20,12 +19,13 @@ import { useSet } from 'react-use'
 import type { WithOptional } from '@edgeandnode/common'
 import {
   ButtonOrLink,
-  Code,
+  ExperimentalAppLauncher,
   ExperimentalButton,
+  ExperimentalCodeInline,
   ExperimentalDivider,
+  ExperimentalLink,
   ExperimentalLocaleSwitcher,
   ExperimentalNavLink,
-  Link as LegacyLink,
   type NestedStrings,
   reactNodeToString,
   useIsomorphicLayoutEffect,
@@ -48,6 +48,7 @@ import {
   Substreams,
   SubstreamsPoweredSubgraph,
   TheGraph,
+  Translate,
 } from '@edgeandnode/gds/icons'
 
 import {
@@ -58,8 +59,6 @@ import {
   Heading,
   HourglassIcon,
   Image,
-  Link,
-  type LinkProps,
   NavigationGroup,
   NavigationItem,
   Table,
@@ -318,7 +317,7 @@ export default function Layout({ pageOpts, children }: NextraThemeLayoutProps<Fr
           [--graph-docs-content-padding:theme(spacing.6)]
           [--graph-docs-footer-padding:theme(spacing.6)]
           [--graph-docs-header-height:theme(spacing.16)]
-          [--graph-docs-header-padding:theme(spacing.5)]
+          [--graph-docs-header-padding:theme(spacing.3)]
           [--graph-docs-layout-transition-duration:300ms]
           [--graph-docs-sidebar-width:theme(spacing.72)]
           [--graph-docs-toc-width:theme(spacing.66)]
@@ -327,36 +326,29 @@ export default function Layout({ pageOpts, children }: NextraThemeLayoutProps<Fr
           md:[--graph-docs-header-padding:theme(spacing.6)]
         `}
       >
+        {/* TODO: Fix issue where the page scrolls up when elements in the header are tabbed to */}
         <header
           className={`
-            sticky top-0 z-10 grid h-[var(--graph-docs-header-height)] grid-cols-[1fr_auto_1fr] items-center border-b border-white/8 bg-background
+            sticky top-0 z-10 grid h-[var(--graph-docs-header-height)] grid-cols-[1fr_auto_1fr] items-center border-b border-space-1500 bg-space-1800
             md:grid-cols-[var(--graph-docs-sidebar-width)_auto]
           `}
         >
           <div className="contents md:flex md:items-center md:justify-center md:ps-[var(--graph-docs-header-padding)]">
             <ButtonOrLink
               href="/"
-              className="text-body-large flex items-center text-text outline-offset-2 transition hocus-visible:text-white md:-ms-1 md:me-auto"
+              className="text-body-large flex items-center text-space-300 outline-offset-4 transition hover:text-white md:-ms-1 md:me-auto"
             >
               <span className="absolute -inset-2" />
               <TheGraph color="white" className="prop-size-8 md:prop-size-7" />
               <span className="flex items-center max-md:hidden">
-                <span className="me-4.5 ms-3.5 h-5 w-px shrink-0 bg-white/16" />
+                <span className="me-4.5 ms-3.5 h-5 w-px shrink-0 bg-space-1300" />
                 <span>Docs</span>
               </span>
             </ButtonOrLink>
             <div className="order-first px-[var(--graph-docs-header-padding)] md:order-none md:px-0">
-              {/* TODO: Use `ExperimentalButton` after new design is implemented (tertiary on mobile, naked on desktop) */}
-              <button
-                type="button"
+              <ExperimentalButton
                 data-sidebar-expanded-on-mobile={sidebarExpandedOnMobile || undefined}
                 data-sidebar-expanded-on-desktop={sidebarExpandedOnDesktop || undefined}
-                className={`
-                  flex size-8 items-center justify-center text-white/88 transition
-                  hocus-visible:text-white
-                  active:text-white/64
-                  active:transition-none
-                `}
                 onClick={() => {
                   if (mobile) {
                     setSidebarExpandedOnMobile((expanded) => !expanded)
@@ -369,11 +361,11 @@ export default function Layout({ pageOpts, children }: NextraThemeLayoutProps<Fr
                     }
                   }
                 }}
+                className="prop-variant-tertiary md:prop-variant-naked md:nested-icon:prop-size-6"
               >
                 <SidebarSimple
                   alt={t('global.navigation.show')}
                   variant="regular"
-                  size={6}
                   className={`
                     max-md:in-clickable-[[data-sidebar-expanded-on-mobile]]:hidden
                     md:in-clickable-[[data-sidebar-expanded-on-desktop]]:hidden
@@ -382,17 +374,16 @@ export default function Layout({ pageOpts, children }: NextraThemeLayoutProps<Fr
                 <SidebarSimple
                   alt={t('global.navigation.hide')}
                   variant="fill"
-                  size={6}
                   className={`
                     max-md:in-clickable-not-[[data-sidebar-expanded-on-mobile]]:hidden
                     md:in-clickable-not-[[data-sidebar-expanded-on-desktop]]:hidden
                   `}
                 />
-              </button>
+              </ExperimentalButton>
             </div>
-            <div className="ms-3.5 h-[var(--graph-docs-header-height)] w-px shrink-0 bg-white/8 max-md:hidden" />
+            <div className="ms-3.5 h-[var(--graph-docs-header-height)] w-px shrink-0 bg-space-1500 max-md:hidden" />
           </div>
-          <div className="flex items-center gap-4 px-[var(--graph-docs-header-padding)]">
+          <div className="flex min-w-auto items-center gap-2 px-[var(--graph-docs-header-padding)]">
             {/* TODO: Add breadcrumbs */}
             <DocSearch
               apiKey={process.env.ALGOLIA_API_KEY ?? ''}
@@ -425,36 +416,50 @@ export default function Layout({ pageOpts, children }: NextraThemeLayoutProps<Fr
               translations={translations.docsearch as NestedStrings}
             >
               {({ buttonRef, openModal }) => (
-                // TODO: Use tertiary `ExperimentalButton` after new design is implemented, at least on mobile
-                <button
-                  ref={buttonRef}
-                  type="button"
-                  aria-label={t('docsearch.button.buttonText')}
-                  onClick={openModal}
-                  className={`
-                    ms-auto flex size-8 items-center gap-1 rounded-6 border-white/16 px-2 text-white/88 transition
-                    hocus-visible:text-white focus-visible:border-purple
-                    lg:w-60 lg:border lg:text-white/64 lg:outline-none lg:hocus-visible:text-white/88 lg:hover:border-white/32
-                  `}
-                >
-                  <MagnifyingGlass alt="" className="prop-size-5 lg:prop-size-3" />
-                  <span className="text-body-xsmall flex-1 truncate max-lg:hidden">
+                <div className="ms-auto xl:w-56">
+                  <ExperimentalButton
+                    ref={buttonRef}
+                    variant="tertiary"
+                    iconBefore={<MagnifyingGlass alt="" className="xl:hidden" />}
+                    onClick={openModal}
+                    className="peer w-full prop-hide-label-true md:prop-size-small md:prop-hide-label-false xl:prop-hide-label-true"
+                  >
                     {t('docsearch.button.buttonText')}
-                  </span>
-                  <span className="text-12 max-lg:hidden">
-                    <kbd>⌘</kbd> <kbd>K</kbd>
-                  </span>
-                </button>
+                  </ExperimentalButton>
+                  <div
+                    className={`
+                      absolute inset-0 flex items-center gap-1 px-2 text-12 text-space-500 transition pointer-events-none
+                      peer-hover:text-space-200
+                      max-xl:hidden
+                    `}
+                  >
+                    <MagnifyingGlass size={3.5} alt="" />
+                    <span aria-hidden="true" className="flex-1 truncate">
+                      {t('docsearch.button.buttonText')}
+                    </span>
+                    <span>
+                      <kbd>⌘</kbd> <kbd>K</kbd>
+                    </span>
+                  </div>
+                </div>
               )}
             </DocSearch>
-            {/* TODO: Use tertiary `ExperimentalButton` in `children` after new design is implemented */}
-            <ExperimentalLocaleSwitcher
-              className={`
-                prop-display-format-short nested-nav-link:prop-variant-primary lg:prop-display-format-full lg:nested-nav-link:prop-variant-secondary
-              `}
+            <ExperimentalLocaleSwitcher>
+              {({ localeDetails }) => (
+                <ExperimentalButton
+                  variant="tertiary"
+                  iconBefore={<Translate alt={t('components.localeSwitcher.language')} />}
+                  className="prop-hide-label-true md:prop-size-small md:prop-hide-label-false"
+                >
+                  <span className="xl:hidden">{localeDetails.shortName}</span>
+                  <span className="max-xl:hidden">{localeDetails.displayName}</span>
+                </ExperimentalButton>
+              )}
+            </ExperimentalLocaleSwitcher>
+            <ExperimentalAppLauncher
+              variant="tertiary"
+              className="prop-hide-label-true md:prop-size-small md:prop-hide-label-false"
             />
-            {/* TODO: Fix app launcher */}
-            {/* <ExperimentalAppLauncher /> */}
           </div>
         </header>
 
@@ -470,18 +475,18 @@ export default function Layout({ pageOpts, children }: NextraThemeLayoutProps<Fr
           <div
             onClick={() => setSidebarExpandedOnMobile(false)}
             className={`
-              pointer-events-none absolute inset-0 z-10 hidden bg-background/64 opacity-0
-              transition-[opacity,display] duration-[var(--graph-docs-layout-transition-duration)] transition-allow-discrete +:starting:opacity-0
-              max-md:group-data-[sidebar-expanded-on-mobile]/layout-sidebar-grid:pointer-events-auto
+              absolute inset-0 z-10 hidden bg-space-1800/50 opacity-0 transition-[opacity,display]
+              duration-[var(--graph-docs-layout-transition-duration)] pointer-events-none transition-allow-discrete +:starting:opacity-0
               max-md:group-data-[sidebar-expanded-on-mobile]/layout-sidebar-grid:block
               max-md:group-data-[sidebar-expanded-on-mobile]/layout-sidebar-grid:opacity-100
+              max-md:group-data-[sidebar-expanded-on-mobile]/layout-sidebar-grid:pointer-events-auto
             `}
           />
           <div className="sticky top-[var(--graph-docs-header-height)] z-10 h-[calc(100dvh-var(--graph-docs-header-height))]">
             <nav
               aria-label={t('global.navigation.title')}
               className={`
-                invisible absolute inset-y-0 end-0 w-[var(--graph-docs-sidebar-width)] border-e border-white/8 bg-background
+                invisible absolute inset-y-0 end-0 w-[var(--graph-docs-sidebar-width)] border-e border-space-1500 bg-space-1800
                 transition-[transform,visibility] duration-[var(--graph-docs-layout-transition-duration)]
                 max-md:group-data-[sidebar-expanded-on-mobile]/layout-sidebar-grid:visible
                 max-md:group-data-[sidebar-expanded-on-mobile]/layout-sidebar-grid:translate-x-full
@@ -538,12 +543,11 @@ export default function Layout({ pageOpts, children }: NextraThemeLayoutProps<Fr
           <div>
             <MDXProvider
               components={{
-                a: Link as ComponentType<Omit<LinkProps, 'type'>>,
-                Link,
+                // TODO: Get rid of the `as any`s
+                a: ExperimentalLink as any,
+                Link: ExperimentalLink,
                 blockquote: Callout,
-                // TODO: Build and use `ExperimentalCodeInline`
-                // TODO: Test `ExperimentalCodeInline` and `ExperimentalLink` together
-                code: Code.Inline as any,
+                code: ExperimentalCodeInline as any,
                 h1: Heading.H1,
                 h2: Heading.H2,
                 h3: Heading.H3,
@@ -562,55 +566,56 @@ export default function Layout({ pageOpts, children }: NextraThemeLayoutProps<Fr
               {children}
             </MDXProvider>
 
-            <footer className="border-t border-white/8 px-[var(--graph-docs-footer-padding)] py-8">
-              <nav className="flex flex-col gap-x-6 gap-y-4 md:flex-row md:items-start">
+            <footer className="border-t border-space-1500 px-[var(--graph-docs-footer-padding)] py-8">
+              <nav className="flex flex-col gap-6 md:flex-row md:items-start">
                 <div className="flex flex-1 flex-wrap items-center gap-x-6 gap-y-4 md:py-2">
-                  <ExperimentalNavLink variant="secondary" href="https://thegraph.com/" target="_self">
+                  <ExperimentalNavLink href="https://thegraph.com/" target="_self" variant="secondary">
                     The Graph
                   </ExperimentalNavLink>
-                  <ExperimentalNavLink variant="secondary" href="https://status.thegraph.com/" target="_self">
+                  <ExperimentalNavLink href="https://status.thegraph.com/" target="_self" variant="secondary">
                     {t('components.globalFooter.status')}
                   </ExperimentalNavLink>
-                  <ExperimentalNavLink variant="secondary" href="https://testnet.thegraph.com/" target="_self">
+                  <ExperimentalNavLink href="https://testnet.thegraph.com/" target="_self" variant="secondary">
                     {t('components.globalFooter.testnet')}
                   </ExperimentalNavLink>
-                  <ExperimentalNavLink variant="secondary" href="https://thegraph.com/brand/" target="_self">
+                  <ExperimentalNavLink href="https://thegraph.com/brand/" target="_self" variant="secondary">
                     {t('components.globalFooter.brandAssets')}
                   </ExperimentalNavLink>
-                  <ExperimentalNavLink variant="secondary" href="https://forum.thegraph.com/" target="_self">
+                  <ExperimentalNavLink href="https://forum.thegraph.com/" target="_self" variant="secondary">
                     {t('components.globalFooter.forum')}
                   </ExperimentalNavLink>
-                  <ExperimentalNavLink variant="secondary" href="https://immunefi.com/bounty/thegraph/" target="_self">
+                  <ExperimentalNavLink href="https://immunefi.com/bounty/thegraph/" target="_self" variant="secondary">
                     {t('components.globalFooter.security')}
                   </ExperimentalNavLink>
-                  <ExperimentalNavLink variant="secondary" href="https://thegraph.com/privacy/" target="_self">
+                  <ExperimentalNavLink href="https://thegraph.com/privacy/" target="_self" variant="secondary">
                     {t('components.globalFooter.privacyPolicy')}
                   </ExperimentalNavLink>
-                  <ExperimentalNavLink variant="secondary" href="https://thegraph.com/terms-of-service/" target="_self">
+                  <ExperimentalNavLink href="https://thegraph.com/terms-of-service/" target="_self" variant="secondary">
                     {t('components.globalFooter.termsOfService')}
                   </ExperimentalNavLink>
                 </div>
                 <div className="flex items-center gap-2">
                   <ExperimentalButton
-                    variant="tertiary"
-                    size="small"
                     href="https://github.com/graphprotocol"
                     target="_self"
+                    variant="tertiary"
+                    size="small"
+                    className="text-space-700"
                   >
                     <SocialGitHub />
                   </ExperimentalButton>
-                  <ExperimentalButton variant="tertiary" size="small" href="https://x.com/graphprotocol" target="_self">
+                  <ExperimentalButton href="https://x.com/graphprotocol" target="_self" variant="tertiary" size="small">
                     <SocialX />
                   </ExperimentalButton>
                   <ExperimentalButton
-                    variant="tertiary"
-                    size="small"
                     href="https://discord.gg/graphprotocol"
                     target="_self"
+                    variant="tertiary"
+                    size="small"
                   >
                     <SocialDiscord />
                   </ExperimentalButton>
-                  <ExperimentalButton variant="tertiary" size="small" href="https://t.me/graphprotocol" target="_self">
+                  <ExperimentalButton href="https://t.me/graphprotocol" target="_self" variant="tertiary" size="small">
                     <SocialTelegram />
                   </ExperimentalButton>
                 </div>
@@ -686,7 +691,7 @@ function MDXContent({ toc: headings, children }: ComponentPropsWithoutRef<Nextra
       <main
         data-hide-table-of-contents={frontMatter.hideTableOfContents || undefined}
         className={`
-          group/layout-toc-grid grid min-h-[calc(100dvh-var(--graph-docs-header-height))] grid-cols-[auto_0] overflow-x-clip
+          group/layout-toc-grid grid min-h-[calc(100svh-var(--graph-docs-header-height))] grid-cols-[auto_0] overflow-x-clip
           transition-[grid-template-columns] duration-[var(--graph-docs-layout-transition-duration)]
           xl:not-data-[hide-table-of-contents]:grid-cols-[auto_var(--graph-docs-toc-width)]
         `}
@@ -694,10 +699,10 @@ function MDXContent({ toc: headings, children }: ComponentPropsWithoutRef<Nextra
         <article
           data-unwrap-content={frontMatter.unwrapContent || undefined}
           className={`
-            group/layout-content-grid graph-docs-content text-body-medium grid
+            group/layout-content-grid graph-docs-content grid
             grid-cols-[1fr_[container-start]_minmax(auto,theme(spacing.192))_[container-end]_1fr]
+            content-start
             gap-x-[var(--graph-docs-content-padding)]
-            text-text
             transition-[gap] duration-[var(--graph-docs-layout-transition-duration)]
           `}
         >
@@ -713,8 +718,7 @@ function MDXContent({ toc: headings, children }: ComponentPropsWithoutRef<Nextra
           {!frontMatter.hideContentHeader ? (
             <header className="col-[container] pt-12 transition-[padding] duration-[var(--graph-docs-layout-transition-duration)]">
               {readingTime ? (
-                // TODO: Use space-600 from the new colors when GDS is updated
-                <span className="mb-3 flex items-center gap-1 text-text">
+                <span className="mb-3 flex items-center gap-1 text-space-700">
                   <HourglassIcon readingTime={Math.ceil(readingTime.minutes)} />
                   <p className="text-body-small">
                     {Math.ceil(readingTime.minutes)} {t('global.page.readingTime.minutes')}
@@ -728,7 +732,7 @@ function MDXContent({ toc: headings, children }: ComponentPropsWithoutRef<Nextra
           ) : null}
           <section
             className={`
-              col-[container] pb-12
+              text-body-medium col-[container] pb-12 text-space-300
               mdx-[h2]:text-heading-medium
               mdx-[h3]:text-heading-small
               mdx-[h4,h5,h6]:text-heading-xsmall
@@ -753,18 +757,18 @@ function MDXContent({ toc: headings, children }: ComponentPropsWithoutRef<Nextra
               mdx-[ol]:list-decimal
               mdx-[ul,ol]:flex-col
               mdx-[ul,ol]:gap-2
-              mdx-[hr]:bg-white/8
+              mdx-[hr]:bg-space-1500
               mdx-[li]:ps-1.5
               mdx-[ul,ol]:ps-5
-              mdx-[b,strong]:font-medium
               mdx-[b,strong]:text-white
               mdx-[h2,h3,h4,h5,h6]:text-white
+              mdx-[b,strong]:font-medium
               mdx-[ul>li]:after:absolute
               mdx-[ul>li]:after:-start-4.5
               mdx-[ul>li]:after:top-4
               mdx-[ul>li]:after:h-0.5
               mdx-[ul>li]:after:w-3
-              mdx-[ul>li]:after:bg-white/32
+              mdx-[ul>li]:after:bg-space-1100
               mdx-[ul>li]:after:content-['']
               md:pb-16
               md:mdx-[hr]:my-16
@@ -772,51 +776,51 @@ function MDXContent({ toc: headings, children }: ComponentPropsWithoutRef<Nextra
           >
             {children}
           </section>
-          <div className="col-[container] flex items-center justify-between pb-12">
+          <div className="text-body-xsmall col-[container] flex items-center justify-between pb-12">
             {lastUpdated ? (
-              <span className="flex items-center gap-1 text-text">
+              <div className="text-body-xsmall flex items-center gap-1 text-space-700">
                 <CalendarIcon date={lastUpdated.getDate()} />
-                {/* TODO: Use space-600 from the new colors when GDS is updated */}
-                <p className="text-body-xsmall">
-                  <time
-                    dateTime={lastUpdated.toISOString()}
-                    // Removes hydration errors because `toLocaleDateString` show different results in Node.js and in browser for some languages like `ar`
-                    suppressHydrationWarning
-                  >
-                    {lastUpdated.toLocaleDateString(locale, {
-                      month: 'long',
-                      day: 'numeric',
-                      year: 'numeric',
-                    })}
-                  </time>
-                </p>
-              </span>
+                <time
+                  dateTime={lastUpdated.toISOString()}
+                  // Removes hydration errors because `toLocaleDateString` show different results in Node.js and in browser for some languages like `ar`
+                  suppressHydrationWarning
+                >
+                  {lastUpdated.toLocaleDateString(locale, {
+                    month: 'long',
+                    day: 'numeric',
+                    year: 'numeric',
+                  })}
+                </time>
+              </div>
             ) : null}
-            {/* TODO: Use `ExperimentalLink` */}
-            <LegacyLink variant="secondary" href={editPageUrl} target="_blank" size="14px">
-              <SocialGitHub alt="" />
+            <ExperimentalLink
+              href={editPageUrl}
+              target="_blank"
+              iconBefore={<SocialGitHub alt="" />}
+              className="text-space-700"
+            >
               {t('global.page.edit')}
-            </LegacyLink>
+            </ExperimentalLink>
           </div>
           {!frontMatter.hideContentFooter ? (
             <footer className="col-[container]">
               <ExperimentalDivider variant="subtle" />
               <div
                 className={`
-                  text-body-xsmall flex gap-8 py-12 lg:text-body-small
-                  *:flex *:max-w-[min(theme(spacing.50),50%)] *:flex-col *:gap-2 *:transition hocus-visible:*:text-white
+                  text-body-xsmall flex gap-8 py-12 text-space-300 lg:text-body-small
+                  *:flex *:max-w-[min(theme(spacing.50),50%)] *:flex-col *:gap-2 *:outline-offset-8 *:transition hover:*:text-white
                   md:py-16
                 `}
               >
                 {previousPage ? (
-                  <ButtonOrLink href={previousPage.route} className="outline-offset-2">
+                  <ButtonOrLink href={previousPage.route}>
                     <span className="absolute -inset-2" />
                     <ArrowLeft alt={t('global.page.previous')} size={4} />
                     <span className="line-clamp-2 text-ellipsis">{previousPage.title}</span>
                   </ButtonOrLink>
                 ) : null}
                 {nextPage ? (
-                  <ButtonOrLink href={nextPage.route} className="ms-auto items-end text-end outline-offset-2">
+                  <ButtonOrLink href={nextPage.route} className="ms-auto items-end text-end">
                     <span className="absolute -inset-2" />
                     <ArrowRight alt={t('global.page.next')} size={4} />
                     <span className="line-clamp-2 text-ellipsis">{nextPage.title}</span>
@@ -830,7 +834,7 @@ function MDXContent({ toc: headings, children }: ComponentPropsWithoutRef<Nextra
         <div>
           <aside
             className={`
-              text-body-xsmall invisible absolute inset-y-0 start-0 w-[var(--graph-docs-toc-width)]
+              text-body-xsmall-tight invisible absolute inset-y-0 start-0 w-[var(--graph-docs-toc-width)]
               transition-[visibility] duration-[var(--graph-docs-layout-transition-duration)]
               group-data-[hide-table-of-contents]/layout-toc-grid:hidden
               xl:group-not-data-[hide-table-of-contents]/layout-toc-grid:visible
@@ -842,13 +846,11 @@ function MDXContent({ toc: headings, children }: ComponentPropsWithoutRef<Nextra
                 overflow-y-auto overflow-x-clip py-12 pe-6 scrollbar-thin
               `}
             >
-              <header className="mb-4 flex gap-4">
-                <div>{t('global.page.onThisPage')}</div>
-              </header>
+              <header className="mb-4">{t('global.page.onThisPage')}</header>
               {headings.length > 0 ? (
                 <nav
                   aria-label={t('global.page.tableOfContents')}
-                  className="flow-root overflow-y-clip border-s border-white/8 text-white/48"
+                  className="flow-root overflow-y-clip border-s border-space-1500"
                 >
                   <ul className="-my-1 -ms-px">
                     {headings.map((heading, headingIndex) => {
@@ -860,7 +862,7 @@ function MDXContent({ toc: headings, children }: ComponentPropsWithoutRef<Nextra
                         <li key={headingIndex}>
                           {active ? (
                             <motion.span
-                              className="absolute inset-y-0 start-0 w-px bg-purple"
+                              className="absolute inset-y-1 start-0 w-px bg-purple"
                               // Using the page's `activeIndex` to ensure the indicator doesn't transition between pages
                               layoutId={`active-heading-indicator-${activeIndex}`}
                             />
@@ -869,9 +871,9 @@ function MDXContent({ toc: headings, children }: ComponentPropsWithoutRef<Nextra
                             href={`#${heading.id}`}
                             data-active={active ? 'true' : undefined}
                             className={`
-                              block py-1 ps-[calc((var(--depth)-1)*theme(spacing.3))] text-white/48 transition
-                              hocus-visible:text-white
-                              data-[active]:text-white/88
+                              block py-1.5 ps-[calc((var(--depth)-1)*theme(spacing.3))] text-space-700 transition
+                              hover:text-white
+                              data-[active]:text-space-200
                             `}
                             style={{ '--depth': heading.depth } as CSSProperties}
                           >

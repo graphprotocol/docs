@@ -48,18 +48,20 @@ export const Card = ({
 }: CardProps) => {
   return (
     <ExperimentalCard
+      // TODO: Add these colors as a new Card variant in GDS?
       className={classNames([
         `text-body-xsmall
-        [--gds-card-bg-hover:theme(colors.white/4%)]
+        [--gds-card-bg-hover:theme(colors.space-1600)]
         [--gds-card-bg:transparent]
-        [--gds-card-border-hover:theme(colors.white/8%)]`,
+        [--gds-card-border-hover:theme(colors.space-1400)]
+        [--gds-card-border:theme(colors.space-1500)]`,
         className,
       ])}
       {...props}
     >
       <div className="flex h-full flex-col gap-6 xs:flex-row">
         {videoThumbnailSrc ? (
-          <div className="peer -m-4 aspect-video max-xs:mb-0 xs:me-0 xs:w-1/2 xs:max-w-64">
+          <div className="peer -m-4 aspect-video max-xs:mb-0 xs:me-0 xs:w-1/2 xs:max-w-64 xs:self-center">
             <img src={videoThumbnailSrc} alt="" className="size-full rounded-6 object-cover" />
           </div>
         ) : null}
@@ -69,12 +71,12 @@ export const Card = ({
           ) : null}
           <div className="flex grow gap-4">
             {icon && iconPosition === 'side' ? <div className="shrink-0 nested-icon:default-size-6">{icon}</div> : null}
-            <div className="flex flex-col gap-1">
-              {slotAboveTitle}
-              <h3 className="text-body-small font-medium text-white/88">{title}</h3>
-              {description ? <p className="text-white/48">{description}</p> : null}
-              {slotBelowDescription}
-              {cta ? <div className="mt-auto pt-1">{cta}</div> : null}
+            <div className="flex flex-col gap-2">
+              {slotAboveTitle ? <div className="mb-1">{slotAboveTitle}</div> : null}
+              <h3 className="text-body-small-tight -my-0.5 text-space-200 font-medium">{title}</h3>
+              {description ? <p className="-mb-1 text-space-700">{description}</p> : null}
+              {slotBelowDescription ? <div className="mt-1">{slotBelowDescription}</div> : null}
+              {cta ? <div className="text-body-xsmall-tight -mb-0.5 mt-1">{cta}</div> : null}
             </div>
           </div>
         </div>

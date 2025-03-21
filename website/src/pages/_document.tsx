@@ -25,7 +25,7 @@ export default class MyDocument extends Document<MyDocumentProps> {
         // For Docsearch
         data-theme="dark"
         /**
-         * We would set `bg-background` here instead of on `body`, but our Tailwind setup generates selectors prefixed with `:scope ` for
+         * We would set `bg-space-1800` here instead of on `body`, but our Tailwind setup generates selectors prefixed with `:scope ` for
          * specificity reasons, which means `html` will never be matched. But by setting it on `body`, we're not overriding GDS's default
          * `html` background color, which we can see outside the bounds of the page (e.g. when using rubber band scrolling). So we reset
          * the `html` background color to `initial`, which has the special behavior of using same background color as `body`.
@@ -41,7 +41,7 @@ export default class MyDocument extends Document<MyDocumentProps> {
           <link rel="icon" type="image/png" sizes="64x64" href="https://storage.thegraph.com/favicons/64x64.png" />
           <link rel="icon" type="image/png" sizes="256x256" href="https://storage.thegraph.com/favicons/256x256.png" />
         </Head>
-        <body className="bg-background">
+        <body className="bg-space-1800">
           <Main />
           <NextScript />
         </body>

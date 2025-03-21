@@ -1,6 +1,6 @@
 import { NetworksRegistry } from '@pinax/graph-networks-registry'
 
-import { Code } from '@edgeandnode/gds'
+import { ExperimentalCodeInline } from '@edgeandnode/gds'
 
 import { Table } from '@/components'
 import { useI18n } from '@/i18n'
@@ -45,7 +45,7 @@ export function SupportedNetworksTable({ networks }: { networks: Awaited<ReturnT
           <tr key={network.id}>
             <td>{network.fullName}</td>
             <td>
-              <Code.Inline>{network.id}</Code.Inline>
+              <code className="font-mono">{network.id}</code>
             </td>
             <td align="center">{network.subgraphs ? '✓' : null}</td>
             <td align="center">{network.substreams ? '✓' : null}</td>

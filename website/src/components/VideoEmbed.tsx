@@ -24,15 +24,22 @@ export const VideoEmbed = ({ title, src, youtube, className, ...props }: VideoEm
   const { t } = useI18n()
 
   return (
-    <figure className={classNames(['graph-docs-not-markdown mt-8 rounded-8 bg-white/4 p-2 not-last:mb-8', className])}>
+    <figure
+      className={classNames([
+        'graph-docs-not-markdown rounded-8 bg-space-1600 p-2 --:my-8 --:last:mb-0 -:is-[li>*]:my-4',
+        className,
+      ])}
+    >
       <iframe
         src={src ?? `https://www.youtube.com/embed/${youtube}`}
         title={t('global.content.video')}
         allowFullScreen
-        className="aspect-video w-full rounded-4 bg-background"
+        className="aspect-video w-full rounded-4 bg-space-1800"
         {...props}
       />
-      {title ? <figcaption className="text-body-xsmall mt-2 px-1 text-center text-white/48">{title}</figcaption> : null}
+      {title ? (
+        <figcaption className="text-body-xsmall mt-2 px-1 text-center text-space-700">{title}</figcaption>
+      ) : null}
     </figure>
   )
 }

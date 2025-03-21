@@ -14,12 +14,12 @@ export const Callout = ({ className, children, ...props }: CalloutProps) => {
   return (
     <div
       className={classNames([
-        'mt-8 flex gap-2 rounded-8 border border-blue/48 bg-blue/8 p-4 ps-3 not-last:mb-8',
+        'flex gap-2 rounded-8 border border-blue/48 bg-blue/8 p-4 ps-3 --:my-8 --:last:mb-0 -:is-[li>*]:my-4',
         className,
       ])}
       {...(props as ComponentPropsWithoutRef<'div'>)}
     >
-      <div className="flex size-6 shrink-0 items-center justify-center">
+      <div className="flex size-7 shrink-0 items-center justify-center">
         <Lightbulb size={4} color="blue" alt={t('global.content.note')} />
       </div>
       <div
