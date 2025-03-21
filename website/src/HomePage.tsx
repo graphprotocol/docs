@@ -283,12 +283,7 @@ function SupportedNetworks({ className, ...props }: ComponentPropsWithoutRef<'di
           .filter((network) => network.id !== 'zora')
           .map((network) => (
             <Tooltip key={network.id} content={network.shortName}>
-              <li
-                className={`
-                  -mb-px -mr-px flex aspect-square items-center justify-center border-b border-r border-space-1500
-                  bg-clip-padding transition hover:bg-space-1500
-                `}
-              >
+              <li className="-mb-px -mr-px flex aspect-square items-center justify-center border-b border-r border-space-1500 transition hover:bg-space-1600">
                 <NetworkIcon caip2Id={network.caip2Id as any} size={6} />
               </li>
             </Tooltip>
