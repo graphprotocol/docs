@@ -235,7 +235,7 @@ Todas as estratégias de `fetch` podem ser combinadas para otimizar o fluxo de e
 
 O mecanismo `retry` permite que você especifique as tentativas de repetição de um único ponto final/origem da GraphQL.
 
-O fluxo de repetição será executado em ambas condições: um erro de rede, ou devido a um erro de execução (problema de indexação/indisponibilidade do indexador).
+The retry flow will execute in both conditions: a netword error, or due to a runtime error (indexing issue/inavailability of the indexer).
 
 ```yaml
 sources:
