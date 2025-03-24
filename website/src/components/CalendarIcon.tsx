@@ -5,7 +5,7 @@ interface CalendarIconProps extends WithOptional<IconProps, 'alt'> {
   date?: number
 }
 
-// TODO: move to gds
+// TODO: Move to GDS
 export const CalendarIcon = ({ date = new Date().getDate(), ...props }: CalendarIconProps) => {
   return (
     <Icon alt="Calendar Icon" {...props}>

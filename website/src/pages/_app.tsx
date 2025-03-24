@@ -89,7 +89,7 @@ export default function MyApp({ Component, router, pageProps }: AppProps) {
 
           return { ...props, href, target }
         }}
-        // TODO: Remove when we stop using components that require Theme UI (notably the legacy `Link` component)
+        // TODO: Remove when we stop using components that require Theme UI
         useThemeUI
       >
         <I18nProvider supportedLocales={supportedLocales} translations={translations}>

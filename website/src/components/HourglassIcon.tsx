@@ -5,7 +5,7 @@ interface HourglassIconProps extends WithOptional<IconProps, 'alt'> {
   readingTime?: number
 }
 
-// TODO: move to gds
+// TODO: Move to GDS
 export const HourglassIcon = ({ readingTime = 0, ...props }: HourglassIconProps) => {
   return (
     <Icon alt="Hourglass Icon" {...props}>

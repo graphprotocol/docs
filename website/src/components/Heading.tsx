@@ -1,7 +1,7 @@
 import { type ComponentPropsWithoutRef, type ElementType, useContext, useEffect } from 'react'
 import { useInView } from 'react-intersection-observer'
 
-import { classNames, Link } from '@edgeandnode/gds'
+import { classNames, ExperimentalButton } from '@edgeandnode/gds'
 import { Link as LinkIcon } from '@edgeandnode/gds/icons'
 
 import { useI18n } from '@/i18n'
@@ -34,15 +34,19 @@ const BaseHeading = ({ as: Element = 'h1', id, className, children, ...props }: 
       {id ? (
         <span
           className={`
-            absolute end-[calc(100%+theme(spacing.3))] top-0 opacity-0 transition
+            absolute inset-y-0 end-[calc(100%+theme(spacing[2.5]))] my-auto h-min opacity-0 transition
             group-hocus-visible-within/heading:opacity-100
             max-md:hidden
           `}
         >
-          {/* TODO: Use `ExperimentalLink` or naked `ExperimentalButton` */}
-          <Link inline underline={false} href={`#${id}`}>
-            <LinkIcon alt={t('global.page.linkToThisSection')} className="prop-size-[0.85em]" />
-          </Link>
+          <ExperimentalButton
+            variant="naked"
+            size="large"
+            href={`#${id}`}
+            className="+:**:text-[1em] +:nested-icon:prop-size-[0.85em]"
+          >
+            <LinkIcon alt={t('global.page.linkToThisSection')} />
+          </ExperimentalButton>
         </span>
       ) : null}
     </Element>

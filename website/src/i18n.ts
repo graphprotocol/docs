@@ -26,7 +26,7 @@ import zh from '@/pages/zh/translations'
 const appLocales = [
   Locale.ARABIC,
   Locale.CZECH,
-  // Locale.GERMAN,
+  Locale.GERMAN,
   Locale.ENGLISH,
   Locale.SPANISH,
   Locale.FRENCH,
