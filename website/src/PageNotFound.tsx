@@ -8,7 +8,7 @@ export default function PageNotFound() {
   const { t } = useI18n()
 
   return (
-    <div className="graph-docs-not-markdown col-[container] flex flex-col items-center justify-center">
+    <div className="graph-docs-not-markdown col-[container] row-[full] flex flex-col items-center justify-center">
       <NotFound
         title={t('global.notFound.title')}
         subtitle={t('global.notFound.subtitle')}

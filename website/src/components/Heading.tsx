@@ -5,7 +5,7 @@ import { classNames, ExperimentalButton } from '@edgeandnode/gds'
 import { Link as LinkIcon } from '@edgeandnode/gds/icons'
 
 import { useI18n } from '@/i18n'
-import { MDXContentContext } from '@/Layout'
+import { MDXContentContext } from '@/layout'
 
 interface HeadingProps extends ComponentPropsWithoutRef<'h1'> {
   as?: ElementType

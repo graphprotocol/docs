@@ -1,7 +1,9 @@
 // @ts-check
 
 import nextra from 'nextra'
+import rehypeMdxCodeProps from 'rehype-mdx-code-props'
 import rehypeUnwrapImages from 'rehype-unwrap-images'
+import remarkCallouts from 'remark-callouts'
 
 import { defaultLocale, translate } from '@edgeandnode/gds'
 
@@ -25,7 +27,7 @@ const env = {
 }
 
 const withNextra = nextra({
-  theme: './src/Layout.tsx',
+  theme: './src/layout/Layout.tsx',
   search: false,
   codeHighlight: false,
   defaultShowCopyCode: false,
@@ -72,11 +74,18 @@ const withNextra = nextra({
       '---4': {
         type: 'separator',
       },
+      'token-api': {
+        type: 'children',
+        title: t('global.navigation.tokenApi'),
+      },
+      '---5': {
+        type: 'separator',
+      },
       indexing: {
         type: 'children',
         title: t('global.navigation.indexing'),
       },
-      '---5': {
+      '---6': {
         type: 'separator',
       },
       resources: {
@@ -100,8 +109,8 @@ const withNextra = nextra({
     ]
   },
   mdxOptions: {
-    remarkPlugins: [remarkTransformRemoteGitHub],
-    rehypePlugins: [rehypeUnwrapImages],
+    remarkPlugins: [remarkTransformRemoteGitHub, remarkCallouts],
+    rehypePlugins: [rehypeUnwrapImages, rehypeMdxCodeProps],
   },
 })
 

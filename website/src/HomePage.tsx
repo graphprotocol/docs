@@ -25,10 +25,14 @@ export default function HomePage() {
   return (
     <>
       <div className="graph-docs-not-markdown grid grid-cols-subgrid">
-        <div className="absolute inset-x-0 -top-8 flex h-72 justify-center pointer-events-none xs:h-90">
-          <img alt="" src={`${process.env.BASE_PATH}/img/home-bg.svg`} className="h-full max-w-none" />
+        <div className="absolute inset-x-0 flex h-70 justify-center pointer-events-none xs:h-90">
+          <img
+            alt=""
+            src={`${process.env.BASE_PATH}/img/home-bg.svg`}
+            className="left-16 h-full max-w-none xs:-top-2 xs:left-0"
+          />
         </div>
-        <div className="col-[container] py-20 xs:py-30">
+        <div className="col-[container] py-28 xs:py-36">
           <div className="max-w-120">
             <h1 className="text-heading-xlarge text-white">{t('index.hero.title')}</h1>
             <p className="mt-2">{t('index.hero.description')}</p>
@@ -43,7 +47,9 @@ export default function HomePage() {
       </div>
       <div className="col-[container] nested-[p:empty]:hidden">
         <section>
-          <Heading.H2 id="products">{t('index.products.title')}</Heading.H2>
+          <Heading.H2 id="products" className="mt-0">
+            {t('index.products.title')}
+          </Heading.H2>
           <p>{t('index.products.description')}</p>
           <div className="graph-docs-not-markdown mt-8 grid gap-4">
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
@@ -56,7 +62,7 @@ export default function HomePage() {
                   </ExperimentalLink>
                 }
                 icon={
-                  <div className="flex size-8 items-center justify-center rounded-4 bg-purple text-white">
+                  <div className="flex size-8 items-center justify-center rounded-4 bg-purple-500 text-white">
                     <Subgraph size={4} />
                   </div>
                 }

@@ -10,9 +10,7 @@ type Params = {
   filterDocs?: (filePath: string) => boolean
 }
 
-const CWD = process.cwd()
-
-async function fetchRemoteDocs({ user, repo, branch, docsPath, outputPath, filterDocs }: Params): Promise<void> {
+async function fetchRemoteDocs({ user, repo, branch, docsPath, outputPath, filterDocs }: Params) {
   const url = `https://api.github.com/repos/${user}/${repo}/git/trees/${branch}?recursive=1`
   const response = await fetch(url)
 
@@ -43,7 +41,9 @@ async function fetchRemoteDocs({ user, repo, branch, docsPath, outputPath, filte
     const text = await response.text()
     const filePath = path.join(outputPath, fp)
     await fs.writeFile(filePath, text)
-    console.log(`✅ Saved remote file "${fp}" in ${path.relative(CWD, filePath)}`)
+    console.log(
+      `Saved remote file ${user}/${repo}/${branch}/${docsPath}${fp} to ${path.relative(process.cwd(), path.dirname(filePath))}`,
+    )
   }
 }
 
@@ -52,7 +52,7 @@ await fetchRemoteDocs({
   repo: 'graph-tooling',
   branch: 'main',
   docsPath: 'packages/ts/',
-  outputPath: path.join(CWD, 'src/pages/en/subgraphs/developing/creating/graph-ts'),
+  outputPath: path.join(process.cwd(), 'src/pages/en/subgraphs/developing/creating/graph-ts'),
 })
 
 await fetchRemoteDocs({
@@ -60,5 +60,5 @@ await fetchRemoteDocs({
   repo: 'graph-client',
   branch: 'main',
   docsPath: 'docs/',
-  outputPath: path.join(CWD, 'src/pages/en/subgraphs/querying/graph-client'),
+  outputPath: path.join(process.cwd(), 'src/pages/en/subgraphs/querying/graph-client'),
 })

@@ -1,7 +1,5 @@
 import { NetworksRegistry } from '@pinax/graph-networks-registry'
 
-import { ExperimentalCodeInline } from '@edgeandnode/gds'
-
 import { Table } from '@/components'
 import { useI18n } from '@/i18n'
 
@@ -28,7 +26,17 @@ export async function getSupportedNetworks() {
     .sort((a, b) => a.fullName.localeCompare(b.fullName))
 }
 
-export function SupportedNetworksTable({ networks }: { networks: Awaited<ReturnType<typeof getSupportedNetworks>> }) {
+export async function getSupportedNetworksStaticProps() {
+  return {
+    props: {
+      networks: await getSupportedNetworks(),
+    },
+  }
+}
+
+export function SupportedNetworksTable({
+  networks,
+}: Awaited<ReturnType<typeof getSupportedNetworksStaticProps>>['props']) {
   const { t } = useI18n()
 
   return (
