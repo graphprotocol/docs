@@ -1,8 +1,17 @@
+import { usePrevious } from '@react-hookz/web'
 import { HTTPSnippet } from '@readme/httpsnippet'
 import fetchHar from 'fetch-har'
 import { type ComponentPropsWithoutRef, useContext, useState } from 'react'
 
-import { ExperimentalButton, ExperimentalCodeBlock, ExperimentalInput, objectKeys } from '@edgeandnode/gds'
+import {
+  ExperimentalButton,
+  ExperimentalCodeBlock,
+  ExperimentalInput,
+  ExperimentalStatus,
+  objectEntries,
+  objectFromEntries,
+  objectKeys,
+} from '@edgeandnode/gds'
 import { Play } from '@edgeandnode/gds/icons'
 
 import { useI18n } from '@/i18n'
@@ -24,6 +33,7 @@ export default function TemplateOpenApiAside(props: ComponentPropsWithoutRef<'di
   return <TemplateOpenApiAsideContent {...props} />
 }
 
+// TODO: Allow showing the aside on mobile?
 function TemplateOpenApiAsideContent(props: ComponentPropsWithoutRef<'div'>) {
   const openApiContext = useContext(OpenApiContext)!
   const { operation, values } = openApiContext
@@ -114,12 +124,30 @@ function TemplateOpenApiAsideContent(props: ComponentPropsWithoutRef<'div'>) {
     javascript: 'JavaScript',
     python: 'Python',
     go: 'Go',
-    // TODO: Add `php` and `java` after GDS update
-  }
+    php: 'PHP',
+    java: 'Java',
+  } as const
+
+  const snippets = objectFromEntries(
+    objectKeys(snippetLanguages).map((language) => {
+      let code = (snippet.convert(language) || [])[0] ?? ''
+      // Unencode placeholders potentially present in the URL
+      for (const placeholder of [
+        ...Object.values(PLACEHOLDERS),
+        ...operation.pathParameters.map((parameter) => `{${parameter.name}}`),
+      ]) {
+        const encodedPlaceholder = encodeURIComponent(placeholder)
+        code = code.replaceAll(encodedPlaceholder, placeholder)
+      }
+      return [language, code] as const
+    }),
+  )
+
+  const previousShellSnippet = usePrevious(snippets.shell)
+  const snippetsChanged = previousShellSnippet !== undefined && previousShellSnippet !== snippets.shell
 
   const [isSendingRequest, setIsSendingRequest] = useState(false)
-  const [responseStatus, setResponseStatus] = useState<number | null>(null)
-  const [responseText, setResponseText] = useState<string | null>(null)
+  const [response, setResponse] = useState<{ status: number; text: string } | null>(null)
 
   const sendRequest = async () => {
     setIsSendingRequest(true)
@@ -127,56 +155,65 @@ function TemplateOpenApiAsideContent(props: ComponentPropsWithoutRef<'div'>) {
       // fetch-har's types are bad
       // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
       const response = await fetchHar({ log: { entries: snippet.entries } } as any)
-      setResponseStatus(response.status)
-      let text = await response.text()
+      let responseText = await response.text()
       try {
-        const data = JSON.parse(text)
-        text = JSON.stringify(data, null, 2)
+        responseText = JSON.parse(responseText)
       } catch {}
-      setResponseText(text)
+      responseText = JSON.stringify(responseText, null, 2)
+      setResponse({ status: response.status, text: responseText })
     } catch (error) {
       console.error({ error })
-      setResponseStatus(null)
-      setResponseText(null)
+      setResponse(null)
     }
+    setSelectedResponseTabIndex(0)
     setIsSendingRequest(false)
   }
 
-  const actualResponseLabel =
-    responseStatus && responseText ? `${t('global.openApi.responses.actualResponse')} (${responseStatus})` : undefined
   const responseTabs = [
-    ...(actualResponseLabel
+    ...(response
       ? [
           {
-            label: actualResponseLabel,
+            label: {
+              label: `${response.status} (${t('global.openApi.responses.liveResponse')})`,
+              iconBefore: <ExperimentalStatus variant={response.status === 200 ? 'success' : 'error'} />,
+            },
             content: (
               <ExperimentalCodeBlock
-                key="actual-response"
-                label={operation.potentialResponses.length === 0 ? actualResponseLabel : undefined}
+                key="live-response"
+                label={
+                  operation.potentialResponses.length === 0
+                    ? `${response.status} (${t('global.openApi.responses.liveResponse')})`
+                    : undefined
+                }
                 language="json"
+                lineNumbers={response.text.split('\n').length > 1}
               >
-                {responseText!}
+                {response.text}
               </ExperimentalCodeBlock>
             ),
           },
         ]
       : []),
     ...operation.potentialResponses.map((potentialResponse) => {
-      const label = `${t('global.openApi.responses.exampleResponse')} (${potentialResponse.status})`
+      const label = `${potentialResponse.status} ${t('global.openApi.responses.example')}`
+      const exampleResponseText = JSON.stringify(potentialResponse.example, null, 2)
       return {
-        label: operation.potentialResponses.length === 1 && actualResponseLabel ? label : potentialResponse.status,
+        label,
         content: (
           <ExperimentalCodeBlock
             key={potentialResponse.status}
-            label={operation.potentialResponses.length === 1 && !actualResponseLabel ? label : undefined}
+            label={operation.potentialResponses.length === 1 && !response ? label : undefined}
             language="json"
+            lineNumbers={exampleResponseText.split('\n').length > 1}
           >
-            {JSON.stringify(potentialResponse.example, null, 2)}
+            {exampleResponseText}
           </ExperimentalCodeBlock>
         ),
       }
     }),
   ]
+
+  const [selectedResponseTabIndex, setSelectedResponseTabIndex] = useState(0)
 
   return (
     <div key={operation.path} {...props}>
@@ -202,35 +239,42 @@ function TemplateOpenApiAsideContent(props: ComponentPropsWithoutRef<'div'>) {
         }
         className="mb-6"
       />
-      <ExperimentalCodeBlock.Tabs tabs={Object.values(snippetLanguages)}>
-        {objectKeys(snippetLanguages).map((language) => {
-          let code = (snippet.convert(language) || [])[0] ?? ''
-          // Unencode placeholders potentially present in the URL
-          for (const placeholder of [
-            ...Object.values(PLACEHOLDERS),
-            ...operation.pathParameters.map((parameter) => `{${parameter.name}}`),
-          ]) {
-            const encodedPlaceholder = encodeURIComponent(placeholder)
-            code = code.replaceAll(encodedPlaceholder, placeholder)
-          }
-          return (
-            <ExperimentalCodeBlock
-              key={language}
-              language={language}
-              className="[tab-size:4]" // TODO: Remove after GDS update
-            >
+      <div>
+        <ExperimentalCodeBlock.Tabs tabs={Object.values(snippetLanguages)}>
+          {objectEntries(snippets).map(([language, code]) => (
+            <ExperimentalCodeBlock key={language} language={language}>
               {code}
             </ExperimentalCodeBlock>
-          )
-        })}
-      </ExperimentalCodeBlock.Tabs>
-      {responseTabs.length === 1 ? (
-        <div className="mt-6">{responseTabs[0]!.content}</div>
-      ) : (
-        <ExperimentalCodeBlock.Tabs tabs={responseTabs.map((responseTab) => responseTab.label)} className="mt-6">
-          {responseTabs.map((responseTab) => responseTab.content)}
+          ))}
         </ExperimentalCodeBlock.Tabs>
-      )}
+        {snippetsChanged ? (
+          <div
+            key={snippets.shell}
+            className="animate-opacity-to-0 absolute inset-0 rounded-8 border border-solar-600 pointer-events-none animate-fill-forwards"
+          />
+        ) : null}
+      </div>
+      {responseTabs.length > 0 ? (
+        <div className="mt-6">
+          {responseTabs.length === 1 ? (
+            responseTabs[0]!.content
+          ) : (
+            <ExperimentalCodeBlock.Tabs
+              tabs={responseTabs.map((responseTab) => responseTab.label)}
+              selectedIndex={selectedResponseTabIndex}
+              onChange={setSelectedResponseTabIndex}
+            >
+              {responseTabs.map((responseTab) => responseTab.content)}
+            </ExperimentalCodeBlock.Tabs>
+          )}
+          {response ? (
+            <div
+              key={response.text}
+              className="animate-opacity-to-0 absolute inset-0 rounded-8 border border-solar-600 pointer-events-none animate-fill-forwards"
+            />
+          ) : null}
+        </div>
+      ) : null}
     </div>
   )
 }

@@ -25,12 +25,14 @@ async function fetchApiReference() {
           } catch {
             // File doesn't exist, create it
             const content = `---
-title: ${operation.summary || operation.description || operation.operationId}
+title: ${operation.summary || operation.operationId}
 template:
   type: openApi
   apiId: ${apiId}
   operationId: ${operation.operationId}
 ---
+
+${operation.description}
 `
             await fs.writeFile(filePath, content, 'utf-8')
             console.log(`Created ${path.relative(process.cwd(), filePath)}`)
