@@ -48,7 +48,7 @@ npm install --save-dev @graphprotocol/client-cli
 
 > The CLI is installed as dev dependency since we are using it to produce optimized runtime artifacts that can be loaded directly from your app!
 
-Create a configuration file (called `.graphclientrc.yml`) and point to your GraphQL endpoints provided by The Graph, for example:
+एक कॉन्फ़िगरेशन फ़ाइल (जिसका नाम `.graphclientrc.yml` हो) बनाएं और इसे आपके GraphQL endpointकी ओर इंगित करें, जो The Graph द्वारा प्रदान किए गए हैं, उदाहरण के लिए:
 
 ```yml
 # .graphclientrc.yml
