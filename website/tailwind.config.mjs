@@ -23,19 +23,19 @@ export default buildTailwindConfig({
     plugin(({ addComponents, matchVariant }) => {
       addComponents({
         '.text-heading-xlarge': {
-          '@apply text-h40': '',
+          '@apply text-h40 text-pretty': '',
         },
         '.text-heading-large': {
-          '@apply text-h32': '',
+          '@apply text-h32 text-pretty': '',
         },
         '.text-heading-medium': {
-          '@apply text-h24': '',
+          '@apply text-h24 text-pretty': '',
         },
         '.text-heading-small': {
-          '@apply text-h20': '',
+          '@apply text-h20 text-pretty': '',
         },
         '.text-heading-xsmall': {
-          '@apply text-h18': '',
+          '@apply text-h18 text-pretty': '',
         },
         '.text-body-large': {
           '@apply text-p20': '',

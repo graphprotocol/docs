@@ -66,10 +66,7 @@ export default function TemplateOpenApiContent({ children, ...props }: Component
                   return (
                     <tr key={parameter.name}>
                       <td className="whitespace-nowrap">
-                        {/* TODO: Remove `+` variant after GDS update */}
-                        <ExperimentalCodeInline className="+:whitespace-nowrap">
-                          {parameter.name}
-                        </ExperimentalCodeInline>
+                        <ExperimentalCodeInline className="whitespace-nowrap">{parameter.name}</ExperimentalCodeInline>
                         <div className="mt-1 text-12 text-space-500">{parameter.schema.type}</div>
                       </td>
                       <td className="text-body-xsmall">
@@ -122,7 +119,6 @@ export default function TemplateOpenApiContent({ children, ...props }: Component
                               <ExperimentalCodeInline>{parameter.serializationFormat}</ExperimentalCodeInline>
                             </li>
                           ) : null}
-                          {/* TODO: If `schema.type` is `object` or `array`, show the schema */}
                         </ul>
                       </td>
                       <td className="py-3.5">
@@ -145,12 +141,11 @@ export default function TemplateOpenApiContent({ children, ...props }: Component
                           />
                         ) : enumValues.length > 0 ? (
                           <div
-                            // TODO: Replace `focus-visible:border-purple-500` by `focus-visible:border-focus` after GDS update
                             className={`
                               flex h-8 w-full items-center border border-space-1500 px-2 text-14 transition
                               hover:border-space-1300
                               active:transition-none
-                              has-focus-visible:border-purple-500
+                              has-focus-visible:border-focus
                             `}
                           >
                             <span className="me-1 w-0 flex-1 truncate">{parameterValue}</span>
@@ -170,16 +165,16 @@ export default function TemplateOpenApiContent({ children, ...props }: Component
                             </select>
                           </div>
                         ) : (
+                          // Known limitation: we don't support `object` or `array` parameter types
                           <input
                             type="text"
                             aria-label={parameter.name}
                             value={parameterValue}
                             onChange={(event) => setParameterValue(event.target.value)}
-                            // TODO: Replace `focus-visible:border-purple-500` by `focus-visible:border-focus` after GDS update
                             className={`
                               h-8 w-full border border-space-1500 px-2 text-14 transition outline-none
                               hover:border-space-1300
-                              focus-visible:border-purple-500
+                              focus-visible:border-focus
                               active:transition-none
                             `}
                           />

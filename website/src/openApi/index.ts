@@ -9,7 +9,7 @@ export const API_IDS = ['tokenApi'] as const
 export const APIS = {
   tokenApi: {
     name: 'Token API',
-    url: 'https://token-api.service.pinax.network/openapi',
+    url: 'https://token-api.thegraph.com/openapi',
     document: tokenApi as OpenAPIV3_1.Document,
     sections: {
       EVM: '/token-api/evm',
@@ -154,14 +154,13 @@ export function getApi(apiId: ApiId, passedDocument?: OpenAPIV3_1.Document): Api
       const potentialResponses: ApiPotentialResponse[] = []
       for (const [status, response] of Object.entries(documentOperation.responses)) {
         if (!('content' in response) || typeof response.content !== 'object') continue
-        // Known limitation: we only support JSON responses
-        const json = response.content['application/json']
-        if (!json || '$ref' in json || !json.schema || '$ref' in json.schema) continue
+        const content = response.content['application/json'] ?? response.content['text/plain']
+        if (!content || '$ref' in content || !content.schema || '$ref' in content.schema) continue
         potentialResponses.push({
           ...response,
           status,
-          schema: json.schema,
-          example: json.example,
+          schema: content.schema,
+          example: content.example,
         })
       }
 
