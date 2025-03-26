@@ -685,133 +685,133 @@ Beachten Sie, dass unterstützte Aktionstypen für das Allokationsmanagement unt
     - deploymentID
     - amount
 
-- `Unallocate` - close allocation, freeing up the stake to reallocate elsewhere
+- `Unallocate` - Beendigung der Zuweisung, wodurch der Einsatz für eine andere Zuweisung frei wird
 
   - erforderliche Aktionsparameter:
     - allocationID
     - deploymentID
-  - optional action params:
+  - optionale Aktionsparameter:
     - poi
-    - force (forces using the provided POI even if it doesn’t match what the graph-node provides)
+    - force (erzwingt die Verwendung des bereitgestellten POI, auch wenn es nicht mit dem übereinstimmt, was der Graph-Knoten bereitstellt)
 
-- `Reallocate` - atomically close allocation and open a fresh allocation for the same Subgraph deployment
+- `Reallocate` - Zuordnung atomar schließen und eine neue Zuordnung für denselben Einsatz von Subgraphen öffnen
 
   - erforderliche Aktionsparameter:
     - allocationID
     - deploymentID
     - amount
-  - optional action params:
+  - optionale Aktionsparameter:
     - poi
-    - force (forces using the provided POI even if it doesn’t match what the graph-node provides)
+    - force (erzwingt die Verwendung des bereitgestellten POI, auch wenn es nicht mit dem übereinstimmt, was der Graph-Knoten bereitstellt)
 
-#### Cost models
+#### Kostenmodelle
 
-Cost models provide dynamic pricing for queries based on market and query attributes. The Indexer Service shares a cost model with the gateways for each Subgraph for which they intend to respond to queries. The gateways, in turn, use the cost model to make Indexer selection decisions per query and to negotiate payment with chosen Indexers.
+Kostenmodelle ermöglichen eine dynamische Preisgestaltung für Abfragen auf der Grundlage von Markt- und Abfrageattributen. Der Indexierer-Service teilt ein Kostenmodell mit den Gateways für jeden Subgraphen, für den sie beabsichtigen, auf Anfragen zu antworten. Die Gateways wiederum nutzen das Kostenmodell, um Entscheidungen über die Auswahl der Indexer pro Anfrage zu treffen und die Bezahlung mit den ausgewählten Indexern auszuhandeln.
 
 #### Agora
 
-The Agora language provides a flexible format for declaring cost models for queries. An Agora price model is a sequence of statements that execute in order for each top-level query in a GraphQL query. For each top-level query, the first statement which matches it determines the price for that query.
+Die Agora-Sprache bietet ein flexibles Format zur Deklaration von Kostenmodellen für Abfragen. Ein Agora-Preismodell ist eine Folge von Anweisungen, die für jede Top-Level-Abfrage in einer GraphQL-Abfrage nacheinander ausgeführt werden. Für jede Top-Level-Abfrage bestimmt die erste Anweisung, die ihr entspricht, den Preis für diese Abfrage.
 
-A statement is comprised of a predicate, which is used for matching GraphQL queries, and a cost expression which when evaluated outputs a cost in decimal GRT. Values in the named argument position of a query may be captured in the predicate and used in the expression. Globals may also be set and substituted in for placeholders in an expression.
+Eine Anweisung besteht aus einem Prädikat, das zum Abgleich von GraphQL-Abfragen verwendet wird, und einem Kostenausdruck, der bei der Auswertung die Kosten in dezimalen GRT ausgibt. Werte in der benannten Argumentposition einer Abfrage können im Prädikat erfasst und im Ausdruck verwendet werden. Globale Werte können auch gesetzt und durch Platzhalter in einem Ausdruck ersetzt werden.
 
-Example cost model:
+Beispielkostenmodell:
 
 ```
-# This statement captures the skip value,
-# uses a boolean expression in the predicate to match specific queries that use `skip`
-# and a cost expression to calculate the cost based on the `skip` value and the SYSTEM_LOAD global
+# Diese Anweisung erfasst den Wert „skip“,
+# verwendet einen booleschen Ausdruck im Prädikat, um mit bestimmten Abfragen übereinzustimmen, die `skip` verwenden
+# und einen Kostenausdruck, um die Kosten auf der Grundlage des `skip`-Wertes und des globalen SYSTEM_LOAD-Wertes zu berechnen
 query { pairs(skip: $skip) { id } } when $skip > 2000 => 0.0001 * $skip * $SYSTEM_LOAD;
 
-# This default will match any GraphQL expression.
-# It uses a Global substituted into the expression to calculate cost
+# Diese Vorgabe passt auf jeden GraphQL-Ausdruck.
+# Sie verwendet ein Global, das in den Ausdruck eingesetzt wird, um die Kosten zu berechnen
 default => 0.1 * $SYSTEM_LOAD;
 ```
 
-Example query costing using the above model:
+Beispiel für eine Abfragekostenberechnung unter Verwendung des obigen Modells:
 
-| Query                                                                        | Price   |
+| Abfrage                                                                      | Preis   |
 | ---------------------------------------------------------------------------- | ------- |
 | &#123; pairs(skip: 5000) &#123; id &#125; &#125;                             | 0.5 GRT |
 | &#123; tokens &#123; symbol &#125; &#125;                                    | 0.1 GRT |
 | &#123; pairs(skip: 5000) &#123; id &#125; tokens &#123; symbol &#125; &#125; | 0.6 GRT |
 
-#### Applying the cost model
+#### Anwendung des Kostenmodells
 
-Cost models are applied via the Indexer CLI, which passes them to the Indexer Management API of the Indexer agent for storing in the database. The Indexer Service will then pick them up and serve the cost models to gateways whenever they ask for them.
+Kostenmodelle werden über die Indexierer-CLI angewendet, die sie zum Speichern in der Datenbank an die Indexierer-Verwaltungs-API des Indexierer-Agenten übergibt. Der Indexierer-Service holt sie dann ab und stellt Gateways die Kostenmodelle zur Verfügung, jedesmal wenn sie danach fragen.
 
 ```sh
 indexer cost set variables '{ "SYSTEM_LOAD": 1.4 }'
 indexer cost set model my_model.agora
 ```
 
-## Interacting with the network
+## Interaktion mit dem Netzwerk
 
-### Stake in the protocol
+### Einsatz im Protokoll
 
-The first steps to participating in the network as an Indexer are to approve the protocol, stake funds, and (optionally) set up an operator address for day-to-day protocol interactions.
+Die ersten Schritte zur Teilnahme am Netzwerk als Indexierer sind die Genehmigung des Protokolls, der Einsatz von Geldern und (optional) die Einrichtung einer Betreiberadresse für die täglichen Interaktionen mit dem Protokoll.
 
-> Note: For the purposes of these instructions Remix will be used for contract interaction, but feel free to use your tool of choice ([OneClickDapp](https://oneclickdapp.com/), [ABItopic](https://abitopic.io/), and [MyCrypto](https://www.mycrypto.com/account) are a few other known tools).
+> Hinweis: In dieser Anleitung wird Remix für die Interaktion mit dem Vertrag verwendet, aber Sie können auch das Tool Ihrer Wahl verwenden ([OneClickDapp](https://oneclickdapp.com/), [ABItopic](https://abitopic.io/) und [MyCrypto](https://www.mycrypto.com/account) sind einige andere bekannte Tools).
 
-Once an Indexer has staked GRT in the protocol, the [Indexer components](/indexing/overview/#indexer-components) can be started up and begin their interactions with the network.
+Sobald ein Indexer GRT im Protokoll verankert hat, können die [Indexierer-Komponenten](/indexing/overview/#indexer-components) gestartet werden und ihre Interaktionen mit dem Netzwerk beginnen.
 
-#### Approve tokens
+#### Genehmigen Sie Token
 
-1. Open the [Remix app](https://remix.ethereum.org/) in a browser
+1. Öffnen Sie die [Remix-App] (https://remix.ethereum.org/) in einem Browser
 
-2. In the `File Explorer` create a file named **GraphToken.abi** with the [token ABI](https://raw.githubusercontent.com/graphprotocol/contracts/mainnet-deploy-build/build/abis/GraphToken.json).
+2. Erstellen Sie im `File Explorer` eine Datei mit dem Namen **GraphToken.abi** mit dem [Token ABI](https://raw.githubusercontent.com/graphprotocol/contracts/mainnet-deploy-build/build/abis/GraphToken.json).
 
-3. With `GraphToken.abi` selected and open in the editor, switch to the `Deploy and run transactions` section in the Remix interface.
+3. Wählen Sie die Datei `GraphToken.abi` aus und öffnen Sie sie im Editor. Wechseln Sie in der Remix-Benutzeroberfläche zum Abschnitt `Deploy and run transactions`.
 
-4. Under environment select `Injected Web3` and under `Account` select your Indexer address.
+4. Wählen Sie unter environment die Option `Injected Web3` und unter `Account` die Adresse Ihres Indexierers aus.
 
-5. Set the GraphToken contract address - Paste the GraphToken contract address (`0xc944E90C64B2c07662A292be6244BDf05Cda44a7`) next to `At Address` and click the `At address` button to apply.
+5. Legen Sie die GraphToken-Vertragsadresse fest - Fügen Sie die GraphToken-Vertragsadresse (`0xc944E90C64B2c07662A292be6244BDf05Cda44a7`) neben `At Address` ein und klicken Sie zum Anwenden auf die Schaltfläche `At address`.
 
-6. Call the `approve(spender, amount)` function to approve the Staking contract. Fill in `spender` with the Staking contract address (`0xF55041E37E12cD407ad00CE2910B8269B01263b9`) and `amount` with the tokens to stake (in wei).
+6. Rufen Sie die Funktion `approve(spender, amount)` auf, um den Einsatzvertrag zu genehmigen. Geben Sie in `spender` die Adresse des Einsatzvertrags (`0xF55041E37E12cD407ad00CE2910B8269B01263b9`) und in `amount` die zu setzenden Token (in wei) ein.
 
-#### Stake tokens
+#### Stake-Token
 
-1. Open the [Remix app](https://remix.ethereum.org/) in a browser
+1. Öffnen Sie die [Remix-App] (https://remix.ethereum.org/) in einem Browser
 
-2. In the `File Explorer` create a file named **Staking.abi** with the staking ABI.
+2. Erstellen Sie im `File Explorer` eine Datei mit dem Namen **Staking.abi** mit dem Staking-ABI.
 
-3. With `Staking.abi` selected and open in the editor, switch to the `Deploy and run transactions` section in the Remix interface.
+3. Wählen Sie die Datei `Staking.abi` aus und öffnen Sie sie im Editor. Wechseln Sie in der Remix-Benutzeroberfläche zum Abschnitt `Deploy and run transactions`.
 
-4. Under environment select `Injected Web3` and under `Account` select your Indexer address.
+4. Wählen Sie unter environment die Option `Injected Web3` und unter `Account` die Adresse Ihres Indexierers aus.
 
-5. Set the Staking contract address - Paste the Staking contract address (`0xF55041E37E12cD407ad00CE2910B8269B01263b9`) next to `At Address` and click the `At address` button to apply.
+5. Legen Sie die Adresse des Abtretungsvertrags fest - Fügen Sie die Adresse des Abtretungsvertrags (`0xF55041E37E12cD407ad00CE2910B8269B01263b9`) neben `At Address` ein und klicken Sie auf die Schaltfläche `At address`, um sie anzuwenden.
 
-6. Call `stake()` to stake GRT in the protocol.
+6. Rufen Sie `stake()` auf, um GRT in das Protokoll aufzunehmen.
 
-7. (Optional) Indexers may approve another address to be the operator for their Indexer infrastructure in order to separate the keys that control the funds from those that are performing day to day actions such as allocating on Subgraphs and serving (paid) queries. In order to set the operator call `setOperator()` with the operator address.
+7. (Optional) Indexierer können eine andere Adresse als Operator für ihre Indexer-Infrastruktur genehmigen, um die Schlüssel, die die Fonds kontrollieren, von denen zu trennen, die alltägliche Aktionen wie die Zuweisung auf Subgraphen und die Bedienung (bezahlter) Abfragen durchführen. Um den Betreiber zu setzen, rufen Sie `setOperator()` mit der Betreiberadresse auf.
 
-8. (Optional) In order to control the distribution of rewards and strategically attract Delegators Indexers can update their delegation parameters by updating their `indexingRewardCut` (parts per million), `queryFeeCut` (parts per million), and `cooldownBlocks` (number of blocks). To do so call `setDelegationParameters()`. The following example sets the `queryFeeCut` to distribute 95% of query rebates to the Indexer and 5% to Delegators, set the `indexingRewardCut` to distribute 60% of indexing rewards to the Indexer and 40% to Delegators, and set the `cooldownBlocks` period to 500 blocks.
+8. (Optional) Um die Verteilung von Belohnungen zu kontrollieren und Delegatoren strategisch anzulocken, können Indexierer ihre Delegationsparameter aktualisieren, indem sie ihren `indexingRewardCut` (Teile pro Million), `queryFeeCut` (Teile pro Million) und `cooldownBlocks` (Anzahl der Blöcke) aktualisieren. Dazu rufen Sie `setDelegationParameters()` auf. Das folgende Beispiel stellt den `queryFeeCut` so ein, dass 95% der Abfragerabatte an den Indexierer und 5% an die Delegatoren verteilt werden, stellt den `indexingRewardCut` so ein, dass 60% der Indexierungsbelohnungen an den Indexierer und 40% an die Delegatoren verteilt werden, und stellt die `cooldownBlocks` Periode auf 500 Blöcke.
 
 ```
 setDelegationParameters(950000, 600000, 500)
 ```
 
-### Setting delegation parameters
+### Einstellung der Delegationsparameter
 
-The `setDelegationParameters()` function in the [staking contract](https://github.com/graphprotocol/contracts/blob/main/packages/contracts/contracts/staking/Staking.sol) is essential for Indexers, allowing them to set parameters that define their interactions with Delegators, influencing their reward sharing and delegation capacity.
+Die Funktion `setDelegationParameters()` im [Staking Contract] (https://github.com/graphprotocol/contracts/blob/main/packages/contracts/contracts/staking/Staking.sol) ist für Indexierer von entscheidender Bedeutung, da sie es ihnen ermöglicht, Parameter zu setzen, die ihre Interaktion mit Delegatoren definieren und ihre Reward-Aufteilung und Delegationskapazität beeinflussen.
 
-### How to set delegation parameters
+### Festlegen der Delegationsparameter
 
-To set the delegation parameters using Graph Explorer interface, follow these steps:
+Gehen Sie wie folgt vor, um die Delegationsparameter über die Graph Explorer-Schnittstelle einzustellen:
 
-1. Navigate to [Graph Explorer](https://thegraph.com/explorer/).
-2. Connect your wallet. Choose multisig (such as Gnosis Safe) and then select mainnet. Note: You will need to repeat this process for Arbitrum One.
-3. Connect the wallet you have as a signer.
-4. Navigate to the 'Settings' section and select 'Delegation Parameters'. These parameters should be configured to achieve an effective cut within the desired range. Upon entering values in the provided input fields, the interface will automatically calculate the effective cut. Adjust these values as necessary to attain the desired effective cut percentage.
-5. Submit the transaction to the network.
+1. Navigieren Sie zu [Graph Explorer] (https://thegraph.com/explorer/).
+2. Verbinden Sie Ihre Wallet. Wählen Sie Multisig (z. B. Gnosis Safe) und dann Mainnet aus. Hinweis: Sie müssen diesen Vorgang für Arbitrum One wiederholen.
+3. Verbinden Sie die Wallet, die Sie als Unterzeichner haben.
+4. Navigieren Sie zum Abschnitt 'Settings' und wählen Sie 'Delegation Parameters'. Diese Parameter sollten so konfiguriert werden, dass eine effektive Kürzung innerhalb des gewünschten Bereichs erreicht wird. Nach Eingabe der Werte in die vorgesehenen Eingabefelder berechnet die Schnittstelle automatisch den effektiven Anteil. Passen Sie diese Werte nach Bedarf an, um den gewünschten Prozentsatz der effektiven Kürzung zu erreichen.
+5. Übermitteln Sie die Transaktion an das Netz.
 
-> Note: This transaction will need to be confirmed by the multisig wallet signers.
+> Hinweis: Diese Transaktion muss von den Unterzeichnern der Multisig-Wallets bestätigt werden.
 
-### The life of an allocation
+### Die Lebensdauer einer Zuweisung
 
-After being created by an Indexer a healthy allocation goes through two states.
+Nachdem sie von einem Indexer erstellt wurde, durchläuft eine ordnungsgemäße Zuordnung zwei Zustände.
 
-- **Active** - Once an allocation is created onchain ([allocateFrom()](https://github.com/graphprotocol/contracts/blob/main/packages/contracts/contracts/staking/Staking.sol#L316)) it is considered **active**. A portion of the Indexer's own and/or delegated stake is allocated towards a Subgraph deployment, which allows them to claim indexing rewards and serve queries for that Subgraph deployment. The Indexer agent manages creating allocations based on the Indexer rules.
+- **Aktiv** - Sobald eine Zuweisung in der Kette erstellt wurde ([allocateFrom()](https://github.com/graphprotocol/contracts/blob/main/packages/contracts/contracts/staking/Staking.sol#L316)), wird sie als **aktiv** betrachtet. Ein Teil des eigenen und/oder delegierten Einsatzes des Indexierers wird einem Subgraph-Einsatz zugewiesen, was ihm erlaubt, Rewards für die Indizierung zu beanspruchen und Abfragen für diesen Subgraph-Einsatz zu bedienen. Der Indexierer-Agent verwaltet die Erstellung von Zuweisungen basierend auf den Indexierer-Regeln.
 
-- **Closed** - An Indexer is free to close an allocation once 1 epoch has passed ([closeAllocation()](https://github.com/graphprotocol/contracts/blob/main/packages/contracts/contracts/staking/Staking.sol#L335)) or their Indexer agent will automatically close the allocation after the **maxAllocationEpochs** (currently 28 days). When an allocation is closed with a valid proof of indexing (POI) their indexing rewards are distributed to the Indexer and its Delegators ([learn more](/indexing/overview/#how-are-indexing-rewards-distributed)).
+- **Geschlossen** - Ein Indexierer kann eine Zuweisung schließen, sobald 1 Epoche vergangen ist ([closeAllocation()](https://github.com/graphprotocol/contracts/blob/main/packages/contracts/contracts/staking/Staking.sol#L335)) oder sein Indexierer-Agent schließt die Zuweisung automatisch nach der **maxAllocationEpochs** (derzeit 28 Tage). Wenn eine Zuweisung mit einem gültigen Indizierungsnachweis (POI) geschlossen wird, werden die Rewards für die Indizierung an den Indexierer und seine Delegatoren verteilt ([lweitere Informationen](/indexing/overview/#how-are-indexing-rewards-distributed)).
 
-Indexers are recommended to utilize offchain syncing functionality to sync Subgraph deployments to chainhead before creating the allocation onchain. This feature is especially useful for Subgraphs that may take longer than 28 epochs to sync or have some chances of failing undeterministically.
+Indexierern wird empfohlen, die Offchain-Synchronisierungsfunktionalität zu nutzen, um den Einsatz von Subgraphen mit dem Chainhead zu synchronisieren, bevor die Zuweisung Onchain erstellt wird. Diese Funktion ist besonders nützlich für Subgraphen, bei denen die Synchronisierung länger als 28 Epochen dauert oder die Gefahr eines unbestimmten Fehlers besteht.
