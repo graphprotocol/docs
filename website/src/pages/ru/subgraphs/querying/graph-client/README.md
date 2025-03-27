@@ -1,24 +1,24 @@
-# The Graph Client Tools
+# Инструменты клиента The Graph
 
-This repo is the home for [The Graph](https://thegraph.com) consumer-side tools (for both browser and NodeJS environments).
+Этот репозиторий является домом для потребительских инструментов [The Graph](https://thegraph.com) (как для браузерных, так и для NodeJS сред).
 
-## Background
+## Предисловие
 
-The tools provided in this repo are intended to enrich and extend the DX, and add the additional layer required for dApps in order to implement distributed applications.
+Инструменты, предоставленные в этом репозитории, предназначены для улучшения и расширения разработческого опыта (DX), а также для добавления дополнительного слоя, необходимого для децентрализованных приложений (dApps), чтобы реализовать распределенные приложения.
 
-Developers who consume data from [The Graph](https://thegraph.com) GraphQL API often need peripherals for making data consumption easier, and also tools that allow using multiple indexers at the same time.
+Разработчики, которые потребляют данные через GraphQL API от [The Graph](https://thegraph.com), часто нуждаются в периферийных инструментах для облегчения потребления данных, а также в инструментах, которые позволяют использовать несколько индексаторов одновременно.
 
-## Features and Goals
+## Функции и цели
 
-This library is intended to simplify the network aspect of data consumption for dApps. The tools provided within this repository are intended to run at build time, in order to make execution faster and performant at runtime.
+Эта библиотека предназначена для упрощения сетевого аспекта потребления данных для децентрализованных приложений (dApps). Инструменты, предоставленные в этом репозитории, предназначены для работы во время сборки, чтобы сделать выполнение более быстрым и производительным в момент выполнения.
 
-> The tools provided in this repo can be used as standalone, but you can also use it with any existing GraphQL Client!
+> Инструменты, предоставленные в этом репозитории, могут использоваться как самостоятельно, так и в сочетании с любым существующим GraphQL клиентом!
 
-| Статус | Feature                                                          | Примечания                                                                                                                       |
+| Статус | Функция                                                          | Примечания                                                                                                                       |
 | :----: | ---------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
-|    ✅   | Multiple indexers                                                | based on fetch strategies                                                                                                        |
-|    ✅   | Fetch Strategies                                                 | timeout, retry, fallback, race, highestValue                                                                                     |
-|    ✅   | Build time validations & optimizations       |                                                                                                                                  |
+|    ✅   | Несколько индексаторов                                           | основано на стратегиях выборки                                                                                                   |
+|    ✅   | Стратегия выборки                                                | timeout, retry, fallback, race, highestValue                                                                                     |
+|    ✅   | Валидации и оптимизации во время сборки                          |                                                                                                                                  |
 |    ✅   | Client-Side Composition                                          | with improved execution planner (based on GraphQL-Mesh)                                                       |
 |    ✅   | Cross-chain Subgraph Handling                                    | Use similar subgraphs as a single source                                                                                         |
 |    ✅   | Raw Execution (standalone mode)               | without a wrapping GraphQL client                                                                                                |
