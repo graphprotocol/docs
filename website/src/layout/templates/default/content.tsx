@@ -1,9 +1,8 @@
 import { type ComponentPropsWithoutRef, useContext } from 'react'
 
 import { ButtonOrLink, classNames, ExperimentalDivider, ExperimentalLink } from '@edgeandnode/gds'
-import { ArrowLeft, ArrowRight, SocialGitHub } from '@edgeandnode/gds/icons'
+import { ArrowLeft, ArrowRight, CalendarDynamic, HourglassDynamic, SocialGitHub } from '@edgeandnode/gds/icons'
 
-import { CalendarIcon, HourglassIcon } from '@/components'
 import { useI18n } from '@/i18n'
 
 import { LayoutContext } from '../../shared'
@@ -45,7 +44,10 @@ export default function TemplateDefaultContent({ className, children, ...props }
         <header className="col-[container] row-[header] pt-12 transition-[padding] duration-[var(--graph-docs-layout-transition-duration)]">
           {readingTime ? (
             <span className="mb-3 flex items-center gap-1 text-space-700">
-              <HourglassIcon readingTime={Math.ceil(readingTime.minutes)} />
+              <HourglassDynamic
+                alt={t('global.page.readingTime.minutes')}
+                filledPercentage={(readingTime.minutes / 15) * 100}
+              />
               <p className="text-body-small">
                 {Math.ceil(readingTime.minutes)} {t('global.page.readingTime.minutes')}
               </p>
@@ -110,7 +112,7 @@ export default function TemplateDefaultContent({ className, children, ...props }
           <div className="text-body-xsmall flex items-center pb-12">
             {lastUpdated ? (
               <div className="text-body-xsmall flex items-center gap-1 text-space-700">
-                <CalendarIcon date={lastUpdated.getDate()} />
+                <CalendarDynamic alt={t('global.page.lastUpdated')} date={lastUpdated.getDate()} />
                 <time
                   dateTime={lastUpdated.toISOString()}
                   // Removes hydration errors because `toLocaleDateString` show different results in Node.js and in browser for some languages like `ar`

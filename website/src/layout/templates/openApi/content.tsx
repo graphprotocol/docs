@@ -207,10 +207,7 @@ export default function TemplateOpenApiContent({ children, ...props }: Component
                         {potentialResponse.status}
                       </ExperimentalTag>
                     </td>
-                    <td className="text-body-xsmall">
-                      {potentialResponse.description}
-                      {/* TODO: Show response schema */}
-                    </td>
+                    <td className="text-body-xsmall">{potentialResponse.description}</td>
                   </tr>
                 )
               })}
