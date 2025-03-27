@@ -28,11 +28,6 @@ const PAGES_DIRECTORY = path.join(process.cwd(), 'src/pages')
 const SOURCE_LOCALE = 'en'
 const META_FILENAME = '_meta.js'
 
-type FileToMove = {
-  sourcePath: string // Relative to locale directory
-  destinationPath: string // Relative to locale directory
-}
-
 async function fileExists(filepath: string): Promise<boolean> {
   try {
     await fs.access(filepath)
@@ -73,7 +68,7 @@ async function getSourceFiles(sourcePath: string): Promise<string[]> {
   return [sourcePath]
 }
 
-async function main() {
+async function movePages() {
   const [sourcePath, destinationPath] = process.argv.slice(2)
   if (!sourcePath || !destinationPath) {
     throw new Error(
@@ -176,7 +171,7 @@ async function main() {
   await execFileAsync('tsx', ['scripts/fix-pages-structure.ts'])
 }
 
-main().catch((error) => {
+movePages().catch((error) => {
   console.error(error.message)
   process.exit(1)
 })

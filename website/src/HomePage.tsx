@@ -15,7 +15,7 @@ import {
 } from '@edgeandnode/gds/icons'
 import { NetworkIcon } from '@edgeandnode/go'
 
-import { Card, Heading } from '@/components'
+import { Card, Heading, TimeIcon } from '@/components'
 import { useI18n } from '@/i18n'
 import { getSupportedNetworks } from '@/supportedNetworks'
 
@@ -25,10 +25,14 @@ export default function HomePage() {
   return (
     <>
       <div className="graph-docs-not-markdown grid grid-cols-subgrid">
-        <div className="absolute inset-x-0 -top-8 flex h-72 justify-center pointer-events-none xs:h-90">
-          <img alt="" src={`${process.env.BASE_PATH}/img/home-bg.svg`} className="h-full max-w-none" />
+        <div className="absolute inset-x-0 flex h-70 justify-center pointer-events-none xs:h-90">
+          <img
+            alt=""
+            src={`${process.env.BASE_PATH}/img/home-bg.svg`}
+            className="left-16 h-full max-w-none xs:-top-2 xs:left-0"
+          />
         </div>
-        <div className="col-[container] py-20 xs:py-30">
+        <div className="col-[container] py-28 xs:py-36">
           <div className="max-w-120">
             <h1 className="text-heading-xlarge text-white">{t('index.hero.title')}</h1>
             <p className="mt-2">{t('index.hero.description')}</p>
@@ -43,7 +47,9 @@ export default function HomePage() {
       </div>
       <div className="col-[container] nested-[p:empty]:hidden">
         <section>
-          <Heading.H2 id="products">{t('index.products.title')}</Heading.H2>
+          <Heading.H2 id="products" className="mt-0">
+            {t('index.products.title')}
+          </Heading.H2>
           <p>{t('index.products.description')}</p>
           <div className="graph-docs-not-markdown mt-8 grid gap-4">
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
@@ -56,7 +62,7 @@ export default function HomePage() {
                   </ExperimentalLink>
                 }
                 icon={
-                  <div className="flex size-8 items-center justify-center rounded-4 bg-purple text-white">
+                  <div className="flex size-8 items-center justify-center rounded-4 bg-purple-500 text-white">
                     <Subgraph size={4} />
                   </div>
                 }
@@ -150,21 +156,21 @@ export default function HomePage() {
                 title={t('index.guides.explorer.title')}
                 description={t('index.guides.explorer.description')}
                 icon={<GraphExplorer alt="" />}
-                slotAboveTitle={<Time variant="reading" minutes={10} />}
+                slotAboveTitle={<TimeIcon variant="reading" minutes={10} />}
               />
               <Card
                 href="/subgraphs/developing/publishing/publishing-a-subgraph/"
                 title={t('index.guides.publishASubgraph.title')}
                 description={t('index.guides.publishASubgraph.description')}
                 icon={<Subgraph alt="" />}
-                slotAboveTitle={<Time variant="reading" minutes={3} />}
+                slotAboveTitle={<TimeIcon variant="reading" minutes={3} />}
               />
               <Card
                 href="/substreams/publishing/"
                 title={t('index.guides.publishSubstreams.title')}
                 description={t('index.guides.publishSubstreams.description')}
                 icon={<Substreams alt="" />}
-                slotAboveTitle={<Time variant="duration" minutes={3} />}
+                slotAboveTitle={<TimeIcon variant="duration" minutes={3} />}
               />
             </div>
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
@@ -172,25 +178,25 @@ export default function HomePage() {
                 href="/subgraphs/querying/best-practices/"
                 title={t('index.guides.queryingBestPractices.title')}
                 description={t('index.guides.queryingBestPractices.description')}
-                slotAboveTitle={<Time variant="reading" minutes={9} />}
+                slotAboveTitle={<TimeIcon variant="reading" minutes={9} />}
               />
               <Card
                 href="/subgraphs/cookbook/timeseries/"
                 title={t('index.guides.timeseries.title')}
                 description={t('index.guides.timeseries.description')}
-                slotAboveTitle={<Time variant="reading" minutes={4} />}
+                slotAboveTitle={<TimeIcon variant="reading" minutes={4} />}
               />
               <Card
                 href="/subgraphs/querying/managing-api-keys/"
                 title={t('index.guides.apiKeyManagement.title')}
                 description={t('index.guides.apiKeyManagement.description')}
-                slotAboveTitle={<Time variant="reading" minutes={2} />}
+                slotAboveTitle={<TimeIcon variant="reading" minutes={2} />}
               />
               <Card
                 href="/subgraphs/cookbook/transfer-to-the-graph/"
                 title={t('index.guides.transferToTheGraph.title')}
                 description={t('index.guides.transferToTheGraph.description')}
-                slotAboveTitle={<Time variant="reading" minutes={3} />}
+                slotAboveTitle={<TimeIcon variant="reading" minutes={3} />}
               />
             </div>
           </div>
@@ -218,46 +224,27 @@ export default function HomePage() {
               href="https://www.youtube.com/watch?v=hn-sJUpZ_aM"
               title={t('index.videos.theGraphExplained.title')}
               description={t('index.videos.theGraphExplained.description')}
-              slotBelowDescription={<Time variant="duration" minutes={1} className="mt-1" />}
+              slotBelowDescription={<TimeIcon variant="duration" minutes={1} className="mt-1" />}
               videoThumbnailSrc={`${process.env.BASE_PATH}/img/video-theGraphExplained.jpg`}
             />
             <Card
               href="https://www.youtube.com/watch?v=VACg8bitnVc"
               title={t('index.videos.whatIsDelegating.title')}
               description={t('index.videos.whatIsDelegating.description')}
-              slotBelowDescription={<Time variant="duration" minutes={4} className="mt-1" />}
+              slotBelowDescription={<TimeIcon variant="duration" minutes={4} className="mt-1" />}
               videoThumbnailSrc={`${process.env.BASE_PATH}/img/video-whatIsDelegating.jpg`}
             />
             <Card
               href="https://www.youtube.com/watch?v=RmKi-Nq9E_A"
               title={t('index.videos.howToIndexSolana.title')}
               description={t('index.videos.howToIndexSolana.description')}
-              slotBelowDescription={<Time variant="duration" minutes={5} className="mt-1" />}
+              slotBelowDescription={<TimeIcon variant="duration" minutes={5} className="mt-1" />}
               videoThumbnailSrc={`${process.env.BASE_PATH}/img/video-howToIndexSolana.jpg`}
             />
           </div>
         </section>
       </div>
     </>
-  )
-}
-
-interface TimeProps extends ComponentPropsWithoutRef<'div'> {
-  variant: 'reading' | 'duration'
-  minutes: number
-}
-
-function Time({ variant, minutes, className, ...props }: TimeProps) {
-  const { t } = useI18n()
-  return (
-    <div className={classNames(['flex items-center gap-1 leading-none', className])} {...props}>
-      <Clock
-        alt={variant === 'reading' ? t('index.time.reading') : t('index.time.duration')}
-        variant="fill"
-        size={3.5}
-      />
-      {minutes} {t('index.time.minutes')}
-    </div>
   )
 }
 

@@ -123,7 +123,7 @@ export const NavigationItem = ({
                 size-2 rounded-full bg-space-1500 transition
                 nearest-group-[:has(:is(a,button):hover)]/navigation-item:bg-space-1300
                 +:group-data-[selected=partially]/navigation-item-trigger:bg-space-1100
-                +:group-data-[selected=true]/navigation-item-trigger:bg-purple
+                +:group-data-[selected=true]/navigation-item-trigger:bg-purple-500
                 +:group-data-[selected]/navigation-item-trigger:transition-none
               `}
             />

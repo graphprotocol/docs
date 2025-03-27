@@ -7,6 +7,7 @@ ENV ENVIRONMENT=$ENVIRONMENT
 ENV ORIGIN=$ORIGIN
 
 ENV PNPM_HOME="/usr/bin"
+ENV NODE_OPTIONS="--max_old_space_size=8192"
 
 RUN apk add --no-cache git
 RUN npm install -g corepack@latest

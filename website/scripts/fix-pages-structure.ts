@@ -81,7 +81,7 @@ async function getPagesStructure(locale: string): Promise<PagesStructure> {
   }
 }
 
-async function main() {
+async function fixPagesStructure() {
   const sourceDirectory = path.join(PAGES_DIRECTORY, SOURCE_LOCALE)
   const sourceStructure = await getPagesStructure(SOURCE_LOCALE)
   const translatedLocales = (await fs.readdir(PAGES_DIRECTORY))
@@ -178,7 +178,7 @@ async function main() {
   }
 }
 
-main().catch((error) => {
+fixPagesStructure().catch((error) => {
   console.error(error.message)
   process.exit(1)
 })
