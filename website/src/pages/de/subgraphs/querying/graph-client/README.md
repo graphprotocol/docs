@@ -14,41 +14,41 @@ This library is intended to simplify the network aspect of data consumption for 
 
 > The tools provided in this repo can be used as standalone, but you can also use it with any existing GraphQL Client!
 
-| Status | Feature                                                          | Anmerkungen                                                                                                                      |
-| :----: | ---------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
-|    ✅   | Multiple indexers                                                | based on fetch strategies                                                                                                        |
-|    ✅   | Fetch Strategies                                                 | timeout, retry, fallback, race, highestValue                                                                                     |
-|    ✅   | Build time validations & optimizations       |                                                                                                                                  |
-|    ✅   | Client-Side Composition                                          | with improved execution planner (based on GraphQL-Mesh)                                                       |
-|    ✅   | Cross-chain Subgraph Handling                                    | Use similar subgraphs as a single source                                                                                         |
-|    ✅   | Raw Execution (standalone mode)               | without a wrapping GraphQL client                                                                                                |
-|    ✅   | Local (client-side) Mutations                 |                                                                                                                                  |
-|    ✅   | [Automatic Block Tracking](../packages/block-tracking/README.md) | tracking block numbers [as described here](https://thegraph.com/docs/en/developer/distributed-systems/#polling-for-updated-data) |
-|    ✅   | [Automatic Pagination](../packages/auto-pagination/README.md)    | doing multiple requests in a single call to fetch more than the indexer limit                                                    |
-|    ✅   | Integration with `@apollo/client`                                |                                                                                                                                  |
-|    ✅   | Integration with `urql`                                          |                                                                                                                                  |
-|    ✅   | TypeScript support                                               | with built-in GraphQL Codegen and `TypedDocumentNode`                                                                            |
-|    ✅   | [`@live` queries](./live.md)                                     | Based on polling                                                                                                                 |
+| Status | Feature                                                                 | Anmerkungen                                                                                                                                                                                                                                |
+| :----: | ----------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+|    ✅   | Multiple indexers                                                       | basierend auf Abrufstrategien                                                                                                                                                                                                              |
+|    ✅   | Abruf-Strategien                                                        | timeout, retry, fallback, race, highestValue                                                                                                                                                                                               |
+|    ✅   | Validierung der Erstellungszeit &amp; Optimierungen |                                                                                                                                                                                                                                            |
+|    ✅   | Kundenseitige Zusammensetzung                                           | mit verbessertem Ausführungsplaner (basierend auf GraphQL-Mesh)                                                                                                                                                         |
+|    ✅   | Behandlung kettenübergreifender Subgraphen                              | Verwenden Sie ähnliche Subgraphen als eine einzige Quelle                                                                                                                                                                                  |
+|    ✅   | Unbearbeitete Ausführung (Standalone-Modus)          | ohne einen umhüllenden GraphQL-Client                                                                                                                                                                                                      |
+|    ✅   | Lokale (client-seitige) Mutationen                   |                                                                                                                                                                                                                                            |
+|    ✅   | [Automatische Blockverfolgung](../packages/block-tracking/README.md)    | Tracking-Blocknummern [wie hier beschrieben] (https://thegraph.com/docs/en/developer/distributed-systems/#polling-for-updated-data) |
+|    ✅   | [Automatischer Seitenumbruch](../packages/auto-pagination/README.md)    | mehrere Anfragen in einem einzigen Aufruf, um mehr als das Indexierer-Limit abzurufen                                                                                                                                                      |
+|    ✅   | Integration mit `@apollo/client`                                        |                                                                                                                                                                                                                                            |
+|    ✅   | Integration mit `urql`                                                  |                                                                                                                                                                                                                                            |
+|    ✅   | TypeScript-Unterstützung                                                | mit eingebautem GraphQL Codegen und `TypedDocumentNode`                                                                                                                                                                                    |
+|    ✅   | [`@live`-Abfragen](./live.md)                                           | Auf der Grundlage von Umfragen                                                                                                                                                                                                             |
 
-> You can find an [extended architecture design here](./architecture.md)
+> Einen [erweiterten Architekturentwurf finden Sie hier](./architecture.md)
 
 ## Erste Schritte
 
-You can follow [Episode 45 of `graphql.wtf`](https://graphql.wtf/episodes/45-the-graph-client) to learn more about Graph Client:
+Sie können [Episode 45 von `graphql.wtf`] (https://graphql.wtf/episodes/45-the-graph-client) verfolgen, um mehr über Graph Client zu erfahren:
 
 [![GraphQL.wtf Episode 45](https://img.youtube.com/vi/ZsRAmyUtvwg/0.jpg)](https://graphql.wtf/episodes/45-the-graph-client)
 
-To get started, make sure to install [The Graph Client CLI] in your project:
+Um loszulegen, stellen Sie sicher, dass Sie [The Graph Client CLI] in Ihrem Projekt installieren:
 
 ```sh
 yarn add -D @graphprotocol/client-cli
-# or, with NPM:
+# oder, mit NPM:
 npm install --save-dev @graphprotocol/client-cli
 ```
 
-> The CLI is installed as dev dependency since we are using it to produce optimized runtime artifacts that can be loaded directly from your app!
+> Das CLI wird als Dev-Abhängigkeit installiert, da wir es verwenden, um optimierte Laufzeit-Artefakte zu erzeugen, die direkt aus Ihrer Anwendung geladen werden können!
 
-Create a configuration file (called `.graphclientrc.yml`) and point to your GraphQL endpoints provided by The Graph, for example:
+Erstellen Sie eine Konfigurationsdatei (mit dem Namen `.graphclientrc.yml`) und verweisen Sie auf Ihre GraphQL-Endpunkte, die z.B. von The Graph bereitgestellt werden:
 
 ```yml
 # .graphclientrc.yml
@@ -59,28 +59,28 @@ sources:
         endpoint: https://api.thegraph.com/subgraphs/name/uniswap/uniswap-v2
 ```
 
-Now, create a runtime artifact by running The Graph Client CLI:
+Erstellen Sie nun ein Laufzeit-Artefakt, indem Sie The Graph Client CLI ausführen:
 
 ```sh
-graphclient build
+Graphclient erstellen
 ```
 
-> Note: you need to run this with `yarn` prefix, or add that as a script in your `package.json`.
+> Hinweis: Sie müssen dies mit dem Präfix `yarn` ausführen oder es als Skript in Ihrer `package.json` hinzufügen.
 
-This should produce a ready-to-use standalone `execute` function, that you can use for running your application GraphQL operations, you should have an output similar to the following:
+Dies sollte eine einsatzbereite eigenständige Funktion `execute` erzeugen, die Sie für die Ausführung Ihrer GraphQL-Operationen verwenden können. Sie sollten eine Ausgabe ähnlich der folgenden erhalten:
 
 ```sh
-GraphClient: Cleaning existing artifacts
-GraphClient: Reading the configuration
-🕸️: Generating the unified schema
-🕸️: Generating artifacts
-🕸️: Generating index file in TypeScript
-🕸️: Writing index.ts for ESM to the disk.
-🕸️: Cleanup
-🕸️: Done! => .graphclient
+GraphClient: Bereinigung vorhandener Artefakte
+GraphClient: Einlesen der Konfiguration
+🕸️: Erzeugen des einheitlichen Schemas
+🕸️: Erzeugen von Artefakten
+🕸️: Erzeugen der Indexdatei in TypeScript
+🕸️: Schreiben der index.ts für ESM auf die Festplatte.
+🕸️: Aufräumen
+🕸️: Erledigt! =&gt; .graphclient
 ```
 
-Now, the `.graphclient` artifact is generated for you, and you can import it directly from your code, and run your queries:
+Nun wird das Artefakt `.graphclient` für Sie generiert, und Sie können es direkt aus Ihrem Code importieren und Ihre Abfragen ausführen:
 
 ```ts
 import { execute } from '../.graphclient'
@@ -111,36 +111,36 @@ async function main() {
 main()
 ```
 
-### Using Vanilla JavaScript Instead of TypeScript
+### Vanilla JavaScript anstelle von TypeScript verwenden
 
-GraphClient CLI generates the client artifacts as TypeScript files by default, but you can configure CLI to generate JavaScript and JSON files together with additional TypeScript definition files by using `--fileType js` or `--fileType json`.
+GraphClient CLI generiert die Client-Artefakte standardmäßig als TypeScript-Dateien, aber Sie können CLI so konfigurieren, dass JavaScript- und JSON-Dateien zusammen mit zusätzlichen TypeScript-Definitionsdateien generiert werden, indem Sie `--fileType js` oder `--fileType json` verwenden.
 
-`js` flag generates all files as JavaScript files with ESM Syntax and `json` flag generates source artifacts as JSON files while entrypoint JavaScript file with old CommonJS syntax because only CommonJS supports JSON files as modules.
+Das `js`-Flag generiert alle Dateien als JavaScript-Dateien mit ESM-Syntax und das `json`-Flag generiert Quellartefakte als JSON-Dateien, während der Einstiegspunkt JavaScript-Dateien mit der alten CommonJS-Syntax erzeugt, da nur CommonJS JSON-Dateien als Module unterstützt.
 
-Unless you use CommonJS(`require`) specifically, we'd recommend you to use `js` flag.
+Wenn Sie nicht gerade CommonJS(`require`) verwenden, empfehlen wir Ihnen, das `js`-Flag zu verwenden.
 
 `graphclient --fileType js`
 
-- [An example for JavaScript usage in CommonJS syntax with JSON files](../examples/javascript-cjs)
-- [An example for JavaScript usage in ESM syntax](../examples/javascript-esm)
+- [Ein Beispiel für die Verwendung von JavaScript in CommonJS-Syntax mit JSON-Dateien](../examples/javascript-cjs)
+- [Ein Beispiel für die Verwendung von JavaScript in der ESM-Syntax](../examples/javascript-esm)
 
-#### The Graph Client DevTools
+#### The Graph Client Tools
 
-The Graph Client CLI comes with a built-in GraphiQL, so you can experiment with queries in real-time.
+The Graph Client CLI verfügt über ein eingebautes GraphiQL, so dass Sie mit Abfragen in Echtzeit experimentieren können.
 
-The GraphQL schema served in that environment, is the eventual schema based on all composed Subgraphs and transformations you applied.
+Das GraphQL-Schema, das in dieser Umgebung serviert wird, ist das letztendliche Schema, das auf allen zusammengesetzten Subgraphen und Transformationen basiert, die Sie angewendet haben.
 
-To start the DevTool GraphiQL, run the following command:
+Um das DevTool GraphiQL zu starten, führen Sie den folgenden Befehl aus:
 
 ```sh
 graphclient serve-dev
 ```
 
-And open http://localhost:4000/ to use GraphiQL. You can now experiment with your Graph client-side GraphQL schema locally! 🥳
+Und öffnen Sie http://localhost:4000/, um GraphiQL zu verwenden. Sie können nun mit Ihrem Graph-Client-seitigen GraphQL-Schema lokal experimentieren! 🥳
 
 #### Beispiele
 
-You can also refer to [examples directory in this repo](../examples), for more advanced examples and integration examples:
+Sie können auch auf [examples directory in this repo](../examples) verweisen, für fortgeschrittene Beispiele und Integrationsbeispiele:
 
 - [TypeScript & React example with raw `execute` and built-in GraphQL-Codegen](../examples/execute)
 - [TS/JS NodeJS standalone mode](../examples/node)
@@ -349,9 +349,9 @@ graph LR;
 
 </details>
 
-#### Block Tracking
+#### Blockverfolgung
 
-The Graph Client can track block numbers and do the following queries by following [this pattern](https://thegraph.com/docs/en/developer/distributed-systems/#polling-for-updated-data) with `blockTracking` transform;
+The Graph Client kann Blocknummern verfolgen und die folgenden Abfragen durchführen, indem er [diesem Muster] (https://thegraph.com/docs/en/developer/distributed-systems/#polling-for-updated-data) mit der Transformation `blockTracking` folgt;
 
 ```yaml
 sources:
@@ -361,57 +361,57 @@ sources:
         endpoint: https://api.thegraph.com/subgraphs/name/uniswap/uniswap-v2
     transforms:
       - blockTracking:
-          # You might want to disable schema validation for faster startup
-          validateSchema: true
-          # Ignore the fields that you don't want to be tracked
+          # Sie möchten vielleicht die Schema-Validierung für einen schnelleren Start deaktivieren
+           validateSchema: true
+          # Ignorieren Sie die Felder, die nicht verfolgt werden sollen
           ignoreFieldNames: [users, prices]
-          # Exclude the operation with the following names
+          # Schließen Sie die Operation mit den folgenden Namen aus
           ignoreOperationNames: [NotFollowed]
 ```
 
-[You can try a working example here](../examples/transforms)
+[Hier können Sie ein funktionierendes Beispiel ausprobieren](../examples/transforms)
 
-#### Automatic Pagination
+#### Automatische Paginierung
 
-With most subgraphs, the number of records you can fetch is limited. In this case, you have to send multiple requests with pagination.
-
-```graphql
-query {
-  # Will throw an error if the limit is 1000
-  users(first: 2000) {
-    id
-    name
-  }
-}
-```
-
-So you have to send the following operations one after the other:
+Bei den meisten Subgraphen ist die Anzahl der Datensätze, die Sie abrufen können, begrenzt. In diesem Fall müssen Sie mehrere Anfragen mit Paginierung senden.
 
 ```graphql
 query {
-  # Will throw an error if the limit is 1000
-  users(first: 1000) {
-    id
-    name
-  }
+ # Wirft einen Fehler, wenn das Limit 1000 ist
+ users(first: 2000) {
+ id
+ name
+ }
 }
 ```
 
-Then after the first response:
+Sie müssen also die folgenden Vorgänge nacheinander senden:
 
 ```graphql
 query {
-  # Will throw an error if the limit is 1000
-  users(first: 1000, skip: 1000) {
-    id
-    name
-  }
+ # Wirft einen Fehler, wenn das Limit 1000 ist
+ users(first: 1000) {
+ id
+ name
+ }
 }
 ```
 
-After the second response, you have to merge the results manually. But instead The Graph Client allows you to do the first one and automatically does those multiple requests for you under the hood.
+Dann nach der ersten Antwort:
 
-All you have to do is:
+```graphql
+query {
+ # Wirft einen Fehler, wenn die Grenze bei 1000 liegt
+ users(first: 1000, skip: 1000) {
+ id
+ name
+ }
+}
+```
+
+Nach der zweiten Antwort müssen Sie die Ergebnisse manuell zusammenführen. The Graph Client erlaubt Ihnen jedoch, die erste Anfrage zu stellen, und führt diese mehreren Anfragen automatisch für Sie durch.
+
+Alles, was Sie tun müssen, ist:
 
 ```yaml
 sources:
@@ -421,21 +421,21 @@ sources:
         endpoint: https://api.thegraph.com/subgraphs/name/uniswap/uniswap-v2
     transforms:
       - autoPagination:
-          # You might want to disable schema validation for faster startup
+          # Sie möchten vielleicht die Schema-Validierung für einen schnelleren Start deaktivieren
           validateSchema: true
 ```
 
-[You can try a working example here](../examples/transforms)
+[Hier können Sie ein funktionierendes Beispiel ausprobieren](../examples/transforms)
 
-#### Client-side Composition
+#### Client-seitige Komposition
 
-The Graph Client has built-in support for client-side GraphQL Composition (powered by [GraphQL-Tools Schema-Stitching](https://graphql-tools.com/docs/schema-stitching/stitch-combining-schemas)).
+The Graph Client verfügt über integrierte Unterstützung für clientseitige GraphQL Composition (powered by [GraphQL-Tools Schema-Stitching](https://graphql-tools.com/docs/schema-stitching/stitch-combining-schemas)).
 
-You can leverage this feature in order to create a single GraphQL layer from multiple Subgraphs, deployed on multiple indexers.
+Sie können diese Funktion nutzen, um eine einzige GraphQL-Schicht aus mehreren Subgraphen zu erstellen, die auf mehreren Indexierern bereitgestellt werden.
 
-> 💡 Tip: You can compose any GraphQL sources, and not only Subgraphs!
+> 💡 Tipp: Sie können beliebige GraphQL-Quellen zusammenstellen, und nicht nur Subgraphen!
 
-Trivial composition can be done by adding more than one GraphQL source to your `.graphclientrc.yml` file, here's an example:
+Triviale Komposition kann durch Hinzufügen von mehr als einer GraphQL-Quelle zu Ihrer `.graphclientrc.yml`-Datei erfolgen, hier ein Beispiel:
 
 ```yaml
 sources:
@@ -449,7 +449,7 @@ sources:
         endpoint: https://api.thegraph.com/subgraphs/name/graphprotocol/compound-v2
 ```
 
-As long as there a no conflicts across the composed schemas, you can compose it, and then run a single query to both Subgraphs:
+Solange es keine Konflikte zwischen den zusammengestellten Schemata gibt, können Sie sie zusammenstellen und dann eine einzige Abfrage für beide Subgraphen ausführen:
 
 ```graphql
 query myQuery {
@@ -457,7 +457,7 @@ query myQuery {
   markets(first: 7) {
     borrowRate
   }
-  # this one is coming from uniswap-v2
+  # dieser kommt von uniswap-v2
   pair(id: "0x00004ee988665cdda9a1080d5792cecd16dc1220") {
     id
     token0 {
@@ -470,71 +470,71 @@ query myQuery {
 }
 ```
 
-You can also resolve conflicts, rename parts of the schema, add custom GraphQL fields, and modify the entire execution phase.
+Sie können auch Konflikte beheben, Teile des Schemas umbenennen, benutzerdefinierte GraphQL-Felder hinzufügen und die gesamte Ausführungsphase ändern.
 
-For advanced use-cases with composition, please refer to the following resources:
+Für fortgeschrittene Anwendungsfälle mit Komposition lesen Sie bitte die folgenden Ressourcen:
 
-- [Advanced Composition Example](../examples/composition)
-- [GraphQL-Mesh Schema transformations](https://graphql-mesh.com/docs/transforms/transforms-introduction)
-- [GraphQL-Tools Schema-Stitching documentation](https://graphql-tools.com/docs/schema-stitching/stitch-combining-schemas)
+- [Fortgeschrittenes Kompositionsbeispiel](../examples/composition)
+- [GraphQL-Mesh Schema-Transformationen](https://graphql-mesh.com/docs/transforms/transforms-introduction)
+- [GraphQL-Tools Schema-Stitching Dokumentation](https://graphql-tools.com/docs/schema-stitching/stitch-combining-schemas)
 
-#### TypeScript Support
+#### TypeScript-Unterstützung
 
-If your project is written in TypeScript, you can leverage the power of [`TypedDocumentNode`](https://the-guild.dev/blog/typed-document-node) and have a fully-typed GraphQL client experience.
+Wenn Ihr Projekt in TypeScript geschrieben ist, können Sie die Leistung von [`TypedDocumentNode`] (https://the-guild.dev/blog/typed-document-node) nutzen und eine vollständig typisierte GraphQL-Client-Erfahrung haben.
 
-The standalone mode of The GraphQL, and popular GraphQL client libraries like Apollo-Client and urql has built-in support for `TypedDocumentNode`!
+Der Standalone-Modus von The GraphQL und populäre GraphQL-Client-Bibliotheken wie Apollo-Client und urql haben integrierte Unterstützung für `TypedDocumentNode`!
 
-The Graph Client CLI comes with a ready-to-use configuration for [GraphQL Code Generator](https://graphql-code-generator.com), and it can generate `TypedDocumentNode` based on your GraphQL operations.
+The Graph Client CLI wird mit einer gebrauchsfertigen Konfiguration für den [GraphQL Code Generator] (https://graphql-code-generator.com) geliefert und kann `TypedDocumentNode` basierend auf Ihren GraphQL-Operationen erzeugen.
 
-To get started, define your GraphQL operations in your application code, and point to those files using the `documents` section of `.graphclientrc.yml`:
+Um loszulegen, definieren Sie Ihre GraphQL-Operationen in Ihrem Anwendungscode und verweisen auf diese Dateien mit dem Abschnitt `documents` in `.graphclientrc.yml`:
 
 ```yaml
 sources:
-  -  # ... your Subgraphs/GQL sources here
+  - # ... Ihre Subgraphs/GQL-Quellen hier
 
 documents:
   - ./src/example-query.graphql
 ```
 
-You can also use Glob expressions, or even point to code files, and the CLI will find your GraphQL queries automatically:
+Sie können auch Glob-Ausdrücke verwenden oder sogar auf Codedateien verweisen, und die CLI wird Ihre GraphQL-Abfragen automatisch finden:
 
 ```yaml
 documents:
   - './src/**/*.graphql'
-  - './src/**/*.{ts,tsx,js,jsx}'
+ - './src/**/*.{ts,tsx,js,jsx}'
 ```
 
-Now, run the GraphQL CLI `build` command again, the CLI will generate a `TypedDocumentNode` object under `.graphclient` for every operation found.
+Führen Sie nun den GraphQL-CLI-Befehl `build` erneut aus. Die CLI wird für jede gefundene Operation ein `TypedDocumentNode`-Objekt unter `.graphclient` erzeugen.
 
-> Make sure to name your GraphQL operations, otherwise it will be ignored!
+> Stellen Sie sicher, dass Sie Ihre GraphQL-Operationen benennen, sonst werden sie ignoriert!
 
-For example, a query called `query ExampleQuery` will have the corresponding `ExampleQueryDocument` generated in `.graphclient`. You can now import it and use that for your GraphQL calls, and you'll have a fully typed experience without writing or specifying any TypeScript manually:
+Zum Beispiel wird für eine Abfrage mit dem Namen `query ExampleQuery` das entsprechende `ExampleQueryDocument` in `.graphclient` generiert. Sie können es nun importieren und für Ihre GraphQL-Aufrufe verwenden. So haben Sie eine vollständig typisierte Erfahrung, ohne TypeScript manuell schreiben oder angeben zu müssen:
 
 ```ts
 import { ExampleQueryDocument, execute } from '../.graphclient'
 
 async function main() {
-  // "result" variable is fully typed, and represents the exact structure of the fields you selected in your query.
-  const result = await execute(ExampleQueryDocument, {})
-  console.log(result)
+ // Die Variable "result" ist vollständig typisiert und repräsentiert die genaue Struktur der Felder, die Sie in Ihrer Abfrage ausgewählt haben.
+ const result = await execute(ExampleQueryDocument, {})
+ console.log(result)
 }
 ```
 
-> You can find a [TypeScript project example here](../examples/urql).
+> Sie können ein [TypeScript-Projektbeispiel hier](../examples/urql) finden.
 
-#### Client-Side Mutations
+#### Client-seitige Mutationen
 
-Due to the nature of Graph-Client setup, it is possible to add client-side schema, that you can later bridge to run any arbitrary code.
+Aufgrund der Natur des Graph-Client-Setups ist es möglich, clientseitige Schemata hinzuzufügen, die Sie später überbrücken können, um beliebigen Code auszuführen.
 
-This is helpful since you can implement custom code as part of your GraphQL schema, and have it as unified application schema that is easier to track and develop.
+Dies ist hilfreich, da Sie benutzerdefinierten Code als Teil Ihres GraphQL-Schemas implementieren können und es als einheitliches Anwendungsschema haben, das einfacher zu verfolgen und zu entwickeln ist.
 
-> This document explains how to add custom mutations, but in fact you can add any GraphQL operation (query/mutation/subscriptions). See [Extending the unified schema article](https://graphql-mesh.com/docs/guides/extending-unified-schema) for more information about this feature.
+> Dieses Dokument erklärt, wie man benutzerdefinierte Mutationen hinzufügt, aber eigentlich kann man jede GraphQL-Operation (Abfrage/Mutation/Abonnements) hinzufügen. Sehen Sie [Erweiterung des einheitlichen Schemaartikels](https://graphql-mesh.com/docs/guides/extending-unified-schema) für weitere Informationen über diese Funktion.
 
-To get started, define a `additionalTypeDefs` section in your config file:
+Um zu beginnen, definieren Sie einen Abschnitt `additionalTypeDefs` in Ihrer Konfigurationsdatei:
 
 ```yaml
 additionalTypeDefs: |
-  # We should define the missing `Mutation` type
+ # Wir sollten dtn fehlenden Typ `Mutation` definieren
   extend schema {
     mutation: Mutation
   }
@@ -548,14 +548,14 @@ additionalTypeDefs: |
   }
 ```
 
-Then, add a pointer to a custom GraphQL resolvers file:
+Fügen Sie dann einen Pointer auf eine benutzerdefinierte GraphQL-Resolver-Datei hinzu:
 
 ```yaml
 additionalResolvers:
   - './resolvers'
 ```
 
-Now, create `resolver.js` (or, `resolvers.ts`) in your project, and implement your custom mutation:
+Erstellen Sie nun `resolver.js` (oder `resolvers.ts`) in Ihrem Projekt, und implementieren Sie Ihre benutzerdefinierte Mutation:
 
 ```js
 module.exports = {
