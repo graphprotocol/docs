@@ -1,51 +1,51 @@
 ---
-title: Distributed Systems
+title: Verteilte Systeme
 ---
 
-The Graph is a protocol implemented as a distributed system.
+The Graph ist ein Protokoll, das als verteiltes System implementiert ist.
 
-Connections fail. Requests arrive out of order. Different computers with out-of-sync clocks and states process related requests. Servers restart. Re-orgs happen between requests. These problems are inherent to all distributed systems but are exacerbated in systems operating at a global scale.
+Verbindungen schlagen fehl. Anfragen treffen nicht in der richtigen Reihenfolge ein. Verschiedene Computer mit nicht synchronisierten Uhren und Zuständen bearbeiten zusammengehörige Anfragen. Server werden neu gestartet. Zwischen den Anfragen kommt es zu Re-orgs. Diese Probleme treten bei allen verteilten Systemen auf, verschärfen sich jedoch bei Systemen, die in globalem Maßstab arbeiten.
 
-Consider this example of what may occur if a client polls an Indexer for the latest data during a re-org.
+Ein Beispiel zeigt, was passieren kann, wenn ein Client während einer Reorganisation einen Indexierer nach den neuesten Daten abfragt.
 
-1. Indexer ingests block 8
-2. Request served to the client for block 8
-3. Indexer ingests block 9
-4. Indexer ingests block 10A
-5. Request served to the client for block 10A
-6. Indexer detects reorg to 10B and rolls back 10A
-7. Request served to the client for block 9
-8. Indexer ingests block 10B
-9. Indexer ingests block 11
-10. Request served to the client for block 11
+1. Indexierer nimmt Block 8 auf
+2. Anfrage an den Kunden für Block 8
+3. Indexierer nimmt Block 9 auf
+4. Indexierer nimmt Block 10A auf
+5. Anfrage an den Kunden für Block 10A
+6. Indexierer erkennt Reorg nach 10B und rollt 10A zurück
+7. Anfrage an den Kunden für Block 9
+8. Indexierer nimmt den Block 10B auf
+9. Indexierer nimmt Block 11 auf
+10. Anfrage an den Kunden für Block 11
 
-From the point of view of the Indexer, things are progressing forward logically. Time is moving forward, though we did have to roll back an uncle block and play the block under consensus forward on top of it. Along the way, the Indexer serves requests using the latest state it knows about at that time.
+Aus der Sicht des Indexers schreiten die Dinge logisch voran. Die Zeit schreitet voran, obwohl wir einen Uncle-Block zurückdrehen und den Block unter Konsens vorwärts auf ihn spielen mussten. Auf dem Weg dorthin bedient der Indexer die Anfragen mit dem neuesten Stand, der ihm zu diesem Zeitpunkt bekannt ist.
 
-From the point of view of the client, however, things appear chaotic. The client observes that the responses were for blocks 8, 10, 9, and 11 in that order. We call this the "block wobble" problem. When a client experiences block wobble, data may appear to contradict itself over time. The situation worsens when we consider that Indexers do not all ingest the latest blocks simultaneously, and your requests may be routed to multiple Indexers.
+Aus der Sicht des Kunden erscheinen die Dinge jedoch chaotisch. Der Kunde stellt fest, dass die Antworten für die Blöcke 8, 10, 9 und 11 in dieser Reihenfolge erfolgten. Wir nennen dies das „Block Wobble“-Problem. Wenn ein Kunde von Block-Wobble betroffen ist, kann es sein, dass sich die Daten im Laufe der Zeit widersprechen. Die Situation verschlimmert sich noch, wenn man bedenkt, dass nicht alle Indexer die neuesten Blöcke gleichzeitig aufnehmen und Ihre Anfragen möglicherweise an mehrere Indexierer weitergeleitet werden.
 
-It is the responsibility of the client and server to work together to provide consistent data to the user. Different approaches must be used depending on the desired consistency as there is no one right program for every problem.
+Es liegt in der Verantwortung von Client und Server, zusammenzuarbeiten, um dem Benutzer konsistente Daten zu liefern. Je nach gewünschter Konsistenz müssen unterschiedliche Ansätze verwendet werden, da es nicht das eine richtige Programm für jedes Problem gibt.
 
-Reasoning through the implications of distributed systems is hard, but the fix may not be! We've established APIs and patterns to help you navigate some common use-cases. The following examples illustrate those patterns but still elide details required by production code (like error handling and cancellation) to not obfuscate the main ideas.
+Die Implikationen verteilter Systeme zu durchdenken ist schwierig, aber die Lösung muss es nicht sein! Wir haben APIs und Muster entwickelt, die Ihnen bei der Navigation in einigen häufigen Anwendungsfällen helfen. Die folgenden Beispiele veranschaulichen diese Muster, lassen aber Details aus, die für den Produktionscode erforderlich sind (z. B. Fehlerbehandlung und Stornierung), um die wichtigsten Ideen nicht zu verschleiern.
 
-## Polling for updated data
+## Abruf von aktualisierten Daten
 
-The Graph provides the `block: { number_gte: $minBlock }` API, which ensures that the response is for a single block equal or higher to `$minBlock`. If the request is made to a `graph-node` instance and the min block is not yet synced, `graph-node` will return an error. If `graph-node` has synced min block, it will run the response for the latest block. If the request is made to an Edge & Node Gateway, the Gateway will filter out any Indexers that have not yet synced min block and make the request for the latest block the Indexer has synced.
+The Graph bietet die `block: { number_gte: $minBlock }` API, die sicherstellt, dass die Antwort für einen einzelnen Block gleich oder höher als `$minBlock` ist. Wenn die Anfrage an eine `graph-node` Instanz gestellt wird und der Min-Block noch nicht synchronisiert ist, wird `graph-node` einen Fehler zurückgeben. Wenn `graph-node` den Min-Block synchronisiert hat, wird er die Antwort für den letzten Block ausführen. Wenn die Anfrage an ein Edge & Node Gateway gerichtet ist, wird das Gateway alle Indexer herausfiltern, die den Min-Block noch nicht synchronisiert haben, und die Anfrage für den letzten Block stellen, den der Indexierer synchronisiert hat.
 
-We can use `number_gte` to ensure that time never travels backward when polling for data in a loop. Here is an example:
+Wir können `number_gte` verwenden, um sicherzustellen, dass die Zeit niemals rückwärts läuft, wenn wir Daten in einer Schleife abfragen. Hier ist ein Beispiel:
 
 ```javascript
-/// Updates the protocol.paused variable to the latest
-/// known value in a loop by fetching it using The Graph.
+/// Aktualisiert die Variable protocol.paused auf den letzten
+/// bekannten Wert in einer Schleife, indem sie ihn mit The Graph abruft.
 async function updateProtocolPaused() {
-  // It's ok to start with minBlock at 0. The query will be served
-  // using the latest block available. Setting minBlock to 0 is the
-  // same as leaving out that argument.
+  // Es ist in Ordnung, mit minBlock bei 0 zu beginnen. Die Abfrage wird
+  // mit dem letzten verfügbaren Block bedient. Das Setzen von minBlock auf 0 ist
+  // dasselbe wie das Weglassen dieses Arguments.
   let minBlock = 0
 
   for (;;) {
-    // Schedule a promise that will be ready once
-    // the next Ethereum block will likely be available.
-    const nextBlock = new Promise((f) => {
+    // Planen Sie ein Versprechen, das bereit sein wird, sobald
+     // der nächste Ethereum-Block wahrscheinlich verfügbar ist.
+     const nextBlock = new Promise((f) => {
       setTimeout(f, 14000)
     })
 
@@ -65,30 +65,30 @@ async function updateProtocolPaused() {
     const response = await graphql(query, variables)
     minBlock = response._meta.block.number
 
-    // TODO: Do something with the response data here instead of logging it.
+    // TODO: Machen Sie hier etwas mit den Antwortdaten, anstatt sie zu protokollieren.
     console.log(response.protocol.paused)
 
-    // Sleep to wait for the next block
+    // Sleep um auf den nächsten Block zu warten
     await nextBlock
   }
 }
 ```
 
-## Fetching a set of related items
+## Abrufen einer Gruppe verwandter Elemente
 
-Another use-case is retrieving a large set or, more generally, retrieving related items across multiple requests. Unlike the polling case (where the desired consistency was to move forward in time), the desired consistency is for a single point in time.
+Ein weiterer Anwendungsfall ist der Abruf einer großen Menge oder, allgemeiner, der Abruf zusammengehöriger Elemente über mehrere Anfragen hinweg. Im Gegensatz zum Abruffall (bei dem die gewünschte Konsistenz in der Zeit vorwärts gehen sollte), bezieht sich die gewünschte Konsistenz auf einen einzigen Zeitpunkt.
 
-Here we will use the `block: { hash: $blockHash }` argument to pin all of our results to the same block.
+Hier werden wir den \`block: { hash: $blockHash }, um alle unsere Ergebnisse an denselben Block zu binden.
 
 ```javascript
-/// Gets a list of domain names from a single block using pagination
+/// Ruft eine Liste von Domainnamen aus einem einzelnen Block mit Paginierung ab
 async function getDomainNames() {
-  // Set a cap on the maximum number of items to pull.
+  // Legen Sie eine Obergrenze für die maximale Anzahl der zu ziehenden Elemente fest.
   let pages = 5
   const perPage = 1000
 
-  // The first query will get the first page of results and also get the block
-  // hash so that the remainder of the queries are consistent with the first.
+  // Die erste Abfrage erhält die erste Seite der Ergebnisse und auch den Block
+  // Hash, so dass die restlichen Abfragen mit der ersten konsistent sind.
   const listDomainsQuery = `
     query ListDomains($perPage: Int!) {
         domains(first: $perPage) {
@@ -107,9 +107,9 @@ async function getDomainNames() {
   let blockHash = data._meta.block.hash
 
   let query
-  // Continue fetching additional pages until either we run into the limit of
-  // 5 pages total (specified above) or we know we have reached the last page
-  // because the page has fewer entities than a full page.
+  // Wir fahren fort, weitere Seiten zu holen, bis wir entweder auf das Limit von
+  // 5 Seiten insgesamt (oben angegeben) stoßen oder wissen, dass wir die letzte Seite
+  // erreicht haben, weil die Seite weniger Entitäten als eine volle Seite hat.
   while (data.domains.length == perPage && --pages) {
     let lastID = data.domains[data.domains.length - 1].id
     query = `
@@ -122,7 +122,7 @@ async function getDomainNames() {
 
     data = await graphql(query, { perPage, lastID, blockHash })
 
-    // Accumulate domain names into the result
+    // Domainnamen im Ergebnis akkumulieren
     for (domain of data.domains) {
       result.push(domain.name)
     }
@@ -131,4 +131,4 @@ async function getDomainNames() {
 }
 ```
 
-Note that in case of a re-org, the client will need to retry from the first request to update the block hash to a non-uncle block.
+Beachten Sie, dass der Client im Falle eines Reorgs ab der ersten Anfrage erneut versuchen muss, den Block-Hash auf einen nicht-uncle-Block zu aktualisieren.
