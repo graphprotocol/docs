@@ -349,9 +349,9 @@ graph LR;
 
 </details>
 
-#### Block Tracking
+#### Отслеживание блоков
 
-The Graph Client can track block numbers and do the following queries by following [this pattern](https://thegraph.com/docs/en/developer/distributed-systems/#polling-for-updated-data) with `blockTracking` transform;
+Graph Client может отслеживать номера блоков и выполнять следующие запросы, следуя [этой схеме](https://thegraph.com/docs/en/developer/distributed-systems/#polling-for-updated-data) с использованием преобразования `blockTracking`;
 
 ```yaml
 sources:
@@ -361,23 +361,23 @@ sources:
         endpoint: https://api.thegraph.com/subgraphs/name/uniswap/uniswap-v2
     transforms:
       - blockTracking:
-          # You might want to disable schema validation for faster startup
+          # Вы можете отключить проверку схемы для более быстрого старта
           validateSchema: true
-          # Ignore the fields that you don't want to be tracked
+          # Игнорируйте поля, которые вы не хотите отслеживать
           ignoreFieldNames: [users, prices]
-          # Exclude the operation with the following names
+          # Исключите операции с указанными именами
           ignoreOperationNames: [NotFollowed]
 ```
 
-[You can try a working example here](../examples/transforms)
+[Здесь Вы можете попробовать рабочий пример](../examples/transforms)
 
-#### Automatic Pagination
+#### Автоматическая пагинация
 
-With most subgraphs, the number of records you can fetch is limited. In this case, you have to send multiple requests with pagination.
+Для большинства субграфов количество записей, которые Вы можете извлечь, ограничено. В этом случае Вам нужно отправить несколько запросов с пагинацией.
 
 ```graphql
 query {
-  # Will throw an error if the limit is 1000
+  # Выдаст ошибку, если лимит равен 1000
   users(first: 2000) {
     id
     name
@@ -385,11 +385,11 @@ query {
 }
 ```
 
-So you have to send the following operations one after the other:
+Таким образом, Вам нужно отправить следующие операции одну за другой:
 
 ```graphql
 query {
-  # Will throw an error if the limit is 1000
+  # Выдаст ошибку, если лимит равен 1000
   users(first: 1000) {
     id
     name
@@ -397,11 +397,11 @@ query {
 }
 ```
 
-Then after the first response:
+Затем после первого ответа:
 
 ```graphql
 query {
-  # Will throw an error if the limit is 1000
+  # Выдаст ошибку, если лимит равен 1000
   users(first: 1000, skip: 1000) {
     id
     name
@@ -409,9 +409,9 @@ query {
 }
 ```
 
-After the second response, you have to merge the results manually. But instead The Graph Client allows you to do the first one and automatically does those multiple requests for you under the hood.
+После второго ответа Вам пришлось бы вручную объединять результаты. Однако Graph Client позволяет выполнить первый запрос, а затем в фоновом режиме обрабатывает все остальные.
 
-All you have to do is:
+Всё, что Вам нужно сделать, это:
 
 ```yaml
 sources:
@@ -421,21 +421,21 @@ sources:
         endpoint: https://api.thegraph.com/subgraphs/name/uniswap/uniswap-v2
     transforms:
       - autoPagination:
-          # You might want to disable schema validation for faster startup
+          # Вы можете отключить проверку схемы для более быстрого старта
           validateSchema: true
 ```
 
-[You can try a working example here](../examples/transforms)
+[Здесь Вы можете попробовать рабочий пример](../examples/transforms)
 
-#### Client-side Composition
+#### Композиция на стороне клиента
 
-The Graph Client has built-in support for client-side GraphQL Composition (powered by [GraphQL-Tools Schema-Stitching](https://graphql-tools.com/docs/schema-stitching/stitch-combining-schemas)).
+Graph Client имеет встроенную поддержку композиции GraphQL на стороне клиента (реализованную с помощью [GraphQL-Tools Schema-Stitching](https://graphql-tools.com/docs/schema-stitching/stitch-combining-schemas)).
 
-You can leverage this feature in order to create a single GraphQL layer from multiple Subgraphs, deployed on multiple indexers.
+Вы можете использовать эту функцию для создания единого слоя GraphQL из нескольких субграфов, развернутых на нескольких индексаторах.
 
-> 💡 Tip: You can compose any GraphQL sources, and not only Subgraphs!
+> 💡 Совет: Вы можете комбинировать любые источники GraphQL, а не только субграфы!
 
-Trivial composition can be done by adding more than one GraphQL source to your `.graphclientrc.yml` file, here's an example:
+Тривиальную композицию можно выполнить, добавив более одного источника GraphQL в Ваш файл `.graphclientrc.yml`, вот пример:
 
 ```yaml
 sources:
@@ -449,15 +449,15 @@ sources:
         endpoint: https://api.thegraph.com/subgraphs/name/graphprotocol/compound-v2
 ```
 
-As long as there a no conflicts across the composed schemas, you can compose it, and then run a single query to both Subgraphs:
+Пока нет конфликтов между объединёнными схемами, Вы можете их составлять, а затем выполнить один запрос ко всем субграфам:
 
 ```graphql
 query myQuery {
-  # this one is coming from compound-v2
+  # этот запрос поступает от compound-v2
   markets(first: 7) {
     borrowRate
   }
-  # this one is coming from uniswap-v2
+  # этот запрос поступает от uniswap-v2
   pair(id: "0x00004ee988665cdda9a1080d5792cecd16dc1220") {
     id
     token0 {
@@ -470,33 +470,33 @@ query myQuery {
 }
 ```
 
-You can also resolve conflicts, rename parts of the schema, add custom GraphQL fields, and modify the entire execution phase.
+Вы также можете разрешать конфликты, переименовывать части схемы, добавлять пользовательские поля GraphQL и изменять всю фазу выполнения.
 
-For advanced use-cases with composition, please refer to the following resources:
+Для сложных сценариев использования композиций обратитесь к следующим ресурсам:
 
-- [Advanced Composition Example](../examples/composition)
-- [GraphQL-Mesh Schema transformations](https://graphql-mesh.com/docs/transforms/transforms-introduction)
-- [GraphQL-Tools Schema-Stitching documentation](https://graphql-tools.com/docs/schema-stitching/stitch-combining-schemas)
+- [Пример сложной композиции](../examples/composition)
+- [Преобразования схемы GraphQL-Mesh](https://graphql-mesh.com/docs/transforms/transforms-introduction)
+- [Документация по объединению схем с помощью GraphQL-Tools](https://graphql-tools.com/docs/schema-stitching/stitch-combining-schemas)
 
-#### TypeScript Support
+#### Поддержка TypeScript
 
-If your project is written in TypeScript, you can leverage the power of [`TypedDocumentNode`](https://the-guild.dev/blog/typed-document-node) and have a fully-typed GraphQL client experience.
+Если Ваш проект написан на TypeScript, Вы можете использовать возможности [`TypedDocumentNode`](https://the-guild.dev/blog/typed-document-node) и получить полностью типизированный опыт работы с GraphQL-клиентом.
 
-The standalone mode of The GraphQL, and popular GraphQL client libraries like Apollo-Client and urql has built-in support for `TypedDocumentNode`!
+Автономный режим The GraphQL, а также популярные библиотеки GraphQL-клиентов, такие как Apollo-Client и urql, имеют встроенную поддержку `TypedDocumentNode`!
 
-The Graph Client CLI comes with a ready-to-use configuration for [GraphQL Code Generator](https://graphql-code-generator.com), and it can generate `TypedDocumentNode` based on your GraphQL operations.
+CLI Graph Client поставляется с готовой конфигурацией для [GraphQL Code Generator](https://graphql-code-generator.com) и может генерировать `TypedDocumentNode` на основе Ваших GraphQL-операций.
 
-To get started, define your GraphQL operations in your application code, and point to those files using the `documents` section of `.graphclientrc.yml`:
+Чтобы начать, определите Ваши GraphQL-операции в коде приложения и укажите пути к этим файлам в разделе `documents` файла `.graphclientrc.yml`:
 
 ```yaml
 sources:
-  -  # ... your Subgraphs/GQL sources here
+  -  # ... Ваши Субграфы/источники GQL здесь
 
 documents:
   - ./src/example-query.graphql
 ```
 
-You can also use Glob expressions, or even point to code files, and the CLI will find your GraphQL queries automatically:
+Вы также можете использовать выражения Glob или даже указывать файлы кода, и CLI автоматически найдет Ваши GraphQL-запросы:
 
 ```yaml
 documents:
@@ -504,37 +504,37 @@ documents:
   - './src/**/*.{ts,tsx,js,jsx}'
 ```
 
-Now, run the GraphQL CLI `build` command again, the CLI will generate a `TypedDocumentNode` object under `.graphclient` for every operation found.
+Теперь снова выполните команду `build` в GraphQL CLI, и CLI сгенерирует объект `TypedDocumentNode` в `.graphclient` для каждой найденной операции.
 
-> Make sure to name your GraphQL operations, otherwise it will be ignored!
+> Обязательно давайте имена Вашим GraphQL-операциям, иначе они будут проигнорированы!
 
-For example, a query called `query ExampleQuery` will have the corresponding `ExampleQueryDocument` generated in `.graphclient`. You can now import it and use that for your GraphQL calls, and you'll have a fully typed experience without writing or specifying any TypeScript manually:
+Например, для запроса с именем `query ExampleQuery` будет сгенерирован соответствующий `ExampleQueryDocument` в `.graphclient`. Теперь вы можете импортировать его и использовать для GraphQL-запросов, получая полностью типизированный опыт без необходимости вручную писать или указывать TypeScript:
 
 ```ts
 import { ExampleQueryDocument, execute } from '../.graphclient'
 
 async function main() {
-  // "result" variable is fully typed, and represents the exact structure of the fields you selected in your query.
+  // переменная "result" полностью типизирована и представляет точную структуру полей, которые вы выбрали в вашем запросе.
   const result = await execute(ExampleQueryDocument, {})
   console.log(result)
 }
 ```
 
-> You can find a [TypeScript project example here](../examples/urql).
+> Вы можете найти [пример проекта на TypeScript здесь](../examples/urql).
 
-#### Client-Side Mutations
+#### Мутации на стороне клиента
 
-Due to the nature of Graph-Client setup, it is possible to add client-side schema, that you can later bridge to run any arbitrary code.
+Из-за особенностей настройки Graph-Client, возможно добавление схемы на стороне клиента, которую затем можно использовать для выполнения произвольного кода.
 
-This is helpful since you can implement custom code as part of your GraphQL schema, and have it as unified application schema that is easier to track and develop.
+Это полезно, потому что Вы можете внедрить пользовательский код в часть своей схемы GraphQL и использовать его как единую схему приложения, что облегчает отслеживание и разработку.
 
-> This document explains how to add custom mutations, but in fact you can add any GraphQL operation (query/mutation/subscriptions). See [Extending the unified schema article](https://graphql-mesh.com/docs/guides/extending-unified-schema) for more information about this feature.
+> Этот документ объясняет, как добавить пользовательские мутации, но на самом деле Вы можете добавить любую операцию GraphQL (запросы/мутации/подписки). Для получения дополнительной информации о данной функции, см. статью [Расширение единой схемы](https://graphql-mesh.com/docs/guides/extending-unified-schema).
 
-To get started, define a `additionalTypeDefs` section in your config file:
+Чтобы начать, определите раздел `additionalTypeDefs` в Вашем конфигурационном файле:
 
 ```yaml
 additionalTypeDefs: |
-  # We should define the missing `Mutation` type
+  # Мы должны определить отсутствующий тип `Mutation`
   extend schema {
     mutation: Mutation
   }
@@ -548,21 +548,21 @@ additionalTypeDefs: |
   }
 ```
 
-Then, add a pointer to a custom GraphQL resolvers file:
+Затем добавьте указатель на файл с пользовательскими GraphQL-ресолверами:
 
 ```yaml
 additionalResolvers:
   - './resolvers'
 ```
 
-Now, create `resolver.js` (or, `resolvers.ts`) in your project, and implement your custom mutation:
+Теперь создайте файл `resolver.js` (или `resolvers.ts`) в своем проекте и внедрите свою пользовательскую мутацию:
 
 ```js
 module.exports = {
   Mutation: {
     async doSomething(root, args, context, info) {
-      // Here, you can run anything you wish.
-      // For example, use `web3` lib, connect a wallet and so on.
+      // Здесь Вы можете выполнить все, что хотите.
+      // Например, использовать библиотеку `web3`, подключить кошелек и так далее.
 
       return true
     },
@@ -570,17 +570,17 @@ module.exports = {
 }
 ```
 
-If you are using TypeScript, you can also get fully type-safe signature by doing:
+Если Вы используете TypeScript, Вы также можете получить полностью безопасную типизацию подписей, сделав следующее:
 
 ```ts
 import { Resolvers } from './.graphclient'
 
-// Now it's fully typed!
+// Теперь всё написано!
 const resolvers: Resolvers = {
   Mutation: {
     async doSomething(root, args, context, info) {
-      // Here, you can run anything you wish.
-      // For example, use `web3` lib, connect a wallet and so on.
+      // Здесь Вы можете выполнить любые операции, которые хотите.
+      // Например, использовать библиотеку `web3`, подключить кошелек и так далее.
 
       return true
     },
@@ -590,22 +590,22 @@ const resolvers: Resolvers = {
 export default resolvers
 ```
 
-If you need to inject runtime variables into your GraphQL execution `context`, you can use the following snippet:
+Если Вам нужно внедрить переменные времени выполнения в Ваш `context` выполнения GraphQL, вы можете использовать следующий сниппет:
 
 ```ts
 execute(
   MY_QUERY,
   {},
   {
-    myHelper: {}, // this will be available in your Mutation resolver as `context.myHelper`
+    myHelper: {}, // это будет доступно в Вашем ресолвере мутации как `context.myHelper`
   },
 )
 ```
 
-> [You can read more about client-side schema extensions here](https://graphql-mesh.com/docs/guides/extending-unified-schema)
+> [Вы можете прочитать больше о расширениях схемы на стороне клиента здесь](https://graphql-mesh.com/docs/guides/extending-unified-schema)
 
-> [You can also delegate and call Query fields as part of your mutation](https://graphql-mesh.com/docs/guides/extending-unified-schema#using-the-sdk-to-fetch-sources)
+> [Вы также можете делегировать и вызывать поля Query в рамках Вашей мутации](https://graphql-mesh.com/docs/guides/extending-unified-schema#using-the-sdk-to-fetch-sources)
 
-## License
+## Лицензия
 
-Released under the [MIT license](../LICENSE).
+Выпущена под [лицензией MIT](../LICENSE).
