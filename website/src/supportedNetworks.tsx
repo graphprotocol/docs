@@ -4,7 +4,7 @@ import { Table } from '@/components'
 import { useI18n } from '@/i18n'
 import { NetworkIcon } from '@edgeandnode/go'
 import { Check } from '@edgeandnode/gds/icons'
-import { Text } from '@edgeandnode/gds'
+import { Skeleton, Text } from '@edgeandnode/gds'
 
 // Networks that should use the "mono" icon variant
 const MONO_ICON_NETWORKS = [
@@ -26,6 +26,16 @@ const MONO_ICON_NETWORKS = [
   'fraxtal',
   'lumia',
   'mbase',
+]
+
+// Skeleton networks (no icon available)
+const MISSING_ICON_NETWORKS = [
+  'berachain-bepolia',
+  'hoodi',
+  'ink-sepolia',
+  'megaeth-testnet',
+  'solana-accounts',
+  'manta',
 ]
 
 export async function getSupportedNetworks() {
@@ -73,6 +83,10 @@ export function SupportedNetworksTable({
     return MONO_ICON_NETWORKS.includes(networkId) ? 'mono' : 'branded'
   }
 
+  const shouldShowSkeleton = (networkId: string) => {
+    return MISSING_ICON_NETWORKS.includes(networkId) || !networkId
+  }
+
   return (
     <Table>
       <tbody>
@@ -100,7 +114,11 @@ export function SupportedNetworksTable({
           <tr key={network.id}>
             <td>
               <div className="flex items-center gap-2">
-                <NetworkIcon variant={getIconVariant(network.id)} caip2Id={network.caip2Id as any} size={5} />
+                {shouldShowSkeleton(network.id) ? (
+                  <Skeleton borderRadius="FULL" height="20px" width="20px" />
+                ) : (
+                  <NetworkIcon variant={getIconVariant(network.id)} caip2Id={network.caip2Id as any} size={5} />
+                )}
                 <Text.P14>{network.shortName}</Text.P14>
               </div>
             </td>
