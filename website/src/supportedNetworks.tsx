@@ -12,11 +12,10 @@ import {
   ExperimentalSearch,
   ExperimentalToggleChip,
   Flex,
-  ExperimentalIcon,
 } from '@edgeandnode/gds'
 import { useRouter } from 'next/router'
 import NextLink from 'next/link'
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 
 // Networks that should use the "mono" icon variant
 export const MONO_ICON_NETWORKS = [
@@ -86,6 +85,35 @@ export async function getSupportedNetworksStaticProps() {
   }
 }
 
+// Skeleton row component for loading state
+const SkeletonRow = () => {
+  return (
+    <tr className="h-16">
+      <td className="w-48">
+        <div className="flex items-center gap-2">
+          <Skeleton borderRadius="FULL" height="20px" width="20px" />
+          <Skeleton borderRadius="XS" height="12px" width="100px" />
+        </div>
+      </td>
+      <td>
+        <Skeleton borderRadius="XS" height="12px" width="80px" />
+      </td>
+      <td align="center">
+        <Skeleton borderRadius="FULL" height="14px" width="14px" className="mx-auto" />
+      </td>
+      <td align="center">
+        <Skeleton borderRadius="FULL" height="14px" width="14px" className="mx-auto" />
+      </td>
+      <td align="center">
+        <Skeleton borderRadius="FULL" height="14px" width="14px" className="mx-auto" />
+      </td>
+      <td align="center">
+        <Skeleton borderRadius="FULL" height="14px" width="14px" className="mx-auto" />
+      </td>
+    </tr>
+  )
+}
+
 export function SupportedNetworksTable({
   networks,
 }: Awaited<ReturnType<typeof getSupportedNetworksStaticProps>>['props']) {
@@ -94,6 +122,22 @@ export function SupportedNetworksTable({
   const { locale = 'en' } = router
   const [searchQuery, setSearchQuery] = useState('')
   const [showTestnets, setShowTestnets] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
+
+  useEffect(() => {
+    // If networks data is already available, showq it
+    if (networks && networks.length > 0) {
+      setIsLoading(false)
+    } else {
+      setIsLoading(true)
+
+      const timer = setTimeout(() => {
+        setIsLoading(false)
+      }, 1500)
+
+      return () => clearTimeout(timer)
+    }
+  }, [networks])
 
   const getIconVariant = (networkId: string) => {
     return MONO_ICON_NETWORKS.includes(networkId) ? 'mono' : 'branded'
@@ -124,6 +168,9 @@ export function SupportedNetworksTable({
 
     return filtered
   }, [networks, searchQuery, showTestnets])
+
+  // Generate skeleton rows
+  const skeletonRows = Array.from({ length: 20 }, (_, index) => <SkeletonRow key={`skeleton-${index}`} />)
 
   return (
     <>
@@ -157,7 +204,7 @@ export function SupportedNetworksTable({
       <Table variant="supported-networks">
         <tbody>
           <tr>
-            <th>
+            <th className="w-48">
               <Text.C10>{t('supportedNetworks.name')}</Text.C10>
             </th>
             <th>
@@ -176,41 +223,44 @@ export function SupportedNetworksTable({
               <Text.C10>{t('supportedNetworks.tokenapi')}</Text.C10>
             </th>
           </tr>
-          {filteredNetworks.map((network) => (
-            <NextLink key={network.id} href={`/${locale}/supported-networks/${network.id}`} className="contents">
-              <tr className="group h-16 cursor-pointer transition-colors hover:bg-space-1600">
-                <td>
-                  <div className="flex items-center gap-2">
-                    {shouldShowSkeleton(network.id) ? (
-                      <Skeleton borderRadius="FULL" height="20px" width="20px" />
-                    ) : (
-                      <NetworkIcon variant={getIconVariant(network.id)} caip2Id={network.caip2Id as any} size={5} />
-                    )}
-                    <Text.P14>{network.shortName}</Text.P14>
-                  </div>
-                </td>
-                <td>
-                  <div className="flex w-full items-center justify-between gap-2">
-                    <Text.P14 className="!mb-0">{network.id}</Text.P14>
-                    <div className="opacity-0 transition-opacity group-hover:opacity-100">
-                      <div
-                        onClick={(e) => {
-                          e.preventDefault()
-                          e.stopPropagation()
-                        }}
-                      >
-                        <ExperimentalCopyButton size="small" variant="tertiary" value={network.id} />
+
+          {isLoading
+            ? skeletonRows
+            : filteredNetworks.map((network) => (
+                <NextLink key={network.id} href={`/${locale}/supported-networks/${network.id}`} className="contents">
+                  <tr className="group h-16 cursor-pointer transition-colors hover:bg-space-1600">
+                    <td className="w-48">
+                      <div className="flex items-center gap-2">
+                        {shouldShowSkeleton(network.id) ? (
+                          <Skeleton borderRadius="FULL" height="20px" width="20px" />
+                        ) : (
+                          <NetworkIcon variant={getIconVariant(network.id)} caip2Id={network.caip2Id as any} size={5} />
+                        )}
+                        <Text.P14>{network.shortName}</Text.P14>
                       </div>
-                    </div>
-                  </div>
-                </td>
-                <td align="center">{network.subgraphs ? <Check size={4} /> : null}</td>
-                <td align="center">{network.substreams ? <Check size={4} /> : null}</td>
-                <td align="center">{network.firehose ? <Check size={4} /> : null}</td>
-                <td align="center">{network.tokenapi ? <Check size={4} /> : null}</td>
-              </tr>
-            </NextLink>
-          ))}
+                    </td>
+                    <td>
+                      <div className="flex w-full items-center justify-between gap-2">
+                        <Text.P14 className="!mb-0">{network.id}</Text.P14>
+                        <div className="opacity-0 transition-opacity group-hover:opacity-100">
+                          <div
+                            onClick={(e) => {
+                              e.preventDefault()
+                              e.stopPropagation()
+                            }}
+                          >
+                            <ExperimentalCopyButton size="small" variant="tertiary" value={network.id} />
+                          </div>
+                        </div>
+                      </div>
+                    </td>
+                    <td align="center">{network.subgraphs ? <Check size={4} /> : null}</td>
+                    <td align="center">{network.substreams ? <Check size={4} /> : null}</td>
+                    <td align="center">{network.firehose ? <Check size={4} /> : null}</td>
+                    <td align="center">{network.tokenapi ? <Check size={4} /> : null}</td>
+                  </tr>
+                </NextLink>
+              ))}
         </tbody>
       </Table>
     </>
