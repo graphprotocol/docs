@@ -30,9 +30,9 @@ graph LR;
 
 ## Composition d'un subgraph
 
-To allow simple and efficient client-side composition, we'll use [`graphql-tools`](https://graphql-tools.com) to create a remote schema / Executor, then can be hooked into the GraphQL client.
+Pour permettre une composition simple et efficace côté client, nous allons utiliser [`graphql-tools`](https://graphql-tools.com) pour créer un schéma / Executor distant, qui peut ensuite être accroché au client GraphQL.
 
-API could be either raw `graphql-tools` transformers, or using [GraphQL-Mesh declarative API](https://graphql-mesh.com/docs/transforms/transforms-introduction) for composing the schema.
+L'API peut être soit des transformateurs `graphql-tools` bruts, soit l'utilisation de l'[API déclarative GraphQL-Mesh](https://graphql-mesh.com/docs/transforms/transforms-introduction) pour composer le schéma.
 
 ```mermaid
 graph LR;
@@ -42,9 +42,9 @@ graph LR;
     m-->s3[Subgraph C GraphQL schema];
 ```
 
-## Subgraph Execution Strategies
+## Stratégies d'exécution des subgraphs
 
-Within every Subgraph defined as source, there will be a way to define it's source(s) indexer and the querying strategy, here are a few options:
+Dans chaque subgraph défini comme source, il sera possible de définir l'Indexeur de la (des) source(s) et la stratégie d'interrogation, dont voici quelques exemples :
 
 ```mermaid
 graph LR;
@@ -85,9 +85,9 @@ graph LR;
     end
 ```
 
-> We can ship a several built-in strategies, along with a simple interfaces to allow developers to write their own.
+> Nous pouvons proposer plusieurs stratégies intégrées, ainsi qu'une interface simple permettant aux développeurs d'écrire leurs propres stratégies.
 
-To take the concept of strategies to the extreme, we can even build a magical layer that does subscription-as-query, with any hook, and provide a smooth DX for dapps:
+Pour pousser le concept de stratégies à l'extrême, nous pouvons même construire une couche magique qui fait de l'abonnement en tant que requête, avec n'importe quel crochet, et fournit un DX fluide pour les dapps :
 
 ```mermaid
 graph LR;
@@ -99,5 +99,5 @@ graph LR;
     sc[Smart Contract]-->|change event|op;
 ```
 
-With this mechanism, developers can write and execute GraphQL `subscription`, but under the hood we'll execute a GraphQL `query` to The Graph indexers, and allow to connect any external hook/probe for re-running the operation.
-This way, we can watch for changes on the Smart Contract itself, and the GraphQL client will fill the gap on the need to real-time changes from The Graph.
+Avec ce mécanisme, les développeurs peuvent écrire et exécuter des `subscriptions` GraphQL, mais sous le capot, nous exécuterons une `requête` GraphQL vers les Indexeurs de The Graph, et nous permettrons de connecter n'importe quel hook/probe externe pour ré-exécuter l'opération.
+De cette façon, nous pouvons surveiller les changements sur le Smart Contract lui-même, et le client GraphQL comblera l'écart sur le besoin de changements en temps réel de The Graph.
