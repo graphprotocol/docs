@@ -3,8 +3,17 @@ import { NetworksRegistry } from '@pinax/graph-networks-registry'
 import { Table } from '@/components'
 import { useI18n } from '@/i18n'
 import { NetworkIcon } from '@edgeandnode/go'
-import { Check } from '@edgeandnode/gds/icons'
-import { Skeleton, Text, ExperimentalCopyButton, ExperimentalSearch, ExperimentalToggleChip } from '@edgeandnode/gds'
+import { Check, Lightbulb } from '@edgeandnode/gds/icons'
+import {
+  Skeleton,
+  ExperimentalLink,
+  Text,
+  ExperimentalCopyButton,
+  ExperimentalSearch,
+  ExperimentalToggleChip,
+  Flex,
+  ExperimentalIcon,
+} from '@edgeandnode/gds'
 import { useRouter } from 'next/router'
 import NextLink from 'next/link'
 import { useState, useMemo } from 'react'
@@ -118,6 +127,19 @@ export function SupportedNetworksTable({
 
   return (
     <>
+      <Flex.Row className="mb-6 rounded-8 bg-space-1600 p-3" alignItems="center" gap="8px">
+        <Lightbulb size={4} variant="regular" color="purple" />
+        <Flex.Column gap="4px">
+          <Text.P14 className="mb-0 font-semibold">{t('index.supportedNetworks.infoTitle')}</Text.P14>
+          <Text.P14>
+            {t('index.supportedNetworks.infoText')}{' '}
+            <ExperimentalLink href="https://thegraph.com/docs/en/network/network-integrations/">
+              {t('index.supportedNetworks.infoLink')}
+            </ExperimentalLink>
+          </Text.P14>
+        </Flex.Column>
+      </Flex.Row>
+
       <div className="mb-4 flex items-center gap-4">
         <div className="flex-grow">
           <ExperimentalSearch
