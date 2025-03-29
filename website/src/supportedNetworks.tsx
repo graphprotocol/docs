@@ -4,6 +4,29 @@ import { Table } from '@/components'
 import { useI18n } from '@/i18n'
 import { NetworkIcon } from '@edgeandnode/go'
 import { Check } from '@edgeandnode/gds/icons'
+import { Text } from '@edgeandnode/gds'
+
+// Networks that should use the "mono" icon variant
+const MONO_ICON_NETWORKS = [
+  'vana',
+  'vana-moksha',
+  'xlayer-mainnet',
+  'xlayer-sepolia',
+  'zksync-era',
+  'zksync-era-sepolia',
+  'sonic',
+  'soneium-testnet',
+  'soneium',
+  'linea-sepolia',
+  'linea',
+  'lens-testnet',
+  'expchain-testnet',
+  'autonomys-taurus',
+  'arweave-mainnet',
+  'fraxtal',
+  'lumia',
+  'mbase',
+]
 
 export async function getSupportedNetworks() {
   const registry = await NetworksRegistry.fromLatestVersion()
@@ -46,27 +69,43 @@ export function SupportedNetworksTable({
 }: Awaited<ReturnType<typeof getSupportedNetworksStaticProps>>['props']) {
   const { t } = useI18n()
 
+  const getIconVariant = (networkId: string) => {
+    return MONO_ICON_NETWORKS.includes(networkId) ? 'mono' : 'branded'
+  }
+
   return (
     <Table>
       <tbody>
         <tr>
-          <th>{t('supportedNetworks.name')}</th>
-          <th>{t('supportedNetworks.id')}</th>
-          <th align="center">{t('supportedNetworks.subgraphs')}</th>
-          <th align="center">{t('supportedNetworks.substreams')}</th>
-          <th align="center">{t('supportedNetworks.firehose')}</th>
-          <th align="center">{t('supportedNetworks.tokenapi')}</th>
+          <th>
+            <Text.C10>{t('supportedNetworks.name')}</Text.C10>
+          </th>
+          <th>
+            <Text.C10>{t('supportedNetworks.id')}</Text.C10>
+          </th>
+          <th align="center">
+            <Text.C10>{t('supportedNetworks.subgraphs')}</Text.C10>
+          </th>
+          <th align="center">
+            <Text.C10>{t('supportedNetworks.substreams')}</Text.C10>
+          </th>
+          <th align="center">
+            <Text.C10>{t('supportedNetworks.firehose')}</Text.C10>
+          </th>
+          <th align="center">
+            <Text.C10>{t('supportedNetworks.tokenapi')}</Text.C10>
+          </th>
         </tr>
         {networks.map((network) => (
           <tr key={network.id}>
             <td>
               <div className="flex items-center gap-2">
-                <NetworkIcon variant="branded" caip2Id={network.caip2Id as any} size={5} />
-                {network.shortName}
+                <NetworkIcon variant={getIconVariant(network.id)} caip2Id={network.caip2Id as any} size={5} />
+                <Text.P14>{network.shortName}</Text.P14>
               </div>
             </td>
             <td>
-              <code className="font-mono">{network.id}</code>
+              <Text.P14>{network.id}</Text.P14>
             </td>
             <td align="center">{network.subgraphs ? <Check size={4} /> : null}</td>
             <td align="center">{network.substreams ? <Check size={4} /> : null}</td>
