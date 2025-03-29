@@ -1,34 +1,34 @@
-# The Graph Client Tools
+# Les outils de The Graph Client
 
-This repo is the home for [The Graph](https://thegraph.com) consumer-side tools (for both browser and NodeJS environments).
+Ce répertoire abrite les outils côté consommateur de [The Graph](https://thegraph.com) (pour les environnements navigateur et NodeJS).
 
-## Background
+## Contexte
 
-The tools provided in this repo are intended to enrich and extend the DX, and add the additional layer required for dApps in order to implement distributed applications.
+Les outils fournis dans ce repo sont destinés à enrichir et à étendre le DX, et à ajouter la couche supplémentaire requise pour les dApps afin de mettre en œuvre des applications distribuées.
 
-Developers who consume data from [The Graph](https://thegraph.com) GraphQL API often need peripherals for making data consumption easier, and also tools that allow using multiple indexers at the same time.
+Les développeurs qui consomment des données à partir de [The Graph](https://thegraph.com) GraphQL API ont souvent besoin de périphériques pour faciliter la consommation des données, ainsi que d'outils permettant d'utiliser plusieurs Indexeurs en même temps.
 
-## Features and Goals
+## Fonctionnalités et objectifs
 
-This library is intended to simplify the network aspect of data consumption for dApps. The tools provided within this repository are intended to run at build time, in order to make execution faster and performant at runtime.
+Cette bibliothèque est destinée à simplifier l'aspect réseau de la consommation de données pour les dApps. Les outils fournis dans ce dépôt sont destinés à être exécutés au moment de la construction, afin de rendre l'exécution plus rapide et plus performante au moment de l'exécution.
 
-> The tools provided in this repo can be used as standalone, but you can also use it with any existing GraphQL Client!
+> Les outils fournis dans ce repo peuvent être utilisés de manière autonome, mais vous pouvez également les utiliser avec n'importe quel client GraphQL existant !
 
-| Status | Feature                                                          | Notes                                                                                                                            |
-| :----: | ---------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
-|    ✅   | Multiple indexers                                                | based on fetch strategies                                                                                                        |
-|    ✅   | Fetch Strategies                                                 | timeout, retry, fallback, race, highestValue                                                                                     |
-|    ✅   | Build time validations & optimizations       |                                                                                                                                  |
-|    ✅   | Client-Side Composition                                          | with improved execution planner (based on GraphQL-Mesh)                                                       |
-|    ✅   | Cross-chain Subgraph Handling                                    | Use similar subgraphs as a single source                                                                                         |
-|    ✅   | Raw Execution (standalone mode)               | without a wrapping GraphQL client                                                                                                |
-|    ✅   | Local (client-side) Mutations                 |                                                                                                                                  |
-|    ✅   | [Automatic Block Tracking](../packages/block-tracking/README.md) | tracking block numbers [as described here](https://thegraph.com/docs/en/developer/distributed-systems/#polling-for-updated-data) |
-|    ✅   | [Automatic Pagination](../packages/auto-pagination/README.md)    | doing multiple requests in a single call to fetch more than the indexer limit                                                    |
-|    ✅   | Integration with `@apollo/client`                                |                                                                                                                                  |
-|    ✅   | Intégration avec `urql`                                          |                                                                                                                                  |
-|    ✅   | Prise en charge de TypeScript                                    | avec GraphQL Codegen et `TypedDocumentNode` intégrés                                                                             |
-|    ✅   | [`@live` queries](./live.md)                                     | Sur la base de sondages                                                                                                          |
+| Status | Fonctionnalité                                                      | Notes                                                                                                                                      |
+| :----: | ------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+|    ✅   | Indexeurs multiples                                                 | sur la base de stratégies d'extraction                                                                                                     |
+|    ✅   | Stratégies d'extraction                                             | timeout, retry, fallback, race, highestValue                                                                                               |
+|    ✅   | Validations et optimisations du temps de construction               |                                                                                                                                            |
+|    ✅   | Composition côté client                                             | avec un planificateur d'exécution amélioré (basé sur GraphQL-Mesh)                                                      |
+|    ✅   | Gestion des subgraphs multi-chaînes                                 | Utiliser des subgraphs similaires comme source unique                                                                                      |
+|    ✅   | Exécution brute (mode autonome)                  | sans client GraphQL intégré                                                                                                                |
+|    ✅   | Mutations locales (côté client)                  |                                                                                                                                            |
+|    ✅   | [Suivi automatique des blocs](../packages/block-tracking/README.md) | les numéros de blocs de suivi [tels que décrits ici](https://thegraph.com/docs/en/developer/distributed-systems/#polling-for-updated-data) |
+|    ✅   | [Pagination automatique](../packages/auto-pagination/README.md)     | effectuer plusieurs requêtes en un seul appel pour récupérer plus que la limite de l'Indexeur                                              |
+|    ✅   | Intégration avec `@apollo/client`                                   |                                                                                                                                            |
+|    ✅   | Intégration avec `urql`                                             |                                                                                                                                            |
+|    ✅   | Prise en charge de TypeScript                                       | avec GraphQL Codegen et `TypedDocumentNode` intégrés                                                                                       |
+|    ✅   | [`@live` queries](./live.md)                                        | Sur la base de sondages                                                                                                                    |
 
 > Vous pouvez trouver un [modèle d'architecture étendu ici](./architecture.md)
 
@@ -192,11 +192,11 @@ execute(myQuery, myVariables, {
 })
 ```
 
-> You can find the [complete documentation for the `graphql` handler here](https://graphql-mesh.com/docs/handlers/graphql#config-api-reference).
+> Vous pouvez trouver la [documentation complète du gestionnaire `graphql` ici](https://graphql-mesh.com/docs/handlers/graphql#config-api-reference).
 
-#### Environment Variables Interpolation
+#### Interpolation des Variables d'environnement
 
-If you wish to use environment variables in your Graph Client configuration file, you can use interpolation with `env` helper:
+Si vous souhaitez utiliser des variables d'environnement dans votre fichier de configuration Graph Client, vous pouvez utiliser l'interpolation avec l'assistant `env` :
 
 ```yaml
 sources:
@@ -208,9 +208,9 @@ sources:
           Authorization: Bearer {env.MY_API_TOKEN} # runtime
 ```
 
-Then, make sure to have `MY_API_TOKEN` defined when you run `process.env` at runtime.
+Ensuite, assurez-vous que `MY_API_TOKEN` est défini lorsque vous lancez `process.env` au moment de l'exécution.
 
-You can also specify environment variables to be filled at build time (during `graphclient build` run) by using the env-var name directly:
+Vous pouvez également spécifier des variables d'environnement à remplir au moment de la construction (pendant l'exécution de `graphclient build`) en utilisant directement le nom env-var :
 
 ```yaml
 sources:
@@ -219,12 +219,12 @@ sources:
       graphql:
         endpoint: https://api.thegraph.com/subgraphs/name/uniswap/uniswap-v2
         operationHeaders:
-          Authorization: Bearer ${MY_API_TOKEN} # build time
+          Authorization: Bearer ${MY_API_TOKEN} # temps de construction
 ```
 
-> You can find the [complete documentation for the `graphql` handler here](https://graphql-mesh.com/docs/handlers/graphql#config-api-reference).
+> Vous pouvez trouver la [documentation complète du gestionnaire `graphql` ici](https://graphql-mesh.com/docs/handlers/graphql#config-api-reference).
 
-#### Fetch Strategies and Multiple Graph Indexers
+#### Extraire les Stratégies et les multiples Indexeurs de The Graph
 
 C'est une pratique courante d'utiliser plus d'un Indexeur dans les dApps, donc pour obtenir l'expérience idéale avec The Graph, vous pouvez spécifier plusieurs stratégies `fetch` afin de rendre les choses plus fluides et plus simples.
 
@@ -233,7 +233,7 @@ Toutes les stratégies `fetch` peuvent être combinées pour créer le flux d'ex
 <details>
  <summary>`retry`</summary>
 
-The `retry` mechanism allow you to specify the retry attempts for a single GraphQL endpoint/source.
+Le mécanisme (retry)`réessai` vous permet de spécifier les tentatives de réessais pour un seul endpoint/source GraphQL.
 
 The retry flow will execute in both conditions: a netword error, or due to a runtime error (indexing issue/inavailability of the indexer).
 
@@ -243,7 +243,7 @@ sources:
     handler:
       graphql:
         endpoint: https://api.thegraph.com/subgraphs/name/uniswap/uniswap-v2
-        retry: 2 # specify here, if you have an unstable/error prone indexer
+        retry: 2 # spécifier ici, si vous avez un Indexeur instable ou sujet à des erreurs
 ```
 
 </details>
@@ -251,7 +251,7 @@ sources:
 <details>
  <summary>`timeout`</summary>
 
-The `timeout` mechanism allow you to specify the `timeout` for a given GraphQL endpoint.
+Le mécanisme `timeout` vous permet de spécifier le `timeout` pour un endpoint GraphQL donné.
 
 ```yaml
 sources:
@@ -259,7 +259,7 @@ sources:
     handler:
       graphql:
         endpoint: https://api.thegraph.com/subgraphs/name/uniswap/uniswap-v2
-        timeout: 5000 # 5 seconds
+        timeout: 5000 # 5 secondes
 ```
 
 </details>
@@ -267,9 +267,9 @@ sources:
 <details>
  <summary>`fallback`</summary>
 
-The `fallback` mechanism allow you to specify use more than one GraphQL endpoint, for the same source.
+Le mécanisme `fallback` vous permet de spécifier l'utilisation de plus d'un endpoint GraphQL, pour la même source.
 
-This is useful if you want to use more than one indexer for the same Subgraph, and fallback when an error/timeout happens. You can also use this strategy in order to use a custom indexer, but allow it to fallback to [The Graph Hosted Service](https://thegraph.com/hosted-service).
+Ceci est utile si vous voulez utiliser plus d'un Indexeur pour le même subgraph, et vous replier en cas d'erreur ou de dépassement de délai. Vous pouvez également utiliser cette stratégie pour utiliser un Indexeur personnalisé, mais lui permettre de se replier sur [Le Service Hébergé de The Graph](https://thegraph.com/hosted-service).
 
 ```yaml
 sources:
@@ -289,9 +289,9 @@ sources:
 <details>
  <summary>`race`</summary>
 
-The `race` mechanism allow you to specify use more than one GraphQL endpoint, for the same source, and race on every execution.
+Le mécanisme `race` permet d'utiliser plusieurs endpoints GraphQL simultanément pour une même source et de prendre la réponse la plus rapide.
 
-This is useful if you want to use more than one indexer for the same Subgraph, and allow both sources to race and get the fastest response from all specified indexers.
+Cette option est utile si vous souhaitez utiliser plus d'un Indexeur pour le même subgraph, et permettre aux deux sources de faire la course et d'obtenir la réponse la plus rapide de tous les Indexeurs spécifiés.
 
 ```yaml
 sources:
@@ -309,9 +309,9 @@ sources:
 <details>
   <summary>`highestValue`</summary>
 
-This strategy allows you to send parallel requests to different endpoints for the same source and choose the most updated.
+Cette stratégie vous permet d'envoyer des demandes parallèles à différents endpoints pour la même source et de choisir la plus récente.
 
-This is useful if you want to choose most synced data for the same Subgraph over different indexers/sources.
+Cette option est utile si vous souhaitez choisir les données les plus synchronisées pour le même subgraph parmi différents Indexeurs/sources.
 
 ```yaml
 sources:
@@ -349,9 +349,9 @@ graph LR;
 
 </details>
 
-#### Block Tracking
+#### Suivi des blocs
 
-The Graph Client can track block numbers and do the following queries by following [this pattern](https://thegraph.com/docs/en/developer/distributed-systems/#polling-for-updated-data) with `blockTracking` transform;
+The Graph Client peut suivre les numéros de blocs et effectuer les requêtes suivantes en suivant [ce schéma](https://thegraph.com/docs/en/developer/distributed-systems/#polling-for-updated-data) avec la transformation `blockTracking` ;
 
 ```yaml
 sources:
@@ -361,23 +361,23 @@ sources:
         endpoint: https://api.thegraph.com/subgraphs/name/uniswap/uniswap-v2
     transforms:
       - blockTracking:
-          # You might want to disable schema validation for faster startup
+          # Vous pouvez désactiver la validation des schémas pour un démarrage plus rapide
           validateSchema: true
-          # Ignore the fields that you don't want to be tracked
+          # Ignorer les champs qui ne doivent pas être suivis
           ignoreFieldNames: [users, prices]
-          # Exclude the operation with the following names
+          # Exclure les opérations avec les noms suivants
           ignoreOperationNames: [NotFollowed]
 ```
 
-[You can try a working example here](../examples/transforms)
+[Vous pouvez essayer un exemple pratique ici](../examples/transforms)
 
-#### Automatic Pagination
+#### Pagination automatique
 
-With most subgraphs, the number of records you can fetch is limited. In this case, you have to send multiple requests with pagination.
+Dans la plupart des subgraphs, le nombre d'enregistrements que vous pouvez récupérer est limité. Dans ce cas, vous devez envoyer plusieurs requêtes avec pagination.
 
 ```graphql
 query {
-  # Will throw an error if the limit is 1000
+  # Lance une erreur si la limite est de 1000
   users(first: 2000) {
     id
     name
@@ -385,11 +385,11 @@ query {
 }
 ```
 
-So you have to send the following operations one after the other:
+Vous devez donc envoyer les opérations suivantes l'une après l'autre :
 
 ```graphql
 query {
-  # Will throw an error if the limit is 1000
+  # Lance une erreur si la limite est de 1000
   users(first: 1000) {
     id
     name
@@ -397,11 +397,11 @@ query {
 }
 ```
 
-Then after the first response:
+Ensuite, après la première réponse :
 
 ```graphql
 query {
-  # Will throw an error if the limit is 1000
+  # Lance une erreur si la limite est de 1000
   users(first: 1000, skip: 1000) {
     id
     name
@@ -409,9 +409,9 @@ query {
 }
 ```
 
-After the second response, you have to merge the results manually. But instead The Graph Client allows you to do the first one and automatically does those multiple requests for you under the hood.
+Après la deuxième réponse, vous devez fusionner les résultats manuellement. En revanche, The Graph Client vous permet de faire la première réponse et exécute automatiquement ces demandes multiples pour vous.
 
-All you have to do is:
+Tout ce que vous avez à faire, c'est :
 
 ```yaml
 sources:
@@ -421,21 +421,21 @@ sources:
         endpoint: https://api.thegraph.com/subgraphs/name/uniswap/uniswap-v2
     transforms:
       - autoPagination:
-          # You might want to disable schema validation for faster startup
+          # Vous pouvez désactiver la validation des schémas pour accélérer le démarrage.
           validateSchema: true
 ```
 
-[You can try a working example here](../examples/transforms)
+[Vous pouvez essayer un exemple pratique ici](../examples/transforms)
 
-#### Client-side Composition
+#### Composition côté client
 
-The Graph Client has built-in support for client-side GraphQL Composition (powered by [GraphQL-Tools Schema-Stitching](https://graphql-tools.com/docs/schema-stitching/stitch-combining-schemas)).
+The Graph Client est doté d'une prise en charge intégrée de la composition GraphQL côté client (assurée par [GraphQL-Tools Schema-Stitching](https://graphql-tools.com/docs/schema-stitching/stitch-combining-schemas)).
 
-You can leverage this feature in order to create a single GraphQL layer from multiple Subgraphs, deployed on multiple indexers.
+Vous pouvez tirer parti de cette fonctionnalité pour créer une seule couche GraphQL à partir de plusieurs subgraphs, déployés sur plusieurs Indexeurs.
 
-> 💡 Tip: You can compose any GraphQL sources, and not only Subgraphs!
+> 💡 Astuce : Vous pouvez composer n'importe quelle source GraphQL, et pas seulement des subgraphs !
 
-Trivial composition can be done by adding more than one GraphQL source to your `.graphclientrc.yml` file, here's an example:
+Une composition triviale peut être faite en ajoutant plus d'une source GraphQL à votre fichier `.graphclientrc.yml`, voici un exemple :
 
 ```yaml
 sources:
