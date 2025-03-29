@@ -1,28 +1,28 @@
 ---
-title: The Graph QL Schema
+title: O Schema GraphQL
 ---
 
 ## Visão geral
 
 The schema for your Subgraph is in the file `schema.graphql`. GraphQL schemas are defined using the GraphQL interface definition language.
 
-> Note: If you've never written a GraphQL schema, it is recommended that you check out this primer on the GraphQL type system. Reference documentation for GraphQL schemas can be found in the [GraphQL API](/subgraphs/querying/graphql-api/) section.
+> Nota: Se você nunca escreveu um schema em GraphQL, recomendamos que confira este manual sobre o sistema de tipos da GraphQL. Consulte a documentação sobre schemas GraphQL na seção sobre a [API da GraphQL](/subgraphs/querying/graphql-api/).
 
 ### Como Definir Entidades
 
-Before defining entities, it is important to take a step back and think about how your data is structured and linked.
+Antes de definir as entidades, é importante dar um passo atrás e pensar em como os seus dados são estruturados e ligados.
 
 - All queries will be made against the data model defined in the Subgraph schema. As a result, the design of the Subgraph schema should be informed by the queries that your application will need to perform.
-- It may be useful to imagine entities as "objects containing data", rather than as events or functions.
-- You define entity types in `schema.graphql`, and Graph Node will generate top-level fields for querying single instances and collections of that entity type.
-- Each type that should be an entity is required to be annotated with an `@entity` directive.
-- By default, entities are mutable, meaning that mappings can load existing entities, modify them and store a new version of that entity.
-  - Mutability comes at a price, so for entity types that will never be modified, such as those containing data extracted verbatim from the chain, it is recommended to mark them as immutable with `@entity(immutable: true)`.
-  - If changes happen in the same block in which the entity was created, then mappings can make changes to immutable entities. Immutable entities are much faster to write and to query so they should be used whenever possible.
+- Pode ser bem útil imaginar entidades como "objetos que contém dados", e não como eventos ou funções.
+- Você define os tipos de entidade em `schema.graphql`, e o Graph Node irá gerar campos de nível superior para queries de instâncias únicas e coleções desse tipo de entidade.
+- Cada tipo feito para ser uma entidade precisa ser anotado com uma diretiva `@entity`.
+- Por padrão, as entidades são mutáveis, ou seja: os mapeamentos podem carregar as entidades existentes, modificá-las, e armazenar uma nova versão dessa entidade.
+  - A mutabilidade tem um preço, então, para tipos de entidade que nunca serão modificados, como as que contêm dados extraídos da chain sem alterações, recomendamos marcá-los como imutáveis com `@entity(immutable: true)`.
+  - Se as alterações acontecerem no mesmo bloco em que a entidade foi criada, então os mapeamentos podem fazer alterações em entidades imutáveis. Entidades imutáveis são muito mais rápidas de escrever e consultar em query, então elas devem ser usadas sempre que possível.
 
 #### Bom Exemplo
 
-The following `Gravatar` entity is structured around a Gravatar object and is a good example of how an entity could be defined.
+A entidade `Gravatar` abaixo é estruturada em torno de um objeto Gravatar, e é um bom exemplo de como pode ser definida uma entidade.
 
 ```graphql
 type Gravatar @entity(immutable: true) {
@@ -36,7 +36,7 @@ type Gravatar @entity(immutable: true) {
 
 #### Mau Exemplo
 
-The following example `GravatarAccepted` and `GravatarDeclined` entities are based around events. It is not recommended to map events or function calls to entities 1:1.
+As entidades `GravatarAccepted` e `GravatarDeclined` abaixo têm base em torno de eventos. Não é recomendado mapear eventos ou chamadas de função a entidades identicamente.
 
 ```graphql
 type GravatarAccepted @entity {
@@ -56,32 +56,32 @@ type GravatarDeclined @entity {
 
 #### Campos Opcionais e Obrigatórios
 
-Entity fields can be defined as required or optional. Required fields are indicated by the `!` in the schema. If the field is a scalar field, you get an error when you try to store the entity. If the field references another entity then you get this error:
+Os campos da entidade podem ser definidos como obrigatórios ou opcionais. Os campos obrigatórios são indicados pelo `!` no schema. Se o campo for escalar, tentar armazenar a entidade causará um erro. Se o campo fizer referência a outra entidade, você receberá esse erro:
 
 ```
 Null value resolved for non-null field 'name'
 ```
 
-Each entity must have an `id` field, which must be of type `Bytes!` or `String!`. It is generally recommended to use `Bytes!`, unless the `id` contains human-readable text, since entities with `Bytes!` id's will be faster to write and query as those with a `String!` `id`. The `id` field serves as the primary key, and needs to be unique among all entities of the same type. For historical reasons, the type `ID!` is also accepted and is a synonym for `String!`.
+Cada entidade deve ter um campo `id`, que deve ser do tipo `Bytes!` ou `String!`. Geralmente é melhor usar `Bytes!` — a não ser que o `id` tenha texto legível para humanos, já que entidades com as ids `Bytes!` são mais fáceis de escrever e consultar que aquelas com um `id` `String!`. O campo `id` serve como a chave primária, e deve ser singular entre todas as entidades do mesmo tipo. Por razões históricas, o tipo `ID!` também é aceite, como um sinónimo de `String!`.
 
-For some entity types the `id` for `Bytes!` is constructed from the id's of two other entities; that is possible using `concat`, e.g., `let id = left.id.concat(right.id) ` to form the id from the id's of `left` and `right`. Similarly, to construct an id from the id of an existing entity and a counter `count`, `let id = left.id.concatI32(count)` can be used. The concatenation is guaranteed to produce unique id's as long as the length of `left` is the same for all such entities, for example, because `left.id` is an `Address`.
+Para alguns tipos de entidade, o `id` é construído das id's de duas outras entidades; isto é possível com o `concat`, por ex., `let id = left.id.concat(right.id)` para formar a id a partir das id's de `left` e `right`. Da mesma forma, para construir uma id a partir da id de uma entidade existente e um contador `count`, pode ser usado o `let id = left.id.concatI32(count)`. Isto garante a concatenação a produzir id's únicas enquanto o comprimento do `left` for o mesmo para todas as tais entidades; por exemplo, porque o `left.id` é um `Address` (endereço).
 
 ### Tipos Embutidos de Escalar
 
 #### Escalares Apoiados pelo GraphQL
 
-The following scalars are supported in the GraphQL API:
+As seguintes escalas são apoiadas na API da GraphQL:
 
-| Tipo         | Descrição                                                                                                                                                                                                        |
-| ------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `Bytes`      | Arranjo de bytes, representado como string hexadecimal. Usado frequentemente por hashes e endereços no Ethereum.                                                                                                 |
-| `String`     | Scalar for `string` values. Null characters are not supported and are automatically removed.                                                                                                                     |
-| `Boolean`    | Scalar for `boolean` values.                                                                                                                                                                                     |
-| `Int`        | The GraphQL spec defines `Int` to be a signed 32-bit integer.                                                                                                                                                    |
-| `Int8`       | An 8-byte signed integer, also known as a 64-bit signed integer, can store values in the range from -9,223,372,036,854,775,808 to 9,223,372,036,854,775,807. Prefer using this to represent `i64` from ethereum. |
-| `BigInt`     | Large integers. Used for Ethereum's `uint32`, `int64`, `uint64`, ..., `uint256` types. Note: Everything below `uint32`, such as `int32`, `uint24` or `int8` is represented as `i32`.                             |
-| `BigDecimal` | `BigDecimal` High precision decimals represented as a significand and an exponent. The exponent range is from −6143 to +6144. Rounded to 34 significant digits.                                                  |
-| `Timestamp`  | It is an `i64` value in microseconds. Commonly used for `timestamp` fields for timeseries and aggregations.                                                                                                      |
+| Tipo         | Descrição                                                                                                                                                                                                                                   |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Bytes`      | Arranjo de bytes, representado como string hexadecimal. Usado frequentemente por hashes e endereços no Ethereum.                                                                                                                            |
+| `String`     | Escalar para valores string. Caracteres nulos serão removidos automaticamente.                                                                                                                                                              |
+| `Boolean`    | Escalar para valores `boolean`.                                                                                                                                                                                                             |
+| `Int`        | A especificação da GraphQL define `Int` como um inteiro assinado de 32 bits.                                                                                                                                                                |
+| `Int8`       | Um número inteiro assinado em 8 bits, também conhecido como um número inteiro assinado em 64 bits, pode armazenar valores de -9,223,372,036,854,775,808 a 9,223,372,036,854,775,807. É melhor usar isto para representar o i64 do ethereum. |
+| `BigInt`     | Números inteiros grandes. Usados para os tipos `uint32`, `int64`, `uint64`, ..., `uint256` do Ethereum. Nota: Tudo abaixo de `uint32`, como `int32`, `uint24` ou `int8` é representado como `i32`.                                          |
+| `BigDecimal` | Decimais de alta precisão `BigDecimal` representados como um significando e um exponente. O alcance de exponentes é de -6143 até +6144. Arredondado para 34 dígitos significantes.                                                          |
+| `Timestamp`  | É um valor i64 em microssegundos. Usado frequentemente para campos `timestamp` para séries temporais e agregações.                                                                                                                          |
 
 ### Enums
 
@@ -95,9 +95,9 @@ enum TokenStatus {
 }
 ```
 
-Once the enum is defined in the schema, you can use the string representation of the enum value to set an enum field on an entity. For example, you can set the `tokenStatus` to `SecondOwner` by first defining your entity and subsequently setting the field with `entity.tokenStatus = "SecondOwner"`. The example below demonstrates what the Token entity would look like with an enum field:
+Quando o enum for definido no schema, podes usar a representação do string do valor enum para determinar um campo enum numa entidade. Por exemplo, podes implantar o `tokenStatus` no `SecondOwner` ao definir primeiro a sua entidade e depois determinar o campo com `entity.tokenStatus = "SecondOwner"`. O exemplo abaixo demonstra como ficaria a entidade do Token com um campo enum:
 
-More detail on writing enums can be found in the [GraphQL documentation](https://graphql.org/learn/schema/).
+Para saber mais sobre como escrever enums, veja a [documentação do GraphQL](https://graphql.org/learn/schema/).
 
 ### Relacionamentos de Entidades
 
@@ -107,7 +107,7 @@ Relacionamentos são definidos em entidades como qualquer outro campo, sendo que
 
 #### Relacionamentos Um-com-Um
 
-Define a `Transaction` entity type with an optional one-to-one relationship with a `TransactionReceipt` entity type:
+Defina um tipo de entidade `Transaction` com um relacionamento um-com-um opcional, com um tipo de entidade `TransactionReceipt`:
 
 ```graphql
 type Transaction @entity(immutable: true) {
@@ -123,7 +123,7 @@ type TransactionReceipt @entity(immutable: true) {
 
 #### Relacionamentos Um-com-Vários
 
-Define a `TokenBalance` entity type with a required one-to-many relationship with a Token entity type:
+Defina um tipo de entidade `TokenBalance` com um relacionamento um-com-vários, exigido com um tipo de entidade `Token`:
 
 ```graphql
 type Token @entity(immutable: true) {
@@ -139,13 +139,13 @@ type TokenBalance @entity {
 
 ### Buscas Reversas
 
-Reverse lookups can be defined on an entity through the `@derivedFrom` field. This creates a virtual field on the entity that may be queried but cannot be set manually through the mappings API. Rather, it is derived from the relationship defined on the other entity. For such relationships, it rarely makes sense to store both sides of the relationship, and both indexing and query performance will be better when only one side is stored and the other is derived.
+Buscas reversas podem ser definidas numa entidade pelo campo `@derivedFrom`. Isto cria um campo virtual na entidade, que pode ser consultado, mas não pode ser configurado manualmente pela API de mapeamentos. Em vez disto, ele é derivado do relacionamento definido na outra entidade. Para tais relacionamentos, faz raramente sentido armazenar ambos os lados do relacionamento, e tanto o indexing quanto o desempenho dos queries melhorarão quando apenas um lado for armazenado, e o outro derivado.
 
 For one-to-many relationships, the relationship should always be stored on the 'one' side, and the 'many' side should always be derived. Storing the relationship this way, rather than storing an array of entities on the 'many' side, will result in dramatically better performance for both indexing and querying the Subgraph. In general, storing arrays of entities should be avoided as much as is practical.
 
 #### Exemplo
 
-We can make the balances for a token accessible from the token by deriving a `tokenBalances` field:
+Podemos fazer os saldos para um token acessíveis a partir do mesmo token ao derivar um campo `tokenBalances`:
 
 ```graphql
 type Token @entity(immutable: true) {
@@ -163,12 +163,12 @@ type TokenBalance @entity {
 Here is an example of how to write a mapping for a Subgraph with reverse lookups:
 
 ```typescript
-let token = new Token(event.address) // Create Token
-token.save() // tokenBalances is derived automatically
+let token = new Token(event.address) // Crie o Token
+token.save() // tokenBalances é derivado automaticamente
 
 let tokenBalance = new TokenBalance(event.address)
 tokenBalance.amount = BigInt.fromI32(0)
-tokenBalance.token = token.id // Reference stored here
+tokenBalance.token = token.id // Referência armazenada aqui
 tokenBalance.save()
 ```
 
@@ -178,7 +178,7 @@ Para relacionamentos vários-com-vários, como um conjunto de utilizadores em qu
 
 #### Exemplo
 
-Define a reverse lookup from a `User` entity type to an `Organization` entity type. In the example below, this is achieved by looking up the `members` attribute from within the `Organization` entity. In queries, the `organizations` field on `User` will be resolved by finding all `Organization` entities that include the user's ID.
+Defina uma busca reversa a partir de um tipo de entidade `User` para um tipo de entidade `Organization`. No exemplo abaixo, isto é feito ao buscar pelo atributo `members` a partir de dentro da entidade `Organization`. Em queries, o campo `organizations` no `User` será resolvido ao encontrar todas as entidades `Organization` que incluem a ID do utilizador.
 
 ```graphql
 type Organization @entity {
@@ -194,7 +194,7 @@ type User @entity {
 }
 ```
 
-A more performant way to store this relationship is through a mapping table that has one entry for each `User` / `Organization` pair with a schema like
+Uma maneira mais eficiente para armazenar este relacionamento é com uma mesa de mapeamento que tem uma entrada para cada par de `User` / `Organization`, com um schema como:
 
 ```graphql
 type Organization @entity {
@@ -235,7 +235,7 @@ This more elaborate way of storing many-to-many relationships will result in les
 
 ### Como adicionar comentários ao schema
 
-As per GraphQL spec, comments can be added above schema entity attributes using the hash symbol `#`. This is illustrated in the example below:
+Pela especificação do GraphQL, é possível adicionar comentários acima de atributos de entidade do schema com o símbolo de hash `#`. Isto é ilustrado no exemplo abaixo:
 
 ```graphql
 type MyFirstEntity @entity {
@@ -251,7 +251,7 @@ Buscas fulltext filtram e ordenam entidades baseadas num texto inserido. Queries
 
 Uma definição de query fulltext inclui: o nome do query, o dicionário do idioma usado para processar os campos de texto, o algoritmo de ordem usado para ordenar os resultados, e os campos incluídos na busca. Todo query fulltext pode ter vários campos, mas todos os campos incluídos devem ser de um único tipo de entidade.
 
-To add a fulltext query, include a `_Schema_` type with a fulltext directive in the GraphQL schema.
+Para adicionar um query fulltext, inclua um tipo `_Schema_` com uma diretiva fulltext no schema em GraphQL.
 
 ```graphql
 type _Schema_
@@ -274,7 +274,7 @@ type Band @entity {
 }
 ```
 
-The example `bandSearch` field can be used in queries to filter `Band` entities based on the text documents in the `name`, `description`, and `bio` fields. Jump to [GraphQL API - Queries](/subgraphs/querying/graphql-api/#queries) for a description of the fulltext search API and more example usage.
+O exemplo `bandSearch` serve, em queries, para filtrar entidades `Band` baseadas nos documentos de texto nos campos `name`, `description` e `bio`. Confira a página [API GraphQL - Consultas](/subgraphs/querying/graphql-api/#queries) para uma descrição da API de busca fulltext e mais exemplos de uso.
 
 ```graphql
 query {
