@@ -2,6 +2,7 @@ import { NetworksRegistry } from '@pinax/graph-networks-registry'
 
 import { Table } from '@/components'
 import { useI18n } from '@/i18n'
+import { NetworkIcon } from '@edgeandnode/go'
 
 export async function getSupportedNetworks() {
   const registry = await NetworksRegistry.fromLatestVersion()
@@ -57,7 +58,12 @@ export function SupportedNetworksTable({
         </tr>
         {networks.map((network) => (
           <tr key={network.id}>
-            <td>{network.fullName}</td>
+            <td>
+              <div className="flex items-center gap-2">
+                <NetworkIcon variant="branded" caip2Id={network.caip2Id as any} size={5} />
+                {network.shortName}
+              </div>
+            </td>
             <td>
               <code className="font-mono">{network.id}</code>
             </td>
