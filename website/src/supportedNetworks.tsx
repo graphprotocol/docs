@@ -3,6 +3,7 @@ import { NetworksRegistry } from '@pinax/graph-networks-registry'
 import { Table } from '@/components'
 import { useI18n } from '@/i18n'
 import { NetworkIcon } from '@edgeandnode/go'
+import { Check } from '@edgeandnode/gds/icons'
 
 export async function getSupportedNetworks() {
   const registry = await NetworksRegistry.fromLatestVersion()
@@ -67,10 +68,10 @@ export function SupportedNetworksTable({
             <td>
               <code className="font-mono">{network.id}</code>
             </td>
-            <td align="center">{network.subgraphs ? '✓' : null}</td>
-            <td align="center">{network.substreams ? '✓' : null}</td>
-            <td align="center">{network.firehose ? '✓' : null}</td>
-            <td align="center">{network.tokenapi ? '✓' : null}</td>
+            <td align="center">{network.subgraphs ? <Check size={4} /> : null}</td>
+            <td align="center">{network.substreams ? <Check size={4} /> : null}</td>
+            <td align="center">{network.firehose ? <Check size={4} /> : null}</td>
+            <td align="center">{network.tokenapi ? <Check size={4} /> : null}</td>
           </tr>
         ))}
       </tbody>
