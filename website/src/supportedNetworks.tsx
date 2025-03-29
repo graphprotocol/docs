@@ -6,12 +6,16 @@ import { useI18n } from '@/i18n'
 export async function getSupportedNetworks() {
   const registry = await NetworksRegistry.fromLatestVersion()
 
+  // Networks with Token API support
+  const tokenAPINetworks = ['mainnet', 'base', 'bsc', 'arbitrum-one', 'matic', 'optimism']
+
   return registry.networks
     .flatMap((network) => {
       const subgraphs = Boolean(network.services.subgraphs?.length)
       const substreams = Boolean(network.services.substreams?.length)
       const firehose = Boolean(network.services.firehose?.length)
-      if (!subgraphs && !substreams && !firehose) {
+      const tokenapi = tokenAPINetworks.includes(network.id)
+      if (!subgraphs && !substreams && !firehose && !tokenapi) {
         return []
       }
       return [
@@ -20,6 +24,7 @@ export async function getSupportedNetworks() {
           subgraphs,
           substreams,
           firehose,
+          tokenapi,
         },
       ]
     })
@@ -48,6 +53,7 @@ export function SupportedNetworksTable({
           <th align="center">{t('supportedNetworks.subgraphs')}</th>
           <th align="center">{t('supportedNetworks.substreams')}</th>
           <th align="center">{t('supportedNetworks.firehose')}</th>
+          <th align="center">{t('supportedNetworks.tokenapi')}</th>
         </tr>
         {networks.map((network) => (
           <tr key={network.id}>
@@ -58,6 +64,7 @@ export function SupportedNetworksTable({
             <td align="center">{network.subgraphs ? '✓' : null}</td>
             <td align="center">{network.substreams ? '✓' : null}</td>
             <td align="center">{network.firehose ? '✓' : null}</td>
+            <td align="center">{network.tokenapi ? '✓' : null}</td>
           </tr>
         ))}
       </tbody>
