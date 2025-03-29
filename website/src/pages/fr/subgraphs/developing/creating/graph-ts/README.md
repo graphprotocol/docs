@@ -48,19 +48,19 @@ function handleNameRegistered(event: NameRegistered) {
 }
 ```
 
-## Helper Functions for AssemblyScript
+## Fonctions d'aide pour AssemblyScript
 
-Refer to the `helper-functions.ts` file in
+Référez-vous au fichier `helper-functions.ts` dans
 [this](https://github.com/graphprotocol/graph-tooling/blob/main/packages/ts/helper-functions.ts)
-repository for a few common functions that help build on top of the AssemblyScript library, such as
-byte array concatenation, among others.
+pour quelques fonctions communes qui aident à construire au-dessus de la bibliothèque AssemblyScript, comme la concaténation de tableaux de byte, entre autres.
+la concaténation de tableaux byte, entre autres.
 
 ## API
 
-Documentation on the API can be found
-[here](https://thegraph.com/docs/en/developer/assemblyscript-api/).
+La documentation sur l'API est disponible
+[ici](https://thegraph.com/docs/en/developer/assemblyscript-api/).
 
-For examples of `graph-ts` in use take a look at one of the following subgraphs:
+Pour des exemples d'utilisation de `graph-ts`, regardez l'un des Subgraphs suivants :
 
 - https://github.com/graphprotocol/ens-subgraph
 - https://github.com/graphprotocol/decentraland-subgraph
@@ -69,15 +69,15 @@ For examples of `graph-ts` in use take a look at one of the following subgraphs:
 - https://github.com/graphprotocol/aragon-subgraph
 - https://github.com/graphprotocol/dharma-subgraph
 
-## License
+## Licence
 
-Copyright &copy; 2018 Graph Protocol, Inc. and contributors.
+Copyright &copy; 2018 Graph Protocol, Inc. et contributeurs.
 
-The Graph TypeScript library is dual-licensed under the
-[MIT license](https://github.com/graphprotocol/graph-tooling/blob/main/LICENSE-MIT) and the
+La bibliothèque TypeScript The Graph est soumise à une double licence, à savoir la licence
+MIT et de la [licence Apache, version 2.0](https://github.com/graphprotocol/graph-tooling/blob/main/LICENSE-MIT).
 [Apache License, Version 2.0](https://github.com/graphprotocol/graph-tooling/blob/main/LICENSE-APACHE).
 
-Unless required by applicable law or agreed to in writing, software distributed under the License is
-distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
-implied. See the License for the specific language governing permissions and limitations under the
-License.
+Sauf obligation légale ou accord écrit, le logiciel distribué dans le cadre de la licence est
+distribué « EN L’ÉTAT », SANS GARANTIE NI CONDITION DE QUELQUE NATURE QUE CE SOIT, expresse ou implicite.
+explicites ou implicites. Voir la Licence pour le langage spécifique régissant les permissions et les limitations dans le cadre de la
+La licence.
