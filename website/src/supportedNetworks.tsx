@@ -5,9 +5,11 @@ import { useI18n } from '@/i18n'
 import { NetworkIcon } from '@edgeandnode/go'
 import { Check } from '@edgeandnode/gds/icons'
 import { Skeleton, Text, ExperimentalCopyButton } from '@edgeandnode/gds'
+import { useRouter } from 'next/router'
+import NextLink from 'next/link'
 
 // Networks that should use the "mono" icon variant
-const MONO_ICON_NETWORKS = [
+export const MONO_ICON_NETWORKS = [
   'vana',
   'vana-moksha',
   'xlayer-mainnet',
@@ -29,7 +31,7 @@ const MONO_ICON_NETWORKS = [
 ]
 
 // Skeleton networks (no icon available)
-const MISSING_ICON_NETWORKS = [
+export const MISSING_ICON_NETWORKS = [
   'berachain-bepolia',
   'hoodi',
   'ink-sepolia',
@@ -78,6 +80,8 @@ export function SupportedNetworksTable({
   networks,
 }: Awaited<ReturnType<typeof getSupportedNetworksStaticProps>>['props']) {
   const { t } = useI18n()
+  const router = useRouter()
+  const { locale = 'en' } = router
 
   const getIconVariant = (networkId: string) => {
     return MONO_ICON_NETWORKS.includes(networkId) ? 'mono' : 'branded'
@@ -111,37 +115,39 @@ export function SupportedNetworksTable({
           </th>
         </tr>
         {networks.map((network) => (
-          <tr key={network.id} className="group h-16 cursor-pointer transition-colors hover:bg-space-1600">
-            <td>
-              <div className="flex items-center gap-2">
-                {shouldShowSkeleton(network.id) ? (
-                  <Skeleton borderRadius="FULL" height="20px" width="20px" />
-                ) : (
-                  <NetworkIcon variant={getIconVariant(network.id)} caip2Id={network.caip2Id as any} size={5} />
-                )}
-                <Text.P14>{network.shortName}</Text.P14>
-              </div>
-            </td>
-            <td>
-              <div className="flex w-full items-center justify-between gap-2">
-                <Text.P14 className="!mb-0">{network.id}</Text.P14>
-                <div className="opacity-0 transition-opacity group-hover:opacity-100">
-                  <div
-                    onClick={(e) => {
-                      e.preventDefault()
-                      e.stopPropagation()
-                    }}
-                  >
-                    <ExperimentalCopyButton size="small" variant="tertiary" value={network.id} />
+          <NextLink key={network.id} href={`/${locale}/supported-networks/${network.id}`} className="contents">
+            <tr className="group h-16 cursor-pointer transition-colors hover:bg-space-1600">
+              <td>
+                <div className="flex items-center gap-2">
+                  {shouldShowSkeleton(network.id) ? (
+                    <Skeleton borderRadius="FULL" height="20px" width="20px" />
+                  ) : (
+                    <NetworkIcon variant={getIconVariant(network.id)} caip2Id={network.caip2Id as any} size={5} />
+                  )}
+                  <Text.P14>{network.shortName}</Text.P14>
+                </div>
+              </td>
+              <td>
+                <div className="flex w-full items-center justify-between gap-2">
+                  <Text.P14 className="!mb-0">{network.id}</Text.P14>
+                  <div className="opacity-0 transition-opacity group-hover:opacity-100">
+                    <div
+                      onClick={(e) => {
+                        e.preventDefault()
+                        e.stopPropagation()
+                      }}
+                    >
+                      <ExperimentalCopyButton size="small" variant="tertiary" value={network.id} />
+                    </div>
                   </div>
                 </div>
-              </div>
-            </td>
-            <td align="center">{network.subgraphs ? <Check size={4} /> : null}</td>
-            <td align="center">{network.substreams ? <Check size={4} /> : null}</td>
-            <td align="center">{network.firehose ? <Check size={4} /> : null}</td>
-            <td align="center">{network.tokenapi ? <Check size={4} /> : null}</td>
-          </tr>
+              </td>
+              <td align="center">{network.subgraphs ? <Check size={4} /> : null}</td>
+              <td align="center">{network.substreams ? <Check size={4} /> : null}</td>
+              <td align="center">{network.firehose ? <Check size={4} /> : null}</td>
+              <td align="center">{network.tokenapi ? <Check size={4} /> : null}</td>
+            </tr>
+          </NextLink>
         ))}
       </tbody>
     </Table>
