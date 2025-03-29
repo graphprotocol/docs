@@ -4,7 +4,7 @@ import { Table } from '@/components'
 import { useI18n } from '@/i18n'
 import { NetworkIcon } from '@edgeandnode/go'
 import { Check } from '@edgeandnode/gds/icons'
-import { Skeleton, Text } from '@edgeandnode/gds'
+import { Skeleton, Text, ExperimentalCopyButton } from '@edgeandnode/gds'
 
 // Networks that should use the "mono" icon variant
 const MONO_ICON_NETWORKS = [
@@ -88,7 +88,7 @@ export function SupportedNetworksTable({
   }
 
   return (
-    <Table>
+    <Table variant="supported-networks">
       <tbody>
         <tr>
           <th>
@@ -111,7 +111,7 @@ export function SupportedNetworksTable({
           </th>
         </tr>
         {networks.map((network) => (
-          <tr key={network.id}>
+          <tr key={network.id} className="group h-16 cursor-pointer transition-colors hover:bg-space-1600">
             <td>
               <div className="flex items-center gap-2">
                 {shouldShowSkeleton(network.id) ? (
@@ -123,7 +123,19 @@ export function SupportedNetworksTable({
               </div>
             </td>
             <td>
-              <Text.P14>{network.id}</Text.P14>
+              <div className="flex w-full items-center justify-between gap-2">
+                <Text.P14 className="!mb-0">{network.id}</Text.P14>
+                <div className="opacity-0 transition-opacity group-hover:opacity-100">
+                  <div
+                    onClick={(e) => {
+                      e.preventDefault()
+                      e.stopPropagation()
+                    }}
+                  >
+                    <ExperimentalCopyButton size="small" variant="tertiary" value={network.id} />
+                  </div>
+                </div>
+              </div>
             </td>
             <td align="center">{network.subgraphs ? <Check size={4} /> : null}</td>
             <td align="center">{network.substreams ? <Check size={4} /> : null}</td>
