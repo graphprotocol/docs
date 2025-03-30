@@ -94,11 +94,12 @@ interface EmptySearchResultsProps {
   searchQuery: string
   onClearSearch: () => void
   showTestnets: boolean
+  onToggleTestnets: () => void
 }
 
-const EmptySearchResults = ({ searchQuery, onClearSearch }: EmptySearchResultsProps) => {
+const EmptySearchResults = ({ searchQuery, onClearSearch, showTestnets, onToggleTestnets }: EmptySearchResultsProps) => {
   const { t } = useI18n()
-
+  
   return (
     <div className="mb-16 flex flex-col items-center justify-center border-b border-space-1400 py-16 pb-16 text-center">
       <div className="text-space-700">
@@ -169,6 +170,7 @@ export function SupportedNetworksTable({
   const [isLoading, setIsLoading] = useState(true)
   const [isLoadingTestnets, setIsLoadingTestnets] = useState(false)
   const [hasLoadedDataBefore, setHasLoadedDataBefore] = useState(false)
+  const [noResults, setNoResults] = useState(false)
 
   useEffect(() => {
     if (networks.length > 0) {
@@ -201,7 +203,7 @@ export function SupportedNetworksTable({
       filtered = filtered.filter((network) => String(network.networkType) !== 'testnet')
     }
 
-    // Filter by search term
+    // Filter by search
     if (searchQuery) {
       const query = searchQuery.toLowerCase()
       filtered = filtered.filter(
@@ -215,11 +217,19 @@ export function SupportedNetworksTable({
     return filtered
   }, [networks, searchQuery, showTestnets])
 
+  useEffect(() => {
+    setNoResults(filteredNetworks.length === 0 && searchQuery !== '')
+  }, [filteredNetworks.length, searchQuery])
+
   const handleClearSearch = () => {
     setSearchQuery('')
   }
 
   const handleShowTestnets = () => {
+    if (noResults) {
+      setSearchQuery('')
+    }
+    
     setIsLoadingTestnets(true)
     
     setTimeout(() => {
@@ -374,7 +384,12 @@ export function SupportedNetworksTable({
           </tbody>
         </Table>
       ) : (
-        <EmptySearchResults searchQuery={searchQuery} onClearSearch={handleClearSearch} showTestnets={showTestnets} />
+        <EmptySearchResults 
+          searchQuery={searchQuery} 
+          onClearSearch={handleClearSearch} 
+          showTestnets={showTestnets}
+          onToggleTestnets={handleToggleTestnets}
+        />
       )}
     </>
   )
