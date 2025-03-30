@@ -206,7 +206,7 @@ export default function NetworkDetailsPage({ network, locale = 'en' }: NetworkDe
 
   return (
     <>
-      <h3 className="mt-0">{t('index.supportedNetworks.guides')}</h3>
+      <h3 className="mt-0 text-h18">{t('index.supportedNetworks.guides')}</h3>
       {isNonEVMNetwork(network.id) ? <NonEVMResources /> : <EVMResources />}
     </>
   )

@@ -140,7 +140,7 @@ const SkeletonRow = () => {
           <Skeleton borderRadius="XS" height="12px" width="100px" />
         </div>
       </td>
-      <td>
+      <td className="w-48">
         <Skeleton borderRadius="XS" height="12px" width="80px" />
       </td>
       <td align="center">
@@ -258,7 +258,7 @@ export function SupportedNetworksTable({
   return (
     <>
       <Flex.Row className="mb-6 rounded-8 bg-space-1600 p-3" align="start" gap="8px">
-        <Lightbulb size={4} variant="regular" color="purple" alt="Information" />
+        <Lightbulb size={4} variant="regular" color="blue" alt="Information" className='pt-1'/>
         <Flex.Column gap="4px">
           <Text.P14 className="mb-0 font-semibold">{t('index.supportedNetworks.infoTitle')}</Text.P14>
           <Text.P14>
@@ -304,7 +304,7 @@ export function SupportedNetworksTable({
               <th className="w-48">
                 <Text.C10>{t('supportedNetworks.name')}</Text.C10>
               </th>
-              <th>
+              <th className="w-48">
                 <Text.C10>{t('supportedNetworks.id')}</Text.C10>
               </th>
               <th align="center">
@@ -330,7 +330,7 @@ export function SupportedNetworksTable({
               <th className="w-48">
                 <Text.C10>{t('supportedNetworks.name')}</Text.C10>
               </th>
-              <th>
+              <th className="w-48">
                 <Text.C10>{t('supportedNetworks.id')}</Text.C10>
               </th>
               <th align="center">
@@ -359,7 +359,7 @@ export function SupportedNetworksTable({
                       <Text.P14>{network.shortName}</Text.P14>
                     </div>
                   </td>
-                  <td>
+                  <td className="w-48">
                     <div className="flex w-full items-center justify-between gap-2">
                       <Text.P14 className="!mb-0">{network.id}</Text.P14>
                       <div className="opacity-0 transition-opacity group-hover:opacity-100">

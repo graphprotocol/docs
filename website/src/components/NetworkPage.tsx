@@ -2,7 +2,7 @@ import Head from 'next/head'
 import { useRouter } from 'next/router'
 import { useData } from 'nextra/hooks'
 
-import { ExperimentalDescriptionList, Grid } from '@edgeandnode/gds'
+import { ExperimentalDescriptionList, ExperimentalLink, Grid, Text } from '@edgeandnode/gds'
 
 import NetworkDetailsPage from '@/components/NetworkDetailsPage'
 import { useI18n } from '@/i18n'
@@ -50,34 +50,34 @@ export function NetworkPage({ network }: NetworkPageProps) {
               <ExperimentalDescriptionList size="small">
                 {networkData.networkType && (
                   <ExperimentalDescriptionList.Item label={t('index.supportedNetworks.type')}>
-                    {networkData.networkType}
+                    <Text.P14>{networkData.networkType}</Text.P14>
                   </ExperimentalDescriptionList.Item>
                 )}
                 {networkData.graphNode?.protocol && (
                   <ExperimentalDescriptionList.Item label={t('index.supportedNetworks.protocol')}>
-                    {networkData.graphNode.protocol}
+                    <Text.P14>{networkData.graphNode.protocol}</Text.P14>
                   </ExperimentalDescriptionList.Item>
                 )}
                 {networkData.id && (
                   <ExperimentalDescriptionList.Item label={t('index.supportedNetworks.identifier')}>
-                    {networkData.id}
+                    <Text.P14>{networkData.id}</Text.P14>
                   </ExperimentalDescriptionList.Item>
                 )}
                 {networkData.caip2Id && (
                   <ExperimentalDescriptionList.Item label={t('index.supportedNetworks.chainId')}>
-                    {networkData.caip2Id}
+                    <Text.P14>{networkData.caip2Id}</Text.P14>
                   </ExperimentalDescriptionList.Item>
                 )}
                 {networkData.nativeToken && (
                   <ExperimentalDescriptionList.Item label={t('index.supportedNetworks.nativeCurrency')}>
-                    {networkData.nativeToken}
+                    <Text.P14>{networkData.nativeToken}</Text.P14>
                   </ExperimentalDescriptionList.Item>
                 )}
                 {networkData.docsUrl && (
                   <ExperimentalDescriptionList.Item label={t('index.supportedNetworks.docs')}>
-                    <a href={networkData.docsUrl} target="_blank" rel="noopener noreferrer">
+                    <ExperimentalLink className="text-p14" href={networkData.docsUrl} target="_blank" rel="noopener noreferrer">
                       {networkData.docsUrl}
-                    </a>
+                    </ExperimentalLink>
                   </ExperimentalDescriptionList.Item>
                 )}
               </ExperimentalDescriptionList>
