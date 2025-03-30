@@ -1,21 +1,22 @@
 import { NetworksRegistry } from '@pinax/graph-networks-registry'
+import NextLink from 'next/link'
+import { useRouter } from 'next/router'
+import { useEffect, useMemo, useState } from 'react'
 
-import { Table } from '@/components'
-import { useI18n } from '@/i18n'
-import { NetworkIcon } from '@edgeandnode/go'
-import { Check, Lightbulb } from '@edgeandnode/gds/icons'
 import {
-  Skeleton,
-  ExperimentalLink,
-  Text,
   ExperimentalCopyButton,
+  ExperimentalLink,
   ExperimentalSearch,
   ExperimentalToggleChip,
   Flex,
+  Skeleton,
+  Text,
 } from '@edgeandnode/gds'
-import { useRouter } from 'next/router'
-import NextLink from 'next/link'
-import { useState, useMemo, useEffect } from 'react'
+import { Check, Lightbulb } from '@edgeandnode/gds/icons'
+import { NetworkIcon } from '@edgeandnode/go'
+
+import { Table } from '@/components'
+import { useI18n } from '@/i18n'
 
 // Networks that should use the "mono" icon variant
 export const MONO_ICON_NETWORKS = [
@@ -125,8 +126,7 @@ export function SupportedNetworksTable({
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    // If networks data is already available, showq it
-    if (networks && networks.length > 0) {
+    if (networks.length > 0) {
       setIsLoading(false)
     } else {
       setIsLoading(true)
@@ -152,7 +152,7 @@ export function SupportedNetworksTable({
 
     // Filter by testnet
     if (!showTestnets) {
-      filtered = filtered.filter((network) => network.networkType !== 'testnet')
+      filtered = filtered.filter((network) => String(network.networkType) !== 'testnet')
     }
 
     // Filter by search term
@@ -174,13 +174,13 @@ export function SupportedNetworksTable({
 
   return (
     <>
-      <Flex.Row className="mb-6 rounded-8 bg-space-1600 p-3" alignItems="center" gap="8px">
-        <Lightbulb size={4} variant="regular" color="purple" />
+      <Flex.Row className="mb-6 rounded-8 bg-space-1600 p-3" align="start" gap="8px">
+        <Lightbulb size={4} variant="regular" color="purple" alt="Information" />
         <Flex.Column gap="4px">
           <Text.P14 className="mb-0 font-semibold">{t('index.supportedNetworks.infoTitle')}</Text.P14>
           <Text.P14>
             {t('index.supportedNetworks.infoText')}{' '}
-            <ExperimentalLink href="https://thegraph.com/docs/en/network/network-integrations/">
+            <ExperimentalLink href="https://thegraph.com/docs/en/indexing/chain-integration-overview/">
               {t('index.supportedNetworks.infoLink')}
             </ExperimentalLink>
           </Text.P14>
@@ -254,10 +254,10 @@ export function SupportedNetworksTable({
                         </div>
                       </div>
                     </td>
-                    <td align="center">{network.subgraphs ? <Check size={4} /> : null}</td>
-                    <td align="center">{network.substreams ? <Check size={4} /> : null}</td>
-                    <td align="center">{network.firehose ? <Check size={4} /> : null}</td>
-                    <td align="center">{network.tokenapi ? <Check size={4} /> : null}</td>
+                    <td align="center">{network.subgraphs ? <Check size={4} alt="Checkmark" /> : null}</td>
+                    <td align="center">{network.substreams ? <Check size={4} alt="Checkmark" /> : null}</td>
+                    <td align="center">{network.firehose ? <Check size={4} alt="Checkmark" /> : null}</td>
+                    <td align="center">{network.tokenapi ? <Check size={4} alt="Checkmark" /> : null}</td>
                   </tr>
                 </NextLink>
               ))}

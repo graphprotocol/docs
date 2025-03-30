@@ -1,12 +1,30 @@
-import { useData } from 'nextra/hooks'
-import { Heading } from '@/components'
-import { ExperimentalDescriptionList, Grid } from '@edgeandnode/gds'
 import Head from 'next/head'
-import { useI18n } from '@/i18n'
-import NetworkDetailsPage from '@/components/NetworkDetailsPage'
 import { useRouter } from 'next/router'
+import { useData } from 'nextra/hooks'
 
-export function NetworkPage({ network }) {
+import { ExperimentalDescriptionList, Grid } from '@edgeandnode/gds'
+
+import NetworkDetailsPage from '@/components/NetworkDetailsPage'
+import { useI18n } from '@/i18n'
+
+interface Network {
+  id: string
+  fullName: string
+  shortName?: string
+  networkType: string
+  graphNode?: {
+    protocol: string
+  }
+  caip2Id?: string
+  nativeToken?: string
+  docsUrl?: string
+}
+
+interface NetworkPageProps {
+  network?: Network
+}
+
+export function NetworkPage({ network }: NetworkPageProps) {
   const data = useData()
   const contextNetwork = data?.ssg?.network || data?.network
   const networkData = network || contextNetwork
