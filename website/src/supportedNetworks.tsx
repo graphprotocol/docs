@@ -5,15 +5,17 @@ import { useEffect, useMemo, useState } from 'react'
 
 import {
   Button,
+  DottedRingsSpinner,
   ExperimentalCopyButton,
   ExperimentalLink,
   ExperimentalSearch,
   ExperimentalToggleChip,
   Flex,
+  LoadingSpinner,
   Skeleton,
   Text,
 } from '@edgeandnode/gds'
-import { Check, EyeClosed,Lightbulb } from '@edgeandnode/gds/icons'
+import { Check, EyeClosed, Lightbulb } from '@edgeandnode/gds/icons'
 import { NetworkIcon } from '@edgeandnode/go'
 
 import { Table } from '@/components'
@@ -98,14 +100,26 @@ const EmptySearchResults = ({ searchQuery, onClearSearch }: EmptySearchResultsPr
   const { t } = useI18n()
 
   return (
-    <div className="flex flex-col mb-16 pb-16 border-b border-space-1400 items-center justify-center py-16 text-center">
-      <div className="mb-4 text-space-700">
-        <EyeClosed size={12} variant="regular" color="purple" alt="Information" />
+    <div className="mb-16 flex flex-col items-center justify-center border-b border-space-1400 py-16 pb-16 text-center">
+      <div className="text-space-700">
+        <DottedRingsSpinner>
+          <EyeClosed
+            size="36px"
+            color="purple-100"
+            alt="Information"
+            sx={{
+              stroke: 'purple-100',
+              transform: 'translate(1px, -1.5px)',
+            }}
+          />
+        </DottedRingsSpinner>
       </div>
-      <Text as="h4" className="mb-2 text-xl font-medium">{t('index.supportedNetworks.emptySearch.title')}</Text>
-      <Text as="p" className="mb-6 max-w-md text-space-700">
+      <Text.P20 className="mb-2 mt-0 font-medium">
+        {t('index.supportedNetworks.emptySearch.title')}
+      </Text.P20>
+      <Text.P16 className="mb-6 max-w-md text-space-700">
         {t('index.supportedNetworks.emptySearch.description', [searchQuery])}
-      </Text>
+      </Text.P16>
       <div className="flex flex-wrap justify-center gap-3">
         <Button onClick={onClearSearch} variant="secondary" size="medium">
           {t('index.supportedNetworks.emptySearch.clearSearch')}
@@ -153,10 +167,13 @@ export function SupportedNetworksTable({
   const [searchQuery, setSearchQuery] = useState('')
   const [showTestnets, setShowTestnets] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
+  const [isLoadingTestnets, setIsLoadingTestnets] = useState(false)
+  const [hasLoadedDataBefore, setHasLoadedDataBefore] = useState(false)
 
   useEffect(() => {
     if (networks.length > 0) {
       setIsLoading(false)
+      setHasLoadedDataBefore(true)
     } else {
       setIsLoading(true)
 
@@ -198,12 +215,35 @@ export function SupportedNetworksTable({
     return filtered
   }, [networks, searchQuery, showTestnets])
 
-  // Handler to clear search
   const handleClearSearch = () => {
     setSearchQuery('')
   }
+
+  const handleShowTestnets = () => {
+    setIsLoadingTestnets(true)
+    
+    setTimeout(() => {
+      setShowTestnets(true)
+      setIsLoadingTestnets(false)
+    }, 150)
+  }
+
+  const handleHideTestnets = () => {
+    setShowTestnets(false)
+  }
+
+  const handleToggleTestnets = () => {
+    if (!showTestnets) {
+      handleShowTestnets()
+    } else {
+      handleHideTestnets()
+    }
+  }
+
   // Generate skeleton rows
   const skeletonRows = Array.from({ length: 20 }, (_, index) => <SkeletonRow key={`skeleton-${index}`} />)
+  
+  const shouldShowLoadingScreen = isLoading || (isLoadingTestnets && !hasLoadedDataBefore)
 
   return (
     <>
@@ -230,12 +270,24 @@ export function SupportedNetworksTable({
             className="w-full"
           />
         </div>
-        <ExperimentalToggleChip size="small" onChange={() => setShowTestnets(!showTestnets)} checked={showTestnets}>
-          {t('index.supportedNetworks.showTestnets')}
+        <ExperimentalToggleChip
+          size="small"
+          onChange={handleToggleTestnets}
+          checked={showTestnets}
+          disabled={isLoadingTestnets}
+        >
+          {isLoadingTestnets ? (
+            <span className="flex items-center">
+              <LoadingSpinner className="mr-2 h-4 w-4" />
+              {t('index.supportedNetworks.loading')}
+            </span>
+          ) : (
+            t('index.supportedNetworks.showTestnets')
+          )}
         </ExperimentalToggleChip>
       </div>
 
-      {isLoading ? (
+      {shouldShowLoadingScreen ? (
         <Table variant="supported-networks">
           <tbody>
             <tr>
@@ -322,11 +374,7 @@ export function SupportedNetworksTable({
           </tbody>
         </Table>
       ) : (
-        <EmptySearchResults 
-          searchQuery={searchQuery}
-          onClearSearch={handleClearSearch}
-          showTestnets={showTestnets}
-        />
+        <EmptySearchResults searchQuery={searchQuery} onClearSearch={handleClearSearch} showTestnets={showTestnets} />
       )}
     </>
   )
