@@ -18,6 +18,9 @@ WORKDIR /app
 COPY . ./
 
 RUN pnpm install --frozen-lockfile
+RUN cd website && pnpm fetch-remote-docs
+RUN cd website && pnpm fetch-api-reference
+RUN cd website && pnpm fix-pages-structure
 RUN pnpm build
 
 FROM nginx:1.16.0-alpine
