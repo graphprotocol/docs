@@ -24,6 +24,7 @@ export type FrontMatter = {
   hideContentFooter?: boolean
   unwrapContent?: boolean
   template?: unknown
+  parentRouteKey?: string
 }
 
 export type LayoutContextProps = {

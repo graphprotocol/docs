@@ -161,6 +161,12 @@ export default function Layout({ pageOpts, children }: NextraThemeLayoutProps<Fr
     if (route === activeRoute) {
       return true
     }
+    
+    const parentRouteKey = frontMatter.parentRouteKey
+    if (parentRouteKey && getRouteWithoutLocale(route) === `/${parentRouteKey}`) {
+      return true
+    }
+    
     if (
       selectedItem &&
       (route === selectedItem.group.route || selectedItem.ancestors.some((ancestor) => route === ancestor.route))
