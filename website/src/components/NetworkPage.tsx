@@ -32,11 +32,12 @@ interface NetworkPageProps {
 export function NetworkPage({ network }: NetworkPageProps) {
   const data = useData()
   const contextNetwork = data?.ssg?.network || data?.network
-  const networkData: Network = network || contextNetwork || { 
-    id: '',
-    fullName: '',
-    networkType: NetworkType.Mainnet
-  }
+  const networkData: Network = network ||
+    contextNetwork || {
+      id: '',
+      fullName: '',
+      networkType: NetworkType.Mainnet,
+    }
   const { t } = useI18n()
   const router = useRouter()
   const { locale = 'en' } = router
@@ -44,7 +45,7 @@ export function NetworkPage({ network }: NetworkPageProps) {
   const getIconVariant = (networkId: string): 'mono' | 'branded' => {
     return MONO_ICON_NETWORKS.includes(networkId) ? 'mono' : 'branded'
   }
-  
+
   const shouldShowSkeleton = (networkId: string): boolean => {
     return MISSING_ICON_NETWORKS.includes(networkId) || !networkId
   }
@@ -55,22 +56,22 @@ export function NetworkPage({ network }: NetworkPageProps) {
         <title>{networkData.fullName}</title>
       </Head>
       <div className="col-[container]">
-        <div className="flex flex-col gap-3 mb-5 mt-12">
+        <div className="mb-5 mt-12 flex flex-col gap-3">
           {networkData.caip2Id ? (
             <div className="flex-shrink-0">
               {shouldShowSkeleton(networkData.id) ? (
                 <Skeleton borderRadius="FULL" height="40px" width="40px" />
               ) : (
-                <NetworkIcon 
-                  variant={getIconVariant(networkData.id)} 
-                  caip2Id={networkData.caip2Id as any} 
-                  size={10} 
-                  className="w-10 h-10"
+                <NetworkIcon
+                  variant={getIconVariant(networkData.id)}
+                  caip2Id={networkData.caip2Id as any}
+                  size={10}
+                  className="h-10 w-10"
                 />
               )}
             </div>
           ) : null}
-          <h2 className="text-24 text-white leading-tight mt-0">{networkData.fullName}</h2>
+          <h2 className="leading-tight mt-0 text-24 text-white">{networkData.fullName}</h2>
         </div>
 
         <Grid className="gap-4">
@@ -102,7 +103,12 @@ export function NetworkPage({ network }: NetworkPageProps) {
                 )}
                 {networkData.docsUrl && (
                   <ExperimentalDescriptionList.Item label={t('index.supportedNetworks.docs')}>
-                    <ExperimentalLink className="text-p14" href={networkData.docsUrl} target="_blank" rel="noopener noreferrer">
+                    <ExperimentalLink
+                      className="text-p14"
+                      href={networkData.docsUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
                       {networkData.docsUrl}
                     </ExperimentalLink>
                   </ExperimentalDescriptionList.Item>

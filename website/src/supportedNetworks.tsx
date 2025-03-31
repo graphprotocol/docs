@@ -97,9 +97,14 @@ interface EmptySearchResultsProps {
   onToggleTestnets: () => void
 }
 
-const EmptySearchResults = ({ searchQuery, onClearSearch, showTestnets, onToggleTestnets }: EmptySearchResultsProps) => {
+const EmptySearchResults = ({
+  searchQuery,
+  onClearSearch,
+  showTestnets,
+  onToggleTestnets,
+}: EmptySearchResultsProps) => {
   const { t } = useI18n()
-  
+
   return (
     <div className="mb-16 flex flex-col items-center justify-center border-b border-space-1400 py-16 pb-16 text-center">
       <div className="text-space-700">
@@ -115,9 +120,7 @@ const EmptySearchResults = ({ searchQuery, onClearSearch, showTestnets, onToggle
           />
         </DottedRingsSpinner>
       </div>
-      <Text.P20 className="mb-2 mt-0 font-medium">
-        {t('index.supportedNetworks.emptySearch.title')}
-      </Text.P20>
+      <Text.P20 className="mb-2 mt-0 font-medium">{t('index.supportedNetworks.emptySearch.title')}</Text.P20>
       <Text.P16 className="mb-6 max-w-md text-space-700">
         {t('index.supportedNetworks.emptySearch.description', [searchQuery])}
       </Text.P16>
@@ -229,9 +232,9 @@ export function SupportedNetworksTable({
     if (noResults) {
       setSearchQuery('')
     }
-    
+
     setIsLoadingTestnets(true)
-    
+
     setTimeout(() => {
       setShowTestnets(true)
       setIsLoadingTestnets(false)
@@ -252,13 +255,13 @@ export function SupportedNetworksTable({
 
   // Generate skeleton rows
   const skeletonRows = Array.from({ length: 20 }, (_, index) => <SkeletonRow key={`skeleton-${index}`} />)
-  
+
   const shouldShowLoadingScreen = isLoading || (isLoadingTestnets && !hasLoadedDataBefore)
 
   return (
     <>
       <Flex.Row className="mb-6 rounded-8 bg-space-1600 p-3" align="start" gap="8px">
-        <Lightbulb size={4} variant="regular" color="blue" alt="Information" className='pt-1'/>
+        <Lightbulb size={4} variant="regular" color="blue" alt="Information" className="pt-1" />
         <Flex.Column gap="4px">
           <Text.P14 className="mb-0 font-semibold">{t('index.supportedNetworks.infoTitle')}</Text.P14>
           <Text.P14>
@@ -384,9 +387,9 @@ export function SupportedNetworksTable({
           </tbody>
         </Table>
       ) : (
-        <EmptySearchResults 
-          searchQuery={searchQuery} 
-          onClearSearch={handleClearSearch} 
+        <EmptySearchResults
+          searchQuery={searchQuery}
+          onClearSearch={handleClearSearch}
           showTestnets={showTestnets}
           onToggleTestnets={handleToggleTestnets}
         />
