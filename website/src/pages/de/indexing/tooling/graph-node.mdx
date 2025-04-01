@@ -26,7 +26,7 @@ Während einige Subgraphen nur einen vollständigen Knoten benötigen, können e
 
 ### IPFS-Knoten
 
-Subgraph deployment metadata is stored on the IPFS network. The Graph Node primarily accesses the IPFS node during Subgraph deployment to fetch the Subgraph manifest and all linked files. Network indexers do not need to host their own IPFS node. An IPFS node for the network is hosted at https://ipfs.network.thegraph.com.
+Die Metadaten für den Einsatz von Subgraphen werden im IPFS-Netzwerk gespeichert. Der Graph Node greift während des Einsatzes von Subgraphen primär auf den IPFS-Knoten zu, um das Subgraphen-Manifest und alle verknüpften Dateien abzurufen. Netzwerkindizierer müssen keinen eigenen IPFS-Knoten hosten. Ein IPFS-Knoten für das Netzwerk wird auf https://ipfs.network.thegraph.com gehostet.
 
 ### Prometheus-Metrikserver
 
@@ -45,7 +45,7 @@ Um Überwachung und Berichterstellung zu ermöglichen, kann Graph Node optional 
 - **Zusätzliche Anforderungen für Ubuntu-Benutzer** - Um einen Graph Node unter Ubuntu zu betreiben, sind möglicherweise einige zusätzliche Pakete erforderlich.
 
 ```sh
-sudo apt-get install -y clang libpq-dev libssl-dev pkg-config
+sudo apt-get install -y clang libpg-dev libssl-dev pkg-config
 ```
 
 #### Konfiguration
@@ -71,7 +71,7 @@ cargo run -p graph-node --release -- \
 
 ### Erste Schritte mit Kubernetes
 
-A complete Kubernetes example configuration can be found in the [indexer repository](https://github.com/graphprotocol/indexer/tree/main/k8s).
+Eine vollständige Datenbeispiel-Konfiguration für Kubernetes ist im [indexer repository](https://github.com/graphprotocol/indexer/tree/main/k8s) zu finden.
 
 ### Ports
 
@@ -85,21 +85,21 @@ Wenn es ausgeführt wird, stellt Graph Node die folgenden Ports zur Verfügung:
 | 8030 | Status der Indizierung von Subgraphen API        | /graphql                                       | \--index-node-port | -                 |
 | 8040 | Prometheus-Metriken                              | /metrics                                       | \--metrics-port    | -                 |
 
-> **Important**: Be careful about exposing ports publicly - **administration ports** should be kept locked down. This includes the the Graph Node JSON-RPC endpoint.
+> **Wichtig**: Seien Sie vorsichtig damit, Ports öffentlich zugänglich zu machen - **Verwaltungsports** sollten unter Verschluss gehalten werden. Dies gilt auch für den Graph Node JSON-RPC Endpunkt.
 
 ## Erweiterte Graph-Knoten-Konfiguration
 
-At its simplest, Graph Node can be operated with a single instance of Graph Node, a single PostgreSQL database, an IPFS node, and the network clients as required by the Subgraphs to be indexed.
+In seiner einfachsten Form kann Graph Node mit einer einzelnen Instanz von Graph Node, einer einzelnen PostgreSQL-Datenbank, einem IPFS-Knoten und den Netzwerk-Clients betrieben werden, die für die zu indizierenden Subgraphen erforderlich sind.
 
-This setup can be scaled horizontally, by adding multiple Graph Nodes, and multiple databases to support those Graph Nodes. Advanced users may want to take advantage of some of the horizontal scaling capabilities of Graph Node, as well as some of the more advanced configuration options, via the `config.toml` file and Graph Node's environment variables.
+Dieses Setup kann horizontal skaliert werden, indem mehrere Graph Nodes und mehrere Datenbanken zur Unterstützung dieser Graph Nodes hinzugefügt werden. Fortgeschrittene Benutzer möchten vielleicht einige der horizontalen Skalierungsmöglichkeiten von Graph Node sowie einige der erweiterten Konfigurationsoptionen über die Datei „config.toml“ und die Umgebungsvariablen von Graph Node nutzen.
 
 ### `config.toml`
 
-A [TOML](https://toml.io/en/) configuration file can be used to set more complex configurations than those exposed in the CLI. The location of the file is passed with the --config command line switch.
+Eine [TOML](https://toml.io/en/)-Konfigurationsdatei kann verwendet werden, um komplexere Konfigurationen als die in der Befehlszeile angezeigten festzulegen. Der Speicherort der Datei wird mit dem Befehlszeilenschalter --config übergeben.
 
 > Bei Verwendung einer Konfigurationsdatei ist es nicht möglich, die Optionen --postgres-url, --postgres-secondary-hosts und --postgres-host-weights zu verwenden.
 
-A minimal `config.toml` file can be provided; the following file is equivalent to using the --postgres-url command line option:
+Eine minimale `config.toml`-Datei kann angegeben werden; die folgende Datei entspricht der Verwendung der Befehlszeilenoption --postgres-url:
 
 ```toml
 [store]
@@ -110,47 +110,47 @@ connection="<.. postgres-url argument ..>"
 indexers = [ "<.. list of all indexing nodes ..>" ]
 ```
 
-Full documentation of `config.toml` can be found in the [Graph Node docs](https://github.com/graphprotocol/graph-node/blob/master/docs/config.md).
+Eine vollständige Dokumentation von `config.toml` findet sich in den [Graph Node docs](https://github.com/graphprotocol/graph-node/blob/master/docs/config.md).
 
 #### Mehrere Graph-Knoten
 
-Graph Node indexing can scale horizontally, running multiple instances of Graph Node to split indexing and querying across different nodes. This can be done simply by running Graph Nodes configured with a different `node_id` on startup (e.g. in the Docker Compose file), which can then be used in the `config.toml` file to specify [dedicated query nodes](#dedicated-query-nodes), [block ingestors](#dedicated-block-ingestion), and splitting Subgraphs across nodes with [deployment rules](#deployment-rules).
+Die Indizierung von Graph Node kann horizontal skaliert werden, indem mehrere Instanzen von Graph Node ausgeführt werden, um die Indizierung und Abfrage auf verschiedene Knoten aufzuteilen. Dies kann einfach durch die Ausführung von Graph Nodes erfolgen, die beim Start mit einer anderen `node_id` konfiguriert werden (z. B. in der Docker Compose-Datei). Diese kann dann in der Datei `config.toml` verwendet werden, um [dedizierte Abfrageknoten](#dedicated-query-nodes), [Block-Ingestoren](#dedicated-block-ingestion) und die Aufteilung von Subgraphen über Knoten mit [Einsatzregeln](#deployment-rules) zu spezifizieren.
 
 > Beachten Sie darauf, dass mehrere Graph-Knoten so konfiguriert werden können, dass sie dieselbe Datenbank verwenden, die ihrerseits durch Sharding horizontal skaliert werden kann.
 
 #### Bereitstellungsregeln
 
-Given multiple Graph Nodes, it is necessary to manage deployment of new Subgraphs so that the same Subgraph isn't being indexed by two different nodes, which would lead to collisions. This can be done by using deployment rules, which can also specify which `shard` a Subgraph's data should be stored in, if database sharding is being used. Deployment rules can match on the Subgraph name and the network that the deployment is indexing in order to make a decision.
+Bei mehreren Graph-Knoten ist es notwendig, den Einsatz von neuen Subgraphen zu verwalten, damit derselbe Subgraph nicht von zwei verschiedenen Knoten indiziert wird, was zu Kollisionen führen würde. Dies kann durch die Verwendung von Einsatzregeln geschehen, die auch angeben können, in welchem „Shard“ die Daten eines Subgraphen gespeichert werden sollen, wenn ein Datenbank-Sharding verwendet wird. Einsatzregeln können den Namen des Subgraphen und das Netzwerk, das der Einsatz indiziert, abgleichen, um eine Entscheidung zu treffen.
 
-Beispielkonfiguration für Bereitstellungsregeln:
+Example deployment rule configuration:
 
 ```toml
 [deployment]
 [[deployment.rule]]
-match = { name = "(vip|important)/.*" }
-shard = "vip"
-indexers = [ "index_node_vip_0", "index_node_vip_1" ]
+match = { name = „(vip|important)/.*“ }
+shard = „vip“
+indexers = [ „index_node_vip_0“, „index_node_vip_1“ ]
 [[deployment.rule]]
-match = { network = "kovan" }
-# No shard, so we use the default shard called 'primary'
-indexers = [ "index_node_kovan_0" ]
+match = { network = „kovan“ }
+# Kein Shard, also verwenden wir den Standard-Shard namens 'primary'
+indexers = [ „index_node_kovan_0“ ]
 [[deployment.rule]]
-match = { network = [ "xdai", "poa-core" ] }
-indexers = [ "index_node_other_0" ]
+match = { network = [ „xdai“, „poa-core“ ] }
+indexers = [ „index_node_other_0“ ]
 [[deployment.rule]]
-# There's no 'match', so any Subgraph matches
-shards = [ "sharda", "shardb" ]
+# Es gibt kein 'match', also passt jeder Subgraph
+shards = [ „sharda“, „shardb“ ]
 indexers = [
-    "index_node_community_0",
-    "index_node_community_1",
-    "index_node_community_2",
-    "index_node_community_3",
-    "index_node_community_4",
-    "index_node_community_5"
+    „index_node_community_0“,
+    „index_node_community_1“, [ ‚index_node_community_1‘,
+    „index_node_community_2“,
+    „index_node_community_3“,
+    „index_node_community_4“,
+    „index_node_community_5“
   ]
 ```
 
-Read more about deployment rules [here](https://github.com/graphprotocol/graph-node/blob/master/docs/config.md#controlling-deployment).
+Lesen Sie mehr über die Einsatzregeln [hier] (https://github.com/graphprotocol/graph-node/blob/master/docs/config.md#controlling-deployment).
 
 #### Dedizierte Abfrageknoten
 
@@ -167,11 +167,11 @@ Jeder Knoten, dessen --node-id mit dem regulären Ausdruck übereinstimmt, wird 
 
 Für die meisten Anwendungsfälle reicht eine einzelne Postgres-Datenbank aus, um eine Graph-Node-Instanz zu unterstützen. Wenn eine Graph-Node-Instanz aus einer einzelnen Postgres-Datenbank herauswächst, ist es möglich, die Speicherung der Daten des Graph-Nodes auf mehrere Postgres-Datenbanken aufzuteilen. Alle Datenbanken zusammen bilden den Speicher der Graph-Node-Instanz. Jede einzelne Datenbank wird als Shard bezeichnet.
 
-Shards can be used to split Subgraph deployments across multiple databases, and can also be used to use replicas to spread query load across databases. This includes configuring the number of available database connections each `graph-node` should keep in its connection pool for each database, which becomes increasingly important as more Subgraphs are being indexed.
+Shards können verwendet werden, um Subgraph-Einsätze auf mehrere Datenbanken aufzuteilen, und sie können auch verwendet werden, um Replikate zu verwenden, um die Abfragelast auf die Datenbanken zu verteilen. Dazu gehört auch die Konfiguration der Anzahl der verfügbaren Datenbankverbindungen, die jeder „Graph-Knoten“ in seinem Verbindungspool für jede Datenbank vorhalten soll, was zunehmend wichtiger wird, je mehr Subgraphen indiziert werden.
 
 Sharding wird nützlich, wenn Ihre vorhandene Datenbank nicht mit der Last Schritt halten kann, die Graph Node ihr auferlegt, und wenn es nicht mehr möglich ist, die Datenbankgröße zu erhöhen.
 
-> It is generally better make a single database as big as possible, before starting with shards. One exception is where query traffic is split very unevenly between Subgraphs; in those situations it can help dramatically if the high-volume Subgraphs are kept in one shard and everything else in another because that setup makes it more likely that the data for the high-volume Subgraphs stays in the db-internal cache and doesn't get replaced by data that's not needed as much from low-volume Subgraphs.
+> Im Allgemeinen ist es besser, eine einzelne Datenbank so groß wie möglich zu machen, bevor man mit Shards beginnt. Eine Ausnahme ist, wenn der Abfrageverkehr sehr ungleichmäßig auf die Subgraphen verteilt ist; in solchen Situationen kann es sehr hilfreich sein, wenn die hochvolumigen Subgraphen in einem Shard und alles andere in einem anderen aufbewahrt wird, weil es dann wahrscheinlicher ist, dass die Daten für die hochvolumigen Subgraphen im db-internen Cache verbleiben und nicht durch Daten ersetzt werden, die von den niedrigvolumigen Subgraphen nicht so häufig benötigt werden.
 
 Was das Konfigurieren von Verbindungen betrifft, beginnen Sie mit max_connections in postgresql.conf, das auf 400 (oder vielleicht sogar 200) eingestellt ist, und sehen Sie sich die Prometheus-Metriken store_connection_wait_time_ms und store_connection_checkout_count an. Spürbare Wartezeiten (alles über 5 ms) sind ein Hinweis darauf, dass zu wenige Verbindungen verfügbar sind; hohe Wartezeiten werden auch dadurch verursacht, dass die Datenbank sehr ausgelastet ist (z. B. hohe CPU-Last). Wenn die Datenbank jedoch ansonsten stabil erscheint, weisen hohe Wartezeiten darauf hin, dass die Anzahl der Verbindungen erhöht werden muss. In der Konfiguration ist die Anzahl der Verbindungen, die jede Graph-Knoten-Instanz verwenden kann, eine Obergrenze, und der Graph-Knoten hält Verbindungen nicht offen, wenn er sie nicht benötigt.
 
@@ -188,7 +188,7 @@ ingestor = "block_ingestor_node"
 
 #### Unterstützung mehrerer Netzwerke
 
-The Graph Protocol is increasing the number of networks supported for indexing rewards, and there exist many Subgraphs indexing unsupported networks which an indexer would like to process. The `config.toml` file allows for expressive and flexible configuration of:
+Das Graph Protocol erhöht die Anzahl der Netzwerke, die für die Indizierung von Belohnungen unterstützt werden, und es gibt viele Subgraphen, die nicht unterstützte Netzwerke indizieren, die ein Indexer gerne verarbeiten würde. Die Datei `config.toml` ermöglicht eine ausdrucksstarke und flexible Konfiguration von:
 
 - Mehrere Netzwerke
 - Mehrere Anbieter pro Netzwerk (dies kann eine Aufteilung der Last auf Anbieter ermöglichen und kann auch die Konfiguration von vollständigen Knoten sowie Archivknoten ermöglichen, wobei Graph Node günstigere Anbieter bevorzugt, wenn eine bestimmte Arbeitslast dies zulässt).
@@ -223,13 +223,13 @@ Benutzer, die ein skaliertes Indizierungs-Setup mit erweiterter Konfiguration be
 - Das Indexer-Repository hat eine [Beispiel-Kubernetes-Referenz](https://github.com/graphprotocol/indexer/tree/main/k8s)
 - [Launchpad] (https://docs.graphops.xyz/launchpad/intro) ist ein Toolkit für den Betrieb eines Graph Protocol Indexer auf Kubernetes, das von GraphOps gepflegt wird. Es bietet eine Reihe von Helm-Diagrammen und eine CLI zur Verwaltung eines Graph Node- Deployments.
 
-### Managing Graph Node
+### Verwaltung von Graph Knoten
 
-Given a running Graph Node (or Graph Nodes!), the challenge is then to manage deployed Subgraphs across those nodes. Graph Node surfaces a range of tools to help with managing Subgraphs.
+Bei einem laufenden Graph Node (oder Graph Nodes!) besteht die Herausforderung darin, die eingesetzten Subgraphen über diese Nodes hinweg zu verwalten. Graph Node bietet eine Reihe von Tools, die bei der Verwaltung von Subgraphen helfen.
 
 #### Protokollierung
 
-Graph Node's logs can provide useful information for debugging and optimisation of Graph Node and specific Subgraphs. Graph Node supports different log levels via the `GRAPH_LOG` environment variable, with the following levels: error, warn, info, debug or trace.
+Die Protokolle von Graph Node können nützliche Informationen zur Fehlersuche und Optimierung von Graph Node und bestimmten Untergraphen liefern. Graph Node unterstützt verschiedene Log-Ebenen über die Umgebungsvariable `GRAPH_LOG`, mit den folgenden Ebenen: error, warn, info, debug oder trace.
 
 Wenn Sie außerdem `GRAPH_LOG_QUERY_TIMING` auf `gql` setzen, erhalten Sie mehr Details darüber, wie GraphQL-Abfragen ausgeführt werden (allerdings wird dadurch eine große Menge an Protokollen erzeugt).
 
@@ -247,86 +247,86 @@ Der Befehl graphman ist in den offiziellen Containern enthalten, und Sie können
 
 Eine vollständige Dokumentation der `graphman`-Befehle ist im Graph Node Repository verfügbar. Siehe [/docs/graphman.md] (https://github.com/graphprotocol/graph-node/blob/master/docs/graphman.md) im Graph Node `/docs`
 
-### Working with Subgraphs
+### Arbeiten mit Subgraphen
 
 #### Indizierungsstatus-API
 
-Available on port 8030/graphql by default, the indexing status API exposes a range of methods for checking indexing status for different Subgraphs, checking proofs of indexing, inspecting Subgraph features and more.
+Die API für den Indizierungsstatus ist standardmäßig an Port 8030/graphql verfügbar und bietet eine Reihe von Methoden zur Überprüfung des Indizierungsstatus für verschiedene Subgraphen, zur Überprüfung von Indizierungsnachweisen, zur Inspektion von Subgraphen-Features und mehr.
 
 Das vollständige Schema ist [hier] verfügbar (https://github.com/graphprotocol/graph-node/blob/master/server/index-node/src/schema.graphql).
 
-#### Indexing performance
+#### Indizierungsleistung
 
-There are three separate parts of the indexing process:
+Es gibt drei separate Teile des Indizierungsprozesses:
 
-- Fetching events of interest from the provider
-- Processing events in order with the appropriate handlers (this can involve calling the chain for state, and fetching data from the store)
-- Writing the resulting data to the store
+- Abrufen von interessanten Ereignissen vom Anbieter
+- Verarbeiten von Ereignissen in der Reihenfolge mit den entsprechenden Handlern (dies kann das Aufrufen der Kette für den Zustand und das Abrufen von Daten aus dem Speicher beinhalten)
+- Schreiben der Ergebnisdaten in den Speicher
 
-These stages are pipelined (i.e. they can be executed in parallel), but they are dependent on one another. Where Subgraphs are slow to index, the underlying cause will depend on the specific Subgraph.
+Diese Phasen sind in einer Pipeline angeordnet (d.h. sie können parallel ausgeführt werden), aber sie sind voneinander abhängig. Wenn die Indizierung von Subgraphen langsam ist, hängt die Ursache dafür von dem jeweiligen Subgraphen ab.
 
-Common causes of indexing slowness:
+Häufige Ursachen für eine langsame Indizierung:
 
 - Zeit, die benötigt wird, um relevante Ereignisse aus der Kette zu finden (insbesondere Call-Handler können langsam sein, da sie auf `trace_filter` angewiesen sind)
 - Durchführen einer großen Anzahl von „eth_calls“ als Teil von Handlern
-- A large amount of store interaction during execution
-- A large amount of data to save to the store
-- A large number of events to process
-- Slow database connection time, for crowded nodes
-- The provider itself falling behind the chain head
-- Slowness in fetching new receipts at the chain head from the provider
+- Eine große Anzahl von Store-Interaktionen während der Ausführung
+- Eine große Datenmenge, die im Speicher gespeichert werden soll
+- Eine große Anzahl von Ereignissen, die verarbeitet werden müssen
+- Lange Datenbankverbindungszeit für überfüllte Knoten
+- Der Anbieter selbst fällt dem Kettenkopf hinterher
+- Langsamkeit beim Abrufen neuer Einnahmen am Kettenkopf vom Anbieter
 
-Subgraph indexing metrics can help diagnose the root cause of indexing slowness. In some cases, the problem lies with the Subgraph itself, but in others, improved network providers, reduced database contention and other configuration improvements can markedly improve indexing performance.
+Metriken zur Indizierung von Subgraphen können dabei helfen, die Ursache für die Langsamkeit der Indizierung zu ermitteln. In einigen Fällen liegt das Problem am Subgraph selbst, in anderen Fällen können verbesserte Netzwerkanbieter, geringere Datenbankkonflikte und andere Konfigurationsverbesserungen die Indizierungsleistung deutlich verbessern.
 
-#### Failed Subgraphs
+#### Fehlerhafte Subgraphen
 
-During indexing Subgraphs might fail, if they encounter data that is unexpected, some component not working as expected, or if there is some bug in the event handlers or configuration. There are two general types of failure:
+Während der Indizierung können Subgraphen fehlschlagen, wenn sie auf unerwartete Daten stoßen, wenn eine Komponente nicht wie erwartet funktioniert oder wenn es einen Fehler in den Event-Handlern oder der Konfiguration gibt. Es gibt zwei allgemeine Arten von Fehlern:
 
-- Deterministic failures: these are failures which will not be resolved with retries
-- Non-deterministic failures: these might be down to issues with the provider, or some unexpected Graph Node error. When a non-deterministic failure occurs, Graph Node will retry the failing handlers, backing off over time.
+- Deterministische Fehler: Dies sind Fehler, die nicht durch Wiederholungsversuche behoben werden können
+- Nicht deterministische Fehler: Diese können auf Probleme mit dem Anbieter oder auf einen unerwarteten Graph-Knoten-Fehler zurückzuführen sein. Wenn ein nicht deterministischer Fehler auftritt, versucht Graph Node die fehlgeschlagenen Handler erneut und nimmt im Laufe der Zeit einen Rückzieher.
 
-In some cases a failure might be resolvable by the indexer (for example if the error is a result of not having the right kind of provider, adding the required provider will allow indexing to continue). However in others, a change in the Subgraph code is required.
+In einigen Fällen kann ein Fehler durch den Indexer behoben werden (z. B. wenn der Fehler darauf zurückzuführen ist, dass nicht die richtige Art von Anbieter vorhanden ist, kann durch Hinzufügen des erforderlichen Anbieters die Indizierung fortgesetzt werden). In anderen Fällen ist jedoch eine Änderung des Subgraph-Codes erforderlich.
 
-> Deterministic failures are considered "final", with a Proof of Indexing generated for the failing block, while non-deterministic failures are not, as the Subgraph may manage to "unfail" and continue indexing. In some cases, the non-deterministic label is incorrect, and the Subgraph will never overcome the error; such failures should be reported as issues on the Graph Node repository.
+> Deterministische Fehler werden als „endgültig“ betrachtet, wobei für den fehlgeschlagenen Block ein Indizierungsnachweis generiert wird, während nicht-deterministische Fehler nicht als solche betrachtet werden, da es dem Subgraphen gelingen kann, „nicht zu versagen“ und die Indizierung fortzusetzen. In einigen Fällen ist die nicht-deterministische Kennzeichnung falsch, und der Subgraph wird den Fehler nie überwinden; solche Fehler sollten als Probleme im Graph Node Repository gemeldet werden.
 
-#### Block and call cache
+#### Cache blockieren und aufrufen
 
-Graph Node caches certain data in the store in order to save refetching from the provider. Blocks are cached, as are the results of `eth_calls` (the latter being cached as of a specific block). This caching can dramatically increase indexing speed during "resyncing" of a slightly altered Subgraph.
+Graph Node speichert bestimmte Daten im Zwischenspeicher, um ein erneutes Abrufen vom Anbieter zu vermeiden. Blöcke werden zwischengespeichert, ebenso wie die Ergebnisse von `eth_calls` (letztere werden ab einem bestimmten Block zwischengespeichert). Diese Zwischenspeicherung kann die Indizierungsgeschwindigkeit bei der „Neusynchronisierung“ eines leicht geänderten Untergraphen drastisch erhöhen.
 
-However, in some instances, if an Ethereum node has provided incorrect data for some period, that can make its way into the cache, leading to incorrect data or failed Subgraphs. In this case indexers can use `graphman` to clear the poisoned cache, and then rewind the affected Subgraphs, which will then fetch fresh data from the (hopefully) healthy provider.
+Wenn jedoch ein Ethereum-Knoten über einen bestimmten Zeitraum falsche Daten geliefert hat, können diese in den Cache gelangen und zu falschen Daten oder fehlgeschlagenen Subgraphen führen. In diesem Fall können Indexer `graphman` verwenden, um den vergifteten Cache zu löschen und dann die betroffenen Subgraphen neu zu spulen, die dann frische Daten von dem (hoffentlich) gesunden Anbieter holen werden.
 
-If a block cache inconsistency is suspected, such as a tx receipt missing event:
+Wenn eine Block-Cache-Inkonsistenz vermutet wird, z. B. ein Ereignis „TX-Empfang fehlt“:
 
 1. `graphman chain list`, um den Namen der Kette zu finden.
 2. `graphman chain check-blocks <CHAIN> by-number <NUMBER>` prüft, ob der zwischengespeicherte Block mit dem Anbieter übereinstimmt, und löscht den Block aus dem Cache, wenn dies nicht der Fall ist.
    1. Wenn es einen Unterschied gibt, kann es sicherer sein, den gesamten Cache mit `graphman chain truncate <CHAIN>` abzuschneiden.
-   2. If the block matches the provider, then the issue can be debugged directly against the provider.
+   2. Wenn der Block mit dem Anbieter übereinstimmt, kann das Problem direkt beim Anbieter gedebuggt werden.
 
-#### Querying issues and errors
+#### Abfragen von Problemen und Fehlern
 
-Once a Subgraph has been indexed, indexers can expect to serve queries via the Subgraph's dedicated query endpoint. If the indexer is hoping to serve significant query volume, a dedicated query node is recommended, and in case of very high query volumes, indexers may want to configure replica shards so that queries don't impact the indexing process.
+Sobald ein Subgraph indiziert wurde, können Indexierer erwarten, dass Abfragen über den dedizierten Abfrageendpunkt des Subgraphen bedient werden. Wenn der Indexer hofft, ein erhebliches Abfragevolumen zu bedienen, wird ein dedizierter Abfrageknoten empfohlen. Im Falle eines sehr hohen Abfragevolumens möchten Indexer möglicherweise Replikatshards konfigurieren, damit Abfragen den Indexierungsprozess nicht beeinträchtigen.
 
-However, even with a dedicated query node and replicas, certain queries can take a long time to execute, and in some cases increase memory usage and negatively impact the query time for other users.
+Aber selbst mit einem dedizierten Abfrageknoten und Replikaten kann die Ausführung bestimmter Abfragen lange dauern und in einigen Fällen die Speichernutzung erhöhen und die Abfragezeit für andere Benutzer negativ beeinflussen.
 
-There is not one "silver bullet", but a range of tools for preventing, diagnosing and dealing with slow queries.
+Es gibt nicht die eine Wunderwaffe, sondern eine Reihe von Tools zur Vorbeugung, Diagnose und Behandlung langsamer Abfragen.
 
-##### Query caching
+##### Abfrage-Caching
 
 Graph Node zwischenspeichert GraphQL-Abfragen standardmäßig, was die Datenbanklast erheblich reduzieren kann. Dies kann mit den Einstellungen `GRAPH_QUERY_CACHE_BLOCKS` und `GRAPH_QUERY_CACHE_MAX_MEM` weiter konfiguriert werden - lesen Sie mehr [hier](https://github.com/graphprotocol/graph-node/blob/master/docs/environment-variables.md#graphql-caching).
 
-##### Analysing queries
+##### Analysieren von Abfragen
 
-Problematic queries most often surface in one of two ways. In some cases, users themselves report that a given query is slow. In that case the challenge is to diagnose the reason for the slowness - whether it is a general issue, or specific to that Subgraph or query. And then of course to resolve it, if possible.
+Problematische Abfragen treten meist auf zwei Arten auf. In einigen Fällen melden die Benutzer selbst, dass eine bestimmte Abfrage langsam ist. In diesem Fall besteht die Herausforderung darin, den Grund für die Langsamkeit zu diagnostizieren - ob es sich um ein allgemeines Problem oder um ein spezifisches Problem für diesen Untergraphen oder diese Abfrage handelt. Und dann natürlich, wenn möglich, das Problem zu beheben.
 
-In other cases, the trigger might be high memory usage on a query node, in which case the challenge is first to identify the query causing the issue.
+In anderen Fällen kann der Auslöser eine hohe Speicherauslastung auf einem Abfrageknoten sein. In diesem Fall besteht die Herausforderung darin, zuerst die Abfrage zu identifizieren, die das Problem verursacht.
 
 Indexer können [qlog](https://github.com/graphprotocol/qlog/) verwenden, um die Abfrageprotokolle von Graph Node zu verarbeiten und zusammenzufassen. `GRAPH_LOG_QUERY_TIMING` kann auch aktiviert werden, um langsame Abfragen zu identifizieren und zu debuggen.
 
-Given a slow query, indexers have a few options. Of course they can alter their cost model, to significantly increase the cost of sending the problematic query. This may result in a reduction in the frequency of that query. However this often doesn't resolve the root cause of the issue.
+Bei einer langsamen Abfrage haben Indexierer einige Optionen. Natürlich können sie ihr Kostenmodell ändern, um die Kosten für das Senden der problematischen Anfrage erheblich zu erhöhen. Dies kann zu einer Verringerung der Häufigkeit dieser Abfrage führen. Dies behebt jedoch häufig nicht die Ursache des Problems.
 
-##### Account-like optimisation
+##### Account-ähnliche Optimierung
 
-Database tables that store entities seem to generally come in two varieties: 'transaction-like', where entities, once created, are never updated, i.e., they store something akin to a list of financial transactions, and 'account-like' where entities are updated very often, i.e., they store something like financial accounts that get modified every time a transaction is recorded. Account-like tables are characterized by the fact that they contain a large number of entity versions, but relatively few distinct entities. Often, in such tables the number of distinct entities is 1% of the total number of rows (entity versions)
+Datenbanktabellen, die Entitäten speichern, scheinen im Allgemeinen in zwei Varianten zu existieren: „transaktionsähnlich“, bei denen Entitäten, sobald sie erstellt wurden, nie aktualisiert werden, d. h. sie speichern so etwas wie eine Liste von Finanztransaktionen, und „kontoähnlich“, bei denen Entitäten sehr oft aktualisiert werden, d. h. sie speichern so etwas wie Finanzkonten, die jedes Mal geändert werden, wenn eine Transaktion aufgezeichnet wird. Kontenähnliche Tabellen zeichnen sich dadurch aus, dass sie eine große Anzahl von Entitätsversionen, aber relativ wenige eindeutige Entitäten enthalten. In solchen Tabellen beträgt die Anzahl der unterschiedlichen Entitäten häufig 1 % der Gesamtzahl der Zeilen (Entitätsversionen).
 
 Für kontoähnliche Tabellen kann `graph-node` Abfragen generieren, die sich die Details zunutze machen, wie Postgres Daten mit einer so hohen Änderungsrate speichert, nämlich dass alle Versionen für die jüngsten Blöcke in einem kleinen Teil des Gesamtspeichers für eine solche Tabelle liegen.
 
@@ -338,8 +338,8 @@ Sobald eine Tabelle als „kontoähnlich“ eingestuft wurde, wird durch die Aus
 
 For Uniswap-like Subgraphs, the `pair` and `token` tables are prime candidates for this optimization, and can have a dramatic effect on database load.
 
-#### Removing Subgraphs
+#### Entfernen von Subgraphen
 
 > This is new functionality, which will be available in Graph Node 0.29.x
 
-At some point an indexer might want to remove a given Subgraph. This can be easily done via `graphman drop`, which deletes a deployment and all it's indexed data. The deployment can be specified as either a Subgraph name, an IPFS hash `Qm..`, or the database namespace `sgdNNN`. Further documentation is available [here](https://github.com/graphprotocol/graph-node/blob/master/docs/graphman.md#-drop).
+Irgendwann möchte ein Indexer vielleicht einen bestimmten Subgraph entfernen. Dies kann einfach mit `graphman drop` gemacht werden, welches einen Einsatz und alle indizierten Daten löscht. Der Einsatz kann entweder als Name eines Subgraphen, als IPFS-Hash `Qm..` oder als Datenbank-Namensraum `sgdNNN` angegeben werden. Weitere Dokumentation ist [hier](https://github.com/graphprotocol/graph-node/blob/master/docs/graphman.md#-drop) verfügbar.
