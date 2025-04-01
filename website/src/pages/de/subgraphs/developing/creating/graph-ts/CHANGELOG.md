@@ -2,21 +2,21 @@
 
 ## 0.38.0
 
-### Minor Changes
+### Geringfügige Änderungen
 
-- [#1935](https://github.com/graphprotocol/graph-tooling/pull/1935) [`0c36a02`](https://github.com/graphprotocol/graph-tooling/commit/0c36a024e0516bbf883ae62b8312dba3d9945f04) Thanks [@isum](https://github.com/isum)! - feat: add yaml parsing support to mappings
+- [#1935](https://github.com/graphprotocol/graph-tooling/pull/1935) [`0c36a02`](https://github.com/graphprotocol/graph-tooling/commit/0c36a024e0516bbf883ae62b8312dba3d9945f04) Danke [@isum](https://github.com/isum)! - feat: yaml parsing Unterstützung für Mappings hinzufügen
 
 ## 0.37.0
 
-### Minor Changes
+### Geringfügige Änderungen
 
 - [#1843](https://github.com/graphprotocol/graph-tooling/pull/1843)
   [`c09b56b`](https://github.com/graphprotocol/graph-tooling/commit/c09b56b093f23c80aa5d217b2fd56fccac061145)
-  Thanks [@YaroShkvorets](https://github.com/YaroShkvorets)! - Update all dependencies
+  Danke [@YaroShkvorets](https://github.com/YaroShkvorets)! - Alle Abhängigkeiten aktualisieren
 
 ## 0.36.0
 
-### Minor Changes
+### Geringfügige Änderungen
 
 - [#1754](https://github.com/graphprotocol/graph-tooling/pull/1754)
   [`2050bf6`](https://github.com/graphprotocol/graph-tooling/commit/2050bf6259c19bd86a7446410c7e124dfaddf4cd)
@@ -33,7 +33,7 @@
 
 ## 0.35.0
 
-### Minor Changes
+### Geringfügige Änderungen
 
 - [#1609](https://github.com/graphprotocol/graph-tooling/pull/1609)
   [`e299f6c`](https://github.com/graphprotocol/graph-tooling/commit/e299f6ce5cf1ad74cab993f6df3feb7ca9993254)
@@ -41,7 +41,7 @@
 
 ## 0.34.0
 
-### Minor Changes
+### Geringfügige Änderungen
 
 - [#1522](https://github.com/graphprotocol/graph-tooling/pull/1522)
   [`d132f9c`](https://github.com/graphprotocol/graph-tooling/commit/d132f9c9f6ea5283e40a8d913f3abefe5a8ad5f8)
@@ -50,7 +50,7 @@
 
 ## 0.33.0
 
-### Minor Changes
+### Geringfügige Änderungen
 
 - [#1584](https://github.com/graphprotocol/graph-tooling/pull/1584)
   [`0075f06`](https://github.com/graphprotocol/graph-tooling/commit/0075f06ddaa6d37606e42e1c12d11d19674d00ad)
@@ -58,7 +58,7 @@
 
 ## 0.32.0
 
-### Minor Changes
+### Geringfügige Änderungen
 
 - [#1523](https://github.com/graphprotocol/graph-tooling/pull/1523)
   [`167696e`](https://github.com/graphprotocol/graph-tooling/commit/167696eb611db0da27a6cf92a7390e72c74672ca)
@@ -66,7 +66,7 @@
 
 ## 0.31.0
 
-### Minor Changes
+### Geringfügige Änderungen
 
 - [#1340](https://github.com/graphprotocol/graph-tooling/pull/1340)
   [`2375877`](https://github.com/graphprotocol/graph-tooling/commit/23758774b33b5b7c6934f57a3e137870205ca6f0)
@@ -79,7 +79,7 @@
 
 ## 0.30.0
 
-### Minor Changes
+### Geringfügige Änderungen
 
 - [#1299](https://github.com/graphprotocol/graph-tooling/pull/1299)
   [`3f8b514`](https://github.com/graphprotocol/graph-tooling/commit/3f8b51440db281e69879be7d91d79cd43e45fe86)
