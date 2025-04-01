@@ -3,7 +3,14 @@ import Head from 'next/head'
 import { useRouter } from 'next/router'
 import { useData } from 'nextra/hooks'
 
-import { ExperimentalDescriptionList, ExperimentalLink, Grid, Skeleton, Text } from '@edgeandnode/gds'
+import {
+  ExperimentalCopyButton,
+  ExperimentalDescriptionList,
+  ExperimentalLink,
+  Grid,
+  Skeleton,
+  Text,
+} from '@edgeandnode/gds'
 import { NetworkIcon } from '@edgeandnode/go'
 
 import NetworkDetailsPage from '@/components/NetworkDetailsPage'
@@ -77,28 +84,34 @@ export function NetworkPage({ network }: NetworkPageProps) {
         <Grid className="gap-4">
           <div className="col-span-2">
             <div>
-              <ExperimentalDescriptionList size="small">
+              <ExperimentalDescriptionList size="medium">
                 <ExperimentalDescriptionList.Item label={t('index.supportedNetworks.type')}>
-                  <Text.P14>{networkData.networkType}</Text.P14>
+                  {networkData.networkType}
                 </ExperimentalDescriptionList.Item>
                 {networkData.graphNode?.protocol && (
                   <ExperimentalDescriptionList.Item label={t('index.supportedNetworks.protocol')}>
-                    <Text.P14>{networkData.graphNode.protocol}</Text.P14>
+                    {networkData.graphNode.protocol}
                   </ExperimentalDescriptionList.Item>
                 )}
                 {networkData.id && (
-                  <ExperimentalDescriptionList.Item label={t('index.supportedNetworks.identifier')}>
-                    <Text.P14>{networkData.id}</Text.P14>
+                  <ExperimentalDescriptionList.Item variant="mono" label={t('index.supportedNetworks.identifier')}>
+                    <div className="flex items-center gap-2">
+                      {networkData.id}
+                      <ExperimentalCopyButton size="small" variant="naked" value={networkData.id} />
+                    </div>
                   </ExperimentalDescriptionList.Item>
                 )}
                 {networkData.caip2Id && (
-                  <ExperimentalDescriptionList.Item label={t('index.supportedNetworks.chainId')}>
-                    <Text.P14>{networkData.caip2Id}</Text.P14>
+                  <ExperimentalDescriptionList.Item variant="mono" label={t('index.supportedNetworks.chainId')}>
+                    <div className="flex items-center gap-2">
+                      {networkData.caip2Id}
+                      <ExperimentalCopyButton size="small" variant="naked" value={networkData.caip2Id} />
+                    </div>
                   </ExperimentalDescriptionList.Item>
                 )}
                 {networkData.nativeToken && (
                   <ExperimentalDescriptionList.Item label={t('index.supportedNetworks.nativeCurrency')}>
-                    <Text.P14>{networkData.nativeToken}</Text.P14>
+                    {networkData.nativeToken}
                   </ExperimentalDescriptionList.Item>
                 )}
                 {networkData.docsUrl && (
