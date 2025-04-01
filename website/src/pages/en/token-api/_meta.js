@@ -5,5 +5,5 @@ export default {
   mcp: titles.mcp,
   evm: titles.evm,
   monitoring: titles.monitoring,
-  'token-api-faq': '',
+  faq: '',
 }
