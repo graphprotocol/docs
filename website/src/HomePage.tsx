@@ -259,11 +259,11 @@ function SupportedNetworks({ className, ...props }: ComponentPropsWithoutRef<'di
       <ul className="grid grid-cols-auto-fill-16 gap-px text-space-500">
         {supportedNetworks
           // TODO: Don't filter out testnets that don't have a mainnet
-          .filter((network) => network.networkType === NetworkType.Mainnet)
+          .filter((network) => String(network.networkType) === String(NetworkType.Mainnet))
           // Filter out networks that are either duplicates (same logo, same or similar short name) or irrelevant in this view
           .filter(
             (network) =>
-              !network.caip2Id.startsWith('beacon:') &&
+              !network.caip2Id?.startsWith('beacon:') &&
               !['boba-bnb', 'eos-evm', 'polygon-zkevm', 'solana-accounts'].includes(network.id),
           )
           // TODO: Fix Zora mono logo in web3icons
