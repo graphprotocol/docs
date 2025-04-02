@@ -298,22 +298,22 @@ export function SupportedNetworksTable({
           <tbody>
             <tr>
               <th className="w-48">
-                <Text.C10>{t('supportedNetworks.name')}</Text.C10>
+                <Text.C10>{t('index.supportedNetworks.tableHeaders.name')}</Text.C10>
               </th>
               <th className="w-48">
-                <Text.C10>{t('supportedNetworks.id')}</Text.C10>
+                <Text.C10>{t('index.supportedNetworks.tableHeaders.id')}</Text.C10>
               </th>
               <th align="center">
-                <Text.C10>{t('supportedNetworks.subgraphs')}</Text.C10>
+                <Text.C10>{t('index.supportedNetworks.tableHeaders.subgraphs')}</Text.C10>
               </th>
               <th align="center">
-                <Text.C10>{t('supportedNetworks.substreams')}</Text.C10>
+                <Text.C10>{t('index.supportedNetworks.tableHeaders.substreams')}</Text.C10>
               </th>
               <th align="center">
-                <Text.C10>{t('supportedNetworks.firehose')}</Text.C10>
+                <Text.C10>{t('index.supportedNetworks.tableHeaders.firehose')}</Text.C10>
               </th>
               <th align="center">
-                <Text.C10>{t('supportedNetworks.tokenapi')}</Text.C10>
+                <Text.C10>{t('index.supportedNetworks.tableHeaders.tokenapi')}</Text.C10>
               </th>
             </tr>
             {skeletonRows}
@@ -324,22 +324,22 @@ export function SupportedNetworksTable({
           <tbody>
             <tr>
               <th className="w-48">
-                <Text.C10>{t('supportedNetworks.name')}</Text.C10>
+                <Text.C10>{t('index.supportedNetworks.tableHeaders.name')}</Text.C10>
               </th>
               <th className="w-48">
-                <Text.C10>{t('supportedNetworks.id')}</Text.C10>
+                <Text.C10>{t('index.supportedNetworks.tableHeaders.id')}</Text.C10>
               </th>
               <th align="center">
-                <Text.C10>{t('supportedNetworks.subgraphs')}</Text.C10>
+                <Text.C10>{t('index.supportedNetworks.tableHeaders.subgraphs')}</Text.C10>
               </th>
               <th align="center">
-                <Text.C10>{t('supportedNetworks.substreams')}</Text.C10>
+                <Text.C10>{t('index.supportedNetworks.tableHeaders.substreams')}</Text.C10>
               </th>
               <th align="center">
-                <Text.C10>{t('supportedNetworks.firehose')}</Text.C10>
+                <Text.C10>{t('index.supportedNetworks.tableHeaders.firehose')}</Text.C10>
               </th>
               <th align="center">
-                <Text.C10>{t('supportedNetworks.tokenapi')}</Text.C10>
+                <Text.C10>{t('index.supportedNetworks.tableHeaders.tokenapi')}</Text.C10>
               </th>
             </tr>
             <AnimatePresence initial={false}>
