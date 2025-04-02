@@ -1,4 +1,4 @@
-import { Button, DottedRingsSpinner, Text } from '@edgeandnode/gds'
+import { Button, DottedRingsSpinner } from '@edgeandnode/gds'
 import { EyeClosed } from '@edgeandnode/gds/icons'
 
 import { useI18n } from '@/i18n'
@@ -17,21 +17,13 @@ export const EmptySearchResults = ({ searchQuery, onClearSearch }: EmptySearchRe
     <div className="mb-16 flex flex-col items-center justify-center border-b border-space-1400 py-16 pb-16 text-center">
       <div className="text-space-700">
         <DottedRingsSpinner>
-          <EyeClosed
-            size="36px"
-            color="purple-100"
-            alt="Information"
-            sx={{
-              stroke: 'purple-100',
-              transform: 'translate(1px, -1.5px)',
-            }}
-          />
+          <EyeClosed size="36px" color="purple-100" alt="Information" />
         </DottedRingsSpinner>
       </div>
-      <Text.P20 className="mb-2 mt-0 font-medium">{t('index.supportedNetworks.emptySearch.title')}</Text.P20>
-      <Text.P16 className="mb-6 max-w-md text-space-700">
+      <p className="text-p20 mb-2 mt-0 font-medium">{t('index.supportedNetworks.emptySearch.title')}</p>
+      <p className="text-p16 mb-6 max-w-90 text-space-700">
         {t('index.supportedNetworks.emptySearch.description', [searchQuery])}
-      </Text.P16>
+      </p>
       <div className="flex flex-wrap justify-center gap-3">
         <Button onClick={onClearSearch} variant="secondary" size="medium">
           {t('index.supportedNetworks.emptySearch.clearSearch')}

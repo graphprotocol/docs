@@ -18,17 +18,12 @@ export const MONO_ICON_NETWORKS = [
   'fraxtal',
   'lumia',
   'mbase',
+  'megaeth-testnet',
 ]
 
+// TODO(@hayderkg, @benface): Add network icons to GDS for these networks
 // Skeleton networks (no icon available)
-export const MISSING_ICON_NETWORKS = [
-  'berachain-bepolia',
-  'hoodi',
-  'ink-sepolia',
-  'megaeth-testnet',
-  'solana-accounts',
-  'manta',
-]
+export const MISSING_ICON_NETWORKS = ['ink-sepolia']
 
 // Non-EVM networks
 export const NON_EVM_NETWORKS = [
@@ -62,25 +57,21 @@ export const NON_EVM_NETWORKS = [
   'starknet-testnet',
 ]
 
-// Networks with Token API support
+// Networks with Token API support (TODO: remove once the registry has this information)
 export const TOKEN_API_NETWORKS = ['mainnet', 'base', 'bsc', 'arbitrum-one', 'matic', 'optimism']
 
-// Mono Icon Variant
 export const getIconVariant = (networkId: string): 'mono' | 'branded' => {
   return MONO_ICON_NETWORKS.includes(networkId) ? 'mono' : 'branded'
 }
 
-// Skeleton Icon
 export const shouldShowSkeleton = (networkId: string): boolean => {
   return MISSING_ICON_NETWORKS.includes(networkId) || !networkId
 }
 
-// Non-EVM Network
 export const isNonEVMNetwork = (networkId: string): boolean => {
   return NON_EVM_NETWORKS.includes(networkId)
 }
 
-// Token API Support
 export const supportsTokenAPI = (networkId: string): boolean => {
   return TOKEN_API_NETWORKS.includes(networkId)
 }
@@ -90,7 +81,7 @@ export interface NetworkData {
   shortName: string
   fullName: string
   networkType: string
-  caip2Id?: string
+  caip2Id: string
   services: {
     subgraphs?: any[]
     substreams?: any[]
@@ -103,7 +94,7 @@ export interface ProcessedNetwork {
   shortName: string
   fullName: string
   networkType: string
-  caip2Id?: string
+  caip2Id: string
   subgraphs: boolean
   substreams: boolean
   firehose: boolean

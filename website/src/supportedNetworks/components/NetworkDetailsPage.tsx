@@ -7,7 +7,7 @@ import { Subgraph, Substreams, SubstreamsPoweredSubgraph } from '@edgeandnode/gd
 
 import { Card, TimeIcon } from '@/components'
 import { useI18n } from '@/i18n'
-import { isNonEVMNetwork } from '@/utils/networkUtils'
+import { isNonEVMNetwork } from '@/supportedNetworks/utils'
 
 type NetworkDetailsPageProps = {
   network: {
@@ -32,7 +32,7 @@ const EVMResources = memo(() => {
           title={t('index.networkGuides.evm.subgraphQuickStart.title')}
           description={t('index.networkGuides.evm.subgraphQuickStart.description')}
           slotAboveTitle={<TimeIcon variant="reading" minutes={10} />}
-          className="min-h-[252px]"
+          className="min-h-64"
           icon={<Subgraph size={6} />}
         />
         <Card
@@ -40,7 +40,7 @@ const EVMResources = memo(() => {
           title={t('index.networkGuides.evm.substreams.title')}
           description={t('index.networkGuides.evm.substreams.description')}
           slotAboveTitle={<TimeIcon variant="reading" minutes={15} />}
-          className="min-h-[252px]"
+          className="min-h-64"
           icon={<Substreams size={6} />}
         />
         <Card
@@ -48,7 +48,7 @@ const EVMResources = memo(() => {
           title={t('index.networkGuides.evm.timeseries.title')}
           description={t('index.networkGuides.evm.timeseries.description')}
           slotAboveTitle={<TimeIcon variant="reading" minutes={8} />}
-          className="min-h-[252px]"
+          className="min-h-64"
           icon={<Substreams size={6} />}
         />
       </div>
@@ -81,7 +81,7 @@ const NonEVMResources = memo(() => {
           title={t('index.networkGuides.nonEvm.officialDocs.title')}
           description={t('index.networkGuides.nonEvm.officialDocs.description')}
           slotAboveTitle={<TimeIcon variant="reading" minutes={15} />}
-          className="min-h-[252px]"
+          className="min-h-64"
           icon={<Substreams size={6} />}
         />
         <Card
@@ -89,7 +89,7 @@ const NonEVMResources = memo(() => {
           title={t('index.networkGuides.nonEvm.spsIntro.title')}
           description={t('index.networkGuides.nonEvm.spsIntro.description')}
           slotAboveTitle={<TimeIcon variant="reading" minutes={8} />}
-          className="min-h-[252px]"
+          className="min-h-64"
           icon={<SubstreamsPoweredSubgraph size={6} />}
         />
         <Card
@@ -97,7 +97,7 @@ const NonEVMResources = memo(() => {
           title={t('index.networkGuides.nonEvm.substreamsDev.title')}
           description={t('index.networkGuides.nonEvm.substreamsDev.description')}
           slotAboveTitle={<TimeIcon variant="reading" minutes={10} />}
-          className="min-h-[252px]"
+          className="min-h-64"
           icon={<Substreams size={6} />}
         />
       </div>

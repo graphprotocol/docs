@@ -8,7 +8,7 @@ interface TableProps extends ComponentPropsWithoutRef<'table'> {
 
 export const Table = ({ className, children, variant = 'default', ...props }: TableProps) => {
   const isSupportedNetworks = variant === 'supported-networks'
-
+  //TODO: @hayderkg Fix when we decide if having variants or not
   return (
     <div
       className={classNames([

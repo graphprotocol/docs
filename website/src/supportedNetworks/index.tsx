@@ -1,14 +1,14 @@
 import { NetworksRegistry } from '@pinax/graph-networks-registry'
 import { useRouter } from 'next/router'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 
-import { ExperimentalLink, Text } from '@edgeandnode/gds'
+import { ExperimentalLink } from '@edgeandnode/gds'
 
 import { Callout } from '@/components'
-import { EmptySearchResults, NetworkFilters, NetworksTable } from '@/components/supported-networks'
+import { EmptySearchResults, NetworkFilters, NetworksTable } from './components'
 import { useI18n } from '@/i18n'
-import type { NetworkData, ProcessedNetwork } from '@/utils/networkUtils'
-import { processNetworksData } from '@/utils/networkUtils'
+import type { NetworkData, ProcessedNetwork } from './utils'
+import { processNetworksData } from './utils'
 
 export async function getSupportedNetworks(): Promise<ProcessedNetwork[]> {
   const registry = await NetworksRegistry.fromLatestVersion()
@@ -31,25 +31,6 @@ export function SupportedNetworksTable({
   const { locale = 'en' } = router
   const [searchQuery, setSearchQuery] = useState('')
   const [showTestnets, setShowTestnets] = useState(false)
-  const [isLoading, setIsLoading] = useState(true)
-  const [isLoadingTestnets, setIsLoadingTestnets] = useState(false)
-  const [hasLoadedDataBefore, setHasLoadedDataBefore] = useState(false)
-  const [noResults, setNoResults] = useState(false)
-
-  useEffect(() => {
-    if (networks.length > 0) {
-      setIsLoading(false)
-      setHasLoadedDataBefore(true)
-    } else {
-      setIsLoading(true)
-
-      const timer = setTimeout(() => {
-        setIsLoading(false)
-      }, 1500)
-
-      return () => clearTimeout(timer)
-    }
-  }, [networks])
 
   const filteredNetworks = useMemo(() => {
     let filtered = networks
@@ -73,9 +54,7 @@ export function SupportedNetworksTable({
     return filtered
   }, [networks, searchQuery, showTestnets])
 
-  useEffect(() => {
-    setNoResults(filteredNetworks.length === 0 && searchQuery !== '')
-  }, [filteredNetworks.length, searchQuery])
+  const noResults = filteredNetworks.length === 0 && searchQuery !== ''
 
   const handleClearSearch = useCallback(() => {
     setSearchQuery('')
@@ -85,13 +64,7 @@ export function SupportedNetworksTable({
     if (noResults) {
       setSearchQuery('')
     }
-
-    setIsLoadingTestnets(true)
-
-    setTimeout(() => {
-      setShowTestnets(true)
-      setIsLoadingTestnets(false)
-    }, 150)
+    setShowTestnets(true)
   }, [noResults])
 
   const handleHideTestnets = useCallback(() => {
@@ -110,31 +83,26 @@ export function SupportedNetworksTable({
     setSearchQuery(value)
   }, [])
 
-  const shouldShowLoadingScreen = isLoading || (isLoadingTestnets && !hasLoadedDataBefore)
-
   return (
     <>
       <Callout variant="info" className="mb-6 flex items-center">
-        <Text.P14>
+        <span className="text-p14">
           {t('index.supportedNetworks.infoText')}{' '}
           <ExperimentalLink href="https://thegraph.com/docs/en/indexing/chain-integration-overview/">
             {t('index.supportedNetworks.infoLink')}
           </ExperimentalLink>
           .
-        </Text.P14>
+        </span>
       </Callout>
 
       <NetworkFilters
         searchQuery={searchQuery}
         setSearchQuery={setSearchQueryCallback}
         showTestnets={showTestnets}
-        isLoadingTestnets={isLoadingTestnets}
         onToggleTestnets={handleToggleTestnets}
       />
 
-      {shouldShowLoadingScreen ? (
-        <NetworksTable networks={[]} isLoading={true} locale={locale} />
-      ) : filteredNetworks.length > 0 ? (
+      {filteredNetworks.length > 0 ? (
         <NetworksTable networks={filteredNetworks} isLoading={false} locale={locale} />
       ) : (
         <EmptySearchResults

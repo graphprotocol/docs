@@ -4,12 +4,12 @@ import { useRouter } from 'next/router'
 import { useData } from 'nextra/hooks'
 import { memo } from 'react'
 
-import { ExperimentalCopyButton, ExperimentalDescriptionList, ExperimentalLink, Grid, Skeleton } from '@edgeandnode/gds'
+import { ExperimentalCopyButton, ExperimentalDescriptionList, ExperimentalLink, Skeleton } from '@edgeandnode/gds'
 import { NetworkIcon } from '@edgeandnode/go'
 
-import NetworkDetailsPage from '@/components/NetworkDetailsPage'
+import NetworkDetailsPage from './NetworkDetailsPage'
 import { useI18n } from '@/i18n'
-import { getIconVariant, shouldShowSkeleton } from '@/utils/networkUtils'
+import { getIconVariant, shouldShowSkeleton } from '@/supportedNetworks/utils'
 
 type CAIP2Id = `${string}:${string | number}`
 
@@ -50,7 +50,7 @@ export const NetworkPage = memo(({ network }: NetworkPageProps) => {
       <div className="col-[container]">
         <div className="mb-5 mt-12 flex flex-col gap-3">
           {networkData.caip2Id ? (
-            <div className="flex-shrink-0">
+            <div className="shrink-0">
               {shouldShowSkeleton(networkData.id) ? (
                 <Skeleton borderRadius="FULL" height="40px" width="40px" />
               ) : (
@@ -66,7 +66,7 @@ export const NetworkPage = memo(({ network }: NetworkPageProps) => {
           <h2 className="leading-tight mt-0 text-24 text-white">{networkData.fullName}</h2>
         </div>
 
-        <Grid className="gap-4">
+        <div className="grid grid-cols-2 gap-4">
           <div className="col-span-2">
             <div>
               <ExperimentalDescriptionList size="medium">
@@ -79,19 +79,21 @@ export const NetworkPage = memo(({ network }: NetworkPageProps) => {
                   </ExperimentalDescriptionList.Item>
                 )}
                 {networkData.id && (
-                  <ExperimentalDescriptionList.Item variant="mono" label={t('index.supportedNetworks.identifier')}>
-                    <div className="flex items-center gap-2">
-                      {networkData.id}
-                      <ExperimentalCopyButton size="small" variant="naked" value={networkData.id} />
-                    </div>
+                  <ExperimentalDescriptionList.Item
+                    variant="mono"
+                    label={t('index.supportedNetworks.identifier')}
+                    action={<ExperimentalCopyButton size="small" variant="naked" value={networkData.id} />}
+                  >
+                    {networkData.id}
                   </ExperimentalDescriptionList.Item>
                 )}
                 {networkData.caip2Id && (
-                  <ExperimentalDescriptionList.Item variant="mono" label={t('index.supportedNetworks.chainId')}>
-                    <div className="flex items-center gap-2">
-                      {networkData.caip2Id}
-                      <ExperimentalCopyButton size="small" variant="naked" value={networkData.caip2Id} />
-                    </div>
+                  <ExperimentalDescriptionList.Item
+                    variant="mono"
+                    label={t('index.supportedNetworks.chainId')}
+                    action={<ExperimentalCopyButton size="small" variant="naked" value={networkData.caip2Id} />}
+                  >
+                    {networkData.caip2Id}
                   </ExperimentalDescriptionList.Item>
                 )}
                 {networkData.nativeToken && (
@@ -114,7 +116,7 @@ export const NetworkPage = memo(({ network }: NetworkPageProps) => {
               </ExperimentalDescriptionList>
             </div>
           </div>
-        </Grid>
+        </div>
 
         <hr />
 

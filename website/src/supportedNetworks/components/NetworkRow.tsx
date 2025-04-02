@@ -6,7 +6,7 @@ import { ExperimentalCopyButton, Skeleton, Text } from '@edgeandnode/gds'
 import { Check } from '@edgeandnode/gds/icons'
 import { NetworkIcon } from '@edgeandnode/go'
 
-import { getIconVariant, shouldShowSkeleton } from '@/utils/networkUtils'
+import { getIconVariant, shouldShowSkeleton } from '@/supportedNetworks/utils'
 
 const MotionTR = motion.tr
 
