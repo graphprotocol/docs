@@ -1,6 +1,6 @@
 import { memo } from 'react'
 
-import { ExperimentalSearch, ExperimentalToggleChip, LoadingSpinner } from '@edgeandnode/gds'
+import { ExperimentalSearch, ExperimentalToggleChip } from '@edgeandnode/gds'
 
 import { useI18n } from '@/i18n'
 
@@ -32,7 +32,6 @@ export const NetworkFilters = memo(
           onChange={onToggleTestnets}
           checked={showTestnets}
           disabled={isLoadingTestnets}
-          iconBefore={isLoadingTestnets ? <LoadingSpinner className="size-4" /> : undefined}
         >
           {t('index.supportedNetworks.showTestnets')}
         </ExperimentalToggleChip>

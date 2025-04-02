@@ -3,9 +3,9 @@ import type { ComponentPropsWithoutRef } from 'react'
 import { memo } from 'react'
 
 import { classNames } from '@edgeandnode/gds'
-import { Clock, Subgraph, Substreams, SubstreamsPoweredSubgraph } from '@edgeandnode/gds/icons'
+import { Subgraph, Substreams, SubstreamsPoweredSubgraph } from '@edgeandnode/gds/icons'
 
-import { Card } from '@/components'
+import { Card, TimeIcon } from '@/components'
 import { useI18n } from '@/i18n'
 import { isNonEVMNetwork } from '@/utils/networkUtils'
 
@@ -21,30 +21,6 @@ type NetworkDetailsPageProps = {
   }
 }
 
-const Time = memo(
-  ({
-    variant,
-    minutes,
-    className,
-    ...props
-  }: ComponentPropsWithoutRef<'div'> & {
-    variant: 'reading' | 'duration'
-    minutes: number
-  }) => {
-    const { t } = useI18n()
-    return (
-      <div className={classNames(['flex items-center gap-1 leading-none', className])} {...props}>
-        <Clock
-          alt={variant === 'reading' ? t('index.time.reading') : t('index.time.duration')}
-          variant="fill"
-          size={3.5}
-        />
-        {minutes} {t('index.time.minutes')}
-      </div>
-    )
-  },
-)
-
 const EVMResources = memo(() => {
   const { t } = useI18n()
 
@@ -55,37 +31,25 @@ const EVMResources = memo(() => {
           href="https://thegraph.com/docs/en/subgraphs/quick-start/"
           title={t('index.networkGuides.evm.subgraphQuickStart.title')}
           description={t('index.networkGuides.evm.subgraphQuickStart.description')}
-          slotAboveTitle={<Time variant="reading" minutes={10} />}
+          slotAboveTitle={<TimeIcon variant="reading" minutes={10} />}
           className="min-h-[252px]"
-          icon={
-            <div className="flex size-8 items-center justify-center text-white">
-              <Subgraph size={6} />
-            </div>
-          }
+          icon={<Subgraph size={6} />}
         />
         <Card
           href="https://docs.substreams.dev/"
           title={t('index.networkGuides.evm.substreams.title')}
           description={t('index.networkGuides.evm.substreams.description')}
-          slotAboveTitle={<Time variant="reading" minutes={15} />}
+          slotAboveTitle={<TimeIcon variant="reading" minutes={15} />}
           className="min-h-[252px]"
-          icon={
-            <div className="flex size-8 items-center justify-center text-white">
-              <Substreams size={6} />
-            </div>
-          }
+          icon={<Substreams size={6} />}
         />
         <Card
           href="https://thegraph.com/docs/en/subgraphs/best-practices/timeseries/"
           title={t('index.networkGuides.evm.timeseries.title')}
           description={t('index.networkGuides.evm.timeseries.description')}
-          slotAboveTitle={<Time variant="reading" minutes={8} />}
+          slotAboveTitle={<TimeIcon variant="reading" minutes={8} />}
           className="min-h-[252px]"
-          icon={
-            <div className="flex size-8 items-center justify-center text-white">
-              <Substreams size={6} />
-            </div>
-          }
+          icon={<Substreams size={6} />}
         />
       </div>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -93,13 +57,13 @@ const EVMResources = memo(() => {
           href="https://thegraph.com/docs/en/subgraphs/developing/creating/advanced/"
           title={t('index.networkGuides.evm.advancedFeatures.title')}
           description={t('index.networkGuides.evm.advancedFeatures.description')}
-          slotAboveTitle={<Time variant="reading" minutes={12} />}
+          slotAboveTitle={<TimeIcon variant="reading" minutes={12} />}
         />
         <Card
           href="https://thegraph.com/docs/en/subgraphs/billing/"
           title={t('index.networkGuides.evm.billing.title')}
           description={t('index.networkGuides.evm.billing.description')}
-          slotAboveTitle={<Time variant="reading" minutes={5} />}
+          slotAboveTitle={<TimeIcon variant="reading" minutes={5} />}
         />
       </div>
     </div>
@@ -116,37 +80,25 @@ const NonEVMResources = memo(() => {
           href="https://docs.substreams.dev/"
           title={t('index.networkGuides.nonEvm.officialDocs.title')}
           description={t('index.networkGuides.nonEvm.officialDocs.description')}
-          slotAboveTitle={<Time variant="reading" minutes={15} />}
+          slotAboveTitle={<TimeIcon variant="reading" minutes={15} />}
           className="min-h-[252px]"
-          icon={
-            <div className="flex size-8 items-center justify-center text-white">
-              <Substreams size={6} />
-            </div>
-          }
+          icon={<Substreams size={6} />}
         />
         <Card
           href="https://thegraph.com/docs/en/sps/introduction/"
           title={t('index.networkGuides.nonEvm.spsIntro.title')}
           description={t('index.networkGuides.nonEvm.spsIntro.description')}
-          slotAboveTitle={<Time variant="reading" minutes={8} />}
+          slotAboveTitle={<TimeIcon variant="reading" minutes={8} />}
           className="min-h-[252px]"
-          icon={
-            <div className="flex size-8 items-center justify-center text-white">
-              <SubstreamsPoweredSubgraph size={6} />
-            </div>
-          }
+          icon={<SubstreamsPoweredSubgraph size={6} />}
         />
         <Card
           href="https://substreams.dev/"
           title={t('index.networkGuides.nonEvm.substreamsDev.title')}
           description={t('index.networkGuides.nonEvm.substreamsDev.description')}
-          slotAboveTitle={<Time variant="reading" minutes={10} />}
+          slotAboveTitle={<TimeIcon variant="reading" minutes={10} />}
           className="min-h-[252px]"
-          icon={
-            <div className="flex size-8 items-center justify-center text-white">
-              <Substreams size={6} />
-            </div>
-          }
+          icon={<Substreams size={6} />}
         />
       </div>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -154,20 +106,19 @@ const NonEVMResources = memo(() => {
           href="https://github.com/streamingfast/substreams-starter"
           title={t('index.networkGuides.nonEvm.substreamsStarter.title')}
           description={t('index.networkGuides.nonEvm.substreamsStarter.description')}
-          slotAboveTitle={<Time variant="reading" minutes={5} />}
+          slotAboveTitle={<TimeIcon variant="reading" minutes={5} />}
         />
         <Card
           href="https://github.com/streamingfast/substreams"
           title={t('index.networkGuides.nonEvm.substreamsRepo.title')}
           description={t('index.networkGuides.nonEvm.substreamsRepo.description')}
-          slotAboveTitle={<Time variant="reading" minutes={7} />}
+          slotAboveTitle={<TimeIcon variant="reading" minutes={7} />}
         />
       </div>
     </div>
   )
 })
 
-Time.displayName = 'Time'
 EVMResources.displayName = 'EVMResources'
 NonEVMResources.displayName = 'NonEVMResources'
 
