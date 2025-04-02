@@ -1,24 +1,13 @@
-import { NetworkType } from '@pinax/graph-networks-registry'
-import type { ComponentPropsWithoutRef } from 'react'
 import { memo } from 'react'
 
-import { classNames } from '@edgeandnode/gds'
 import { Subgraph, Substreams, SubstreamsPoweredSubgraph } from '@edgeandnode/gds/icons'
 
 import { Card, TimeIcon } from '@/components'
 import { useI18n } from '@/i18n'
-import { isNonEVMNetwork } from '@/supportedNetworks/utils'
+import { isEVMNetwork, type Network } from '../utils'
 
 type NetworkDetailsPageProps = {
-  network: {
-    id: string
-    fullName: string
-    networkType: NetworkType
-    protocol: string
-    chainId: number | string
-    nativeCurrency: string
-    docs: string
-  }
+  network: Network
 }
 
 const EVMResources = memo(() => {
@@ -128,7 +117,7 @@ const NetworkDetailsPage = memo(({ network }: NetworkDetailsPageProps) => {
   return (
     <>
       <h3 className="text-h18 mt-0">{t('index.supportedNetworks.guides')}</h3>
-      {isNonEVMNetwork(network.id) ? <NonEVMResources /> : <EVMResources />}
+      {isEVMNetwork(network) ? <EVMResources /> : <NonEVMResources />}
     </>
   )
 })

@@ -1,3 +1,5 @@
+import { NetworkType } from '@pinax/graph-networks-registry'
+
 // Networks that should use the "mono" icon variant
 export const MONO_ICON_NETWORKS = [
   'vana',
@@ -25,38 +27,6 @@ export const MONO_ICON_NETWORKS = [
 // Skeleton networks (no icon available)
 export const MISSING_ICON_NETWORKS = ['ink-sepolia']
 
-// Non-EVM networks
-export const NON_EVM_NETWORKS = [
-  'eos',
-  'jungle4',
-  'kylin',
-  'telos-testnet',
-  'telos',
-  'wax-testnet',
-  'wax',
-  'arweave-mainnet',
-  'gnosis-chiado-cl',
-  'gnosis-cl',
-  'holesky-cl',
-  'mainnet-cl',
-  'sepolia-cl',
-  'btc',
-  'litecoin',
-  'injective-mainnet',
-  'injective-testnet',
-  'mantra-mainnet',
-  'mantra-testnet',
-  'near-mainnet',
-  'near-testnet',
-  'solana-accounts',
-  'solana-devnet',
-  'solana-mainnet',
-  'solana-mainnet-beta',
-  'solana-testnet',
-  'starknet-mainnet',
-  'starknet-testnet',
-]
-
 // Networks with Token API support (TODO: remove once the registry has this information)
 export const TOKEN_API_NETWORKS = ['mainnet', 'base', 'bsc', 'arbitrum-one', 'matic', 'optimism']
 
@@ -68,12 +38,21 @@ export const shouldShowSkeleton = (networkId: string): boolean => {
   return MISSING_ICON_NETWORKS.includes(networkId) || !networkId
 }
 
-export const isNonEVMNetwork = (networkId: string): boolean => {
-  return NON_EVM_NETWORKS.includes(networkId)
-}
-
 export const supportsTokenAPI = (networkId: string): boolean => {
   return TOKEN_API_NETWORKS.includes(networkId)
+}
+
+export interface Network {
+  id: string
+  fullName: string
+  shortName?: string
+  networkType: NetworkType
+  graphNode?: {
+    protocol: string
+  }
+  caip2Id: string
+  nativeToken?: string
+  docsUrl?: string
 }
 
 export interface NetworkData {
@@ -127,4 +106,8 @@ export const processNetworksData = (networks: NetworkData[]): ProcessedNetwork[]
       ]
     })
     .sort((a, b) => a.fullName.localeCompare(b.fullName))
+}
+
+export const isEVMNetwork = (network: Network | NetworkData): boolean => {
+  return network.caip2Id.startsWith('eip155:')
 }

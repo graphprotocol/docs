@@ -1,6 +1,5 @@
 import { NetworkType } from '@pinax/graph-networks-registry'
 import Head from 'next/head'
-import { useRouter } from 'next/router'
 import { useData } from 'nextra/hooks'
 import { memo } from 'react'
 
@@ -9,22 +8,7 @@ import { NetworkIcon } from '@edgeandnode/go'
 
 import NetworkDetailsPage from './NetworkDetailsPage'
 import { useI18n } from '@/i18n'
-import { getIconVariant, shouldShowSkeleton } from '@/supportedNetworks/utils'
-
-type CAIP2Id = `${string}:${string | number}`
-
-interface Network {
-  id: string
-  fullName: string
-  shortName?: string
-  networkType: NetworkType
-  graphNode?: {
-    protocol: string
-  }
-  caip2Id?: CAIP2Id
-  nativeToken?: string
-  docsUrl?: string
-}
+import { getIconVariant, shouldShowSkeleton, type Network } from '../utils'
 
 interface NetworkPageProps {
   network?: Network
@@ -38,9 +22,10 @@ export const NetworkPage = memo(({ network }: NetworkPageProps) => {
       id: '',
       fullName: '',
       networkType: NetworkType.Mainnet,
+      caip2Id: '',
     }
+
   const { t } = useI18n()
-  const router = useRouter()
 
   return (
     <>
@@ -120,17 +105,7 @@ export const NetworkPage = memo(({ network }: NetworkPageProps) => {
 
         <hr />
 
-        <NetworkDetailsPage
-          network={{
-            id: networkData.id,
-            fullName: networkData.fullName,
-            networkType: networkData.networkType,
-            protocol: networkData.graphNode?.protocol ?? '',
-            chainId: networkData.caip2Id?.split(':')[1] ?? '',
-            nativeCurrency: networkData.nativeToken ?? '',
-            docs: networkData.docsUrl ?? '',
-          }}
-        />
+        <NetworkDetailsPage network={networkData} />
       </div>
     </>
   )
