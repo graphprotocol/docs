@@ -1,14 +1,13 @@
 import { NetworkType } from '@pinax/graph-networks-registry'
-import Head from 'next/head'
 import type { ComponentPropsWithoutRef } from 'react'
+import { memo } from 'react'
 
 import { classNames } from '@edgeandnode/gds'
-import { translate } from '@edgeandnode/gds'
-import { ExperimentalLink } from '@edgeandnode/gds'
 import { Clock, Subgraph, Substreams, SubstreamsPoweredSubgraph } from '@edgeandnode/gds/icons'
 
 import { Card } from '@/components'
-import { translations, useI18n } from '@/i18n'
+import { useI18n } from '@/i18n'
+import { isNonEVMNetwork } from '@/utils/networkUtils'
 
 type NetworkDetailsPageProps = {
   network: {
@@ -20,66 +19,33 @@ type NetworkDetailsPageProps = {
     nativeCurrency: string
     docs: string
   }
-  locale?: string
 }
 
-const isNonEVMNetwork = (networkId: string): boolean => {
-  const nonEVMIds = [
-    'eos',
-    'jungle4',
-    'kylin',
-    'telos-testnet',
-    'telos',
-    'wax-testnet',
-    'wax',
-    'arweave-mainnet',
-    'gnosis-chiado-cl',
-    'gnosis-cl',
-    'holesky-cl',
-    'mainnet-cl',
-    'sepolia-cl',
-    'btc',
-    'litecoin',
-    'injective-mainnet',
-    'injective-testnet',
-    'mantra-mainnet',
-    'mantra-testnet',
-    'near-mainnet',
-    'near-testnet',
-    'solana-accounts',
-    'solana-devnet',
-    'solana-mainnet',
-    'solana-mainnet-beta',
-    'solana-testnet',
-    'starknet-mainnet',
-    'starknet-testnet',
-  ]
-  return nonEVMIds.includes(networkId)
-}
+const Time = memo(
+  ({
+    variant,
+    minutes,
+    className,
+    ...props
+  }: ComponentPropsWithoutRef<'div'> & {
+    variant: 'reading' | 'duration'
+    minutes: number
+  }) => {
+    const { t } = useI18n()
+    return (
+      <div className={classNames(['flex items-center gap-1 leading-none', className])} {...props}>
+        <Clock
+          alt={variant === 'reading' ? t('index.time.reading') : t('index.time.duration')}
+          variant="fill"
+          size={3.5}
+        />
+        {minutes} {t('index.time.minutes')}
+      </div>
+    )
+  },
+)
 
-function Time({
-  variant,
-  minutes,
-  className,
-  ...props
-}: ComponentPropsWithoutRef<'div'> & {
-  variant: 'reading' | 'duration'
-  minutes: number
-}) {
-  const { t } = useI18n()
-  return (
-    <div className={classNames(['flex items-center gap-1 leading-none', className])} {...props}>
-      <Clock
-        alt={variant === 'reading' ? t('index.time.reading') : t('index.time.duration')}
-        variant="fill"
-        size={3.5}
-      />
-      {minutes} {t('index.time.minutes')}
-    </div>
-  )
-}
-
-function EVMResources() {
+const EVMResources = memo(() => {
   const { t } = useI18n()
 
   return (
@@ -138,9 +104,9 @@ function EVMResources() {
       </div>
     </div>
   )
-}
+})
 
-function NonEVMResources() {
+const NonEVMResources = memo(() => {
   const { t } = useI18n()
 
   return (
@@ -199,9 +165,13 @@ function NonEVMResources() {
       </div>
     </div>
   )
-}
+})
 
-export default function NetworkDetailsPage({ network, locale = 'en' }: NetworkDetailsPageProps) {
+Time.displayName = 'Time'
+EVMResources.displayName = 'EVMResources'
+NonEVMResources.displayName = 'NonEVMResources'
+
+const NetworkDetailsPage = memo(({ network }: NetworkDetailsPageProps) => {
   const { t } = useI18n()
 
   return (
@@ -210,4 +180,8 @@ export default function NetworkDetailsPage({ network, locale = 'en' }: NetworkDe
       {isNonEVMNetwork(network.id) ? <NonEVMResources /> : <EVMResources />}
     </>
   )
-}
+})
+
+NetworkDetailsPage.displayName = 'NetworkDetailsPage'
+
+export default NetworkDetailsPage

@@ -1,21 +1,15 @@
 import { NetworkType } from '@pinax/graph-networks-registry'
 import Head from 'next/head'
 import { useRouter } from 'next/router'
+import { memo } from 'react'
 import { useData } from 'nextra/hooks'
 
-import {
-  ExperimentalCopyButton,
-  ExperimentalDescriptionList,
-  ExperimentalLink,
-  Grid,
-  Skeleton,
-  Text,
-} from '@edgeandnode/gds'
+import { ExperimentalCopyButton, ExperimentalDescriptionList, ExperimentalLink, Grid, Skeleton } from '@edgeandnode/gds'
 import { NetworkIcon } from '@edgeandnode/go'
 
 import NetworkDetailsPage from '@/components/NetworkDetailsPage'
 import { useI18n } from '@/i18n'
-import { MISSING_ICON_NETWORKS, MONO_ICON_NETWORKS } from '@/supportedNetworks'
+import { getIconVariant, shouldShowSkeleton } from '@/utils/networkUtils'
 
 type CAIP2Id = `${string}:${string | number}`
 
@@ -36,7 +30,7 @@ interface NetworkPageProps {
   network?: Network
 }
 
-export function NetworkPage({ network }: NetworkPageProps) {
+export const NetworkPage = memo(({ network }: NetworkPageProps) => {
   const data = useData()
   const contextNetwork = data?.ssg?.network || data?.network
   const networkData: Network = network ||
@@ -47,15 +41,6 @@ export function NetworkPage({ network }: NetworkPageProps) {
     }
   const { t } = useI18n()
   const router = useRouter()
-  const { locale = 'en' } = router
-
-  const getIconVariant = (networkId: string): 'mono' | 'branded' => {
-    return MONO_ICON_NETWORKS.includes(networkId) ? 'mono' : 'branded'
-  }
-
-  const shouldShowSkeleton = (networkId: string): boolean => {
-    return MISSING_ICON_NETWORKS.includes(networkId) || !networkId
-  }
 
   return (
     <>
@@ -143,9 +128,10 @@ export function NetworkPage({ network }: NetworkPageProps) {
             nativeCurrency: networkData.nativeToken ?? '',
             docs: networkData.docsUrl ?? '',
           }}
-          locale={locale}
         />
       </div>
     </>
   )
-}
+})
+
+NetworkPage.displayName = 'NetworkPage'
