@@ -4,6 +4,7 @@ import { Subgraph, Substreams, SubstreamsPoweredSubgraph } from '@edgeandnode/gd
 
 import { Card, TimeIcon } from '@/components'
 import { useI18n } from '@/i18n'
+
 import { isEVMNetwork, type Network } from '../utils'
 
 type NetworkDetailsPageProps = {

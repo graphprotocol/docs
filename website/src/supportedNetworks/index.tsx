@@ -5,8 +5,9 @@ import { useCallback, useMemo, useState } from 'react'
 import { ExperimentalLink } from '@edgeandnode/gds'
 
 import { Callout } from '@/components'
-import { EmptySearchResults, NetworkFilters, NetworksTable } from './components'
 import { useI18n } from '@/i18n'
+
+import { EmptySearchResults, NetworkFilters, NetworksTable } from './components'
 import type { NetworkData, ProcessedNetwork } from './utils'
 import { processNetworksData } from './utils'
 

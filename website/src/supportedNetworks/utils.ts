@@ -59,7 +59,7 @@ export interface NetworkData {
   id: string
   shortName: string
   fullName: string
-  networkType: string
+  networkType: NetworkType
   caip2Id: string
   services: {
     subgraphs?: any[]
@@ -72,7 +72,7 @@ export interface ProcessedNetwork {
   id: string
   shortName: string
   fullName: string
-  networkType: string
+  networkType: NetworkType
   caip2Id: string
   subgraphs: boolean
   substreams: boolean

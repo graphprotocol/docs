@@ -6,9 +6,11 @@ import { memo } from 'react'
 import { ExperimentalCopyButton, ExperimentalDescriptionList, ExperimentalLink, Skeleton } from '@edgeandnode/gds'
 import { NetworkIcon } from '@edgeandnode/go'
 
-import NetworkDetailsPage from './NetworkDetailsPage'
 import { useI18n } from '@/i18n'
-import { getIconVariant, shouldShowSkeleton, type Network } from '../utils'
+
+import { getIconVariant, type Network, shouldShowSkeleton } from '../utils'
+
+import NetworkDetailsPage from './NetworkDetailsPage'
 
 interface NetworkPageProps {
   network?: Network
