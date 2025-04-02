@@ -7,11 +7,12 @@ import { ExperimentalLink, Text } from '@edgeandnode/gds'
 import { Callout } from '@/components'
 import { EmptySearchResults, NetworkFilters, NetworksTable } from '@/components/supported-networks'
 import { useI18n } from '@/i18n'
+import type { NetworkData, ProcessedNetwork } from '@/utils/networkUtils'
 import { processNetworksData } from '@/utils/networkUtils'
 
-export async function getSupportedNetworks() {
+export async function getSupportedNetworks(): Promise<ProcessedNetwork[]> {
   const registry = await NetworksRegistry.fromLatestVersion()
-  return processNetworksData(registry.networks)
+  return processNetworksData(registry.networks as NetworkData[])
 }
 
 export async function getSupportedNetworksStaticProps() {

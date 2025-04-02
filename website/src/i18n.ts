@@ -84,7 +84,6 @@ export const translations = {
     global: NestedStrings
     index: NestedStrings
     docsearch: NestedStrings
-    supportedNetworks: NestedStrings
   }
 }
 

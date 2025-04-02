@@ -1,5 +1,6 @@
-import { Skeleton } from '@edgeandnode/gds'
 import { memo } from 'react'
+
+import { Skeleton } from '@edgeandnode/gds'
 
 export const SkeletonRow = memo(() => {
   return (

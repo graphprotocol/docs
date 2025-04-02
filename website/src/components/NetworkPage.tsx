@@ -1,8 +1,8 @@
 import { NetworkType } from '@pinax/graph-networks-registry'
 import Head from 'next/head'
 import { useRouter } from 'next/router'
-import { memo } from 'react'
 import { useData } from 'nextra/hooks'
+import { memo } from 'react'
 
 import { ExperimentalCopyButton, ExperimentalDescriptionList, ExperimentalLink, Grid, Skeleton } from '@edgeandnode/gds'
 import { NetworkIcon } from '@edgeandnode/go'

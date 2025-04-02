@@ -85,7 +85,37 @@ export const supportsTokenAPI = (networkId: string): boolean => {
   return TOKEN_API_NETWORKS.includes(networkId)
 }
 
-export const processNetworksData = (networks: any[]) => {
+export interface NetworkData {
+  id: string
+  shortName: string
+  fullName: string
+  networkType: string
+  caip2Id?: string
+  services: {
+    subgraphs?: any[]
+    substreams?: any[]
+    firehose?: any[]
+  }
+}
+
+export interface ProcessedNetwork {
+  id: string
+  shortName: string
+  fullName: string
+  networkType: string
+  caip2Id?: string
+  subgraphs: boolean
+  substreams: boolean
+  firehose: boolean
+  tokenapi: boolean
+  services: {
+    subgraphs?: any[]
+    substreams?: any[]
+    firehose?: any[]
+  }
+}
+
+export const processNetworksData = (networks: NetworkData[]): ProcessedNetwork[] => {
   return networks
     .flatMap((network) => {
       const subgraphs = Boolean(network.services.subgraphs?.length)
