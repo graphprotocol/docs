@@ -138,7 +138,7 @@ graphclient serve-dev
 
 Und öffnen Sie http://localhost:4000/, um GraphiQL zu verwenden. Sie können nun mit Ihrem Graph-Client-seitigen GraphQL-Schema lokal experimentieren! 🥳
 
-#### Beispiele
+#### Examples
 
 Sie können auch auf [examples directory in this repo](../examples) verweisen, für fortgeschrittene Beispiele und Integrationsbeispiele:
 
@@ -606,6 +606,6 @@ execute(
 
 > [You can also delegate and call Query fields as part of your mutation](https://graphql-mesh.com/docs/guides/extending-unified-schema#using-the-sdk-to-fetch-sources)
 
-## License
+## Lizenz
 
 Released under the [MIT license](../LICENSE).
