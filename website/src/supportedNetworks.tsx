@@ -287,16 +287,9 @@ export function SupportedNetworksTable({
           onChange={handleToggleTestnets}
           checked={showTestnets}
           disabled={isLoadingTestnets}
-          className="min-w-34"
+          iconBefore={isLoadingTestnets ? <LoadingSpinner className="size-4" /> : undefined}
         >
-          {isLoadingTestnets ? (
-            <span className="flex items-center">
-              <LoadingSpinner className="mr-2 h-4 w-4" />
-              {t('index.supportedNetworks.loading')}
-            </span>
-          ) : (
-            t('index.supportedNetworks.showTestnets')
-          )}
+          {t('index.supportedNetworks.showTestnets')}
         </ExperimentalToggleChip>
       </div>
 
