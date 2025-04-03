@@ -20,8 +20,8 @@ export const EmptySearchResults = ({ searchQuery, onClearSearch }: EmptySearchRe
           <EyeClosed size="36px" color="purple-100" alt="Information" />
         </DottedRingsSpinner>
       </div>
-      <p className="text-p20 mb-2 mt-0 font-medium">{t('index.supportedNetworks.emptySearch.title')}</p>
-      <p className="text-p16 mb-6 max-w-90 text-space-700">
+      <p className="text-body-large mb-2 mt-0 font-medium">{t('index.supportedNetworks.emptySearch.title')}</p>
+      <p className="text-body-small mb-6 max-w-90 text-space-700">
         {t('index.supportedNetworks.emptySearch.description', [searchQuery])}
       </p>
       <div className="flex flex-wrap justify-center gap-3">
