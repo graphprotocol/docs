@@ -14,7 +14,7 @@ This library is intended to simplify the network aspect of data consumption for 
 
 > The tools provided in this repo can be used as standalone, but you can also use it with any existing GraphQL Client!
 
-|  状态 | Feature                                                          | Notes                                                                                                                            |
+|  状态 | Feature                                                          | 注意：                                                                                                                              |
 | :-: | ---------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
 |  ✅  | Multiple indexers                                                | based on fetch strategies                                                                                                        |
 |  ✅  | Fetch Strategies                                                 | timeout, retry, fallback, race, highestValue                                                                                     |
