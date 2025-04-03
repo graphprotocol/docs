@@ -20,7 +20,7 @@ title: 使用分叉快速轻松地调试子图
 
 为了专注于子图调试，让我们保持简单，并与索引 Ethereum Gravity 智能合约的 [示例子图](https://github.com/graphprotocol/graph-tooling/tree/main/examples/ethereum-gravatar) 一起运行。
 
-Here are the handlers defined for indexing `Gravatar`s, with no bugs whatsoever:
+以下是索引 `Gravatar` 定义的处理程序，没有任何错误：
 
 ```tsx
 export function handleNewGravatar(event: NewGravatar): void {
@@ -46,18 +46,18 @@ export function handleUpdatedGravatar(event: UpdatedGravatar): void {
 
 糟糕，不幸的是，当我将完美的子图部署到[Subgraph Studio](https://thegraph.com/studio/)时，它会报“未找到 Gravatar！” 的错误。
 
-The usual way to attempt a fix is:
+尝试修复的常用方法是：
 
-1. Make a change in the mappings source, which you believe will solve the issue (while I know it won't).
+1. 在映射源中进行更改，你认为这将解决问题（但我知道它不会）。
 2. 将子图重新部署到[subgraph Studio](https://thegraph.com/studio/)（或另一个远程图形节点）。
-3. Wait for it to sync-up.
-4. If it breaks again go back to 1, otherwise: Hooray!
+3. 等待同步。
+4. 如果它再次中断，则返回 第1步，否则：搞定！
 
-It is indeed pretty familiar to an ordinary debug process, but there is one step that horribly slows down the process: _3. Wait for it to sync-up._
+对于一个普通的调试过程来说很常见，但是有一个步骤会严重减缓这个过程：_3。 等待同步。_
 
 使用 **子图分叉** 我们可以从根本上解决这个问题。 如下：
 
-0. Spin-up a local Graph Node with the **_appropriate fork-base_** set.
+0. 使用**适当的子分叉**设置启动本地 Graph 节点。
 1. 按照你认为可以解决问题的方法，在映射源中进行更改。
 2. 部署到本地 Graph 节点，**分叉失败的子图**并**从有问题的区块开始**。
 3. 如果它再次中断，则返回 第1步，否则：搞定！
@@ -73,7 +73,7 @@ It is indeed pretty familiar to an ordinary debug process, but there is one step
 2. 分叉容易，不要紧张：
 
 ```bash
-$ graph deploy <subgraph-name> --debug-fork <subgraph-id> --ipfs http://localhost:5001 --node http://localhost:8020
+$ graph 部署 <subgraph-name> --调试分叉 <subgraph-id> --ipfs地址 http://localhost:5001 --node http://localhost:8020
 ```
 
 另外，不要忘记将子图中的 `dataSources.source.startBlock` 字段设置为有问题的区块编号，这样您就可以跳过索引不必要的区块并利用分叉！
@@ -90,12 +90,12 @@ $ cargo run -p graph-node --release -- \
     --fork-base https://api.thegraph.com/subgraphs/id/
 ```
 
-2. After careful inspection I notice that there is a mismatch in the `id` representations used when indexing `Gravatar`s in my two handlers. While `handleNewGravatar` converts it to a hex (`event.params.id.toHex()`), `handleUpdatedGravatar` uses an int32 (`event.params.id.toI32()`) which causes the `handleUpdatedGravatar` to panic with "Gravatar not found!". I make them both convert the `id` to a hex.
+2. 经过仔细检查，我注意到在我的两个处理程序中索引 `Gravatar` 时使用的 `id` 不匹配。 `handleNewGravatar` 将其转换为十六进制 (`event.params.id.toHex()`)，而 `handleUpdatedGravatar` 使用 int32格式 (`event. params.id.toI32()`) 这会导致 `handleUpdatedGravatar` 出现“未找到 Gravatar！”的错误。 于是我将他们都 `id` 转换为十六进制。
 3. 更改后，我将子图部署到本地 Graph 节点，**分叉失败的子图**并设置 subgraph.yaml 中的`dataSources.source.startBlock`到`6190343`：
 
 ```bash
 $ graph deploy gravity --debug-fork QmNp169tKvomnH3cPXTfGg4ZEhAHA6kEq5oy1XDqAxqHmW --ipfs http://localhost:5001 --node http://localhost:8020
 ```
 
-4. I inspect the logs produced by the local Graph Node and, Hooray!, everything seems to be working.
+4. 我检查了本地 Graph 节点生成的日志，万岁！一切正常。
 5. 我将没有问题的子图部署到远程 Graph 节点上，从此过上幸福的生活！ （不担心缺衣少粮）
