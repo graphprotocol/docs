@@ -12,7 +12,7 @@ plugins:
       defaultInterval: 1000
 ```
 
-## Usage
+## 使用方法
 
 Set the default update interval you wish to use, and then you can apply the following GraphQL `@directive` over your GraphQL queries:
 
