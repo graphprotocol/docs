@@ -1,8 +1,7 @@
 import { motion } from 'framer-motion'
-import NextLink from 'next/link'
 import { memo } from 'react'
 
-import { ExperimentalCopyButton, Skeleton } from '@edgeandnode/gds'
+import { ButtonOrLink, ExperimentalCopyButton, Skeleton } from '@edgeandnode/gds'
 import { Check } from '@edgeandnode/gds/icons'
 import { NetworkIcon } from '@edgeandnode/go'
 
@@ -24,7 +23,7 @@ interface NetworkRowProps {
 export const NetworkRow = memo(({ network, locale }: NetworkRowProps) => {
   return (
     <motion.tr
-      className="group h-16 cursor-pointer transition-colors hover:bg-space-1600"
+      className="group/table-row isolate -outline-offset-1 transition hocus-visible-within:bg-space-1600 has-[a:focus-visible]:outline-focus"
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{
@@ -41,33 +40,24 @@ export const NetworkRow = memo(({ network, locale }: NetworkRowProps) => {
       }}
       layoutId={network.id}
     >
-      <td className="static min-w-48">
-        <NextLink
-          href={`/${locale}/supported-networks/${network.id}`}
-          className="absolute inset-0 z-10 flex size-full items-center px-3.5 py-2.5 -outline-offset-2"
-        >
-          <div className="flex items-center gap-2">
+      <td>
+        <ButtonOrLink href={`/${locale}/supported-networks/${network.id}`} className="static outline-none">
+          <span className="flex items-center gap-2">
             {shouldShowSkeleton(network.id) ? (
               <Skeleton borderRadius="FULL" height="20px" width="20px" />
             ) : (
               <NetworkIcon variant={getIconVariant(network.id)} caip2Id={network.caip2Id as any} size={5} />
             )}
-            <span className="text-p14">{network.shortName}</span>
-          </div>
-        </NextLink>
+            <span className="text-body-xsmall">{network.shortName}</span>
+          </span>
+          <span className="absolute inset-y-0 start-0 z-10 w-[1999px]" />
+        </ButtonOrLink>
       </td>
-      <td className="w-48">
-        <div className="flex w-full items-center justify-between gap-2">
-          <span className="text-p14 !mb-0">{network.id}</span>
-          <div className="z-20 opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100">
-            <div
-              onClick={(e) => {
-                e.preventDefault()
-                e.stopPropagation()
-              }}
-            >
-              <ExperimentalCopyButton size="small" variant="tertiary" value={network.id} />
-            </div>
+      <td>
+        <div className="flex items-center justify-between gap-2">
+          <span className="text-body-xsmall">{network.id}</span>
+          <div className="z-20 shrink-0 opacity-0 transition group-focus-within/table-row:opacity-100 group-hover/table-row:opacity-100">
+            <ExperimentalCopyButton size="small" variant="tertiary" value={network.id} />
           </div>
         </div>
       </td>
