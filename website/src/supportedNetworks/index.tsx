@@ -60,11 +60,13 @@ export function SupportedNetworksTable({
   return (
     <>
       <Callout variant="info" className="mb-6">
-        {t('index.supportedNetworks.infoText')}{' '}
-        <ExperimentalLink href="https://thegraph.com/docs/en/indexing/chain-integration-overview/">
-          {t('index.supportedNetworks.infoLink')}
-        </ExperimentalLink>
-        .
+        <p>
+          {t('index.supportedNetworks.infoText')}{' '}
+          <ExperimentalLink href="https://thegraph.com/docs/en/indexing/chain-integration-overview/">
+            {t('index.supportedNetworks.infoLink')}
+          </ExperimentalLink>
+          .
+        </p>
       </Callout>
 
       <NetworkFilters
