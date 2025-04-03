@@ -53,7 +53,7 @@ export const Callout = ({
       ])}
       {...(props as ComponentPropsWithoutRef<'div'>)}
     >
-      <div className="flex size-7 shrink-0 items-center justify-center">
+      <div className="flex size-6 shrink-0 items-center justify-center">
         {variant === 'info' ? (
           <Lightbulb size={4} color="astro-500" alt={!title ? t('global.content.callout.note') : ''} />
         ) : (
@@ -62,8 +62,8 @@ export const Callout = ({
       </div>
       <div
         className={`
-          text-body-small flex-1
-          first:*:text-white
+          text-body-xsmall flex-1
+          -:first:*:text-white
           mdx-[:is(p,ul,ol):not(:last-child,:is(ul,ol)_*)]:mb-3
           mdx-[ul,ol]:gap-1
         `}
