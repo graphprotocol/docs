@@ -62,7 +62,7 @@ export const Callout = ({
       </div>
       <div
         className={`
-          text-body-small flex-1
+          text-body-xsmall flex-1
           first:*:text-white
           mdx-[:is(p,ul,ol):not(:last-child,:is(ul,ol)_*)]:mb-3
           mdx-[ul,ol]:gap-1
