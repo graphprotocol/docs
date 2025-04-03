@@ -1,139 +1,21 @@
 ---
-title: |+
-  Guía de Migración TAP
-  Aprende sobre el nuevo sistema de pagos de The Graph, el Protocolo de Agregación de Línea de Tiempo (TAP). Este sistema ofrece microtransacciones rápidas y eficientes con una confianza minimizada.
-
-  Descripción General
-  TAP es un reemplazo directo del sistema de pagos Scalar actualmente en uso. Ofrece las siguientes características clave:
-
-  Manejo eficiente de micropagos.
-  Agrega una capa de consolidación a las transacciones y costos en la cadena.
-  Permite a los Indexadores controlar los recibos y pagos, garantizando el pago por consultas.
-  Facilita puertas de enlace descentralizadas y sin confianza, mejorando el  indexer-service para múltiples remitentes.
-
-  Especificaciones
-  TAP permite que un remitente realice múltiples pagos a un receptor a través de TAP Receipts, los cuales agrupan estos pagos en un único pago denominado Receipt Aggregate Voucher (RAV). Este pago consolidado puede verificarse en la blockchain, reduciendo la cantidad de transacciones y simplificando el proceso de pago.
-
-  Para cada consulta, la puerta de enlace te enviará un recibo firmado (signed receipt) que se almacenará en tu base de datos. Luego, estas consultas serán agrupadas por un tap-agent mediante una solicitud. Posteriormente, recibirás un RAV. Puedes actualizar un RAV enviándolo con recibos más recientes, lo que generará un nuevo RAV con un valor incrementado.
-
-  Detalles del RAV
-  Es dinero que está pendiente de ser enviado a la blockchain.
-  Continuará enviando solicitudes para agrupar recibos y garantizar que el valor total de los recibos no agregados no supere la cantidad dispuesta a perder.
-  Cada RAV puede ser canjeado una sola vez en los contratos, por lo que se envían después de que la asignación se haya cerrado.
-
-  Canjeo de RAV
-  Mientras ejecutes tap-agent e indexer-agent, todo el proceso se ejecutará automáticamente. A continuación, se presenta un desglose detallado del proceso:
-
-  Proceso de Canjeo de RAV
-  1. Un Indexador cierra la asignación.
-  2. Durante el período <recently-closed-allocation-buffer>, tap-agent toma todos los recibos pendientes de esa asignación específica y solicita su agregación en un RAV, marcándolo como el último.
-  3. Indexer-agent toma todos los últimos RAVs y envía solicitudes de canje a la blockchain, lo que actualizará el valor de redeem_at.
-  4. Durante el período <finality-time>, indexer-agent monitorea si la blockchain experimenta alguna reorganización que revierta la transacción.
-  Si la transacción es revertida, el RAV se reenvía a la blockchain. Si no es revertida, se marca como final.
-
-  Blockchain Addresses
-  Contracts
-  Contract	Arbitrum Mainnet (42161)	Arbitrum Sepolia (421614)
-  TAP Verifier	0x33f9E93266ce0E108fc85DdE2f71dab555A0F05a	0xfC24cE7a4428A6B89B52645243662A02BA734ECF
-  AllocationIDTracker	0x5B2F33d7Ca6Ec88f5586f2528f58c20843D9FE7c	0xAaC28a10d707bbc6e02029f1bfDAEB5084b2aD11
-  Escrow	0x8f477709eF277d4A880801D01A140a9CF88bA0d3	0x1e4dC4f9F95E102635D8F7ED71c5CdbFa20e2d02
-  Gateway
-  Component	Edge and Node Mainnet (Arbitrum Mainnet)	Edge and Node Testnet (Arbitrum Sepolia)
-  Sender	0xDDE4cfFd3D9052A9cb618fC05a1Cd02be1f2F467	0xC3dDf37906724732FfD748057FEBe23379b0710D
-  Signers	0xfF4B7A5EfD00Ff2EC3518D4F250A27e4c29A2211	0xFb142dE83E261e43a81e9ACEADd1c66A0DB121FE
-  Aggregator	https://tap-aggregator.network.thegraph.com	https://tap-aggregator.testnet.thegraph.com
-
-  Requisitos
-  Además de los requisitos habituales para ejecutar un indexador, necesitarás un endpoint tap-escrow-subgraph para consultar actualizaciones de TAP. Puedes utilizar The Graph Network para hacer consultas o alojarlo en tu propio graph-node.
-
-  Subgrafo Graph TAP Arbitrum Sepolia (para la testnet de The Graph).
-  Subgrafo Graph TAP Arbitrum One (para la mainnet de The Graph).
-
-  Nota: Actualmente, indexer-agent no gestiona la indexación de este subgrafo como lo hace con la implementación del subgrafo de la red. Por lo tanto, debes indexarlo manualmente.
-
-  Guía de Migración
-  Versiones de Software
-  La versión requerida del software se puede encontrar aquí.
-
-  Pasos
-  1. Indexer Agent
-  Sigue el mismo proceso de configuración.
-  Agrega el nuevo argumento --tap-subgraph-endpoint para activar las rutas de código de TAP y habilitar el canje de RAVs de TAP.
-  2. Indexer Service
-  Reemplaza completamente tu configuración actual con la nueva versión de Indexer Service rs. Se recomienda usar la imagen del contenedor.
-  Como en la versión anterior, puedes escalar Indexer Service horizontalmente con facilidad. Sigue siendo stateless.
-  3. TAP Agent
-  Ejecuta una única instancia de TAP Agent en todo momento. Se recomienda usar la imagen del contenedor.
-  4. Configura Indexer Service y TAP Agent mediante un archivo TOML compartido, suministrado con el argumento --config /path/to/config.toml.
-  Consulta la configuración completa y los valores predeterminados.
-  Para una configuración mínima, usa la siguiente plantilla:
-
-  toml
-  Copy
-  Edit
-  [indexer]
-  indexer_address = "0x1111111111111111111111111111111111111111"
-  operator_mnemonic = "celery smart tip orange scare van steel radio dragon joy alarm crane"
-
-  [database]
-  postgres_url = "postgres://postgres@postgres:5432/postgres"
-
-  [graph_node]
-  query_url = "http://graph-node:8000"
-  status_url = "http://graph-node:8000/graphql"
-
-  [subgraphs.network]
-  query_url = "http://example.com/network-subgraph"
-  deployment_id = "Qmaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
-
-  [subgraphs.escrow]
-  query_url = "http://example.com/network-subgraph"
-  deployment_id = "Qmaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
-
-  [blockchain]
-  chain_id = 1337
-  receipts_verifier_address = "0x2222222222222222222222222222222222222222"
-
-  [tap]
-  max_amount_willing_to_lose_grt = 20
-
-  [tap.sender_aggregator_endpoints]
-  0xDDE4cfFd3D9052A9cb618fC05a1Cd02be1f2F467 = "https://tap-aggregator.network.thegraph.com"
-  Notas Importantes
-  Los valores de tap.sender_aggregator_endpoints se encuentran en la sección de gateway.
-  El valor de blockchain.receipts_verifier_address debe coincidir con la sección de direcciones de Blockchain según el chain ID apropiado.
-  Nivel de Registro (Log Level)
-  Puedes establecer el nivel de registro con la variable de entorno RUST_LOG. Se recomienda:
-
-  bash
-  Copy
-  Edit
-  RUST_LOG=indexer_tap_agent=debug,info
-  Monitoreo
-  Métricas
-  Todos los componentes exponen el puerto 7300, que puede ser consultado por Prometheus.
-
-  Grafana Dashboard
-  Puedes descargar el Dashboard de Grafana e importarlo.
-
-  Launchpad
-  Actualmente, hay una versión en desarrollo de indexer-rs y tap-agent, que puedes encontrar aquí.
+title: GraphTally Guide
 ---
 
-Learn about The Graph’s new payment system, **Timeline Aggregation Protocol, TAP**. This system provides fast, efficient microtransactions with minimized trust.
+Learn about The Graph’s new payment system, **GraphTally** [(previously Timeline Aggregation Protocol)](https://docs.rs/tap_core/latest/tap_core/index.html). This system provides fast, efficient microtransactions with minimized trust.
 
 ## Descripción
 
-[TAP](https://docs.rs/tap_core/latest/tap_core/index.html) is a drop-in replacement to the Scalar payment system currently in place. It provides the following key features:
+GraphTally is a drop-in replacement to the Scalar payment system currently in place. It provides the following key features:
 
 - Efficiently handles micropayments.
 - Adds a layer of consolidations to onchain transactions and costs.
 - Allows Indexers control of receipts and payments, guaranteeing payment for queries.
 - It enables decentralized, trustless gateways and improves `indexer-service` performance for multiple senders.
 
-## Specifics
+### Specifics
 
-TAP allows a sender to make multiple payments to a receiver, **TAP Receipts**, which aggregates these payments into a single payment, a **Receipt Aggregate Voucher**, also known as a **RAV**. This aggregated payment can then be verified on the blockchain, reducing the number of transactions and simplifying the payment process.
+GraphTally allows a sender to make multiple payments to a receiver, **Receipts**, which aggregates these payments into a single payment, a **Receipt Aggregate Voucher**, also known as a **RAV**. This aggregated payment can then be verified on the blockchain, reducing the number of transactions and simplifying the payment process.
 
 For each query, the gateway will send you a `signed receipt` that is stored on your database. Then, these queries will be aggregated by a `tap-agent` through a request. Afterwards, you’ll receive a RAV. You can update a RAV by sending it with newer receipts and this will generate a new RAV with an increased value.
 
@@ -177,9 +59,9 @@ As long as you run `tap-agent` and `indexer-agent`, everything will be executed 
 | Signers    | `0xfF4B7A5EfD00Ff2EC3518D4F250A27e4c29A2211`  | `0xFb142dE83E261e43a81e9ACEADd1c66A0DB121FE`  |
 | Aggregator | `https://tap-aggregator.network.thegraph.com` | `https://tap-aggregator.testnet.thegraph.com` |
 
-### Requirements
+### Prerequisites
 
-In addition to the typical requirements to run an indexer, you’ll need a `tap-escrow-subgraph` endpoint to query TAP updates. You can use The Graph Network to query or host yourself on your `graph-node`.
+In addition to the typical requirements to run an indexer, you’ll need a `tap-escrow-subgraph` endpoint to query updates. You can use The Graph Network to query or host yourself on your `graph-node`.
 
 - [Graph TAP Arbitrum Sepolia Subgraph (for The Graph testnet)](https://thegraph.com/explorer/subgraphs/7ubx365MiqBH5iUz6XWXWT8PTof5BVAyEzdb8m17RvbD)
 - [Graph TAP Arbitrum One Subgraph (for The Graph mainnet)](https://thegraph.com/explorer/subgraphs/4sukbNVTzGELnhdnpyPqsf1QqtzNHEYKKmJkgaT8z6M1)
@@ -197,7 +79,7 @@ The required software version can be found [here](https://github.com/graphprotoc
 1. **Indexer Agent**
 
    - Follow the [same process](https://github.com/graphprotocol/indexer/pkgs/container/indexer-agent#graph-protocol-indexer-components).
-   - Give the new argument `--tap-subgraph-endpoint` to activate the new TAP codepaths and enable redeeming of TAP RAVs.
+   - Give the new argument `--tap-subgraph-endpoint` to activate the new GraphTally codepaths and enable redeeming of RAVs.
 
 2. **Indexer Service**
 
