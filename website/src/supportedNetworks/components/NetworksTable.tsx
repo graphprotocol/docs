@@ -1,4 +1,3 @@
-import { AnimatePresence } from 'framer-motion'
 import { memo } from 'react'
 
 import { Text } from '@edgeandnode/gds'
@@ -44,15 +43,9 @@ export const NetworksTable = memo(({ networks, isLoading, locale }: NetworksTabl
             <Text.C10>{t('index.supportedNetworks.tableHeaders.tokenapi')}</Text.C10>
           </th>
         </tr>
-        {isLoading ? (
-          skeletonRows
-        ) : (
-          <AnimatePresence initial={false}>
-            {networks.map((network) => (
-              <NetworkRow key={network.id} network={network} locale={locale} />
-            ))}
-          </AnimatePresence>
-        )}
+        {isLoading
+          ? skeletonRows
+          : networks.map((network) => <NetworkRow key={network.id} network={network} locale={locale} />)}
       </tbody>
     </Table>
   )

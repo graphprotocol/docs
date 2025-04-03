@@ -1,4 +1,3 @@
-import { motion } from 'framer-motion'
 import { memo } from 'react'
 
 import { ButtonOrLink, ExperimentalCopyButton, Skeleton } from '@edgeandnode/gds'
@@ -22,24 +21,7 @@ interface NetworkRowProps {
 
 export const NetworkRow = memo(({ network, locale }: NetworkRowProps) => {
   return (
-    <motion.tr
-      className="group/table-row isolate -outline-offset-1 transition hocus-visible-within:bg-space-1600 has-[a:focus-visible]:outline-focus"
-      initial={{ opacity: 0, y: 16 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{
-        opacity: 0,
-        y: -16,
-        transition: {
-          duration: 0.1,
-          ease: 'easeIn',
-        },
-      }}
-      transition={{
-        duration: 0.2,
-        ease: 'easeOut',
-      }}
-      layoutId={network.id}
-    >
+    <tr className="group/table-row isolate -outline-offset-1 transition hocus-visible-within:bg-space-1600 has-[a:focus-visible]:outline-focus">
       <td>
         <ButtonOrLink href={`/${locale}/supported-networks/${network.id}`} className="static outline-none">
           <span className="flex items-center gap-2">
@@ -65,6 +47,6 @@ export const NetworkRow = memo(({ network, locale }: NetworkRowProps) => {
       <td align="center">{network.substreams ? <Check size={4} alt="Checkmark" /> : null}</td>
       <td align="center">{network.firehose ? <Check size={4} alt="Checkmark" /> : null}</td>
       <td align="center">{network.tokenapi ? <Check size={4} alt="Checkmark" /> : null}</td>
-    </motion.tr>
+    </tr>
   )
 })
