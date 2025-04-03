@@ -1,22 +1,22 @@
 # The Graph Client Tools
 
-This repo is the home for [The Graph](https://thegraph.com) consumer-side tools (for both browser and NodeJS environments).
+Dieses Repo ist das Zuhause für [The Graph](https://thegraph.com) Tools auf der Verbraucherseite (sowohl für Browser- als auch NodeJS-Umgebungen).
 
-## Background
+## Hintergrund
 
-The tools provided in this repo are intended to enrich and extend the DX, and add the additional layer required for dApps in order to implement distributed applications.
+Die in diesem Repo bereitgestellten Tools sollen den DX bereichern und erweitern und die zusätzliche Schicht hinzufügen, die für dApps erforderlich ist, um verteilte Anwendungen zu implementieren.
 
-Developers who consume data from [The Graph](https://thegraph.com) GraphQL API often need peripherals for making data consumption easier, and also tools that allow using multiple indexers at the same time.
+Entwickler, die Daten von [The Graph](https://thegraph.com) GraphQL API konsumieren, benötigen oft Peripheriegeräte, um den Datenkonsum zu vereinfachen, und auch Tools, die die gleichzeitige Verwendung mehrerer Indexer ermöglichen.
 
-## Features and Goals
+## Merkmale und Ziele
 
-This library is intended to simplify the network aspect of data consumption for dApps. The tools provided within this repository are intended to run at build time, in order to make execution faster and performant at runtime.
+Diese Bibliothek soll den Netzwerkaspekt des Datenverbrauchs für dApps vereinfachen. Die in diesem Repository bereitgestellten Tools sollen zur Build-Zeit ausgeführt werden, um die Ausführung zur Laufzeit schneller und leistungsfähiger zu machen.
 
-> The tools provided in this repo can be used as standalone, but you can also use it with any existing GraphQL Client!
+> Die in diesem Repo zur Verfügung gestellten Tools können als Standalone verwendet werden, aber Sie können sie auch mit jedem bestehenden GraphQL Client verwenden!
 
-| Status | Feature                                                                 | Anmerkungen                                                                                                                                                                                                                                |
+| Status | Merkmal                                                                 | Anmerkungen                                                                                                                                                                                                                                |
 | :----: | ----------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-|    ✅   | Multiple indexers                                                       | basierend auf Abrufstrategien                                                                                                                                                                                                              |
+|    ✅   | Mehrere Indexer                                                         | basierend auf Abrufstrategien                                                                                                                                                                                                              |
 |    ✅   | Abruf-Strategien                                                        | timeout, retry, fallback, race, highestValue                                                                                                                                                                                               |
 |    ✅   | Validierung der Erstellungszeit &amp; Optimierungen |                                                                                                                                                                                                                                            |
 |    ✅   | Kundenseitige Zusammensetzung                                           | mit verbessertem Ausführungsplaner (basierend auf GraphQL-Mesh)                                                                                                                                                         |
@@ -138,27 +138,27 @@ graphclient serve-dev
 
 Und öffnen Sie http://localhost:4000/, um GraphiQL zu verwenden. Sie können nun mit Ihrem Graph-Client-seitigen GraphQL-Schema lokal experimentieren! 🥳
 
-#### Examples
+#### Beispiele
 
 Sie können auch auf [examples directory in this repo](../examples) verweisen, für fortgeschrittene Beispiele und Integrationsbeispiele:
 
 - [TypeScript & React example with raw `execute` and built-in GraphQL-Codegen](../examples/execute)
-- [TS/JS NodeJS standalone mode](../examples/node)
-- [Client-Side GraphQL Composition](../examples/composition)
-- [Integration with Urql and React](../examples/urql)
-- [Integration with NextJS and TypeScript](../examples/nextjs)
-- [Integration with Apollo-Client and React](../examples/apollo)
+- [TS/JS NodeJS Einzelplatzmodus](../Beispiele/node)
+- [Client-seitige GraphQL-Zusammensetzung](../Beispiele/Zusammensetzung)
+- [Integration mit Urql und React](../Beispiele/urql)
+- [Integration mit NextJS und TypeScript](../examples/nextjs)
+- [Integration mit Apollo-Client und React](../examples/apollo)
 - [Integration with React-Query](../examples/react-query)
-- _Cross-chain merging (same Subgraph, different chains)_
-- - [Parallel SDK calls](../examples/cross-chain-sdk)
-- - [Parallel internal calls with schema extensions](../examples/cross-chain-extension)
-- [Customize execution with Transforms (auto-pagination and auto-block-tracking)](../examples/transforms)
+- _Kettenübergreifende Zusammenführung (gleicher Subgraphen, unterschiedliche Ketten)_
+- - [Parallele SDK-Aufrufe](../examples/cross-chain-sdk)
+- - [Parallele interne Aufrufe mit Schemaerweiterungen](../examples/cross-chain-extension)
+- [Ausführung mit Transforms anpassen (Auto-Pagination und Auto-Block-Tracking)](../examples/transforms)
 
-### Advanced Examples/Features
+### Erweiterte Beispiele/Funktionen
 
-#### Customize Network Calls
+#### Anpassen von Netzanrufen
 
-You can customize the network execution (for example, to add authentication headers) by using `operationHeaders`:
+Sie können die Netzwerkausführung anpassen (z. B. um Authentifizierungs-Header hinzuzufügen), indem Sie `operationHeaders` verwenden:
 
 ```yaml
 sources:
@@ -170,19 +170,19 @@ sources:
           Authorization: Bearer MY_TOKEN
 ```
 
-You can also use runtime variables if you wish, and specify it in a declarative way:
+Sie können auch Laufzeitvariablen verwenden, wenn Sie dies wünschen, und sie deklarativ angeben:
 
 ```yaml
-sources:
-  - name: uniswapv2
-    handler:
+Quellen:
+  - Name: uniswapv2
+    Handler:
       graphql:
         endpoint: https://api.thegraph.com/subgraphs/name/uniswap/uniswap-v2
         operationHeaders:
           Authorization: Bearer {context.config.apiToken}
 ```
 
-Then, you can specify that when you execute operations:
+Dann können Sie dies bei der Ausführung von Vorgängen angeben:
 
 ```ts
 execute(myQuery, myVariables, {
@@ -192,11 +192,11 @@ execute(myQuery, myVariables, {
 })
 ```
 
-> You can find the [complete documentation for the `graphql` handler here](https://graphql-mesh.com/docs/handlers/graphql#config-api-reference).
+> Sie finden die [vollständige Dokumentation für den `graphql`-Handler hier](https://graphql-mesh.com/docs/handlers/graphql#config-api-reference).
 
-#### Environment Variables Interpolation
+#### Umgebungsvariablen Interpolation
 
-If you wish to use environment variables in your Graph Client configuration file, you can use interpolation with `env` helper:
+Wenn Sie Umgebungsvariablen in Ihrer Graph-Client-Konfigurationsdatei verwenden möchten, können Sie die Interpolation mit dem `env`-Helper nutzen:
 
 ```yaml
 sources:
@@ -208,9 +208,9 @@ sources:
           Authorization: Bearer {env.MY_API_TOKEN} # runtime
 ```
 
-Then, make sure to have `MY_API_TOKEN` defined when you run `process.env` at runtime.
+Stellen Sie dann sicher, dass Sie `MY_API_TOKEN` definiert haben, wenn Sie `process.env` zur Laufzeit ausführen.
 
-You can also specify environment variables to be filled at build time (during `graphclient build` run) by using the env-var name directly:
+Sie können auch Umgebungsvariablen angeben, die zur Erstellungszeit (während der Ausführung von `graphclient build`) gefüllt werden sollen, indem Sie den Namen der Umgebungsvariablen direkt verwenden:
 
 ```yaml
 sources:
@@ -222,20 +222,19 @@ sources:
           Authorization: Bearer ${MY_API_TOKEN} # build time
 ```
 
-> You can find the [complete documentation for the `graphql` handler here](https://graphql-mesh.com/docs/handlers/graphql#config-api-reference).
+> Sie finden die [vollständige Dokumentation für den `graphql`-Handler hier](https://graphql-mesh.com/docs/handlers/graphql#config-api-reference).
 
-#### Fetch Strategies and Multiple Graph Indexers
+#### Abrufstrategien und mehrere Graph-Indexer
 
-It's a common practice to use more than one indexer in dApps, so to achieve the ideal experience with The Graph, you can specify several `fetch` strategies in order to make it more smooth and simple.
+Es ist eine gängige Praxis, mehr als einen Indexer in dApps zu verwenden. Um die ideale Erfahrung mit The Graph zu erreichen, können Sie mehrere „Fetch“-Strategien angeben, um den Vorgang reibungsloser und einfacher zu gestalten.
 
-All `fetch` strategies can be combined to create the ultimate execution flow.
+Alle „Abruf“-Strategien können kombiniert werden, um den ultimativen Ausführungsfluss zu schaffen.
 
-<details>
- <summary>`retry`</summary>
+<details> <summary>`retry`</summary>
 
-The `retry` mechanism allow you to specify the retry attempts for a single GraphQL endpoint/source.
+Mit dem Mechanismus `retry` können Sie die Wiederholungsversuche für einen einzelnen GraphQL-Endpunkt/Quelle festlegen.
 
-The retry flow will execute in both conditions: a netword error, or due to a runtime error (indexing issue/inavailability of the indexer).
+Der Wiederholungslauf wird unter beiden Bedingungen ausgeführt: bei einem Netzwortfehler oder aufgrund eines Laufzeitfehlers (Indizierungsproblem/Verfügbarkeit des Indexers).
 
 ```yaml
 sources:
@@ -248,10 +247,9 @@ sources:
 
 </details>
 
-<details>
- <summary>`timeout`</summary>
+<details><summary>`Timeout`</summary>
 
-The `timeout` mechanism allow you to specify the `timeout` for a given GraphQL endpoint.
+Der „Timeout“-Mechanismus ermöglicht es Ihnen, den „Timeout“ für einen bestimmten GraphQL-Endpunkt anzugeben.
 
 ```yaml
 sources:
@@ -264,12 +262,11 @@ sources:
 
 </details>
 
-<details>
- <summary>`fallback`</summary>
+<details> <summary>`Fallback`</summary>
 
-The `fallback` mechanism allow you to specify use more than one GraphQL endpoint, for the same source.
+Der „Fallback“-Mechanismus ermöglicht es Ihnen, mehr als einen GraphQL-Endpunkt für dieselbe Quelle zu verwenden.
 
-This is useful if you want to use more than one indexer for the same Subgraph, and fallback when an error/timeout happens. You can also use this strategy in order to use a custom indexer, but allow it to fallback to [The Graph Hosted Service](https://thegraph.com/hosted-service).
+Dies ist nützlich, wenn Sie mehr als einen Indexer für denselben Subgraphen verwenden und bei einem Fehler/Timeout zurückgreifen möchten. Sie können diese Strategie auch verwenden, um einen benutzerdefinierten Indexer zu verwenden, der jedoch auf [The Graph Hosted Service] (https://thegraph.com/hosted-service) zurückgreifen kann.
 
 ```yaml
 sources:
@@ -286,12 +283,11 @@ sources:
 
 </details>
 
-<details>
- <summary>`race`</summary>
+<details> <summary>`race`</summary>
 
-The `race` mechanism allow you to specify use more than one GraphQL endpoint, for the same source, and race on every execution.
+Der „Race“-Mechanismus ermöglicht es Ihnen, mehr als einen GraphQL-Endpunkt für dieselbe Quelle zu verwenden und bei jeder Ausführung ein Race durchzuführen.
 
-This is useful if you want to use more than one indexer for the same Subgraph, and allow both sources to race and get the fastest response from all specified indexers.
+Dies ist nützlich, wenn Sie mehr als einen Indizierer für denselben Subgraphen verwenden möchten und beide Quellen gegeneinander antreten lassen wollen, um die schnellste Antwort von allen angegebenen Indizierern zu erhalten.
 
 ```yaml
 sources:
@@ -306,12 +302,11 @@ sources:
 
 </details>
 
-<details>
-  <summary>`highestValue`</summary>
+<details>  <summary>`höchsterWert`</summary>
 
-This strategy allows you to send parallel requests to different endpoints for the same source and choose the most updated.
+Diese Strategie ermöglicht es Ihnen, parallele Anfragen an verschiedene Endpunkte für dieselbe Quelle zu senden und die aktuellste auszuwählen.
 
-This is useful if you want to choose most synced data for the same Subgraph over different indexers/sources.
+Dies ist nützlich, wenn Sie die meisten synchronisierten Daten für denselben Subgraphen über verschiedene Indexer/Quellen auswählen möchten.
 
 ```yaml
 sources:
@@ -570,7 +565,7 @@ module.exports = {
 }
 ```
 
-If you are using TypeScript, you can also get fully type-safe signature by doing:
+Wenn Sie TypeScript verwenden, können Sie auch eine vollständig typsichere Signatur erhalten, indem Sie dies tun:
 
 ```ts
 import { Resolvers } from './.graphclient'
@@ -590,7 +585,7 @@ const resolvers: Resolvers = {
 export default resolvers
 ```
 
-If you need to inject runtime variables into your GraphQL execution `context`, you can use the following snippet:
+Wenn Sie Laufzeitvariablen in Ihren GraphQL-Ausführungskontext einfügen müssen, können Sie das folgende Snippet verwenden:
 
 ```ts
 execute(
@@ -602,10 +597,10 @@ execute(
 )
 ```
 
-> [You can read more about client-side schema extensions here](https://graphql-mesh.com/docs/guides/extending-unified-schema)
+> [Mehr über clientseitige Schemaerweiterungen erfahren Sie hier](https://graphql-mesh.com/docs/guides/extending-unified-schema)
 
-> [You can also delegate and call Query fields as part of your mutation](https://graphql-mesh.com/docs/guides/extending-unified-schema#using-the-sdk-to-fetch-sources)
+> [Sie können auch Abfragefelder als Teil Ihrer Mutation delegieren und aufrufen] (https://graphql-mesh.com/docs/guides/extending-unified-schema#using-the-sdk-to-fetch-sources)
 
 ## Lizenz
 
-Released under the [MIT license](../LICENSE).
+Freigegeben unter der [MIT-Lizenz](../LICENSE).
