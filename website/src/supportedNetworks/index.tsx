@@ -1,6 +1,6 @@
 import { NetworksRegistry } from '@pinax/graph-networks-registry'
 import { useRouter } from 'next/router'
-import { useCallback, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 
 import { ExperimentalLink } from '@edgeandnode/gds'
 
@@ -57,50 +57,30 @@ export function SupportedNetworksTable({
 
   const noResults = filteredNetworks.length === 0 && searchQuery !== ''
 
-  const handleClearSearch = useCallback(() => {
-    setSearchQuery('')
-  }, [])
-
-  const handleShowTestnets = useCallback(() => {
-    if (noResults) {
-      setSearchQuery('')
-    }
-    setShowTestnets(true)
-  }, [noResults])
-
-  const handleHideTestnets = useCallback(() => {
-    setShowTestnets(false)
-  }, [])
-
-  const handleToggleTestnets = useCallback(() => {
-    if (!showTestnets) {
-      handleShowTestnets()
-    } else {
-      handleHideTestnets()
-    }
-  }, [showTestnets, handleShowTestnets, handleHideTestnets])
-
-  const setSearchQueryCallback = useCallback((value: string) => {
-    setSearchQuery(value)
-  }, [])
-
   return (
     <>
-      <Callout variant="info" className="mb-6 flex items-center">
-        <span className="text-p14">
-          {t('index.supportedNetworks.infoText')}{' '}
-          <ExperimentalLink href="https://thegraph.com/docs/en/indexing/chain-integration-overview/">
-            {t('index.supportedNetworks.infoLink')}
-          </ExperimentalLink>
-          .
-        </span>
+      <Callout variant="info" className="mb-6">
+        {t('index.supportedNetworks.infoText')}{' '}
+        <ExperimentalLink href="https://thegraph.com/docs/en/indexing/chain-integration-overview/">
+          {t('index.supportedNetworks.infoLink')}
+        </ExperimentalLink>
+        .
       </Callout>
 
       <NetworkFilters
         searchQuery={searchQuery}
-        setSearchQuery={setSearchQueryCallback}
+        setSearchQuery={setSearchQuery}
         showTestnets={showTestnets}
-        onToggleTestnets={handleToggleTestnets}
+        onToggleTestnets={() => {
+          if (!showTestnets) {
+            if (noResults) {
+              setSearchQuery('')
+            }
+            setShowTestnets(true)
+          } else {
+            setShowTestnets(false)
+          }
+        }}
       />
 
       {filteredNetworks.length > 0 ? (
@@ -108,9 +88,18 @@ export function SupportedNetworksTable({
       ) : (
         <EmptySearchResults
           searchQuery={searchQuery}
-          onClearSearch={handleClearSearch}
+          onClearSearch={() => setSearchQuery('')}
           showTestnets={showTestnets}
-          onToggleTestnets={handleToggleTestnets}
+          onToggleTestnets={() => {
+            if (!showTestnets) {
+              if (noResults) {
+                setSearchQuery('')
+              }
+              setShowTestnets(true)
+            } else {
+              setShowTestnets(false)
+            }
+          }}
         />
       )}
     </>

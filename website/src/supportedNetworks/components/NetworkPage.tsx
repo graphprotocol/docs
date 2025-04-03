@@ -90,12 +90,7 @@ export const NetworkPage = memo(({ network }: NetworkPageProps) => {
                 )}
                 {networkData.docsUrl && (
                   <ExperimentalDescriptionList.Item label={t('index.supportedNetworks.docs')}>
-                    <ExperimentalLink
-                      className="text-p14"
-                      href={networkData.docsUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
+                    <ExperimentalLink className="text-p14" href={networkData.docsUrl} target="_blank">
                       {networkData.docsUrl}
                     </ExperimentalLink>
                   </ExperimentalDescriptionList.Item>

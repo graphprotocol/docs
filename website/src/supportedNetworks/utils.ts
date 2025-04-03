@@ -23,9 +23,8 @@ export const MONO_ICON_NETWORKS = [
   'megaeth-testnet',
 ]
 
-// TODO(@hayderkg, @benface): Add network icons to GDS for these networks
-// Skeleton networks (no icon available)
-export const MISSING_ICON_NETWORKS = ['ink-sepolia']
+// TODO(@hayderkg, @benface, @0xa3k5): Add network icons to GDS for these networks
+export const MISSING_ICON_NETWORKS: string[] = []
 
 // Networks with Token API support (TODO: remove once the registry has this information)
 export const TOKEN_API_NETWORKS = ['mainnet', 'base', 'bsc', 'arbitrum-one', 'matic', 'optimism']
