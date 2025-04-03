@@ -1,15 +1,15 @@
 ---
-title: Subgraph Best Practice 3 - Improve Indexing and Query Performance by Using Immutable Entities and Bytes as IDs
-sidebarTitle: Immutable Entities and Bytes as IDs
+title: 子图最佳实践3-通过使用Immutable Entities和Bytes作为ID来提高索引和查询性能
+sidebarTitle: Immutable Entities和Bytes作为ID
 ---
 
 ## TLDR
 
-Using Immutable Entities and Bytes for IDs in our `schema.graphql` file [significantly improves ](https://thegraph.com/blog/two-simple-subgraph-performance-improvements/) indexing speed and query performance.
+在`schema.graphql`文件中使用Immutable Entities和Bytes作为ID[显著改进](https://thegraph.com/blog/two-simple-subgraph-performance-improvements/)索引速度和查询性能。
 
-## Immutable Entities
+## 不可变实体
 
-To make an entity immutable, we simply add `(immutable: true)` to an entity.
+为了使一个实体不可变，我们只需在实体中添加`（immutable：true）`。
 
 ```graphql
 type Transfer @entity(immutable: true) {
@@ -20,21 +20,21 @@ type Transfer @entity(immutable: true) {
 }
 ```
 
-By making the `Transfer` entity immutable, graph-node is able to process the entity more efficiently, improving indexing speeds and query responsiveness.
+通过使`Transfer`实体不可变，graph-node能够更有效地处理实体，提高索引速度和查询响应能力。
 
 Immutable Entities structures will not change in the future. An ideal entity to become an Immutable Entity would be an entity that is directly logging on-chain event data, such as a `Transfer` event being logged as a `Transfer` entity.
 
-### Under the hood
+### 在后台
 
-Mutable entities have a 'block range' indicating their validity. Updating these entities requires the graph node to adjust the block range of previous versions, increasing database workload. Queries also need filtering to find only live entities. Immutable entities are faster because they are all live and since they won't change, no checks or updates are required while writing, and no filtering is required during queries.
+可变实体有一个`块范围`表示其有效性。更新这些实体需要graph节点调整以前版本的块范围，从而增加数据库工作负载。查询还需要筛选，以便只找到活动实体。不可变实体更快，因为都是活的，而且不会改变，在写入时不需要检查或更新，在查询时也不需要筛选。
 
-### When not to use Immutable Entities
+### 何时不使用不可变实体
 
-If you have a field like `status` that needs to be modified over time, then you should not make the entity immutable. Otherwise, you should use immutable entities whenever possible.
+如果你有一个类似字段的`状态`需要随着时间的推移而修改，那么你不应该让实体不可变。否则，您应该尽可能使用不可变实体。
 
-## Bytes as IDs
+## 字节作为ID
 
-Every entity requires an ID. In the previous example, we can see that the ID is already of the Bytes type.
+每个实体都需要一个ID。在前面的示例中，我们可以看到ID已经是Bytes类型。
 
 ```graphql
 type Transfer @entity(immutable: true) {
@@ -45,19 +45,19 @@ type Transfer @entity(immutable: true) {
 }
 ```
 
-While other types for IDs are possible, such as String and Int8, it is recommended to use the Bytes type for all IDs due to character strings taking twice as much space as Byte strings to store binary data, and comparisons of UTF-8 character strings must take the locale into account which is much more expensive than the bytewise comparison used to compare Byte strings.
+虽然其他类型的ID也是可能的，如String和Int8，但建议对所有ID使用Bytes类型，因为字符串存储二进制数据所需的空间是Byte字符串的两倍，并且UTF-8字符串的比较必须考虑到区域设置，这比用于比较Byte串的逐字节比较要昂贵得多。
 
-### Reasons to Not Use Bytes as IDs
+### 不使用字节作为ID的原因
 
-1. If entity IDs must be human-readable such as auto-incremented numerical IDs or readable strings, Bytes for IDs should not be used.
-2. If integrating a Subgraph’s data with another data model that does not use Bytes as IDs, Bytes as IDs should not be used.
-3. Indexing and querying performance improvements are not desired.
+1. 如果实体ID必须是人类可读的，例如自动递增的数字ID或可读字符串，则不应使用Bytes 作为 ID。
+2. 如果将子图的数据与不使用Bytes作为ID的另一个数据模型集成，则不应使用Bytes 作为 ID。
+3. 索引和查询性能的改进是不可取的。
 
-### Concatenating With Bytes as IDs
+### 以Bytes作为ID连接
 
-It is a common practice in many Subgraphs to use string concatenation to combine two properties of an event into a single ID, such as using `event.transaction.hash.toHex() + "-" + event.logIndex.toString()`. However, as this returns a string, this significantly impedes Subgraph indexing and querying performance.
+在许多子图中，使用字符串连接将事件的两个属性组合成一个ID是一种常见的做法，例如使用`event.transaction.hash.toHex()+“-”+event.logIndex.toString()`。然而，由于这会返回一个字符串，将严重阻碍子图索引和查询性能。
 
-Instead, we should use the `concatI32()` method to concatenate event properties. This strategy results in a `Bytes` ID that is much more performant.
+相反，我们应该使用`concatI32()`方法来连接事件属性。此策略产生了性能更高的`Bytes`ID。
 
 ```typescript
 export function handleTransfer(event: TransferEvent): void {
@@ -74,11 +74,11 @@ export function handleTransfer(event: TransferEvent): void {
 }
 ```
 
-### Sorting With Bytes as IDs
+### 以Bytes作为ID排序
 
-Sorting using Bytes as IDs is not optimal as seen in this example query and response.
+如本示例查询和响应所示，使用字节作为ID进行排序不是最佳选择。
 
-Query:
+查询：
 
 ```graphql
 {
@@ -91,7 +91,7 @@ Query:
 }
 ```
 
-Query response:
+查询响应：
 
 ```json
 {
@@ -120,9 +120,9 @@ Query response:
 }
 ```
 
-The IDs are returned as hex.
+ID以十六进制返回。
 
-To improve sorting, we should create another field on the entity that is a BigInt.
+为了改进排序，我们应该在BigInt实体上创建另一个字段。
 
 ```graphql
 type Transfer @entity {
@@ -134,7 +134,7 @@ type Transfer @entity {
 }
 ```
 
-This will allow for sorting to be optimized sequentially.
+这将允许按顺序优化排序。
 
 查询：
 
@@ -147,7 +147,7 @@ This will allow for sorting to be optimized sequentially.
 }
 ```
 
-Query Response:
+查询响应：
 
 ```json
 {
@@ -172,20 +172,20 @@ Query Response:
 
 ## 结论
 
-Using both Immutable Entities and Bytes as IDs has been shown to markedly improve Subgraph efficiency. Specifically, tests have highlighted up to a 28% increase in query performance and up to a 48% acceleration in indexing speeds.
+使用Immutable Entities和Bytes作为ID已被证明可以显著提高子图效率。具体来说，测试表明查询性能提高了28%，索引速度提高了48%。
 
-Read more about using Immutable Entities and Bytes as IDs in this blog post by David Lutterkort, a Software Engineer at Edge & Node: [Two Simple Subgraph Performance Improvements](https://thegraph.com/blog/two-simple-subgraph-performance-improvements/).
+在Edge＆Node的软件工程师David Lutterkort的这篇博客文章中，可以阅读到更多关于使用Immutable Entities和字节作为ID的信息：[两个简单的子图性能改进](https://thegraph.com/blog/two-simple-subgraph-performance-improvements/)。
 
-## Subgraph Best Practices 1-6
+## 子图最佳实践1-6
 
-1. [Improve Query Speed with Subgraph Pruning](/subgraphs/best-practices/pruning/)
+1. [通过子图修剪提高查询速度](/subgraphs/best-practices/pruning/)
 
-2. [Improve Indexing and Query Responsiveness by Using @derivedFrom](/subgraphs/best-practices/derivedfrom/)
+2. [使用@derivedFrom提高索引和查询响应能力](/subgraphs/best-practices/derivedfrom/)
 
-3. [Improve Indexing and Query Performance by Using Immutable Entities and Bytes as IDs](/subgraphs/best-practices/immutable-entities-bytes-as-ids/)
+3. [通过使用不可变实体和字节作为ID来提高索引和查询性能](/subgraphs/best-practices/immutable-entities-bytes-as-ids/)
 
-4. [Improve Indexing Speed by Avoiding `eth_calls`](/subgraphs/best-practices/avoid-eth-calls/)
+4. [通过避免`eth_calls`提高索引速度](/subgraphs/best-practices/avoid-eth-calls/)
 
-5. [Simplify and Optimize with Timeseries and Aggregations](/subgraphs/best-practices/timeseries/)
+5. [通过时间序列和聚合进行简化和优化](/subgraphs/best-practices/timeseries/)
 
-6. [Use Grafting for Quick Hotfix Deployment](/subgraphs/best-practices/grafting-hotfix/)
+6. [使用嫁接快速部署修补程序](/subgraphs/best-practices/grafting-hotfix/)
