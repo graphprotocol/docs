@@ -25,10 +25,10 @@ export const NetworksTable = memo(({ networks, isLoading, locale }: NetworksTabl
     <Table variant="supported-networks">
       <tbody>
         <tr>
-          <th className="w-48">
+          <th className="min-w-46">
             <Text.C10>{t('index.supportedNetworks.tableHeaders.name')}</Text.C10>
           </th>
-          <th className="w-48">
+          <th className="min-w-46">
             <Text.C10>{t('index.supportedNetworks.tableHeaders.id')}</Text.C10>
           </th>
           <th align="center">
