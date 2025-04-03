@@ -622,7 +622,7 @@ Indexer-cli 提供了一个 `actions` 模块，用于手动处理操作队列。
 - 索引人（或其他软件）可以使用`indexer-cli`批准或取消队列中的操作。批准和取消命令将一组操作ID作为输入。
 - 执行工作人员定期轮询队列以获得批准的操作。它将从队列中获取`已批准`的操作，尝试执行它们，并根据执行状态将数据库中的值更新为`成功`或`失败`。
 - 如果操作成功，工作人员将确保存在索引规则，告诉代理如何管理向前的分配，这在代理处于`自动`或`监督`模式时进行手动操作非常有用。
-- The indexer can monitor the action queue to see a history of action execution and if needed re-approve and update action items if they failed execution. The action queue provides a history of all actions queued and taken.
+- 索引人可以监视操作队列以查看操作执行的历史记录，如果需要，可以在操作项执行失败时重新批准和更新操作项。操作队列提供排队和执行的所有操作的历史记录。
 
 数据模型：
 
@@ -657,7 +657,7 @@ ActionType {
 }
 ```
 
-Example usage from source:
+数据源用法示例：
 
 ```bash
 graph indexer actions get all
@@ -677,44 +677,44 @@ graph indexer actions approve 1 3 5
 graph indexer actions execute approve
 ```
 
-Note that supported action types for allocation management have different input requirements:
+请注意，分配管理支持的操作类型有不同的输入要求：
 
-- `Allocate` - allocate stake to a specific Subgraph deployment
+- `Allocate` - 将份额分配给特定的子图部署
 
-  - required action params:
-    - deploymentID
-    - amount
+  - 所需的操作参数：
+    - 部署ID
+    - 数量
 
-- `Unallocate` - close allocation, freeing up the stake to reallocate elsewhere
+- `Unallocate` - 结束分配，腾出份额重新分配到其他地方
 
-  - required action params:
-    - allocationID
-    - deploymentID
-  - optional action params:
+  - 所需的操作参数：
+    - 分配ID
+    - 部署ID
+  - 可选操作参数：
     - poi
-    - force (forces using the provided POI even if it doesn’t match what the graph-node provides)
+    - force（使用提供的POI的力量，即使它与图形节点提供的不匹配)
 
-- `Reallocate` - atomically close allocation and open a fresh allocation for the same Subgraph deployment
+- `Reallocate` - 自动关闭分配并为相同的子图部署打开新的分配
 
-  - required action params:
-    - allocationID
-    - deploymentID
-    - amount
-  - optional action params:
+  - 所需的操作参数：
+    - 分配ID
+    - 部署ID
+    - 数量
+  - 可选操作参数：
     - poi
-    - force (forces using the provided POI even if it doesn’t match what the graph-node provides)
+    - force（使用提供的POI的力量，即使它与图形节点提供的不匹配)
 
-#### Cost models
+#### 成本模式
 
-Cost models provide dynamic pricing for queries based on market and query attributes. The Indexer Service shares a cost model with the gateways for each Subgraph for which they intend to respond to queries. The gateways, in turn, use the cost model to make Indexer selection decisions per query and to negotiate payment with chosen Indexers.
+成本模型根据市场和查询属性为查询提供动态定价。索引人服务与网关共享一个成本模型，用于它们打算响应查询的每个子图。反过来，网关使用成本模型对每个查询进行索引人选择决策，并与选定的索引人协商付款。
 
 #### Agora
 
-The Agora language provides a flexible format for declaring cost models for queries. An Agora price model is a sequence of statements that execute in order for each top-level query in a GraphQL query. For each top-level query, the first statement which matches it determines the price for that query.
+Agora 语言提供了一种灵活的格式来声明查询的成本模型。 Agora 价格模型是一系列的语句，它们按照 GraphQL 查询中每个顶层查询的顺序执行。 对于每个顶层查询，第一个与其匹配的语句决定了该查询的价格。
 
-A statement is comprised of a predicate, which is used for matching GraphQL queries, and a cost expression which when evaluated outputs a cost in decimal GRT. Values in the named argument position of a query may be captured in the predicate and used in the expression. Globals may also be set and substituted in for placeholders in an expression.
+语句由一个用于匹配 GraphQL 查询的谓词和一个成本表达式组成，该表达式在评估时输出一个以十进制 GRT 表示的成本。 查询的命名参数位置中的值可以在谓词中捕获并在表达式中使用。 也可以在表达式中设置全局，并代替占位符。
 
-Example cost model:
+成本模型示例：
 
 ```
 # This statement captures the skip value,
@@ -727,91 +727,91 @@ query { pairs(skip: $skip) { id } } when $skip > 2000 => 0.0001 * $skip * $SYSTE
 default => 0.1 * $SYSTEM_LOAD;
 ```
 
-Example query costing using the above model:
+使用上述模型的查询成本计算示例：
 
-| Query                                                                        | Price   |
+| 查询                                                                           | 价格      |
 | ---------------------------------------------------------------------------- | ------- |
 | &#123; pairs(skip: 5000) &#123; id &#125; &#125;                             | 0.5 GRT |
 | &#123; tokens &#123; symbol &#125; &#125;                                    | 0.1 GRT |
 | &#123; pairs(skip: 5000) &#123; id &#125; tokens &#123; symbol &#125; &#125; | 0.6 GRT |
 
-#### Applying the cost model
+#### 应用成本模式
 
-Cost models are applied via the Indexer CLI, which passes them to the Indexer Management API of the Indexer agent for storing in the database. The Indexer Service will then pick them up and serve the cost models to gateways whenever they ask for them.
+成本模型是通过索引人 CLI 应用的，CLI 将它们传递给索引人代理的索引人管理 API，以便存储在数据库中。 然后，索引人服务将接收这些模型，并在网关要求时将成本模型提供给它们。
 
 ```sh
 indexer cost set variables '{ "SYSTEM_LOAD": 1.4 }'
 indexer cost set model my_model.agora
 ```
 
-## Interacting with the network
+## 与网络的交互
 
-### Stake in the protocol
+### 在协议中进行质押
 
-The first steps to participating in the network as an Indexer are to approve the protocol, stake funds, and (optionally) set up an operator address for day-to-day protocol interactions.
+作为索引人参与网络的第一步是批准协议、质押资金，以及（可选）设置一个操作员地址以进行日常协议交互。
 
-> Note: For the purposes of these instructions Remix will be used for contract interaction, but feel free to use your tool of choice ([OneClickDapp](https://oneclickdapp.com/), [ABItopic](https://abitopic.io/), and [MyCrypto](https://www.mycrypto.com/account) are a few other known tools).
+> 注意: 在这些说明中，Remix 将用于合约交互，但请随意使用您选择的工具([OneClickDapp](https://oneclickdapp.com/), [ABItopic](https://abitopic.io/), 和 [MyCrypto](https://www.mycrypto.com/account) 是其他一些已知的工具)。
 
-Once an Indexer has staked GRT in the protocol, the [Indexer components](/indexing/overview/#indexer-components) can be started up and begin their interactions with the network.
+一旦索引人将GRT置于协议中，[索引人组件](/indexing/overview/#indexer-components)就可以启动并开始与网络交互。
 
-#### Approve tokens
+#### 批准代币
 
-1. Open the [Remix app](https://remix.ethereum.org/) in a browser
+1. 在浏览器中打开[Remix app](https://remix.ethereum.org/) 。
 
-2. In the `File Explorer` create a file named **GraphToken.abi** with the [token ABI](https://raw.githubusercontent.com/graphprotocol/contracts/mainnet-deploy-build/build/abis/GraphToken.json).
+2. 使用[token ABI](https://raw.githubusercontent.com/graphprotocol/contracts/mainnet-deploy-build/build/abis/GraphToken.json).在`File Explorer`文件夹中创建一个名为**GraphToken.abi**的文件。
 
-3. With `GraphToken.abi` selected and open in the editor, switch to the `Deploy and run transactions` section in the Remix interface.
-
-4. Under environment select `Injected Web3` and under `Account` select your Indexer address.
-
-5. Set the GraphToken contract address - Paste the GraphToken contract address (`0xc944E90C64B2c07662A292be6244BDf05Cda44a7`) next to `At Address` and click the `At address` button to apply.
-
-6. Call the `approve(spender, amount)` function to approve the Staking contract. Fill in `spender` with the Staking contract address (`0xF55041E37E12cD407ad00CE2910B8269B01263b9`) and `amount` with the tokens to stake (in wei).
-
-#### Stake tokens
-
-1. 在浏览器中打开[Remix应用程序](https://remix.ethereum.org/)。
-
-2. In the `File Explorer` create a file named **Staking.abi** with the staking ABI.
-
-3. With `Staking.abi` selected and open in the editor, switch to the `Deploy and run transactions` section in the Remix interface.
+3. 在编辑器中选择`GraphToken.abi` 并打开，切换到Remix 界面中`部署和Run Transactions` 选项中。
 
 4. 在环境选择`Injected Web3`和`Account` 下面选择你的索引人地址。
 
-5. Set the Staking contract address - Paste the Staking contract address (`0xF55041E37E12cD407ad00CE2910B8269B01263b9`) next to `At Address` and click the `At address` button to apply.
+5. 设置 GraphToken 合约地址 - 将 GraphToken 合约地址(`0xc944E90C64B2c07662A292be6244BDf05Cda44a7`) 粘贴到`At Address` 旁边 ，单击并应用`At address` 按钮。
 
-6. Call `stake()` to stake GRT in the protocol.
+6. 调用`approve(spender, amount)`函数以批准 Staking 合约。 用质押合约地址(`0xF55041E37E12cD407ad00CE2910B8269B01263b9`) 填写`spender` 和`amount` 要质押的代币数量 (in wei)。
 
-7. (Optional) Indexers may approve another address to be the operator for their Indexer infrastructure in order to separate the keys that control the funds from those that are performing day to day actions such as allocating on Subgraphs and serving (paid) queries. In order to set the operator call `setOperator()` with the operator address.
+#### 质押代币
 
-8. (Optional) In order to control the distribution of rewards and strategically attract Delegators Indexers can update their delegation parameters by updating their `indexingRewardCut` (parts per million), `queryFeeCut` (parts per million), and `cooldownBlocks` (number of blocks). To do so call `setDelegationParameters()`. The following example sets the `queryFeeCut` to distribute 95% of query rebates to the Indexer and 5% to Delegators, set the `indexingRewardCut` to distribute 60% of indexing rewards to the Indexer and 40% to Delegators, and set the `cooldownBlocks` period to 500 blocks.
+1. 在浏览器中打开[Remix应用程序](https://remix.ethereum.org/)。
+
+2. 在 `File Explorer` 创建一个名为**Staking.abi** 的文件中，使用 staking ABI。
+
+3. 在编辑器中选择并打开 `Staking.abi` 后，切换到 Remix 界面中的 `Deploy 和 run Transactions` 部分。
+
+4. 在环境选择`Injected Web3`和`Account` 下面选择你的索引人地址。
+
+5. 设置 GraphToken 合约地址 - 将 GraphToken 地址(`0xc944E90C64B2c07662A292be6244BDf05Cda44a7`) 粘贴到`At Address` 旁边 ，单击`At address` 按钮以应用。
+
+6. 调用 `stake()` 质押协议中的 GRT。
+
+7. （可选）索引人可以批准另一个地址作为其索引人基础设施的操作员，以便将控制资金的密钥与执行日常操作，例如在子图上分配和服务（付费）查询的密钥分开。 用操作员地址调用`setOperator()` 设置操作员。
+
+8. (可选）为了控制奖励的分配和战略性地吸引委托人，索引人可以通过更新他们的`索引人奖励削减`（百万分之一）、`查询费用削减`（百万分之一）和`冷却周期区块`（区块数）来更新他们的委托参数。 要实现这一目的需要调用 `setDelegationParameters()`。 以下示例设置`查询费用削减`将 95% 的查询返利分配给索引人，5% 给委托人，设置`索引人奖励削减`将 60% 的索引奖励分配给索引人，将 40% 分配给委托人，并将`冷却周期区块`设置为 500 个。
 
 ```
 setDelegationParameters(950000, 600000, 500)
 ```
 
-### Setting delegation parameters
+### 设置委托参数
 
-The `setDelegationParameters()` function in the [staking contract](https://github.com/graphprotocol/contracts/blob/main/packages/contracts/contracts/staking/Staking.sol) is essential for Indexers, allowing them to set parameters that define their interactions with Delegators, influencing their reward sharing and delegation capacity.
+[质押合约](https://github.com/graphprotocol/contracts/blob/main/packages/contracts/contracts/staking/Staking.sol) 中的`setDelegationParameters()`函数对索引人至关重要，允许他们设置参数来定义他们与委托人的交互，从而影响他们的奖励共享和委托能力。
 
-### How to set delegation parameters
+### 如何设置委托参数
 
-To set the delegation parameters using Graph Explorer interface, follow these steps:
+要使用Graph Explorer界面设置委派参数，请执行以下步骤：
 
-1. Navigate to [Graph Explorer](https://thegraph.com/explorer/).
-2. Connect your wallet. Choose multisig (such as Gnosis Safe) and then select mainnet. Note: You will need to repeat this process for Arbitrum One.
-3. Connect the wallet you have as a signer.
-4. Navigate to the 'Settings' section and select 'Delegation Parameters'. These parameters should be configured to achieve an effective cut within the desired range. Upon entering values in the provided input fields, the interface will automatically calculate the effective cut. Adjust these values as necessary to attain the desired effective cut percentage.
-5. Submit the transaction to the network.
+1. 导航到 [Graph Explorer](https://thegraph.com/explorer/)。
+2. 连接你的钱包。选择multisig（如Gnosis Safe），然后选择主网。注意：您需要对Arbitrum One重复此过程。
+3. 连接您作为签名者的钱包。
+4. '设置'部分，然后选择'委托参数'。这些参数应配置为在所需范围内实现有效切割。在提供的输入字段中输入值后，界面将自动计算有效切割。根据需要调整这些值，以达到所需的有效切割百分比。
+5. 将交易提交到网络。
 
-> Note: This transaction will need to be confirmed by the multisig wallet signers.
+> 注意：此交易需要由多重签名钱包签名者确认。
 
-### The life of an allocation
+### 分配的生命周期
 
-After being created by an Indexer a healthy allocation goes through two states.
+在被索引人创建之后，健康的分配会经历两个状态。
 
-- **Active** - Once an allocation is created onchain ([allocateFrom()](https://github.com/graphprotocol/contracts/blob/main/packages/contracts/contracts/staking/Staking.sol#L316)) it is considered **active**. A portion of the Indexer's own and/or delegated stake is allocated towards a Subgraph deployment, which allows them to claim indexing rewards and serve queries for that Subgraph deployment. The Indexer agent manages creating allocations based on the Indexer rules.
+- **Active** - 一旦在链上创建了分配 ([allocateFrom()](https://github.com/graphprotocol/contracts/blob/main/packages/contracts/contracts/staking/Staking.sol#L316)) ，它就被认为是**active**的。索引人自己和/或委托的一部分份额分配给子图部署，这允许他们申请索引奖励并为该子图部署提供查询。索引人代理根据索引人规则管理创建分配。
 
-- **Closed** - An Indexer is free to close an allocation once 1 epoch has passed ([closeAllocation()](https://github.com/graphprotocol/contracts/blob/main/packages/contracts/contracts/staking/Staking.sol#L335)) or their Indexer agent will automatically close the allocation after the **maxAllocationEpochs** (currently 28 days). When an allocation is closed with a valid proof of indexing (POI) their indexing rewards are distributed to the Indexer and its Delegators ([learn more](/indexing/overview/#how-are-indexing-rewards-distributed)).
+- **Closed**-一旦经过1个时期，索引人就可以自由关闭分配（[closeGallocation()](https://github.com/graphprotocol/contracts/blob/main/packages/contracts/contracts/staking/Staking.sol#L335))或者他们的索引人代理将在**maxAllocationPochs**（目前为28天）后自动关闭分配。当分配以有效的索引证明（POI）结束时，其索引奖励将分配给索引人及其委托人([了解更多](/indexing/overview/#how-are-indexing-rewards-distributed))。
 
-Indexers are recommended to utilize offchain syncing functionality to sync Subgraph deployments to chainhead before creating the allocation onchain. This feature is especially useful for Subgraphs that may take longer than 28 epochs to sync or have some chances of failing undeterministically.
+建议索引人在链上创建分配之前，利用链外同步功能将子图部署同步到链头。对于可能需要超过28个时期才能同步或有一些无法确定失败的机会的子图，此功能特别有用。
