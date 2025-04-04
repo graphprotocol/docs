@@ -59,29 +59,29 @@ type Stats @aggregation(intervals: ["hour", "day"], source: "Data") {
 
 - 具有int8类型的唯一ID
 - 具有timestamp类型的时间戳
-- include data that will be used for calculation by aggregation entities.
+- 包括将由聚合实体用于计算的数据
 
-These Timeseries entities can be saved in regular trigger handlers, and act as the “raw data” for the aggregation entities.
+这些时序实体可以保存在常规触发器处理程序中，并作为聚合实体的“原始数据”。
 
-Aggregation entities are defined with `@aggregation` in the GraphQL schema. Every aggregation entity defines the source from which it will gather data (which must be a timeseries entity), sets the intervals (e.g., hour, day), and specifies the aggregation function it will use (e.g., sum, count, min, max, first, last).
+聚合实体在GraphQL模式中用`@aggregation`定义。每个聚合实体都定义了它将从中收集数据的源（必须是时间序列实体），设置间隔（例如小时、天），并指定它将使用的聚合函数（例如总和、计数、最小值、最大值、第一个、最后一个）。
 
-Aggregation entities are automatically calculated on the basis of the specified source at the end of the required interval.
+聚合实体在所需间隔结束时根据指定的源自动计算。
 
-#### Available Aggregation Intervals
+#### 可用聚合间隔
 
-- `hour`: sets the timeseries period every hour, on the hour.
-- `day`: sets the timeseries period every day, starting and ending at 00:00.
+- `hour`：按小时设置时间序列周期。
+- `day`：设置每天的时间序列周期，从00:00开始到00:00结束。
 
-#### Available Aggregation Functions
+#### 可用聚合功能
 
-- `sum`: Total of all values.
-- `count`: Number of values.
-- `min`: Minimum value.
-- `max`: Maximum value.
-- `first`: First value in the period.
-- `last`: Last value in the period.
+- `sum`：所有值的总和。
+- `count`：值的数量。
+- `min`：最小值。
+- `max`：最大值。
+- `first`：周期中的第一个值。
+- `last`：周期中的最后一个值。
 
-#### Example Aggregations Query
+#### 示例聚合查询
 
 ```graphql
 {
@@ -93,25 +93,25 @@ Aggregation entities are automatically calculated on the basis of the specified 
 }
 ```
 
-[Read more](https://github.com/graphprotocol/graph-node/blob/master/docs/aggregations.md) about Timeseries and Aggregations.
+[阅读更多](https://github.com/graphprotocol/graph-node/blob/master/docs/aggregations.md)关于时间序列和聚合的信息。
 
 ## 非致命错误
 
-Indexing errors on already synced Subgraphs will, by default, cause the Subgraph to fail and stop syncing. Subgraphs can alternatively be configured to continue syncing in the presence of errors, by ignoring the changes made by the handler which provoked the error. This gives Subgraph authors time to correct their Subgraphs while queries continue to be served against the latest block, though the results might be inconsistent due to the bug that caused the error. Note that some errors are still always fatal. To be non-fatal, the error must be known to be deterministic.
+在默认情况下，已同步子图上的索引错误会导致子图失败并停止同步。 子图也可以配置为忽略引发错误的处理程序所做的更改, 在出现错误时继续同步。 这使子图作者有时间更正他们的子图，同时继续针对最新区块提供查询，尽管由于导致错误的代码问题，结果可能会不一致。 请注意，某些错误仍然总是致命的，要成为非致命错误，首先需要确定相应的错误是确定性的错误。
 
-> **Note:** The Graph Network does not yet support non-fatal errors, and developers should not deploy Subgraphs using that functionality to the network via the Studio.
+> 注意： The Graph 网络尚不支持非致命错误，开发人员不应通过工作室将使用该功能的子图部署到网络。
 
-Enabling non-fatal errors requires setting the following feature flag on the Subgraph manifest:
+启用非致命错误需要在子图清单上设置以下功能标志：
 
 ```yaml
 specVersion: 1.3.0
 description: Gravatar for Ethereum
 features:
     - nonFatalErrors
-    ...
+    …
 ```
 
-The query must also opt-in to querying data with potential inconsistencies through the `subgraphError` argument. It is also recommended to query `_meta` to check if the Subgraph has skipped over errors, as in the example:
+查询还必须通过 `subgraphError` 参数选择查询可能存在不一致的数据。 还建议查询 `_meta` 以检查子图是否跳过错误，如示例：
 
 ```graphql
 foos(first: 100, subgraphError: allow) {
@@ -123,7 +123,7 @@ _meta {
 }
 ```
 
-If the Subgraph encounters an error, that query will return both the data and a graphql error with the message `"indexing_error"`, as in this example response:
+如果子图遇到错误，则查询将返回数据和带有消息 `"indexing_error"` 的 graphql 错误，如以下示例响应所示：
 
 ```graphql
 "data": {
@@ -143,25 +143,25 @@ If the Subgraph encounters an error, that query will return both the data and a 
 ]
 ```
 
-## IPFS/Arweave File Data Sources
+## IPFS/Arweave文件数据源
 
-File data sources are a new Subgraph functionality for accessing off-chain data during indexing in a robust, extendable way. File data sources support fetching files from IPFS and from Arweave.
+文件数据源是一种新的子图功能，用于以稳健、可扩展的方式在索引期间访问链下数据。文件数据源支持从IPFS和Arweave获取文件。
 
 > 这也为链外数据的确定性索引以及引入任意HTTP源数据奠定了基础。
 
 ### 概述
 
-Rather than fetching files "in line" during handler execution, this introduces templates which can be spawned as new data sources for a given file identifier. These new data sources fetch the files, retrying if they are unsuccessful, running a dedicated handler when the file is found.
+这不是在处理程序执行期间“在线”获取文件，而是引入了可以作为给定文件标识符的新数据源生成的模板。这些新数据源获取文件，如果不成功则重试，找到文件后运行专用处理程序。
 
-This is similar to the [existing data source templates](/developing/creating-a-subgraph/#data-source-templates), which are used to dynamically create new chain-based data sources.
+这类似于[现有数据源模板](/developing/creating-a-subgraph/#data-source-templates)，用于动态创建新的基于链的数据源。
 
-> This replaces the existing `ipfs.cat` API
+> 这将替换现有的`ipfs.cat` API
 
 ### 升级指南
 
-#### Update `graph-ts` and `graph-cli`
+#### 更新`graph-ts`和`graph-cli`
 
-File data sources requires graph-ts >=0.29.0 and graph-cli >=0.33.1
+文件数据源需要graph-ts>=0.29.0和graph-cli>=0.33.1
 
 #### 添加新的实体类型，当找到文件时将更新该类型
 
@@ -210,9 +210,9 @@ type TokenMetadata @entity {
 
 如果母实体与生成的文件数据源实体之间的关系为1:1，则最简单的模式是通过使用IPFS CID作为查找将母实体链接到生成的文件实体。如果您在建模新的基于文件的实体时遇到困难，请联系Discord！
 
-> You can use [nested filters](/subgraphs/querying/graphql-api/#example-for-nested-entity-filtering) to filter parent entities on the basis of these nested entities.
+> 您可以使用[嵌套筛选器](/subgraphs/querying/graphql-api/#example-for-nested-entity-filtering)根据这些嵌套实体过滤父实体。
 
-#### Add a new templated data source with `kind: file/ipfs` or `kind: file/arweave`
+#### 添加一个新的模板数据源，使用`kind: file/ipfs`或`kind: file/arweave`。
 
 这是在识别出感兴趣的文件时生成的数据源。
 
@@ -232,15 +232,15 @@ templates:
           file: ./abis/Token.json
 ```
 
-> Currently `abis` are required, though it is not possible to call contracts from within file data sources
+> 目前需要`abis`，但无法从文件数据源中调用合约。
 
-The file data source must specifically mention all the entity types which it will interact with under `entities`. See [limitations](#limitations) for more details.
+文件数据源必须特别提到它将在`实体`下与之交互的所有实体类型。有关详细信息，请参阅[限制](#limitations) 。
 
 #### 创建新处理程序以处理文件
 
-This handler should accept one `Bytes` parameter, which will be the contents of the file, when it is found, which can then be processed. This will often be a JSON file, which can be processed with `graph-ts` helpers ([documentation](/subgraphs/developing/creating/graph-ts/api/#json-api)).
+此处理程序应接受一个`Bytes`参数，当找到文件时，该参数将是文件的内容，然后可以对其进行处理。这通常是一个JSON文件，可以用`graph-ts` 助手([文件](/subgraphs/developing/creating/graph-ts/api/#json-api))处理。
 
-The CID of the file as a readable string can be accessed via the `dataSource` as follows:
+文件的CID作为可读字符串可通过`数据源`访问，如下所示：
 
 ```typescript
 const cid = dataSource.stringParam()
@@ -277,12 +277,12 @@ export function handleMetadata(content: Bytes): void {
 
 现在，您可以在执行基于链的处理程序期间创建文件数据源：
 
-- Import the template from the auto-generated `templates`
-- call `TemplateName.create(cid: string)` from within a mapping, where the cid is a valid content identifier for IPFS or Arweave
+- 从自动生成的模板导入`模板`
+- 从映射中调用`TemplateName.create(cid:string)`，其中cid是有效的IPFS或Arweave内容标识符
 
-For IPFS, Graph Node supports [v0 and v1 content identifiers](https://docs.ipfs.tech/concepts/content-addressing/), and content identifiers with directories (e.g. `bafyreighykzv2we26wfrbzkcdw37sbrby4upq7ae3aqobbq7i4er3tnxci/metadata.json`).
+对于IPFS，Graph Node支持[v0 和 v1内容标识符](https://docs.ipfs.tech/concepts/content-addressing/)，以及带有目录的内容标识符（例如`bafyreighykzv2we26wfrbzkcdw37sbrby4upq7ae3aqobbq7i4er3tnxci/metadata.json`）。
 
-For Arweave, as of version 0.33.0 Graph Node can fetch files stored on Arweave based on their [transaction ID](https://docs.arweave.org/developers/arweave-node-server/http-api#transactions) from an Arweave gateway ([example file](https://bdxujjl5ev5eerd5ouhhs6o4kjrs4g6hqstzlci5pf6vhxezkgaa.arweave.net/CO9EpX0lekJEfXUOeXncUmMuG8eEp5WJHXl9U9yZUYA)). Arweave supports transactions uploaded via Irys (previously Bundlr), and Graph Node can also fetch files based on [Irys manifests](https://docs.irys.xyz/overview/gateways#indexing).
+对于Arweave，从0.33.0版本开始，Graph Node可以根据其[交易ID](https://docs.arweave.org/developers/arweave-node-server/http-api#transactions)获取存储在Arweave上的文件来自Arweave网关（[示例文件](https://bdxujjl5ev5eerd5ouhhs6o4kjrs4g6hqstzlci5pf6vhxezkgaa.arweave.net/CO9EpX0lekJEfXUOeXncUmMuG8eEp5WJHXl9U9yZUYA)). Arweave支持通过Irys（以前是Bundlr）上传的交易，Graph Node还可以根据[Irys清单](https://docs.irys.xyz/overview/gateways#indexing)获取文件。
 
 例子:
 
@@ -315,25 +315,25 @@ export function handleTransfer(event: TransferEvent): void {
 
 这将创建一个新的文件数据源，该数据源将轮询Graph Node配置的IPFS或Arweave端点，如果未找到文件，则进行重试。当找到文件时，文件数据源处理程序将被执行。
 
-This example is using the CID as the lookup between the parent `Token` entity and the resulting `TokenMetadata` entity.
+此示例使用 CID 作为母 `代币` 实体和生成的 `TokenMetadata` 实体之间的查找。
 
-> Previously, this is the point at which a Subgraph developer would have called `ipfs.cat(CID)` to fetch the file
+> 以前，子图开发人员会在此时调用`ipfs.cat(CID)`来获取文件。
 
 祝贺您，您正在使用文件数据源！
 
-#### Deploying your Subgraphs
+#### 部署子图
 
-You can now `build` and `deploy` your Subgraph to any Graph Node >=v0.30.0-rc.0.
+现在，您可以将子图`构建`并`部署`到任何Graph Node>=v0.30.0-rc.0。
 
 #### 限制
 
-File data source handlers and entities are isolated from other Subgraph entities, ensuring that they are deterministic when executed, and ensuring no contamination of chain-based data sources. To be specific:
+文件数据源处理程序和实体与其他子图实体隔离，确保它们在执行时是确定的，并确保基于链的数据源不受污染。具体来说：
 
 - 文件数据源创建的实体是不可变的，不能更新
 - 文件数据源处理程序无法访问其他文件数据源中的实体
 - 基于链的处理程序无法访问与文件数据源关联的实体
 
-> While this constraint should not be problematic for most use-cases, it may introduce complexity for some. Please get in touch via Discord if you are having issues modelling your file-based data in a Subgraph!
+> 虽然这个约束对于大多数用例不应该是有问题的，但是对于某些用例，它可能会引入复杂性。如果您在子图中基于文件数据建模时遇到问题，请通过 Discord 与我们联系！
 
 此外，不可能从文件数据源创建数据源，无论是线上数据源还是其他文件数据源。这项限制将来可能会取消。
 
@@ -469,44 +469,44 @@ eventHandlers:
 ### 关键概念
 
 - 声明性`eth_calls`：定义为并行执行而非顺序执行的以太坊调用。
-- Parallel Execution: Instead of waiting for one call to finish before starting the next, multiple calls can be initiated simultaneously.
-- Time Efficiency: The total time taken for all the calls changes from the sum of the individual call times (sequential) to the time taken by the longest call (parallel).
+- 并行执行：可以同时发起多个调用，而不是在开始下一个调用之前等待一个调用完成。
+- 时间效率：所有呼叫所花费的总时间从单个呼叫时间的总和（连续）变为最长呼叫所花费时间（并行）。
 
-#### Scenario without Declarative `eth_calls`
+#### 没有声明性`eth_calls`的场景
 
-Imagine you have a Subgraph that needs to make three Ethereum calls to fetch data about a user's transactions, balance, and token holdings.
+想象一下，你有一个子图，需要进行三次以太坊调用来获取有关用户交易、余额和代币持有量的数据。
 
-Traditionally, these calls might be made sequentially:
-
-1. 调用 1 (交易): 需要3 秒
-2. Call 2 (Balance): Takes 2 seconds
-3. 调用 3 (代币持有): 需要4 秒
-
-Total time taken = 3 + 2 + 4 = 9 seconds
-
-#### Scenario with Declarative `eth_calls`
-
-With this feature, you can declare these calls to be executed in parallel:
+传统上，这些调用可能会按顺序进行：
 
 1. 调用 1 (交易): 需要3 秒
-2. Call 2 (Balance): Takes 2 seconds
+2. 调用 2 (余额): 需要2 秒
 3. 调用 3 (代币持有): 需要4 秒
 
-Since these calls are executed in parallel, the total time taken is equal to the time taken by the longest call.
+总耗时 = 3 + 2 + 4 = 9 秒
 
-Total time taken = max (3, 2, 4) = 4 seconds
+#### 带有声明性`eth_calls`的场景
 
-#### How it Works
+使用此功能，您可以声明这些调用并行执行：
 
-1. Declarative Definition: In the Subgraph manifest, you declare the Ethereum calls in a way that indicates they can be executed in parallel.
-2. Parallel Execution Engine: The Graph Node's execution engine recognizes these declarations and runs the calls simultaneously.
-3. Result Aggregation: Once all calls are complete, the results are aggregated and used by the Subgraph for further processing.
+1. 调用 1 (交易): 需要3 秒
+2. 调用 2 (余额): 需要2 秒
+3. 调用 3 (代币持有): 需要4 秒
 
-#### Example Configuration in Subgraph Manifest
+由于这些调用是并行执行的，因此所花费的总时间等于最长调用所花费的时间。
 
-Declared `eth_calls` can access the `event.address` of the underlying event as well as all the `event.params`.
+总耗时 = max (3, 2, 4) = 4 秒
 
-`subgraph.yaml` using `event.address`:
+#### 它是如何工作的
+
+1. 声明性定义：在子图清单中，你以一种表明以太坊调用可以并行执行的方式声明它们。
+2. 并行执行引擎：The Graph节点的执行引擎识别这些声明并同时运行调用。
+3. 结果聚合：一旦所有调用完成，结果将被聚合并由子图用于进一步处理。
+
+#### 子图清单中的示例配置
+
+声明的`eth_calls`可以访问底层事件的`event.address`以及所有`event.params`。
+
+使用`event.address`的`subgraph.yaml` ：
 
 ```yaml
 eventHandlers:
@@ -517,14 +517,14 @@ calls:
   global1X128: Pool[event.address].feeGrowthGlobal1X128()
 ```
 
-Details for the example above:
+上述示例的详细信息：
 
-- `global0X128` is the declared `eth_call`.
-- The text (`global0X128`) is the label for this `eth_call` which is used when logging errors.
-- The text (`Pool[event.address].feeGrowthGlobal0X128()`) is the actual `eth_call` that will be executed, which is in the form of `Contract[address].function(arguments)`
-- The `address` and `arguments` can be replaced with variables that will be available when the handler is executed.
+- `global0X128` 是声明的 `eth_call`。
+- 文本（`global0X128`）是此`eth_call`的标签，用于记录错误。
+- 文本（`Pool[event.address].feeGrowthGlobal0X128（）`）是将要执行的实际`eth_call`，其形式为`Contract[address].function（arguments`）。
+- `地址`和`参数`可以用执行处理程序时可用的变量替换。
 
-`subgraph.yaml` using `event.params`
+使用 `event.params`的`Subgraph.yaml` ：
 
 ```yaml
 calls:
@@ -533,11 +533,11 @@ calls:
 
 ### 嫁接到现有子图
 
-> **Note:** it is not recommended to use grafting when initially upgrading to The Graph Network. Learn more [here](/subgraphs/cookbook/grafting/#important-note-on-grafting-when-upgrading-to-the-network).
+> **注意：**不建议在最初升级到The Graph网络时使用嫁接。了解更多信息[此处](/subgraphs/cookbook/grafting/#important-note-on-grafting-when-upgrading-to-the-network)。
 
-When a Subgraph is first deployed, it starts indexing events at the genesis block of the corresponding chain (or at the `startBlock` defined with each data source) In some circumstances; it is beneficial to reuse the data from an existing Subgraph and start indexing at a much later block. This mode of indexing is called _Grafting_. Grafting is, for example, useful during development to get past simple errors in the mappings quickly or to temporarily get an existing Subgraph working again after it has failed.
+首次部署子图时，它会在相应链的启动区块（或每个数据源定义的 `startBlock` 处）开始索引事件。在某些情况下，可以使用现有子图已经索引的数据并在更晚的区块上开始索引。 这种索引模式称为_Grafting_。 例如，嫁接在开发过程中非常有用，可以快速克服映射中的简单错误，或者在现有子图失败后暂时恢复工作。
 
-A Subgraph is grafted onto a base Subgraph when the Subgraph manifest in `subgraph.yaml` contains a `graft` block at the top-level:
+当 `subgraph.yaml` 中的子图清单在顶层包含 `graft` 区块时，子图被嫁接到基础子图：
 
 ```yaml
 description: ...
@@ -546,11 +546,11 @@ graft:
   block: 7345624 # Block number
 ```
 
-When a Subgraph whose manifest contains a `graft` block is deployed, Graph Node will copy the data of the `base` Subgraph up to and including the given `block` and then continue indexing the new Subgraph from that block on. The base Subgraph must exist on the target Graph Node instance and must have indexed up to at least the given block. Because of this restriction, grafting should only be used during development or during an emergency to speed up producing an equivalent non-grafted Subgraph.
+当部署其清单包含 `graft` 区块的子图时，Graph 节点将复制 `base` 子图的数据，直到并包括给定的 `区块`，然后继续从该区块开始索引新子图。 基础子图必须存在于目标Graph Node实例上，并且必须至少索引到给定区块。 由于这个限制，嫁接只能在开发期间或紧急情况下使用，以加快生成等效的非嫁接子图。
 
-Because grafting copies rather than indexes base data, it is much quicker to get the Subgraph to the desired block than indexing from scratch, though the initial data copy can still take several hours for very large Subgraphs. While the grafted Subgraph is being initialized, the Graph Node will log information about the entity types that have already been copied.
+因为嫁接是拷贝而不是索引基础数据，所以子图同步到所需区块比从头开始索引要快得多，尽管对于非常大的子图，初始数据拷贝仍可能需要几个小时。 在初始化嫁接子图时，Graph 节点将记录有关已复制的实体类型的信息。
 
-The grafted Subgraph can use a GraphQL schema that is not identical to the one of the base Subgraph, but merely compatible with it. It has to be a valid Subgraph schema in its own right, but may deviate from the base Subgraph's schema in the following ways:
+嫁接子图可以使用一个与基础子图不同的GraphQL 模式，但仅与之兼容。它本身必须是一个有效的子图模式，但是可以通过以下方式偏离基础子图的模式：
 
 - 添加或删除实体类型
 - 从实体类型中删除属性
@@ -560,4 +560,4 @@ The grafted Subgraph can use a GraphQL schema that is not identical to the one o
 - 添加或删除接口
 - 改变了实现接口的实体类型
 
-> **[Feature Management](#experimental-features):** `grafting` must be declared under `features` in the Subgraph manifest.
+> **[特征管理](#experimental-features):** `grafting`必须在子图清单中的`features`下声明。
