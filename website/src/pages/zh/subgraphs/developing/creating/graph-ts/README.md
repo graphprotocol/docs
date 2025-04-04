@@ -1,30 +1,30 @@
-# The Graph TypeScript Library (graph-ts)
+# 图形类型脚本库 (graph-ts)
 
 [![npm (scoped)](https://img.shields.io/npm/v/@graphprotocol/graph-ts.svg)](https://www.npmjs.com/package/@graphprotocol/graph-ts)
 [![Build Status](https://travis-ci.org/graphprotocol/graph-ts.svg?branch=master)](https://travis-ci.org/graphprotocol/graph-ts)
 
-TypeScript/AssemblyScript library for writing subgraph mappings to be deployed to
-[The Graph](https://github.com/graphprotocol/graph-node).
+要部署到
+[The Graph](https://github.com/graphprotocol/graph-node)写入子图的 TypeScript/AssemblyScript 库。
 
 ## 使用方法
 
-For a detailed guide on how to create a subgraph, please see the
-[Graph CLI docs](https://github.com/graphprotocol/graph-cli).
+关于如何创建子图的详细指南，请参阅
+[GraphCLI 文档](https://github.com/graphprotocol/graph-cli)。
 
-One step of creating the subgraph is writing mappings that will process blockchain events and will
-write entities into the store. These mappings are written in TypeScript/AssemblyScript.
+创建子图的步骤是编写将处理区块链事件的映射，并将实体
+写入存储。 这些映射都以 TypeScript/AssemblyScript 编写。
 
-The `graph-ts` library provides APIs to access the Graph Node store, blockchain data, smart
-contracts, data on IPFS, cryptographic functions and more. To use it, all you have to do is add a
-dependency on it:
+`graph-ts`库提供 API，访问the Graph节点存储、区块链数据、智能
+合约、IPFS数据、加密功能等数据。 若要使用它，您必须做的就是添加一个
+依赖于它：
 
 ```sh
 npm install --dev @graphprotocol/graph-ts # NPM
-yarn add --dev @graphprotocol/graph-ts    # Yarn
+yarn add --dev @graph/graph-ts # Yarn
 ```
 
-After that, you can import the `store` API and other features from this library in your mappings. A
-few examples:
+然后，您可以在您的映射中导入这个库的 `store` API 和其他功能。
+几个例子：
 
 ```typescript
 import { crypto, store } from '@graphprotocol/graph-ts'
@@ -50,19 +50,19 @@ function handleNameRegistered(event: NameRegistered) {
 }
 ```
 
-## Helper Functions for AssemblyScript
+## AssemblyScript 的辅助函数
 
-Refer to the `helper-functions.ts` file in
-[this](https://github.com/graphprotocol/graph-tooling/blob/main/packages/ts/helper-functions.ts)
-repository for a few common functions that help build on top of the AssemblyScript library, such as
-byte array concatenation, among others.
+参考
+[这个](https://github.com/graphprotocol/graph-tooling/blob/main/packages/ts/helper-functions.ts)
+版本库用于一些共同的函数的`助手函数`，这些函数有助于在 AssemblyScript 库顶端上建构， 例如
+字节数组会合等。
 
 ## API
 
-Documentation on the API can be found
-[here](https://thegraph.com/docs/en/developer/assemblyscript-api/).
+API 上的文档可以在[这里](https://thegraph.com/docs/en/developer/assemblyscript-api/)找到
+。
 
-For examples of `graph-ts` in use take a look at one of the following subgraphs:
+对于所用的`graph-ts`的示例，请看下面的子图之一：
 
 - https://github.com/graphprotocol/ens-subgraph
 - https://github.com/graphprotocol/decentraland-subgraph
@@ -71,15 +71,15 @@ For examples of `graph-ts` in use take a look at one of the following subgraphs:
 - https://github.com/graphprotocol/aragon-subgraph
 - https://github.com/graphprotocol/dharma-subgraph
 
-## License
+## 许可协议
 
-Copyright &copy; 2018 Graph Protocol, Inc. and contributors.
+版权所有 &copy; 2018 Graph协议、 公司和贡献者。
 
-The Graph TypeScript library is dual-licensed under the
-[MIT license](https://github.com/graphprotocol/graph-tooling/blob/main/LICENSE-MIT) and the
-[Apache License, Version 2.0](https://github.com/graphprotocol/graph-tooling/blob/main/LICENSE-APACHE).
+GraphTypeScript 库是
+[MIT license](https://github.com/graphprotocol/graph-tooling/blob/main/LICENSE-MIT) 和
+[Apache License, 版本 2.0](https://github.com/graphprotocol/graph-tooling/blob/main/LICENSE-APACHE)的双向授权。
 
-Unless required by applicable law or agreed to in writing, software distributed under the License is
-distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
-implied. See the License for the specific language governing permissions and limitations under the
-License.
+除非适用法律要求或书面同意，否则根据许可证分发的软件
+按“原样”分发，不附带任何明示或明示的保证或条件
+暗指的。有关管理许可和限制的特定语言，请参阅许可证
+许可证。
