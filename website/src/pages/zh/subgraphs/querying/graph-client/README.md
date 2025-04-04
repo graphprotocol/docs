@@ -1,44 +1,44 @@
-# The Graph Client Tools
+# The Graph客户端工具
 
-This repo is the home for [The Graph](https://thegraph.com) consumer-side tools (for both browser and NodeJS environments).
+这个仓库是[The Graph](https://thegraph.com)消费者端工具（适用于浏览器和NodeJS环境）的家。
 
-## Background
+## 背景
 
-The tools provided in this repo are intended to enrich and extend the DX, and add the additional layer required for dApps in order to implement distributed applications.
+本节提供的工具旨在丰富和扩展DX, 并添加 dApp 所需的附加层以实现分布式应用程序。
 
-Developers who consume data from [The Graph](https://thegraph.com) GraphQL API often need peripherals for making data consumption easier, and also tools that allow using multiple indexers at the same time.
+从GraphQL API 上[[The Graph](https://thegraph.com) 消耗数据的开发者常常需要外观才能使数据消耗更加容易， 而且还可以同时使用多个索引人的工具。
 
-## Features and Goals
+## 特征和目标
 
-This library is intended to simplify the network aspect of data consumption for dApps. The tools provided within this repository are intended to run at build time, in order to make execution faster and performant at runtime.
+这个库旨在简化dApp数据消耗的网络方面。 这个仓库中提供的工具是为了在构建时运行，以便在运行时更快地执行和运行。
 
-> The tools provided in this repo can be used as standalone, but you can also use it with any existing GraphQL Client!
+> 在这个仓库中提供的工具可以单独使用，但你也可以和任何现有的 GraphQL 客户端一起使用！
 
-|  状态 | Feature                                                          | 注意：                                                                                                                              |
-| :-: | ---------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
-|  ✅  | Multiple indexers                                                | based on fetch strategies                                                                                                        |
-|  ✅  | Fetch Strategies                                                 | timeout, retry, fallback, race, highestValue                                                                                     |
-|  ✅  | Build time validations & optimizations       |                                                                                                                                  |
-|  ✅  | Client-Side Composition                                          | with improved execution planner (based on GraphQL-Mesh)                                                       |
-|  ✅  | Cross-chain Subgraph Handling                                    | Use similar subgraphs as a single source                                                                                         |
-|  ✅  | Raw Execution (standalone mode)               | without a wrapping GraphQL client                                                                                                |
-|  ✅  | Local (client-side) Mutations                 |                                                                                                                                  |
-|  ✅  | [Automatic Block Tracking](../packages/block-tracking/README.md) | tracking block numbers [as described here](https://thegraph.com/docs/en/developer/distributed-systems/#polling-for-updated-data) |
-|  ✅  | [Automatic Pagination](../packages/auto-pagination/README.md)    | doing multiple requests in a single call to fetch more than the indexer limit                                                    |
-|  ✅  | Integration with `@apollo/client`                                |                                                                                                                                  |
-|  ✅  | Integration with `urql`                                          |                                                                                                                                  |
-|  ✅  | TypeScript support                                               | with built-in GraphQL Codegen and `TypedDocumentNode`                                                                            |
-|  ✅  | [`@live` queries](./live.md)                                     | Based on polling                                                                                                                 |
+|  状态 | 特征                                             | 注意：                                                                                                   |
+| :-: | ---------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+|  ✅  | 多个索引人                                          | 基于获取策略                                                                                                |
+|  ✅  | 获取策略                                           | 超时、 重试、 回退、 种族，最高值                                                                                    |
+|  ✅  | 构建时间验证和优化                                      |                                                                                                       |
+|  ✅  | 客户端组成                                          | 改进执行规划程序(基于 GraphQL-Mesh)                                                          |
+|  ✅  | 跨链子图处理                                         | 使用相似子图作为单个源                                                                                           |
+|  ✅  | 原始执行 (独立模式)                 | 没有包装GraphQL客户端                                                                                        |
+|  ✅  | 本地(客户端) 突变                  |                                                                                                       |
+|  ✅  | [自动区块跟踪](../packages/block-tracking/README.md) | 跟踪区块编号 [如这里描述的](https://thegraph.com/docs/en/developer/distributed-systems/#polling-for-updated-data) |
+|  ✅  | [自动分页](../packages/auto-pagination/README.md)  | 在单次调用中执行多个请求以获取超过索引人限制的数据                                                                             |
+|  ✅  | 与 `@apollo/client` 集成                          |                                                                                                       |
+|  ✅  | 与 `urql` 集成                                    |                                                                                                       |
+|  ✅  | TypeScript 支持                                  | 具有内置的 GraphQL Codegen 和 `TypedDocumentNode`                                                           |
+|  ✅  | [`@live` 查询](./live.md)                        | 基于投票                                                                                                  |
 
-> You can find an [extended architecture design here](./architecture.md)
+> 您可以在这里找到一个[扩展架构设计](./architecture.md)。
 
 ## 开始
 
-You can follow [Episode 45 of `graphql.wtf`](https://graphql.wtf/episodes/45-the-graph-client) to learn more about Graph Client:
+您可以关注 [Episode 45 of `graphql.wtf`](https://graphql.wtf/episodes/45-the-graph-client) 来了解更多关于Graph客户端的信息：
 
 [![GraphQL.wtf Episode 45](https://img.youtube.com/vi/ZsRAmyUtvwg/0.jpg)](https://graphql.wtf/episodes/45-the-graph-client)
 
-To get started, make sure to install [The Graph Client CLI] in your project:
+若要启动，请确保在您的项目中安装 [The Graph客户端CLI] ：
 
 ```sh
 yarn add -D @graphprotocol/client-cli
@@ -46,9 +46,9 @@ yarn add -D @graphprotocol/client-cli
 npm install --save-dev @graphprotocol/client-cli
 ```
 
-> The CLI is installed as dev dependency since we are using it to produce optimized runtime artifacts that can be loaded directly from your app!
+> CLI 是作为dev 依赖安装的，因为我们正在使用它来产生优化的运行时工件，这些工件可以直接从您的应用中加载！
 
-Create a configuration file (called `.graphclientrc.yml`) and point to your GraphQL endpoints provided by The Graph, for example:
+创建一个配置文件 (名为 `.graphclientrc.yml`) 并指向您的由The Graph提供的GraphQL 端点, 例如：
 
 ```yml
 # .graphclientrc.yml
@@ -59,15 +59,15 @@ sources:
         endpoint: https://api.thegraph.com/subgraphs/name/uniswap/uniswap-v2
 ```
 
-Now, create a runtime artifact by running The Graph Client CLI:
+现在，通过运行 The Graph客户端 CLI 创建运行时的工件：
 
 ```sh
 graphclient build
 ```
 
-> Note: you need to run this with `yarn` prefix, or add that as a script in your `package.json`.
+> 注意：您需要使用 `yarn` 前缀运行此操作，或者在您的 `package.json` 中添加一个脚本。
 
-This should produce a ready-to-use standalone `execute` function, that you can use for running your application GraphQL operations, you should have an output similar to the following:
+这将产生一个可随时使用的独立`执行`函数。 你可以用来运行你的应用程序 GraphQL 操作，你应该有一个类似于以下的输出：
 
 ```sh
 GraphClient: Cleaning existing artifacts
@@ -80,7 +80,7 @@ GraphClient: Reading the configuration
 🕸️: Done! => .graphclient
 ```
 
-Now, the `.graphclient` artifact is generated for you, and you can import it directly from your code, and run your queries:
+现在，`.graphclient`的艺术品是为你生成的，你可以直接从你的代码中导入它，并运行你的查询：
 
 ```ts
 import { execute } from '../.graphclient'
@@ -111,54 +111,54 @@ async function main() {
 main()
 ```
 
-### Using Vanilla JavaScript Instead of TypeScript
+### 使用 Vanilla JavaScript 而不是 TypeScript
 
-GraphClient CLI generates the client artifacts as TypeScript files by default, but you can configure CLI to generate JavaScript and JSON files together with additional TypeScript definition files by using `--fileType js` or `--fileType json`.
+GraphClient CLI 默认情况下以 TypeScript 文件生成客户端工件， 但您可以使用 `--fileType js` 或 `--fileType js` 或 `--fileType json` 来配置 CLI 以生成JavaScript 和 JSON 文件以及额外的 TypeScript 定义文件。
 
-`js` flag generates all files as JavaScript files with ESM Syntax and `json` flag generates source artifacts as JSON files while entrypoint JavaScript file with old CommonJS syntax because only CommonJS supports JSON files as modules.
+`js` 标志生成了所有使用 JavaScript 文件的文件，其中含有ESM 语法和 `json` 标志作为JSON 文件生成了源代码，同时也生成了旧的 CommonJS 语法的 JavaScript 文件，因为只有CommonJS支持 JSON 文件作为模块。
 
-Unless you use CommonJS(`require`) specifically, we'd recommend you to use `js` flag.
+除非您使用CommonJS(`require`)，否则我们建议您使用`js`标记。
 
 `graphclient --fileType js`
 
-- [An example for JavaScript usage in CommonJS syntax with JSON files](../examples/javascript-cjs)
-- [An example for JavaScript usage in ESM syntax](../examples/javascript-esm)
+- [使用JSON文件在CommonJS语法中使用JavaScript的示例](../examples/javascript-cjs)
+- [一个 JavaScript 在ESM 语法中的使用示例](../examples/javascript-esm)
 
-#### The Graph Client DevTools
+#### The Graph客户端开发工具
 
-The Graph Client CLI comes with a built-in GraphiQL, so you can experiment with queries in real-time.
+The Graph客户端CLI 带有内置的 GraphiQL，因此您可以实时尝试查询。
 
-The GraphQL schema served in that environment, is the eventual schema based on all composed Subgraphs and transformations you applied.
+在这种环境下服务的 GraphQL 模式是基于您应用的所有构成子图和转换的最终模式 。
 
-To start the DevTool GraphiQL, run the following command:
+要启动DevTool GraphiQL，请运行以下命令：
 
 ```sh
 graphclient serve-dev
 ```
 
-And open http://localhost:4000/ to use GraphiQL. You can now experiment with your Graph client-side GraphQL schema locally! 🥳
+然后打开 http://localhost:4000/以使用 GraphiQL。您现在可以在本地试用您的Graph客户端GraphQL 模式！🥳
 
 #### 例子
 
-You can also refer to [examples directory in this repo](../examples), for more advanced examples and integration examples:
+您还可以参考[此仓库中的示例目录](../examples)，了解更高级的示例和集成示例：
 
-- [TypeScript & React example with raw `execute` and built-in GraphQL-Codegen](../examples/execute)
-- [TS/JS NodeJS standalone mode](../examples/node)
-- [Client-Side GraphQL Composition](../examples/composition)
-- [Integration with Urql and React](../examples/urql)
-- [Integration with NextJS and TypeScript](../examples/nextjs)
-- [Integration with Apollo-Client and React](../examples/apollo)
-- [Integration with React-Query](../examples/react-query)
-- _Cross-chain merging (same Subgraph, different chains)_
-- - [Parallel SDK calls](../examples/cross-chain-sdk)
-- - [Parallel internal calls with schema extensions](../examples/cross-chain-extension)
-- [Customize execution with Transforms (auto-pagination and auto-block-tracking)](../examples/transforms)
+- [[TypeScript & React示例与原始的 `execute` 和内置的 GraphQL-Codegen](../examples/execute)
+- [TS/JS NodeJS独立模式](../examples/node)
+- [客户端 GraphQL 组合](../examples/composition)
+- [与Urql 和 React集成](../examples/urql)
+- [与NextJS 和 TypeScript集成](../examples/nextjs)
+- [与Apollo-Client 和 React集成](../examples/apollo)
+- [与React-Query集成](../examples/react-query)
+- _跨链合并 (相同的子图，不同的链)_
+- - [并行的 SDK 调用](../examples/cross-chain-sdk)
+- - [具有模式扩展的并行内部调用](../examples/cross-chain-extension)
+- [使用Transforms（自动分页和自动块跟踪）自定义执行](../examples/transforms)
 
-### Advanced Examples/Features
+### 高级示例/功能
 
-#### Customize Network Calls
+#### 自定义网络调用
 
-You can customize the network execution (for example, to add authentication headers) by using `operationHeaders`:
+您可以使用`operationHeaders`自定义网络执行 (例如，添加身份验证头)：
 
 ```yaml
 sources:
@@ -170,7 +170,7 @@ sources:
           Authorization: Bearer MY_TOKEN
 ```
 
-You can also use runtime variables if you wish, and specify it in a declarative way:
+如果您愿意，您也可以使用运行时变量，并以声明方式指定：
 
 ```yaml
 sources:
@@ -182,7 +182,7 @@ sources:
           Authorization: Bearer {context.config.apiToken}
 ```
 
-Then, you can specify that when you execute operations:
+然后，您可以指定当您执行操作时：
 
 ```ts
 execute(myQuery, myVariables, {
@@ -192,11 +192,11 @@ execute(myQuery, myVariables, {
 })
 ```
 
-> You can find the [complete documentation for the `graphql` handler here](https://graphql-mesh.com/docs/handlers/graphql#config-api-reference).
+> 您可以在这里找到 [`graphql` 处理程序的完整文档](https://graphql-mesh.com/docs/handlers/graphql#config-api-reference)。
 
-#### Environment Variables Interpolation
+#### 环境变量内插值
 
-If you wish to use environment variables in your Graph Client configuration file, you can use interpolation with `env` helper:
+如果你想要在你的Graph客户端配置文件中使用环境变量，你可以使用 `env` 助手的插值：
 
 ```yaml
 sources:
@@ -208,9 +208,9 @@ sources:
           Authorization: Bearer {env.MY_API_TOKEN} # runtime
 ```
 
-Then, make sure to have `MY_API_TOKEN` defined when you run `process.env` at runtime.
+然后，请确保在运行`process.env`时定义`MY_API_TOKEN`。
 
-You can also specify environment variables to be filled at build time (during `graphclient build` run) by using the env-var name directly:
+您还可以直接使用 Env-var 名称指定要在构建时间(在 `graphclient build` 运行时) 填充的环境变量：
 
 ```yaml
 sources:
@@ -222,20 +222,20 @@ sources:
           Authorization: Bearer ${MY_API_TOKEN} # build time
 ```
 
-> You can find the [complete documentation for the `graphql` handler here](https://graphql-mesh.com/docs/handlers/graphql#config-api-reference).
+> 您可以在这里找到 [`graphql` 处理程序的完整文档](https://graphql-mesh.com/docs/handlers/graphql#config-api-reference)。
 
-#### Fetch Strategies and Multiple Graph Indexers
+#### 获取策略和多图索引人
 
-It's a common practice to use more than one indexer in dApps, so to achieve the ideal experience with The Graph, you can specify several `fetch` strategies in order to make it more smooth and simple.
+在dApp中使用多个索引人是一种常见的做法，以便实现理想的The Graph体验， 你可以指定 `fetch` 的几种策略来使它更加顺畅和简单。
 
-All `fetch` strategies can be combined to create the ultimate execution flow.
+所有的 `fetch` 策略可以合并来创建最终的执行流程。
 
 <details>
  <summary>"重试"</summary>
 
-The `retry` mechanism allow you to specify the retry attempts for a single GraphQL endpoint/source.
+`重试`机制允许您指定重试单个GraphQL端点/源的尝试。
 
-The retry flow will execute in both conditions: a netword error, or due to a runtime error (indexing issue/inavailability of the indexer).
+重试将在两个条件下执行：网络错误或运行时错误(索引问题/索引人不可用)。
 
 ```yaml
 sources:
@@ -249,9 +249,9 @@ sources:
 </details>
 
 <details>
- <summary>`timeout`</summary>
+ <summary>"超时"</summary>
 
-The `timeout` mechanism allow you to specify the `timeout` for a given GraphQL endpoint.
+`超时`机制允许您为给定的 GraphQL 端点指定`超时` 。
 
 ```yaml
 sources:
@@ -265,11 +265,11 @@ sources:
 </details>
 
 <details>
- <summary>`fallback`</summary>
+ <summary>“fallback”</summary>
 
-The `fallback` mechanism allow you to specify use more than one GraphQL endpoint, for the same source.
+`fallback`机制允许您为同一来源指定多个GraphQL端点。
 
-This is useful if you want to use more than one indexer for the same Subgraph, and fallback when an error/timeout happens. You can also use this strategy in order to use a custom indexer, but allow it to fallback to [The Graph Hosted Service](https://thegraph.com/hosted-service).
+如果您想要为同一个子图使用多个索引人，并在发生错误/超时时时进行回退，这是有用的。 您也可以使用此策略来使用自定义索引人，但允许它回退到 [The Graph托管服务](https://thegraph.com/hosted-service)。
 
 ```yaml
 sources:
@@ -287,11 +287,11 @@ sources:
 </details>
 
 <details>
- <summary>`race`</summary>
+ <summary>"竞技"</summary>
 
-The `race` mechanism allow you to specify use more than one GraphQL endpoint, for the same source, and race on every execution.
+“种族”机制允许您为同一源指定多个GraphQL端点，以及每次执行时的竞赛。
 
-This is useful if you want to use more than one indexer for the same Subgraph, and allow both sources to race and get the fastest response from all specified indexers.
+如果你想要在同一个子图中使用多个索引人，这是有用的， 并且允许这两个来源进行竞赛，并从所有指定的索引人获得最快的响应。
 
 ```yaml
 sources:
@@ -307,11 +307,11 @@ sources:
 </details>
 
 <details>
-  <summary>`highestValue`</summary>
+  <summary>"最高值"</summary>
 
-This strategy allows you to send parallel requests to different endpoints for the same source and choose the most updated.
+此策略允许您将并行请求发送到同一源的不同端点并选择最先进的端点。
 
-This is useful if you want to choose most synced data for the same Subgraph over different indexers/sources.
+如果您想要从不同的索引人/源选择同一子图中最常同步的数据，这是有用的。
 
 ```yaml
 sources:
@@ -349,9 +349,9 @@ graph LR;
 
 </details>
 
-#### Block Tracking
+#### 区块跟踪
 
-The Graph Client can track block numbers and do the following queries by following [this pattern](https://thegraph.com/docs/en/developer/distributed-systems/#polling-for-updated-data) with `blockTracking` transform;
+Graph客户端可以跟踪块号码并通过 `blockTracking` 转换通过 [此模式](https://thegraph.com/docs/en/developer/distributed-systems/#polling-for-updated-data)进行以下查询:
 
 ```yaml
 sources:
@@ -369,11 +369,11 @@ sources:
           ignoreOperationNames: [NotFollowed]
 ```
 
-[You can try a working example here](../examples/transforms)
+[您可以在此尝试一个工作示例](../examples/transforms)。
 
-#### Automatic Pagination
+#### 自动分页
 
-With most subgraphs, the number of records you can fetch is limited. In this case, you have to send multiple requests with pagination.
+对大多数子图，您可以获取的记录数量是有限的。在这种情况下，您必须发送多个带分页的请求。
 
 ```graphql
 query {
@@ -385,7 +385,7 @@ query {
 }
 ```
 
-So you have to send the following operations one after the other:
+所以你必须一个接一个的发送操作：
 
 ```graphql
 query {
@@ -397,7 +397,7 @@ query {
 }
 ```
 
-Then after the first response:
+然后在第一个响应之后：
 
 ```graphql
 query {
@@ -409,9 +409,9 @@ query {
 }
 ```
 
-After the second response, you have to merge the results manually. But instead The Graph Client allows you to do the first one and automatically does those multiple requests for you under the hood.
+在第二个响应后，您必须手动合并结果。 但是The Graph客户端允许您做第一个，并自动为您在场景下执行这些多个请求。
 
-All you have to do is:
+您必须做的是：
 
 ```yaml
 sources:
@@ -425,17 +425,17 @@ sources:
           validateSchema: true
 ```
 
-[You can try a working example here](../examples/transforms)
+[您可以在此尝试一个工作示例](../examples/transforms)。
 
-#### Client-side Composition
+#### 客户端组成
 
-The Graph Client has built-in support for client-side GraphQL Composition (powered by [GraphQL-Tools Schema-Stitching](https://graphql-tools.com/docs/schema-stitching/stitch-combining-schemas)).
+The Graph客户端内置支持客户端GraphQL组成(由 [GraphQL-Tools Schema-Stitching](https://graphql-tools.com/docs/schema-stitching/stitch-combining-schemas)驱动)。
 
-You can leverage this feature in order to create a single GraphQL layer from multiple Subgraphs, deployed on multiple indexers.
+您可以利用此功能，从多个子图中创建一个单一的 GraphQL 层，部署在多个索引人。
 
-> 💡 Tip: You can compose any GraphQL sources, and not only Subgraphs!
+> 💡 提示: 你可以创建任何GraphQL源, 而不仅仅是子图！
 
-Trivial composition can be done by adding more than one GraphQL source to your `.graphclientrc.yml` file, here's an example:
+可通过将多个GraphQL源添加到您的 `.graphclientrc.yml` 文件来完成三角合成，下面是一个示例：
 
 ```yaml
 sources:
@@ -449,7 +449,7 @@ sources:
         endpoint: https://api.thegraph.com/subgraphs/name/graphprotocol/compound-v2
 ```
 
-As long as there a no conflicts across the composed schemas, you can compose it, and then run a single query to both Subgraphs:
+只要在合成模式之间没有冲突，您就可以编写它，然后对两个子图执行一个查询：
 
 ```graphql
 query myQuery {
@@ -470,23 +470,23 @@ query myQuery {
 }
 ```
 
-You can also resolve conflicts, rename parts of the schema, add custom GraphQL fields, and modify the entire execution phase.
+您也可以解决冲突，重命名模式的一部分，添加自定义 GraphQL 字段，并修改整个执行阶段。
 
-For advanced use-cases with composition, please refer to the following resources:
+关于由人员组成的高级使用案例，请参考以下资源：
 
 - [Advanced Composition Example](../examples/composition)
 - [GraphQL-Mesh Schema transformations](https://graphql-mesh.com/docs/transforms/transforms-introduction)
 - [GraphQL-Tools Schema-Stitching documentation](https://graphql-tools.com/docs/schema-stitching/stitch-combining-schemas)
 
-#### TypeScript Support
+#### TypeScript 支持
 
-If your project is written in TypeScript, you can leverage the power of [`TypedDocumentNode`](https://the-guild.dev/blog/typed-document-node) and have a fully-typed GraphQL client experience.
+如果你的项目是在TypeScript写的，你可以利用[`TypedDocumentNode`](https://the-guild.dev/blog/typed-document-node)的力量，并且拥有一个完整的GraphQL客户端体验。
 
 The standalone mode of The GraphQL, and popular GraphQL client libraries like Apollo-Client and urql has built-in support for `TypedDocumentNode`!
 
-The Graph Client CLI comes with a ready-to-use configuration for [GraphQL Code Generator](https://graphql-code-generator.com), and it can generate `TypedDocumentNode` based on your GraphQL operations.
+The Graph客户端CLI带有一个现成配置的 [GraphQL 代码生成器](https://graphql-code-generator.com)，它可以根据您的 GraphQL 操作生成`TypedDocumentNode` 。
 
-To get started, define your GraphQL operations in your application code, and point to those files using the `documents` section of `.graphclientrc.yml`:
+要启动，请在应用程序代码中定义您的 GraphQL 操作，并指向使用 `.graphclientrc.yml` 中的 `documents` 部分的文件：
 
 ```yaml
 sources:
@@ -496,7 +496,7 @@ documents:
   - ./src/example-query.graphql
 ```
 
-You can also use Glob expressions, or even point to code files, and the CLI will find your GraphQL queries automatically:
+您也可以使用 Glob 表达式，甚至指向代码文件，CLI 会自动找到您的 GraphQL 查询：
 
 ```yaml
 documents:
@@ -504,11 +504,11 @@ documents:
   - './src/**/*.{ts,tsx,js,jsx}'
 ```
 
-Now, run the GraphQL CLI `build` command again, the CLI will generate a `TypedDocumentNode` object under `.graphclient` for every operation found.
+现在，再次运行 GraphQL CLI `build` 命令，CLI 将在`.graphclient`下为找到的每个操作生成一个 `TypedDocumentNode` 对象。
 
-> Make sure to name your GraphQL operations, otherwise it will be ignored!
+> 请务必命名您的 GraphQL 操作，否则将被忽略！
 
-For example, a query called `query ExampleQuery` will have the corresponding `ExampleQueryDocument` generated in `.graphclient`. You can now import it and use that for your GraphQL calls, and you'll have a fully typed experience without writing or specifying any TypeScript manually:
+例如，一个叫做`query ExampleQuery`的查询将在`.graphclient`中生成相应的`ExampleQueryDocument`。 您现在可以导入它并用于您的 GraphQL 调用， 您将拥有完整类型的体验，无需手动写入或指定任何类型脚本：
 
 ```ts
 import { ExampleQueryDocument, execute } from '../.graphclient'
@@ -520,17 +520,17 @@ async function main() {
 }
 ```
 
-> You can find a [TypeScript project example here](../examples/urql).
+> 你可以在这里找到一个[TypeScript项目示例](../examples/urql)。
 
-#### Client-Side Mutations
+#### 客户端突变
 
-Due to the nature of Graph-Client setup, it is possible to add client-side schema, that you can later bridge to run any arbitrary code.
+由于Graph-客户端设置的性质，可以添加客户端模式，您以后可以通过桥接运行任意代码。
 
-This is helpful since you can implement custom code as part of your GraphQL schema, and have it as unified application schema that is easier to track and develop.
+这很有帮助，因为您可以实现自定义代码作为您的 GraphQL 模式的一部分， 让它作为统一的应用程序模式更容易跟踪和发展。
 
-> This document explains how to add custom mutations, but in fact you can add any GraphQL operation (query/mutation/subscriptions). See [Extending the unified schema article](https://graphql-mesh.com/docs/guides/extending-unified-schema) for more information about this feature.
+> 本文档解释了如何添加自定义突变，但事实上，您可以添加任何GraphQL操作（查询/突变/订阅）。请参阅[扩展统一模式文章](https://graphql-mesh.com/docs/guides/extending-unified-schema)获取有关此功能的更多信息。
 
-To get started, define a `additionalTypeDefs` section in your config file:
+要启动，请在配置文件中定义一个 `additionalTypeDefs` 部分：
 
 ```yaml
 additionalTypeDefs: |
@@ -548,14 +548,14 @@ additionalTypeDefs: |
   }
 ```
 
-Then, add a pointer to a custom GraphQL resolvers file:
+然后，在自定义GraphQL解析器文件中添加指针：
 
 ```yaml
 additionalResolvers:
   - './resolvers'
 ```
 
-Now, create `resolver.js` (or, `resolvers.ts`) in your project, and implement your custom mutation:
+现在，在你的项目中创建 `resolver.js` (或`resolvers.ts`)，并实现你的自定义突变：
 
 ```js
 module.exports = {
@@ -570,7 +570,7 @@ module.exports = {
 }
 ```
 
-If you are using TypeScript, you can also get fully type-safe signature by doing:
+如果您正在使用 TypeScript，您也可以通过以下操作获得完全安全类型的签名：
 
 ```ts
 import { Resolvers } from './.graphclient'
@@ -590,7 +590,7 @@ const resolvers: Resolvers = {
 export default resolvers
 ```
 
-If you need to inject runtime variables into your GraphQL execution `context`, you can use the following snippet:
+如果您需要将运行时变量注入到您的 GraphQL 执行`context`中，您可以使用以下代码：
 
 ```ts
 execute(
@@ -602,10 +602,10 @@ execute(
 )
 ```
 
-> [You can read more about client-side schema extensions here](https://graphql-mesh.com/docs/guides/extending-unified-schema)
+> [您可以在这里阅读更多关于客户端模式扩展的信息](https://graphql-mesh.com/docs/guides/extending-unified-schema)。
 
-> [You can also delegate and call Query fields as part of your mutation](https://graphql-mesh.com/docs/guides/extending-unified-schema#using-the-sdk-to-fetch-sources)
+> [您也可以委托和通话查询字段作为您的突变的一部分](https://graphql-mesh.com/docs/guides/extending-unified-schema#using-the-sdk-to-fetch-sources)。
 
-## License
+## 许可协议
 
-Released under the [MIT license](../LICENSE).
+在 [MIT license](../LICENSE)下发布。
