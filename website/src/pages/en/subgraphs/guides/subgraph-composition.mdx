@@ -53,102 +53,77 @@ While the source Subgraph is a standard Subgraph, the dependent Subgraph uses th
 - Developers cannot compose an onchain datasource with a Subgraph datasource (i.e. you can’t do normal event handlers and call handlers and block handlers in a composed Subgraph)
 
 Additionally, you can explore the [example-composable-subgraph](https://github.com/graphprotocol/example-composable-subgraph) repository for a working implementation of composable subgraphs
-
-### Source Subgraph
-
-The source Subgraph tracks events from the Sushiswap v3 Subgraph on the Base chain. This Subgraph's configuration file is `source/subgraph.yaml`.
-
-> The `source/subgraph.yaml` employs the advanced Subgraph feature, [declarative `eth_calls`](https://thegraph.com/docs/en/subgraphs/developing/creating/advanced/#declared-eth_call). To review the code for this `source/subgraph.yaml`, check out the [source Subgraph example repo](https://github.com/incrypto32/subgraph-composition-sample-subgraph/blob/a5f13cb4b961f92d5c5631dca589c54feb1c0a19/source/subgraph.yaml).
-
-### Dependent Subgraph
-
-The dependent Subgraph is in the `dependent/subgraph.yaml` file, which specifies the source Subgraph as a data source. This Subgraph uses entities from the source to trigger specific actions based on changes to those entities.
-
-> To review the code for this `dependent/subgraph.yaml`, check out the [dependent Subgraph example repo](https://github.com/incrypto32/subgraph-composition-sample-subgraph/blob/main/dependant/subgraph.yaml).
-
 ## Get Started
 
-The following is a guide that illustrates how to use one Subgraph as a data source for another. This example uses:
+The following guide provides examples for defining 3 source Subgraphs to create one powerful composed Subgraph.
 
-- Sushiswap v3 Subgraph on Base chain
-- Two Subgraphs (but you can use up to **5 source** Subgraphs in your own development).
+### Specifics
 
-### Step 1. Set Up Your Source Subgraph
+- To keep this example simple, all source Subgraphs use only block handlers. However, in a real environment, each source Subgraph will use data from different smart contracts.
+- The examples below show how to import and extend the schema of another Subgraph to enhance its functionality.
+- Each source Subgraph is optimized with a specific entity.
+- All the commands listed install the necessary dependencies, generate code based on the GraphQL schema, build the Subgraph, and deploy it to your local Graph Node instance.
 
-To set the source Subgraph as a data source in the dependent Subgraph, include the following in `subgraph.yaml`:
+### Step 1. Deploy Block Time Source Subgraph
 
-```yaml
-specVersion: 1.3.0
-schema:
-  file: ./schema.graphql
-dataSources:
-  - kind: subgraph
-    name: Factory
-    network: base
-    source:
-      address: 'QmdXu8byAFCGSDWsB5gMQjWr6GUvEVB7S1hemfxNuomerz'
-      startBlock: 82522
+This first source Subgraph calculates the block time for each block.
+
+- It imports schemas from other Subgraphs and adds a `block` entity with a `timestamp` field, representing the time each block was mined.
+- It listens to time-related blockchain events (e.g., block timestamps) and processes this data to update the Subgraph's entities accordingly.
+
+To deploy this Subgraph locally, run the following commands:
+
+```bash
+npm install
+npm run codegen
+npm run build
+npm run create-local
+npm run deploy-local
 ```
 
-Here, `source.address` refers to the Deployment ID of the source Subgraph, and `startBlock` specifies the block from which indexing should begin.
+### Step 2. Deploy Block Cost Source Subgraph
 
-### Step 2. Define Handlers in Dependent Subgraph
+This second source Subgraph indexes the cost of each block.
 
-Below is an example of defining handlers in the dependent Subgraph:
+#### Key Functions
 
-```typescript
-export function handleInitialize(trigger: EntityTrigger<Initialize>): void {
-  if (trigger.operation === EntityOp.Create) {
-    let entity = trigger.data
-    let poolAddressParam = Address.fromBytes(entity.poolAddress)
+- It imports schemas from other Subgraphs and adds a `block` entity with cost-related fields.
+- It listens to blockchain events related to costs (e.g. gas fees, transaction costs) and processes this data to update the Subgraph's entities accordingly.
 
-    // Update pool sqrt price and tick
-    let pool = Pool.load(poolAddressParam.toHexString()) as Pool
-    pool.sqrtPrice = entity.sqrtPriceX96
-    pool.tick = BigInt.fromI32(entity.tick)
-    pool.save()
+To deploy this Subgraph locally, run the same commands as above.
 
-    // Update token prices
-    let token0 = Token.load(pool.token0) as Token
-    let token1 = Token.load(pool.token1) as Token
+### Step 3. Define Block Size in Source Subgraph
 
-    // Update ETH price in USD
-    let bundle = Bundle.load('1') as Bundle
-    bundle.ethPriceUSD = getEthPriceInUSD()
-    bundle.save()
+This third source Subgraph indexes the size of each block. To deploy this Subgraph locally, run the same commands as above.
 
-    updatePoolDayData(entity)
-    updatePoolHourData(entity)
+#### Key Functions
 
-    // Update derived ETH price for tokens
-    token0.derivedETH = findEthPerToken(token0)
-    token1.derivedETH = findEthPerToken(token1)
-    token0.save()
-    token1.save()
-  }
-}
-```
+- It imports existing schemas from other Subgraphs and adds a `block` entity with a `size` field representing each block's size.
+- It listens to blockchain events related to block sizes (e.g., storage or volume) and processes this data to update the Subgraph's entities accordingly.
 
-In this example, the `handleInitialize` function is triggered when a new `Initialize` entity is created in the source Subgraph, passed as `EntityTrigger<Initialize>`. The handler updates the pool and token entities based on data from the new `Initialize` entity.
+### Step 4. Combine Into Block Stats Subgraph
 
-`EntityTrigger` has three fields:
+This composed Subgraph combines and aggregates the information from the source Subgraphs above, providing a unified view of block statistics. To deploy this Subgraph locally, run the same commands as above.
 
-1. `operation`: Specifies the operation type, which can be `Create`, `Modify`, or `Remove`.
-2. `type`: Indicates the entity type.
-3. `data`: Contains the entity data.
+> Note:
+>
+> - Any change to a source Subgraph will likely generate a new deployment ID.
+> - Be sure to update the deployment ID in the data source address of the Subgraph manifest to take advantage of the latest changes.
+> - All source Subgraphs should be deployed before the composed Subgraph is deployed.
 
-Developers can then determine specific actions for the entity data based on the operation type.
+#### Key Functions
+
+- It provides a consolidated data model that encompasses all relevant block metrics.
+- It combines data from 3 source Subgraphs, and provides a comprehensive view of block statistics, enabling more complex queries and analyses.
 
 ## Key Takeaways
 
-- Use this powerful tool to quickly scale your Subgraph development and reuse existing data.
-- The setup includes creating a base source Subgraph and referencing it in a dependent Subgraph.
-- You define handlers in the dependent Subgraph to perform actions based on changes in the source Subgraph's entities.
-
-This approach unlocks composability and scalability, simplifying both development and maintenance efficiency.
+- This powerful tool will scale your Subgraph development and allow you to combine multiple Subgraphs.
+- The setup includes the deployment of 3 source Subgraphs and one final deployment of the composed Subgraph.
+- This feature unlocks scalability, simplifying both development and maintenance efficiency.
 
 ## Additional Resources
 
-To use other advanced features in your Subgraph, check out [Subgraph advanced features](/developing/creating/advanced/) and [this Subgraph composition example repo](https://github.com/incrypto32/subgraph-composition-sample-subgraph).
-
-To learn how to define source Subgraphs, check out [this Subgraph composition example repo](https://github.com/isum/subgraph-composition-example).
+- Check out all the code for this example in [this GitHub repo](https://github.com/graphprotocol/example-composable-subgraph).
+- To add advanced features to your Subgraph, check out [Subgraph advanced features](/developing/creating/advanced/).
+- To learn more about aggregations, check out [Timeseries and Aggregations](/subgraphs/developing/creating/advanced/#timeseries-and-aggregations).
