@@ -1,4 +1,4 @@
-# Live"-Abfragen im “Graph-Client
+# `@live`-Abfragen im `graph-client`
 
 Graph-Client implementiert eine benutzerdefinierte `@live`-Direktive, mit der jede GraphQL-Abfrage mit Echtzeitdaten arbeiten kann.
 
@@ -14,7 +14,7 @@ plugins:
 
 ## Verwendung
 
-Legen Sie das standardmäßige Aktualisierungsintervall fest, das Sie verwenden möchten, und wenden Sie dann die folgende GraphQL-@directive“ auf Ihre GraphQL-Abfragen an:
+Legen Sie das standardmäßige Aktualisierungsintervall fest, das Sie verwenden möchten, und wenden Sie dann die folgende GraphQL-`@directive` auf Ihre GraphQL-Abfragen an:
 
 ```graphql
 query ExampleQuery @live {
