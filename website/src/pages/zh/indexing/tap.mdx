@@ -1,102 +1,102 @@
 ---
-title: TAP Migration Guide
+title: GraphTally Guide
 ---
 
-Learn about The Graph’s new payment system, **Timeline Aggregation Protocol, TAP**. This system provides fast, efficient microtransactions with minimized trust.
+了解图表的新支付系统，**GraphTally** [(先前的时间线聚合协议)](https://docs.rs/tap_core/latest/tap_core/index.html)。这个系统提供了快速、高效的微交易，并最大限度地减少了信任。
 
 ## 概述
 
-[TAP](https://docs.rs/tap_core/latest/tap_core/index.html) is a drop-in replacement to the Scalar payment system currently in place. It provides the following key features:
+GraphTally is a drop-in replacement to the Scalar payment system currently in place. It provides the following key features:
 
-- Efficiently handles micropayments.
-- Adds a layer of consolidations to onchain transactions and costs.
-- Allows Indexers control of receipts and payments, guaranteeing payment for queries.
-- It enables decentralized, trustless gateways and improves `indexer-service` performance for multiple senders.
+- 高效处理小额支付。
+- 为链上交易和成本添加一层整合。
+- 允许索引人控制收款和付款，保证查询付款。
+- 支持去中心化、去信任的网关，并提高了多个发送者的`索引人服务`性能。
 
-## Specifics
+### 详情
 
-TAP allows a sender to make multiple payments to a receiver, **TAP Receipts**, which aggregates these payments into a single payment, a **Receipt Aggregate Voucher**, also known as a **RAV**. This aggregated payment can then be verified on the blockchain, reducing the number of transactions and simplifying the payment process.
+TAP允许发送方向接收方进行多次付款，**TAP收据**将这些付款聚合为一次付款，即**收据聚合凭证**，也称为**RAV**。然后可以在区块链上验证这种聚合支付，减少交易数量并简化支付过程。
 
-For each query, the gateway will send you a `signed receipt` that is stored on your database. Then, these queries will be aggregated by a `tap-agent` through a request. Afterwards, you’ll receive a RAV. You can update a RAV by sending it with newer receipts and this will generate a new RAV with an increased value.
+对于每个查询，网关将向您发送一个存储在数据库中的`签名收据`。然后，这些查询将由`tap代理`通过请求聚合。之后，您将收到RAV。您可以通过发送带有较新收据的RAV来更新它，这将生成一个价值增加的新RAV。
 
-### RAV Details
+### RAV详情
 
-- It’s money that is waiting to be sent to the blockchain.
+- 这是等待发送到区块链的钱。
 
-- It will continue to send requests to aggregate and ensure that the total value of non-aggregated receipts does not exceed the `amount willing to lose`.
+- 它将继续发送汇总请求，并确保非汇总收据的总价值不超过`amount willing to lose`。
 
-- Each RAV can be redeemed once in the contracts, which is why they are sent after the allocation is closed.
+- 每个RAV在合约中都可以兑换一次，这就是为什么它们在分配结束后被发送的原因。
 
-### Redeeming RAV
+### 兑换RAV
 
-As long as you run `tap-agent` and `indexer-agent`, everything will be executed automatically. The following provides a detailed breakdown of the process:
+只要您运行`tap代理`和`索引人代理`，所有操作都将自动执行。以下提供了该过程的详细分解：
 
-1. An Indexer closes allocation.
+1. 索引人关闭分配。
 
-2. `<recently-closed-allocation-buffer> period, tap-agent` takes all pending receipts for that specific allocation and requests an aggregation into a RAV, marking it as `last`.
+2. `<recently-closed-allocation-buffer> 在此期间，tap代理`会获取该特定分配的所有待处理收据，并请求将其聚合到RAV中，将其标记为`最后一次`。
 
-3. `indexer-agent` takes all the last RAVS and sends redeem requests to the blockchain, which will update the value of `redeem_at`.
+3. `indexer代理`获取所有最后一次的RAVS，并向区块链发送兑换请求，区块链将更新`recent_at`的值。
 
-4. During the `<finality-time>` period, `indexer-agent` monitors if the blockchain has any reorganizations that revert the transaction.
+4. 在`<finality-time>`期间，`索引人代理`监控区块链是否有任何重组来恢复交易。
 
-   - If it was reverted, the RAV is resent to the blockchain. If it was not reverted, it gets marked as `final`.
+   - 如果被回退，RAV将重新发送到区块链。如果它没有被回退，它将被标记为最终版本。
 
-## Blockchain Addresses
+## 区块链地址
 
-### Contracts
+### 合约
 
-| Contract            | Arbitrum Mainnet (42161)                     | Arbitrum Sepolia (421614)                    |
+| 合约                  | Arbitrum 主网 (42161)                          | Arbitrum Sepolia (421614)                    |
 | ------------------- | -------------------------------------------- | -------------------------------------------- |
-| TAP Verifier        | `0x33f9E93266ce0E108fc85DdE2f71dab555A0F05a` | `0xfC24cE7a4428A6B89B52645243662A02BA734ECF` |
+| TAPVerifier         | `0x33f9E93266ce0E108fc85DdE2f71dab555A0F05a` | `0xfC24cE7a4428A6B89B52645243662A02BA734ECF` |
 | AllocationIDTracker | `0x5B2F33d7Ca6Ec88f5586f2528f58c20843D9FE7c` | `0xAaC28a10d707bbc6e02029f1bfDAEB5084b2aD11` |
 | Escrow              | `0x8f477709eF277d4A880801D01A140a9CF88bA0d3` | `0x1e4dC4f9F95E102635D8F7ED71c5CdbFa20e2d02` |
 
-### Gateway
+### 网关
 
-| Component  | Edge and Node Mainnet (Arbitrum Mainnet)      | Edge and Node Testnet (Arbitrum Sepolia)      |
-| ---------- | --------------------------------------------- | --------------------------------------------- |
-| Sender     | `0xDDE4cfFd3D9052A9cb618fC05a1Cd02be1f2F467`  | `0xC3dDf37906724732FfD748057FEBe23379b0710D`  |
-| Signers    | `0xfF4B7A5EfD00Ff2EC3518D4F250A27e4c29A2211`  | `0xFb142dE83E261e43a81e9ACEADd1c66A0DB121FE`  |
-| Aggregator | `https://tap-aggregator.network.thegraph.com` | `https://tap-aggregator.testnet.thegraph.com` |
+| 组件      | Edge and Node主网(Arbitrum 主网)                  | Edge and Node测试网(Arbitrum Sepolia)            |
+| ------- | --------------------------------------------- | --------------------------------------------- |
+| 发送人     | `0xDDE4cfFd3D9052A9cb618fC05a1Cd02be1f2F467`  | `0xC3dDf37906724732FfD748057FEBe23379b0710D`  |
+| 签字人     | `0xfF4B7A5EfD00Ff2EC3518D4F250A27e4c29A2211`  | `0xFb142dE83E261e43a81e9ACEADd1c66A0DB121FE`  |
+| 聚合器     | `https://tap-aggregator.network.thegraph.com` | `https://tap-aggregator.testnet.thegraph.com` |
 
-### 要求
+### 先决条件
 
-In addition to the typical requirements to run an indexer, you’ll need a `tap-escrow-subgraph` endpoint to query TAP updates. You can use The Graph Network to query or host yourself on your `graph-node`.
+除了运行索引人的典型要求外，您还需要一个`tap托管子图`端点来查询tap更新。您可以使用Graph网络在`graph-节点`上查询或托管自己。
 
-- [Graph TAP Arbitrum Sepolia subgraph (for The Graph testnet)](https://thegraph.com/explorer/subgraphs/7ubx365MiqBH5iUz6XWXWT8PTof5BVAyEzdb8m17RvbD)
-- [Graph TAP Arbitrum One subgraph (for The Graph mainnet)](https://thegraph.com/explorer/subgraphs/4sukbNVTzGELnhdnpyPqsf1QqtzNHEYKKmJkgaT8z6M1)
+- [Graph TAP Arbitrum Sepolia Subgraph (适用The Graph测试网)](https://thegraph.com/explorer/subgraphs/7ubx365MiqBH5iUz6XWXWT8PTof5BVAyEzdb8m17RvbD)
+- [Graph TAP Arbitrum One Subgraph (适用The Graph主网)](https://thegraph.com/explorer/subgraphs/4sukbNVTzGELnhdnpyPqsf1QqtzNHEYKKmJkgaT8z6M1)
 
-> Note: `indexer-agent` does not currently handle the indexing of this subgraph like it does for the network subgraph deployment. As a result, you have to index it manually.
+> 注意：“索引人代理”目前不能像网络子图部署那样处理此子图的索引。因此，您必须手动对其进行索引。
 
-## Migration Guide
+## 迁移指南
 
-### Software versions
+### 软件版本
 
-The required software version can be found [here](https://github.com/graphprotocol/indexer/blob/main/docs/networks/arbitrum-one.md#latest-releases).
+所需的软件版本可以在[此处](https://github.com/graphprotocol/indexer/blob/main/docs/networks/arbitrum-one.md#latest-releases)找到。
 
-### Steps
+### 步骤
 
-1. **Indexer Agent**
+1. **索引人代理**
 
-   - Follow the [same process](https://github.com/graphprotocol/indexer/pkgs/container/indexer-agent#graph-protocol-indexer-components).
-   - Give the new argument `--tap-subgraph-endpoint` to activate the new TAP codepaths and enable redeeming of TAP RAVs.
+   - 遵循[相同的过程](https://github.com/graphprotocol/indexer/pkgs/container/indexer-agent#graph-protocol-indexer-components)。
+   - Give the new argument `--tap-subgraph-endpoint` to activate the new GraphTally codepaths and enable redeeming of RAVs.
 
-2. **Indexer Service**
+2. **索引人服务**
 
-   - Fully replace your current configuration with the [new Indexer Service rs](https://github.com/graphprotocol/indexer-rs). It's recommend that you use the [container image](https://github.com/orgs/graphprotocol/packages?repo_name=indexer-rs).
-   - Like the older version, you can scale Indexer Service horizontally easily. It is still stateless.
+   - 用[新的索引人服务](https://github.com/graphprotocol/indexer-rs)完全替换当前的配置。建议您使用[容器映像](https://github.com/orgs/graphprotocol/packages?repo_name=indexer-rs)。
+   - 与旧版本一样，您可以轻松地水平扩展索引人服务。它仍然是无状态的。
 
-3. **TAP Agent**
+3. **TAP代理**
 
-   - Run _one_ single instance of [TAP Agent](https://github.com/graphprotocol/indexer-rs) at all times. It's recommend that you use the [container image](https://github.com/orgs/graphprotocol/packages?repo_name=indexer-rs).
+   - 运行 _一个_  [TAP代理](https://github.com/graphprotocol/indexer-rs)实例。建议您使用[容器映像](https://github.com/orgs/graphprotocol/packages?repo_name=indexer-rs)。
 
-4. **Configure Indexer Service and TAP Agent**
+4. **配置索引人服务和TAP代理**
 
-   Configuration is a TOML file shared between `indexer-service` and `tap-agent`, supplied with the argument `--config /path/to/config.toml`.
+   配置是`索引人服务`和`tap代理`之间共享的TOML文件，帶上参数 `--config /path/to/config.toml`。
 
-   Check out the full [configuration](https://github.com/graphprotocol/indexer-rs/blob/main/config/maximal-config-example.toml) and the [default values](https://github.com/graphprotocol/indexer-rs/blob/main/config/default_values.toml)
+   查看完整[配置](https://github.com/graphprotocol/indexer-rs/blob/main/config/maximal-config-example.toml)和[默认值](https://github.com/graphprotocol/indexer-rs/blob/main/config/default_values.toml)
 
-For minimal configuration, use the following template:
+对于最小配置，请使用以下模板：
 
 ```bash
 # You will have to change *all* the values below to match your setup.
@@ -128,18 +128,18 @@ query_url = "<http://graph-node:8000>"
 status_url = "<http://graph-node:8000/graphql>"
 
 [subgraphs.network]
-# Query URL for the Graph Network subgraph.
+# Query URL for the Graph Network Subgraph.
 query_url = "<http://example.com/network-subgraph>"
 # Optional, deployment to look for in the local `graph-node`, if locally indexed.
-# Locally indexing the subgraph is recommended.
+# Locally indexing the Subgraph is recommended.
 # NOTE: Use `query_url` or `deployment_id` only
 deployment_id = "Qmaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
 
 [subgraphs.escrow]
-# Query URL for the Escrow subgraph.
+# Query URL for the Escrow Subgraph.
 query_url = "<http://example.com/network-subgraph>"
 # Optional, deployment to look for in the local `graph-node`, if locally indexed.
-# Locally indexing the subgraph is recommended.
+# Locally indexing the Subgraph is recommended.
 # NOTE: Use `query_url` or `deployment_id` only
 deployment_id = "Qmaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
 
@@ -170,24 +170,24 @@ max_amount_willing_to_lose_grt = 20
 
 注意：
 
-- Values for `tap.sender_aggregator_endpoints` can be found in the [gateway section](/indexing/tap/#gateway).
-- Values for `blockchain.receipts_verifier_address` must be used accordingly to the [Blockchain addresses section](/indexing/tap/#contracts) using the appropriate chain id.
+- `tap.sender_aggregator_endpoints`的值可以在[网关部分](/indexing/tap/#gateway)找到。
+- `blockchain.receipts_verider_address`的值必须使用相应的链id与[blockchain地址部分](/indexing/tap/#contracts) 相对应。
 
-**Log Level**
+**日志级别**
 
-- You can set the log level by using the `RUST_LOG` environment variable.
-- It’s recommended that you set it to `RUST_LOG=indexer_tap_agent=debug,info`.
+- 您可以使用`RUST_log`环境变量设置日志级别。
+- 建议您将其设置为 `RUST_LOG=indexer_tap_agent=debug,info`。
 
-## Monitoring
+## 监测
 
 ### Metrics
 
-All components expose the port 7300 to be queried by prometheus.
+所有组件都将端口7300暴露给prometheus进行查询。
 
 ### Grafana Dashboard
 
-You can download [Grafana Dashboard](https://github.com/graphprotocol/indexer-rs/blob/main/docs/dashboard.json) and import.
+您可以下载[Grafana Dashboard](https://github.com/graphprotocol/indexer-rs/blob/main/docs/dashboard.json) 并导入。
 
 ### Launchpad
 
-Currently, there is a WIP version of `indexer-rs` and `tap-agent` that can be found [here](https://github.com/graphops/launchpad-charts/tree/main/charts/graph-network-indexer)
+目前，有一个WIP版本的 `index-rs`和`tap-agent`可以在[这里](https://github.com/graphops/launchpad-charts/tree/main/charts/graph-network-indexer)找到。
