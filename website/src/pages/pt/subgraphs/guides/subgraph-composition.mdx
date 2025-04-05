@@ -1,0 +1,132 @@
+---
+title: Como Agregar Dados com a Composição de Subgraphs
+sidebarTitle: Construa um Subgraph Compostável com Múltiplos Subgraphs
+---
+
+Alavanque a composição de um subgraph para acelerar o tempo de desenvolvimento. Crie um subgraph de base com dados essenciais, e em seguida, crie mais subgraphs em cima dele.
+
+Optimize your Subgraph by merging data from independent, source Subgraphs into a single composable Subgraph to enhance data aggregation.
+
+## Introdução
+
+Composable Subgraphs enable you to combine multiple Subgraphs' data sources into a new Subgraph, facilitating faster and more flexible Subgraph development. Subgraph composition empowers you to create and maintain smaller, focused Subgraphs that collectively form a larger, interconnected dataset.
+
+### Vantagens da Composição
+
+A composição de subgraphs é um recurso poderoso para fins de dimensionamento, permitindo:
+
+- Reciclagem, mistura, e combinação de dados existentes
+- Otimização de programação e queries
+- Uso de múltiplas fontes de dados (até cinco subgraphs de origem)
+- Sincronização acelerada do seu Subgraph
+- Solução de erros e otimização da ressincronização
+
+## Visão Geral da Arquitetura
+
+A configuração deste exemplo envolve dois Subgraphs:
+
+1. **Subgraph de Origem**: Rastreia os dados do evento como entidades.
+2. **Subgraph Dependente**: Usa o Subgraph de origem como uma fonte de dados.
+
+Esses exemplos podem ser encontrados nos diretórios `source` e `dependent`.
+
+- O **subgraph de origem** é um subgraph básico de rastreamento de eventos, que regista eventos emitidos por contratos relevantes.
+- O **subgraph dependente** faz referência ao subgraph de origem como uma fonte de dados, usando as entidades da fonte como gatilhos.
+
+Embora o subgraph de origem seja um Subgraph padrão, o dependente usa o recurso de composição de Subgraphs.
+
+## Pré-requisitos
+
+### Source Subgraphs
+
+- All Subgraphs need to be published with a **specVersion 1.3.0 or later** (Use the latest graph-cli version to be able to deploy composable Subgraphs)
+- See notes here: https://github.com/graphprotocol/graph-node/releases/tag/v0.37.0
+- Immutable entities only: All Subgraphs must have [immutable entities](https://thegraph.com/docs/en/subgraphs/best-practices/immutable-entities-bytes-as-ids/#immutable-entities) when the Subgraph is deployed
+- Pruning can be used in the source Subgraphs, but only entities that are immutable can be composed on top of
+- Source Subgraphs cannot use grafting on top of existing entities
+- Aggregated entities can be used in composition, but entities that are composed from them cannot performed additional aggregations directly
+
+### Composed Subgraphs
+
+- You can only compose up to a **maximum of 5 source Subgraphs**
+- Composed Subgraphs can only use **datasources from the same chain**
+- **Nested composition is not yet supported**: Composing on top of another composed Subgraph isn’t allowed at this time
+- Aggregated entities can be used in composition, but the composed entities on them cannot also use aggregations directly
+- Developers cannot compose an onchain datasource with a Subgraph datasource (i.e. you can’t do normal event handlers and call handlers and block handlers in a composed Subgraph)
+
+Additionally, you can explore the [example-composable-subgraph](https://github.com/graphprotocol/example-composable-subgraph) repository for a working implementation of composable Subgraphs
+
+## Como Começar
+
+The following guide provides examples for defining 3 source Subgraphs to create one powerful composed Subgraph.
+
+### Especificações
+
+- Para fins de simplicidade, todos os Subgraphs de origem usam apenas handlers de blocos. No entanto, num ambiente real, cada Subgraph de origem usará dados de contratos inteligentes diferentes.
+- Os exemplos abaixo mostram como importar e estender o schema de outro Subgraph para melhorar a sua funcionalidade.
+- Cada Subgraph de origem é otimizado com uma entidade específica.
+- Todos os comandos listados instalam as dependências necessárias, geram código baseado no schema da GraphQL, constroem o Subgraph, e o implantam na instância local do Graph Node.
+
+### Passo 1. Implante o Tempo de Bloco do Subgraph de Origem
+
+Este primeiro Subgraph de origem calcula o tempo de bloco para cada bloco.
+
+- Ele importa schemas de outros Subgraphs e adiciona uma entidade `block` com um campo `timestamp`, que representa o tempo em que cada bloco foi minerado.
+- Procura eventos de blockchain relacionados ao tempo (por exemplo, data e hora de blocos) e processa esses dados para atualizar as entidades do Subgraph de acordo.
+
+Para implantar este Subgraph localmente, execute os seguintes comandos:
+
+```bash
+npm install
+npm run codegen
+npm run build
+npm run create-local
+npm run deploy-local
+```
+
+### Passo 2. Implante o Custo de Bloco do Subgraph de Origem
+
+Este segundo Subgraph de origem indexa o custo de cada bloco.
+
+#### Funções Importantes
+
+- Importa schemas de outros Subgraphs e adiciona uma entidade `block` com campos relacionados ao custo.
+- Procura eventos da blockchain relacionados aos custos (por exemplo, taxas de gás, custos de transação), e processa esses dados para atualizar as entidades do Subgraphs de acordo.
+
+Para implantar este Subgraph localmente, execute os mesmos comandos listados acima.
+
+### Passo 3. Defina o Tamanho dos Blocos do Subgraph de Origem
+
+Este terceiro subgraph de origem indexa o tamanho de cada bloco. Para implantar este Subgraph localmente, execute os mesmos comandos acima.
+
+#### Funções Importantes
+
+- Ele importa schemas de outros Subgraphs e adiciona uma entidade `block` com um campo `size`, que representa o tamanho de cada bloco.
+- Procura eventos da blockchain relacionados ao tamanho dos blocos (por exemplo, armazenamento ou volume), e processa esses dados para atualizar as entidades do Subgraph de acordo.
+
+### Passo 4. Combine os Subgraphs em Um Único para Estatísticas de Bloco
+
+This composed Subgraph combines and aggregates the information from the source Subgraphs above, providing a unified view of block statistics. To deploy this Subgraph locally, run the same commands as above.
+
+> Note:
+>
+> - Qualquer alteração a um Subgraph de origem provavelmente gerará uma nova ID de implantação.
+> - Certifique-se de atualizar a ID de implantação no endereço de origem de dados do manifest do Subgraph, para aproveitar as últimas alterações.
+> - Todos os Subgraphs de origem devem ser implantados antes de implantar o Subgraph composto.
+
+#### Funções Importantes
+
+- Fornece um modelo consolidado de dados que abrange todas as métricas relevantes de bloco.
+- It combines data from 3 source Subgraphs, and provides a comprehensive view of block statistics, enabling more complex queries and analyses.
+
+## Conclusão
+
+- Esta ferramenta poderosa escalará a sua programação de Subgraphs e permitirá a combinação de vários Subgraphs.
+- The setup includes the deployment of 3 source Subgraphs and one final deployment of the composed Subgraph.
+- Esta função tira os limites da escalabilidade e simplifica a eficiência tanto na programação como na manutenção.
+
+## Outros Recursos
+
+- Check out all the code for this example in [this GitHub repo](https://github.com/graphprotocol/example-composable-subgraph).
+- Para adicionar recursos avançados ao seu Subgraph, confira a página sobre [recursos avançados](/developing/creating/advanced/).
+- Para saber mais sobre agregações, confira a página sobre [Séries Temporais e Agregações](/subgraphs/developing/creating/advanced/#timeseries-and-aggregations).
