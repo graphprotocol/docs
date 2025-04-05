@@ -1,30 +1,30 @@
-# The Graph TypeScript Library (graph-ts)
+# The Graph-TypeScript-Bibliothek (graph-ts)
 
 [![npm (scoped)](https://img.shields.io/npm/v/@graphprotocol/graph-ts.svg)](https://www.npmjs.com/package/@graphprotocol/graph-ts)
 [![Build Status](https://travis-ci.org/graphprotocol/graph-ts.svg?branch=master)](https://travis-ci.org/graphprotocol/graph-ts)
 
-TypeScript/AssemblyScript library for writing subgraph mappings to be deployed to
+TypeScript/AssemblyScript-Bibliothek zum Schreiben von Subgraph-Mappings, die auf
 [The Graph](https://github.com/graphprotocol/graph-node).
 
-## Usage
+## Verwendung
 
-For a detailed guide on how to create a subgraph, please see the
+Eine detaillierte Anleitung zur Erstellung eines Subgraphen finden Sie in der
 [Graph CLI docs](https://github.com/graphprotocol/graph-cli).
 
-One step of creating the subgraph is writing mappings that will process blockchain events and will
-write entities into the store. These mappings are written in TypeScript/AssemblyScript.
+Ein Schritt bei der Erstellung des Subgraphen ist das Schreiben von Mappings, die Blockchain-Ereignisse verarbeiten und
+Entitäten in den Speicher schreiben. Diese Mappings werden in TypeScript/AssemblyScript geschrieben.
 
-The `graph-ts` library provides APIs to access the Graph Node store, blockchain data, smart
-contracts, data on IPFS, cryptographic functions and more. To use it, all you have to do is add a
-dependency on it:
+Die Bibliothek `graph-ts` bietet APIs für den Zugriff auf den Graph Node-Speicher, Blockchain-Daten, Smart
+Verträge, Daten auf IPFS, kryptographische Funktionen und mehr. Um sie zu verwenden, müssen Sie lediglich eine
+Abhängigkeit von ihr hinzufügen:
 
 ```sh
 npm install --dev @graphprotocol/graph-ts # NPM
 yarn add --dev @graphprotocol/graph-ts    # Yarn
 ```
 
-After that, you can import the `store` API and other features from this library in your mappings. A
-few examples:
+Danach können Sie die „Store“-API und andere Funktionen aus dieser Bibliothek in Ihre Mappings importieren. A
+einige Beispiele:
 
 ```typescript
 import { crypto, store } from '@graphprotocol/graph-ts'
@@ -50,19 +50,19 @@ function handleNameRegistered(event: NameRegistered) {
 }
 ```
 
-## Helper Functions for AssemblyScript
+## Hilfsfunktionen für AssemblyScript
 
-Refer to the `helper-functions.ts` file in
+Siehe die Datei `helper-functions.ts` in
 [this](https://github.com/graphprotocol/graph-tooling/blob/main/packages/ts/helper-functions.ts)
-repository for a few common functions that help build on top of the AssemblyScript library, such as
-byte array concatenation, among others.
+Repository für einige allgemeine Funktionen, die helfen, auf der AssemblyScript-Bibliothek aufzubauen, wie
+Byte-Array-Verkettung, unter anderem.
 
 ## API
 
-Documentation on the API can be found
-[here](https://thegraph.com/docs/en/developer/assemblyscript-api/).
+Die Dokumentation zur API finden Sie
+[hier](https://thegraph.com/docs/en/developer/assemblyscript-api/).
 
-For examples of `graph-ts` in use take a look at one of the following subgraphs:
+Beispiele für die Verwendung von `graph-ts` finden Sie in einem der folgenden Subgraphen:
 
 - https://github.com/graphprotocol/ens-subgraph
 - https://github.com/graphprotocol/decentraland-subgraph
@@ -71,15 +71,15 @@ For examples of `graph-ts` in use take a look at one of the following subgraphs:
 - https://github.com/graphprotocol/aragon-subgraph
 - https://github.com/graphprotocol/dharma-subgraph
 
-## License
+## Lizenz
 
-Copyright &copy; 2018 Graph Protocol, Inc. and contributors.
+Copyright &copy; 2018 Graph Protocol, Inc. und Mitwirkende.
 
-The Graph TypeScript library is dual-licensed under the
-[MIT license](https://github.com/graphprotocol/graph-tooling/blob/main/LICENSE-MIT) and the
-[Apache License, Version 2.0](https://github.com/graphprotocol/graph-tooling/blob/main/LICENSE-APACHE).
+The Graph TypeScript-Bibliothek ist doppelt lizenziert unter der
+[MIT-Lizenz](https://github.com/graphprotocol/graph-tooling/blob/main/LICENSE-MIT) und der
+[Apache-Lizenz, Version 2.0](https://github.com/graphprotocol/graph-tooling/blob/main/LICENSE-APACHE).
 
-Unless required by applicable law or agreed to in writing, software distributed under the License is
-distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
-implied. See the License for the specific language governing permissions and limitations under the
-License.
+Sofern nicht durch geltendes Recht vorgeschrieben oder schriftlich vereinbart, wird die unter dieser Lizenz vertriebene Software
+auf einer „AS IS“-Basis verteilt, OHNE GARANTIEN ODER BEDINGUNGEN JEGLICHER ART, weder ausdrücklich noch
+stillschweigend. In der Lizenz finden Sie die spezifischen Bestimmungen zu den Rechten und Beschränkungen unter der
+Lizenz.
