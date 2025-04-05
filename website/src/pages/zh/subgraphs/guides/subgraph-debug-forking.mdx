@@ -1,26 +1,26 @@
 ---
-title: Quick and Easy Subgraph Debugging Using Forks
+title: 使用分叉快速轻松地调试子图
 ---
 
-As with many systems processing large amounts of data, The Graph's Indexers (Graph Nodes) may take quite some time to sync-up your Subgraph with the target blockchain. The discrepancy between quick changes with the purpose of debugging and long wait times needed for indexing is extremely counterproductive and we are well aware of that. This is why we are introducing **Subgraph forking**, developed by [LimeChain](https://limechain.tech/), and in this article I will show you how this feature can be used to substantially speed-up Subgraph debugging!
+与许多处理大量数据的系统一样，The Graph的索引人（Graph Nodes）可能需要相当长的时间才能将您的子图与目标区块链同步。以调试为目的的快速更改和索引所需的长等待时间之间的差异，是极其适得其反的，我们对此非常清楚。这就是为什么我们引入了由[LimeChain](https://limechain.tech/)开发的**子图分叉**，在本文中，我将向您展示如何使用此功能来大大加快子图调试！
 
-## Ok, what is it?
+## 好的，那是什么？
 
-**Subgraph forking** is the process of lazily fetching entities from _another_ Subgraph's store (usually a remote one).
+**子图分叉**是从另一个子图的存储（通常是远程存储）中缓慢获取实体的过程。
 
-In the context of debugging, **Subgraph forking** allows you to debug your failed Subgraph at block _X_ without needing to wait to sync-up to block _X_.
+在调试时，**子图分叉**允许您在固定的区块X中调试失败的子图，而无需等待区块同步X。
 
-## What?! How?
+## 什么？！ 如何处理？
 
-When you deploy a Subgraph to a remote Graph Node for indexing and it fails at block _X_, the good news is that the Graph Node will still serve GraphQL queries using its store, which is synced-up to block _X_. That's great! This means we can take advantage of this "up-to-date" store to fix the bugs arising when indexing block _X_.
+当您将子图部署到远程Graph节点进行索引时，它在块X处失败，好消息是Graph节点仍将使用其存储服务GraphQL查询，该存储同步到块X。这太棒了！这意味着我们可以利用这个“最新”存储来修复索引块X时出现的错误。
 
-In a nutshell, we are going to _fork the failing Subgraph_ from a remote Graph Node that is guaranteed to have the Subgraph indexed up to block _X_ in order to provide the locally deployed Subgraph being debugged at block _X_ an up-to-date view of the indexing state.
+简而言之，我们将从远程 Graph 节点 分叉失败的子图，保证子图索引更新至区块X的数据， 以便基于更新至区块 X 的数据在本地部署的子图进行调试，以反映索引数据的最新状态。
 
-## Please, show me some code!
+## 请给我看一些代码！
 
-To stay focused on Subgraph debugging, let's keep things simple and run along with the [example-Subgraph](https://github.com/graphprotocol/graph-tooling/tree/main/examples/ethereum-gravatar) indexing the Ethereum Gravity smart contract.
+为了专注于子图调试，让我们保持简单，并与索引 Ethereum Gravity 智能合约的 [示例子图](https://github.com/graphprotocol/graph-tooling/tree/main/examples/ethereum-gravatar) 一起运行。
 
-Here are the handlers defined for indexing `Gravatar`s, with no bugs whatsoever:
+以下是索引 `Gravatar` 定义的处理程序，没有任何错误：
 
 ```tsx
 export function handleNewGravatar(event: NewGravatar): void {
@@ -44,43 +44,43 @@ export function handleUpdatedGravatar(event: UpdatedGravatar): void {
 }
 ```
 
-Oops, how unfortunate, when I deploy my perfect looking Subgraph to [Subgraph Studio](https://thegraph.com/studio/) it fails with the _"Gravatar not found!"_ error.
+糟糕，不幸的是，当我将完美的子图部署到[Subgraph Studio](https://thegraph.com/studio/)时，它会报“未找到 Gravatar！” 的错误。
 
-The usual way to attempt a fix is:
+尝试修复的常用方法是：
 
-1. Make a change in the mappings source, which you believe will solve the issue (while I know it won't).
-2. Re-deploy the Subgraph to [Subgraph Studio](https://thegraph.com/studio/) (or another remote Graph Node).
-3. Wait for it to sync-up.
-4. If it breaks again go back to 1, otherwise: Hooray!
+1. 在映射源中进行更改，你认为这将解决问题（但我知道它不会）。
+2. 将子图重新部署到[subgraph Studio](https://thegraph.com/studio/)（或另一个远程图形节点）。
+3. 等待同步。
+4. 如果它再次中断，则返回 第1步，否则：搞定！
 
-It is indeed pretty familiar to an ordinary debug process, but there is one step that horribly slows down the process: _3. Wait for it to sync-up._
+对于一个普通的调试过程来说很常见，但是有一个步骤会严重减缓这个过程：_3。 等待同步。_
 
-Using **Subgraph forking** we can essentially eliminate this step. Here is how it looks:
+使用 **子图分叉** 我们可以从根本上解决这个问题。 如下：
 
-0. Spin-up a local Graph Node with the **_appropriate fork-base_** set.
-1. Make a change in the mappings source, which you believe will solve the issue.
-2. Deploy to the local Graph Node, **_forking the failing Subgraph_** and **_starting from the problematic block_**.
-3. If it breaks again, go back to 1, otherwise: Hooray!
+0. 使用**适当的子分叉**设置启动本地 Graph 节点。
+1. 按照你认为可以解决问题的方法，在映射源中进行更改。
+2. 部署到本地 Graph 节点，**分叉失败的子图**并**从有问题的区块开始**。
+3. 如果它再次中断，则返回 第1步，否则：搞定！
 
-Now, you may have 2 questions:
+现在，你可能有 2 个问题：
 
-1. fork-base what???
-2. Forking who?!
+1. 子分叉集是什么???
+2. 分叉什么?!
 
-And I answer:
+回答如下：
 
-1. `fork-base` is the "base" URL, such that when the _subgraph id_ is appended the resulting URL (`<fork-base>/<subgraph-id>`) is a valid GraphQL endpoint for the Subgraph's store.
-2. Forking is easy, no need to sweat:
+1. `分叉基础` 是“基础”URL，例如将 _子图 id_ 添加到结果 URL (`<fork-base>/<subgraph-id>`)，就是一个合法的子图GraphQL访问端口。
+2. 分叉容易，不要紧张：
 
 ```bash
-$ graph deploy <subgraph-name> --debug-fork <subgraph-id> --ipfs http://localhost:5001 --node http://localhost:8020
+$ graph 部署 <subgraph-name> --调试分叉 <subgraph-id> --ipfs地址 http://localhost:5001 --node http://localhost:8020
 ```
 
-Also, don't forget to set the `dataSources.source.startBlock` field in the Subgraph manifest to the number of the problematic block, so you can skip indexing unnecessary blocks and take advantage of the fork!
+另外，不要忘记将子图中的 `dataSources.source.startBlock` 字段设置为有问题的区块编号，这样您就可以跳过索引不必要的区块并利用分叉！
 
-So, here is what I do:
+所以，我是这么做的：
 
-1. I spin-up a local Graph Node ([here is how to do it](https://github.com/graphprotocol/graph-node#running-a-local-graph-node)) with the `fork-base` option set to: `https://api.thegraph.com/subgraphs/id/`, since I will fork a Subgraph, the buggy one I deployed earlier, from [Subgraph Studio](https://thegraph.com/studio/).
+1. 我启动一个本地Graph节点，([这里是如何做到的](https://github.com/graphprotocol/graph-node#running-a-local-graph-node)) 将`分叉基础`选项设为：`https://api.thegraph.com/subgraphs/id/`，因为我将从[Subgraph Studio](https://thegraph.com/studio/)分叉子图，即之前部署有问题的子图。
 
 ```
 $ cargo run -p graph-node --release -- \
@@ -90,12 +90,12 @@ $ cargo run -p graph-node --release -- \
     --fork-base https://api.thegraph.com/subgraphs/id/
 ```
 
-2. After careful inspection I notice that there is a mismatch in the `id` representations used when indexing `Gravatar`s in my two handlers. While `handleNewGravatar` converts it to a hex (`event.params.id.toHex()`), `handleUpdatedGravatar` uses an int32 (`event.params.id.toI32()`) which causes the `handleUpdatedGravatar` to panic with "Gravatar not found!". I make them both convert the `id` to a hex.
-3. After I made the changes I deploy my Subgraph to the local Graph Node, **_forking the failing Subgraph_** and setting `dataSources.source.startBlock` to `6190343` in `subgraph.yaml`:
+2. 经过仔细检查，我注意到在我的两个处理程序中索引 `Gravatar` 时使用的 `id` 不匹配。 `handleNewGravatar` 将其转换为十六进制 (`event.params.id.toHex()`)，而 `handleUpdatedGravatar` 使用 int32格式 (`event. params.id.toI32()`) 这会导致 `handleUpdatedGravatar` 出现“未找到 Gravatar！”的错误。 于是我将他们都 `id` 转换为十六进制。
+3. 更改后，我将子图部署到本地 Graph 节点，**分叉失败的子图**并设置 subgraph.yaml 中的`dataSources.source.startBlock`到`6190343`：
 
 ```bash
 $ graph deploy gravity --debug-fork QmNp169tKvomnH3cPXTfGg4ZEhAHA6kEq5oy1XDqAxqHmW --ipfs http://localhost:5001 --node http://localhost:8020
 ```
 
-4. I inspect the logs produced by the local Graph Node and, Hooray!, everything seems to be working.
-5. I deploy my now bug-free Subgraph to a remote Graph Node and live happily ever after! (no potatoes tho)
+4. 我检查了本地 Graph 节点生成的日志，万岁！一切正常。
+5. 我将没有问题的子图部署到远程 Graph 节点上，从此过上幸福的生活！ （不担心缺衣少粮）
