@@ -1,0 +1,109 @@
+---
+title: Token API FAQ
+---
+
+Get fast answers to easily integrate and scale with The Graph's high-performance Token API.
+
+## आम
+
+### What blockchains does the Token API support?
+
+Currently, the Token API supports Ethereum, Binance Smart Chain (BSC), Polygon, Optimism, Base, and Arbitrum One.
+
+### Why isn't my API key from The Graph Market working?
+
+Be sure to use the Access Token generated from the API key, not the API key itself. An access token can be generated from the dashboard on The Graph Market using the dropdown menu next to each API key.
+
+### How current is the data provided by the API relative to the blockchain?
+
+The API provides data up to the latest finalized block.
+
+### How do I authenticate requests to the Token API?
+
+Authentication is managed via JWT tokens obtained through The Graph Market. JWT tokens issued by [Pinax](https://pinax.network/en), a core developer of The Graph, are also supported.
+
+### Does the Token API provide a client SDK?
+
+While a client SDK is not currently available, please share feedback on any SDKs or integrations you would like to see on [Discord](https://discord.gg/graphprotocol).
+
+### Are there plans to support additional blockchains in the future?
+
+Yes, more blockchains will be supported in the future. Please share feedback on desired chains on [Discord](https://discord.gg/graphprotocol).
+
+### Are there plans to offer data closer to the chain head?
+
+Yes, improvements to provide data closer to the chain head are planned. Feedback is welcome on [Discord](https://discord.gg/graphprotocol).
+
+### Are there plans to support additional use cases such as NFTs?
+
+The Graph ecosystem is actively determining the [roadmap](https://thegraph.com/blog/token-api-the-graph/) for additional use cases, including NFTs. Please provide feedback on specific features you would like prioritized on [Discord](https://discord.gg/graphprotocol).
+
+## MCP / LLM / AI Topics
+
+### Is there a time limit for LLM queries?
+
+Yes. The maximum time limit for LLM queries is 10 seconds.
+
+### Is there a known list of LLMs that work with the API?
+
+Yes, Cline, Cursor, and Claude Desktop integrate successfully with The Graph's Token API + MCP server.
+
+Beyond that, whether an LLM "works" depends on whether it supports the MCP protocol directly (or has a compatible plugin/adapter).
+
+### Where can I find the MCP client?
+
+You can find the code for the MCP client in [The Graph's repo](https://github.com/graphprotocol/mcp-client).
+
+## Advanced Topics
+
+### I'm getting 403/401 errors. What's wrong?
+
+Check that you included the `Authorization: Bearer <jwt>` header with the correct, non-expired token. Common issues include using the API key instead of generating a new JWT, forgetting the "Bearer" prefix, using an incorrect token, or omitting the header entirely. Ensure you copied the JWT exactly as provided by The Graph Market.
+
+### Are there rate limits or usage costs?\*\*
+
+During Beta, the Token API is free for authorized developers. While specific rate limits aren't documented, reasonable throttling exists to prevent abuse. High request volumes may trigger HTTP 429 errors. Monitor official announcements for future pricing changes after Beta.
+
+### What networks are supported, and how do I specify them?
+
+You can query available networks with [this link](https://token-api.thegraph.com/#tag/monitoring/GET/networks). A full list of network IDs accepted by The Graph can be found on [The Graph's Networks](https://thegraph.com/docs/en/supported-networks/). The API supports Ethereum mainnet, Binance Smart Chain, Base, Arbitrum One, Optimism, and Polygon/Matic. Use the optional `network_id` parameter (e.g., `mainnet`, `bsc`, `base`, `arbitrum-one`, `optimism`, `matic`) to target a specific chain. Without this parameter, the API defaults to Ethereum mainnet.
+
+### Why do I only see 10 results? How can I get more data?
+
+Endpoints cap output at 10 items by default. Use pagination parameters: `limit` (up to 500) and `page` (1-indexed). For example, set `limit=50` to get 50 results, and increment `page` for subsequent batches (e.g., `page=2` for items 51-100).
+
+### How do I fetch older transfer history?
+
+The Transfers endpoint defaults to 30 days of history. To retrieve older events, increase the `age` parameter up to 180 days maximum (e.g., `age=180` for 6 months of transfers). Transfers older than 180 days cannot be fetched in a single call.
+
+### What does an empty `"data": []` array mean?
+
+An empty data array means no records were found matching the query – not an error. This occurs when querying wallets with no tokens/transfers or token contracts with no holders. Verify you've used the correct address and parameters. An invalid address format will trigger a 4xx error.
+
+### Why is the JSON response wrapped in a `"data"` array?
+
+All Token API responses consistently wrap results in a top-level `data` array, even for single items. This uniform design handles the common case where addresses have multiple balances or transfers. When parsing, be sure to index into the `data` array (e.g., `const results = response.data`).
+
+### Why are token amounts returned as strings?
+
+Large numeric values (like token amounts or supplies) are returned as strings to avoid precision loss, as they often exceed JavaScript's safe integer range. Convert these to big number types for arithmetic operations. Fields like `decimals` are provided as normal numbers to help derive human-readable values.
+
+### What format should addresses be in?
+
+The API accepts 40-character hex addresses with or without the `0x` prefix. The endpoint is case-insensitive, so both lower and uppercase hex characters work. Ensure addresses are exactly 40 hex digits (20 bytes) if you remove the prefix. For contract queries, use the token's contract address; for balance/transfer queries, use the wallet address.
+
+### Do I need special headers besides authentication?
+
+While recommended, `Accept: application/json` isn't strictly required as the API returns JSON by default. The critical header is `Authorization: Bearer <token>`. Ensure you make a GET request to the correct URL without trailing slashes or path typos (e.g., use `/balances/evm/{address}` not `/balance`).
+
+### MCP integration with Claude/Cline/Cursor shows errors like "ENOENT" or "Server disconnected". How do I fix this?
+
+For "ENOENT" errors, ensure Node.js 18+ is installed and the path to `npx`/`bunx` is correct (consider using full paths in config). "Server disconnected" usually indicates authentication or connectivity issues – verify your `ACCESS_TOKEN` is set correctly and your network allows access to `https://token-api.thegraph.com/sse`.
+
+### Is the Token API part of The Graph's GraphQL service?
+
+No, the Token API is a separate RESTful service. Unlike traditional subgraphs, it provides ready-to-use REST endpoints (HTTP GET) for common token data. You don't need to write GraphQL queries or deploy subgraphs. Under the hood, it uses The Graph's infrastructure and MCP with AI for enrichment, but you simply interact with REST endpoints.
+
+### Do I need to use MCP or tools like Claude, Cline, or Cursor?
+
+No, these are optional. MCP is an advanced feature allowing AI assistants to interface with the API via streaming. For standard usage, simply call the REST endpoints with any HTTP client using your JWT. Claude Desktop, Cline bot, and Cursor IDE integrations are provided for convenience but aren't required.
