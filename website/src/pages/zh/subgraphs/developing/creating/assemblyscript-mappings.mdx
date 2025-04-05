@@ -4,13 +4,13 @@ title: Writing AssemblyScript Mappings
 
 ## 概述
 
-The mappings take data from a particular source and transform it into entities that are defined within your schema. Mappings are written in a subset of [TypeScript](https://www.typescriptlang.org/docs/handbook/typescript-in-5-minutes.html) called [AssemblyScript](https://github.com/AssemblyScript/assemblyscript/wiki) which can be compiled to WASM ([WebAssembly](https://webassembly.org/)). AssemblyScript is stricter than normal TypeScript, yet provides a familiar syntax.
+映射将获取的以太坊数据转换为您的模式文件中定义的实体。 映射是用 [TypeScript](https://www.typescriptlang.org/docs/handbook/typescript-in-5-minutes.html) 的子集编写的，称为 [AssemblyScript](https://github.com/AssemblyScript/assemblyscript/wiki)。 AssemblyScript 可以编译成 WASM ([WebAssembly](https://webassembly.org/))。 AssemblyScript 比普通的 TypeScript 更严格，但提供了开发者熟悉的语法。
 
 ## 编写映射
 
-For each event handler that is defined in `subgraph.yaml` under `mapping.eventHandlers`, create an exported function of the same name. Each handler must accept a single parameter called `event` with a type corresponding to the name of the event which is being handled.
+对于在 `mapping.eventHandlers` 下的 `subgraph.yaml` 中定义的每个事件处理程序，都会创建一个同名的导出函数。 每个处理程序必须接受一个名为 `event` 的参数，其类型对应于正在处理的事件的名称。
 
-In the example subgraph, `src/mapping.ts` contains handlers for the `NewGravatar` and `UpdatedGravatar` events:
+在示例子图中，`src/mapping.ts` 包含 `NewGravatar` 和 `UpdatedGravatar` 事件的处理程序：
 
 ```javascript
 import { NewGravatar, UpdatedGravatar } from '../generated/Gravity/Gravity'
@@ -37,50 +37,50 @@ export function handleUpdatedGravatar(event: UpdatedGravatar): void {
 }
 ```
 
-The first handler takes a `NewGravatar` event and creates a new `Gravatar` entity with `new Gravatar(event.params.id.toHex())`, populating the entity fields using the corresponding event parameters. This entity instance is represented by the variable `gravatar`, with an id value of `event.params.id.toHex()`.
+第一个处理程序接受 `NewGravatar` 事件，而且使用 `new Gravatar(event.params.id.toHex())` 创建一个新的 `Gravatar` 实体，使用相应的事件参数填充实体字段。 该实体实例由变量 `gravatar` 表示，id 值为 `event.params.id.toHex()`。
 
-The second handler tries to load the existing `Gravatar` from the Graph Node store. If it does not exist yet, it is created on-demand. The entity is then updated to match the new event parameters before it is saved back to the store using `gravatar.save()`.
+第二个处理程序尝试从 Graph 节点存储加载现有的 Gravatar。 如果尚不存在，则会按需创建。 然后更新实体以匹配新的事件参数，并使用 gravatar.save() 将其保存。
 
 ### 用于创建新实体的推荐 ID
 
-It is highly recommended to use `Bytes` as the type for `id` fields, and only use `String` for attributes that truly contain human-readable text, like the name of a token. Below are some recommended `id` values to consider when creating new entities.
+强烈建议使用`Bytes`作为`id`字段的类型，并且只在确实包含人类可读文本的属性上使用`String`，例如代币的名称。以下是在创建新实体时需要考虑的一些推荐的`id`值。
 
 - `transfer.id = event.transaction.hash`
 
 - `let id = event.transaction.hash.concatI32(event.logIndex.toI32())`
 
-- For entities that store aggregated data, for e.g, daily trade volumes, the `id` usually contains the day number. Here, using a `Bytes` as the `id` is beneficial. Determining the `id` would look like
+- 对于存储聚合数据的实体，例如每日交易量，`id`通常包含天数。在这里，使用`Bytes`作为`id`是有益的。确定`id`的方式可能看起来像这样：
 
 ```typescript
 let dayID = event.block.timestamp.toI32() / 86400
 let id = Bytes.fromI32(dayID)
 ```
 
-- Convert constant addresses to `Bytes`.
+- 将固定地址转换为`Bytes`。
 
 `const id = Bytes.fromHexString('0xdead...beef')`
 
-There is a [Graph Typescript Library](https://github.com/graphprotocol/graph-tooling/tree/main/packages/ts) which contains utilities for interacting with the Graph Node store and conveniences for handling smart contract data and entities. It can be imported into `mapping.ts` from `@graphprotocol/graph-ts`.
+存在一个名为[Graph Typescript Library](https://github.com/graphprotocol/graph-tooling/tree/main/packages/ts)的库，其中包含用于与Graph Node存储交互的工具以及处理智能合约数据和实体的便利功能。它可以从`@graphprotocol/graph-ts`导入到`mapping.ts`中。
 
-### Handling of entities with identical IDs
+### 处理具有相同ID的entity的策略
 
-When creating and saving a new entity, if an entity with the same ID already exists, the properties of the new entity are always preferred during the merge process. This means that the existing entity will be updated with the values from the new entity.
+在创建并保存新实体时，如果已存在具有相同ID的实体，则在合并过程中始终优先考虑新实体的属性。这意味着现有的实体将会用新实体的值进行更新。这种方式确保了数据的最新性和一致性，使得每次操作都反映最近的变更和信息。
 
-If a null value is intentionally set for a field in the new entity with the same ID, the existing entity will be updated with the null value.
+如果在具有相同ID的新实体中某个字段故意设置为null值，现有的实体将会被更新为该null值。这种做法允许数据显式地表示无值或已删除的状态，从而在数据处理和存储中提供更大的灵活性和控制。
 
-If no value is set for a field in the new entity with the same ID, the field will result in null as well.
+如果在具有相同ID的新实体中某个字段没有设置任何值，该字段也将被设为null。这样的处理确保了数据的完整性，防止了意外的旧数据保留，确保了在数据更新时的透明性和一致性。这种做法适用于那些需要明确字段值缺失或未定义情况的应用场景。
 
 ## 代码生成
 
 为了使与智能合约、事件和实体的代码编写工作变得简单且类型安全，Graph CLI 可以从子图的 GraphQL 模式和数据源中包含的合约 ABI 生成 AssemblyScript 类型。
 
-这可以通过以下命令实现
+这可以通过以下命令实现：
 
 ```sh
 graph codegen [--output-dir <OUTPUT_DIR>] [<MANIFEST>]
 ```
 
-but in most cases, subgraphs are already preconfigured via `package.json` to allow you to simply run one of the following to achieve the same:
+但在大多数情况下，子图已经通过 `package.json` 进行了预配置，以允许您简单地运行以下命令之一来实现相同的目的：
 
 ```sh
 # Yarn
@@ -90,7 +90,7 @@ yarn codegen
 npm run codegen
 ```
 
-This will generate an AssemblyScript class for every smart contract in the ABI files mentioned in `subgraph.yaml`, allowing you to bind these contracts to specific addresses in the mappings and call read-only contract methods against the block being processed. It will also generate a class for every contract event to provide easy access to event parameters, as well as the block and transaction the event originated from. All of these types are written to `<OUTPUT_DIR>/<DATA_SOURCE_NAME>/<ABI_NAME>.ts`. In the example subgraph, this would be `generated/Gravity/Gravity.ts`, allowing mappings to import these types with.
+这将为 `subgrap.yaml` 中提到的 ABI 文件中的每个智能合约生成一个 AssemblyScript 类，允许您将这些合约绑定到映射中的特定地址，并针对正在处理的区块调用只读合约方法。它还将为每个合约事件生成一个类，以便于访问事件参数以及事件源自的区块和交易。所有这些类型都写入到`<OUTPUT_DIR>/<DATA_SOURCE_NAME>/<ABI_NAME>.ts`。在示例子图中，这将成为`generated/Gravity/Gravity.ts`，允许映射导入这些类型。
 
 ```javascript
 import {
@@ -102,12 +102,12 @@ import {
 } from '../generated/Gravity/Gravity'
 ```
 
-In addition to this, one class is generated for each entity type in the subgraph's GraphQL schema. These classes provide type-safe entity loading, read and write access to entity fields as well as a `save()` method to write entities to store. All entity classes are written to `<OUTPUT_DIR>/schema.ts`, allowing mappings to import them with
+除此之外，还会为子图的 GraphQL 模式中的每个实体类型生成一个类。 这些类提供类型安全的实体加载、对实体字段的读写访问以及一个 `save()` 方法来写入要存储的实体。 所有实体类都写入 `<OUTPUT_DIR>/schema.ts`，允许映射导入它们：
 
 ```javascript
 import { Gravatar } from '../generated/schema'
 ```
 
-> **Note:** The code generation must be performed again after every change to the GraphQL schema or the ABIs included in the manifest. It must also be performed at least once before building or deploying the subgraph.
+> **注意：** 每次更改 GraphQL 模式文件或清单中包含的 ABI 后，都必须再次执行代码生成。 在构建或部署子图之前，它还必须至少执行一次。
 
-Code generation does not check your mapping code in `src/mapping.ts`. If you want to check that before trying to deploy your subgraph to Graph Explorer, you can run `yarn build` and fix any syntax errors that the TypeScript compiler might find.
+代码生成不会检查 `src/mapping.ts` 中的映射代码。 如果您想在尝试将子图部署到 Graph Explorer 之前进行检查，您可以运行 `yarn build`，并修复 TypeScript 编译器可能发现的任何语法错误。

@@ -1,49 +1,53 @@
 ---
-title: Subgraph Best Practice 5 - Simplify and Optimize with Timeseries and Aggregations
-sidebarTitle: 'Subgraph Best Practice 5: Timeseries and Aggregations'
+title: 子图最佳实践5-使用时间序列和聚合进行简化和优化
+sidebarTitle: 时间序列和聚合
 ---
 
 ## TLDR
 
-Leveraging the new time-series and aggregations feature in subgraphs can significantly enhance both indexing speed and query performance.
+利用子图中新的时间序列和聚合功能可以显著提高索引速度和查询性能。
 
 ## 概述
 
-Timeseries and aggregations reduce data processing overhead and accelerate queries by offloading aggregation computations to the database and simplifying mapping code. This approach is particularly effective when handling large volumes of time-based data.
+时间序列和聚合通过将聚合计算卸载到数据库和简化映射代码来减少数据处理开销并加速查询。这种方法在处理大量基于时间的数据时特别有效。
 
-## Benefits of Timeseries and Aggregations
+## 时间序列和聚合的好处
 
-1. Improved Indexing Time
+1. 缩短了索引时间
 
-- Less Data to Load: Mappings handle less data since raw data points are stored as immutable timeseries entities.
-- Database-Managed Aggregations: Aggregations are automatically computed by the database, reducing the workload on the mappings.
+- 要加载的数据更少：映射处理的数据更少，因为原始数据点存储为不可变的时间序列实体。
+- 数据库管理聚合：聚合由数据库自动计算，减少了映射的工作量。
 
-2. Simplified Mapping Code
+2. 简化映射代码
 
-- No Manual Calculations: Developers no longer need to write complex aggregation logic in mappings.
-- Reduced Complexity: Simplifies code maintenance and minimizes the potential for errors.
+- 无需手动计算：开发人员不再需要在映射中编写复杂的聚合逻辑。
+- 降低复杂性：简化代码维护，最大限度地减少错误的可能性。
 
-3. Dramatically Faster Queries
+3. 查询速度快得多
 
-- Immutable Data: All timeseries data is immutable, enabling efficient storage and retrieval.
-- Efficient Data Separation: Aggregates are stored separately from raw timeseries data, allowing queries to process significantly less data—often several orders of magnitude less.
+- 不可变数据：所有时间序列数据都是不可变的，可以实现高效的存储和检索。
+- 高效的数据分离：聚合与原始时间序列数据分开存储，使查询处理的数据大大减少，通常减少几个数量级。
 
-### Important Considerations
+### 重要注意事项
 
-- Immutable Data: Timeseries data cannot be altered once written, ensuring data integrity and simplifying indexing.
-- Automatic ID and Timestamp Management: id and timestamp fields are automatically managed by graph-node, reducing potential errors.
-- Efficient Data Storage: By separating raw data from aggregates, storage is optimized, and queries run faster.
+- 不可变数据：时间序列数据一旦写入就不能更改，从而确保数据完整性并简化索引。
+- 自动ID和时间戳管理：ID和时间戳字段由图节点自动管理，减少了潜在的错误。
+- 高效的数据存储：通过将原始数据与聚合分离，存储得到优化，查询运行速度更快。
 
-## How to Implement Timeseries and Aggregations
+## 如何实现时间序列和聚合
 
-### Defining Timeseries Entities
+### 先决条件
 
-A timeseries entity represents raw data points collected over time. It is defined with the `@entity(timeseries: true)` annotation. Key requirements:
+此功能需要`规范版本1.1.0`。
 
-- Immutable: Timeseries entities are always immutable.
-- Mandatory Fields:
-  - `id`: Must be of type `Int8!` and is auto-incremented.
-  - `timestamp`: Must be of type `Timestamp!` and is automatically set to the block timestamp.
+### 定义时间序列实体
+
+时间序列实体表示随时间收集的原始数据点。它是用`@entity（timeseries：true）`注释定义的。关键要求：
+
+- 不可变：时间序列实体始终是不可变的。
+- 必填字段：
+  - `id`：必须是`Int8！`类型并且自动递增。
+  - `timestamp`：必须是`Timestamp！`类型并自动设置为块时间戳。
 
 例子:
 
@@ -51,16 +55,16 @@ A timeseries entity represents raw data points collected over time. It is define
 type Data @entity(timeseries: true) {
   id: Int8!
   timestamp: Timestamp!
-  price: BigDecimal!
+  amount: BigDecimal!
 }
 ```
 
-### Defining Aggregation Entities
+### 定义聚合实体
 
-An aggregation entity computes aggregated values from a timeseries source. It is defined with the `@aggregation` annotation. Key components:
+聚合实体从时间序列源计算聚合值。它是用`@aggregation`注释定义的。关键部件：
 
-- Annotation Arguments:
-  - `intervals`: Specifies time intervals (e.g., `["hour", "day"]`).
+- 注释参数：
+  - `interval`：指定时间间隔（例如，`["hour", "day"]`）。
 
 例子:
 
@@ -68,15 +72,15 @@ An aggregation entity computes aggregated values from a timeseries source. It is
 type Stats @aggregation(intervals: ["hour", "day"], source: "Data") {
   id: Int8!
   timestamp: Timestamp!
-  sum: BigDecimal! @aggregate(fn: "sum", arg: "price")
+  sum: BigDecimal! @aggregate(fn: "sum", arg: "amount")
 }
 ```
 
-In this example, Stats aggregates the price field from Data over hourly and daily intervals, computing the sum.
+在这个例子中，Stats在每小时和每天的时间间隔内聚合Data中的金额字段，计算总和。
 
-### Querying Aggregated Data
+### 查询聚合数据
 
-Aggregations are exposed via query fields that allow filtering and retrieval based on dimensions and time intervals.
+聚合通过查询字段公开，这些字段允许基于维度和时间间隔进行过滤和检索。
 
 例子:
 
@@ -98,13 +102,13 @@ Aggregations are exposed via query fields that allow filtering and retrieval bas
 }
 ```
 
-### Using Dimensions in Aggregations
+### 在聚合中使用维度
 
-Dimensions are non-aggregated fields used to group data points. They enable aggregations based on specific criteria, such as a token in a financial application.
+维度是用于对数据点进行分组的非聚合字段。它们支持基于特定标准的聚合，例如金融应用程序中的代币。
 
 例子:
 
-### Timeseries Entity
+### 时间序列实体
 
 ```graphql
 type TokenData @entity(timeseries: true) {
@@ -116,7 +120,7 @@ type TokenData @entity(timeseries: true) {
 }
 ```
 
-### Aggregation Entity with Dimension
+### 带维度的聚合实体
 
 ```graphql
 type TokenStats @aggregation(intervals: ["hour", "day"], source: "TokenData") {
@@ -129,67 +133,67 @@ type TokenStats @aggregation(intervals: ["hour", "day"], source: "TokenData") {
 }
 ```
 
-- Dimension Field: token groups the data, so aggregates are computed per token.
-- Aggregates:
-  - totalVolume: Sum of amount.
-  - priceUSD: Last recorded priceUSD.
-  - count: Cumulative count of records.
+- 维度字段：代币对数据进行分组，因此每个代币计算聚合。
+- 聚合：
+  - totalVolume：总金额。
+  - priceUSD：最后记录的价格USD。
+  - count：记录的累计计数。
 
-### Aggregation Functions and Expressions
+### 聚合函数和表达式
 
-Supported aggregation functions:
+支持的聚合功能：
 
-- sum
-- count
-- min
-- max
-- first
-- last
+- 求和
+- 计数
+- 最小值
+- 最大值
+- 第一
+- 最后
 
-### The arg in @aggregate can be
+### @aggregate中的参数可以是
 
-- A field name from the timeseries entity.
-- An expression using fields and constants.
+- 时间序列实体中的字段名。
+- 使用字段和常量的表达式。
 
-### Examples of Aggregation Expressions
+### 聚合表达式示例
 
-- Sum Token Value: @aggregate(fn: "sum", arg: "priceUSD \_ amount")
-- Maximum Positive Amount: @aggregate(fn: "max", arg: "greatest(amount0, amount1, 0)")
-- Conditional Sum: @aggregate(fn: "sum", arg: "case when amount0 > amount1 then amount0 else 0 end")
+- 代币总值: @aggregate(fn: "sum", arg: "priceUSD \_ amount")
+- 最大正金额: @aggregate(fn: "max", arg: "greatest(amount0, amount1, 0)")
+- 条件总和: @aggregate(fn: "sum", arg: "case when amount0 > amount1 then amount0 else 0 end")
 
-Supported operators and functions include basic arithmetic (+, -, \_, /), comparison operators, logical operators (and, or, not), and SQL functions like greatest, least, coalesce, etc.
+支持的运算符和函数包括基本算术（+、-、\_、/）、比较运算符、逻辑运算符（和、或、非）以及最大、最小、合并等SQL函数。
 
-### Query Parameters
+### 查询参数
 
-- interval: Specifies the time interval (e.g., "hour").
-- where: Filters based on dimensions and timestamp ranges.
-- timestamp_gte / timestamp_lt: Filters for start and end times (microseconds since epoch).
+- interval：指定时间间隔（例如，"hour"）。
+- where: 基于维度和时间戳范围的筛选器。
+- timestamp_gte/timestamp_lt：开始和结束时间的筛选器（自时期以来的微秒）。
 
-### Notes
+### 注意：
 
-- Sorting: Results are automatically sorted by timestamp and id in descending order.
-- Current Data: An optional current argument can include the current, partially filled interval.
+- 排序：结果按时间戳和id降序自动排序。
+- 当前数据：可选的当前参数可以包括当前部分填充的间隔。
 
-### Conclusion
+### 结论
 
-Implementing timeseries and aggregations in subgraphs is a best practice for projects dealing with time-based data. This approach:
+在子图中实现时间序列和聚合是处理基于时间的数据的项目的最佳实践。这种方法：
 
-- Enhances Performance: Speeds up indexing and querying by reducing data processing overhead.
-- Simplifies Development: Eliminates the need for manual aggregation logic in mappings.
-- Scales Efficiently: Handles large volumes of data without compromising on speed or responsiveness.
+- 提高性能：通过减少数据处理开销来加快索引和查询。
+- 简化开发：消除了在映射中手动聚合逻辑的需要。
+- 高效扩展：在不影响速度或响应性的情况下处理大量数据。
 
-By adopting this pattern, developers can build more efficient and scalable subgraphs, providing faster and more reliable data access to end-users. To learn more about implementing timeseries and aggregations, refer to the [Timeseries and Aggregations Readme](https://github.com/graphprotocol/graph-node/blob/master/docs/aggregations.md) and consider experimenting with this feature in your subgraphs.
+通过采用这种模式，开发人员可以构建更高效、更可扩展的子图，为最终用户提供更快、更可靠的数据访问。要了解有关实现时间序列和聚合的更多信息，请参阅[时间序列和聚集自述文件](https://github.com/graphprotocol/graph-node/blob/master/docs/aggregations.md)，并考虑在子图中尝试此功能。
 
-## Subgraph Best Practices 1-6
+## 子图最佳实践1-6
 
-1. [Improve Query Speed with Subgraph Pruning](/subgraphs/best-practices/pruning/)
+1. [通过子图修剪提高查询速度](/subgraphs/best-practices/pruning/)
 
-2. [Improve Indexing and Query Responsiveness by Using @derivedFrom](/subgraphs/best-practices/derivedfrom/)
+2. [使用@derivedFrom提高索引和查询响应能力](/subgraphs/best-practices/derivedfrom/)
 
-3. [Improve Indexing and Query Performance by Using Immutable Entities and Bytes as IDs](/subgraphs/best-practices/immutable-entities-bytes-as-ids/)
+3. [通过使用不可变实体和字节作为ID来提高索引和查询性能](/subgraphs/best-practices/immutable-entities-bytes-as-ids/)
 
-4. [Improve Indexing Speed by Avoiding `eth_calls`](/subgraphs/best-practices/avoid-eth-calls/)
+4. [通过避免`eth_calls`提高索引速度](/subgraphs/best-practices/avoid-eth-calls/)
 
-5. [Simplify and Optimize with Timeseries and Aggregations](/subgraphs/best-practices/timeseries/)
+5. [通过时间序列和聚合进行简化和优化](/subgraphs/best-practices/timeseries/)
 
-6. [Use Grafting for Quick Hotfix Deployment](/subgraphs/best-practices/grafting-hotfix/)
+6. [使用嫁接快速部署修补程序](/subgraphs/best-practices/grafting-hotfix/)

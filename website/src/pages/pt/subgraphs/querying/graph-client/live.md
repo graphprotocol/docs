@@ -1,10 +1,10 @@
-# `@live` queries in `graph-client`
+# Queries `@live` no `graph-client`
 
-Graph-Client implements a custom `@live` directive that can make every GraphQL query work with real-time data.
+O Graph-Client implementa uma diretiva personalizada `@live` que pode fazer cada query do GraphQL funcionar com dados em tempo real.
 
-## Getting Started
+## Como Começar
 
-Start by adding the following configuration to your `.graphclientrc.yml` file:
+Comece a adicionar a seguinte configuração ao seu arquivo `.graphclientrc.yml`:
 
 ```yaml
 plugins:
@@ -12,9 +12,9 @@ plugins:
       defaultInterval: 1000
 ```
 
-## Usage
+## Uso
 
-Set the default update interval you wish to use, and then you can apply the following GraphQL `@directive` over your GraphQL queries:
+Defina o intervalo padrão de atualizações que deseja usar. Em seguida, você pode aplicar o seguinte `@directive` da GraphQL sobre os seus queries GraphQL:
 
 ```graphql
 query ExampleQuery @live {
@@ -26,7 +26,7 @@ query ExampleQuery @live {
 }
 ```
 
-Or, you can specify a per-query interval:
+Ou, você pode especificar um intervalo por query:
 
 ```graphql
 query ExampleQuery @live(interval: 5000) {
@@ -36,8 +36,8 @@ query ExampleQuery @live(interval: 5000) {
 }
 ```
 
-## Integrations
+## Integrações
 
 Since the entire network layer (along with the `@live` mechanism) is implemented inside `graph-client` core, you can use Live queries with every GraphQL client (such as Urql or Apollo-Client), as long as it supports streame responses (`AsyncIterable`).
 
-No additional setup is required for GraphQL clients cache updates.
+Não é necessário fazer mais configurações para atualizações de cache de clientes da GraphQL.

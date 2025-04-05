@@ -1,21 +1,21 @@
 ---
-title: Guide de migration TAP
+title: GraphTally Guide
 ---
 
-Découvrez le nouveau système de paiement de The Graph, le **Timeline Aggregation Protocol, TAP**. Ce système permet des microtransactions rapides et efficaces avec une confiance minimale.
+Learn about The Graph’s new payment system, **GraphTally** [(previously Timeline Aggregation Protocol)](https://docs.rs/tap_core/latest/tap_core/index.html). This system provides fast, efficient microtransactions with minimized trust.
 
 ## Aperçu
 
-[TAP](https://docs.rs/tap_core/latest/tap_core/index.html) est un remplacement direct du système de paiement Scalar actuellement en place. Il offre les fonctionnalités clés suivantes :
+GraphTally is a drop-in replacement to the Scalar payment system currently in place. It provides the following key features:
 
 - Gère efficacement les micropaiements.
 - Ajoute une couche de consolidations aux transactions et aux coûts onchain.
 - Permet aux Indexeurs de contrôler les recettes et les paiements, garantissant ainsi le paiement des requêtes.
 - Il permet des passerelles décentralisées, sans confiance, et améliore les performances du service d'indexation pour les expéditeurs multiples.
 
-## Spécificités⁠
+### Spécificités⁠
 
-Le TAP permet à un expéditeur d'effectuer plusieurs paiements à un destinataire, **TAP Receipts**, qui regroupe ces paiements en un seul paiement, un **Receipt Aggregate Voucher**, également connu sous le nom de **RAV**. Ce paiement regroupé peut ensuite être vérifié sur la blockchain, ce qui réduit le nombre de transactions et simplifie le processus de paiement.
+GraphTally allows a sender to make multiple payments to a receiver, **Receipts**, which aggregates these payments into a single payment, a **Receipt Aggregate Voucher**, also known as a **RAV**. This aggregated payment can then be verified on the blockchain, reducing the number of transactions and simplifying the payment process.
 
 Pour chaque requête, la passerelle vous enverra un `reçu signé` qui sera stocké dans votre base de données. Ensuite, ces requêtes seront agrégées par un `tap-agent` par le biais d'une demande. Vous recevrez ensuite un RAV. Vous pouvez mettre à jour un RAV en l'envoyant avec des reçus plus récents, ce qui générera un nouveau RAV avec une valeur plus élevée.
 
@@ -59,14 +59,14 @@ Tant que vous exécutez `tap-agent` et `indexer-agent`, tout sera exécuté auto
 | Signataires | `0xfF4B7A5EfD00Ff2EC3518D4F250A27e4c29A2211`  | `0xFb142dE83E261e43a81e9ACEADd1c66A0DB121FE`  |
 | Aggregateur | `https://tap-aggregator.network.thegraph.com` | `https://tap-aggregator.testnet.thegraph.com` |
 
-### Exigences
+### Prérequis
 
-En plus des conditions typiques pour faire fonctionner un Indexeur, vous aurez besoin d'un Endpoint `tap-escrow-subgraph` pour interroger les mises à jour de TAP. Vous pouvez utiliser The Graph Network pour interroger ou vous héberger vous-même sur votre `graph-node`.
+In addition to the typical requirements to run an indexer, you’ll need a `tap-escrow-subgraph` endpoint to query updates. You can use The Graph Network to query or host yourself on your `graph-node`.
 
-- [Subgraph Graph TAP Arbitrum Sepolia (pour le testnet The Graph )](https://thegraph.com/explorer/subgraphs/7ubx365MiqBH5iUz6XWXWT8PTof5BVAyEzdb8m17RvbD)
-- [Subgraph Graph TAP Arbitrum One (Pour le mainnet The Graph )](https://thegraph.com/explorer/subgraphs/4sukbNVTzGELnhdnpyPqsf1QqtzNHEYKKmJkgaT8z6M1)
+- [Graph TAP Arbitrum Sepolia Subgraph (for The Graph testnet)](https://thegraph.com/explorer/subgraphs/7ubx365MiqBH5iUz6XWXWT8PTof5BVAyEzdb8m17RvbD)
+- [Graph TAP Arbitrum One Subgraph (for The Graph mainnet)](https://thegraph.com/explorer/subgraphs/4sukbNVTzGELnhdnpyPqsf1QqtzNHEYKKmJkgaT8z6M1)
 
-> Note : `indexer-agent` ne gère pas actuellement l'indexation de ce subgraph comme il le fait pour le déploiement du subgraph réseau. Par conséquent, vous devez l'indexer manuellement.
+> Note: `indexer-agent` does not currently handle the indexing of this Subgraph like it does for the network Subgraph deployment. As a result, you have to index it manually.
 
 ## Guide De Migration
 
@@ -79,7 +79,7 @@ La version requise du logiciel peut être trouvée [ici](https://github.com/grap
 1. **Agent d'indexeur**
 
    - Suivez le [même processus](https://github.com/graphprotocol/indexer/pkgs/container/indexer-agent#graph-protocol-indexer-components).
-   - Donnez le nouvel argument `--tap-subgraph-endpoint` pour activer les nouveaux chemins de code TAP et permettre l'échange de RAVs TAP.
+   - Give the new argument `--tap-subgraph-endpoint` to activate the new GraphTally codepaths and enable redeeming of RAVs.
 
 2. **Indexer Service**
 
@@ -99,72 +99,72 @@ La version requise du logiciel peut être trouvée [ici](https://github.com/grap
 Pour une configuration minimale, utilisez le modèle suivant :
 
 ```bash
-# Vous devrez modifier *toutes* les valeurs ci-dessous pour qu'elles correspondent à votre configuration.
+# You will have to change *all* the values below to match your setup.
 #
-# Certaines des configurations ci-dessous sont des valeurs globales de graph network, que vous pouvez trouver ici :
+# Some of the config below are global graph network values, which you can find here:
 # <https://github.com/graphprotocol/indexer/tree/main/docs/networks>
 #
-# Astuce de pro : si vous devez charger certaines valeurs de l'environnement dans cette configuration, vous
-# pouvez les écraser avec des variables d'environnement. Par exemple, ce qui suit peut être remplacé
-# par [PREFIX]_DATABASE_POSTGRESURL, où PREFIX peut être `INDEXER_SERVICE` ou `TAP_AGENT` :
+# Pro tip: if you need to load some values from the environment into this config, you
+# can overwrite with environment variables. For example, the following can be replaced
+# by [PREFIX]_DATABASE_POSTGRESURL, where PREFIX can be `INDEXER_SERVICE` or `TAP_AGENT`:
 #
 # [database]
 # postgres_url = "postgresql://indexer:${POSTGRES_PASSWORD}@postgres:5432/indexer_components_0"
 
 [indexer]
-indexer_address = "0x111111111111111111111111111111111111111111"
+indexer_address = "0x1111111111111111111111111111111111111111"
 operator_mnemonic = "celery smart tip orange scare van steel radio dragon joy alarm crane"
 
 [database]
-# L'URL de la base de données Postgres utilisée pour les composants de l'Indexeur. La même base de données
-# qui est utilisée par `indexer-agent`. Il est prévu que `indexer-agent` crée
-# les tables nécessaires.
+# The URL of the Postgres database used for the indexer components. The same database
+# that is used by the `indexer-agent`. It is expected that `indexer-agent` will create
+# the necessary tables.
 postgres_url = "postgres://postgres@postgres:5432/postgres"
 
 [graph_node]
-# URL vers l'endpoint de requête de votre graph-node
+# URL to your graph-node's query endpoint
 query_url = "<http://graph-node:8000>"
-# URL vers l'endpoint d'état de votre graph-node
+# URL to your graph-node's status endpoint
 status_url = "<http://graph-node:8000/graphql>"
 
 [subgraphs.network]
-# URL de requête pour le subgraph Graph Network.
+# Query URL for the Graph Network Subgraph.
 query_url = "<http://example.com/network-subgraph>"
-# Facultatif, déploiement à rechercher dans le `graph-node` local, s'il est indexé localement.
-# L'indexation locale du subgraph est recommandée.
-# REMARQUE : utilisez uniquement `query_url` ou `deployment_id`
-deployment_id = "Qmaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+# Optional, deployment to look for in the local `graph-node`, if locally indexed.
+# Locally indexing the Subgraph is recommended.
+# NOTE: Use `query_url` or `deployment_id` only
+deployment_id = "Qmaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
 
 [subgraphs.escrow]
-# URL de requête pour le subgraph Escrow.
+# Query URL for the Escrow Subgraph.
 query_url = "<http://example.com/network-subgraph>"
-# Facultatif, déploiement à rechercher dans le `graph-node` local, s'il est indexé localement.
-# Il est recommandé d'indexer localement le subgraph.
-# REMARQUE : utilisez uniquement `query_url` ou `deployment_id`
-deployment_id = "Qmaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+# Optional, deployment to look for in the local `graph-node`, if locally indexed.
+# Locally indexing the Subgraph is recommended.
+# NOTE: Use `query_url` or `deployment_id` only
+deployment_id = "Qmaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
 
 [blockchain]
-# Le chain ID du réseau sur lequel The Graph Network s'exécute
+# The chain ID of the network that the graph network is running on
 chain_id = 1337
-# Adresse du contrat du vérificateur de bon de réception agrégé (RAV) de TAP.
-receives_verifier_address = "0x222222222222222222222222222222222222222222222"
+# Contract address of TAP's receipt aggregate voucher (RAV) verifier.
+receipts_verifier_address = "0x2222222222222222222222222222222222222222"
 
-############################################
-# Configurations spécifiques à tap-agent #
-##########################################
+########################################
+# Specific configurations to tap-agent #
+########################################
 [tap]
-# Il s'agit du montant des frais que vous êtes prêt à risquer à un moment donné. Par exemple,
-# si l'expéditeur cesse de fournir des RAV pendant suffisamment longtemps et que les frais dépassent ce
-# montant, le service d'indexation cessera d'accepter les requêtes de l'expéditeur
-# jusqu'à ce que les frais soient agrégés.
-# REMARQUE : utilisez des chaînes de caractère pour les valeurs décimales afin d'éviter les erreurs d'arrondi
-# p. ex. :
+# This is the amount of fees you are willing to risk at any given time. For ex.
+# if the sender stops supplying RAVs for long enough and the fees exceed this
+# amount, the indexer-service will stop accepting queries from the sender
+# until the fees are aggregated.
+# NOTE: Use strings for decimal values to prevent rounding errors
+# e.g:
 # max_amount_willing_to_lose_grt = "0.1"
 max_amount_willing_to_lose_grt = 20
 
 [tap.sender_aggregator_endpoints]
-# Clé-valeur de tous les expéditeurs et de leurs endpoint d'agrégation
-# Celle-ci ci-dessous concerne par exemple la passerelle de testnet E&N.
+# Key-Value of all senders and their aggregator endpoints
+# This one below is for the E&N testnet gateway for example.
 0xDDE4cfFd3D9052A9cb618fC05a1Cd02be1f2F467 = "https://tap-aggregator.network.thegraph.com"
 ```
 

@@ -1,25 +1,25 @@
 ---
-title: Subgraph Best Practice 4 - Improve Indexing Speed by Avoiding eth_calls
-sidebarTitle: 'Subgraph Best Practice 4: Avoiding eth_calls'
+title: 子图最佳实践4-通过避免eth_calls提高索引速度
+sidebarTitle: 避免eth_calls
 ---
 
 ## TLDR
 
-`eth_calls` are calls that can be made from a subgraph to an Ethereum node. These calls take a significant amount of time to return data, slowing down indexing. If possible, design smart contracts to emit all the data you need so you don’t need to use `eth_calls`.
+`eth_calls是可以从子图到以太坊节点进行的调用。这些调用需要大量时间来返回数据，从而减慢了索引速度。如果可能的话，设计智能合约来发出你需要的所有数据，这样你就不需要使用`eth_calls\`。
 
-## Why Avoiding `eth_calls` Is a Best Practice
+## 为什么避免`eth_calls`是一种最佳实践
 
-Subgraphs are optimized to index event data emitted from smart contracts. A subgraph can also index the data coming from an `eth_call`, however, this can significantly slow down subgraph indexing as `eth_calls` require making external calls to smart contracts. The responsiveness of these calls relies not on the subgraph but on the connectivity and responsiveness of the Ethereum node being queried. By minimizing or eliminating eth_calls in our subgraphs, we can significantly improve our indexing speed.
+子图经过优化，可以对智能合约发出的事件数据进行索引。子图也可以对来自`eth_calls`的数据进行索引，但是，这会大大减慢子图索引的速度，因为`eth_call`需要对智能合约进行外部调用。这些调用的响应性不依赖于子图，而是依赖于被查询的以太坊节点的连接性和响应性。通过最小化或消除子图中的eth_calls，我们可以显著提高索引速度。
 
-### What Does an eth_call Look Like?
+### Eth_call是什么样子的？
 
-`eth_calls` are often necessary when the data required for a subgraph is not available through emitted events. For example, consider a scenario where a subgraph needs to identify whether ERC20 tokens are part of a specific pool, but the contract only emits a basic `Transfer` event and does not emit an event that contains the data that we need:
+当子图所需的数据无法通过发出的事件获得时，通常需要`eth_calls`。例如，考虑一个场景，其中子图需要确定ERC20代币是否是特定池的一部分，但合约只发出一个基本的`转移`事件，而不发出包含我们所需数据的事件：
 
 ```yaml
-event Transfer(address indexed from, address indexed to, uint256 value);
+event Transfer(address indexed from, address indexed to, uint256 value)；
 ```
 
-Suppose the tokens' pool membership is determined by a state variable named `getPoolInfo`. In this case, we would need to use an `eth_call` to query this data:
+假设代币的池成员资格由名为`getPoolInfo`的状态变量决定。在这种情况下，我们需要使用`eth_call`来查询这些数据：
 
 ```typescript
 import { Address } from '@graphprotocol/graph-ts'
@@ -44,17 +44,17 @@ export function handleTransfer(event: Transfer): void {
 }
 ```
 
-This is functional, however is not ideal as it slows down our subgraph’s indexing.
+这是功能性的，但并不理想，因为它减缓了子图的索引速度。
 
-## How to Eliminate `eth_calls`
+## 如何消除`eth_calls`
 
-Ideally, the smart contract should be updated to emit all necessary data within events. For instance, modifying the smart contract to include pool information in the event could eliminate the need for `eth_calls`:
+理想情况下，智能合约应该更新已在事件中发出所有必要的数据。例如，修改智能合约以在事件中包含池信息可以消除对`eth_calls`的需求：
 
 ```
 event TransferWithPool(address indexed from, address indexed to, uint256 value, bytes32 indexed poolInfo);
 ```
 
-With this update, the subgraph can directly index the required data without external calls:
+通过此更新，子图可以直接索引所需的数据，而无需外部调用：
 
 ```typescript
 import { Address } from '@graphprotocol/graph-ts'
@@ -73,17 +73,17 @@ export function handleTransferWithPool(event: TransferWithPool): void {
 }
 ```
 
-This is much more performant as it has eliminated the need for `eth_calls`.
+这更具性能，因为它消除了对`eth_calls`的需求。
 
-## How to Optimize `eth_calls`
+## 如何优化`eth_calls`
 
-If modifying the smart contract is not possible and `eth_calls` are required, read “[Improve Subgraph Indexing Performance Easily: Reduce eth_calls](https://thegraph.com/blog/improve-subgraph-performance-reduce-eth-calls/)” by Simon Emanuel Schmid to learn various strategies on how to optimize `eth_calls`.
+如果无法修改智能合约并且需要`eth_calls`，请阅读“[轻松提高子图索引性能：减少eth_calls](https://thegraph.com/blog/improve-subgraph-performance-reduce-eth-calls/)”由Simon Emanuel Schmid教授所作，学习如何优化`eth_calls`的各种策略。
 
-## Reducing the Runtime Overhead of `eth_calls`
+## 降低`eth_calls`运行时的开销
 
-For the `eth_calls` that can not be eliminated, the runtime overhead they introduce can be minimized by declaring them in the manifest. When `graph-node` processes a block it performs all declared `eth_calls` in parallel before handlers are run. Calls that are not declared are executed sequentially when handlers run. The runtime improvement comes from performing calls in parallel rather than sequentially - that helps reduce the total time spent in calls but does not eliminate it completely.
+对于无法消除的`eth_calls`，可以通过在清单中声明来最小化引入的运行开销。当`graph-节点`处理一个块时，它会在处理程序运行之前并行执行所有声明的`eth_calls`。未声明的调用在处理程序运行时按顺序执行。运行时的改进来自并行而不是顺序执行调用，这有助于减少调用所花费的总时间，但并不能完全消除它。
 
-Currently, `eth_calls` can only be declared for event handlers. In the manifest, write
+目前，'eth_calls'只能为事件处理程序声明。在清单中，写
 
 ```yaml
 event: TransferWithPool(address indexed, address indexed, uint256, bytes32 indexed)
@@ -92,26 +92,26 @@ calls:
   ERC20.poolInfo: ERC20[event.address].getPoolInfo(event.params.to)
 ```
 
-The portion highlighted in yellow is the call declaration. The part before the colon is simply a text label that is only used for error messages. The part after the colon has the form `Contract[address].function(params)`. Permissible values for address and params are `event.address` and `event.params.<name>`.
+黄色突出显示的部分是调用声明。冒号之前的部分只是一个仅用于错误消息的文本标签。冒号后的部分的格式为`Contract[address].function（params）`。地址和参数的允许值是`event.address`和`event.params<name>`。
 
-The handler itself accesses the result of this `eth_call` exactly as in the previous section by binding to the contract and making the call. graph-node caches the results of declared `eth_calls` in memory and the call from the handler will retrieve the result from this in memory cache instead of making an actual RPC call.
+处理程序本身通过绑定到合约并进行调用来访问这个`eth_call`的结果，与上一节完全相同。graph-节点将声明的`eth_calls`结果缓存在内存中，处理程序的调用将从内存缓存中检索结果，而不是进行实际的RPC调用。
 
-Note: Declared eth_calls can only be made in subgraphs with specVersion >= 1.2.0.
+注意：声明的eth_calls只能在specVersion>=1.2.0的子图中创建。
 
-## Conclusion
+## 结论
 
-You can significantly improve indexing performance by minimizing or eliminating `eth_calls` in your subgraphs.
+通过最小化或消除子图中的`eth_calls`，我们可以显著提高索引性能。
 
-## Subgraph Best Practices 1-6
+## 子图最佳实践1-6
 
-1. [Improve Query Speed with Subgraph Pruning](/subgraphs/best-practices/pruning/)
+1. [通过子图修剪提高查询速度](/subgraphs/best-practices/pruning/)
 
-2. [Improve Indexing and Query Responsiveness by Using @derivedFrom](/subgraphs/best-practices/derivedfrom/)
+2. [使用@derivedFrom提高索引和查询响应能力](/subgraphs/best-practices/derivedfrom/)
 
-3. [Improve Indexing and Query Performance by Using Immutable Entities and Bytes as IDs](/subgraphs/best-practices/immutable-entities-bytes-as-ids/)
+3. [通过使用不可变实体和字节作为ID来提高索引和查询性能](/subgraphs/best-practices/immutable-entities-bytes-as-ids/)
 
-4. [Improve Indexing Speed by Avoiding `eth_calls`](/subgraphs/best-practices/avoid-eth-calls/)
+4. [通过避免`eth_calls`提高索引速度](/subgraphs/best-practices/avoid-eth-calls/)
 
-5. [Simplify and Optimize with Timeseries and Aggregations](/subgraphs/best-practices/timeseries/)
+5. [通过时间序列和聚合进行简化和优化](/subgraphs/best-practices/timeseries/)
 
-6. [Use Grafting for Quick Hotfix Deployment](/subgraphs/best-practices/grafting-hotfix/)
+6. [使用嫁接快速部署修补程序](/subgraphs/best-practices/grafting-hotfix/)

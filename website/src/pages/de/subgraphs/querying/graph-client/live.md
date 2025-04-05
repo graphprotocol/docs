@@ -1,10 +1,10 @@
-# `@live` queries in `graph-client`
+# `@live`-Abfragen im `graph-client`
 
-Graph-Client implements a custom `@live` directive that can make every GraphQL query work with real-time data.
+Graph-Client implementiert eine benutzerdefinierte `@live`-Direktive, mit der jede GraphQL-Abfrage mit Echtzeitdaten arbeiten kann.
 
-## Getting Started
+## Erste Schritte
 
-Start by adding the following configuration to your `.graphclientrc.yml` file:
+Beginnen Sie, indem Sie die folgende Konfiguration zu Ihrer `.graphclientrc.yml`-Datei hinzufügen:
 
 ```yaml
 plugins:
@@ -12,9 +12,9 @@ plugins:
       defaultInterval: 1000
 ```
 
-## Usage
+## Verwendung
 
-Set the default update interval you wish to use, and then you can apply the following GraphQL `@directive` over your GraphQL queries:
+Legen Sie das standardmäßige Aktualisierungsintervall fest, das Sie verwenden möchten, und wenden Sie dann die folgende GraphQL-`@directive` auf Ihre GraphQL-Abfragen an:
 
 ```graphql
 query ExampleQuery @live {
@@ -26,7 +26,7 @@ query ExampleQuery @live {
 }
 ```
 
-Or, you can specify a per-query interval:
+Sie können auch ein Intervall pro Abfrage festlegen:
 
 ```graphql
 query ExampleQuery @live(interval: 5000) {
@@ -36,8 +36,8 @@ query ExampleQuery @live(interval: 5000) {
 }
 ```
 
-## Integrations
+## Integrationen
 
-Since the entire network layer (along with the `@live` mechanism) is implemented inside `graph-client` core, you can use Live queries with every GraphQL client (such as Urql or Apollo-Client), as long as it supports streame responses (`AsyncIterable`).
+Da die gesamte Netzwerkschicht (zusammen mit dem `@live`-Mechanismus) innerhalb des `graph-client`-Kerns implementiert ist, können Sie Live-Abfragen mit jedem GraphQL-Client (wie z. B. Urql oder Apollo-Client) verwenden, solange dieser Streame-Antworten (`AsyncIterable`) unterstützt.
 
-No additional setup is required for GraphQL clients cache updates.
+Für die Cache-Aktualisierung von GraphQL-Clients ist keine zusätzliche Einrichtung erforderlich.

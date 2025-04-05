@@ -1,50 +1,50 @@
-# The Graph Client Architecture
+# Arquitetura do The Graph Client
 
-To address the need to support a distributed network, we plan to take several actions to ensure The Graph client provides everything app needs:
+Para resolver a necessidade de oferecer apoio a uma rede distribuída, temos planos para garantir que o Graph Client forneça tudo que o aplicativo precisa:
 
-1. Compose multiple Subgraphs (on the client-side)
-2. Fallback to multiple indexers/sources/hosted services
-3. Automatic/Manual source picking strategy
-4. Agnostic core, with the ability to run integrate with any GraphQL client
+1. Composição de múltiplos subgraphs (no lado do cliente)
+2. Retorno a múltiplos indexadores/fontes de dados/serviços hospedados
+3. Estratégia de seleção de fonte: automática/manual
+4. Núcleo agnóstico, capaz de integrar com qualquer cliente GraphQL
 
-## Standalone mode
+## Modo avulso
 
 ```mermaid
 graph LR;
     c[Browser/Node]-->|executes|g[Graph-Client];
-    g-->op[Orchestrator/Query Planner]
+    g-->op[Orquestrador/Planejador de Queries]
     op-->sA[Subgraph A];
     op-->sB[Subgraph B];
 ```
 
-## With any GraphQL client
+## Com qualquer cliente GraphQL
 
 ```mermaid
 graph LR;
-    c[Any GraphQL Client]-->|fetch/Urql Exchange/Apollo Link|l[Compatibility Layer];
+    c[Any GraphQL Client]-->|fetch/Urql Exchange/Apollo Link|l[Camada de Compatibilidade];
     l-->|executes|g[Graph-Client];
-    g-->op[Orchestrator/Query Planner]
+    g-->op[Orquestrador/Planejador de Queries]
     op-->sA[Subgraph A];
     op-->sB[Subgraph B];
 ```
 
-## Subgraph Composition
+## Composição de Subgraph
 
-To allow simple and efficient client-side composition, we'll use [`graphql-tools`](https://graphql-tools.com) to create a remote schema / Executor, then can be hooked into the GraphQL client.
+Para permitir uma composição simples e eficiente do lado do cliente, utilizaremos [`graphql-tools`](https://graphql-tools.com) para criar um esquema remoto / Executor, que pode ser ligado ao cliente GraphQL.
 
-API could be either raw `graphql-tools` transformers, or using [GraphQL-Mesh declarative API](https://graphql-mesh.com/docs/transforms/transforms-introduction) for composing the schema.
+A API poderia consistir de transformadores brutos `graphql-tools`, ou usar a [API declarativa da GraphQL-Mesh](https://graphql-mesh.com/docs/transforms/transforms-introduction) para compor o esquema.
 
 ```mermaid
 graph LR;
-    g[GraphQL Schema/Executor]-->m{Composer};
-    m-->s1[Subgraph A GraphQL schema];
-    m-->s2[Subgraph B GraphQL schema];
-    m-->s3[Subgraph C GraphQL schema];
+    g[Schema GraphQL/Executor]-->m{Composer};
+    m-->s1[Schema GraphQL do Subgraph A];
+    m-->s2[Schema GraphQL do Subgraph B];
+    m-->s3[Schema GraphQL do Subgraph C];
 ```
 
-## Subgraph Execution Strategies
+## Estratégias de Execução de Subgraph
 
-Within every Subgraph defined as source, there will be a way to define it's source(s) indexer and the querying strategy, here are a few options:
+Dentro de cada Subgraph definido como fonte, haverá uma maneira de definir o seu indexador(es) de fontes e a estratégia de queries; veja algumas opções:
 
 ```mermaid
 graph LR;
@@ -85,19 +85,19 @@ graph LR;
     end
 ```
 
-> We can ship a several built-in strategies, along with a simple interfaces to allow developers to write their own.
+> Podemos enviar várias estratégias embutidas, junto a uma interface simples para permitir que os programadores escrevam as suas próprias.
 
-To take the concept of strategies to the extreme, we can even build a magical layer that does subscription-as-query, with any hook, and provide a smooth DX for dapps:
+Para levar o conceito de estratégias ao extremo, podemos até construir uma camada mágica com um modelo de assinatura-como-query, com qualquer gancho, e fornecer um DX suave para dapps:
 
 ```mermaid
 graph LR;
     app[App]-->|subscription somedata|c;
-    c[Any GraphQL Client]-->l[Compatibility Layer];
-    l-->|executes|g[GraphQL Schema/Executor];
-    g-->op[Orchestrator]
+    c[Qualquer Cliente GraphQL]-->l[Camada de Compatibilidade];
+    l-->|executes|g[Schema da GraphQL/Executor];
+    g-->op[Orquestrador]
     op-->|query somedata|sA[Subgraph];
-    sc[Smart Contract]-->|change event|op;
+    sc[Contrato Inteligente]-->|change event|op;
 ```
 
-With this mechanism, developers can write and execute GraphQL `subscription`, but under the hood we'll execute a GraphQL `query` to The Graph indexers, and allow to connect any external hook/probe for re-running the operation.
-This way, we can watch for changes on the Smart Contract itself, and the GraphQL client will fill the gap on the need to real-time changes from The Graph.
+Com este mecanismo, os programadores podem escrever e executar o `subscription` da GraphQL, mas em segundo plano, executaremos um `query` da GraphQL para os indexadores do The Graph e vamos conectar qualquer gancho/sonda externa para executar a operação novamente.
+Assim, poderemos procurar mudanças no Contrato Inteligente, e o cliente da GraphQL preencherá o vazio da necessidade de fazer mudanças em tempo real a partir do The Graph.
