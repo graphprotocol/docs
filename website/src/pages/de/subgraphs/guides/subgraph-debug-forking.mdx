@@ -1,26 +1,26 @@
 ---
-title: Quick and Easy Subgraph Debugging Using Forks
+title: Schnelles und einfaches Debuggen von Subgraphen mit Forks
 ---
 
-As with many systems processing large amounts of data, The Graph's Indexers (Graph Nodes) may take quite some time to sync-up your Subgraph with the target blockchain. The discrepancy between quick changes with the purpose of debugging and long wait times needed for indexing is extremely counterproductive and we are well aware of that. This is why we are introducing **Subgraph forking**, developed by [LimeChain](https://limechain.tech/), and in this article I will show you how this feature can be used to substantially speed-up Subgraph debugging!
+Wie bei vielen Systemen, die große Datenmengen verarbeiten, können die Indexierer (Graph Nodes) von The Graph einige Zeit benötigen, um Ihren Subgraphen mit der Ziel-Blockchain zu synchronisieren. Die Diskrepanz zwischen schnellen Änderungen zum Zweck der Fehlersuche und langen Wartezeiten für die Indizierung ist äußerst kontraproduktiv und wir sind uns dessen bewusst. Aus diesem Grund führen wir das **Subgraph forking** ein, das von [LimeChain] (https://limechain.tech/) entwickelt wurde, und in diesem Artikel zeige ich Ihnen, wie diese Funktion genutzt werden kann, um das Debuggen von Subgraphen erheblich zu beschleunigen!
 
-## Ok, what is it?
+## Ok, was ist es?
 
-**Subgraph forking** is the process of lazily fetching entities from _another_ Subgraph's store (usually a remote one).
+**Subgraph forking** ist der Prozess, bei dem Entitäten aus dem Speicher eines _anderen_ Subgraphen (normalerweise eines entfernten) geholt werden.
 
-In the context of debugging, **Subgraph forking** allows you to debug your failed Subgraph at block _X_ without needing to wait to sync-up to block _X_.
+Im Zusammenhang mit der Fehlersuche ermöglicht **Subgraph forking** die Fehlersuche in einem fehlgeschlagenen Subgraphen im Block _X_, ohne dass Sie auf die Synchronisierung mit Block _X_ warten müssen.
 
-## What?! How?
+## Was? Wie?
 
-When you deploy a Subgraph to a remote Graph Node for indexing and it fails at block _X_, the good news is that the Graph Node will still serve GraphQL queries using its store, which is synced-up to block _X_. That's great! This means we can take advantage of this "up-to-date" store to fix the bugs arising when indexing block _X_.
+Wenn Sie einen Subgraphen an einen entfernten Graph Node zur Indizierung bereitstellen und dieser bei Block _X_ ausfällt, ist die gute Nachricht, dass der Graph Node weiterhin GraphQL-Abfragen mit seinem Speicher bedient, der mit Block _X_ synchronisiert ist. Das ist großartig! Das bedeutet, dass wir diesen „aktuellen“ Speicher nutzen können, um die Fehler zu beheben, die bei der Indizierung von Block _X_ auftreten.
 
-In a nutshell, we are going to _fork the failing Subgraph_ from a remote Graph Node that is guaranteed to have the Subgraph indexed up to block _X_ in order to provide the locally deployed Subgraph being debugged at block _X_ an up-to-date view of the indexing state.
+Kurz gesagt, wir _forken den fehlgeschlagenen Subgraphen_ von einem entfernten Graph Node, der garantiert den Subgraphen bis zum Block _X_ indiziert hat, um dem lokal eingesetzten Subgraphen, der im Block _X_ debuggt wird, eine aktuelle Sicht auf den Indizierungsstatus zu geben.
 
-## Please, show me some code!
+## Bitte, zeigen Sie mir einen Code!
 
-To stay focused on Subgraph debugging, let's keep things simple and run along with the [example-Subgraph](https://github.com/graphprotocol/graph-tooling/tree/main/examples/ethereum-gravatar) indexing the Ethereum Gravity smart contract.
+Um uns auf das Debuggen von Subgraphen zu konzentrieren, halten wir die Dinge einfach und führen den [Beispiel-Subgraph](https://github.com/graphprotocol/graph-tooling/tree/main/examples/ethereum-gravatar) aus, der den Ethereum Gravity Smart Contract indiziert.
 
-Here are the handlers defined for indexing `Gravatar`s, with no bugs whatsoever:
+Hier sind die für die Indizierung von `Gravatar` definierten Handler, die keinerlei Fehler aufweisen:
 
 ```tsx
 export function handleNewGravatar(event: NewGravatar): void {
@@ -44,43 +44,43 @@ export function handleUpdatedGravatar(event: UpdatedGravatar): void {
 }
 ```
 
-Oops, how unfortunate, when I deploy my perfect looking Subgraph to [Subgraph Studio](https://thegraph.com/studio/) it fails with the _"Gravatar not found!"_ error.
+Oops, wie schade, wenn ich meinen perfekt aussehenden Subgraphen in [Subgraph Studio] (https://thegraph.com/studio/) einsetze, schlägt er mit der Fehlermeldung _„Gravatar not found!“_ fehl.
 
-The usual way to attempt a fix is:
+Der übliche Weg, eine Lösung zu finden, ist:
 
-1. Make a change in the mappings source, which you believe will solve the issue (while I know it won't).
-2. Re-deploy the Subgraph to [Subgraph Studio](https://thegraph.com/studio/) (or another remote Graph Node).
-3. Wait for it to sync-up.
-4. If it breaks again go back to 1, otherwise: Hooray!
+1. Nehmen Sie eine Änderung in der Mappingquelle vor, von der Sie glauben, dass sie das Problem lösen wird (während ich weiß, dass sie es nicht tut).
+2. Stellen Sie den Subgraphen erneut in [Subgraph Studio](https://thegraph.com/studio/) (oder einem anderen entfernten Graph-Knoten) bereit.
+3. Warten Sie, bis es synchronisiert wird.
+4. Wenn es wieder bricht, gehen Sie zurück zu 1, sonst: Hurra!
 
-It is indeed pretty familiar to an ordinary debug process, but there is one step that horribly slows down the process: _3. Wait for it to sync-up._
+Es ist in der Tat ziemlich vertraut mit einem normalen Debug-Prozess, aber es gibt einen Schritt, der den Prozess schrecklich verlangsamt: _3. Warten Sie auf die Synchronisierung._
 
-Using **Subgraph forking** we can essentially eliminate this step. Here is how it looks:
+Mit **Subgraph forking** können wir diesen Schritt im Wesentlichen eliminieren. So sieht es aus:
 
-0. Spin-up a local Graph Node with the **_appropriate fork-base_** set.
-1. Make a change in the mappings source, which you believe will solve the issue.
-2. Deploy to the local Graph Node, **_forking the failing Subgraph_** and **_starting from the problematic block_**.
-3. If it breaks again, go back to 1, otherwise: Hooray!
+0. Starten Sie einen lokalen Graph-Knotens mit der **_geeigneten fork-base_**-Satz.
+1. Nehmen Sie eine Änderung in der Mappingquelle vor, von der Sie glauben, dass sie das Problem lösen wird.
+2. Bereitstellung auf dem lokalen Graph Node, **_Forking des fehlgeschlagenen Subgraphs_** und **_Start vom problematischen Block_**.
+3. Wenn es wieder bricht, gehen Sie zurück zu 1, sonst: Hurra!
 
-Now, you may have 2 questions:
+Jetzt haben Sie vielleicht 2 Fragen:
 
-1. fork-base what???
-2. Forking who?!
+1. fork-base, was???
+2. Forking von wem?!
 
-And I answer:
+Und ich antworte:
 
-1. `fork-base` is the "base" URL, such that when the _subgraph id_ is appended the resulting URL (`<fork-base>/<subgraph-id>`) is a valid GraphQL endpoint for the Subgraph's store.
-2. Forking is easy, no need to sweat:
+1. `fork-base` ist die ‚Basis‘-URL, so dass, wenn die _subgraph id_ angehängt wird, die resultierende URL (<fork-base>/<subgraph-id>\`) ein gültiger GraphQL-Endpunkt für den Subgraph-Speicher ist.
+2. Forken ist einfach, keine Notwendigkeit zu schwitzen :
 
 ```bash
 $ graph deploy <subgraph-name> --debug-fork <subgraph-id> --ipfs http://localhost:5001 --node http://localhost:8020
 ```
 
-Also, don't forget to set the `dataSources.source.startBlock` field in the Subgraph manifest to the number of the problematic block, so you can skip indexing unnecessary blocks and take advantage of the fork!
+Vergessen Sie auch nicht, das Feld `dataSources.source.startBlock` im Subgraph-Manifest auf die Nummer des problematischen Blocks zu setzen, damit Sie die Indizierung unnötiger Blöcke überspringen und die Vorteile der Gabelung nutzen können!
 
-So, here is what I do:
+Also, ich mache Folgendes:
 
-1. I spin-up a local Graph Node ([here is how to do it](https://github.com/graphprotocol/graph-node#running-a-local-graph-node)) with the `fork-base` option set to: `https://api.thegraph.com/subgraphs/id/`, since I will fork a Subgraph, the buggy one I deployed earlier, from [Subgraph Studio](https://thegraph.com/studio/).
+1. Ich erstelle einen lokalen Graph Node ([hier wird erklärt, wie man es macht](https://github.com/graphprotocol/graph-node#running-a-local-graph-node)) mit der Option `fork-base` auf: `https://api.thegraph.com/subgraphs/id/`, da ich einen Subgraphen, den fehlerhaften, den ich zuvor eingesetzt habe, von [Subgraph Studio](https://thegraph.com/studio/) forken werde.
 
 ```
 $ cargo run -p graph-node --release -- \
@@ -90,12 +90,12 @@ $ cargo run -p graph-node --release -- \
     --fork-base https://api.thegraph.com/subgraphs/id/
 ```
 
-2. After careful inspection I notice that there is a mismatch in the `id` representations used when indexing `Gravatar`s in my two handlers. While `handleNewGravatar` converts it to a hex (`event.params.id.toHex()`), `handleUpdatedGravatar` uses an int32 (`event.params.id.toI32()`) which causes the `handleUpdatedGravatar` to panic with "Gravatar not found!". I make them both convert the `id` to a hex.
-3. After I made the changes I deploy my Subgraph to the local Graph Node, **_forking the failing Subgraph_** and setting `dataSources.source.startBlock` to `6190343` in `subgraph.yaml`:
+2. Nach sorgfältiger Prüfung stelle ich fest, dass es eine Unstimmigkeit in der `id`-Darstellung gibt, die bei der Indizierung von `Gravatar` in meinen beiden Handlern verwendet wird. Während `handleNewGravatar` sie in eine Hexadezimaldarstellung umwandelt (`event.params.id.toHex()`), verwendet `handleUpdatedGravatar` eine int32-Darstellung (`event.params.id.toI32()`), was dazu führt, dass `handleUpdatedGravatar` in Panik gerät mit „Gravatar not found!“. Ich lasse sie beide die `id` in eine Hexadezimalzahl konvertieren.
+3. Nachdem ich die Änderungen vorgenommen habe, verteile ich meinen Subgraphen auf dem lokalen Graph Node, **_forking the failing Subgraph_** und setze `dataSources.source.startBlock` auf `6190343` in `subgraph.yaml`:
 
 ```bash
 $ graph deploy gravity --debug-fork QmNp169tKvomnH3cPXTfGg4ZEhAHA6kEq5oy1XDqAxqHmW --ipfs http://localhost:5001 --node http://localhost:8020
 ```
 
-4. I inspect the logs produced by the local Graph Node and, Hooray!, everything seems to be working.
-5. I deploy my now bug-free Subgraph to a remote Graph Node and live happily ever after! (no potatoes tho)
+4. Ich schaue mir die vom lokalen Graph Node erstellten Protokolle an, und - hurra - alles scheint zu funktionieren.
+5. Ich verteile meinen nun fehlerfreien Subgraphen an einen entfernten Graph Node und lebe glücklich bis ans Ende meiner Tage! (allerdings ohne Kartoffeln)
