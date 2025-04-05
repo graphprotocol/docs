@@ -1,102 +1,102 @@
 ---
-title: TAP Migration Guide
+title: GraphTally Guide
 ---
 
-Learn about The Graph’s new payment system, **Timeline Aggregation Protocol, TAP**. This system provides fast, efficient microtransactions with minimized trust.
+Learn about The Graph’s new payment system, **GraphTally** [(previously Timeline Aggregation Protocol)](https://docs.rs/tap_core/latest/tap_core/index.html). This system provides fast, efficient microtransactions with minimized trust.
 
 ## Genel Bakış
 
-[TAP](https://docs.rs/tap_core/latest/tap_core/index.html) is a drop-in replacement to the Scalar payment system currently in place. It provides the following key features:
+GraphTally is a drop-in replacement to the Scalar payment system currently in place. It provides the following key features:
 
-- Efficiently handles micropayments.
-- Adds a layer of consolidations to onchain transactions and costs.
-- Allows Indexers control of receipts and payments, guaranteeing payment for queries.
-- It enables decentralized, trustless gateways and improves `indexer-service` performance for multiple senders.
+- Mikro ödemelerin üstesinden etkili bir şekilde gelir.
+- Zincir üstünde yapılan işlemler ve maliyetler için bir birleştirme katmanı ekler.
+- Endeksleyicilerin makbuzlar ve ödemeler üzerinde kontrol sahibi olmasına olanak tanır, sorgular için garanti ödeme sağlar.
+- Merkeziyetsiz, güven gerektirmeyen ağ geçitlerine olanak sağlar ve birden fazla gönderici olması durumunda `indexer-service` performansını artırır.
 
-## Ayrıntılar
+### Ayrıntılar
 
-TAP allows a sender to make multiple payments to a receiver, **TAP Receipts**, which aggregates these payments into a single payment, a **Receipt Aggregate Voucher**, also known as a **RAV**. This aggregated payment can then be verified on the blockchain, reducing the number of transactions and simplifying the payment process.
+GraphTally allows a sender to make multiple payments to a receiver, **Receipts**, which aggregates these payments into a single payment, a **Receipt Aggregate Voucher**, also known as a **RAV**. This aggregated payment can then be verified on the blockchain, reducing the number of transactions and simplifying the payment process.
 
-For each query, the gateway will send you a `signed receipt` that is stored on your database. Then, these queries will be aggregated by a `tap-agent` through a request. Afterwards, you’ll receive a RAV. You can update a RAV by sending it with newer receipts and this will generate a new RAV with an increased value.
+Ağ geçidi her sorgu için size veritabanınızda saklanan bir `signed receipt` (imzalı makbuz) gönderecektir. Daha sonra, bu sorgular bir `tap-agent` tarafından bir istek aracılığıyla toplulaştırılacaktır. Sonrasında size bir RAV gönderilecek. RAV'ı, sonradan aldığınız yeni makbuzlarla birlikte göndererek güncelleyebilirsiniz. Bu yeni oluşan RAV'ın değeri önceki RAV'ın ve sonradan eklediğiniz makbuzların toplamı olacaktır.
 
-### RAV Details
+### RAV Ayrıntıları
 
-- It’s money that is waiting to be sent to the blockchain.
+- RAV blokzincirine gönderilmeyi bekleyen paradır.
 
-- It will continue to send requests to aggregate and ensure that the total value of non-aggregated receipts does not exceed the `amount willing to lose`.
+- RAV, toplulaştırma işlemini sürdürmek için istekler göndermeye devam edecek ve toplulaştırılmamış makbuzların toplam değerinin `amount willing to lose`'u (kaybetmesi göze alınan tutarı) aşmamasını sağlayacaktır.
 
-- Each RAV can be redeemed once in the contracts, which is why they are sent after the allocation is closed.
+- Her bir RAV, akıllı sözleşmelerde yalnızca bir kez kullanılabilir, bu yüzden tahsis kapandıktan sonra gönderilir.
 
-### Redeeming RAV
+### RAV'i Kullanma
 
-As long as you run `tap-agent` and `indexer-agent`, everything will be executed automatically. The following provides a detailed breakdown of the process:
+`tap-agent` ve `indexer-agent` komutlarını çalıştırdığınız sürece, her şey otomatik olarak yürütülecektir. Aşağıda sürecin ayrıntılı bir açıklaması verilmiştir:
 
-1. An Indexer closes allocation.
+1. Bir Endeksleyici tahsisi kapatır.
 
-2. `<recently-closed-allocation-buffer> period, tap-agent` takes all pending receipts for that specific allocation and requests an aggregation into a RAV, marking it as `last`.
+2. `<recently-closed-allocation-buffer>` dönemi boyunca `tap-agent`, söz konusu tahsis için bekleyen tüm makbuzları alır ve bu makbuzları bir RAV içine toplulaştırma talebi oluştur. Bu talebi `last` (son) olarak işaretler.
 
-3. `indexer-agent` takes all the last RAVS and sends redeem requests to the blockchain, which will update the value of `redeem_at`.
+3. `indexer-agent`, tüm son RAV'leri alır ve blokzincirine kullanma talepleri gönderir, bu da `redeem_at` değerini güncelleyecektir.
 
-4. During the `<finality-time>` period, `indexer-agent` monitors if the blockchain has any reorganizations that revert the transaction.
+4. `<finality-time>` dönemi boyunca, `indexer-agent`, blokzincirinin işlemi geri çeviren herhangi bir yeniden düzenleme (reorg) yaşayıp yaşamadığını izler.
 
-   - If it was reverted, the RAV is resent to the blockchain. If it was not reverted, it gets marked as `final`.
+   - Eğer işlem geri çevrildiyse, RAV tekrar blokzincire gönderilir. Eğer geri çevrilmediyse, `final` (nihai) olarak işaretlenir.
 
-## Blockchain Addresses
+## Blokzinciri Adresleri
 
-### Contracts
+### Sözleşmeler
 
-| Contract            | Arbitrum Mainnet (42161)                     | Arbitrum Sepolia (421614)                    |
-| ------------------- | -------------------------------------------- | -------------------------------------------- |
-| TAP Verifier        | `0x33f9E93266ce0E108fc85DdE2f71dab555A0F05a` | `0xfC24cE7a4428A6B89B52645243662A02BA734ECF` |
-| AllocationIDTracker | `0x5B2F33d7Ca6Ec88f5586f2528f58c20843D9FE7c` | `0xAaC28a10d707bbc6e02029f1bfDAEB5084b2aD11` |
-| Escrow              | `0x8f477709eF277d4A880801D01A140a9CF88bA0d3` | `0x1e4dC4f9F95E102635D8F7ED71c5CdbFa20e2d02` |
+| Sözleşme                     | Arbitrum Ana Ağı (42161)                     | Arbitrum Sepolia (421614)                    |
+| ---------------------------- | -------------------------------------------- | -------------------------------------------- |
+| TAP Doğrulayıcı              | `0x33f9E93266ce0E108fc85DdE2f71dab555A0F05a` | `0xfC24cE7a4428A6B89B52645243662A02BA734ECF` |
+| AllocationIDTracker          | `0x5B2F33d7Ca6Ec88f5586f2528f58c20843D9FE7c` | `0xAaC28a10d707bbc6e02029f1bfDAEB5084b2aD11` |
+| Emanet (Escrow)              | `0x8f477709eF277d4A880801D01A140a9CF88bA0d3` | `0x1e4dC4f9F95E102635D8F7ED71c5CdbFa20e2d02` |
 
-### Gateway
+### Ağ Geçidi
 
-| Component  | Edge and Node Mainnet (Arbitrum Mainnet)      | Edge and Node Testnet (Arbitrum Sepolia)      |
-| ---------- | --------------------------------------------- | --------------------------------------------- |
-| Sender     | `0xDDE4cfFd3D9052A9cb618fC05a1Cd02be1f2F467`  | `0xC3dDf37906724732FfD748057FEBe23379b0710D`  |
-| Signers    | `0xfF4B7A5EfD00Ff2EC3518D4F250A27e4c29A2211`  | `0xFb142dE83E261e43a81e9ACEADd1c66A0DB121FE`  |
-| Aggregator | `https://tap-aggregator.network.thegraph.com` | `https://tap-aggregator.testnet.thegraph.com` |
+| Bileşen                     | Edge and Node Mainnet (Arbitrum Mainnet)      | Edge and Node Testnet (Arbitrum Sepolia)      |
+| --------------------------- | --------------------------------------------- | --------------------------------------------- |
+| Gönderen                    | `0xDDE4cfFd3D9052A9cb618fC05a1Cd02be1f2F467`  | `0xC3dDf37906724732FfD748057FEBe23379b0710D`  |
+| İmzalayıcılar (Signers)     | `0xfF4B7A5EfD00Ff2EC3518D4F250A27e4c29A2211`  | `0xFb142dE83E261e43a81e9ACEADd1c66A0DB121FE`  |
+| Toplulaştırıcı (Aggregator) | `https://tap-aggregator.network.thegraph.com` | `https://tap-aggregator.testnet.thegraph.com` |
 
-### Gereksinimler
+### Prerequisites
 
-In addition to the typical requirements to run an indexer, you’ll need a `tap-escrow-subgraph` endpoint to query TAP updates. You can use The Graph Network to query or host yourself on your `graph-node`.
+In addition to the typical requirements to run an indexer, you’ll need a `tap-escrow-subgraph` endpoint to query updates. You can use The Graph Network to query or host yourself on your `graph-node`.
 
-- [Graph TAP Arbitrum Sepolia subgraph (for The Graph testnet)](https://thegraph.com/explorer/subgraphs/7ubx365MiqBH5iUz6XWXWT8PTof5BVAyEzdb8m17RvbD)
-- [Graph TAP Arbitrum One subgraph (for The Graph mainnet)](https://thegraph.com/explorer/subgraphs/4sukbNVTzGELnhdnpyPqsf1QqtzNHEYKKmJkgaT8z6M1)
+- [Graph TAP Arbitrum Sepolia Subgraph (for The Graph testnet)](https://thegraph.com/explorer/subgraphs/7ubx365MiqBH5iUz6XWXWT8PTof5BVAyEzdb8m17RvbD)
+- [Graph TAP Arbitrum One Subgraph (for The Graph mainnet)](https://thegraph.com/explorer/subgraphs/4sukbNVTzGELnhdnpyPqsf1QqtzNHEYKKmJkgaT8z6M1)
 
-> Note: `indexer-agent` does not currently handle the indexing of this subgraph like it does for the network subgraph deployment. As a result, you have to index it manually.
+> Note: `indexer-agent` does not currently handle the indexing of this Subgraph like it does for the network Subgraph deployment. As a result, you have to index it manually.
 
-## Migration Guide
+## Geçiş Kılavuzu
 
-### Software versions
+### Yazılım sürümleri
 
-The required software version can be found [here](https://github.com/graphprotocol/indexer/blob/main/docs/networks/arbitrum-one.md#latest-releases).
+Gerekli yazılım sürümü [burada](https://github.com/graphprotocol/indexer/blob/main/docs/networks/arbitrum-one.md#latest-releases) bulunabilir.
 
-### Steps
+### Adımlar
 
-1. **Indexer Agent**
+1. **Endeksleyici Aracı**
 
-   - Follow the [same process](https://github.com/graphprotocol/indexer/pkgs/container/indexer-agent#graph-protocol-indexer-components).
-   - Give the new argument `--tap-subgraph-endpoint` to activate the new TAP codepaths and enable redeeming of TAP RAVs.
+   - [Buradaki süreci](https://github.com/graphprotocol/indexer/pkgs/container/indexer-agent#graph-protocol-indexer-components) takip edin.
+   - Give the new argument `--tap-subgraph-endpoint` to activate the new GraphTally codepaths and enable redeeming of RAVs.
 
-2. **Indexer Service**
+2. **Endeksleyici Hizmeti**
 
-   - Fully replace your current configuration with the [new Indexer Service rs](https://github.com/graphprotocol/indexer-rs). It's recommend that you use the [container image](https://github.com/orgs/graphprotocol/packages?repo_name=indexer-rs).
-   - Like the older version, you can scale Indexer Service horizontally easily. It is still stateless.
+   - Mevcut yapılandırmanızı tamamen [yeni Indexer Service rs (Endeksleyici Hizmeti)](https://github.com/graphprotocol/indexer-rs) ile değiştirin. [Konteyner imajını](https://github.com/orgs/graphprotocol/packages?repo_name=indexer-rs) kullanmanız tavsiye edilir.
+   - Eski versiyonda olduğu gibi, Endeksleyici Hizmeti'ni yatay olarak kolayca ölçekleyebilirsiniz. Hala durumsuz (stateless) bir yapıya sahiptir.
 
-3. **TAP Agent**
+3. **TAP Aracı**
 
-   - Run _one_ single instance of [TAP Agent](https://github.com/graphprotocol/indexer-rs) at all times. It's recommend that you use the [container image](https://github.com/orgs/graphprotocol/packages?repo_name=indexer-rs).
+   - Her zaman [TAP Aracı](https://github.com/graphprotocol/indexer-rs)'nın _tek_ bir örneğini çalıştırın. [Konteyner imajını](https://github.com/orgs/graphprotocol/packages?repo_name=indexer-rs) kullanmanız önerilir.
 
-4. **Configure Indexer Service and TAP Agent**
+4. **Endeksleyici Servisi'ni ve TAP Aracı'nı Yapılandırma**
 
-   Configuration is a TOML file shared between `indexer-service` and `tap-agent`, supplied with the argument `--config /path/to/config.toml`.
+   Yapılandırma, `indexer-service` ve `tap-agent` arasında paylaşılan bir TOML dosyasıdır ve `--config /path/to/config.toml` argümanı ile sağlanır.
 
-   Check out the full [configuration](https://github.com/graphprotocol/indexer-rs/blob/main/config/maximal-config-example.toml) and the [default values](https://github.com/graphprotocol/indexer-rs/blob/main/config/default_values.toml)
+   Tam [yapılandırmaya](https://github.com/graphprotocol/indexer-rs/blob/main/config/maximal-config-example.toml) ve [varsayılan değerlere](https://github.com/graphprotocol/indexer-rs/blob/main/config/default_values.toml) göz atın.
 
-For minimal configuration, use the following template:
+Minimal yapılandırma için aşağıdaki şablonu kullanın:
 
 ```bash
 # You will have to change *all* the values below to match your setup.
@@ -128,18 +128,18 @@ query_url = "<http://graph-node:8000>"
 status_url = "<http://graph-node:8000/graphql>"
 
 [subgraphs.network]
-# Query URL for the Graph Network subgraph.
+# Query URL for the Graph Network Subgraph.
 query_url = "<http://example.com/network-subgraph>"
 # Optional, deployment to look for in the local `graph-node`, if locally indexed.
-# Locally indexing the subgraph is recommended.
+# Locally indexing the Subgraph is recommended.
 # NOTE: Use `query_url` or `deployment_id` only
 deployment_id = "Qmaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
 
 [subgraphs.escrow]
-# Query URL for the Escrow subgraph.
+# Query URL for the Escrow Subgraph.
 query_url = "<http://example.com/network-subgraph>"
 # Optional, deployment to look for in the local `graph-node`, if locally indexed.
-# Locally indexing the subgraph is recommended.
+# Locally indexing the Subgraph is recommended.
 # NOTE: Use `query_url` or `deployment_id` only
 deployment_id = "Qmaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
 
@@ -170,24 +170,24 @@ max_amount_willing_to_lose_grt = 20
 
 Notlar:
 
-- Values for `tap.sender_aggregator_endpoints` can be found in the [gateway section](/indexing/tap/#gateway).
-- Values for `blockchain.receipts_verifier_address` must be used accordingly to the [Blockchain addresses section](/indexing/tap/#contracts) using the appropriate chain id.
+- `tap.sender_aggregator_endpoints` parametresinin alabileceği değerler [ağ geçidi bölümü](/indexing/tap/#gateway) içinde bulunabilir.
+- `blockchain.receipts_verifier_address` parametresinin alabileceği değerler, [Blokzinciri adresleri bölümü](/indexing/tap/#contracts) ile uyumlu olarak, uygun zincir kimliği verilerek kullanılmalıdır.
 
-**Log Level**
+**Kayıt Seviyesi**
 
-- You can set the log level by using the `RUST_LOG` environment variable.
-- It’s recommended that you set it to `RUST_LOG=indexer_tap_agent=debug,info`.
+- Kayıt seviyesini `RUST_LOG` çevre değişkenini kullanarak ayarlayabilirsiniz.
+- Bunu `RUST_LOG=indexer_tap_agent=debug,info` şeklinde ayarlamanız önerilir.
 
-## Monitoring
+## İzleme
 
-### Metrics
+### Metrikler
 
-All components expose the port 7300 to be queried by prometheus.
+Tüm bileşenler, prometheus tarafından sorgulanmak üzere 7300 portunu açar.
 
-### Grafana Dashboard
+### Grafana Gösterge Paneli
 
-You can download [Grafana Dashboard](https://github.com/graphprotocol/indexer-rs/blob/main/docs/dashboard.json) and import.
+[Grafana Gösterge Paneli](https://github.com/graphprotocol/indexer-rs/blob/main/docs/dashboard.json)'ni indirip içe aktarabilirsiniz.
 
 ### Launchpad
 
-Currently, there is a WIP version of `indexer-rs` and `tap-agent` that can be found [here](https://github.com/graphops/launchpad-charts/tree/main/charts/graph-network-indexer)
+Halihazırda, `indexer-rs` ve `tap-agent`'in [buradan](https://github.com/graphops/launchpad-charts/tree/main/charts/graph-network-indexer) ulaşabileceğiniz bir WIP sürümü (geliştirilmesi tamamlanmamış sürümü) bulunmaktadır.
