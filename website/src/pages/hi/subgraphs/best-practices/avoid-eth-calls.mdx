@@ -1,19 +1,19 @@
 ---
 title: सबग्राफ सर्वोत्तम प्रथा 4 - eth_calls से बचकर अनुक्रमण गति में सुधार करें
-sidebarTitle: 'Subgraph Best Practice 4: Avoiding eth_calls'
+sidebarTitle: eth_calls से बचाव
 ---
 
 ## TLDR
 
-eth_calls वे कॉल हैं जो एक Subgraph से Ethereum नोड पर किए जा सकते हैं। ये कॉल डेटा लौटाने में महत्वपूर्ण समय लेते हैं, जिससे indexing धीमी हो जाती है। यदि संभव हो, तो स्मार्ट कॉन्ट्रैक्ट्स को इस तरह से डिजाइन करें कि वे सभी आवश्यक डेटा उत्पन्न करें ताकि आपको eth_calls का उपयोग न करना पड़े।
+eth_calls वे कॉल हैं जो एक Subgraph से Ethereum नोड पर किया जा सकता है। ये कॉल डेटा लौटाने में महत्वपूर्ण समय लेते हैं, जिससे indexing धीमी हो जाती है। यदि संभव हो, तो smart contract को इस तरह से डिजाइन करें कि वे सभी आवश्यक डेटा उत्पन्न करें ताकि आपको eth_calls का उपयोग न करना पड़े।
 
 ## Eth_calls से बचना एक सर्वोत्तम अभ्यास क्यों है
 
-Subgraphs को स्मार्ट कॉन्ट्रैक्ट्स से निकले हुए इवेंट डेटा को इंडेक्स करने के लिए ऑप्टिमाइज़ किया गया है। एक subgraph ‘eth_call’ से आने वाले डेटा को भी इंडेक्स कर सकता है, लेकिन इससे subgraph इंडेक्सिंग काफी धीमी हो सकती है क्योंकि ‘eth_calls’ के लिए स्मार्ट कॉन्ट्रैक्ट्स को एक्सटर्नल कॉल्स करने की आवश्यकता होती है। इन कॉल्स की प्रतिक्रिया subgraph पर निर्भर नहीं करती, बल्कि उस Ethereum नोड की कनेक्टिविटी और प्रतिक्रिया पर निर्भर करती है, जिसे क्वेरी किया जा रहा है। हमारे subgraphs में ‘eth_calls’ को कम करके या पूरी तरह से समाप्त करके, हम अपने इंडेक्सिंग स्पीड में उल्लेखनीय सुधार कर सकते हैं।
+सबग्राफ स्मार्ट contract द्वारा उत्सर्जित इवेंट डेटा को इंडेक्स करने के लिए ऑप्टिमाइज़ किए गए हैं। एक सबग्राफ `eth_call` से आने वाले डेटा को भी इंडेक्स कर सकता है, लेकिन यह सबग्राफ indexing को काफी धीमा कर सकता है क्योंकि eth_calls के लिए स्मार्ट कॉन्ट्रैक्ट्स को एक्सटर्नल कॉल करने की आवश्यकता होती है। इन कॉल्स की प्रतिक्रियाशीलता सबग्राफ पर नहीं, बल्कि उस Ethereum नोड की कनेक्टिविटी और प्रतिक्रियाशीलता पर निर्भर करती है, जिससे क्वेरी की जा रही है। यदि हम अपने सबग्राफ में `eth_calls` को कम या समाप्त कर देते हैं, तो हम अपनी indexing स्पीड को काफी हद तक सुधार सकते हैं।
 
 ### एक eth_call कैसा दिखता है?
 
-eth_calls अक्सर तब आवश्यक होते हैं जब subgraph के लिए आवश्यक डेटा इमिटेड इवेंट्स के माध्यम से उपलब्ध नहीं होता है। उदाहरण के लिए, एक ऐसा परिदृश्य मानें जहां एक subgraph को यह पहचानने की आवश्यकता है कि क्या ERC20 टोकन एक विशेष पूल का हिस्सा हैं, लेकिन कॉन्ट्रैक्ट केवल एक बुनियादी Transfer इवेंट इमिट करता है और वह इवेंट इमिट नहीं करता जिसमें हमें आवश्यक डेटा हो:
+`eth_calls` अक्सर आवश्यक होते हैं जब किसी सबग्राफ के लिए आवश्यक डेटा उत्सर्जित घटनाओं के माध्यम से उपलब्ध नहीं होता है। उदाहरण के लिए, एक स्थिति पर विचार करें जहां एक सबग्राफ को यह पहचानने की आवश्यकता होती है कि कोई ERC20 टोकन किसी विशेष पूल का हिस्सा है या नहीं, लेकिन अनुबंध केवल एक बुनियादी `Transfer` आयोजन उत्सर्जित करता है और वह घटना उत्सर्जित नहीं करता है जिसमें हमारे लिए आवश्यक डेटा हो।
 
 ```yaml
 इवेंट Transfer(address indexed from, address indexed to, uint256 value);
@@ -44,7 +44,7 @@ export function handleTransfer(event: Transfer): void {
 }
 ```
 
-यह कार्यात्मक है, हालांकि यह आदर्श नहीं है क्योंकि यह हमारे subgraph की indexing को धीमा कर देता है।
+यह कार्यशील है, हालांकि यह हमारे सबग्राफ की indexing को धीमा कर देता है।
 
 ## Eth_calls को कैसे समाप्त करें
 
@@ -54,7 +54,7 @@ export function handleTransfer(event: Transfer): void {
 event TransferWithPool(address indexed from, address indexed to, uint256 value, bytes32 indexed poolInfo);
 ```
 
-इस अपडेट के साथ, subgraph आवश्यक डेटा को बिना बाहरी कॉल के सीधे अनुक्रमित कर सकता है:
+इस अपडेट के साथ, सबग्राफ बाहरी कॉल किए बिना सीधे आवश्यक डेटा को इंडेक्स कर सकता है।
 
 ```typescript
 import { Address } from '@graphprotocol/graph-ts'
@@ -96,22 +96,22 @@ export function handleTransferWithPool(event: TransferWithPool): void {
 
 Handler स्वयं इस eth_call के परिणाम तक ठीक उसी तरह पहुंचता है जैसे पिछले अनुभाग में, अनुबंध से बाइंडिंग करके और कॉल करके। graph-node घोषित eth_calls के परिणामों को मेमोरी में कैश करता है और हैंडलर से कॉल इस मेमोरी कैश से परिणाम प्राप्त करेगा, बजाय इसके कि एक वास्तविक RPC कॉल की जाए।
 
-नोट: घोषित eth_calls केवल उन subgraphs में किए जा सकते हैं जिनका specVersion >= 1.2.0 है।
+घोषित eth_calls केवल उन सबग्राफ में किए जा सकते हैं जिनका specVersion >= 1.2.0 है।
 
 ## निष्कर्ष
 
-You can significantly improve indexing performance by minimizing or eliminating `eth_calls` in your subgraphs.
+आप अपने सबग्राफ में `eth_calls` को कम या समाप्त करके Indexing प्रदर्शन को काफी हद तक सुधार सकते हैं।
 
-## Subgraph Best Practices 1-6
+## सबग्राफ सर्वोत्तम प्रथाएँ 1-6
 
-1. [Improve Query Speed with Subgraph Pruning](/subgraphs/best-practices/pruning/)
+1. [सबग्राफ की गति में सुधार करें सबग्राफ प्रूनिंग के साथ](/subgraphs/best-practices/pruning/)
 
-2. [Improve Indexing and Query Responsiveness by Using @derivedFrom](/subgraphs/best-practices/derivedfrom/)
+2. ![indexing और क्वेरी प्रतिसादशीलता में सुधार करें @derivedFrom का उपयोग करके](/subgraphs/best-practices/derivedfrom/)
 
-3. [Improve Indexing and Query Performance by Using Immutable Entities and Bytes as IDs](/subgraphs/best-practices/immutable-entities-bytes-as-ids/)
+3. [अपरिवर्तनीय entities और Bytes को ID के रूप में उपयोग करके Indexing और क्वेरी प्रदर्शन में सुधार करें](/subgraphs/best-practices/immutable-entities-bytes-as-ids/)
 
-4. [Improve Indexing Speed by Avoiding `eth_calls`](/subgraphs/best-practices/avoid-eth-calls/)
+4. [indexing गति में सुधार करें `eth_calls` से बचकर](/subgraphs/best-practices/avoid-eth-calls/)
 
-5. [Simplify and Optimize with Timeseries and Aggregations](/subgraphs/best-practices/timeseries/)
+5. [समय श्रृंखला और समुच्चयन के साथ सरल और अनुकूलित करें](/subgraphs/best-practices/timeseries/)
 
-6. [Use Grafting for Quick Hotfix Deployment](/subgraphs/best-practices/grafting-hotfix/)
+6. [त्वरित हॉटफ़िक्स परिनियोजन के लिए ग्राफ्टिंग का उपयोग करें](/subgraphs/best-practices/grafting-hotfix/)
