@@ -1,49 +1,53 @@
 ---
-title: Subgraph Best Practice 5 - Simplify and Optimize with Timeseries and Aggregations
-sidebarTitle: 'Subgraph Best Practice 5: Timeseries and Aggregations'
+title: Meilleure pratique pour les subgraphs 5 - Simplifier et optimiser avec les séries chronologiques et les agrégations
+sidebarTitle: Séries chronologiques et agrégations
 ---
 
 ## TLDR
 
-Leveraging the new time-series and aggregations feature in subgraphs can significantly enhance both indexing speed and query performance.
+L'utilisation de la nouvelle fonction de séries Chronologiques et d'agrégations dans les Subgraphs peut améliorer de manière significative la vitesse d'indexation et la performance des requêtes.
 
 ## Aperçu
 
-Timeseries and aggregations reduce data processing overhead and accelerate queries by offloading aggregation computations to the database and simplifying mapping code. This approach is particularly effective when handling large volumes of time-based data.
+Les séries chronologiques et les agrégations réduisent le coûts de traitementt des données et accélèrent les requêtes en déchargeant les calculs d'agrégation dans la base de données et en simplifiant le code de mappage. Cette approche est particulièrement efficace lorsqu'il s'agit de traiter de grands volumes de données chronologiques.
 
-## Benefits of Timeseries and Aggregations
+## Avantages des séries chronologiques et des agrégations
 
-1. Improved Indexing Time
+1. Amélioration du temps d'indexation
 
-- Less Data to Load: Mappings handle less data since raw data points are stored as immutable timeseries entities.
-- Database-Managed Aggregations: Aggregations are automatically computed by the database, reducing the workload on the mappings.
+- Moins de données à charger : Les mappages traitent moins de données puisque les points de données brutes sont stockés sous forme d'entités chronologiques immuables.
+- Agrégations gérées par la base de données : Les agrégations sont automatiquement calculées par la base de données, ce qui réduit la charge de travail sur les mappages.
 
-2. Simplified Mapping Code
+2. Code de mappage simplifié
 
-- No Manual Calculations: Developers no longer need to write complex aggregation logic in mappings.
-- Reduced Complexity: Simplifies code maintenance and minimizes the potential for errors.
+- Pas de calculs manuels : Les développeurs n'ont plus besoin d'écrire une logique d'agrégation complexe dans les mappages.
+- Complexité réduite : Simplifie la maintenance du code et minimise les risques d'erreurs.
 
-3. Dramatically Faster Queries
+3. Des requêtes beaucoup plus rapides
 
-- Immutable Data: All timeseries data is immutable, enabling efficient storage and retrieval.
-- Efficient Data Separation: Aggregates are stored separately from raw timeseries data, allowing queries to process significantly less data—often several orders of magnitude less.
+- Données immuables : Toutes les données de séries chronologiques sont immuables, ce qui permet un stockage et une extraction efficaces.
+- Séparation efficace des données : Les agrégats sont stockés séparément des données chronologiques brutes, ce qui permet aux requêtes de traiter beaucoup moins de données, souvent plusieurs ordres de grandeur en moins.
 
 ### Points Importants
 
-- Immutable Data: Timeseries data cannot be altered once written, ensuring data integrity and simplifying indexing.
-- Automatic ID and Timestamp Management: id and timestamp fields are automatically managed by graph-node, reducing potential errors.
-- Efficient Data Storage: By separating raw data from aggregates, storage is optimized, and queries run faster.
+- Données immuables : Les données chronologiques ne peuvent pas être modifiées une fois écrites, ce qui garantit l'intégrité des données et simplifie l'indexation.
+- Gestion automatique de l'identification et de l'horodatage : les champs d'identification et d'horodatage sont automatiquement gérés par graph-node, ce qui réduit les erreurs potentielles.
+- Stockage efficace des données : En séparant les données brutes des agrégats, le stockage est optimisé et les requêtes s'exécutent plus rapidement.
 
-## How to Implement Timeseries and Aggregations
+## Comment mettre en œuvre des séries chronologiques et des agrégations
 
-### Defining Timeseries Entities
+### Prérequis
 
-A timeseries entity represents raw data points collected over time. It is defined with the `@entity(timeseries: true)` annotation. Key requirements:
+Vous avez besoin de `spec version 1.1.0` pour cette fonctionnalité.
 
-- Immutable: Timeseries entities are always immutable.
-- Mandatory Fields:
-  - `id`: Must be of type `Int8!` and is auto-incremented.
-  - `timestamp`: Must be of type `Timestamp!` and is automatically set to the block timestamp.
+### Définition des entités de séries chronologiques
+
+Une entité de séries chronologiques représente des points de données brutes collectés au fil du temps. Elle est définie par l'annotation `@entity(timeseries : true)`. Exigences principales :
+
+- Immuable : Les entités de séries chronologiques sont toujours immuables.
+- Champs obligatoires :
+  - `id` : Doit être de type `Int8!` et est auto-incrémenté.
+  - `timestamp` : Doit être de type 'Timestamp!\` et est automatiquement fixé à l'horodatage du bloc.
 
 L'exemple:
 
@@ -51,16 +55,16 @@ L'exemple:
 type Data @entity(timeseries: true) {
   id: Int8!
   timestamp: Timestamp!
-  price: BigDecimal!
+  amount: BigDecimal!
 }
 ```
 
-### Defining Aggregation Entities
+### Définition des entités d'agrégation
 
-An aggregation entity computes aggregated values from a timeseries source. It is defined with the `@aggregation` annotation. Key components:
+Une entité d'agrégation calcule des valeurs agrégées à partir d'une source de séries chronologiques. Elle est définie par l'annotation `@aggregation`. Composants clés :
 
-- Annotation Arguments:
-  - `intervals`: Specifies time intervals (e.g., `["hour", "day"]`).
+- Arguments d'annotation :
+  - `intervals` : Spécifie les intervalles de temps (par exemple, `["hour", "day"]`).
 
 L'exemple:
 
@@ -68,15 +72,15 @@ L'exemple:
 type Stats @aggregation(intervals: ["hour", "day"], source: "Data") {
   id: Int8!
   timestamp: Timestamp!
-  sum: BigDecimal! @aggregate(fn: "sum", arg: "price")
+  sum: BigDecimal! @aggregate(fn: "sum", arg: "amount")
 }
 ```
 
-In this example, Stats aggregates the price field from Data over hourly and daily intervals, computing the sum.
+Dans cet exemple, Stats agrège le champ montant de Data sur des intervalles horaires et quotidiens, en calculant la somme.
 
-### Querying Aggregated Data
+### Interroger des données agrégées
 
-Aggregations are exposed via query fields that allow filtering and retrieval based on dimensions and time intervals.
+Les agrégations sont exposées via des champs de requête qui permettent le filtrage et la recherche sur la base de dimensions et d'intervalles de temps.
 
 L'exemple:
 
@@ -98,13 +102,13 @@ L'exemple:
 }
 ```
 
-### Using Dimensions in Aggregations
+### Utilisation des dimensions dans les agrégations
 
-Dimensions are non-aggregated fields used to group data points. They enable aggregations based on specific criteria, such as a token in a financial application.
+Les dimensions sont des champs non agrégés utilisés pour regrouper des points de données. Elles permettent des agrégations basées sur des critères spécifiques, tels qu'un jeton dans une application financière.
 
 L'exemple:
 
-### Timeseries Entity
+### Entité de séries chronologiques
 
 ```graphql
 type TokenData @entity(timeseries: true) {
@@ -116,7 +120,7 @@ type TokenData @entity(timeseries: true) {
 }
 ```
 
-### Aggregation Entity with Dimension
+### Entité d'agrégation avec dimension
 
 ```graphql
 type TokenStats @aggregation(intervals: ["hour", "day"], source: "TokenData") {
@@ -129,15 +133,15 @@ type TokenStats @aggregation(intervals: ["hour", "day"], source: "TokenData") {
 }
 ```
 
-- Dimension Field: token groups the data, so aggregates are computed per token.
-- Aggregates:
-  - totalVolume: Sum of amount.
-  - priceUSD: Last recorded priceUSD.
-  - count: Cumulative count of records.
+- Champ dimensionnel : le jeton regroupe les données, de sorte que les agrégats sont calculés par jeton.
+- Agrégats :
+  - totalVolume: Somme des montants.
+  - priceUSD: priceUSD le plus récent Enregistré.
+  - count: Nombre cumulé d'enregistrements.
 
-### Aggregation Functions and Expressions
+### Fonctions et expressions d'agrégation
 
-Supported aggregation functions:
+Fonctions d'agrégation prises en charge :
 
 - sum
 - count
@@ -146,50 +150,50 @@ Supported aggregation functions:
 - first
 - last
 
-### The arg in @aggregate can be
+### L'argument dans @aggregate peut être
 
-- A field name from the timeseries entity.
-- An expression using fields and constants.
+- Un nom de champ de l'entité de série chronologique.
+- Une expression utilisant des champs et des constantes.
 
-### Examples of Aggregation Expressions
+### Exemples d'expressions d'agrégation
 
-- Sum Token Value: @aggregate(fn: "sum", arg: "priceUSD \_ amount")
-- Maximum Positive Amount: @aggregate(fn: "max", arg: "greatest(amount0, amount1, 0)")
-- Conditional Sum: @aggregate(fn: "sum", arg: "case when amount0 > amount1 then amount0 else 0 end")
+- Addition de la Valeur du jeton: @aggregate(fn: "sum", arg: "priceUSD \_ amount")
+- Montant positif maximum: @aggregate(fn: "max", arg: "greatest(amount0, amount1, 0)")
+- Somme conditionnelle: @aggregate(fn: "sum", arg: "case when amount0 > amount1 then amount0 else 0 end")
 
-Supported operators and functions include basic arithmetic (+, -, \_, /), comparison operators, logical operators (and, or, not), and SQL functions like greatest, least, coalesce, etc.
+Les opérateurs et fonctions pris en charge comprennent l'arithmétique de base (+, -, \_, /), les opérateurs de comparaison, les opérateurs logiques (and, or, not) et les fonctions SQL telles que la plus grande, la plus petite, la coalescence, etc.
 
-### Query Parameters
+### Paramètres de requête
 
-- interval: Specifies the time interval (e.g., "hour").
-- where: Filters based on dimensions and timestamp ranges.
-- timestamp_gte / timestamp_lt: Filters for start and end times (microseconds since epoch).
+- interval: Spécifie l'intervalle de temps (e.g., "heure").
+- where: Filtres basés sur les dimensions et les plages d'horodatage.
+- timestamp_gte / timestamp_lt: Filtre pour les heures de début et de fin (microsecondes depuis l'epoch).
 
 ### Notes
 
-- Sorting: Results are automatically sorted by timestamp and id in descending order.
-- Current Data: An optional current argument can include the current, partially filled interval.
+- Tri : Les résultats sont automatiquement triés par date et par numéro d'identification, dans l'ordre décroissant.
+- Données actuelles : Un argument facultatif de données actuelles peut inclure l'intervalle actuel, partiellement rempli.
 
 ### Conclusion
 
-Implementing timeseries and aggregations in subgraphs is a best practice for projects dealing with time-based data. This approach:
+La mise en œuvre de séries chronologiques et d'agrégations dans des Subgraphs est une bonne pratique pour les projets traitant de données temporelles. Cette approche :
 
-- Enhances Performance: Speeds up indexing and querying by reducing data processing overhead.
-- Simplifies Development: Eliminates the need for manual aggregation logic in mappings.
-- Scales Efficiently: Handles large volumes of data without compromising on speed or responsiveness.
+- Améliore les performances : Accélère l'indexation et l'interrogation en réduisant le coût du traitement des données.
+- Simplifie le développement : Élimine la nécessité d'une logique d'agrégation manuelle dans les correspondances.
+- Évolue efficacement : Traite d'importants volumes de données sans compromettre la vitesse ou la réactivité.
 
-By adopting this pattern, developers can build more efficient and scalable subgraphs, providing faster and more reliable data access to end-users. To learn more about implementing timeseries and aggregations, refer to the [Timeseries and Aggregations Readme](https://github.com/graphprotocol/graph-node/blob/master/docs/aggregations.md) and consider experimenting with this feature in your subgraphs.
+En adoptant ce modèle, les développeurs peuvent construire des subgraphs plus efficaces et plus évolutifs, offrant un accès aux données plus rapide et plus fiable aux utilisateurs finaux. Pour en savoir plus sur l'implémentation des séries chronologiques et des agrégations, consultez le [Readme des Séries chronologiques et agrégations] (https://github.com/graphprotocol/graph-node/blob/master/docs/aggregations.md) et envisagez d'expérimenter cette fonctionnalité dans vos subgraphs.
 
-## Subgraph Best Practices 1-6
+## Bonnes pratiques pour les subgraphs 1-6
 
-1. [Improve Query Speed with Subgraph Pruning](/subgraphs/best-practices/pruning/)
+1. [Améliorer la vitesse des requêtes avec l'élagage des Subgraphs](/subgraphs/best-practices/pruning/)
 
-2. [Improve Indexing and Query Responsiveness by Using @derivedFrom](/subgraphs/best-practices/derivedfrom/)
+2. [Améliorer l'indexation et la réactivité des requêtes en utilisant @derivedFrom](/subgraphs/best-practices/derivedfrom/)
 
-3. [Improve Indexing and Query Performance by Using Immutable Entities and Bytes as IDs](/subgraphs/best-practices/immutable-entities-bytes-as-ids/)
+3. [Améliorer l'indexation et les performances des requêtes en utilisant des entités immuables et des Bytes comme IDs](/subgraphs/best-practices/immutable-entities-bytes-as-ids/)
 
-4. [Improve Indexing Speed by Avoiding `eth_calls`](/subgraphs/best-practices/avoid-eth-calls/)
+4. [Améliorer la vitesse d'indexation en évitant les `eth_calls`](/subgraphs/best-practices/avoid-eth-calls/)
 
-5. [Simplify and Optimize with Timeseries and Aggregations](/subgraphs/best-practices/timeseries/)
+5. [Simplifier et optimiser avec les séries chronologiques et les agrégations](/subgraphs/best-practices/timeseries/)
 
-6. [Use Grafting for Quick Hotfix Deployment](/subgraphs/best-practices/grafting-hotfix/)
+6. [Utiliser le greffage pour un déploiement rapide des correctifs](/subgraphs/best-practices/grafting-hotfix/)

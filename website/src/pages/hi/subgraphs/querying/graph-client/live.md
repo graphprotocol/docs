@@ -2,7 +2,7 @@
 
 Graph-Client implements a custom `@live` directive that can make every GraphQL query work with real-time data.
 
-## Getting Started
+## शुरू करना
 
 Start by adding the following configuration to your `.graphclientrc.yml` file:
 
@@ -12,7 +12,7 @@ plugins:
       defaultInterval: 1000
 ```
 
-## Usage
+## उपयोग
 
 Set the default update interval you wish to use, and then you can apply the following GraphQL `@directive` over your GraphQL queries:
 

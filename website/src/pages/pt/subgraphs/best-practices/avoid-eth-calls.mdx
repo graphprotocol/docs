@@ -1,19 +1,19 @@
 ---
 title: Melhores Práticas de Subgraph Parte 4 - Como Melhorar a Velocidade da Indexação ao Evitar eth_calls
-sidebarTitle: 'Subgraph Best Practice 4: Avoiding eth_calls'
+sidebarTitle: Avoiding eth_calls
 ---
 
 ## TLDR
 
-`eth_calls` são chamadas feitas de um subgraph a um node no Ethereum. Estas chamadas levam um bom tempo para retornar dados, o que retarda a indexação. Se possível, construa contratos inteligentes para emitir todos os dados necessários, para que não seja necessário usar `eth_calls`.
+`eth_calls` are calls that can be made from a Subgraph to an Ethereum node. These calls take a significant amount of time to return data, slowing down indexing. If possible, design smart contracts to emit all the data you need so you don’t need to use `eth_calls`.
 
 ## Por que Evitar `eth_calls` É uma Boa Prática
 
-Subgraphs são otimizados para indexar dados de eventos emitidos de contratos inteligentes. Um subgraph também pode indexar os dados que vêm de uma `eth_call`, mas isto pode atrasar muito a indexação de um subgraph, já que `eth_calls` exigem a realização de chamadas externas para contratos inteligentes. A capacidade de respostas destas chamadas depende não apenas do subgraph, mas também da conectividade e das respostas do node do Ethereum a ser consultado. Ao minimizar ou eliminar `eth_calls` nos nossos subgraphs, podemos melhorar muito a nossa velocidade de indexação.
+Subgraphs are optimized to index event data emitted from smart contracts. A Subgraph can also index the data coming from an `eth_call`, however, this can significantly slow down Subgraph indexing as `eth_calls` require making external calls to smart contracts. The responsiveness of these calls relies not on the Subgraph but on the connectivity and responsiveness of the Ethereum node being queried. By minimizing or eliminating eth_calls in our Subgraphs, we can significantly improve our indexing speed.
 
 ### Como É Um `eth_call`?
 
-`eth_calls` tendem a ser necessárias quando os dados requeridos por um subgraph não estão disponíveis via eventos emitidos. Por exemplo, vamos supor que um subgraph precisa identificar se tokens ERC20 são parte de um pool específico, mas o contrato só emite um evento `Transfer` básico e não emite um evento que contém os dados que precisamos:
+`eth_calls` are often necessary when the data required for a Subgraph is not available through emitted events. For example, consider a scenario where a Subgraph needs to identify whether ERC20 tokens are part of a specific pool, but the contract only emits a basic `Transfer` event and does not emit an event that contains the data that we need:
 
 ```yaml
 event Transfer(address indexed from, address indexed to, uint256 value);
@@ -44,7 +44,7 @@ export function handleTransfer(event: Transfer): void {
 }
 ```
 
-Isto é funcional, mas não ideal, já que ele atrasa a indexação do nosso subgraph.
+This is functional, however is not ideal as it slows down our Subgraph’s indexing.
 
 ## Como Eliminar `eth_calls`
 
@@ -54,7 +54,7 @@ Idealmente, o contrato inteligente deve ser atualizado para emitir todos os dado
 event TransferWithPool(address indexed from, address indexed to, uint256 value, bytes32 indexed poolInfo);
 ```
 
-Com esta atualização, o subgraph pode indexar directamente os dados exigidos sem chamadas externas:
+With this update, the Subgraph can directly index the required data without external calls:
 
 ```typescript
 import { Address } from '@graphprotocol/graph-ts'
@@ -96,22 +96,22 @@ A porção destacada em amarelo é a declaração de chamada. A parte antes dos 
 
 O próprio handler acessa o resultado desta `eth_call` exatamente como na secção anterior ao atrelar ao contrato e fazer a chamada. o graph-node coloca em cache os resultados de `eth_calls` na memória e a chamada do handler terirará o resultado disto no cache de memória em vez de fazer uma chamada de RPC real.
 
-Nota: `eth_calls` declaradas só podem ser feitas em subgraphs com specVersion maior que 1.2.0.
+Note: Declared eth_calls can only be made in Subgraphs with specVersion >= 1.2.0.
 
 ## Conclusão
 
-O desempenho da indexação pode melhorar muito ao minimizar ou eliminar `eth_calls` nos nossos subgraphs.
+You can significantly improve indexing performance by minimizing or eliminating `eth_calls` in your Subgraphs.
 
 ## Melhores Práticas para um Subgraph 1 – 6
 
-1. [Pruning: Reduza o Excesso de Dados do Seu Subgraph para Acelerar Queries](/subgraphs/best-practices/pruning/)
+1. [Improve Query Speed with Subgraph Pruning](/subgraphs/best-practices/pruning/)
 
-2. [Use o @derivedFrom para Melhorar a Resposta da Indexação e de Queries](/subgraphs/best-practices/derivedfrom/)
+2. [Improve Indexing and Query Responsiveness by Using @derivedFrom](/subgraphs/best-practices/derivedfrom/)
 
-3. [Melhore o Desempenho da Indexação e de Queries com o Uso de Bytes como IDs](/subgraphs/best-practices/immutable-entities-bytes-as-ids/)
+3. [Improve Indexing and Query Performance by Using Immutable Entities and Bytes as IDs](/subgraphs/best-practices/immutable-entities-bytes-as-ids/)
 
-4. [Evite `eth-calls` para Acelerar a Indexação](/subgraphs/best-practices/avoid-eth-calls/)
+4. [Improve Indexing Speed by Avoiding `eth_calls`](/subgraphs/best-practices/avoid-eth-calls/)
 
-5. [Simplifique e Otimize com Séries Temporais e Agregações](/subgraphs/best-practices/timeseries/)
+5. [Simplify and Optimize with Timeseries and Aggregations](/subgraphs/best-practices/timeseries/)
 
-6. [Lance Hotfixes Mais Rápido com Enxertos](/subgraphs/best-practices/grafting-hotfix/)
+6. [Use Grafting for Quick Hotfix Deployment](/subgraphs/best-practices/grafting-hotfix/)

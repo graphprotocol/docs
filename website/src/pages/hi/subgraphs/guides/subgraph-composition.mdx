@@ -1,0 +1,132 @@
+---
+title: डेटा को एकत्रित करें उपयोग करके Subgraph Composition
+sidebarTitle: एक Composable Subgraph बनाएं जिसमें कई Subgraphs शामिल हों
+---
+
+Subgraph संयोजन का उपयोग करके विकास समय को तेज़ करें। आवश्यक डेटा के साथ एक मूल Subgraph बनाएं, फिर उसके ऊपर अतिरिक्त Subgraph बनाएं।
+
+Optimize your Subgraph by merging data from independent, source Subgraphs into a single composable Subgraph to enhance data aggregation.
+
+## Introduction
+
+Composable Subgraphs enable you to combine multiple Subgraphs' data sources into a new Subgraph, facilitating faster and more flexible Subgraph development. Subgraph composition empowers you to create and maintain smaller, focused Subgraphs that collectively form a larger, interconnected dataset.
+
+### संयोजन के लाभ
+
+Subgraph संयोजन एक शक्तिशाली विशेषता है जो स्केलिंग के लिए अनुमति देती है:
+
+- पुनः उपयोग करें, मिलाएं, और मौजूदा डेटा को संयोजित करें
+- विकास और क्वेरी को सुव्यवस्थित करें
+- एकाधिक डेटा स्रोतों का उपयोग करें (अधिकतम पांच स्रोत Subgraphs तक)
+- Subgraph की सिंकिंग स्पीड तेज करें
+- त्रुटियों को संभालें और पुनःसिंक को अनुकूलित करें
+
+## आर्किटेक्चर अवलोकन
+
+यह उदाहरण दो Subgraphs की स्थापना के साथ जुड़ा हुआ है:
+
+1. **सोर्स Subgraph**: घटनाओं के डेटा को entities के रूप में ट्रैक करता है.
+2. **आश्रित Subgrap**h: स्रोत Subgraph को डेटा स्रोत के रूप में उपयोग करता है।
+
+आप इन्हें `source` और `dependent` डायरेक्टरी में पा सकते हैं।
+
+- The **साधन Subgraph** एक बेसिक इवेंट-ट्रैकिंग Subgraph है जो संबंधित contract द्वारा एमिट किए गए इवेंट्स को रिकॉर्ड करता है।
+- **निर्भर Subgraph** स्रोत Subgraph को एक डेटा स्रोत के रूप में संदर्भित करता है, और स्रोत से entities का उपयोग ट्रिगर के रूप में करता है।
+
+जबकि **स्रोत Subgraph** एक मानक Subgraph है, आश्रित Subgraph Subgraph संयोजन सुविधा का उपयोग करता है।
+
+## आवश्यक शर्तें
+
+### Source Subgraphs
+
+- All Subgraphs need to be published with a **specVersion 1.3.0 or later** (Use the latest graph-cli version to be able to deploy composable Subgraphs)
+- See notes here: https://github.com/graphprotocol/graph-node/releases/tag/v0.37.0
+- Immutable entities only: All Subgraphs must have [immutable entities](https://thegraph.com/docs/en/subgraphs/best-practices/immutable-entities-bytes-as-ids/#immutable-entities) when the Subgraph is deployed
+- Pruning can be used in the source Subgraphs, but only entities that are immutable can be composed on top of
+- Source Subgraphs cannot use grafting on top of existing entities
+- Aggregated entities can be used in composition, but entities that are composed from them cannot performed additional aggregations directly
+
+### Composed Subgraphs
+
+- You can only compose up to a **maximum of 5 source Subgraphs**
+- Composed Subgraphs can only use **datasources from the same chain**
+- **Nested composition is not yet supported**: Composing on top of another composed Subgraph isn’t allowed at this time
+- Aggregated entities can be used in composition, but the composed entities on them cannot also use aggregations directly
+- Developers cannot compose an onchain datasource with a Subgraph datasource (i.e. you can’t do normal event handlers and call handlers and block handlers in a composed Subgraph)
+
+Additionally, you can explore the [example-composable-subgraph](https://github.com/graphprotocol/example-composable-subgraph) repository for a working implementation of composable Subgraphs
+
+## शुरू करिये
+
+The following guide provides examples for defining 3 source Subgraphs to create one powerful composed Subgraph.
+
+### विशिष्टताएँ
+
+- इस उदाहरण को सरल रखने के लिए, सभी स्रोत Subgraph केवल ब्लॉक हैंडलर का उपयोग करते हैं। हालांकि, वास्तविक वातावरण में, प्रत्येक स्रोत Subgraph विभिन्न स्मार्ट कॉन्ट्रैक्ट्स से डेटा का उपयोग करेगा।
+- ये उदाहरण दिखाते हैं कि किसी अन्य Subgraph की schema को कैसे आयात किया जाए और इसकी कार्यक्षमता को बढ़ाया जाए।
+- प्रत्येक स्रोत Subgraph को एक विशिष्ट entity के साथ अनुकूलित किया जाता है।
+- सभी कमांड आवश्यक डिपेंडेंसीज़ को इंस्टॉल करती हैं, GraphQL स्कीमा के आधार पर कोड जेनरेट करती हैं, Subgraph को बिल्ड करती हैं, और इसे आपकी लोकल Graph Node इंस्टेंस पर डिप्लॉय करती हैं।
+
+### चरण 1. Block Time साधन Subgraph को डिप्लॉय करें
+
+यह पहला स्रोत Subgraph प्रत्येक ब्लॉक के लिए ब्लॉक समय की गणना करता है।
+
+- यह अन्य Subgraphs से schemas को इम्पोर्ट करता है और प्रत्येक `ब्लॉक` के माइन किए जाने के समय को दर्शाने वाले timestamp फ़ील्ड के साथ एक block entity जोड़ता है।
+- यह समय-संबंधित ब्लॉकचेन घटनाओं (जैसे, ब्लॉक टाइमस्टैम्प) को सुनता है और इस डेटा को प्रोसेस करके Subgraph की entities को अपडेट करता है।
+
+इस Subgraph को लोकल रूप से डिप्लॉय करने के लिए, निम्नलिखित कमांड्स चलाएँ:
+
+```bash
+npm install
+npm run codegen
+npm run build
+npm run create-local
+npm run deploy-local
+```
+
+### चरण 2. Block Cost Source Subgraph को डिप्लॉय करें
+
+यह दूसरा स्रोत Subgraph प्रत्येक ब्लॉक की लागत को इंडेक्स करता है।
+
+#### मुख्य कार्य
+
+- यह अन्य Subgraphs से schemas आयात करता है और लागत-संबंधी फ़ील्ड के साथ एक `block` entity जोड़ता है।
+- यह ब्लॉकचेन घटनाओं को सुनता है जो लागत (जैसे गैस शुल्क, लेनदेन लागत) से संबंधित होती हैं और इस डेटा को प्रोसेस करके Subgraph की entities को अपडेट करता है।
+
+इस Subgraph को लोकल रूप से डिप्लॉय करने के लिए, ऊपर दिए गए वही कमांड्स चलाएँ।
+
+### स्टेप 3. स्रोत Subgraph में ब्लॉक साइज़ परिभाषित करें
+
+यह तीसरा स्रोत Subgraph प्रत्येक ब्लॉक के आकार को इंडेक्स करता है। इस Subgraph को लोकली डिप्लॉय करने के लिए, ऊपर दिए गए वही कमांड्स चलाएँ।
+
+#### मुख्य कार्य
+
+- यह मौजूदा schemas को अन्य Subgraphs से आयात करता है और एक `block` entity जोड़ता है, जिसमें प्रत्येक block के आकार को दर्शाने वाला एक `size` फ़ील्ड होता है।
+- यह ब्लॉक साइज़ (जैसे, स्टोरेज या वॉल्यूम) से संबंधित ब्लॉकचेन इवेंट्स को सुनता है और इस डेटा को प्रोसेस करके Subgraph की entities को उचित रूप से अपडेट करता है।
+
+### चरण 4. ब्लॉक स्टैट्स में मिलाएँ Subgraph
+
+This composed Subgraph combines and aggregates the information from the source Subgraphs above, providing a unified view of block statistics. To deploy this Subgraph locally, run the same commands as above.
+
+> नोट:
+>
+> - किसी स्रोत Subgraph में कोई भी परिवर्तन संभवतः एक नया deployment ID उत्पन्न करेगा।
+> - Subgraph manifest में डेटा स्रोत पते में नवीनतम परिवर्तनों का लाभ उठाने के लिए डिप्लॉयमेंट ID को अपडेट करना सुनिश्चित करें।
+> - सभी स्रोत Subgraphs को तब तक तैनात किया जाना चाहिए जब तक कि संयोजित Subgraph तैनात न हो जाए।
+
+#### मुख्य कार्य
+
+- यह एक समेकित डेटा मॉडल प्रदान करता है जो सभी प्रासंगिक ब्लॉक मेट्रिक्स को शामिल करता है।
+- It combines data from 3 source Subgraphs, and provides a comprehensive view of block statistics, enabling more complex queries and analyses.
+
+## मुख्य निष्कर्ष
+
+- यह शक्तिशाली टूल आपके Subgraph डेवलपमेंट को स्केल करेगा और आपको कई Subgraph को एक साथ जोड़ने की अनुमति देगा।
+- The setup includes the deployment of 3 source Subgraphs and one final deployment of the composed Subgraph.
+- यह विशेषता स्केलेबिलिटी को अनलॉक करती है, जिससे विकास और रखरखाव की दक्षता सरल हो जाती है।
+
+## Additional Resources
+
+- Check out all the code for this example in [this GitHub repo](https://github.com/graphprotocol/example-composable-subgraph).
+- To add advanced features to your Subgraph, और जानने के लिए देखें [Subgraph advanced features.](/developing/creating/advanced/)
+- एग्रीगेशन के बारे में अधिक जानने के लिए, [Timeseries and Aggregations](/subgraphs/developing/creating/advanced/#timeseries-and-aggregations) देखें।

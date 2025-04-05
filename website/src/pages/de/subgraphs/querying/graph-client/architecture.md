@@ -1,13 +1,13 @@
-# The Graph Client Architecture
+# The Graph-Client-Architektur
 
-To address the need to support a distributed network, we plan to take several actions to ensure The Graph client provides everything app needs:
+Um der Notwendigkeit der Unterstützung eines verteilten Netzwerks gerecht zu werden, planen wir mehrere Maßnahmen, um sicherzustellen, dass der Graph-Client alles bietet, was eine App braucht:
 
-1. Compose multiple Subgraphs (on the client-side)
-2. Fallback to multiple indexers/sources/hosted services
-3. Automatic/Manual source picking strategy
-4. Agnostic core, with the ability to run integrate with any GraphQL client
+1. Mehrere Subgraphen zusammenstellen (auf der Client-Seite)
+2. Fallback auf mehrere Indexer/Quellen/gehostete Dienste
+3. Automatische/manuelle Kommissionierstrategie
+4. Agnostischer Kern, mit der Fähigkeit, die Integration mit jedem GraphQL-Client auszuführen
 
-## Standalone mode
+## Standalone-Modus
 
 ```mermaid
 graph LR;
@@ -17,7 +17,7 @@ graph LR;
     op-->sB[Subgraph B];
 ```
 
-## With any GraphQL client
+## Mit jedem GraphQL-Client
 
 ```mermaid
 graph LR;
@@ -28,11 +28,11 @@ graph LR;
     op-->sB[Subgraph B];
 ```
 
-## Subgraph Composition
+## Subgraphen-Zusammensetzung
 
-To allow simple and efficient client-side composition, we'll use [`graphql-tools`](https://graphql-tools.com) to create a remote schema / Executor, then can be hooked into the GraphQL client.
+Um eine einfache und effiziente client-seitige Komposition zu ermöglichen, werden wir [`graphql-tools`](https://graphql-tools.com) verwenden, um ein entferntes Schema / Executor zu erstellen, das dann in den GraphQL-Client eingehängt werden kann.
 
-API could be either raw `graphql-tools` transformers, or using [GraphQL-Mesh declarative API](https://graphql-mesh.com/docs/transforms/transforms-introduction) for composing the schema.
+API könnte entweder rohe `graphql-tools`-Transformatoren oder die Verwendung von [GraphQL-Mesh declarative API] (https://graphql-mesh.com/docs/transforms/transforms-introduction) für die Zusammenstellung des Schemas sein.
 
 ```mermaid
 graph LR;
@@ -42,9 +42,9 @@ graph LR;
     m-->s3[Subgraph C GraphQL schema];
 ```
 
-## Subgraph Execution Strategies
+## Strategien für die Ausführung von Subgraphen
 
-Within every Subgraph defined as source, there will be a way to define it's source(s) indexer and the querying strategy, here are a few options:
+Für jeden Subgraphen, der als Quelle definiert ist, gibt es eine Möglichkeit, seine(n) Quell-Indexer und die Abfragestrategie zu definieren, hier einige Optionen:
 
 ```mermaid
 graph LR;
@@ -85,9 +85,9 @@ graph LR;
     end
 ```
 
-> We can ship a several built-in strategies, along with a simple interfaces to allow developers to write their own.
+> Wir können mehrere eingebaute Strategien liefern, zusammen mit einfachen Schnittstellen, die es Entwicklern ermöglichen, ihre eigenen zu schreiben.
 
-To take the concept of strategies to the extreme, we can even build a magical layer that does subscription-as-query, with any hook, and provide a smooth DX for dapps:
+Um das Konzept der Strategien auf die Spitze zu treiben, können wir sogar eine magische Schicht aufbauen, die Abonnement-als-Abfrage mit einem beliebigen Hook durchführt und einen reibungslosen DX für Dapps bietet:
 
 ```mermaid
 graph LR;
@@ -99,5 +99,5 @@ graph LR;
     sc[Smart Contract]-->|change event|op;
 ```
 
-With this mechanism, developers can write and execute GraphQL `subscription`, but under the hood we'll execute a GraphQL `query` to The Graph indexers, and allow to connect any external hook/probe for re-running the operation.
-This way, we can watch for changes on the Smart Contract itself, and the GraphQL client will fill the gap on the need to real-time changes from The Graph.
+Mit diesem Mechanismus können Entwickler GraphQL-Abonnements schreiben und ausführen, aber unter der Haube führen wir eine GraphQL-Abfrage an die The Graph-Indexer aus und ermöglichen den Anschluss eines externen Hooks/einer externen Probe zur erneuten Ausführung der Operation.
+Auf diese Weise können wir auf Änderungen am Smart Contract selbst achten, und der GraphQL-Client füllt die Lücke, wenn Echtzeitänderungen von The Graph erforderlich sind.

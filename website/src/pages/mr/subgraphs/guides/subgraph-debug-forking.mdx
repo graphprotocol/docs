@@ -1,22 +1,22 @@
 ---
-title: Quick and Easy Subgraph Debugging Using Forks
+title: फॉर्क्स वापरून जलद आणि सुलभ सबग्राफ डीबगिंग
 ---
 
 As with many systems processing large amounts of data, The Graph's Indexers (Graph Nodes) may take quite some time to sync-up your Subgraph with the target blockchain. The discrepancy between quick changes with the purpose of debugging and long wait times needed for indexing is extremely counterproductive and we are well aware of that. This is why we are introducing **Subgraph forking**, developed by [LimeChain](https://limechain.tech/), and in this article I will show you how this feature can be used to substantially speed-up Subgraph debugging!
 
-## Ok, what is it?
+## ठीक आहे, ते काय आहे?
 
 **Subgraph forking** is the process of lazily fetching entities from _another_ Subgraph's store (usually a remote one).
 
 In the context of debugging, **Subgraph forking** allows you to debug your failed Subgraph at block _X_ without needing to wait to sync-up to block _X_.
 
-## What?! How?
+## काय?! कसे?
 
 When you deploy a Subgraph to a remote Graph Node for indexing and it fails at block _X_, the good news is that the Graph Node will still serve GraphQL queries using its store, which is synced-up to block _X_. That's great! This means we can take advantage of this "up-to-date" store to fix the bugs arising when indexing block _X_.
 
 In a nutshell, we are going to _fork the failing Subgraph_ from a remote Graph Node that is guaranteed to have the Subgraph indexed up to block _X_ in order to provide the locally deployed Subgraph being debugged at block _X_ an up-to-date view of the indexing state.
 
-## Please, show me some code!
+## कृपया, मला काही कोड दाखवा!
 
 To stay focused on Subgraph debugging, let's keep things simple and run along with the [example-Subgraph](https://github.com/graphprotocol/graph-tooling/tree/main/examples/ethereum-gravatar) indexing the Ethereum Gravity smart contract.
 
@@ -46,31 +46,31 @@ export function handleUpdatedGravatar(event: UpdatedGravatar): void {
 
 Oops, how unfortunate, when I deploy my perfect looking Subgraph to [Subgraph Studio](https://thegraph.com/studio/) it fails with the _"Gravatar not found!"_ error.
 
-The usual way to attempt a fix is:
+निराकरण करण्याचा प्रयत्न करण्याचा नेहमीचा मार्ग आहे:
 
-1. Make a change in the mappings source, which you believe will solve the issue (while I know it won't).
+1. मॅपिंग स्त्रोतामध्ये बदल करा, जो तुम्हाला विश्वास आहे की समस्या सोडवेल (जेव्हा मला माहित आहे की ते होणार नाही).
 2. Re-deploy the Subgraph to [Subgraph Studio](https://thegraph.com/studio/) (or another remote Graph Node).
-3. Wait for it to sync-up.
-4. If it breaks again go back to 1, otherwise: Hooray!
+3. ते समक्रमित होण्याची प्रतीक्षा करा.
+4. तो पुन्हा खंडित झाल्यास 1 वर परत जा, अन्यथा: हुर्रे!
 
 It is indeed pretty familiar to an ordinary debug process, but there is one step that horribly slows down the process: _3. Wait for it to sync-up._
 
 Using **Subgraph forking** we can essentially eliminate this step. Here is how it looks:
 
 0. Spin-up a local Graph Node with the **_appropriate fork-base_** set.
-1. Make a change in the mappings source, which you believe will solve the issue.
+1. मॅपिंग स्त्रोतामध्ये बदल करा, जो तुम्हाला विश्वास आहे की समस्या सोडवेल.
 2. Deploy to the local Graph Node, **_forking the failing Subgraph_** and **_starting from the problematic block_**.
-3. If it breaks again, go back to 1, otherwise: Hooray!
+3. तो पुन्हा खंडित झाल्यास, 1 वर परत जा, अन्यथा: हुर्रे!
 
-Now, you may have 2 questions:
+आता, तुमच्याकडे 2 प्रश्न असू शकतात:
 
-1. fork-base what???
-2. Forking who?!
+1. fork-base काय???
+2. फोर्किंग होईल कोणासोबत?!
 
-And I answer:
+आणि मी उत्तर देतो:
 
 1. `fork-base` is the "base" URL, such that when the _subgraph id_ is appended the resulting URL (`<fork-base>/<subgraph-id>`) is a valid GraphQL endpoint for the Subgraph's store.
-2. Forking is easy, no need to sweat:
+2. काटा काढणे सोपे आहे, घाम गाळण्याची गरज नाही:
 
 ```bash
 $ graph deploy <subgraph-name> --debug-fork <subgraph-id> --ipfs http://localhost:5001 --node http://localhost:8020
@@ -78,7 +78,7 @@ $ graph deploy <subgraph-name> --debug-fork <subgraph-id> --ipfs http://localhos
 
 Also, don't forget to set the `dataSources.source.startBlock` field in the Subgraph manifest to the number of the problematic block, so you can skip indexing unnecessary blocks and take advantage of the fork!
 
-So, here is what I do:
+तर, मी काय करतो ते येथे आहे:
 
 1. I spin-up a local Graph Node ([here is how to do it](https://github.com/graphprotocol/graph-node#running-a-local-graph-node)) with the `fork-base` option set to: `https://api.thegraph.com/subgraphs/id/`, since I will fork a Subgraph, the buggy one I deployed earlier, from [Subgraph Studio](https://thegraph.com/studio/).
 

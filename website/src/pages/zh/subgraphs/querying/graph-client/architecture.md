@@ -1,13 +1,13 @@
-# The Graph Client Architecture
+# The Graph客户端结构
 
-To address the need to support a distributed network, we plan to take several actions to ensure The Graph client provides everything app needs:
+为了满足支持分布式网络的需要，我们计划采取若干行动，确保The Graph客户端提供所有应用需求：
 
-1. Compose multiple Subgraphs (on the client-side)
-2. Fallback to multiple indexers/sources/hosted services
-3. Automatic/Manual source picking strategy
-4. Agnostic core, with the ability to run integrate with any GraphQL client
+1. 编写多个子图(在客户端)
+2. 返回到多个索引人/源/托管服务
+3. 自动/手动选取源策略
+4. Agnostic 核心，能够运行任何GraphQL客户端集成
 
-## Standalone mode
+## 独立模式
 
 ```mermaid
 graph LR;
@@ -17,7 +17,7 @@ graph LR;
     op-->sB[Subgraph B];
 ```
 
-## With any GraphQL client
+## 使用任意GraphQL客户端
 
 ```mermaid
 graph LR;
@@ -28,11 +28,11 @@ graph LR;
     op-->sB[Subgraph B];
 ```
 
-## Subgraph Composition
+## 子图组成
 
-To allow simple and efficient client-side composition, we'll use [`graphql-tools`](https://graphql-tools.com) to create a remote schema / Executor, then can be hooked into the GraphQL client.
+为了实现简单高效的客户端组合，我们将使用[`graphql-tools`](https://graphql-tools.com)创建远程模式/执行器，然后可以挂接到GraphQL客户端。
 
-API could be either raw `graphql-tools` transformers, or using [GraphQL-Mesh declarative API](https://graphql-mesh.com/docs/transforms/transforms-introduction) for composing the schema.
+API 可以是原始的 `graphql-tool` 变换器，也可以使用 [GraphQL-Mesh 声明的 API](https://graphql-mesh.com/docs/transforms/transforms-introduction) 来构造架构。
 
 ```mermaid
 graph LR;
@@ -42,9 +42,9 @@ graph LR;
     m-->s3[Subgraph C GraphQL schema];
 ```
 
-## Subgraph Execution Strategies
+## 子图执行策略
 
-Within every Subgraph defined as source, there will be a way to define it's source(s) indexer and the querying strategy, here are a few options:
+在被定义为源的每一个子图中，都有一种方法来定义其源索引人和查询策略，下面是几个选项：
 
 ```mermaid
 graph LR;
@@ -85,9 +85,9 @@ graph LR;
     end
 ```
 
-> We can ship a several built-in strategies, along with a simple interfaces to allow developers to write their own.
+> 我们可以配送几个内置策略，以及一个简单的接口，让开发者自己写。
 
-To take the concept of strategies to the extreme, we can even build a magical layer that does subscription-as-query, with any hook, and provide a smooth DX for dapps:
+为了使战略概念走向极端，我们甚至可以建立一个订阅即时查询的魔力层， 带任何钩子, 并提供一个平滑的 DX 数据库：
 
 ```mermaid
 graph LR;
@@ -99,5 +99,5 @@ graph LR;
     sc[Smart Contract]-->|change event|op;
 ```
 
-With this mechanism, developers can write and execute GraphQL `subscription`, but under the hood we'll execute a GraphQL `query` to The Graph indexers, and allow to connect any external hook/probe for re-running the operation.
-This way, we can watch for changes on the Smart Contract itself, and the GraphQL client will fill the gap on the need to real-time changes from The Graph.
+使用此机制，开发者可以写入并执行 GraphQL `subscription` ， 但在这个位置下，我们会执行 GraphQL `query` 到 Graph索引人，并允许连接任何外部钩子/probe来重新运行操作。
+这种方式，我们可以观看智能合约本身的变更。 GraphQL客户端将填补The Graph实时变化的需要。

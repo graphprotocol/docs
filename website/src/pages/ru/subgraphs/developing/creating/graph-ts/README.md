@@ -6,7 +6,7 @@
 TypeScript/AssemblyScript library for writing subgraph mappings to be deployed to
 [The Graph](https://github.com/graphprotocol/graph-node).
 
-## Usage
+## Применение
 
 For a detailed guide on how to create a subgraph, please see the
 [Graph CLI docs](https://github.com/graphprotocol/graph-cli).

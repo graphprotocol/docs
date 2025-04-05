@@ -2,12 +2,12 @@
 title: AssemblyScript API'si
 ---
 
-> Note: If you created a subgraph prior to `graph-cli`/`graph-ts` version `0.22.0`, then you're using an older version of AssemblyScript. It is recommended to review the [`Migration Guide`](/resources/migration-guides/assemblyscript-migration-guide/).
+> Note: If you created a Subgraph prior to `graph-cli`/`graph-ts` version `0.22.0`, then you're using an older version of AssemblyScript. It is recommended to review the [`Migration Guide`](/resources/migration-guides/assemblyscript-migration-guide/).
 
-Subgraph eşlemeleri yazarken kullanılabilecek yerleşik API'leri öğrenin. Hazır olarak sunulan iki tür API mevcuttur:
+Learn what built-in APIs can be used when writing Subgraph mappings. There are two kinds of APIs available out of the box:
 
 - [Graph TypeScript kütüphanesi](https://github.com/graphprotocol/graph-tooling/tree/main/packages/ts) (`graph-ts`)
-- Subgraph dosyalarından `graph codegen` tarafından üretilen kod
+- Code generated from Subgraph files by `graph codegen`
 
 [AssemblyScript](https://github.com/AssemblyScript/assemblyscript) ile uyumlu olduğu sürece diğer kütüphaneleri de bağımlılık olarak ekleyebilirsiniz.
 
@@ -27,7 +27,7 @@ Dil eşlemeleri AssemblyScript ile yazıldığından, [AssemblyScript wiki'sinde
 
 ### Sürümler
 
-Subgraph manifestosundaki `apiVersion`, bir subgraph için Graph Düğümü tarafından çalıştırılan eşleme (mapping) API'sinin sürümünü belirtir.
+The `apiVersion` in the Subgraph manifest specifies the mapping API version which is run by Graph Node for a given Subgraph.
 
 | Sürüm | Sürüm Notları |
 | :-: | --- |
@@ -37,7 +37,7 @@ Subgraph manifestosundaki `apiVersion`, bir subgraph için Graph Düğümü tara
 | 0.0.6 | Ethereum Transaction nesnesine `nonce` alanı eklendi<br />Ethereum Block nesnesine `baseFeePerGas` eklendi |
 | 0.0.5 | AssemblyScript upgraded to version 0.19.10 (this includes breaking changes, please see the [`Migration Guide`](/resources/migration-guides/assemblyscript-migration-guide/))<br />`ethereum.transaction.gasUsed` renamed to `ethereum.transaction.gasLimit` |
 | 0.0.4 | Ethereum SmartContractCall nesnesine `functionSignature` alanı eklendi |
-| 0.0.3 | Added `from` field to the Ethereum Call object<br />`ethereum.call.address` renamed to `ethereum.call.to` |
+| 0.0.3 | Ethereum Call nesnesine `from` alanı eklendi<br />`ethereum.call.address`, `ethereum.call.to` olarak yeniden adlandırıldı |
 | 0.0.2 | Ethereum Transaction nesnesine `input` alanı eklendi |
 
 ### Dahili Türler
@@ -223,7 +223,7 @@ import { store } from '@graphprotocol/graph-ts'
 
 `store` API'si, varlıkları Graph Düğümü deposundan yüklemeye, depoya kaydetmeye ve depodan kaldırmaya olanak tanır.
 
-Depoya yazılan varlıklar, subgraph'in GraphQL şemasında tanımlanan `@entity` türleriyle bire bir eşleşir. Bu varlıklarla çalışmayı kolaylaştırmak için [Graph CLI](https://github.com/graphprotocol/graph-tooling/tree/main/packages/cli) tarafından sağlanan `graph codegen` komutu varlık sınıfları oluşturur. Varlık sınıfları, şemadaki alanlar için özellik alıcıları ve ayarlayıcılarının yanı sıra bu varlıkları yüklemek ve kaydetmek için metotlar içeren, yerleşik `Entity` türünün alt sınıflarıdır.
+Entities written to the store map one-to-one to the `@entity` types defined in the Subgraph's GraphQL schema. To make working with these entities convenient, the `graph codegen` command provided by the [Graph CLI](https://github.com/graphprotocol/graph-tooling/tree/main/packages/cli) generates entity classes, which are subclasses of the built-in `Entity` type, with property getters and setters for the fields in the schema as well as methods to load and save these entities.
 
 #### Unsurların Oluşturulması
 
@@ -282,8 +282,8 @@ Varlık henüz depoda mevcut olmayabileceğinden, `load` yöntemi `Transfer | nu
 
 The store API facilitates the retrieval of entities that were created or updated in the current block. A typical situation for this is that one handler creates a transaction from some onchain event, and a later handler wants to access this transaction if it exists.
 
-- Eğer işlem mevcut değilse subgraph sırf varlığın mevcut olmadığını öğrenmek için veritabanına başvurmak zorunda kalacaktır. Ancak, subgraph yazarı varlığın aynı blokta oluşturulmuş olması gerektiğini zaten biliyorsa, `loadInBlock` kullanmak bu veritabanı sorgusunu ortadan kaldırır.
-- Bazı subgraph'lerde bu başarısız aramalar endeksleme süresine önemli ölçüde etki edebilir.
+- In the case where the transaction does not exist, the Subgraph will have to go to the database simply to find out that the entity does not exist. If the Subgraph author already knows that the entity must have been created in the same block, using `loadInBlock` avoids this database roundtrip.
+- For some Subgraphs, these missed lookups can contribute significantly to the indexing time.
 
 ```typescript
 let id = event.transaction.hash // veya ID nasıl oluşturulurmuşsa
@@ -380,11 +380,11 @@ Ethereum API'si, akıllı sözleşmelere, genel durum değişkenlerine, sözleş
 
 #### Ethereum Türleri İçin Destek
 
-Varlıklarda olduğu gibi `graph codegen`, bir subgraph'te kullanılan tüm akıllı sözleşmeler ve olaylar için sınıflar oluşturur. Bunun için, sözleşme ABI'lerinin subgraph manifestosundaki veri kaynağının bir parçası olması gerekir. ABI dosyaları genelde `abis/` klasöründe saklanır.
+As with entities, `graph codegen` generates classes for all smart contracts and events used in a Subgraph. For this, the contract ABIs need to be part of the data source in the Subgraph manifest. Typically, the ABI files are stored in an `abis/` folder.
 
-Oluşturulan sınıflarla sayesinde Ethereum türleri ile [yerleşik türler](#built-in-types) arasındaki dönüşümler arka planda gerçekleşir, böylece subgraph yazarlarının bu dönüşümlerle ilgilenmesine gerek kalmaz.
+With the generated classes, conversions between Ethereum types and the [built-in types](#built-in-types) take place behind the scenes so that Subgraph authors do not have to worry about them.
 
-Aşağıdaki örnek bunu açıklar. Aşağıdaki gibi bir subgraph şeması verildiğinde
+The following example illustrates this. Given a Subgraph schema like
 
 ```graphql
 type Transfer @entity {
@@ -483,7 +483,7 @@ class Log {
 
 #### Akıllı Sözleşme Durumuna Erişim
 
-`graph codegen` tarafından oluşturulan kod, subgraph'te kullanılan akıllı sözleşmeler için sınıflar da içerir. Bu sınıflar, mevcut blokta sözleşmenin genel durum değişkenlerine erişmek ve sözleşme fonksiyonlarını çağırmak için kullanılabilir.
+The code generated by `graph codegen` also includes classes for the smart contracts used in the Subgraph. These can be used to access public state variables and call functions of the contract at the current block.
 
 Yaygın bir model, bir olayın kaynaklandığı sözleşmeye erişmektir. Bu, aşağıdaki kodla elde edilir:
 
@@ -506,7 +506,7 @@ Burada `Transfer`, varlık türüyle adlandırma çakışmasını önlemek için
 
 Ethereum üzerindeki `ERC20Contract` sözleşmesi `symbol` adında herkese açık ve salt okunur bir fonksiyona sahip olduğu sürece, `.symbol()` ile çağrılabilir. Genel durum değişkenleri için otomatik olarak aynı ada sahip bir metot oluşturulur.
 
-Subgraph parçası olan diğer tüm sözleşmelerde oluşturulan koddan içe aktarılabilir ve geçerli bir adrese bağlanabilir.
+Any other contract that is part of the Subgraph can be imported from the generated code and can be bound to a valid address.
 
 #### Geri Dönen Çağrıları Yönetme
 
@@ -582,7 +582,7 @@ let isContract = ethereum.hasCode(eoa).inner // false döndürür
 import { log } from '@graphprotocol/graph-ts'
 ```
 
-`log` API'si, subgraph'lerin bilgileri Graph Düğümü standart çıktısına ve Graph Gezgini'ne kaydetmesine olanak tanır. Mesajlar farklı günlük seviyeleri kullanılarak kaydedilebilir. Verilen argümanlardan günlük mesajlarını oluşturmak için temel bir biçimlendirme dizesi sentaksı sunulmaktadır.
+The `log` API allows Subgraphs to log information to the Graph Node standard output as well as Graph Explorer. Messages can be logged using different log levels. A basic format string syntax is provided to compose log messages from argument.
 
 `log` API'si aşağıdaki fonksiyonları içerir:
 
@@ -590,7 +590,7 @@ import { log } from '@graphprotocol/graph-ts'
 - `log.info(fmt: string, args: Array<string>): void` – bir bilgilendirme mesajı kaydeder.
 - `log.warning(fmt: string, args: Array<string>): void` – bir uyarı mesajı kaydeder.
 - `log.error(fmt: string, args: Array<string>): void` – bir hata mesajı kaydeder.
-- `log.critical(fmt: string, args: Array<string>): void` – kritik bir mesaj kaydeder **ve** subgraph'i sonlandırır.
+- `log.critical(fmt: string, args: Array<string>): void` – logs a critical message _and_ terminates the Subgraph.
 
 `log` API'si bir format dizesi ve bir dize değerleri dizisini alır. Daha sonra, dizideki dize değerlerini format dizesindeki yer tutucuların yerine koyar. İlk `{}` yer tutucusu dizideki ilk değerle, ikinci `{}` yer tutucusu ikinci değerle ve bu şekilde devam ederek değiştirilir.
 
@@ -722,7 +722,7 @@ ipfs.mapJSON('Qm...', 'processItem', Value.fromString('parentId'))
 
 Şu anda desteklenen tek bayrak `ipfs.map`'e iletilmesi gereken `json` bayrağıdır. `json` bayrağı ile IPFS dosyası, her satırda bir JSON değeri olacak şekilde bir dizi JSON değerinden oluşmalıdır. `ipfs.map` çağrısı, dosyadaki her satırı okur, bir `JSONValue` olarak ayrıştırır (deserialize eder) ve her biri için geri çağırma (callback) fonksiyonunu çağırır. Geri çağırma fonksiyonu daha sonra `JSONValue`dan gelen verileri depolamak için varlık operasyonlarını kullanabilir. Varlık değişiklikleri yalnızca `ipfs.map`'i çağıran işleyici başarıyla tamamlandığında depolanır; bu sırada değişiklikler bellekte tutulur ve bu nedenle `ipfs.map`'in işleyebileceği dosya boyutu sınırlıdır.
 
-Başarılı olduğunda `ipfs.map`, `void` döndürür. Geri çağırma fonksiyonunun herhangi bir çağrısı bir hataya neden olursa, `ipfs.map`'i çağıran işleyici durdurulur ve subgraph başarısız olarak işaretlenir.
+On success, `ipfs.map` returns `void`. If any invocation of the callback causes an error, the handler that invoked `ipfs.map` is aborted, and the Subgraph is marked as failed.
 
 ### Kripto(Crypto) API'si
 
@@ -837,7 +837,7 @@ Temel `Entity` sınıfı ve alt sınıf olan `DataSourceContext` sınıfı, alan
 
 ### Manifest'teki DataSourceContext
 
-`dataSources` içindeki `context` bölümü, subgraph eşlemeleriniz içinde erişilebilen anahtar-değer çiftlerini tanımlamanıza olanak tanır. Kullanılabilir türler şunlardır: `Bool`, `String`, `Int`, `Int8`, `BigDecimal`, `Bytes`, `List` ve `BigInt`.
+The `context` section within `dataSources` allows you to define key-value pairs that are accessible within your Subgraph mappings. The available types are `Bool`, `String`, `Int`, `Int8`, `BigDecimal`, `Bytes`, `List`, and `BigInt`.
 
 İşte `context` bölümünde çeşitli türlerin kullanımını gösteren bir YAML örneği:
 
@@ -888,4 +888,4 @@ dataSources:
 - `List`: Elemanlardan oluşan bir liste belirtir. Her elemanın türü ve verisi belirtilmelidir.
 - `BigInt`: Büyük bir tamsayı değeri belirtir. Büyük boyutu nedeniyle tırnak içinde yazılması gerekir.
 
-Bu bağlama daha sonra subgraph eşleştirme dosyalarınızdan erişilebilir ve böylece daha dinamik ve yapılandırılabilir subgraphlar elde edebilirsiniz.
+This context is then accessible in your Subgraph mapping files, enabling more dynamic and configurable Subgraphs.

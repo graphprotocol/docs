@@ -1,10 +1,10 @@
-# `@live` queries in `graph-client`
+# `@live`查询`graph-client`
 
-Graph-Client implements a custom `@live` directive that can make every GraphQL query work with real-time data.
+Graph-客户端实现了一个自定义 `@live` 指令，可以让每个GraphQL 查询都与实时数据兼容。
 
-## Getting Started
+## 开始
 
-Start by adding the following configuration to your `.graphclientrc.yml` file:
+首先将以下配置添加到您的`.graphclientrc.yml`文件中：
 
 ```yaml
 plugins:
@@ -12,9 +12,9 @@ plugins:
       defaultInterval: 1000
 ```
 
-## Usage
+## 使用方法
 
-Set the default update interval you wish to use, and then you can apply the following GraphQL `@directive` over your GraphQL queries:
+设置您想要使用的默认更新间隔，然后您可以在 GraphQL 查询中应用下面的 GraphQL `@directive` ：
 
 ```graphql
 query ExampleQuery @live {
@@ -26,7 +26,7 @@ query ExampleQuery @live {
 }
 ```
 
-Or, you can specify a per-query interval:
+或者，您可以指定每个查询间隔：
 
 ```graphql
 query ExampleQuery @live(interval: 5000) {
@@ -36,8 +36,8 @@ query ExampleQuery @live(interval: 5000) {
 }
 ```
 
-## Integrations
+## 集成
 
-Since the entire network layer (along with the `@live` mechanism) is implemented inside `graph-client` core, you can use Live queries with every GraphQL client (such as Urql or Apollo-Client), as long as it supports streame responses (`AsyncIterable`).
+因为整个网络图层 (与 `@live` 机制一起) 是在 `graph-client` 核心内实现的， 您可以使用每个GraphQL客户端的实时查询(例如Urql 或 Apollo-Client)，只要它支持流回应(`AsyncIterable`)。
 
-No additional setup is required for GraphQL clients cache updates.
+GraphQL客户端缓存更新不需要额外设置。

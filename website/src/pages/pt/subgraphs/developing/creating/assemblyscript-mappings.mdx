@@ -1,16 +1,16 @@
 ---
-title: Writing AssemblyScript Mappings
+title: Escrita de Mapeamentos de AssemblyScript
 ---
 
 ## Visão geral
 
-The mappings take data from a particular source and transform it into entities that are defined within your schema. Mappings are written in a subset of [TypeScript](https://www.typescriptlang.org/docs/handbook/typescript-in-5-minutes.html) called [AssemblyScript](https://github.com/AssemblyScript/assemblyscript/wiki) which can be compiled to WASM ([WebAssembly](https://webassembly.org/)). AssemblyScript is stricter than normal TypeScript, yet provides a familiar syntax.
+Os mapeamentos tomam dados de uma fonte particular e os transformam em entidades que são definidas dentro do seu schema. São escritos em um subconjunto do [TypeScript](https://www.typescriptlang.org/docs/handbook/typescript-in-5-minutes.html) chamado [AssemblyScript](https://github.com/AssemblyScript/assemblyscript/wiki), que pode ser compilado ao ([WebAssembly](https://webassembly.org/)). O AssemblyScript é mais rígido que o TypeScript normal, mas rende uma sintaxe familiar.
 
 ## Como Escrever Mapeamentos
 
-For each event handler that is defined in `subgraph.yaml` under `mapping.eventHandlers`, create an exported function of the same name. Each handler must accept a single parameter called `event` with a type corresponding to the name of the event which is being handled.
+Para cada handler de evento definido no `subgraph.yaml` sob o `mapping.eventHandlers`, crie uma função exportada de mesmo nome. Cada handler deve aceitar um único parâmetro chamado `event` com um tipo a corresponder ao nome do evento a ser lidado.
 
-In the example subgraph, `src/mapping.ts` contains handlers for the `NewGravatar` and `UpdatedGravatar` events:
+In the example Subgraph, `src/mapping.ts` contains handlers for the `NewGravatar` and `UpdatedGravatar` events:
 
 ```javascript
 import { NewGravatar, UpdatedGravatar } from '../generated/Gravity/Gravity'
@@ -37,30 +37,30 @@ export function handleUpdatedGravatar(event: UpdatedGravatar): void {
 }
 ```
 
-The first handler takes a `NewGravatar` event and creates a new `Gravatar` entity with `new Gravatar(event.params.id.toHex())`, populating the entity fields using the corresponding event parameters. This entity instance is represented by the variable `gravatar`, with an id value of `event.params.id.toHex()`.
+O primeiro handler toma um evento `NewGravatar` e cria uma nova entidade `Gravatar` com o `new Gravatar(event.params.id.toHex())`, e assim popula os campos da entidade com os parâmetros de evento correspondentes. Esta instância da entidade é representada pelo variável `gravatar`, com um valor de id de `event.params.id.toHex()`.
 
-The second handler tries to load the existing `Gravatar` from the Graph Node store. If it does not exist yet, it is created on-demand. The entity is then updated to match the new event parameters before it is saved back to the store using `gravatar.save()`.
+O segundo handler tenta carregar o `Gravatar` existente do armazenamento do Graph Node. Se ele ainda não existe, ele é criado por demanda. A entidade é então atualizada para corresponder aos novos parâmetros de evento, antes de ser devolvida ao armazenamento com `gravatar.save()`.
 
 ### IDs Recomendadas para Criar Novas Entidades
 
-It is highly recommended to use `Bytes` as the type for `id` fields, and only use `String` for attributes that truly contain human-readable text, like the name of a token. Below are some recommended `id` values to consider when creating new entities.
+Recomendamos muito utilizar `Bytes` como o tipo para campos `id`, e só usar o `String` para atributos que realmente contenham texto legível para humanos, como o nome de um token. Abaixo estão alguns valores recomendados de `id` para considerar ao criar novas entidades.
 
 - `transfer.id = event.transaction.hash`
 
 - `let id = event.transaction.hash.concatI32(event.logIndex.toI32())`
 
-- For entities that store aggregated data, for e.g, daily trade volumes, the `id` usually contains the day number. Here, using a `Bytes` as the `id` is beneficial. Determining the `id` would look like
+- Para entidades que armazenam dados agregados como, por exemplo, volumes diários de trading, a `id` costuma conter o número do dia. Aqui, usar `Bytes` como a `id` é beneficial. Determinar a `id` pareceria com:
 
 ```typescript
 let dayID = event.block.timestamp.toI32() / 86400
 let id = Bytes.fromI32(dayID)
 ```
 
-- Convert constant addresses to `Bytes`.
+- Converta endereços constantes em Bytes\`.
 
 `const id = Bytes.fromHexString('0xdead...beef')`
 
-There is a [Graph Typescript Library](https://github.com/graphprotocol/graph-tooling/tree/main/packages/ts) which contains utilities for interacting with the Graph Node store and conveniences for handling smart contract data and entities. It can be imported into `mapping.ts` from `@graphprotocol/graph-ts`.
+Há uma [Biblioteca do Graph Typescript](https://github.com/graphprotocol/graph-tooling/tree/main/packages/ts), com utilidades para interagir com o armazenamento do Graph Node e conveniências para lidar com entidades e dados de contratos inteligentes. Ela pode ser importada ao `mapping.ts` do `@graphprotocol/graph-ts`.
 
 ### Gestão de entidades com IDs idênticas
 
@@ -72,7 +72,7 @@ Se nenhum valor for inserido para um campo na nova entidade com a mesma ID, o ca
 
 ## Geração de Código
 
-Para tornar mais fácil e seguro a tipos o trabalho com contratos inteligentes, eventos e entidades, o Graph CLI pode gerar tipos de AssemblyScript a partir do schema GraphQL do subgraph e das ABIs de contratos incluídas nas fontes de dados.
+In order to make it easy and type-safe to work with smart contracts, events and entities, the Graph CLI can generate AssemblyScript types from the Subgraph's GraphQL schema and the contract ABIs included in the data sources.
 
 Isto é feito com
 
@@ -80,7 +80,7 @@ Isto é feito com
 graph codegen [--output-dir <OUTPUT_DIR>] [<MANIFEST>]
 ```
 
-but in most cases, subgraphs are already preconfigured via `package.json` to allow you to simply run one of the following to achieve the same:
+but in most cases, Subgraphs are already preconfigured via `package.json` to allow you to simply run one of the following to achieve the same:
 
 ```sh
 # Yarn
@@ -90,7 +90,7 @@ yarn codegen
 npm run codegen
 ```
 
-This will generate an AssemblyScript class for every smart contract in the ABI files mentioned in `subgraph.yaml`, allowing you to bind these contracts to specific addresses in the mappings and call read-only contract methods against the block being processed. It will also generate a class for every contract event to provide easy access to event parameters, as well as the block and transaction the event originated from. All of these types are written to `<OUTPUT_DIR>/<DATA_SOURCE_NAME>/<ABI_NAME>.ts`. In the example subgraph, this would be `generated/Gravity/Gravity.ts`, allowing mappings to import these types with.
+This will generate an AssemblyScript class for every smart contract in the ABI files mentioned in `subgraph.yaml`, allowing you to bind these contracts to specific addresses in the mappings and call read-only contract methods against the block being processed. It will also generate a class for every contract event to provide easy access to event parameters, as well as the block and transaction the event originated from. All of these types are written to `<OUTPUT_DIR>/<DATA_SOURCE_NAME>/<ABI_NAME>.ts`. In the example Subgraph, this would be `generated/Gravity/Gravity.ts`, allowing mappings to import these types with.
 
 ```javascript
 import {
@@ -102,12 +102,12 @@ import {
 } from '../generated/Gravity/Gravity'
 ```
 
-In addition to this, one class is generated for each entity type in the subgraph's GraphQL schema. These classes provide type-safe entity loading, read and write access to entity fields as well as a `save()` method to write entities to store. All entity classes are written to `<OUTPUT_DIR>/schema.ts`, allowing mappings to import them with
+In addition to this, one class is generated for each entity type in the Subgraph's GraphQL schema. These classes provide type-safe entity loading, read and write access to entity fields as well as a `save()` method to write entities to store. All entity classes are written to `<OUTPUT_DIR>/schema.ts`, allowing mappings to import them with
 
 ```javascript
 import { Gravatar } from '../generated/schema'
 ```
 
-> **Note:** The code generation must be performed again after every change to the GraphQL schema or the ABIs included in the manifest. It must also be performed at least once before building or deploying the subgraph.
+> **Note:** The code generation must be performed again after every change to the GraphQL schema or the ABIs included in the manifest. It must also be performed at least once before building or deploying the Subgraph.
 
-Code generation does not check your mapping code in `src/mapping.ts`. If you want to check that before trying to deploy your subgraph to Graph Explorer, you can run `yarn build` and fix any syntax errors that the TypeScript compiler might find.
+Code generation does not check your mapping code in `src/mapping.ts`. If you want to check that before trying to deploy your Subgraph to Graph Explorer, you can run `yarn build` and fix any syntax errors that the TypeScript compiler might find.
