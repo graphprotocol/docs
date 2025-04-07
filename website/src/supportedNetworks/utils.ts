@@ -1,30 +1,29 @@
-import { NetworkType } from '@pinax/graph-networks-registry'
+import { NetworksRegistry } from '@pinax/graph-networks-registry'
 
-// Networks that should use the "mono" icon variant
+// Networks that should use the "mono" icon variant (TODO: add this feature to web3icons?)
 export const MONO_ICON_NETWORKS = [
+  'arweave-mainnet',
+  'autonomys-taurus',
+  'expchain-testnet',
+  'fraxtal',
+  'lens',
+  'lens-testnet',
+  'linea',
+  'linea-sepolia',
+  'lumia',
+  'mbase',
+  'megaeth-testnet',
+  'soneium',
+  'soneium-testnet',
+  'sonic',
+  'stellar',
   'vana',
   'vana-moksha',
   'xlayer-mainnet',
   'xlayer-sepolia',
   'zksync-era',
   'zksync-era-sepolia',
-  'sonic',
-  'soneium-testnet',
-  'soneium',
-  'linea-sepolia',
-  'linea',
-  'lens-testnet',
-  'expchain-testnet',
-  'autonomys-taurus',
-  'arweave-mainnet',
-  'fraxtal',
-  'lumia',
-  'mbase',
-  'megaeth-testnet',
 ]
-
-// TODO(@hayderkg, @benface, @0xa3k5): Add network icons to GDS for these networks
-export const MISSING_ICON_NETWORKS: string[] = []
 
 // Networks with Token API support (TODO: remove once the registry has this information)
 export const TOKEN_API_NETWORKS = ['mainnet', 'base', 'bsc', 'arbitrum-one', 'matic', 'optimism']
@@ -33,80 +32,38 @@ export const getIconVariant = (networkId: string): 'mono' | 'branded' => {
   return MONO_ICON_NETWORKS.includes(networkId) ? 'mono' : 'branded'
 }
 
-export const shouldShowSkeleton = (networkId: string): boolean => {
-  return MISSING_ICON_NETWORKS.includes(networkId) || !networkId
-}
-
-export const supportsTokenAPI = (networkId: string): boolean => {
-  return TOKEN_API_NETWORKS.includes(networkId)
-}
-
-export interface Network {
-  id: string
-  fullName: string
-  shortName?: string
-  networkType: NetworkType
-  graphNode?: {
-    protocol: string
-  }
-  caip2Id: string
-  nativeToken?: string
-  docsUrl?: string
-}
-
-export interface NetworkData {
-  id: string
-  shortName: string
-  fullName: string
-  networkType: NetworkType
-  caip2Id: string
-  services: {
-    subgraphs?: any[]
-    substreams?: any[]
-    firehose?: any[]
-  }
-}
-
-export interface ProcessedNetwork {
-  id: string
-  shortName: string
-  fullName: string
-  networkType: NetworkType
-  caip2Id: string
-  subgraphs: boolean
-  substreams: boolean
-  firehose: boolean
-  tokenapi: boolean
-  services: {
-    subgraphs?: any[]
-    substreams?: any[]
-    firehose?: any[]
-  }
-}
-
-export const processNetworksData = (networks: NetworkData[]): ProcessedNetwork[] => {
-  return networks
+export async function getSupportedNetworks() {
+  const registry = await NetworksRegistry.fromLatestVersion()
+  return registry.networks
     .flatMap((network) => {
+      const evm = network.caip2Id.startsWith('eip155:')
       const subgraphs = Boolean(network.services.subgraphs?.length)
       const substreams = Boolean(network.services.substreams?.length)
       const firehose = Boolean(network.services.firehose?.length)
-      const tokenapi = TOKEN_API_NETWORKS.includes(network.id)
-      if (!subgraphs && !substreams && !firehose && !tokenapi) {
+      const tokenApi = TOKEN_API_NETWORKS.includes(network.id)
+      if (!subgraphs && !substreams && !firehose && !tokenApi) {
         return []
       }
       return [
         {
           ...network,
+          evm,
           subgraphs,
           substreams,
           firehose,
-          tokenapi,
+          tokenApi,
         },
       ]
     })
     .sort((a, b) => a.fullName.localeCompare(b.fullName))
 }
 
-export const isEVMNetwork = (network: Network | NetworkData): boolean => {
-  return network.caip2Id.startsWith('eip155:')
+export type SupportedNetwork = Awaited<ReturnType<typeof getSupportedNetworks>>[number]
+
+export async function getSupportedNetworksStaticProps() {
+  return {
+    props: {
+      networks: await getSupportedNetworks(),
+    },
+  }
 }
