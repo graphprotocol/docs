@@ -1,10 +1,7 @@
 import { NetworkType } from '@pinax/graph-networks-registry'
-import { useData } from 'nextra/hooks'
-import type { ComponentPropsWithoutRef } from 'react'
 
-import { classNames, ExperimentalLink, Tooltip } from '@edgeandnode/gds'
+import { ButtonOrLink, ExperimentalLink, Tooltip } from '@edgeandnode/gds'
 import {
-  Clock,
   Firehose,
   GraphExplorer,
   GraphNode,
@@ -17,9 +14,9 @@ import { NetworkIcon } from '@edgeandnode/go'
 
 import { Card, Heading, TimeIcon } from '@/components'
 import { useI18n } from '@/i18n'
-import { getSupportedNetworks } from '@/supportedNetworks'
+import { type ProcessedNetwork } from '@/supportedNetworks'
 
-export default function HomePage() {
+export default function HomePage({ supportedNetworks }: { supportedNetworks: ProcessedNetwork[] }) {
   const { t } = useI18n()
 
   return (
@@ -141,7 +138,42 @@ export default function HomePage() {
               </ExperimentalLink>,
             ])}
           </p>
-          <SupportedNetworks className="mt-8" />
+          <div className="graph-docs-not-markdown mt-8 overflow-clip rounded-8 border border-space-1500">
+            <ul className="grid grid-cols-auto-fill-16 gap-px text-space-500">
+              {supportedNetworks
+                // TODO: Don't filter out testnets that don't have a mainnet
+                .filter((network) => network.networkType === NetworkType.Mainnet)
+                // Filter out networks that are either duplicates (same logo, same or similar short name) or irrelevant in this view
+                .filter(
+                  (network) =>
+                    !network.caip2Id.startsWith('beacon:') &&
+                    !['boba-bnb', 'eos-evm', 'polygon-zkevm', 'solana-accounts'].includes(network.id),
+                )
+                .filter((network) => {
+                  return (
+                    // TODO: Fix Zora mono logo in web3icons
+                    network.id !== 'zora' &&
+                    // TODO: Add support for Ultra in web3icons and `NetworkIcon`
+                    network.id !== 'ultra'
+                  )
+                })
+                .map((network) => (
+                  <li key={network.id} className="-mb-px -mr-px">
+                    <Tooltip content={network.shortName}>
+                      <ButtonOrLink
+                        href={`/supported-networks/${network.id}`}
+                        className={`
+                          flex aspect-square items-center justify-center border-b border-r border-space-1500 -outline-offset-1 transition
+                          hover:bg-space-1600
+                        `}
+                      >
+                        <NetworkIcon caip2Id={network.caip2Id as any} size={6} />
+                      </ButtonOrLink>
+                    </Tooltip>
+                  </li>
+                ))}
+            </ul>
+          </div>
         </section>
 
         <hr />
@@ -245,37 +277,5 @@ export default function HomePage() {
         </section>
       </div>
     </>
-  )
-}
-
-function SupportedNetworks({ className, ...props }: ComponentPropsWithoutRef<'div'>) {
-  const { supportedNetworks } = useData() as { supportedNetworks: Awaited<ReturnType<typeof getSupportedNetworks>> }
-
-  return (
-    <div
-      className={classNames(['graph-docs-not-markdown overflow-clip rounded-8 border border-space-1500', className])}
-      {...props}
-    >
-      <ul className="grid grid-cols-auto-fill-16 gap-px text-space-500">
-        {supportedNetworks
-          // TODO: Don't filter out testnets that don't have a mainnet
-          .filter((network) => network.networkType === NetworkType.Mainnet)
-          // Filter out networks that are either duplicates (same logo, same or similar short name) or irrelevant in this view
-          .filter(
-            (network) =>
-              !network.caip2Id.startsWith('beacon:') &&
-              !['boba-bnb', 'eos-evm', 'polygon-zkevm', 'solana-accounts'].includes(network.id),
-          )
-          // TODO: Fix Zora mono logo in web3icons
-          .filter((network) => network.id !== 'zora')
-          .map((network) => (
-            <Tooltip key={network.id} content={network.shortName}>
-              <li className="-mb-px -mr-px flex aspect-square items-center justify-center border-b border-r border-space-1500 transition hover:bg-space-1600">
-                <NetworkIcon caip2Id={network.caip2Id as any} size={6} />
-              </li>
-            </Tooltip>
-          ))}
-      </ul>
-    </div>
   )
 }

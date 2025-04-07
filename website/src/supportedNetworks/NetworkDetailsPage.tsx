@@ -1,21 +1,87 @@
-import { memo } from 'react'
-
+import { ExperimentalCopyButton, ExperimentalDescriptionList, ExperimentalLink } from '@edgeandnode/gds'
 import { Subgraph, Substreams, SubstreamsPoweredSubgraph } from '@edgeandnode/gds/icons'
+import { NetworkIcon } from '@edgeandnode/go'
 
 import { Card, TimeIcon } from '@/components'
 import { useI18n } from '@/i18n'
 
-import { isEVMNetwork, type Network } from '../utils'
+import { getIconVariant, isEVMNetwork, type Network } from './utils'
 
-type NetworkDetailsPageProps = {
-  network: Network
-}
-
-const EVMResources = memo(() => {
+export function NetworkDetailsPage({ network }: { network: Network }) {
   const { t } = useI18n()
 
   return (
-    <div className="graph-docs-not-markdown mt-8 grid grid-cols-1 gap-4">
+    <div className="col-[container]">
+      <div className="mb-5 mt-12 flex flex-col gap-3">
+        {network.caip2Id ? (
+          <NetworkIcon variant={getIconVariant(network.id)} caip2Id={network.caip2Id as any} size={10} />
+        ) : null}
+        <h2 className="leading-tight mt-0 text-24 text-white">{network.fullName}</h2>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <div className="col-span-2">
+          <div>
+            <ExperimentalDescriptionList size="medium">
+              <ExperimentalDescriptionList.Item label={t('index.supportedNetworks.type')}>
+                {network.networkType}
+              </ExperimentalDescriptionList.Item>
+              {network.graphNode?.protocol && (
+                <ExperimentalDescriptionList.Item label={t('index.supportedNetworks.protocol')}>
+                  {network.graphNode.protocol}
+                </ExperimentalDescriptionList.Item>
+              )}
+              {network.id && (
+                <ExperimentalDescriptionList.Item
+                  variant="mono"
+                  label={t('index.supportedNetworks.identifier')}
+                  action={<ExperimentalCopyButton size="small" variant="naked" value={network.id} />}
+                >
+                  {network.id}
+                </ExperimentalDescriptionList.Item>
+              )}
+              {network.caip2Id && (
+                <ExperimentalDescriptionList.Item
+                  variant="mono"
+                  label={t('index.supportedNetworks.chainId')}
+                  action={<ExperimentalCopyButton size="small" variant="naked" value={network.caip2Id} />}
+                >
+                  {network.caip2Id}
+                </ExperimentalDescriptionList.Item>
+              )}
+              {network.nativeToken && (
+                <ExperimentalDescriptionList.Item label={t('index.supportedNetworks.nativeCurrency')}>
+                  {network.nativeToken}
+                </ExperimentalDescriptionList.Item>
+              )}
+              {network.docsUrl && (
+                <ExperimentalDescriptionList.Item label={t('index.supportedNetworks.docs')}>
+                  <ExperimentalLink className="text-14" href={network.docsUrl} target="_blank">
+                    {network.docsUrl}
+                  </ExperimentalLink>
+                </ExperimentalDescriptionList.Item>
+              )}
+            </ExperimentalDescriptionList>
+          </div>
+        </div>
+      </div>
+
+      <hr />
+
+      <h3 className="text-h18 mt-0">{t('index.supportedNetworks.guides')}</h3>
+
+      <div className="graph-docs-not-markdown mt-8">
+        {isEVMNetwork(network) ? <EVMResources /> : <NonEVMResources />}
+      </div>
+    </div>
+  )
+}
+
+function EVMResources() {
+  const { t } = useI18n()
+
+  return (
+    <div className="grid grid-cols-1 gap-4">
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <Card
           href="https://thegraph.com/docs/en/subgraphs/quick-start/"
@@ -58,13 +124,13 @@ const EVMResources = memo(() => {
       </div>
     </div>
   )
-})
+}
 
-const NonEVMResources = memo(() => {
+function NonEVMResources() {
   const { t } = useI18n()
 
   return (
-    <div className="graph-docs-not-markdown mt-8 grid grid-cols-1 gap-4">
+    <div className="grid grid-cols-1 gap-4">
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <Card
           href="https://docs.substreams.dev/"
@@ -107,22 +173,4 @@ const NonEVMResources = memo(() => {
       </div>
     </div>
   )
-})
-
-EVMResources.displayName = 'EVMResources'
-NonEVMResources.displayName = 'NonEVMResources'
-
-const NetworkDetailsPage = memo(({ network }: NetworkDetailsPageProps) => {
-  const { t } = useI18n()
-
-  return (
-    <>
-      <h3 className="text-h18 mt-0">{t('index.supportedNetworks.guides')}</h3>
-      {isEVMNetwork(network) ? <EVMResources /> : <NonEVMResources />}
-    </>
-  )
-})
-
-NetworkDetailsPage.displayName = 'NetworkDetailsPage'
-
-export default NetworkDetailsPage
+}
