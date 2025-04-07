@@ -17,9 +17,9 @@ import { NetworkIcon } from '@edgeandnode/go'
 import { Callout, Table } from '@/components'
 import { useI18n } from '@/i18n'
 
-import { getIconVariant, type ProcessedNetwork } from './utils'
+import { getIconVariant, type SupportedNetwork } from './utils'
 
-export function NetworksTable({ networks }: { networks: ProcessedNetwork[] }) {
+export function NetworksTable({ networks }: { networks: SupportedNetwork[] }) {
   const { t } = useI18n()
   const [immediateSearchQuery, setSearchQuery] = useState('')
   const [immediateShowTestnets, setShowTestnets] = useState(false)
@@ -144,7 +144,7 @@ export function NetworksTable({ networks }: { networks: ProcessedNetwork[] }) {
                 <td align="center">{network.subgraphs ? <Check size={4} alt="Checkmark" /> : null}</td>
                 <td align="center">{network.substreams ? <Check size={4} alt="Checkmark" /> : null}</td>
                 <td align="center">{network.firehose ? <Check size={4} alt="Checkmark" /> : null}</td>
-                <td align="center">{network.tokenapi ? <Check size={4} alt="Checkmark" /> : null}</td>
+                <td align="center">{network.tokenApi ? <Check size={4} alt="Checkmark" /> : null}</td>
               </tr>
             ))}
           </tbody>

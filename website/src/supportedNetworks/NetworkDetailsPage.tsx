@@ -5,9 +5,9 @@ import { NetworkIcon } from '@edgeandnode/go'
 import { Card, TimeIcon } from '@/components'
 import { useI18n } from '@/i18n'
 
-import { getIconVariant, isEVMNetwork, type Network } from './utils'
+import { getIconVariant, type SupportedNetwork } from './utils'
 
-export function NetworkDetailsPage({ network }: { network: Network }) {
+export function NetworkDetailsPage({ network }: { network: SupportedNetwork }) {
   const { t } = useI18n()
 
   return (
@@ -70,9 +70,7 @@ export function NetworkDetailsPage({ network }: { network: Network }) {
 
       <h3 className="text-h18 mt-0">{t('index.supportedNetworks.guides')}</h3>
 
-      <div className="graph-docs-not-markdown mt-8">
-        {isEVMNetwork(network) ? <EVMResources /> : <NonEVMResources />}
-      </div>
+      <div className="graph-docs-not-markdown mt-8">{network.evm ? <EVMResources /> : <NonEVMResources />}</div>
     </div>
   )
 }

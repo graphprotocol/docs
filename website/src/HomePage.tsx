@@ -14,9 +14,9 @@ import { NetworkIcon } from '@edgeandnode/go'
 
 import { Card, Heading, TimeIcon } from '@/components'
 import { useI18n } from '@/i18n'
-import { type ProcessedNetwork } from '@/supportedNetworks'
+import { type SupportedNetwork } from '@/supportedNetworks'
 
-export default function HomePage({ supportedNetworks }: { supportedNetworks: ProcessedNetwork[] }) {
+export default function HomePage({ supportedNetworks }: { supportedNetworks: SupportedNetwork[] }) {
   const { t } = useI18n()
 
   return (
