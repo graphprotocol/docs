@@ -66,10 +66,10 @@ function NetworkDetailsPage({ network }: NetworkDetailsPageProps) {
       <div className="grid grid-cols-6 gap-4">
         {cards.map((card) => (
           <Card
-            key={t(card.titleKey as any)}
+            key={t(card.titleKey)}
             href={card.href}
-            title={t(card.titleKey as any)}
-            description={t(card.descriptionKey as any)}
+            title={t(card.titleKey)}
+            description={t(card.descriptionKey)}
             slotAboveTitle={<TimeIcon variant="reading" minutes={card.minutes} />}
             className="col-span-full [&:nth-child(-n+3)]:lg:col-span-2 [&:nth-child(-n+3)]:lg:min-h-64 [&:nth-child(n+4)]:lg:col-span-3"
             icon={card.icon}
