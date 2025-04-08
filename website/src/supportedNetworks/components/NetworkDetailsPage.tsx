@@ -1,6 +1,6 @@
 import { useI18n } from '@/i18n'
 
-import { isEVMNetwork, type Network, type NetworkData, type ProcessedNetwork,supportsTokenAPI } from '../utils'
+import { isEVMNetwork, type Network, type NetworkData, type ProcessedNetwork, supportsTokenAPI } from '../utils'
 
 import {
   evmNoTokenAPICards,
