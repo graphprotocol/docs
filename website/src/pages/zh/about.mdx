@@ -1,67 +1,55 @@
 ---
-title: 关于 The Graph
+title: About The Graph
+description: This page summarizes the core concepts and basics of The Graph Network.
 ---
 
-## 什么是 The Graph？
+## Explanation
 
-The Graph是一个强大的去中心化协议，可以无缝地查询区块链数据并将其索引。 它简化了查询区块链数据的复杂过程，使开发dapp 更快和更容易。
+### 什么是 The Graph？
 
-## 了解基础知识
+The Graph is a decentralized protocol for indexing and querying blockchain data. Its suite includes [Subgraphs](/subgraphs/developing/subgraphs/), [Substreams](/substreams/introduction/), [Token API BETA](/token-api/quick-start/), and tools like [Graph Explorer](/subgraphs/explorer/) and [Subgraph Studio](/subgraphs/developing/deploying/using-subgraph-studio/).
 
-像 [Uniswap](https://uniswap.org/)这样具有复杂智能合约的项目，以及像 [Bored Ape Yacht Club](https://boredapeyachtclub.com/) 这样的 NFTs 倡议，都在以太坊区块链上存储数据，因此，除了直接从区块链上读取基本数据外，真的很难。
+The Graph supports [90+ blockchains](/supported-networks/), enhancing dapp development and data retrieval.
 
-### 没有The Graph的挑战
+### Why is Blockchain Data Hard to Query?
 
-在上面列出的例子中，Bored Ape Yacht Club，您可以在 [合约](https://etherscan.io/address/0xbc4ca0eda7647a8ab7c2061c2e118a18a936f13d#code)上进行基本的读取操作。 您可以读取某个Ape的所有者。根据他们的ID阅读Ape的内容URI，或者阅读总供应。
+Reading onchain data from the blockchain (e.g., ownership history, metadata, relationships between assets) typically requires processing smart contract events, parsing metadata from IPFS, and aggregating data manually. This is very slow, complex, and resource-intensive.
 
-- 之所以能够做到这一点，是因为这些已阅读的操作直接编入智能合约本身。 然而，更高级、具体和现实世界的查询和操作，如集成、搜索、关系和非微不足道的过滤， **是不可能的**。
+## Solution
 
-- 例如，如果您想要查询某个特定地址所拥有的Ape，并根据某个特定特征改进您的搜索， 你无法通过与合约本身直接互动获取这种信息。
+### How The Graph Solves This
 
-- 为了获得这些数据，你必须处理曾经发出的每一个 [`传输`](https://etherscan.io/address/0xbc4ca0eda7647a8ab7c2061c2e118a18a936f13d#code#L1746) 事件，使用Token ID和IPFS的哈希值从IPFS读取元数据，然后将其汇总。
+The Graph simplifies the complex process of retrieving blockchain data through a global, decentralized network of Indexers that index Subgraphs. This infrastructure facilitates efficient, censorship-resistant query handling, allowing developers to build applications using blockchain data without the hassle of managing servers or custom indexing.
 
-### 为什么这是个问题？
+Each Subgraph defines:
 
-在浏览器中运行的去中心化应用程序（dapp）需要**几小时甚至几天**才能得到这些简单问题的答案。
+- Which smart contracts to watch
+- Which events to extract
+- How to map event data into a queryable format using [GraphQL](https://graphql.org/learn/)
 
-你也可以建立你自己的服务器，在那里处理交易，把它们保存到数据库，并在上面建立一个 API 终端，以便查询数据。 然而，这种选择是[资源密集型的](/resources/benefits/)，需要维护，会出现单点故障，并破坏了去中心化化所需的重要安全属性。
+### [Building a Subgraph](/subgraphs/developing/creating/starting-your-subgraph/)
 
-区块链的属性，如最终性、链重组或未封闭的区块，使这一过程进一步复杂化，并使从区块链数据中检索出正确查询结果不仅耗时，而且在概念上也很难。
+1. Define a [Subgraph Manifest](/subgraphs/developing/creating/subgraph-manifest/) with data sources and mappings.
+2. Use [Graph CLI](https://github.com/graphprotocol/graph-tooling/tree/main/packages/cli) to deploy the manifest to IPFS.
+3. An [Indexer](/indexing/overview/) picks it up and starts indexing Ethereum blocks.
+4. Data becomes queryable via a [GraphQL endpoint](/subgraphs/querying/graphql-api/).
 
-## The Graph提供了一个解决办法
+### Data Flow Overview
 
-The Graph通过一个去中心化的协议解决了这个挑战，这个协议可以索引并使区块链数据能够高效和高性能的查询。 这些API(索引的 "Subgraphs") 然后可以用标准的 GraphQL API查询。
+1. A dapp triggers a transaction on Ethereum by interacting with a smart contract.
 
-今天有一个去中心化的协议，它得到了 [Graph Node](https://github.com/graphprotocol/graph-node) 开放源代码实现的支持。
+2. As the transaction is processed, the smart contract emits one or more events.
 
-### The Graph 如何起效
+3. [Graph Node](/indexing/tooling/graph-node/) continuously scans the Ethereum blockchain for new blocks and filters for events relevant to a deployed Subgraph.
 
-索引区块链数据是非常困难的，但是The Graph使它变得容易。The Graph通过子图学习如何索引以太坊数据。 子图是基于 blockchain 数据从区块链中提取数据的自定义 API， 处理它，并存储它，以便它可以通过 GraphQL 无缝查询。
+4. When a matching event is identified, Graph Node executes the Subgraph’s mapping logic, which is a WASM module that transforms event data into structured entities. These entities are subsequently stored and indexed.
 
-#### 详情
-
-- The Graph使用子图描述，它称为子图中的子图清单。
-
-- 子图描述定义了子图所关注的智能合约，这些合约中需要关注的事件，以及如何将事件数据映射到The Graph将存储在其数据库中的数据。
-
-- 创建子图时，您需要写子图清单。
-
-- 一旦编写了`子图清单`，就可以使用Graph CLI将定义存储在IPFS中，并告诉索引人开始为该子图的数据编制索引。
+5. The dapp queries the Graph Node via a [GraphQL API](https://graphql.org/learn/), retrieving indexed data to render in the UI. Users can then take actions that generate new transactions, continuing the cycle.
 
 此图提供了部署子图清单后用于处理以太坊交易的数据流的更多细节。
 
 ![解释The Graph如何使用Graph节点向数据消费者提供查询的图形。](/img/graph-dataflow.png)
 
-流程遵循这些步骤：
-
-1.  一个去中心化的应用程序通过智能合约上的交易向以太坊添加数据。
-2.  智能合约在处理交易时，会发出一个或多个事件。
-3.  Graph 节点不断扫描以太坊的新区块和它们可能包含的子图的数据。
-4.  Graph 节点在这些区块中为你的子图找到以太坊事件并运行你提供的映射处理程序。 映射是一个 WASM 模块，它创建或更新 Graph 节点存储的数据实体，以响应以太坊事件。
-5.  去中心化的应用程序使用Graph节点的[GraphQL 端点](https://graphql.org/learn/)，从区块链的索引中查询 Graph 节点的数据。 Graph 节点反过来将 GraphQL 查询转化为对其底层数据存储的查询，以便利用存储的索引功能来获取这些数据。 去中心化的应用程序在一个丰富的用户界面中为终端用户显示这些数据，他们用这些数据在以太坊上发行新的交易。 就这样周而复始。
-
 ## 下一步
 
-以下各节更深入地审视了子图、其部署情况和数据查询情况。
-
-在编写自己的子图之前，建议您探索[Graph Explorer](https://thegraph.com/explorer)并查看一些已经部署的子图。每个Subgraph的页面都包含一个GraphQL游乐场，允许您查询其数据。
+Explore [Graph Explorer](https://thegraph.com/explorer) to view and query existing Subgraphs.
