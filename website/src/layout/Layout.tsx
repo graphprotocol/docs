@@ -304,22 +304,23 @@ export default function Layout({ pageOpts, children }: NextraThemeLayoutProps<Fr
         {/* TODO: Fix issue where the page scrolls up when elements in the header are tabbed to */}
         <header
           className={`
-            sticky top-0 z-10 grid h-[var(--graph-docs-header-height)] grid-cols-[1fr_auto_1fr] items-center border-b border-space-1500 bg-space-1800
+            sticky top-0 z-10 grid h-[var(--graph-docs-header-height)] grid-cols-[auto_1fr_1fr] items-center border-b border-space-1500 bg-space-1800
             md:grid-cols-[var(--graph-docs-sidebar-width)_auto]
           `}
         >
           <div className="contents md:flex md:items-center md:justify-center md:ps-[var(--graph-docs-header-padding)]">
-            <ButtonOrLink
-              href="/"
-              className="text-body-large flex items-center text-space-300 outline-offset-4 transition hover:text-white md:-ms-1 md:me-auto"
-            >
-              <span className="absolute -inset-2" />
-              <TheGraph color="white" className="prop-size-8 md:prop-size-7" />
-              <span className="flex items-center max-md:hidden">
-                <span className="me-4.5 ms-3.5 h-5 w-px shrink-0 bg-space-1300" />
-                <span>Docs</span>
-              </span>
-            </ButtonOrLink>
+            <div className="flex w-full items-center max-md:ml-2">
+              <ButtonOrLink href="https://thegraph.com/">
+                <TheGraph color="white" className="prop-size-7" />
+              </ButtonOrLink>
+              <span className="me-4.5 ms-3.5 h-5 w-px shrink-0 bg-space-1300 " />
+              <ButtonOrLink
+                href="/"
+                className="text-body-large text-space-300 outline-offset-4 transition hover:text-white md:-ms-1 md:me-auto"
+              >
+                Docs
+              </ButtonOrLink>
+            </div>
             <div className="order-first px-[var(--graph-docs-header-padding)] md:order-none md:px-0">
               <ExperimentalButton
                 data-sidebar-expanded-on-mobile={sidebarExpandedOnMobile || undefined}
