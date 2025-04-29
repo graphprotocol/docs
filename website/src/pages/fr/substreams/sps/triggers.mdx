@@ -1,0 +1,47 @@
+---
+title: Déclencheurs de Substreams
+---
+
+Use Custom Triggers and enable the full use GraphQL.
+
+## Aperçu
+
+Les déclencheurs personnalisés vous permettent d'envoyer des données directement dans votre fichier de mappage de subgraph et dans vos entités, qui sont similaires aux tables et aux champs. Cela vous permet d'utiliser pleinement la couche GraphQL.
+
+En important les définitions Protobuf émises par votre module Substreams, vous pouvez recevoir et traiter ces données dans le gestionnaire de votre subgraph. Cela garantit une gestion efficace et rationalisée des données dans le cadre du Subgraph.
+
+### Définition de `handleTransactions`
+
+Le code suivant montre comment définir une fonction `handleTransactions` dans un gestionnaire de Subgraph. Cette fonction reçoit comme paramètre de Substreams des Bytes bruts et les décode en un objet `Transactions`. Pour chaque transaction, une nouvelle entité Subgraph est créée.
+
+```tsx
+export function handleTransactions(bytes: Uint8Array): void {
+  let transactions = assembly.eth.transaction.v1.Transactions.decode(bytes.buffer).transactions // 1.
+  if (transactions.length == 0) {
+    log.info('No transactions found', [])
+    return
+  }
+
+  for (let i = 0; i < transactions.length; i++) {
+    // 2.
+    let transaction = transactions[i]
+
+    let entity = new Transaction(transaction.hash) // 3.
+    entity.from = transaction.from
+    entity.to = transaction.to
+    entity.save()
+  }
+}
+```
+
+Voici ce que vous voyez dans le fichier `mappings.ts` :
+
+1. Les bytes contenant les données Substreams sont décodés en un objet `Transactions` généré, qui est utilisé comme n’importe quel autre objet AssemblyScript
+2. Boucle sur les transactions
+3. Créer une nouvelle entité de subgraph pour chaque transaction
+
+Pour découvrir un exemple détaillé de subgraph à déclencheurs, [consultez le tutoriel](/sps/tutorial/).
+
+### Ressources supplémentaires
+
+Pour élaborer votre premier projet dans le conteneur de développement, consultez l'un des [guides pratiques](/substreams/developing/dev-container/).
