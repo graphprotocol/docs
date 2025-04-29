@@ -1,0 +1,155 @@
+---
+title: "Tutorial: Einrichten eines Substreams-basierten Subgraphen auf Solana"
+sidebarTitle: Tutorial
+---
+
+Erfolgreiche Einrichtung eines auslösungsbasierten Substreams-powered Subgraphs für ein Solana SPL-Token.
+
+## Los geht’s
+
+For a video tutorial, check out [How to Index Solana with a Substreams-powered Subgraph](/sps/tutorial/#video-tutorial)
+
+### Voraussetzungen
+
+Bevor Sie beginnen, stellen Sie Folgendes sicher:
+
+- Vervollständigen Sie das [Erste-Schritte-Guide] (https://github.com/streamingfast/substreams-starter), um Ihre Entwicklungsumgebung mit einem Dev Container einzurichten.
+- Sie sollten mit The Graph und grundlegenden Blockchain-Konzepten wie Transaktionen und Protobufs vertraut sein.
+
+### Schritt 1: Initialisieren Sie Ihr Projekt
+
+1. Öffnen Sie Ihren Dev Container und führen Sie den folgenden Befehl aus, um Ihr Projekt zu initialisieren:
+
+   ```bash
+   substreams init
+   ```
+
+2. Wählen Sie die Option „Minimalprojekt“.
+
+3. Ersetzen Sie den Inhalt der generierten Datei `substreams.yaml` durch die folgende Konfiguration, die Transaktionen für das Orca-Konto nach der SPL-Token-Programm-ID filtert:
+
+```yaml
+specVersion: v0.1.0
+Paket:
+  Name: my_project_sol
+  Version: v0.1.0
+
+importiert: # Übergeben Sie Ihr spkg von Interesse
+  solana: https://github.com/streamingfast/substreams-solana-spl-token/raw/master/tokens/solana-spl-token-v0.1.0.spkg
+
+Module:
+  - name: map_spl_transfers
+    use: solana:map_block # Wählen Sie die entsprechenden Module aus, die in Ihrem spkg verfügbar sind
+    initialBlock: 260000082
+
+  - name: map_transactions_by_programid
+    use: solana:solana:transactions_by_programid_without_votes
+
+netzwerk: solana-mainnet-beta
+
+params: # Passen Sie die param-Felder an Ihre Bedürfnisse an.
+  # Für program_id: TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA
+  map_spl_transfers: token_contract:orcaEKTdK7LKz57vaAYr9QeNsVEPfiu6QeMU1kektZE
+```
+
+### Schritt 2: Erzeugen des Subgraph-Manifests
+
+Sobald das Projekt initialisiert ist, erzeugen Sie ein Subgraph-Manifest, indem Sie den folgenden Befehl im Dev Container ausführen:
+
+```bash
+substreams codegen subgraph
+```
+
+Sie erzeugen ein `subgraph.yaml`-Manifest, das das Substreams-Paket als Datenquelle importiert:
+
+```yaml
+---
+dataSources:
+  - kind: substreams
+    name: my_project_sol
+    network: solana-mainnet-beta
+    source:
+      package:
+        moduleName: map_spl_transfers # Module defined in the substreams.yaml
+        file: ./my-project-sol-v0.1.0.spkg
+    mapping:
+      apiVersion: 0.0.9
+      kind: substreams/graph-entities
+      file: ./src/mappings.ts
+      handler: handleTriggers
+```
+
+### Schritt 3: Definieren Sie Entitäten in `schema.graphql`
+
+Definieren Sie die Felder, die Sie in Ihren Subgraph-Entitäten speichern wollen, indem Sie die Datei `schema.graphql` aktualisieren.
+
+Hier ist ein Beispiel:
+
+```graphql
+type MyTransfer @entity {
+  id: ID!
+  amount: String!
+  source: String!
+  designation: String!
+  signers: [String!]!
+}
+```
+
+Dieses Schema definiert eine `MyTransfer`-Entität mit Feldern wie `id`, `amount`, `source`, `designation` und `signers`.
+
+### Schritt 4: Umgang mit Substreams Daten in `mappings.ts`
+
+Mit den erzeugten Protobuf-Objekten können Sie nun die dekodierten Substreams-Daten in Ihrer Datei `mappings.ts` im Verzeichnis `./src`verarbeiten.
+
+Das folgende Beispiel zeigt, wie die nicht abgeleiteten Überweisungen, die mit der Orca-Kontonummer verbunden sind, in die Subgraph-Entitäten extrahiert werden:
+
+```ts
+import { Protobuf } from 'as-proto/assembly'
+import { Events as protoEvents } from './pb/sf/solana/spl/token/v1/Events'
+import { MyTransfer } from '../generated/schema'
+
+export function handleTriggers(bytes: Uint8Array): void {
+  const input: protoEvents = Protobuf.decode<protoEvents>(bytes, protoEvents.decode)
+
+  for (let i = 0; i < input.data.length; i++) {
+    const event = input.data[i]
+
+    if (event.transfer != null) {
+      let entity_id: string = `${event.txnId}-${i}`
+      const entity = new MyTransfer(entity_id)
+      entity.amount = event.transfer!.instruction!.amount.toString()
+      entity.source = event.transfer!.accounts!.source
+      entity.designation = event.transfer!.accounts!.destination
+
+      if (event.transfer!.accounts!.signer!.single != null) {
+        entity.signers = [event.transfer!.accounts!.signer!.single!.signer]
+      } else if (event.transfer!.accounts!.signer!.multisig != null) {
+        entity.signers = event.transfer!.accounts!.signer!.multisig!.signers
+      }
+      entity.save()
+    }
+  }
+}
+```
+
+### Schritt 5: Erzeugen von Protobuf-Dateien
+
+Um Protobuf-Objekte in AssemblyScript zu erzeugen, führen Sie den folgenden Befehl aus:
+
+```bash
+npm run protogen
+```
+
+Dieser Befehl konvertiert die Protobuf-Definitionen in AssemblyScript, so dass Sie sie im Handler des Subgraphen verwenden können.
+
+### Schlussfolgerung
+
+Herzlichen Glückwunsch! Sie haben erfolgreich einen Trigger-basierten Substreams-powered Subgraph für ein Solana SPL-Token eingerichtet. Im nächsten Schritt können Sie Ihr Schema, Ihre Mappings und Module an Ihren spezifischen Anwendungsfall anpassen.
+
+### Video-Anleitung
+
+<VideoEmbed title="How to Index Solana with a Substreams-powered Subgraph" youtube="RmKi-Nq9E_A" />
+
+### Zusätzliche Ressourcen
+
+Für weitergehende Anpassungen und Optimierungen lesen Sie bitte die offizielle [Substreams-Dokumentation] (https://substreams.streamingfast.io/tutorials/solana).
