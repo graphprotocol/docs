@@ -5,5 +5,5 @@ export default {
   introduction: '',
   developing: titles.developing,
   publishing: '',
-  sps: 'Substreams-Powered Subgraphs',
+  sps: titles.sps,
 }
