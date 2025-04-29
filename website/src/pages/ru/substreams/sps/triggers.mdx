@@ -1,0 +1,47 @@
+---
+title: Триггеры Субпотоков
+---
+
+Use Custom Triggers and enable the full use GraphQL.
+
+## Обзор
+
+Custom Triggers allow you to send data directly into your Subgraph mappings file and entities, which are similar to tables and fields. This enables you to fully use the GraphQL layer.
+
+By importing the Protobuf definitions emitted by your Substreams module, you can receive and process this data in your Subgraph's handler. This ensures efficient and streamlined data management within the Subgraph framework.
+
+### Defining `handleTransactions`
+
+Следующий код демонстрирует, как определить функцию `handleTransactions` в обработчике субграфа. Эта функция принимает сырые байты Субпотоков в качестве параметра и декодирует их в объект `Transactions`. Для каждой транзакции создается новый объект субграфа.
+
+```tsx
+export function handleTransactions(bytes: Uint8Array): void {
+  let transactions = assembly.eth.transaction.v1.Transactions.decode(bytes.buffer).transactions // 1.
+  if (transactions.length == 0) {
+    log.info('No transactions found', [])
+    return
+  }
+
+  for (let i = 0; i < transactions.length; i++) {
+    // 2.
+    let transaction = transactions[i]
+
+    let entity = new Transaction(transaction.hash) // 3.
+    entity.from = transaction.from
+    entity.to = transaction.to
+    entity.save()
+  }
+}
+```
+
+Вот что Вы видите в файле `mappings.ts`:
+
+1. Байты, содержащие данные Субпотоков, декодируются в сгенерированный объект `Transactions`. Этот объект используется как любой другой объект на AssemblyScript
+2. Итерация по транзакциям (процесс поочерёдного прохода по всем транзакциям для их анализа или обработки)
+3. Создание нового объекта субграфа для каждой транзакции
+
+Чтобы ознакомиться с подробным примером субграфа на основе триггера, [ознакомьтесь с руководством](/sps/tutorial/).
+
+### Дополнительные ресурсы
+
+To scaffold your first project in the Development Container, check out one of the [How-To Guide](/substreams/developing/dev-container/).
