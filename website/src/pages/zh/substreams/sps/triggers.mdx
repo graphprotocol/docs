@@ -1,0 +1,47 @@
+---
+title: Substreams触发器
+---
+
+使用自定义触发器并启用完全使用GraphQL。
+
+## 概述
+
+自定义触发器允许您将数据直接发送到子图映射文件和实体中，这些文件和实体类似于表和字段。这使您能够充分使用GraphQL层。
+
+通过导入Substreams模块发出的Protobuf定义，您可以在子图的处理程序中接收和处理这些数据。这确保了子图框架内高效和简化的数据管理。
+
+### 定义`处理交易`
+
+以下代码演示了如何在子图处理程序中定义`handleTransactions`函数。此函数接收原始Substreams字节作为参数，并将其解码为`Transactions`对象。对于每个交易，都会创建一个新的子图实体。
+
+```tsx
+export function handleTransactions(bytes: Uint8Array): void {
+  let transactions = assembly.eth.transaction.v1.Transactions.decode(bytes.buffer).transactions // 1.
+  if (transactions.length == 0) {
+    log.info('No transactions found', [])
+    return
+  }
+
+  for (let i = 0; i < transactions.length; i++) {
+    // 2.
+    let transaction = transactions[i]
+
+    let entity = new Transaction(transaction.hash) // 3.
+    entity.from = transaction.from
+    entity.to = transaction.to
+    entity.save()
+  }
+}
+```
+
+以下是您在`mappings.ts`文件中看到的内容：
+
+1. 包含Substreams数据的字节被解码为生成的`交易`对象，该对象与任何其他AssemblyScript对象一样使用
+2. 循环交易
+3. 为每笔交易创建一个新的子图实体
+
+要查看基于触发器的子图的详细示例，[单击此处](/sps/tutorial/)。
+
+### 其他资源
+
+要在开发容器中构建你的第一个项目，请查看[操作指南](/substreams/developing/dev-container/)。
