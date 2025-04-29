@@ -1,0 +1,137 @@
+---
+title: "Tutorial: Como Montar um Subgraph Movido a Substreams na Solana"
+sidebarTitle: Tutorial
+---
+
+Configure um subgraph, movido pelo Substreams e baseado em gatilhos, para um token da SPL (Biblioteca de Protocolos da Solana) da Solana.
+
+## Como Começar
+
+Para ver um tutorial em vídeo sobre o assunto, [clique aqui](/sps/tutorial/#video-tutorial)
+
+### Pré-requisitos
+
+Antes de começar:
+
+- Complete o [Guia de Introdução](https://github.com/streamingfast/substreams-starter) para montar o seu ambiente de programação com um Recipiente de Programação.
+- Familiarize-se com o The Graph e conceitos básicos de blockchain, como transações e Protobufs.
+
+### Passo 1: Inicialize o Seu Projeto
+
+1. Para inicializar o seu projeto, abra o seu Recipiente e execute o seguinte comando:
+
+   ```bash
+   substreams init
+   ```
+
+2. Selecione a opção de projeto "minimal" (mínimo).
+
+3. Troque os conteúdos do arquivo `substreams.yaml` gerado com a seguinte configuração, que filtra transações para a conta do Orca no ID de programa do token da SPL:
+
+```yaml
+params: # Modifique os parâmetros a seu gosto
+  # For program_id: TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA
+  map_spl_transfers: token_contract:orcaEKTdK7LKz57vaAYr9QeNsVEPfiu6QeMU1kektZE
+```
+
+### Passo 2: Crie o Manifest do Subgraph
+
+Com o projeto inicializado, gere um manifest de subgraph com o seguinte comando no Recipiente de Programação:
+
+```bash
+substreams codegen subgraph
+```
+
+Será gerado um manifest `subgraph.yaml` que importa o pacote do Substreams como uma fonte de dados:
+
+```yaml
+---
+dataSources:
+  - kind: substreams
+    name: my_project_sol
+    network: solana-mainnet-beta
+    source:
+      package:
+        moduleName: map_spl_transfers # Módulo definido no substreams.yaml
+        file: ./my-project-sol-v0.1.0.spkg
+    mapping:
+      apiVersion: 0.0.9
+      kind: substreams/graph-entities
+      file: ./src/mappings.ts
+      handler: handleTriggers
+```
+
+### Passo 3: Defina as Entidades em `schema.graphql`
+
+Para definir os campos a guardar nas suas entidades de subgraph, atualize o arquivo `schema.graphql`.
+
+Por exemplo:
+
+```graphql
+type MyTransfer @entity {
+  id: ID!
+  amount: String!
+  source: String!
+  designation: String!
+  signers: [String!]!
+}
+```
+
+Este schema define uma entidade `MyTransfer` com campos como `id`, `amount`, `source`, `designation`, e `signers`.
+
+### Passo 4: Controle Dados do Substreams no `mappings.ts`
+
+Com os objetos do Protobuf criados, agora você pode tratar os dados descodificados do Substreams no seu arquivo `mappings.ts` no diretório `./src`.
+
+O exemplo abaixo demonstra como extrair as transferências não derivadas associadas à id de conta do Orca para entidades de subgraph:
+
+```ts
+import { Protobuf } from 'as-proto/assembly'
+import { Events as protoEvents } from './pb/sf/solana/spl/token/v1/Events'
+import { MyTransfer } from '../generated/schema'
+
+export function handleTriggers(bytes: Uint8Array): void {
+  const input: protoEvents = Protobuf.decode<protoEvents>(bytes, protoEvents.decode)
+
+  for (let i = 0; i < input.data.length; i++) {
+    const event = input.data[i]
+
+    if (event.transfer != null) {
+      let entity_id: string = `${event.txnId}-${i}`
+      const entity = new MyTransfer(entity_id)
+      entity.amount = event.transfer!.instruction!.amount.toString()
+      entity.source = event.transfer!.accounts!.source
+      entity.designation = event.transfer!.accounts!.destination
+
+      if (event.transfer!.accounts!.signer!.single != null) {
+        entity.signers = [event.transfer!.accounts!.signer!.single!.signer]
+      } else if (event.transfer!.accounts!.signer!.multisig != null) {
+        entity.signers = event.transfer!.accounts!.signer!.multisig!.signers
+      }
+      entity.save()
+    }
+  }
+}
+```
+
+### Passo 5: Crie Arquivos de Protobuf
+
+Para gerar objetos do Protobuf no AssemblyScript, execute:
+
+```bash
+npm run protogen
+```
+
+Este comando converte as definições do Protobuf em AssemblyScript, permitindo o seu uso no handler do subgraph.
+
+### Conclusão
+
+Parabéns! Está montado um subgraph movido a Substreams, baseado em gatilhos, para um token da SPL da Solana. Agora dá para personalizar mais o seu schema, os seus mapeamentos, e os seus módulos de modo que combinem com o seu caso de uso específico.
+
+### Tutorial em vídeo
+
+<VideoEmbed title="Como indexar a Solana com um Subgraph movido a Substreams" youtube="RmKi-Nq9E_A" />
+
+### Outros Recursos
+
+Para otimizações e personalizações mais avançadas, veja a [documentação oficial do Substreams](https://substreams.streamingfast.io/tutorials/solana).
