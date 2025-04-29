@@ -1,0 +1,47 @@
+---
+title: Trigger für Substreams
+---
+
+Verwenden Sie Custom Triggers und aktivieren Sie die volle Nutzung von GraphQL.
+
+## Überblick
+
+Mit benutzerdefinierten Triggern können Sie Daten direkt in Ihre Subgraph-Mappings-Datei und Entitäten senden, die Tabellen und Feldern ähneln. So können Sie die GraphQL-Schicht vollständig nutzen.
+
+Durch den Import der Protobuf-Definitionen, die von Ihrem Substreams-Modul ausgegeben werden, können Sie diese Daten in Ihrem Subgraph-Handler empfangen und verarbeiten. Dies gewährleistet eine effiziente und schlanke Datenverwaltung innerhalb des Subgraph-Frameworks.
+
+### Definieren von `handleTransactions`
+
+Der folgende Code veranschaulicht, wie eine Funktion `handleTransactions` in einem Subgraph-Handler definiert wird. Diese Funktion empfängt rohe Substream-Bytes als Parameter und dekodiert sie in ein `Transactions`-Objekt. Für jede Transaktion wird eine neue Subgraph-Entität erstellt.
+
+```tsx
+export function handleTransactions(bytes: Uint8Array): void {
+  let transactions = assembly.eth.transaction.v1.Transactions.decode(bytes.buffer).transactions // 1.
+  if (transactions.length == 0) {
+    log.info('No transactions found', [])
+    return
+  }
+
+  for (let i = 0; i < transactions.length; i++) {
+    // 2.
+    let transaction = transactions[i]
+
+    let entity = new Transaction(transaction.hash) // 3.
+    entity.from = transaction.from
+    entity.to = transaction.to
+    entity.save()
+  }
+}
+```
+
+Das sehen Sie in der Datei `mappings.ts`:
+
+1. Die Bytes, die die Substreams enthalten, werden in das generierte `Transactions`-Objekt dekodiert. Dieses Objekt wird wie jedes andere AssemblyScript-Objekt verwendet
+2. Looping über die Transaktionen
+3. Erstellen einer neuen Subgraph-Entität für jede Transaktion
+
+Ein ausführliches Datenbeispiel für einen auslöserbasierten Subgraphen finden Sie [hier](/sps/tutorial/).
+
+### Zusätzliche Ressourcen
+
+Um Ihr erstes Projekt im Entwicklungscontainer zu erstellen, lesen Sie einen der [Schritt-für-Schritt-Guide](/substreams/developing/dev-container/).
