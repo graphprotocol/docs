@@ -152,9 +152,7 @@ export default function HomePage({ supportedNetworks }: { supportedNetworks: Sup
                 .filter((network) => {
                   return (
                     // TODO: Fix Zora mono logo in web3icons
-                    network.id !== 'zora' &&
-                    // TODO: Add support for Ultra in web3icons and `NetworkIcon`
-                    network.id !== 'ultra'
+                    network.id !== 'zora'
                   )
                 })
                 .map((network) => (
@@ -167,7 +165,7 @@ export default function HomePage({ supportedNetworks }: { supportedNetworks: Sup
                           hover:bg-space-1600
                         `}
                       >
-                        <NetworkIcon caip2Id={network.caip2Id as any} size={6} />
+                        <NetworkIcon network={network} size={6} />
                       </ButtonOrLink>
                     </Tooltip>
                   </li>

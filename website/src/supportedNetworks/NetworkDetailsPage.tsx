@@ -13,9 +13,7 @@ export function NetworkDetailsPage({ network }: { network: SupportedNetwork }) {
   return (
     <div className="col-[container]">
       <div className="mb-5 mt-12 flex flex-col gap-3">
-        {network.caip2Id ? (
-          <NetworkIcon variant={getIconVariant(network.id)} caip2Id={network.caip2Id as any} size={10} />
-        ) : null}
+        <NetworkIcon network={network} variant={getIconVariant(network.id)} size={10} />
         <h2 className="leading-tight mt-0 text-24 text-white">{network.fullName}</h2>
       </div>
 

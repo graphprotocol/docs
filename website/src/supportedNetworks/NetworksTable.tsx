@@ -127,7 +127,7 @@ export function NetworksTable({ networks }: { networks: SupportedNetwork[] }) {
                 <td>
                   <ButtonOrLink href={`/supported-networks/${network.id}`} className="static outline-none">
                     <span className="flex items-center gap-2">
-                      <NetworkIcon variant={getIconVariant(network.id)} caip2Id={network.caip2Id as any} size={5} />
+                      <NetworkIcon network={network} variant={getIconVariant(network.id)} size={5} />
                       <span className="text-body-xsmall">{network.shortName}</span>
                     </span>
                     <span className="absolute inset-y-0 start-0 z-10 w-[1999px]" />
