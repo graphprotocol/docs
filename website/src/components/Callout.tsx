@@ -45,9 +45,9 @@ export const Callout = ({
       className={classNames([
         `flex gap-2 rounded-8 border p-4 ps-3
         data-[variant=important]:border-solar-500/50
-        data-[variant=info]:border-astro-500/50
+        data-[variant=info]:border-galactic-500/50
         data-[variant=important]:bg-solar-500/10
-        data-[variant=info]:bg-astro-500/10
+        data-[variant=info]:bg-galactic-500/10
         --:my-8 --:last:mb-0 -:is-[li>*]:my-4`,
         className,
       ])}
@@ -55,7 +55,7 @@ export const Callout = ({
     >
       <div className="flex size-6 shrink-0 items-center justify-center">
         {variant === 'info' ? (
-          <Lightbulb size={4} color="astro-500" alt={!title ? t('global.content.callout.note') : ''} />
+          <Lightbulb size={4} color="galactic-500" alt={!title ? t('global.content.callout.note') : ''} />
         ) : (
           <ExclamationMark size={4} color="solar-500" alt={!title ? t('global.content.callout.important') : ''} />
         )}
