@@ -67,13 +67,6 @@ const withNextra = nextra({
       '---3': {
         type: 'separator',
       },
-      sps: {
-        type: 'children',
-        title: t('global.navigation.sps'),
-      },
-      '---4': {
-        type: 'separator',
-      },
       'token-api': {
         type: 'children',
         title: t('global.navigation.tokenApi'),
