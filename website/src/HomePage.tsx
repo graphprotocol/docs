@@ -149,11 +149,9 @@ export default function HomePage({ supportedNetworks }: { supportedNetworks: Sup
                     !network.caip2Id.startsWith('beacon:') &&
                     !['boba-bnb', 'eos-evm', 'polygon-zkevm', 'solana-accounts'].includes(network.id),
                 )
+                // Filter out networks that don't have a proper monochrome logo
                 .filter((network) => {
-                  return (
-                    // TODO: Fix Zora mono logo in web3icons
-                    network.id !== 'zora'
-                  )
+                  return network.id !== 'zora'
                 })
                 .map((network) => (
                   <li key={network.id} className="-mb-px -mr-px">
