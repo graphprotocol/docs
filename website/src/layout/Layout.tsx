@@ -304,7 +304,7 @@ export default function Layout({ pageOpts, children }: NextraThemeLayoutProps<Fr
         {/* TODO: Fix issue where the page scrolls up when elements in the header are tabbed to */}
         <header
           className={`
-            sticky top-0 z-10 grid h-[var(--graph-docs-header-height)] grid-cols-[auto_1fr_1fr] items-center border-b border-space-1500 bg-space-1800
+            sticky top-0 z-10 grid h-[var(--graph-docs-header-height)] grid-cols-[auto_auto_1fr] items-center border-b border-space-1500 bg-space-1800
             md:grid-cols-[var(--graph-docs-sidebar-width)_auto]
           `}
         >
