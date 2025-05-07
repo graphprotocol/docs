@@ -313,7 +313,7 @@ export default function Layout({ pageOpts, children }: NextraThemeLayoutProps<Fr
               <ButtonOrLink href="https://thegraph.com/">
                 <TheGraph size={7} color="white" />
               </ButtonOrLink>
-              <span className="me-4.5 ms-3.5 h-5 w-px shrink-0 bg-space-1300 " />
+              <span className="me-4.5 ms-3.5 h-5 w-px shrink-0 bg-space-1300" />
               <ButtonOrLink
                 href="/"
                 className="text-body-large text-space-300 outline-offset-4 transition hover:text-white"
