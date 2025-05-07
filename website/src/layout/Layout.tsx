@@ -309,14 +309,14 @@ export default function Layout({ pageOpts, children }: NextraThemeLayoutProps<Fr
           `}
         >
           <div className="contents md:flex md:items-center md:justify-center md:ps-[var(--graph-docs-header-padding)]">
-            <div className="flex w-full items-center max-md:ml-2">
+            <div className="flex items-center max-md:ml-2 md:me-auto">
               <ButtonOrLink href="https://thegraph.com/">
-                <TheGraph color="white" className="prop-size-7" />
+                <TheGraph size={7} color="white" />
               </ButtonOrLink>
               <span className="me-4.5 ms-3.5 h-5 w-px shrink-0 bg-space-1300 " />
               <ButtonOrLink
                 href="/"
-                className="text-body-large text-space-300 outline-offset-4 transition hover:text-white md:-ms-1 md:me-auto"
+                className="text-body-large text-space-300 outline-offset-4 transition hover:text-white"
               >
                 Docs
               </ButtonOrLink>
