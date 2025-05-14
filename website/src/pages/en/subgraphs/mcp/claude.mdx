@@ -6,23 +6,27 @@ The Subgraph Model Context Protocol (MCP) server enables Claude to interact dire
 
 ## What You Can Do
 
-With the Subgraph MCP integration, you can:
+The Subgraph MCP integration enables you to:
 
 - Access the GraphQL schema for any Subgraph on The Graph Network
 - Execute GraphQL queries against any Subgraph deployment
-- Find top Subgraph deployments for a given keyword
-- Find top Subgraph deployments for a contract address on a specific chain
+- Find top Subgraph deployments for a given keyword or contract address
+- Get 30-day query volume for Subgraph deployments
 - Ask natural language questions about Subgraph data without writing GraphQL queries manually
 
 ## Prerequisites
 
 - [Node.js](https://nodejs.org/en) installed and available in your path
-- [Claude Desktop](https://claude.ai/download) installed
+- [Claude Desktop](https://claude.ai/download) installed (latest version)
 - A Gateway API key from [Subgraph Studio](https://thegraph.com/studio/)
 
-## Configuration Steps
+## Installation Options
 
-### 1. Open Configuration File
+### Option 1: Using npx (Recommended)
+
+#### Configuration Steps using npx
+
+#### 1. Open Configuration File
 
 Navigate to your `claude_desktop_config.json` file:
 
@@ -32,33 +36,78 @@ Navigate to your `claude_desktop_config.json` file:
 - Windows: `%APPDATA%\Claude\claude_desktop_config.json`
 - Linux: `.config/Claude/claude_desktop_config.json`
 
-### 2. Add Configuration
+#### 2. Add Configuration
 
 Paste the following settings into your config file:
 
-```json label="claude_desktop_config.json"
+```json
 {
   "mcpServers": {
     "subgraph": {
       "command": "npx",
-      "args": [
-        "mcp-remote",
-        "--header",
-        "Authorization: Bearer GATEWAY_API_KEY",
-        "https://subgraph-ai.graphops.xyz/sse"
-      ]
+      "args": ["mcp-remote", "--header", "Authorization:${AUTH_HEADER}", "https://subgraphs.mcp.thegraph.com/sse"],
+      "env": {
+        "AUTH_HEADER": "Bearer GATEWAY_API_KEY"
+      }
     }
   }
 }
 ```
 
-### 3. Add Your Gateway API Key
+#### 3. Add Your Gateway API Key
 
 Replace `GATEWAY_API_KEY` with your API key from [Subgraph Studio](https://thegraph.com/studio/).
 
-### 4. Save and Restart
+#### 4. Save and Restart
 
-Once you've entered your Gateway API key into your settings, you can save the file, and restart Claude desktop.
+Once you've entered your Gateway API key into your settings, save the file and restart Claude Desktop.
+
+### Option 2: Building from Source
+
+#### Requirements
+
+- Rust (latest stable version recommended: 1.75+)
+  ```bash
+  curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+  ```
+  Follow the on-screen instructions. For other platforms, see the [official Rust installation guide](https://www.rust-lang.org/tools/install).
+
+#### Installation Steps
+
+1. **Clone and Build the Repository**
+
+   ```bash
+   git clone git@github.com:graphops/subgraph-mcp.git
+   cd subgraph-mcp
+   cargo build --release
+   ```
+
+2. **Find the Command Path**
+
+   After building, the executable will be located at `target/release/subgraph-mcp` inside your project directory.
+
+   - Navigate to your `subgraph-mcp` directory in terminal
+   - Run `pwd` to get the full path
+   - Combine the output with `/target/release/subgraph-mcp`
+
+3. **Configure Claude Desktop**
+
+   Open your `claude_desktop_config.json` file as described above and add:
+
+   ```json
+   {
+     "mcpServers": {
+       "subgraph": {
+         "command": "/path/to/your/subgraph-mcp/target/release/subgraph-mcp",
+         "env": {
+           "GATEWAY_API_KEY": "your-api-key-here"
+         }
+       }
+     }
+   }
+   ```
+
+   Replace `/path/to/your/subgraph-mcp/target/release/subgraph-mcp` with the actual path to the compiled binary.
 
 ## Using The Graph Resource in Claude
 
@@ -73,7 +122,7 @@ After configuring Claude Desktop:
 
 ## Troubleshooting
 
-To enable logs for the MCP, add the `--verbose true` option to your args array.
+To enable logs for the MCP when using the npx option, add the `--verbose true` option to your args array.
 
 ## Available Subgraph Tools and Usage
 
@@ -87,13 +136,20 @@ The Subgraph MCP provides several tools for interacting with Subgraphs:
 
 ### Query Execution Tools
 
-- **Execute query by deployment ID**: Run GraphQL queries against specific, immutable deployments
+- **Execute query by deployment ID/IPFS hash**: Run GraphQL queries against specific, immutable deployments
 - **Execute query by Subgraph ID**: Run GraphQL queries against the latest version of a Subgraph
 
 ### Discovery Tools
 
-- **Get top Subgraph deployments for a given keyword**: Find the top Subgraph deployments by query volume for a given keyword
-- **Get top Subgraph deployments for a contract**: Find the top 3 Subgraph deployments indexing a specific contract on a particular chain
+- **Search subgraphs by keyword**: Find subgraphs by keyword in their display names, ordered by signal
+- **Get deployment 30-day query counts**: Get aggregate query count over the last 30 days for multiple subgraph deployments
+- **Get top Subgraph deployments for a contract**: Find the top 3 Subgraph deployments indexing a specific contract on a particular chain, ordered by query fees
+
+## Key Identifier Types
+
+- **Subgraph ID** (e.g., `5zvR82...`): Logical identifier for a subgraph. Use `execute_query_by_subgraph_id` or `get_schema_by_subgraph_id`.
+- **Deployment ID** (e.g., `0x4d7c...`): Identifier for a specific, immutable deployment. Use `execute_query_by_deployment_id` or `get_schema_by_deployment_id`.
+- **IPFS Hash** (e.g., `QmTZ8e...`): Identifier for the manifest of a specific, immutable deployment. Use `execute_query_by_deployment_id` (the gateway treats it like a deployment ID for querying) or `get_schema_by_ipfs_hash`.
 
 ## Natural Language Queries
 
@@ -117,4 +173,8 @@ Which tokens have the highest market cap in this Subgraph?
 
 ```
 Show me the most recent 5 swaps for the USDC/ETH pair
+```
+
+```
+Find the top subgraphs for contract 0x1f98431c8ad98523631ae4a59f267346ea31f984 on arbitrum-one
 ```
