@@ -8,4 +8,6 @@ export default {
   billing: '',
   guides: titles.guides,
   'best-practices': titles['best-practices'],
+  'fair-use-policy': '',
+  'upgrade-indexer': 'Upgrade Indexer',
 }
