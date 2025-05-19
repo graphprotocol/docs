@@ -1,0 +1,1 @@
+export const hello = (): string => 'Hello from @graphprotocol/guides'; 
