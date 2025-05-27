@@ -7,6 +7,6 @@ export default {
   'ql-schema': '',
   'assemblyscript-mappings': '',
   advanced: '',
-  'graph-ts': titles['graph-ts'],
+  'graph-ts': titles['graph-ts'] ?? '',
   'unit-testing-framework': '',
 }
