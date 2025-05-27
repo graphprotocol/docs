@@ -2,13 +2,13 @@ import { NetworkType } from '@pinax/graph-networks-registry'
 
 import { ButtonOrLink, ExperimentalLink, Tooltip } from '@edgeandnode/gds'
 import {
+  APIToken,
   Firehose,
   GraphExplorer,
   GraphNode,
   SocialYouTube,
   Subgraph,
   Substreams,
-  SubstreamsPoweredSubgraph,
 } from '@edgeandnode/gds/icons'
 import { NetworkIcon } from '@edgeandnode/go'
 
@@ -83,12 +83,14 @@ export default function HomePage({ supportedNetworks }: { supportedNetworks: Sup
             </div>
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
               <Card
-                title={t('index.products.sps.title')}
-                description={t('index.products.sps.description')}
-                cta={<ExperimentalLink href="/sps/tutorial/">{t('index.products.sps.cta')}</ExperimentalLink>}
+                title={t('index.products.tokenApi.title')}
+                description={t('index.products.tokenApi.description')}
+                cta={
+                  <ExperimentalLink href="/token-api/quick-start/">{t('index.products.tokenApi.cta')}</ExperimentalLink>
+                }
                 icon={
                   <div className="flex size-8 items-center justify-center rounded-4 bg-space-1400 text-white">
-                    <SubstreamsPoweredSubgraph size={4} />
+                    <APIToken size={4} />
                   </div>
                 }
               />

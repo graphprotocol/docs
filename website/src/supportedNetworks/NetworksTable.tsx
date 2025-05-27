@@ -116,7 +116,7 @@ export function NetworksTable({ networks }: { networks: SupportedNetwork[] }) {
                 <Text.C10>{t('index.supportedNetworks.tableHeaders.firehose')}</Text.C10>
               </th>
               <th align="center">
-                <Text.C10>{t('index.supportedNetworks.tableHeaders.tokenapi')}</Text.C10>
+                <Text.C10>{t('index.supportedNetworks.tableHeaders.tokenApi')}</Text.C10>
               </th>
             </tr>
             {filteredNetworks.map((network) => (

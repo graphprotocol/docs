@@ -33,8 +33,8 @@ export const evmWithTokenAPICards = [
   },
   {
     href: 'https://thegraph.com/docs/en/token-api/quick-start/',
-    titleKey: 'index.networkGuides.evm.tokenapi.title' as const,
-    descriptionKey: 'index.networkGuides.evm.tokenapi.description' as const,
+    titleKey: 'index.networkGuides.evm.tokenApi.title' as const,
+    descriptionKey: 'index.networkGuides.evm.tokenApi.description' as const,
     minutes: 8,
     icon: <APIToken size={6} />,
   },
