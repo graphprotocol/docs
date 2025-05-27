@@ -2,9 +2,7 @@
 title: Sorgulama - Örnek Uygulamalar
 ---
 
-The Graph, blokzincirlerinden veri sorgulamak için merkeziyetsiz bir yöntem sağlar. Verileri bir GraphQL API'si aracılığıyla sunulur ve bu da GraphQL diliyle sorgulamayı kolaylaştırır.
-
-Subgraph'inizi optimize etmek için gerekli temel GraphQL dili kurallarını ve örnek uygulamaları öğrenin.
+Use The Graph's GraphQL API to query [Subgraph](/subgraphs/developing/subgraphs/) data efficiently. This guide outlines essential GraphQL rules, guides, and best practices to help you write optimized, reliable queries.
 
 ---
 
@@ -12,9 +10,11 @@ Subgraph'inizi optimize etmek için gerekli temel GraphQL dili kurallarını ve 
 
 ### Bir GraphQL Sorgusunun Anatomisi
 
-REST API'den farklı olarak, bir GraphQL API'si, hangi sorguların gerçekleştirilebileceğini tanımlayan bir Şema üzerine kuruludur.
+> GraphQL queries use the GraphQL language, which is defined in the [GraphQL specification](https://spec.graphql.org/).
 
-Örneğin, `token` sorgusunu kullanarak bir token almak için yapılacak sorgu aşağıdaki gibi olacaktır:
+Unlike REST APIs, GraphQL APIs are built on a schema-driven design that defines which queries can be performed.
+
+Here's a typical query to fetch a `token`:
 
 ```graphql
 query GetToken($id: ID!) {
@@ -25,7 +25,7 @@ query GetToken($id: ID!) {
 }
 ```
 
-ve bu sorgu (doğru `$id` değişkeni geçirildiğinde) aşağıdaki öngörülebilir JSON yanıtını döndürecektir:
+which will return a predictable JSON response (when passing the proper `$id` variable value):
 
 ```json
 {
@@ -35,8 +35,6 @@ ve bu sorgu (doğru `$id` değişkeni geçirildiğinde) aşağıdaki öngörüle
   }
 }
 ```
-
-GraphQL sorguları, [bir spesifikasyon](https://spec.graphql.org/) temelinde tanımlanmış olan GraphQL dilini kullanır.
 
 Yukarıdaki `GetToken` sorgusu, birden fazla dil bileşeninden oluşur (aşağıda `[...]` yer tutucularıyla gösterilmiştir):
 
@@ -50,33 +48,31 @@ query [operationName]([variableName]: [variableType]) {
 }
 ```
 
-## GraphQL Sorgusu Yazmanın Kuralları
+### GraphQL Sorgusu Yazmanın Kuralları
 
-- Her bir `queryName`, işlem başına yalnızca bir kez kullanılmalıdır.
-- Her bir `field`, bir seçim içinde yalnızca bir kez kullanılmalıdır (örneğin, `token` altında `id` alanını iki kez sorgulayamayız)
-- Bazı `field`'lar veya sorgular (örneğin `tokens`), alt alan seçimi gerektiren karmaşık türler döndürür. Beklendiğinde alt alan seçimi yapmamak (ya da beklenmediğinde böyle bir seçim yapmak, örneğin `id` üzerinde) bir hata oluşturur. Bir alanın türünü öğrenmek için lütfen [Graph Gezgini](/subgraphs/explorer/) sayfasına bakın.
-- Bir argümana atanan herhangi bir değişken, onun türüyle eşleşmelidir.
-- Belirli bir değişken listesinde, her bir değişken özgün olmalıdır.
-- Tanımlanan tüm değişkenler kullanılmalıdır.
+> Important: Failing to follow these rules will result in an error from The Graph API.
 
-> Not: Bu kurallara uyulmaması, The Graph API'sinin hata vermesi ile sonuçlanacaktır.
+1. Her bir `queryName`, işlem başına yalnızca bir kez kullanılmalıdır.
+2. Each `field` must be used only once in a selection (you cannot query `id` twice under `token`).
+3. Complex types require a selection of sub-fields.
+   - For example, some `fields' or queries (like `tokens`) return complex types which will require a selection of sub-fields. Not providing a selection when expected or providing one when not expected will raise an error, such as `id\`. To know a field type, please refer to [Graph Explorer](/subgraphs/explorer/).
+4. Bir argümana atanan herhangi bir değişken, onun türüyle eşleşmelidir.
+5. Variables must be uniquely defined and used.
 
-Kod örnekleriyle birlikte tam kurallar listesi için [GraphQL Doğrulamaları rehberine](/resources/migration-guides/graphql-validations-migration-guide/) göz atın.
+**For a complete list of rules with code examples, check out the [GraphQL Validations guide](/resources/migration-guides/graphql-validations-migration-guide/)**.
 
-### Bir GraphQL API'sine sorgu göndermek
+### How to Send a Query to a GraphQL API
 
-GraphQL, HTTP üzerinden taşınan bir dil ve kurallar bütünüdür.
+[GraphQL is a query language](https://graphql.org/learn/) and a set of conventions for APIs, typically used over HTTP to request and send data between clients and servers. This means that you can query a GraphQL API using standard `fetch` (natively or via `@whatwg-node/fetch` or `isomorphic-fetch`).
 
-Bu, (yerel olarak veya `@whatwg-node/fetch` ya da `isomorphic-fetch` aracılığıyla) standart `fetch` kullanarak bir GraphQL API'sini sorgulayabileceğiniz anlamına gelir.
-
-Ancak, ["Bir Uygulamadan Sorgulama"](/subgraphs/querying/from-an-application/) bölümünde belirtildiği gibi, aşağıdaki benzersiz özellikleri destekleyen `graph-client`ın kullanılması önerilir:
+However, as recommended in [Querying from an Application](/subgraphs/querying/from-an-application/), it's best to use `graph-client`, which supports the following unique features:
 
 - Zincirler arası Subgraph İşleme: Tek bir sorguda birden fazla Subgraph'ten veri sorgulama
 - [Otomatik Blok Takibi](https://github.com/graphprotocol/graph-client/blob/main/packages/block-tracking/README.md)
 - [Otomatik Sayfalama](https://github.com/graphprotocol/graph-client/blob/main/packages/auto-pagination/README.md)
 - Tamamen yazılmış sonuç
 
-`graph-client` aracılığıyla The Graph sorgusu nasıl yapılır:
+Example query using `graph-client`:
 
 ```tsx
 import { execute } from '../.graphclient'
@@ -100,15 +96,15 @@ async function main() {
 main()
 ```
 
-Daha fazla GraphQL istemcisi alternatifi, ["Bir Uygulamadan Sorgulama"](/subgraphs/querying/from-an-application/) bölümünde ele alınmıştır.
+For more alternatives, see ["Querying from an Application"](/subgraphs/querying/from-an-application/).
 
 ---
 
 ## En İyi Uygulamalar
 
-### Her zaman statik sorgular yazın
+### 1. Always Write Static Queries
 
-Yaygın (ve kötü) bir uygulama, sorgu dizelerini aşağıdaki gibi dinamik olarak oluşturmaktır:
+A common bad practice is to dynamically build a query string as follows:
 
 ```tsx
 const id = params.id
@@ -124,14 +120,16 @@ query GetToken {
 // Sorguyu çalıştır...
 ```
 
-Yukarıdaki kod parçası geçerli bir GraphQL sorgusu üretse de, **birçok dezavantaja sahiptir**:
+While the example above produces a valid GraphQL query, it comes with several issues:
 
-- sorguyu bir bütün olarak anlamayı **zorlaştırır**
-- geliştiriciler, **dize enterpolasyonunun güvenliğini sağlamakla sorumludur**
-- değişken değerlerinin istek parametreleriyle gönderilmemesi **sunucu tarafındaki önbellekleme olasılığını ortadan kaldırır**
-- bu, **araçların sorguyu statik olarak analiz etmesini engeller** (örneğin: Linter veya tür üretim araçları)
+- The full query is harder to understand.
+- Developers are responsible for safely sanitizing the string interpolation.
+- Not sending the values of the variables as part of the request can block server-side caching.
+- It prevents tools from statically analyzing the query (e.g.linters or type generation tools).
 
-Bu nedenle, sorguları her zaman statik dizeler olarak yazmanız önerilir:
+Instead, it's recommended to **always write queries as static strings**.
+
+Example of static string:
 
 ```tsx
 import { execute } from 'dilediğiniz-graphql-istemcisi'
@@ -153,18 +151,21 @@ const result = await execute(query, {
 })
 ```
 
-Bunu yapmak **birçok avantaj** sağlar:
+Static strings have several **key advantages**:
 
-- **Okuması ve bakımı kolay** sorgular
-- GraphQL sunucusu **değişkenlerin güvenli hale getirilmesini üstlenir**
-- Değişkenler sunucu düzeyinde **önbelleğe alınabilir**
-- **Sorgular araçlar tarafından statik olarak analiz edilebilir** (detaylar sonraki bölümlerde açıklanacaktır)
+- Queries are easier to read, manage, and debug.
+- Variable sanitization is handled by the GraphQL server The GraphQL.
+- Variables can be cached at the server level.
+- Queries can be statically analyzed by tools (see [GraphQL Essential Tools](/subgraphs/querying/best-practices/#graphql-essential-tools-guides)).
 
-### Statik sorgularda alanlar nasıl koşullu olarak dahil edilir
+### 2. Include Fields Conditionally in Static Queries
 
-`owner` alanını yalnızca belirli bir koşulla dahil etmek isteyebilirsiniz.
+Including fields in static queries only for a particular condition improves performance and keeps responses lightweight by fetching only the necessary data when it's relevant.
 
-Bunun için, `@include(if:...)` yönergesinden aşağıdaki gibi yararlanabilirsiniz:
+- The `@include(if:...)` directive tells the query to **include** a specific field only if the given condition is true.
+- The `@skip(if: ...)` directive tells the query to **exclude** a specific field if the given condition is true.
+
+Example using `owner` field with `@include(if:...)` directive:
 
 ```tsx
 import { execute } from 'dilediğiniz-graphql-istemcisi'
@@ -187,15 +188,11 @@ const result = await execute(query, {
 })
 ```
 
-> Not: Bunun tersi yönerge `@skip(if: ...)` şeklindedir.
+### 3. Ask Only For What You Want
 
-### İstediğini sor
+GraphQL is known for its "Ask for what you want” tagline, which is why it requires explicitly listing each field you want. There's no built-in way to fetch all available fields automatically.
 
-GraphQL, “İstediğini sor” sloganıyla ün kazanmıştı.
-
-Bu nedenle, GraphQL'de tüm kullanılabilir alanları tek tek listelemeden almanın bir yolu yoktur.
-
-- GraphQL API'leri sorgularken, her zaman sadece gerçekten kullanılacak alanları sorgulamayı düşünmelisiniz.
+- When querying GraphQL APIs, always think of querying only the fields that will actually be used.
 - Sorguların yalnızca gerçekten ihtiyaç duyduğunuz kadar varlık getirdiğinden emin olun. Varsayılan olarak, sorgular bir koleksiyondan 100 varlık getirir. Bu miktar genellikle gerekenden, örneğin kullanıcıya gösterilecek olandan, çok daha fazladır. Bu durum yalnızca sorgulardaki en üst düzey koleksiyonlar için değil, özellikle iç içe varlık koleksiyonları için de geçerlidir.
 
 Örneğin, aşağıdaki sorguda:
@@ -215,9 +212,9 @@ query listTokens {
 
 Yanıt, 100 token için 100'er işlem içerebilir.
 
-Uygulama yalnızca 10 işleme ihtiyaç duyuyorsa, sorguda transactions (işlemler) alanına açıkça `first: 10` değeri verilmelidir.
+If the application only needs 10 transactions, the query should explicitly set **`first: 10`** on the transactions field.
 
-### Birden fazla kaydı istemek için tek bir sorgu kullanın
+### 4. Use a Single Query to Request Multiple Records
 
 Varsayılan olarak, Subgraph'ler tek bir kayıt için tekil bir varlık sunar. Birden fazla kayıt almak için çoğul varlıkları ve filtrelemeyi kullanın: `where: {id_in:[X,Y,Z]}` veya `where: {volume_gt:100000}`
 
@@ -249,7 +246,7 @@ query ManyRecords {
 }
 ```
 
-### Birden fazla sorguyu tek bir istekte birleştirin
+### 5. Combine Multiple Queries in a Single Request
 
 Uygulamanız buradaki gibi birden fazla veri türünü sorgulamanızı gerektirebilir:
 
@@ -281,9 +278,9 @@ const [tokens, counters] = Promise.all(
 )
 ```
 
-Bu uygulama tamamen geçerli olsa da, GraphQL API'si ile iki kez veri alışverişi yapılmasını gerektirir.
+While this implementation is valid, it will require two round trips with the GraphQL API.
 
-Neyse ki, aynı GraphQL isteği içinde birden fazla sorgu göndermek de aşağıdaki gibi geçerlidir:
+It's best to send multiple queries in the same GraphQL request as follows:
 
 ```graphql
 import { execute } from "dilediğiniz-graphql-istemcisi"
@@ -304,9 +301,9 @@ query GetTokensandCounters {
 const  { result: { tokens, counters } } = execute(query)
 ```
 
-Bu yaklaşım, ağ üzerinde harcanan süreyi azaltarak **genel performansı artırır** (API'ye yapılan bir gidiş-dönüşü ortadan kaldırır) ve **daha sade bir uygulama** sunar.
+Sending multiple queries in the same GraphQL request **improves the overall performance** by reducing the time spent on the network (saves you a round trip to the API) and provides a **more concise implementation**.
 
-### GraphQL Parçalarını (Fragment) Kullanın
+### 6. Leverage GraphQL Fragments
 
 GraphQL sorguları yazarken faydalı bir özellik de GraphQL Fragment'tir.
 
@@ -335,7 +332,7 @@ Bu tür tekrarlanan alanlar (`id`, `active`, `status`) birçok sorunu beraberind
 - Daha kapsamlı sorguların okunması zorlaşır.
 - Sorgulara dayanarak TypeScript türleri üreten araçlar kullanıldığında (_ilgili detaylar için son bölüme bakınız_), `newDelegate` ve `oldDelegate` iki ayrı satır içi arayüz (inline interface) olarak tanımlanır.
 
-Sorgunun yeniden düzenlenmiş hali aşağıdaki gibi olacaktır:
+An optimized version of the query would be the following:
 
 ```graphql
 query {
@@ -359,15 +356,18 @@ fragment DelegateItem on Transcoder {
 }
 ```
 
-GraphQL `fragment` kullanmak, okunabilirliği artırır (özellikle büyük sorgularda) ve daha iyi TypeScript türleri üretilmesini sağlar.
+Using a GraphQL `fragment` improves readability (especially at scale) and results in better TypeScript types generation.
 
 Tür üretim aracını kullanırken, yukarıdaki sorgu doğru bir `DelegateItemFragment` türü (_sondaki "Araçlar" bölümüne bakabilirsiniz_) oluşturacaktır.
 
-### GraphQL Fragment kullanırken yapılması ve kaçınılması gerekenler
+## GraphQL Fragment Guidelines
 
-### Fragment tabanı bir tip olmalıdır
+### Do's and Don'ts for Fragments
 
-Bir Fragment, geçerli olmayan bir tür üzerinde tanımlanamaz. Kısacası, **alanları olmayan bir tür** üzerinde kullanılamaz:
+1. Fragments cannot be based on a non-applicable types (types without fields).
+2. `BigInt` cannot be used as a fragment's base because it's a **scalar** (native "plain" type).
+
+Örnek:
 
 ```graphql
 fragment MyFragment on BigInt {
@@ -375,11 +375,8 @@ fragment MyFragment on BigInt {
 }
 ```
 
-`BigInt`, bir **skaler** (yerel "basit" tür) olduğu için bir fragment'in temeli olarak kullanılamaz.
-
-#### Fragment Nasıl Yayılır
-
-Fragment'ler belirli türler üzerinde tanımlanırlar ve sorgularda buna uygun şekilde kullanılmalılardır.
+3. Fragments belong to specific types and must be used with those same types in queries.
+4. Spread only fragments matching the correct type.
 
 Örnek:
 
@@ -388,7 +385,7 @@ query {
   bondEvents {
     id
     newDelegate {
-      ...VoteItem # Hata! `VoteItem` fragment'i `Transcoder` türü üzerinde kullanılamaz
+      ...VoteItem # Error! `VoteItem` cannot be spread on `Transcoder` type
     }
     oldDelegate {
       ...VoteItem
@@ -402,20 +399,23 @@ fragment VoteItem on Vote {
 }
 ```
 
-`newDelegate` ve `oldDelegate`, `Transcoder` türündendir.
+- `newDelegate` and `oldDelegate` are of type `Transcoder`. It's not possible to spread a fragment of type `Vote` here.
 
-Burada `Vote` türünde bir fragment kullanılamaz.
+5. Fragments must be defined based on their specific usage.
+6. Define fragments as an atomic business unit of data.
 
-#### Fragment'ı atomik bir veri iş birimi olarak tanımlayın
+---
 
-GraphQL'de bir `Fragment`, kullanım amacına göre tanımlanmalıdır.
+### How to Define `Fragment` as an Atomic Business Unit of Data
 
-Çoğu kullanım senaryosunda, her tür için bir fragment tanımlamak (özellikle tekrarlanan alan kullanımı veya tür üretimi durumlarında) yeterlidir.
+> For most use-cases, defining one fragment per type (in the case of repeated fields usage or type generation) is enough.
 
-İşte fragment kullanımı için temel bir kural:
+Here is a rule of thumb for using fragments:
 
-- Aynı türdeki alanlar bir sorguda tekrar ediyorsa, bunları bir `Fragment` içinde gruplayın.
-- Benzer ancak farklı alanlar tekrar ediyorsa, birden fazla "fragment" oluşturun. Örneğin:
+- When fields of the same type are repeated in a query, group them in a `Fragment`.
+- When similar but different fields are repeated, create multiple fragments.
+
+Örnek:
 
 ```graphql
 # temel fragment (genellikle listeleme işlemlerinde kullanılır)
@@ -438,35 +438,45 @@ fragment VoteWithPoll on Vote {
 
 ---
 
-## Temel Araçlar
+## GraphQL Essential Tools Guides
 
-### Web tabanlı GraphQL gezginleri
+### Test Queries with Graph Explorer
 
-Sorgularınızı uygulamanızda çalıştırarak denemek zahmetli olabilir. Bu nedenle, sorgularınızı uygulamaya eklemeden önce test etmek için [Graph Gezgini](https://thegraph.com/explorer)ni kullanmaktan çekinmeyin. Graph Gezgini, sorgularınızı test etmeniz için önceden yapılandırılmış bir GraphQL playground'u sunar.
+Before integrating GraphQL queries into your dapp, it's best to test them. Instead of running them directly in your app, use a web-based playground.
 
-Sorgularınızda hata ayıklamak/sorgularınızı test etmek için daha esnek bir yol arıyorsanız, [Altair](https://altairgraphql.dev/) ve [GraphiQL](https://graphiql-online.com/graphiql) gibi benzer web tabanlı araçlar da mevcuttur.
+Start with [Graph Explorer](https://thegraph.com/explorer), a preconfigured GraphQL playground built specifically for Subgraphs. You can experiment with queries and see the structure of the data returned without writing any frontend code.
 
-### GraphQL'de Linting
+If you want alternatives to debug/test your queries, check out other similar web-based tools:
 
-Yukarıda belirtilen örnek uygulamalar ve sözdizim kurallarına uyum sağlamak için aşağıdaki iş akışı ve IDE (Entegre Geliştirme Ortamı) araçlarını kullanmanız şiddetle tavsiye edilir.
+- [GraphiQL](https://graphiql-online.com/graphiql)
+- [Altair](https://altairgraphql.dev/)
 
-**GraphQL ESLint**
+### Setting up Workflow and IDE Tools
 
-[GraphQL ESLint](https://the-guild.dev/graphql/eslint/docs/getting-started), GraphQL örnek uygulamalarına zahmetsizce uymanıza yardımcı olur.
+In order to keep up with querying best practices and syntax rules, use the following workflow and IDE tools.
 
-["operations-recommended" yapılandırmasını kurmak](https://the-guild.dev/graphql/eslint/docs/configs), aşağıdakiler gibi temel kuralları zorunlu kılar:
+#### GraphQL ESLint
 
-- `@graphql-eslint/fields-on-correct-type`: alan doğru tür üzerinde mi kullanılmış?
-- `@graphql-eslint/no-unused-variables`: verilen bir değişken kullanılmadan mı bırakılmış?
-- ve daha fazlası!
+1. Install GraphQL ESLint
 
-Bu sayede, sorguları playground’da test etmeye ya da üretim ortamında çalıştırmaya gerek kalmadan **hataları önceden yakalayabilirsiniz**!
+Use [GraphQL ESLint](https://the-guild.dev/graphql/eslint/docs/getting-started) to enforce best practices and syntax rules with zero effort.
 
-### IDE eklentileri
+2. Use the ["operations-recommended"](https://the-guild.dev/graphql/eslint/docs/configs) config
 
-**VSCode ve GraphQL**
+This will enforce essential rules such as:
 
-[GraphQL VSCode uzantısı](https://marketplace.visualstudio.com/items?itemName=GraphQL.vscode-graphql), geliştirme sürecinize aşağıdakileri sağlamak için mükemmel bir eklentidir:
+- `@graphql-eslint/fields-on-correct-type`: Ensures fields match the proper type.
+- `@graphql-eslint/no-unused variables`: Flags unused variables in your queries.
+
+Result: You'll **catch errors without even testing queries** on the playground or running them in production!
+
+#### Use IDE plugins
+
+GraphQL plugins streamline your workflow by offering real-time feedback while you code. They highlight mistakes, suggest completions, and help you explore your schema faster.
+
+1. VS Code
+
+Install the [GraphQL VS Code extension](https://marketplace.visualstudio.com/items?itemName=GraphQL.vscode-graphql) to unlock:
 
 - Sözdizimi vurgulama
 - Otomatik tamamlama önerileri
@@ -474,11 +484,11 @@ Bu sayede, sorguları playground’da test etmeye ya da üretim ortamında çal�
 - Kod parçacıkları (snippets)
 - Fragment'ler ve girdi türleri için tanıma gitme özelliği
 
-`graphql-eslint` kullanıyorsanız, [ESLint VSCode uzantısı](https://marketplace.visualstudio.com/items?itemName=dbaeumer.vscode-eslint) kodunuzda hataları ve uyarıları satır içi şekilde doğru bir biçimde görüntülemek için mutlaka edinilmesi gereken bir araçtır.
+If you are using `graphql-eslint`, use the [ESLint VS Code extension](https://marketplace.visualstudio.com/items?itemName=dbaeumer.vscode-eslint) to visualize errors and warnings inlined in your code correctly.
 
-**WebStorm/Intellij ve GraphQL**
+2. WebStorm/Intellij and GraphQL
 
-[JS GraphQL eklentisi](https://plugins.jetbrains.com/plugin/8097-graphql/), GraphQL ile çalışırken deneyiminizi aşağıdakileri sağlayarak önemli ölçüde iyileştirir:
+Install the [JS GraphQL plugin](https://plugins.jetbrains.com/plugin/8097-graphql/). It significantly improves the experience of working with GraphQL by providing:
 
 - Sözdizimi vurgulama
 - Otomatik tamamlama önerileri
