@@ -34,8 +34,9 @@ const BaseHeading = ({ as: Element = 'h1', id, className, children, ...props }: 
       {id ? (
         <span
           className={`
-            absolute inset-y-0 end-[calc(100%+theme(spacing[2.5]))] my-auto h-min opacity-0 transition
-            group-hocus-visible-within/heading:opacity-100
+            absolute end-[calc(100%+theme(spacing[2.5]))] top-0 flex h-[1lh] items-center opacity-0 transition
+            group-hover/heading:opacity-100
+            group-has-focus-visible/heading:opacity-100
             max-md:hidden
           `}
         >
