@@ -2,9 +2,7 @@
 title: 查询最佳实践
 ---
 
-Graph提供了一种去中心化的方式来查询区块链中的数据。它的数据是通过GraphQL API公开的，这使得使用GraphQL语言进行查询更加容易。
-
-学习基本的 GraphQL 语言规则和最佳做法，以优化您的子图。
+Use The Graph's GraphQL API to query [Subgraph](/subgraphs/developing/subgraphs/) data efficiently. This guide outlines essential GraphQL rules, guides, and best practices to help you write optimized, reliable queries.
 
 ---
 
@@ -12,9 +10,11 @@ Graph提供了一种去中心化的方式来查询区块链中的数据。它的
 
 ### GraphQL查询的剖析
 
-与REST API不同，GraphQL API构建在定义可以执行哪些查询的模式之上。
+> GraphQL queries use the GraphQL language, which is defined in the [GraphQL specification](https://spec.graphql.org/).
 
-例如，使用`token`查询获取代币如下所示：
+Unlike REST APIs, GraphQL APIs are built on a schema-driven design that defines which queries can be performed.
+
+Here's a typical query to fetch a `token`:
 
 ```graphql
 query GetToken($id: ID!) {
@@ -25,7 +25,7 @@ query GetToken($id: ID!) {
 }
 ```
 
-它将返回以下可预测的 JSON 响应(_当传递适当的 $id 变量值时_)：
+which will return a predictable JSON response (when passing the proper `$id` variable value):
 
 ```json
 {
@@ -35,8 +35,6 @@ query GetToken($id: ID!) {
   }
 }
 ```
-
-GraphQL 查询使用基于[规范](https://spec.graphql.org/)定义的 GraphQL 语言。
 
 上述`GetToken`查询由多语言部分组成(用`[...]`占位符替换)：
 
@@ -50,33 +48,31 @@ query [operationName]([variableName]: [variableType]) {
 }
 ```
 
-## 写入 GraphQL 查询规则
+### 写入 GraphQL 查询规则
 
-- 每个操作只能使用一次`queryName`。
-- 每个`字段`必须只能在选择中使用一次 (我们不能在 `token` 下查询`id` 两次)。
-- 有些`字段`或查询(如`tokens`)返回了需要选择子字段的复杂类型。 预期时不提供选择(或在不预期时提供选择――例如在`id`上――会引起错误。 要知道一个字段类型，请参阅[Graph Explorer](/subgraphs/explorer/)。
-- 分配给参数的任何变量都必须匹配其类型。
-- 在给定的变量列表中，每个变量必须是唯一的。
-- 必须使用所有已定义的变量。
+> Important: Failing to follow these rules will result in an error from The Graph API.
 
-> 注意：如果不遵循这些规则，将导致从 The Graph API中发生错误。
+1. 每个操作只能使用一次`queryName`。
+2. Each `field` must be used only once in a selection (you cannot query `id` twice under `token`).
+3. Complex types require a selection of sub-fields.
+   - For example, some `fields' or queries (like `tokens`) return complex types which will require a selection of sub-fields. Not providing a selection when expected or providing one when not expected will raise an error, such as `id\`. To know a field type, please refer to [Graph Explorer](/subgraphs/explorer/).
+4. 分配给参数的任何变量都必须匹配其类型。
+5. Variables must be uniquely defined and used.
 
-有关包含代码示例的完整规则列表，请查看[GraphQL Validations guide](/resources/migration-guides/graphql-validations-migration-guide/)。
+**For a complete list of rules with code examples, check out the [GraphQL Validations guide](/resources/migration-guides/graphql-validations-migration-guide/)**.
 
-### 向 GraphQL API 发送查询
+### How to Send a Query to a GraphQL API
 
-GraphQL 是一种通过 HTTP 传输的语言和一组协议。
+[GraphQL is a query language](https://graphql.org/learn/) and a set of conventions for APIs, typically used over HTTP to request and send data between clients and servers. This means that you can query a GraphQL API using standard `fetch` (natively or via `@whatwg-node/fetch` or `isomorphic-fetch`).
 
-这意味着您可以使用标准的 `fetch` (nomatily or through `@whatwg-node/fetch` 或 `isomorphic-fetch`)查询一个 GraphQL API。
-
-然而，正如[“查询申请”]（/subgraphs/querying/from-an-application/）中提到的那样，建议使用 `graph-client` ，支持以下独特功能：
+However, as recommended in [Querying from an Application](/subgraphs/querying/from-an-application/), it's best to use `graph-client`, which supports the following unique features:
 
 - 跨链子图处理: 在一个查询中从多个子图进行查询
 - [自动区块跟踪](https://github.com/graphprotocol/graph-client/blob/main/packages/block-tracking/README.md)
 - [自动分页](https://github.com/graphprotocol/graph-client/blob/main/packages/auto-pagination/README.md)
 - 完全类型化的结果
 
-以下是如何使用 `Graph-client` 查询The Graph：
+Example query using `graph-client`:
 
 ```tsx
 import { execute } from '../.graphclient'
@@ -100,15 +96,15 @@ async function main() {
 main()
 ```
 
-更多GraphQL客户端替代方案在[“从应用程序查询”](/subgraphs/querying/from-an-application/)中介绍。
+For more alternatives, see ["Querying from an Application"](/subgraphs/querying/from-an-application/).
 
 ---
 
 ## 最佳实践
 
-### 始终编写静态查询
+### 1. Always Write Static Queries
 
-一个常见的(不好的) 实践是动态构建查询字符串，如下所示：
+A common bad practice is to dynamically build a query string as follows:
 
 ```tsx
 const id = params.id
@@ -124,14 +120,16 @@ query GetToken {
 // Execute query...
 ```
 
-虽然上面的代码片段产生了一个有效的 GraphQL 查询，但**它有许多缺点** ：
+While the example above produces a valid GraphQL query, it comes with several issues:
 
-- 它使得**更难理解** 整个查询
-- 开发者**负责安全清理字符串内插值**
-- 不将变量的值作为请求参数的一部分发送以**防止服务器侧可能缓存**
-- 它**阻止工具静态分析查询** (例如: Linter, 或类型代工具)
+- The full query is harder to understand.
+- Developers are responsible for safely sanitizing the string interpolation.
+- Not sending the values of the variables as part of the request can block server-side caching.
+- It prevents tools from statically analyzing the query (e.g.linters or type generation tools).
 
-因此，建议始终将查询写为静态字符串：
+Instead, it's recommended to **always write queries as static strings**.
+
+Example of static string:
 
 ```tsx
 import { execute } from 'your-favorite-graphql-client'
@@ -153,18 +151,21 @@ const result = await execute(query, {
 })
 ```
 
-这样做会带有**许多优点**：
+Static strings have several **key advantages**:
 
-- **易读和维护** 查询
-- GraphQL **服务器处理变量净化**
-- **变量可以缓存到 **服务器级别
-- **查询可以通过工具进行静态分析** (在以下章节中更多关于此问题)
+- Queries are easier to read, manage, and debug.
+- Variable sanitization is handled by the GraphQL server The GraphQL.
+- Variables can be cached at the server level.
+- Queries can be statically analyzed by tools (see [GraphQL Essential Tools](/subgraphs/querying/best-practices/#graphql-essential-tools-guides)).
 
-### 如何在静态查询中有条件地包含字段
+### 2. Include Fields Conditionally in Static Queries
 
-您可能只想在特定条件下包含 '所有者' 字段。
+Including fields in static queries only for a particular condition improves performance and keeps responses lightweight by fetching only the necessary data when it's relevant.
 
-为此，你可以将`@include(if:...)`的指令应用如下：
+- The `@include(if:...)` directive tells the query to **include** a specific field only if the given condition is true.
+- The `@skip(if: ...)` directive tells the query to **exclude** a specific field if the given condition is true.
+
+Example using `owner` field with `@include(if:...)` directive:
 
 ```tsx
 import { execute } from 'your-favorite-graphql-client'
@@ -187,15 +188,11 @@ const result = await execute(query, {
 })
 ```
 
-> 注意： 相反的指令是 `@skip(if: ...)` 。
+### 3. Ask Only For What You Want
 
-### 问你所想
+GraphQL is known for its "Ask for what you want” tagline, which is why it requires explicitly listing each field you want. There's no built-in way to fetch all available fields automatically.
 
-GraphQL以其“问你所想”的口号而闻名。
-
-因此，在GraphQL中，不单独列出所有可用字段，就无法获取所有可用字段。
-
-- 在查询GraphQL API时，请始终考虑只查询实际使用的字段。
+- When querying GraphQL APIs, always think of querying only the fields that will actually be used.
 - 请确保查询仅获取您实际需要的更多实体。 默认情况下，查询将会在集合中获取100个实体，这通常比实际使用的要多得多，如用于显示用户。这不仅适用于查询中的顶层集合，更适用于实体嵌套集合。
 
 例如，在以下查询中：
@@ -215,9 +212,9 @@ query listTokens {
 
 该响应可以包含每100个代币交易中的100个交易。
 
-如果应用程序只需要10笔交易，查询应在交易字段中明确设置 `first: 10`。
+If the application only needs 10 transactions, the query should explicitly set **`first: 10`** on the transactions field.
 
-### 使用单个查询请求多个记录
+### 4. Use a Single Query to Request Multiple Records
 
 默认情况下，子图表有一个单数实体用于一个记录。对于多个记录，请使用复数实体和过滤器：`其中：{id_in:[X,Y,Z]}`或者`其中： {volume_gt:100000}`。
 
@@ -249,7 +246,7 @@ query ManyRecords {
 }
 ```
 
-### 在单个请求中合并多个查询
+### 5. Combine Multiple Queries in a Single Request
 
 您的应用程序可能需要查询多种类型的数据，如下所示：
 
@@ -281,9 +278,9 @@ const [tokens, counters] = Promise.all(
 )
 ```
 
-虽然这个实现是完全有效的，但它需要使用GraphQL API进行两次交互。
+While this implementation is valid, it will require two round trips with the GraphQL API.
 
-幸运的是，在同一GraphQL请求中发送多个查询也是有效的，如下所示：
+It's best to send multiple queries in the same GraphQL request as follows:
 
 ```graphql
 import { execute } from "your-favorite-graphql-client"
@@ -304,9 +301,9 @@ query GetTokensandCounters {
 const  { result: { tokens, counters } } = execute(query)
 ```
 
-这个方法将**改进整体性能**，减少网络上花费的时间(将你节省一次回程旅行到 API)，并提供一个**更简洁的实现**。
+Sending multiple queries in the same GraphQL request **improves the overall performance** by reducing the time spent on the network (saves you a round trip to the API) and provides a **more concise implementation**.
 
-### 利用GraphQL片段
+### 6. Leverage GraphQL Fragments
 
 编写GraphQL查询的一个有用功能是GraphQL片段。
 
@@ -335,7 +332,7 @@ query {
 - 更广泛的查询变得更难阅读。
 - 当使用基于查询生成类型的 TypeScript 类型的工具 (_more on that in the last section_), `newDelegate`和`oldDelegate`将导致两个不同的内联接口。
 
-查询的重构版本如下：
+An optimized version of the query would be the following:
 
 ```graphql
 query {
@@ -359,15 +356,18 @@ fragment DelegateItem on Transcoder {
 }
 ```
 
-使用 GraphQL `fragment` 将提高可读性(尤其在规模上)，并导致更好的 TypeScript 类型生成。
+Using a GraphQL `fragment` improves readability (especially at scale) and results in better TypeScript types generation.
 
 当使用类型生成工具时，上面的查询将生成一个适当的`DelegateItemFragment` 类型(_see last "Tools" section _)。
 
-### GraphQL片段的注意事项
+## GraphQL Fragment Guidelines
 
-### 片段必须是一种类型
+### Do's and Don'ts for Fragments
 
-片段不能基于不适用的类型，简而言之，**基于没有字段的类型**：
+1. Fragments cannot be based on a non-applicable types (types without fields).
+2. `BigInt` cannot be used as a fragment's base because it's a **scalar** (native "plain" type).
+
+例子:
 
 ```graphql
 fragment MyFragment on BigInt {
@@ -375,11 +375,8 @@ fragment MyFragment on BigInt {
 }
 ```
 
-`BigInt` 是一个 **scalar** (原生"plain" 类型)，不能用作碎片的基础。
-
-#### 如何传播片段
-
-片段是在特定类型上定义的，应该在查询中相应地使用。
+3. Fragments belong to specific types and must be used with those same types in queries.
+4. Spread only fragments matching the correct type.
 
 例子:
 
@@ -402,20 +399,23 @@ fragment VoteItem on Vote {
 }
 ```
 
-`newDelegate`和`oldDelegate`都是`Transcoder`的类型。
+- `newDelegate` and `oldDelegate` are of type `Transcoder`. It's not possible to spread a fragment of type `Vote` here.
 
-不可能在这里散布`Vote`型号的片段。
+5. Fragments must be defined based on their specific usage.
+6. Define fragments as an atomic business unit of data.
 
-#### 将片段定义为数据的原子业务单元。
+---
 
-必须根据它们的用途来定义GraphQL `Fragment` 。
+### How to Define `Fragment` as an Atomic Business Unit of Data
 
-对于大多数用例，为每个类型定义一个片段（在重复使用字段或生成类型的情况下）就足够了。
+> For most use-cases, defining one fragment per type (in the case of repeated fields usage or type generation) is enough.
 
-以下是使用Fragment的经验法则：
+Here is a rule of thumb for using fragments:
 
-- 当同类字段重复查询时，将它们分组为`片段`。
-- 当重复类似但不相同的字段时，创建多个片段，例如：
+- When fields of the same type are repeated in a query, group them in a `Fragment`.
+- When similar but different fields are repeated, create multiple fragments.
+
+例子:
 
 ```graphql
 # base fragment (主要在上架中使用)
@@ -438,35 +438,45 @@ fragment VoteWithPoll on Vote {
 
 ---
 
-## 重要工具
+## GraphQL Essential Tools Guides
 
-### GraphQL基于web的浏览器
+### Test Queries with Graph Explorer
 
-通过在您的应用程序中运行这些查询来绕过它们，可能是繁琐的。 为此，请不要犹豫地使用 [Graph Explorer](https://thegraph.com/explorer) 来测试您的查询，然后将它们添加到您的应用程序中。 Graph Explorer将为您提供一个预配置的 GraphQL 播放场，以测试您的查询。
+Before integrating GraphQL queries into your dapp, it's best to test them. Instead of running them directly in your app, use a web-based playground.
 
-如果您正在寻找一种更灵活的方式来调试或测试您的查询， 其他类似的网络工具也可用，如 [Altair](https://altairgraphql.dev/) 和 [GraphiQL](https://graphiql-online.com/graphiql)。
+Start with [Graph Explorer](https://thegraph.com/explorer), a preconfigured GraphQL playground built specifically for Subgraphs. You can experiment with queries and see the structure of the data returned without writing any frontend code.
 
-### GraphQL Linting
+If you want alternatives to debug/test your queries, check out other similar web-based tools:
 
-为了跟上提到的最佳实践和语法规则，强烈建议使用以下工作流和IDE工具。
+- [GraphiQL](https://graphiql-online.com/graphiql)
+- [Altair](https://altairgraphql.dev/)
 
-**GraphQL ESLint**
+### Setting up Workflow and IDE Tools
 
-[GraphQL ESLint](https://the-guild.dev/graphql/eslint/docs/getting-started)将帮助您保持在 GraphQL 最佳做法之外的零努力状态。
+In order to keep up with querying best practices and syntax rules, use the following workflow and IDE tools.
 
-[设置“推荐操作”](https://the-guild.dev/graphql/eslint/docs/configs)配置将强制执行基本规则，例如：
+#### GraphQL ESLint
 
-- `@graphql-eslint/fields-on-correct-type`: 字段是否用于适当类型？
-- `@graphql-eslint/no-used 变量`: 某个变量是否不使用？
-- 还有更多！
+1. Install GraphQL ESLint
 
-这将允许您在运作场上**捕获错误——甚至不需要测试查询** 或者在生产中运行它们！
+Use [GraphQL ESLint](https://the-guild.dev/graphql/eslint/docs/getting-started) to enforce best practices and syntax rules with zero effort.
 
-### IDE插件
+2. Use the ["operations-recommended"](https://the-guild.dev/graphql/eslint/docs/configs) config
 
-**VSCode和GraphQL**
+This will enforce essential rules such as:
 
-[GraphQL VSCode扩展](https://marketplace.visualstudio.com/items?itemName=GraphQL.vscode-graphql）是开发工作流程中一个很好的补充，可以获得：
+- `@graphql-eslint/fields-on-correct-type`: Ensures fields match the proper type.
+- `@graphql-eslint/no-unused variables`: Flags unused variables in your queries.
+
+Result: You'll **catch errors without even testing queries** on the playground or running them in production!
+
+#### Use IDE plugins
+
+GraphQL plugins streamline your workflow by offering real-time feedback while you code. They highlight mistakes, suggest completions, and help you explore your schema faster.
+
+1. VS Code
+
+Install the [GraphQL VS Code extension](https://marketplace.visualstudio.com/items?itemName=GraphQL.vscode-graphql) to unlock:
 
 - 语法高亮
 - 自动完成建议
@@ -474,11 +484,11 @@ fragment VoteWithPoll on Vote {
 - 代码片段
 - 转到片段和输入类型的定义
 
-如果您使用 `graphql-eslint`, [ESLint VSCode 扩展](https://marketplace.visualstudio.com/items?itemName=dbaeumer.vscode-eslint) 是一个必须直观的错误和警告包含在您的代码中是正确的。
+If you are using `graphql-eslint`, use the [ESLint VS Code extension](https://marketplace.visualstudio.com/items?itemName=dbaeumer.vscode-eslint) to visualize errors and warnings inlined in your code correctly.
 
-**WebStorm/Intellij和GraphQL**
+2. WebStorm/Intellij and GraphQL
 
-[JS GraphQL插件](https://plugins.jetbrains.com/plugin/8097-graphql/) 在使用 GraphQL 时将通过提供以下方式大大改进您的体验：
+Install the [JS GraphQL plugin](https://plugins.jetbrains.com/plugin/8097-graphql/). It significantly improves the experience of working with GraphQL by providing:
 
 - 语法高亮
 - 自动完成建议
