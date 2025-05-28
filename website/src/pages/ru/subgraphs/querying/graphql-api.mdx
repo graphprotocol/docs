@@ -4,9 +4,9 @@ title: API GraphQL
 
 Explore the GraphQL Query API for interacting with Subgraphs on The Graph Network.
 
-## Что такое GraphQL?
+[GraphQL](https://graphql.org/learn/) is a query language for APIs and a runtime for executing those queries with existing data.
 
-[GraphQL](https://graphql.org/learn/) is a query language for APIs and a runtime for executing those queries with your existing data. The Graph uses GraphQL to query Subgraphs.
+The Graph uses GraphQL to query Subgraphs.
 
 ## Core Concepts
 
@@ -24,15 +24,15 @@ Explore the GraphQL Query API for interacting with Subgraphs on The Graph Networ
   - Read-only operations (no mutations)
   - Defines entity interfaces and derived fields
 
-## Запросы с GraphQL
+## Query Structure
 
-In the Subgraph schema, types called `Entities`. For each `Entity` type, `entity` and `entities` fields will be generated on the top-level `Query` type.
+GraphQL queries in The Graph target entities defined in the Subgraph schema. Each `Entity` type generates corresponding `entity` and `entities` fields on the root `Query` type.
 
-### Example Queries
+> Note: The `query` keyword is not required at the top level of GraphQL queries.
 
-> Примечание: `query` не нужно указывать в начале `graphql` запроса при использовании The Graph.
+### Single Entity Queries Example
 
-Запрос для одного объекта `Token`, определенного в Вашей схеме:
+Query for a single `Token` entity:
 
 ```graphql
 {
@@ -43,9 +43,11 @@ In the Subgraph schema, types called `Entities`. For each `Entity` type, `entity
 }
 ```
 
-> Примечание: При запросе одного объекта поле `id` является обязательным и должно быть записано как строка.
+> Note: Single entity queries require the `id` parameter as a string.
 
-Запрос всех объектов `Token`:
+### Collection Queries Example
+
+Query format for all `Token` entities:
 
 ```graphql
 {
@@ -56,14 +58,14 @@ In the Subgraph schema, types called `Entities`. For each `Entity` type, `entity
 }
 ```
 
-### Сортировка
+### Sorting Example
 
-When querying a collection, you can:
+Collection queries support the following sort parameters:
 
-- Использовать параметр `orderBy` для сортировки по определенному атрибуту.
-- Использовать параметр `orderDirection`, чтобы указать направление сортировки `asc` для возрастания или `desc` для убывания.
+- `orderBy`: Specifies the attribute for sorting
+- `orderDirection`: Accepts `asc` (ascending) or `desc` (descending)
 
-#### Пример
+#### Standard Sorting Example
 
 ```graphql
 {
@@ -74,11 +76,7 @@ When querying a collection, you can:
 }
 ```
 
-#### Example for Nested Entity Sorting
-
-Начиная с Graph Node [`v0.30.0`](https://github.com/graphprotocol/graph-node/releases/tag/v0.30.0), объекты можно сортировать на основе вложенных объектов.
-
-В следующем примере мы сортируем токены по имени их владельца:
+#### Nested Entity Sorting Example
 
 ```graphql
 {
@@ -91,20 +89,18 @@ When querying a collection, you can:
 }
 ```
 
-> В настоящее время сортировка возможна по одноуровневым полям типа `String` или `ID`, в полях `@entity` и `@derivedFrom`. К сожалению, [сортировка по интерфейсам в одноуровневых объектах](https://github.com/graphprotocol/graph-node/pull/4058), сортировка по полям-массивам и вложенным объектам пока не поддерживается.
+> Note: Nested sorting supports one-level-deep `String` or `ID` types on `@entity` and `@derivedFrom` fields.
 
-### Пагинация
+### Pagination Example
 
-При запросе коллекции лучше всего:
+When querying a collection, it is best to:
 
 - Использовать параметр `first` для пагинации данных с начала коллекции.
   - Стандартная сортировка выполняется по `ID` в возрастающем алфавитно-числовом порядке, **не** по времени создания.
 - Использовать параметр `skip`, чтобы пропускать объекты и осуществлять пагинацию. Например, `first:100` покажет первые 100 объектов, а `first:100, skip:100` покажет следующие 100 объектов.
 - Избегайте использования `skip` в запросах, так как это обычно приводит к низкой производительности. Для получения большого количества элементов лучше выполнять постраничную загрузку объектов на основе атрибута, как показано в предыдущем примере.
 
-#### Example Using `first`
-
-Запрос первых 10 токенов:
+#### Standard Pagination Example
 
 ```graphql
 {
@@ -115,11 +111,7 @@ When querying a collection, you can:
 }
 ```
 
-To query for groups of entities in the middle of a collection, the `skip` parameter can be used in conjunction with the `first` parameter to skip a specified number of entities starting at the beginning of the collection.
-
-#### Example Using `first` and `skip`
-
-Запрос 10 объектов `Token`, смещенных на 10 позиций от начала коллекции:
+#### Offset Pagination Example
 
 ```graphql
 {
@@ -130,9 +122,7 @@ To query for groups of entities in the middle of a collection, the `skip` parame
 }
 ```
 
-#### Example Using `first` and `id_ge`
-
-Если клиенту нужно получить большое количество объектов, эффективнее выполнять запросы на основе атрибута и фильтровать по этому атрибуту. Например, клиент может получить большое количество токенов с помощью следующего запроса:
+#### Cursor-based Pagination Example
 
 ```graphql
 query manyTokens($lastID: String) {
@@ -143,16 +133,11 @@ query manyTokens($lastID: String) {
 }
 ```
 
-В первый раз запрос отправляется с `lastID = ""`, а в последующих запросах `lastID` устанавливается в значение атрибута `id` последнего объекта из предыдущего запроса. Этот подход значительно эффективнее, чем использование увеличивающихся значений `skip`.
-
 ### Фильтрация
 
-- Вы можете использовать параметр `where` в запросах для фильтрации по различным свойствам.
-- Вы можете фильтровать по нескольким значениям внутри параметра `where`.
+The `where` parameter filters entities based on specified conditions.
 
-#### Using `where` Filtering
-
-Query challenges with `failed` outcome using 'where' filter:
+#### Basic Filtering Example
 
 ```graphql
 {
@@ -166,9 +151,7 @@ Query challenges with `failed` outcome using 'where' filter:
 }
 ```
 
-Вы можете использовать такие суффиксы, как `_gt`, `_lte` для сравнения значений:
-
-#### Range Filtering
+#### Numeric Comparison Example
 
 ```graphql
 {
@@ -180,11 +163,7 @@ Query challenges with `failed` outcome using 'where' filter:
 }
 ```
 
-#### Block Filtering
-
-Вы также можете фильтровать объекты, которые были обновлены на указанном блоке или позже, с помощью `_change_block(number_gte: Int)`.
-
-This can be useful if you are looking to fetch only entities which have changed, for example since the last time you polled. Or alternatively it can be useful to investigate or debug how entities are changing in your Subgraph (if combined with a block filter, you can isolate only entities that changed in a specific block).
+#### Block-based Filtering Example
 
 ```graphql
 {
@@ -196,11 +175,7 @@ This can be useful if you are looking to fetch only entities which have changed,
 }
 ```
 
-#### Nested Entity Filtering
-
-Фильтрация на основе вложенных объектов возможна в полях с суффиксом `_`.
-
-Это может быть полезно, если Вы хотите получать только объекты, у которых объекты дочернего уровня удовлетворяют заданным условиям.
+#### Nested Entity Filtering Example
 
 ```graphql
 {
@@ -214,11 +189,9 @@ This can be useful if you are looking to fetch only entities which have changed,
 }
 ```
 
-### Logical Operators
+#### Logical Operators
 
-Начиная с Graph Node [`v0.30.0`](https://github.com/graphprotocol/graph-node/releases/tag/v0.30.0), Вы можете группировать несколько параметров в одном аргументе `where`, используя операторы `and` или `or` для фильтрации результатов по нескольким критериям.
-
-#### Using `and` Operator
+##### AND Operations Example
 
 Следующий пример фильтрует задачи с `outcome` `succeeded` и `number` больше или равно `100`.
 
@@ -234,23 +207,21 @@ This can be useful if you are looking to fetch only entities which have changed,
 }
 ```
 
-> **Синтаксический сахар:** Вы можете упростить приведенный выше запрос, убрав оператор `and` и передав подвыражение, разделенное запятыми.
->
-> ```graphql
-> {
->   challenges(where: { number_gte: 100, outcome: "succeeded" }) {
->     challenger
->     outcome
->     application {
->       id
->     }
->   }
-> }
-> ```
+**Syntactic sugar:** You can simplify the above query by removing the `and` operator and by passing a sub-expression separated by commas.
 
-#### Using `or` Operator
+```graphql
+{
+  challenges(where: { number_gte: 100, outcome: "succeeded" }) {
+    challenger
+    outcome
+    application {
+      id
+    }
+  }
+}
+```
 
-Следующий пример фильтрует задачи с `outcome` `succeeded` или `number` больше или равно `100`.
+##### OR Operations Example
 
 ```graphql
 {
@@ -264,52 +235,22 @@ This can be useful if you are looking to fetch only entities which have changed,
 }
 ```
 
-> **Note**: When writing queries, it is important to consider the performance impact of using the `or` operator. While `or` can be a useful tool for broadening search results, it can also have significant costs. One of the main issues with `or` is that it can cause queries to slow down. This is because `or` requires the database to scan through multiple indexes, which can be a time-consuming process. To avoid these issues, it is recommended that developers use and operators instead of or whenever possible. This allows for more precise filtering and can lead to faster, more accurate queries.
-
-#### Все фильтры
-
-Полный список суффиксов параметров:
-
-```
-_
-_not
-_gt
-_lt
-_gte
-_lte
-_in
-_not_in
-_contains
-_contains_nocase
-_not_contains
-_not_contains_nocase
-_starts_with
-_starts_with_nocase
-_ends_with
-_ends_with_nocase
-_not_starts_with
-_not_starts_with_nocase
-_not_ends_with
-_not_ends_with_nocase
-```
-
-> Обратите внимание, что некоторые суффиксы поддерживаются только для определенных типов. Например, `Boolean` поддерживает только `_not`, `_in` и `_not_in`, тогда как `_` доступен только для объектных и интерфейсных типов.
-
-Кроме того, в качестве части аргумента `where` доступны следующие глобальные фильтры:
+Global filter parameter:
 
 ```graphql
 _change_block(number_gte: Int)
 ```
 
-### Time-travel Queries
+### Time-travel Queries Example
 
-Вы можете запрашивать состояние своих объектов не только для последнего блока, который используется по умолчанию, но и для произвольного блока в прошлом. Блок, в котором должен выполняться запрос, можно указать либо по номеру блока, либо по его хэшу, включив аргумент `block` в поля верхнего уровня запросов.
+Queries support historical state retrieval using the `block` parameter:
 
-Результат такого запроса не изменится со временем, то есть запрос на определенном прошедшем блоке вернет тот же результат, независимо от времени выполнения, за исключением случая, когда запрос выполняется на блоке, который находится очень близко к началу чейна. В этом случае результат может измениться, если этот блок окажется **не** на основном чейне, и чейн будет реорганизован. Как только блок можно будет считать окончательным, результат запроса больше не изменится.
+- `number`: Integer block number
+- `hash`: String block hash
 
 > Примечание: Текущая реализация все еще подвержена определенным ограничениям, которые могут нарушить эти гарантии. Реализация не всегда может точно определить, что данный хэш блока вообще не находится на основном чейне, или что результат запроса по хэшу блока для блока, который еще не считается окончательным, может быть изменен из-за реорганизации блоков, происходящей одновременно с запросом. Эти ограничения не влияют на результаты запросов по хэшу блока, если блок окончателен и подтвержден на основном чейне. [Этот вопрос](https://github.com/graphprotocol/graph-node/issues/1405) подробно объясняет, в чем состоят эти ограничения.
 
-#### Example Time-travel Queries
+#### Block Number Query Example
 
 ```graphql
 {
@@ -323,7 +264,7 @@ _change_block(number_gte: Int)
 }
 ```
 
-Этот запрос вернет объекты `Challenge` и связанные с ними объекты `Application` в том виде, в каком они существовали сразу после обработки блока номер 8,000,000.
+#### Block Hash Query Example
 
 ```graphql
 {
@@ -337,28 +278,26 @@ _change_block(number_gte: Int)
 }
 ```
 
-Этот запрос вернет объекты `Challenge` и связанные с ними объекты `Application` в том виде, в каком они существовали сразу после обработки блока с заданным хешем.
-
-### Full-text Search Queries
+### Full-Text Search Example
 
 Full-text search query fields provide an expressive text search API that can be added to the Subgraph schema and customized. Refer to [Defining Full-text Search Fields](/developing/creating-a-subgraph/#defining-fulltext-search-fields) to add full-text search to your Subgraph.
 
 Full-text search queries have one required field, `text`, for supplying search terms. Several special full-text operators are available to be used in this `text` search field.
 
-Full-text search operators:
+Full-text search fields use the required `text` parameter with the following operators:
 
-| Символ | Оператор    | Описание                                                                                                                                       |
-| ------ | ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| `&`    | `And`       | Для объединения нескольких условий поиска в фильтр для объектов, которые включают все указанные условия                                        |
-| `\|`   | `Or`        | Запросы с несколькими условиями поиска, разделенные оператором or, вернут все объекты, которые соответствуют любому из предоставленных условий |
-| `<->`  | `Follow by` | Укажите расстояние между двумя словами.                                                                                                        |
-| `:*`   | `Prefix`    | Используйте поисковый запрос по префиксу, чтобы найти слова с соответствующим префиксом (необходимо 2 символа)                                 |
+| Operator  | Символ | Description                                                     |
+| --------- | ------ | --------------------------------------------------------------- |
+| And       | `&`    | Matches entities containing all terms                           |
+| Or        | `\|`   | Return all entities with a match from any of the provided terms |
+| Follow by | `<->`  | Matches terms with specified distance                           |
+| Prefix    | `:*`   | Matches word prefixes (minimum 2 characters)                    |
 
-#### Full-text Query Examples
+#### Search Examples
 
-Using the `or` operator, this query will filter to blog entities with variations of either "anarchism" or "crumpet" in their full-text fields.
+OR operator:
 
-```graphql
+```
 {
   blogSearch(text: "anarchism | crumpets") {
     id
@@ -369,7 +308,7 @@ Using the `or` operator, this query will filter to blog entities with variations
 }
 ```
 
-The `follow by` operator specifies that two words must appear a specific distance apart in full-text documents.. The following query will return all blogs with variations of "decentralize" followed by "philosophy"
+“Follow” by operator:
 
 ```graphql
 {
@@ -382,7 +321,7 @@ The `follow by` operator specifies that two words must appear a specific distanc
 }
 ```
 
-Combine full-text operators to make more complex filters. With a pretext search operator combined with a follow by this example query will match all blog entities with words that start with "lou" followed by "music".
+Combined operators:
 
 ```graphql
 {
@@ -395,15 +334,19 @@ Combine full-text operators to make more complex filters. With a pretext search 
 }
 ```
 
-### Валидация
+### Определение схемы
 
-Graph Node реализует валидацию [на основе спецификации](https://spec.graphql.org/October2021/#sec-Validation) для получаемых GraphQL-запросов с использованием [graphql-tools-rs](https://github.com/dotansimha/graphql-tools-rs#validation-rules), которая основана на [референсной реализации graphql-js](https://github.com/graphql/graphql-js/tree/main/src/validation). Запросы, не прошедшие проверку валидации, завершаются стандартной ошибкой. Ознакомьтесь со [спецификацией GraphQL](https://spec.graphql.org/October2021/#sec-Validation), чтобы узнать больше.
+Entity types require:
 
-### Метаданные субграфа
+- GraphQL Interface Definition Language (IDL) format
+- `@entity` directive
+- `ID` field
 
-All Subgraphs have an auto-generated `_Meta_` object, which provides access to Subgraph metadata. This can be queried as follows:
+### Subgraph Metadata Example
 
-```graphQL
+The `_Meta_` object provides subgraph metadata:
+
+```graphql
 {
   _meta(block: { number: 123987 }) {
     block {
@@ -417,14 +360,49 @@ All Subgraphs have an auto-generated `_Meta_` object, which provides access to S
 }
 ```
 
-If a block is provided, the metadata is as of that block, if not the latest indexed block is used. If provided, the block must be after the Subgraph's start block, and less than or equal to the most recently indexed block.
+Metadata fields:
 
-`deployment` — это уникальный идентификатор, соответствующий IPFS CID файла `subgraph.yaml`.
+- `deployment`: IPFS CID of the subgraph.yaml
+- `block`: Latest block information
+- `hasIndexingErrors`: Boolean indicating past indexing errors
 
-`block` предоставляет информацию о последнем блоке (с учетом любых ограничений блоков, переданных в `_meta`):
+> Note: When writing queries, it is important to consider the performance impact of using the `or` operator. While `or` can be a useful tool for broadening search results, it can also have significant costs. One of the main issues with `or` is that it can cause queries to slow down. This is because `or` requires the database to scan through multiple indexes, which can be a time-consuming process. To avoid these issues, it is recommended that developers use `and` operators instead of `or` whenever possible. This allows for more precise filtering and can lead to faster, more accurate queries.
 
-- hash: хэш блока
-- number: номер блока
-- timestamp: the timestamp of the block, if available (this is currently only available for Subgraphs indexing EVM networks)
+### GraphQL Filter Operators Reference
 
-`hasIndexingErrors` is a boolean identifying whether the Subgraph encountered indexing errors at some past block
+This table explains each filter operator available in The Graph's GraphQL API. These operators are used as suffixes to field names when filtering data using the `where` parameter.
+
+| Оператор                  | Описание                                                          | Пример                                               |
+| ------------------------- | ----------------------------------------------------------------- | ---------------------------------------------------- |
+| `_`                       | Matches entities where the specified field equals another entity  | `{ where: { owner_: { name: "Alice" } } }`           |
+| `_not`                    | Negates the specified condition                                   | `{ where: { active_not: true } }`                    |
+| `_gt`                     | Greater than (>)                                                  | `{ where: { price_gt: "100" } }`                     |
+| `_lt`                     | Less than (`\<`)                                                  | `{ where: { price_lt: "100" } }`                     |
+| `_gte`                    | Greater than or equal to (>=)                                     | `{ where: { price_gte: "100" } }`                    |
+| `_lte`                    | Less than or equal to (`\<=`)                                     | `{ where: { price_lte: "100" } }`                    |
+| `_in`                     | Value is in the specified array                                   | `{ where: { category_in: ["Art", "Music"] } }`       |
+| `_not_in`                 | Value is not in the specified array                               | `{ where: { category_not_in: ["Art", "Music"] } }`   |
+| `_contains`               | Field contains the specified string (case-sensitive)              | `{ where: { name_contains: "token" } }`              |
+| `_contains_nocase`        | Field contains the specified string (case-insensitive)            | `{ where: { name_contains_nocase: "token" } }`       |
+| `_not_contains`           | Field does not contain the specified string (case-sensitive)      | `{ where: { name_not_contains: "test" } }`           |
+| `_not_contains_nocase`    | Field does not contain the specified string (case-insensitive)    | `{ where: { name_not_contains_nocase: "test" } }`    |
+| `_starts_with`            | Field starts with the specified string (case-sensitive)           | `{ where: { name_starts_with: "Crypto" } }`          |
+| `_starts_with_nocase`     | Field starts with the specified string (case-insensitive)         | `{ where: { name_starts_with_nocase: "crypto" } }`   |
+| `_ends_with`              | Field ends with the specified string (case-sensitive)             | `{ where: { name_ends_with: "Token" } }`             |
+| `_ends_with_nocase`       | Field ends with the specified string (case-insensitive)           | `{ where: { name_ends_with_nocase: "token" } }`      |
+| `_not_starts_with`        | Field does not start with the specified string (case-sensitive)   | `{ where: { name_not_starts_with: "Test" } }`        |
+| `_not_starts_with_nocase` | Field does not start with the specified string (case-insensitive) | `{ where: { name_not_starts_with_nocase: "test" } }` |
+| `_not_ends_with`          | Field does not end with the specified string (case-sensitive)     | `{ where: { name_not_ends_with: "Test" } }`          |
+| `_not_ends_with_nocase`   | Field does not end with the specified string (case-insensitive)   | `{ where: { name_not_ends_with_nocase: "test" } }`   |
+
+#### Примечания
+
+- Type support varies by operator. For example, `Boolean` only supports `_not`, `_in`, and `_not_in`.
+- The `_` operator is only available for object and interface types.
+- String comparison operators are especially useful for text fields.
+- Numeric comparison operators work with both number and string-encoded number fields.
+- Use these operators in combination with logical operators (`and`, `or`) for complex filtering.
+
+### Валидация
+
+Graph Node реализует валидацию [на основе спецификации](https://spec.graphql.org/October2021/#sec-Validation) для получаемых GraphQL-запросов с использованием [graphql-tools-rs](https://github.com/dotansimha/graphql-tools-rs#validation-rules), которая основана на [референсной реализации graphql-js](https://github.com/graphql/graphql-js/tree/main/src/validation). Запросы, не прошедшие проверку валидации, завершаются стандартной ошибкой. Ознакомьтесь со [спецификацией GraphQL](https://spec.graphql.org/October2021/#sec-Validation), чтобы узнать больше.
