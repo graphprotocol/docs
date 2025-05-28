@@ -4,9 +4,9 @@ title: GraphQL API
 
 Explore the GraphQL Query API for interacting with Subgraphs on The Graph Network.
 
-## 什么是GraphQL？
+[GraphQL](https://graphql.org/learn/) is a query language for APIs and a runtime for executing those queries with existing data.
 
-[GraphQL](https://graphql.org/learn/)是API的查询语言，也是用您现有数据执行这些查询的运行时间。The Graph使用GraphQL查询子图。
+The Graph uses GraphQL to query Subgraphs.
 
 ## Core Concepts
 
@@ -24,15 +24,15 @@ Explore the GraphQL Query API for interacting with Subgraphs on The Graph Networ
   - Read-only operations (no mutations)
   - Defines entity interfaces and derived fields
 
-## 用GraphQL查询
+## Query Structure
 
-In the Subgraph schema, types called `Entities`. For each `Entity` type, `entity` and `entities` fields will be generated on the top-level `Query` type.
+GraphQL queries in The Graph target entities defined in the Subgraph schema. Each `Entity` type generates corresponding `entity` and `entities` fields on the root `Query` type.
 
-### Example Queries
+> Note: The `query` keyword is not required at the top level of GraphQL queries.
 
-> 注意：在使用The Graph时，`query` 不需要包含在`graphql`查询的顶部。
+### Single Entity Queries Example
 
-查询在您的模式中定义的单个`Token`实体：
+Query for a single `Token` entity:
 
 ```graphql
 {
@@ -43,9 +43,11 @@ In the Subgraph schema, types called `Entities`. For each `Entity` type, `entity
 }
 ```
 
-> 注意：当查询单个实体时，需要填写`id`字段，它必须是一个字符串。
+> Note: Single entity queries require the `id` parameter as a string.
 
-查询所有 `Token` 实体：
+### Collection Queries Example
+
+Query format for all `Token` entities:
 
 ```graphql
 {
@@ -56,14 +58,14 @@ In the Subgraph schema, types called `Entities`. For each `Entity` type, `entity
 }
 ```
 
-### 排序
+### Sorting Example
 
-When querying a collection, you can:
+Collection queries support the following sort parameters:
 
-- 使用 `orderBy` 参数按特定属性排序。
-- 使用 `orderDirection` 来指定排序方向, `asc` 用于升序或 `desc` 用于降序。
+- `orderBy`: Specifies the attribute for sorting
+- `orderDirection`: Accepts `asc` (ascending) or `desc` (descending)
 
-#### 示例
+#### Standard Sorting Example
 
 ```graphql
 {
@@ -74,11 +76,7 @@ When querying a collection, you can:
 }
 ```
 
-#### Example for Nested Entity Sorting
-
-从Graph节点[`v0.30.0`](https://github.com/graphprotocol/graph-node/releases/tag/v0.30.0) 可以根据嵌套实体排序。
-
-在以下示例中，我们根据代币所有者的名称对其进行排序：
+#### Nested Entity Sorting Example
 
 ```graphql
 {
@@ -91,20 +89,18 @@ When querying a collection, you can:
 }
 ```
 
-> 目前，您可以在 `@entity` 和 `@orotovedFrom` 字段按一级深度`String` 或 `ID`类型排序。 不幸的是，[按一个深度实体的接口排序](https://github.com/graphprotocol/graph-node/pull/4058)，仍不支持按数组和嵌套实体的字段排序。
+> Note: Nested sorting supports one-level-deep `String` or `ID` types on `@entity` and `@derivedFrom` fields.
 
-### 分页
+### Pagination Example
 
-当查询集合时，最好：
+When querying a collection, it is best to:
 
 - 从集合开始使用`first`参数分页。
   - 默认排序顺序是 `ID`，按字母和数字顺序排列，**不是**创建时间。
 - 使用 `skip` 参数跳过实体和分页。例如，`first:100` 会显示前100个实体，`first:100, skip:100`会显示后100个实体。
 - 避免在查询中使用 `skip` 值，因为它们通常表现很差。 要检索大量条目，最好是通过上面示例中显示的属性的实体进行查找。
 
-#### Example Using `first`
-
-查询前10 个代币：
+#### Standard Pagination Example
 
 ```graphql
 {
@@ -115,11 +111,7 @@ When querying a collection, you can:
 }
 ```
 
-To query for groups of entities in the middle of a collection, the `skip` parameter can be used in conjunction with the `first` parameter to skip a specified number of entities starting at the beginning of the collection.
-
-#### Example Using `first` and `skip`
-
-查询 10 `Token` 实体，由集合开始时的10个地方抵消：
+#### Offset Pagination Example
 
 ```graphql
 {
@@ -130,9 +122,7 @@ To query for groups of entities in the middle of a collection, the `skip` parame
 }
 ```
 
-#### Example Using `first` and `id_ge`
-
-如果客户端需要检索大量实体，则基于属性进行查询和过滤会明显提高性能。 例如，客户端可以使用以下查询检索大量代币：
+#### Cursor-based Pagination Example
 
 ```graphql
 query manyTokens($lastID: String) {    tokens(first: 1000, where: { id_gt: $lastID }) {
@@ -143,16 +133,11 @@ query manyTokens($lastID: String) {    tokens(first: 1000, where: { id_gt: $last
 }
 ```
 
-第一次，它会用'lastID = ""`发送查询， 对于随后的请求，它会在上次请求中将 `lastID`设置为最后一个实体的`id`属性。 这个方法将大大优于使用增加`skip\`值。
-
 ### 过滤
 
-- 您可以在查询中使用 `where` 参数来过滤不同的属性。
-- 您可以在 `where` 参数中筛选多个值。
+The `where` parameter filters entities based on specified conditions.
 
-#### Using `where` Filtering
-
-Query challenges with `failed` outcome using 'where' filter:
+#### Basic Filtering Example
 
 ```graphql
 {
@@ -166,9 +151,7 @@ Query challenges with `failed` outcome using 'where' filter:
 }
 ```
 
-你可以使用后缀，例如`_gt`, `_lte`来进行值比较：
-
-#### Range Filtering
+#### Numeric Comparison Example
 
 ```graphql
 {
@@ -180,11 +163,7 @@ Query challenges with `failed` outcome using 'where' filter:
 }
 ```
 
-#### Block Filtering
-
-您也可以筛选在指定的区块中或之后更新的实体使用 `_change_block(number_gte: Int)`。
-
-如果您只想获取已经更改的实体，例如自上次轮询以来改变的实体，那么这将非常有用。或者也可以调查或调试子图中实体的变化情况(如果与区块过滤器结合使用，则只能隔离在特定区块中发生变化的实体)。
+#### Block-based Filtering Example
 
 ```graphql
 {
@@ -196,11 +175,7 @@ Query challenges with `failed` outcome using 'where' filter:
 }
 ```
 
-#### Nested Entity Filtering
-
-在后缀是\`_'的字段中可以根据嵌套的实体进行过滤。
-
-如果您希望只获取其子级实体满足条件的实体，那么这可能很有用。
+#### Nested Entity Filtering Example
 
 ```graphql
 {
@@ -214,11 +189,9 @@ Query challenges with `failed` outcome using 'where' filter:
 }
 ```
 
-### Logical Operators
+#### Logical Operators
 
-对于Graph节点[`v0.30.0`](https://github.com/graphprotocol/graph-node/releases/tag/v0.30.0)，您可以在同一个`where`参数中使用`and`或`or`运算符，根据多个标准过滤结果。
-
-#### Using `and` Operator
+##### AND Operations Example
 
 下面的示例对大于或等于`100`的`outcome`、`successed`和`number`的挑战进行过滤。
 
@@ -234,23 +207,21 @@ Query challenges with `failed` outcome using 'where' filter:
 }
 ```
 
-> **Synteracc sugar:** 你可以通过传递一个用逗号分隔的子表达式来移除`and`运算符来简化上述查询。
->
-> ```graphql
-> {
->   challenges(where: { number_gte: 100, outcome: "succeeded" }) {
->     challenger
->     outcome
->     application {
->       id
->     }
->   }
-> }
-> ```
+**Syntactic sugar:** You can simplify the above query by removing the `and` operator and by passing a sub-expression separated by commas.
 
-#### Using `or` Operator
+```graphql
+{
+  challenges(where: { number_gte: 100, outcome: "succeeded" }) {
+    challenger
+    outcome
+    application {
+      id
+    }
+  }
+}
+```
 
-下面的示例对大于或等于`100`的`outcome`、`successed`和`number`的挑战进行过滤。
+##### OR Operations Example
 
 ```graphql
 {
@@ -264,52 +235,22 @@ Query challenges with `failed` outcome using 'where' filter:
 }
 ```
 
-> **Note**: When writing queries, it is important to consider the performance impact of using the `or` operator. While `or` can be a useful tool for broadening search results, it can also have significant costs. One of the main issues with `or` is that it can cause queries to slow down. This is because `or` requires the database to scan through multiple indexes, which can be a time-consuming process. To avoid these issues, it is recommended that developers use and operators instead of or whenever possible. This allows for more precise filtering and can lead to faster, more accurate queries.
-
-#### 所有过滤器
-
-参数后缀的完整列表:
-
-```
-_
-_not
-_gt
-_lt
-_gte
-_lte
-_in
-_not_in
-_contains
-_contains_nocase
-_not_contains
-_not_contains_nocase
-_starts_with
-_starts_with_nocase
-_ends_with
-_ends_with_nocase
-_not_starts_with
-_not_starts_with_nocase
-_not_ends_with
-_not_ends_with_nocase
-```
-
-> 请注意，某些后缀只支持特定类型。 例如，`Boolean` 只支持 `_not`、`_in`和`_not_in`，但`_` 只适用于对象和接口类型。
-
-此外，下列全局过滤器可以作为`where`参数的一部分：
+Global filter parameter:
 
 ```graphql
 _change_block(number_gte: Int)
 ```
 
-### Time-travel Queries
+### Time-travel Queries Example
 
-您可以查询您的实体状态，不仅仅是为了最新的区块， 它是默认的，但也是过去的任意区块的。 可以在查询的顶级字段中包含一个 ' block' 参数来指定查询的要么用其区块编号或区块哈希。
+Queries support historical state retrieval using the `block` parameter:
 
-这种查询结果不会随着时间的推移而改变，即对过去某个区块的查询，无论何时执行，都将返回相同的结果。唯一的例外是，如果您在非常靠近链头的区块上进行查询，如果该区块**不**在主链上，并且链被重新组织，则结果可能会改变。 一旦一个区块被确认是最终的区块，那么查询的结果就不会改变。
+- `number`: Integer block number
+- `hash`: String block hash
 
 > 请注意，当前的实现仍然受到某些限制，这些限制可能会违反这些保证。该实现不能总是判断给定的区块哈希根本不在主链上，或者对于一个不能被认为是最终的区块，逐块哈希查询的结果可能会受到与查询同时运行的区块重组的影响。当区块是最终区块并且已知在主链上时，它们不会影响区块哈希查询的结果。[这个](https://github.com/graphprotocol/graph-node/issues/1405)问题详细解释了这些限制是什么。
 
-#### Example Time-travel Queries
+#### Block Number Query Example
 
 ```graphql
 {
@@ -323,7 +264,7 @@ _change_block(number_gte: Int)
 }
 ```
 
-此查询将返回 `Challenge` 实体及其关联的 `Application` 实体，因为它们在处理8,000,000个区块后就存在了。
+#### Block Hash Query Example
 
 ```graphql
 {
@@ -337,28 +278,26 @@ _change_block(number_gte: Int)
 }
 ```
 
-此查询将返回 `Challenge` 实体及其关联的 `Application` 实体，因为它们在处理具有给定哈希值的区块后就存在了。
-
-### Full-text Search Queries
+### Full-Text Search Example
 
 Full-text search query fields provide an expressive text search API that can be added to the Subgraph schema and customized. Refer to [Defining Full-text Search Fields](/developing/creating-a-subgraph/#defining-fulltext-search-fields) to add full-text search to your Subgraph.
 
 Full-text search queries have one required field, `text`, for supplying search terms. Several special full-text operators are available to be used in this `text` search field.
 
-Full-text search operators:
+Full-text search fields use the required `text` parameter with the following operators:
 
-| 符号    | 运算符         | 描述                                    |
-| ----- | ----------- | ------------------------------------- |
-| `&`   | `And`       | 用于将多个搜索词组合到包含所有提供词条的实体的过滤器中           |
-| `\|`  | `Or`        | 由 or 运算符分隔的多个搜索词的查询，将返回与任何提供的词匹配的所有实体 |
-| `<->` | `Follow by` | 指定两个单词之间的距离。                          |
-| `:*`  | `Prefix`    | 使用前缀搜索词查找前缀匹配的单词（需要 2 个字符）            |
+| Operator  | 符号     | Description                                                     |
+| --------- | ------ | --------------------------------------------------------------- |
+| And       | `&`    | Matches entities containing all terms                           |
+| Or        | `\|`   | Return all entities with a match from any of the provided terms |
+| Follow by | `<->`  | Matches terms with specified distance                           |
+| Prefix    | `:*`   | Matches word prefixes (minimum 2 characters)                    |
 
-#### Full-text Query Examples
+#### Search Examples
 
-Using the `or` operator, this query will filter to blog entities with variations of either "anarchism" or "crumpet" in their full-text fields.
+OR operator:
 
-```graphql
+```
 {
   blogSearch(text: "anarchism | crumpets") {
     id
@@ -369,7 +308,7 @@ Using the `or` operator, this query will filter to blog entities with variations
 }
 ```
 
-The `follow by` operator specifies that two words must appear a specific distance apart in full-text documents.. The following query will return all blogs with variations of "decentralize" followed by "philosophy"
+“Follow” by operator:
 
 ```graphql
 {
@@ -382,7 +321,7 @@ The `follow by` operator specifies that two words must appear a specific distanc
 }
 ```
 
-Combine full-text operators to make more complex filters. With a pretext search operator combined with a follow by this example query will match all blog entities with words that start with "lou" followed by "music".
+Combined operators:
 
 ```graphql
 {
@@ -395,15 +334,19 @@ Combine full-text operators to make more complex filters. With a pretext search 
 }
 ```
 
-### 验证
+### 模式定义
 
-Graph节点实现使用 [graphql-tools-rs](https://github.com/dotansimha/graphql-tools-rs#validation-rules)验证它收到的 GraphQL 查询的 [specification-based](https://spec.graphql.org/October2021/#sec-Validation) 验证基于 [graphql-js 参考实现](https://github.com/graphql/graphql-js/tree/main/src/validation)。 查询失败的验证规则有一个标准错误 - 请访问 [GraphQL spec](https://spec.graphql.org/October2021/#sec-Validation)来了解更多信息。
+Entity types require:
 
-### 子图元数据
+- GraphQL Interface Definition Language (IDL) format
+- `@entity` directive
+- `ID` field
 
-所有子图都有一个自动生成的`_Meta_`对象，它提供对子图元数据的访问。可按如下方式查询：
+### Subgraph Metadata Example
 
-```graphQL
+The `_Meta_` object provides subgraph metadata:
+
+```graphql
 {
   _meta(block: { number: 123987 }) {
     block {
@@ -417,14 +360,49 @@ Graph节点实现使用 [graphql-tools-rs](https://github.com/dotansimha/graphql
 }
 ```
 
-如果提供了区块，则元数据为该区块的元数据，如果未使用最新的索引区块。如果提供，则区块必须在子图的起始区块之后，并且小于或等于最近索引的区块。
+Metadata fields:
 
-`deplement` 是一个唯一的ID，与 `subgraph.yaml` 文件的 IPFS CID 相对应。
+- `deployment`: IPFS CID of the subgraph.yaml
+- `block`: Latest block information
+- `hasIndexingErrors`: Boolean indicating past indexing errors
 
-`block` 提供了关于最新区块的信息(同时考虑到传递给`_meta`的任何区块约束)：
+> Note: When writing queries, it is important to consider the performance impact of using the `or` operator. While `or` can be a useful tool for broadening search results, it can also have significant costs. One of the main issues with `or` is that it can cause queries to slow down. This is because `or` requires the database to scan through multiple indexes, which can be a time-consuming process. To avoid these issues, it is recommended that developers use `and` operators instead of `or` whenever possible. This allows for more precise filtering and can lead to faster, more accurate queries.
 
-- hash：区块的哈希
-- number：区块编号
-- timestamp：区块的时间戳，如果可用的话（当前仅适用于索引EVM网络的子图）
+### GraphQL Filter Operators Reference
 
-`hasIndexingErrors`是一个布尔值，用于标识子图在过去的某个区块中是否遇到索引错误。
+This table explains each filter operator available in The Graph's GraphQL API. These operators are used as suffixes to field names when filtering data using the `where` parameter.
+
+| 运算符                       | 描述                                                                | 示例                                                   |
+| ------------------------- | ----------------------------------------------------------------- | ---------------------------------------------------- |
+| `_`                       | Matches entities where the specified field equals another entity  | `{ where: { owner_: { name: "Alice" } } }`           |
+| `_not`                    | Negates the specified condition                                   | `{ where: { active_not: true } }`                    |
+| `_gt`                     | Greater than (>)                                                  | `{ where: { price_gt: "100" } }`                     |
+| `_lt`                     | Less than (`\<`)                                                  | `{ where: { price_lt: "100" } }`                     |
+| `_gte`                    | Greater than or equal to (>=)                                     | `{ where: { price_gte: "100" } }`                    |
+| `_lte`                    | Less than or equal to (`\<=`)                                     | `{ where: { price_lte: "100" } }`                    |
+| `_in`                     | Value is in the specified array                                   | `{ where: { category_in: ["Art", "Music"] } }`       |
+| `_not_in`                 | Value is not in the specified array                               | `{ where: { category_not_in: ["Art", "Music"] } }`   |
+| `_contains`               | Field contains the specified string (case-sensitive)              | `{ where: { name_contains: "token" } }`              |
+| `_contains_nocase`        | Field contains the specified string (case-insensitive)            | `{ where: { name_contains_nocase: "token" } }`       |
+| `_not_contains`           | Field does not contain the specified string (case-sensitive)      | `{ where: { name_not_contains: "test" } }`           |
+| `_not_contains_nocase`    | Field does not contain the specified string (case-insensitive)    | `{ where: { name_not_contains_nocase: "test" } }`    |
+| `_starts_with`            | Field starts with the specified string (case-sensitive)           | `{ where: { name_starts_with: "Crypto" } }`          |
+| `_starts_with_nocase`     | Field starts with the specified string (case-insensitive)         | `{ where: { name_starts_with_nocase: "crypto" } }`   |
+| `_ends_with`              | Field ends with the specified string (case-sensitive)             | `{ where: { name_ends_with: "Token" } }`             |
+| `_ends_with_nocase`       | Field ends with the specified string (case-insensitive)           | `{ where: { name_ends_with_nocase: "token" } }`      |
+| `_not_starts_with`        | Field does not start with the specified string (case-sensitive)   | `{ where: { name_not_starts_with: "Test" } }`        |
+| `_not_starts_with_nocase` | Field does not start with the specified string (case-insensitive) | `{ where: { name_not_starts_with_nocase: "test" } }` |
+| `_not_ends_with`          | Field does not end with the specified string (case-sensitive)     | `{ where: { name_not_ends_with: "Test" } }`          |
+| `_not_ends_with_nocase`   | Field does not end with the specified string (case-insensitive)   | `{ where: { name_not_ends_with_nocase: "test" } }`   |
+
+#### 注意：
+
+- Type support varies by operator. For example, `Boolean` only supports `_not`, `_in`, and `_not_in`.
+- The `_` operator is only available for object and interface types.
+- String comparison operators are especially useful for text fields.
+- Numeric comparison operators work with both number and string-encoded number fields.
+- Use these operators in combination with logical operators (`and`, `or`) for complex filtering.
+
+### 验证
+
+Graph节点实现使用 [graphql-tools-rs](https://github.com/dotansimha/graphql-tools-rs#validation-rules)验证它收到的 GraphQL 查询的 [specification-based](https://spec.graphql.org/October2021/#sec-Validation) 验证基于 [graphql-js 参考实现](https://github.com/graphql/graphql-js/tree/main/src/validation)。 查询失败的验证规则有一个标准错误 - 请访问 [GraphQL spec](https://spec.graphql.org/October2021/#sec-Validation)来了解更多信息。
