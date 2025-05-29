@@ -10,22 +10,22 @@ By following these steps, you can avoid data inconsistencies that arise from blo
 
 When you need to fetch the newest information from The Graph without stepping back to an older block:
 
-1. **Initialize a minimal block target:** Start by setting `minBlock` to 0 (or a known block number). This ensures your query will be served from the most recent block.  
-2. **Set up a periodic polling cycle:** Choose a delay that matches the block production interval (e.g., 14 seconds). This ensures you wait until a new block is likely available.  
-3. **Use the `block: { number_gte: $minBlock }` argument:** This ensures the fetched data is from a block at or above the specified block number, preventing time from moving backward.  
-4. **Handle logic inside the loop:** Update `minBlock` to the most recent block returned in each iteration.  
+1. **Initialize a minimal block target:** Start by setting `minBlock` to 0 (or a known block number). This ensures your query will be served from the most recent block.
+2. **Set up a periodic polling cycle:** Choose a delay that matches the block production interval (e.g., 14 seconds). This ensures you wait until a new block is likely available.
+3. **Use the `block: { number_gte: $minBlock }` argument:** This ensures the fetched data is from a block at or above the specified block number, preventing time from moving backward.
+4. **Handle logic inside the loop:** Update `minBlock` to the most recent block returned in each iteration.
 5. **Process the fetched data:** Implement the necessary actions (e.g., updating internal state) with the newly polled data.
 
 ```javascript
 /// Example: Polling for updated data
 async function updateProtocolPaused() {
-  let minBlock = 0;
+  let minBlock = 0
 
   for (;;) {
     // Wait for the next block.
     const nextBlock = new Promise((f) => {
-      setTimeout(f, 14000);
-    });
+      setTimeout(f, 14000)
+    })
 
     const query = `
       query GetProtocol($minBlock: Int!) {
@@ -38,17 +38,17 @@ async function updateProtocolPaused() {
             }
           }
       }
-    `;
+    `
 
-    const variables = { minBlock };
-    const response = await graphql(query, variables);
-    minBlock = response._meta.block.number;
+    const variables = { minBlock }
+    const response = await graphql(query, variables)
+    minBlock = response._meta.block.number
 
     // TODO: Replace this placeholder with handling of 'response.protocol.paused'.
-    console.log(response.protocol.paused);
+    console.log(response.protocol.paused)
 
     // Wait to poll again.
-    await nextBlock;
+    await nextBlock
   }
 }
 ```
@@ -57,16 +57,16 @@ async function updateProtocolPaused() {
 
 If you must retrieve multiple related items or a large set of data from the same point in time:
 
-1. **Fetch the initial page:** Use a query that includes `_meta { block { hash } }` to capture the block hash. This ensures subsequent queries stay pinned to that same block.  
-2. **Store the block hash:** Keep the hash from the first response. This becomes your reference point for the rest of the items.  
-3. **Paginate the results:** Make additional requests using the same block hash and a pagination strategy (e.g., `id_gt` or other filtering) until you have fetched all relevant items.  
+1. **Fetch the initial page:** Use a query that includes `_meta { block { hash } }` to capture the block hash. This ensures subsequent queries stay pinned to that same block.
+2. **Store the block hash:** Keep the hash from the first response. This becomes your reference point for the rest of the items.
+3. **Paginate the results:** Make additional requests using the same block hash and a pagination strategy (e.g., `id_gt` or other filtering) until you have fetched all relevant items.
 4. **Handle re-orgs:** If the block hash becomes invalid due to a re-org, retry from the first request to obtain a non-uncle block.
 
 ```javascript
 /// Example: Fetching a large set of related items
 async function getDomainNames() {
-  let pages = 5;
-  const perPage = 1000;
+  let pages = 5
+  const perPage = 1000
 
   // First request captures the block hash.
   const listDomainsQuery = `
@@ -81,15 +81,15 @@ async function getDomainNames() {
         }
       }
     }
-  `;
+  `
 
-  let data = await graphql(listDomainsQuery, { perPage });
-  let result = data.domains.map((d) => d.name);
-  let blockHash = data._meta.block.hash;
+  let data = await graphql(listDomainsQuery, { perPage })
+  let result = data.domains.map((d) => d.name)
+  let blockHash = data._meta.block.hash
 
   // Paginate until fewer than 'perPage' results are returned or you reach the page limit.
   while (data.domains.length === perPage && --pages) {
-    let lastID = data.domains[data.domains.length - 1].id;
+    let lastID = data.domains[data.domains.length - 1].id
     let query = `
       query ListDomains($perPage: Int!, $lastID: ID!, $blockHash: Bytes!) {
         domains(
@@ -101,17 +101,17 @@ async function getDomainNames() {
           id
         }
       }
-    `;
+    `
 
-    data = await graphql(query, { perPage, lastID, blockHash });
+    data = await graphql(query, { perPage, lastID, blockHash })
 
     for (const domain of data.domains) {
-      result.push(domain.name);
+      result.push(domain.name)
     }
   }
 
   // TODO: Do something with the full result.
-  return result;
+  return result
 }
 ```
 
@@ -121,4 +121,4 @@ By using the `number_gte` parameter in a polling loop, you ensure time moves for
 
 • If you encounter re-orgs, plan to retry from the beginning or adjust your logic accordingly. • Explore other filtering and block arguments (see \[placeholder for reference location\]) to handle additional use-cases.
 
-\[Placeholder for additional references or external resources if available\]  
+\[Placeholder for additional references or external resources if available\]
