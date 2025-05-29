@@ -62,7 +62,9 @@ export default function TemplateOpenApiContent({ children, ...props }: Component
                   const setParameterValue = (value: ParameterValue) => {
                     parameterValues.set(parameter.name, value)
                   }
-                  const enumValues = parameter.schema.enum ?? []
+                  const enumValues = (parameter.schema.enum ?? [])
+                    .map((value) => String(value))
+                    .filter((value) => value !== '')
                   return (
                     <tr key={parameter.name}>
                       <td className="whitespace-nowrap">
@@ -94,9 +96,9 @@ export default function TemplateOpenApiContent({ children, ...props }: Component
                             <li>
                               {t('global.openApi.parameters.acceptedValues')}:{' '}
                               {enumValues.map((value, valueIndex: number) => (
-                                <Fragment key={String(value)}>
+                                <Fragment key={value}>
                                   {valueIndex > 0 ? ', ' : null}
-                                  <ExperimentalCodeInline>{String(value)}</ExperimentalCodeInline>
+                                  <ExperimentalCodeInline>{value}</ExperimentalCodeInline>
                                 </Fragment>
                               ))}
                             </li>
@@ -158,8 +160,8 @@ export default function TemplateOpenApiContent({ children, ...props }: Component
                             >
                               <option value="">–</option>
                               {enumValues.map((value) => (
-                                <option key={String(value)} value={String(value)}>
-                                  {String(value)}
+                                <option key={value} value={value}>
+                                  {value}
                                 </option>
                               ))}
                             </select>
