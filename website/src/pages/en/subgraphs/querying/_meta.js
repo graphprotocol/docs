@@ -6,7 +6,7 @@ export default {
   'best-practices': '',
   'from-an-application': '',
   'distributed-systems': '',
-  'distributed-systems-guide': '',
+  'distributed-systems-guide': titles['distributed-systems-guide'] ?? '',
   'graphql-api': '',
   'subgraph-id-vs-deployment-id': '',
   'graph-client': titles['graph-client'] ?? '',
