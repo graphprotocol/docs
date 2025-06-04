@@ -26,7 +26,16 @@ export const MONO_ICON_NETWORKS = [
 ]
 
 // Networks with Token API support (TODO: remove once the registry has this information)
-export const TOKEN_API_NETWORKS = ['mainnet', 'base', 'bsc', 'arbitrum-one', 'matic', 'optimism', 'unichain']
+export const TOKEN_API_NETWORKS = [
+  'mainnet',
+  'base',
+  'bsc',
+  'arbitrum-one',
+  'matic',
+  'optimism',
+  'unichain',
+  'avalanche',
+]
 
 export const getIconVariant = (networkId: string): 'mono' | 'branded' => {
   return MONO_ICON_NETWORKS.includes(networkId) ? 'mono' : 'branded'
