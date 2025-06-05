@@ -59,45 +59,45 @@ export function NetworksTable({ networks }: { networks: SupportedNetwork[] }) {
       </Callout>
 
       <div className="mb-6 overflow-clip rounded-8 border border-space-1500 bg-space-1800">
-        <div className="grid grid-cols-2 gap-px text-space-500">
+        <div className="grid grid-cols-1 gap-px text-space-500 xs:grid-cols-2">
           <div className="border-b border-r border-space-1500 p-4">
             <Text.C10 className="mb-2 uppercase text-white">Subgraphs</Text.C10>
             <div className="flex items-center gap-2">
               <Check size={4} alt="Checkmark" />
-              <span className="text-14">Subgraph Studio (No issuance)</span>
+              <span className="text-14">{t('index.supportedNetworks.tableLegend.subgraphs.basic')}</span>
             </div>
             <div className="flex items-center gap-2">
               <Checks size={4} alt="Checkmarks" />
-              <span className="text-14">The Graph Network (Issuance)</span>
+              <span className="text-14">{t('index.supportedNetworks.tableLegend.subgraphs.full')}</span>
             </div>
           </div>
           <div className="border-b border-r border-space-1500 p-4 lg:border-r-0">
             <Text.C10 className="mb-2 uppercase text-white">Substreams</Text.C10>
             <div className="flex items-center gap-2">
               <Check size={4} alt="Checkmark" />
-              <span className="text-14">Base</span>
+              <span className="text-14">{t('index.supportedNetworks.tableLegend.substreams.basic')}</span>
             </div>
             <div className="flex items-center gap-2">
               <Checks size={4} alt="Checkmarks" />
-              <span className="text-14">Extended (EVM Only)</span>
+              <span className="text-14">{t('index.supportedNetworks.tableLegend.substreams.full')}</span>
             </div>
           </div>
           <div className="border-b border-r border-space-1500 p-4">
             <Text.C10 className="mb-2 uppercase text-white">Firehose</Text.C10>
             <div className="flex items-center gap-2">
               <Check size={4} alt="Checkmark" />
-              <span className="text-14">Base</span>
+              <span className="text-14">{t('index.supportedNetworks.tableLegend.firehose.basic')}</span>
             </div>
             <div className="flex items-center gap-2">
               <Checks size={4} alt="Checkmarks" />
-              <span className="text-14">Extended (EVM Only)</span>
+              <span className="text-14">{t('index.supportedNetworks.tableLegend.firehose.full')}</span>
             </div>
           </div>
           <div className="p-4">
             <Text.C10 className="mb-2 uppercase text-white">Token API</Text.C10>
             <div className="flex items-center gap-2">
               <Check size={4} alt="Checkmark" />
-              <span className="text-14">All endpoints supported</span>
+              <span className="text-14">{t('index.supportedNetworks.tableLegend.tokenApi.supported')}</span>
             </div>
           </div>
         </div>
