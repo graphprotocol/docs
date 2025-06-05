@@ -9,7 +9,8 @@ export const API_IDS = ['tokenApi'] as const
 export const APIS = {
   tokenApi: {
     name: 'Token API',
-    url: 'https://token-api.thegraph.com/openapi',
+    url: 'https://token-api.thegraph.com/openapi', // production
+    // url: 'https://token-api.service.stage.pinax.network/openapi', // staging
     document: tokenApi as OpenAPIV3_1.Document,
     sections: {
       EVM: '/token-api/evm',
