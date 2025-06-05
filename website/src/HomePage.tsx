@@ -29,16 +29,64 @@ export default function HomePage({ supportedNetworks }: { supportedNetworks: Sup
             className="left-16 h-full max-w-none xs:-top-2 xs:left-0"
           />
         </div>
-        <div className="col-[container] py-28 xs:py-36">
-          <div className="max-w-120">
-            <h1 className="text-heading-xlarge text-white">{t('index.hero.title')}</h1>
-            <p className="mt-2">{t('index.hero.description')}</p>
-            {/*
-              <ExperimentalButtonGroup className="mt-4 prop-orientation-vertical xs:prop-orientation-horizontal">
-                <ExperimentalButton href="/about/">{t('index.hero.cta1')}</ExperimentalButton>
-                <ExperimentalButton href="/subgraphs/quick-start/">{t('index.hero.cta2')}</ExperimentalButton>
-              </ExperimentalButtonGroup>
-            */}
+        <div className="col-[container] py-28">
+          <div className="flex flex-col items-start gap-4 lg:flex-row">
+            <div className="flex-1 lg:mb-0 lg:max-w-84">
+              <h1 className="text-heading-xlarge text-white">{t('index.hero.title')}</h1>
+              <p className="mt-2 text-16">{t('index.hero.description')}</p>
+            </div>
+            <div className="flex w-full flex-1 justify-end lg:w-auto">
+              <div className="w-full overflow-clip rounded-8 border border-space-1600 bg-space-1800 lg:w-auto">
+                <div className="relative grid grid-cols-4 gap-px">
+                  {[
+                    'mainnet',
+                    'btc',
+                    'bsc',
+                    'solana-mainnet-beta',
+                    'avalanche',
+                    'stellar',
+                    'litecoin',
+                    'matic',
+                    'arbitrum-one',
+                    'sonic',
+                    'optimism',
+                    'sei-mainnet',
+                    'starknet-mainnet',
+                    'zksync-era',
+                    'celo',
+                    'metis',
+                  ]
+                    .map((id) => supportedNetworks.find((network) => network.id === id))
+                    .filter((network): network is typeof network & {} => Boolean(network))
+                    .map((network) => (
+                      <div key={network.id} className="-mb-px -mr-px">
+                        <ButtonOrLink
+                          href={`/supported-networks/${network.id}`}
+                          className="flex items-center justify-center border-b border-r border-space-1600 px-8 py-5 transition hover:bg-space-1600"
+                        >
+                          <NetworkIcon
+                            network={network}
+                            size={6}
+                            variant={
+                              network.id === 'stellar' || network.id === 'sonic' || network.id === 'zksync-era'
+                                ? 'mono'
+                                : 'branded'
+                            }
+                          />
+                        </ButtonOrLink>
+                      </div>
+                    ))}
+                  <ExperimentalLink
+                    href="/supported-networks"
+                    className="absolute bottom-0 right-0 flex h-[64px] w-[calc(100%-1px)] items-center justify-center text-14 backdrop-blur-md sm:w-[calc(50%-1px)]"
+                  >
+                    {t('index.supportedNetworks.seeAllNetworks', [
+                      supportedNetworks.filter((network) => network.networkType === NetworkType.Mainnet).length,
+                    ])}
+                  </ExperimentalLink>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
