@@ -31,13 +31,13 @@ export default function HomePage({ supportedNetworks }: { supportedNetworks: Sup
         </div>
         <div className="col-[container] py-28">
           <div className="flex flex-col items-start gap-4 lg:flex-row">
-            <div className="mb-4 flex-1 lg:mb-0 lg:max-w-84">
+            <div className="flex-1 lg:mb-0 lg:max-w-84">
               <h1 className="text-heading-xlarge text-white">{t('index.hero.title')}</h1>
               <p className="mt-2 text-16">{t('index.hero.description')}</p>
             </div>
-            <div className="flex w-full flex-1 flex-col items-end justify-end lg:w-auto">
+            <div className="flex w-full flex-1 justify-end lg:w-auto">
               <div className="w-full overflow-clip rounded-8 border border-space-1600 bg-space-1800 lg:w-auto">
-                <div className="relative grid grid-cols-4 gap-px text-space-500">
+                <div className="relative grid grid-cols-4 gap-px">
                   {[
                     'mainnet',
                     'btc',
@@ -78,10 +78,11 @@ export default function HomePage({ supportedNetworks }: { supportedNetworks: Sup
                     ))}
                   <ExperimentalLink
                     href="/supported-networks"
-                    className="absolute bottom-0 right-0 flex h-[64px] w-[calc(100%-1px)] items-center justify-center rounded-br-8 text-14 backdrop-blur-md sm:w-[calc(50%-1px)]"
+                    className="absolute bottom-0 right-0 flex h-[64px] w-[calc(100%-1px)] items-center justify-center text-14 backdrop-blur-md sm:w-[calc(50%-1px)]"
                   >
-                    See all {supportedNetworks.filter((network) => network.networkType === NetworkType.Mainnet).length}{' '}
-                    networks
+                    {t('index.supportedNetworks.seeAllNetworks', [
+                      supportedNetworks.filter((network) => network.networkType === NetworkType.Mainnet).length,
+                    ])}
                   </ExperimentalLink>
                 </div>
               </div>
