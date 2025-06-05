@@ -11,7 +11,7 @@ import {
   Text,
   useDebounce,
 } from '@edgeandnode/gds'
-import { Check, EyeClosed } from '@edgeandnode/gds/icons'
+import { Check, Checks, EyeClosed } from '@edgeandnode/gds/icons'
 import { NetworkIcon } from '@edgeandnode/go'
 
 import { Callout, Table } from '@/components'
@@ -58,6 +58,51 @@ export function NetworksTable({ networks }: { networks: SupportedNetwork[] }) {
         </p>
       </Callout>
 
+      <div className="mb-6 overflow-clip rounded-8 border border-space-1500 bg-space-1800">
+        <div className="grid grid-cols-2 gap-px text-space-500">
+          <div className="border-b border-r border-space-1500 p-4">
+            <Text.C10 className="mb-2 uppercase text-white">Subgraphs</Text.C10>
+            <div className="flex items-center gap-2">
+              <Check size={4} alt="Checkmark" />
+              <span className="text-14">Subgraph Studio (No issuance)</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Checks size={4} alt="Checkmarks" />
+              <span className="text-14">The Graph Network (Issuance)</span>
+            </div>
+          </div>
+          <div className="border-b border-r border-space-1500 p-4 lg:border-r-0">
+            <Text.C10 className="mb-2 uppercase text-white">Substreams</Text.C10>
+            <div className="flex items-center gap-2">
+              <Check size={4} alt="Checkmark" />
+              <span className="text-14">Base</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Checks size={4} alt="Checkmarks" />
+              <span className="text-14">Extended (EVM Only)</span>
+            </div>
+          </div>
+          <div className="border-b border-r border-space-1500 p-4">
+            <Text.C10 className="mb-2 uppercase text-white">Firehose</Text.C10>
+            <div className="flex items-center gap-2">
+              <Check size={4} alt="Checkmark" />
+              <span className="text-14">Base</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Checks size={4} alt="Checkmarks" />
+              <span className="text-14">Extended (EVM Only)</span>
+            </div>
+          </div>
+          <div className="p-4">
+            <Text.C10 className="mb-2 uppercase text-white">Token API</Text.C10>
+            <div className="flex items-center gap-2">
+              <Check size={4} alt="Checkmark" />
+              <span className="text-14">All endpoints supported</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div className="mb-4 flex items-center gap-4">
         <div className="flex-grow">
           <ExperimentalSearch
@@ -103,9 +148,6 @@ export function NetworksTable({ networks }: { networks: SupportedNetwork[] }) {
               <th className="min-w-47">
                 <Text.C10>{t('index.supportedNetworks.tableHeaders.name')}</Text.C10>
               </th>
-              <th className="min-w-47">
-                <Text.C10>{t('index.supportedNetworks.tableHeaders.id')}</Text.C10>
-              </th>
               <th align="center">
                 <Text.C10>{t('index.supportedNetworks.tableHeaders.subgraphs')}</Text.C10>
               </th>
@@ -125,25 +167,43 @@ export function NetworksTable({ networks }: { networks: SupportedNetwork[] }) {
                 className="group/table-row isolate -outline-offset-1 transition hocus-visible-within:bg-space-1600 has-[a:focus-visible]:outline-focus"
               >
                 <td>
-                  <ButtonOrLink href={`/supported-networks/${network.id}`} className="static outline-none">
-                    <span className="flex items-center gap-2">
-                      <NetworkIcon network={network} variant={getIconVariant(network.id)} size={5} />
-                      <span className="text-body-xsmall">{network.shortName}</span>
-                    </span>
-                    <span className="absolute inset-y-0 start-0 z-10 w-[1999px]" />
-                  </ButtonOrLink>
-                </td>
-                <td>
                   <div className="flex items-center justify-between gap-2">
-                    <span className="text-body-xsmall">{network.id}</span>
+                    <ButtonOrLink href={`/supported-networks/${network.id}`} className="static outline-none">
+                      <div className="flex items-center gap-3">
+                        <NetworkIcon network={network} variant={getIconVariant(network.id)} size={5} />
+                        <div className="flex flex-col">
+                          <span className="text-body-xsmall leading-5 text-white">{network.shortName}</span>
+                          <span className="text-body-xsmall leading-5 text-space-500">{network.id}</span>
+                        </div>
+                      </div>
+                      <span className="absolute inset-y-0 start-0 z-10 w-[1999px]" />
+                    </ButtonOrLink>
                     <div className="z-20 shrink-0 opacity-0 transition group-focus-within/table-row:opacity-100 group-hover/table-row:opacity-100">
                       <ExperimentalCopyButton size="small" variant="tertiary" value={network.id} />
                     </div>
                   </div>
                 </td>
-                <td align="center">{network.subgraphs ? <Check size={4} alt="Checkmark" /> : null}</td>
-                <td align="center">{network.substreams ? <Check size={4} alt="Checkmark" /> : null}</td>
-                <td align="center">{network.firehose ? <Check size={4} alt="Checkmark" /> : null}</td>
+                <td align="center">
+                  {network.subgraphsSupportLevel === 'full' ? (
+                    <Checks size={4} alt="Checkmarks" />
+                  ) : network.subgraphsSupportLevel === 'basic' ? (
+                    <Check size={4} alt="Checkmark" />
+                  ) : null}
+                </td>
+                <td align="center">
+                  {network.substreamsSupportLevel === 'full' ? (
+                    <Checks size={4} alt="Checkmarks" />
+                  ) : network.substreamsSupportLevel === 'basic' ? (
+                    <Check size={4} alt="Checkmark" />
+                  ) : null}
+                </td>
+                <td align="center">
+                  {network.firehoseSupportLevel === 'full' ? (
+                    <Checks size={4} alt="Checkmarks" />
+                  ) : network.firehoseSupportLevel === 'basic' ? (
+                    <Check size={4} alt="Checkmark" />
+                  ) : null}
+                </td>
                 <td align="center">{network.tokenApi ? <Check size={4} alt="Checkmark" /> : null}</td>
               </tr>
             ))}

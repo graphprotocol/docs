@@ -41,6 +41,29 @@ export const getIconVariant = (networkId: string): 'mono' | 'branded' => {
   return MONO_ICON_NETWORKS.includes(networkId) ? 'mono' : 'branded'
 }
 
+// Suport level for services
+export const getSubgraphsSupportLevel = (network: any): 'none' | 'basic' | 'full' => {
+  const hasSubgraphs = Boolean(network.services.subgraphs?.length || network.services.sps?.length)
+
+  if (!hasSubgraphs) return 'none'
+  if (network.issuanceRewards === true) return 'full'
+  return 'basic'
+}
+
+export const getSubstreamsSupportLevel = (network: any): 'none' | 'basic' | 'full' => {
+  const substreamCount = network.services.substreams?.length || 0
+  if (substreamCount === 0) return 'none'
+  if (substreamCount >= 2) return 'full'
+  return 'basic'
+}
+
+export const getFirehoseSupportLevel = (network: any): 'none' | 'basic' | 'full' => {
+  const firehoseCount = network.services.firehose?.length || 0
+  if (firehoseCount === 0) return 'none'
+  if (firehoseCount >= 2) return 'full'
+  return 'basic'
+}
+
 export async function getSupportedNetworks() {
   const registry = await NetworksRegistry.fromLatestVersion()
   return registry.networks
@@ -61,6 +84,10 @@ export async function getSupportedNetworks() {
           substreams,
           firehose,
           tokenApi,
+          rawNetwork: network,
+          subgraphsSupportLevel: getSubgraphsSupportLevel(network),
+          substreamsSupportLevel: getSubstreamsSupportLevel(network),
+          firehoseSupportLevel: getFirehoseSupportLevel(network),
         },
       ]
     })
