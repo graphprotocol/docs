@@ -708,42 +708,6 @@ graph indexer actions execute approve
 
 成本模型根据市场和查询属性为查询提供动态定价。索引人服务与网关共享一个成本模型，用于它们打算响应查询的每个子图。反过来，网关使用成本模型对每个查询进行索引人选择决策，并与选定的索引人协商付款。
 
-#### Agora
-
-Agora 语言提供了一种灵活的格式来声明查询的成本模型。 Agora 价格模型是一系列的语句，它们按照 GraphQL 查询中每个顶层查询的顺序执行。 对于每个顶层查询，第一个与其匹配的语句决定了该查询的价格。
-
-语句由一个用于匹配 GraphQL 查询的谓词和一个成本表达式组成，该表达式在评估时输出一个以十进制 GRT 表示的成本。 查询的命名参数位置中的值可以在谓词中捕获并在表达式中使用。 也可以在表达式中设置全局，并代替占位符。
-
-成本模型示例：
-
-```
-# This statement captures the skip value,
-# uses a boolean expression in the predicate to match specific queries that use `skip`
-# and a cost expression to calculate the cost based on the `skip` value and the SYSTEM_LOAD global
-query { pairs(skip: $skip) { id } } when $skip > 2000 => 0.0001 * $skip * $SYSTEM_LOAD;
-
-# This default will match any GraphQL expression.
-# It uses a Global substituted into the expression to calculate cost
-default => 0.1 * $SYSTEM_LOAD;
-```
-
-使用上述模型的查询成本计算示例：
-
-| 查询                                                                           | 价格      |
-| ---------------------------------------------------------------------------- | ------- |
-| &#123; pairs(skip: 5000) &#123; id &#125; &#125;                             | 0.5 GRT |
-| &#123; tokens &#123; symbol &#125; &#125;                                    | 0.1 GRT |
-| &#123; pairs(skip: 5000) &#123; id &#125; tokens &#123; symbol &#125; &#125; | 0.6 GRT |
-
-#### 应用成本模式
-
-成本模型是通过索引人 CLI 应用的，CLI 将它们传递给索引人代理的索引人管理 API，以便存储在数据库中。 然后，索引人服务将接收这些模型，并在网关要求时将成本模型提供给它们。
-
-```sh
-indexer cost set variables '{ "SYSTEM_LOAD": 1.4 }'
-indexer cost set model my_model.agora
-```
-
 ## 与网络的交互
 
 ### 在协议中进行质押
