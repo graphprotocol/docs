@@ -708,42 +708,6 @@ Note that supported action types for allocation management have different input 
 
 Cost models provide dynamic pricing for queries based on market and query attributes. The Indexer Service shares a cost model with the gateways for each Subgraph for which they intend to respond to queries. The gateways, in turn, use the cost model to make Indexer selection decisions per query and to negotiate payment with chosen Indexers.
 
-#### Agora
-
-The Agora language provides a flexible format for declaring cost models for queries. An Agora price model is a sequence of statements that execute in order for each top-level query in a GraphQL query. For each top-level query, the first statement which matches it determines the price for that query.
-
-A statement is comprised of a predicate, which is used for matching GraphQL queries, and a cost expression which when evaluated outputs a cost in decimal GRT. Values in the named argument position of a query may be captured in the predicate and used in the expression. Globals may also be set and substituted in for placeholders in an expression.
-
-Example cost model:
-
-```
-# This statement captures the skip value,
-# uses a boolean expression in the predicate to match specific queries that use `skip`
-# and a cost expression to calculate the cost based on the `skip` value and the SYSTEM_LOAD global
-query { pairs(skip: $skip) { id } } when $skip > 2000 => 0.0001 * $skip * $SYSTEM_LOAD;
-
-# This default will match any GraphQL expression.
-# It uses a Global substituted into the expression to calculate cost
-default => 0.1 * $SYSTEM_LOAD;
-```
-
-Example query costing using the above model:
-
-| Query                                                                        | Price   |
-| ---------------------------------------------------------------------------- | ------- |
-| &#123; pairs(skip: 5000) &#123; id &#125; &#125;                             | 0.5 GRT |
-| &#123; tokens &#123; symbol &#125; &#125;                                    | 0.1 GRT |
-| &#123; pairs(skip: 5000) &#123; id &#125; tokens &#123; symbol &#125; &#125; | 0.6 GRT |
-
-#### Applying the cost model
-
-Cost models are applied via the Indexer CLI, which passes them to the Indexer Management API of the Indexer agent for storing in the database. The Indexer Service will then pick them up and serve the cost models to gateways whenever they ask for them.
-
-```sh
-indexer cost set variables '{ "SYSTEM_LOAD": 1.4 }'
-indexer cost set model my_model.agora
-```
-
 ## Interacting with the network
 
 ### Stake in the protocol
