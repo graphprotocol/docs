@@ -1,4 +1,4 @@
-import { NetworksRegistry, type Network } from '@pinax/graph-networks-registry'
+import { type Network,NetworksRegistry } from '@pinax/graph-networks-registry'
 
 // Networks that should use the "mono" icon variant (TODO: add this feature to web3icons?)
 export const MONO_ICON_NETWORKS = [
@@ -46,7 +46,7 @@ export const getSubgraphsSupportLevel = (network: Network): 'none' | 'basic' | '
   const hasSubgraphs = Boolean(network.services.subgraphs?.length || network.services.sps?.length)
 
   if (!hasSubgraphs) return 'none'
-  if (network.issuanceRewards === true) return 'full'
+  if (network.issuanceRewards) return 'full'
   return 'basic'
 }
 
