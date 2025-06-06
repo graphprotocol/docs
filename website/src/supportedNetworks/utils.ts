@@ -1,4 +1,4 @@
-import { type Network,NetworksRegistry } from '@pinax/graph-networks-registry'
+import { type Network, NetworksRegistry } from '@pinax/graph-networks-registry'
 
 // Networks that should use the "mono" icon variant (TODO: add this feature to web3icons?)
 export const MONO_ICON_NETWORKS = [
