@@ -41,23 +41,20 @@ export const getIconVariant = (networkId: string): 'mono' | 'branded' => {
   return MONO_ICON_NETWORKS.includes(networkId) ? 'mono' : 'branded'
 }
 
-// Suport level for services
-export const getSubgraphsSupportLevel = (network: Network): 'none' | 'basic' | 'full' => {
+// Support level for services
+export const getSubgraphsSupportLevel = (network: Network) => {
   const hasSubgraphs = Boolean(network.services.subgraphs?.length || network.services.sps?.length)
-
   if (!hasSubgraphs) return 'none'
   if (network.issuanceRewards) return 'full'
   return 'basic'
 }
-
-export const getSubstreamsSupportLevel = (network: Network): 'none' | 'basic' | 'full' => {
+export const getSubstreamsSupportLevel = (network: Network) => {
   const substreamCount = network.services.substreams?.length || 0
   if (substreamCount === 0) return 'none'
   if (substreamCount >= 2) return 'full'
   return 'basic'
 }
-
-export const getFirehoseSupportLevel = (network: Network): 'none' | 'basic' | 'full' => {
+export const getFirehoseSupportLevel = (network: Network) => {
   const firehoseCount = network.services.firehose?.length || 0
   if (firehoseCount === 0) return 'none'
   if (firehoseCount >= 2) return 'full'
