@@ -1,7 +1,7 @@
 import { usePrevious } from '@react-hookz/web'
 import { HTTPSnippet } from '@readme/httpsnippet'
 import fetchHar from 'fetch-har'
-import { type ComponentPropsWithoutRef, useContext, useState } from 'react'
+import { type ComponentProps, useContext, useState } from 'react'
 
 import {
   ExperimentalButton,
@@ -23,7 +23,7 @@ const PLACEHOLDERS = {
   token: '{token}',
 }
 
-export default function TemplateOpenApiAside(props: ComponentPropsWithoutRef<'div'>) {
+export default function TemplateOpenApiAside(props: ComponentProps<'div'>) {
   const openApiContext = useContext(OpenApiContext)
 
   if (!openApiContext) {
@@ -34,7 +34,7 @@ export default function TemplateOpenApiAside(props: ComponentPropsWithoutRef<'di
 }
 
 // TODO: Allow showing the aside on mobile?
-function TemplateOpenApiAsideContent(props: ComponentPropsWithoutRef<'div'>) {
+function TemplateOpenApiAsideContent(props: ComponentProps<'div'>) {
   const openApiContext = useContext(OpenApiContext)!
   const { operation, values } = openApiContext
   const { t } = useI18n()

@@ -1,4 +1,4 @@
-import { type ComponentPropsWithoutRef, type ElementType, useContext, useEffect } from 'react'
+import { type ComponentProps, type ElementType, useContext, useEffect } from 'react'
 import { useInView } from 'react-intersection-observer'
 
 import { classNames, ExperimentalButton } from '@edgeandnode/gds'
@@ -7,7 +7,7 @@ import { Link as LinkIcon } from '@edgeandnode/gds/icons'
 import { useI18n } from '@/i18n'
 import { MDXContentContext } from '@/layout'
 
-interface HeadingProps extends ComponentPropsWithoutRef<'h1'> {
+interface HeadingProps extends ComponentProps<'h1'> {
   as?: ElementType
 }
 

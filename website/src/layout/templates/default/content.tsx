@@ -1,4 +1,4 @@
-import { type ComponentPropsWithoutRef, useContext } from 'react'
+import { type ComponentProps, useContext } from 'react'
 
 import { ButtonOrLink, classNames, ExperimentalDivider, ExperimentalLink } from '@edgeandnode/gds'
 import { ArrowLeft, ArrowRight, CalendarDynamic, HourglassDynamic, SocialGitHub } from '@edgeandnode/gds/icons'
@@ -7,7 +7,7 @@ import { useI18n } from '@/i18n'
 
 import { LayoutContext } from '../../shared'
 
-export default function TemplateDefaultContent({ className, children, ...props }: ComponentPropsWithoutRef<'div'>) {
+export default function TemplateDefaultContent({ className, children, ...props }: ComponentProps<'div'>) {
   const { filePath, frontMatter, lastUpdated, readingTime, remotePageUrl, flatDocsDirectories, activeIndex } =
     useContext(LayoutContext)!
   const { t, locale } = useI18n()

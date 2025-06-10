@@ -1,11 +1,11 @@
-import { type ComponentPropsWithoutRef, useContext } from 'react'
+import { type ComponentProps, useContext } from 'react'
 
 import { camelToKebab, classNames } from '@edgeandnode/gds'
 
 import { LayoutContext } from '../../shared'
 import { Template } from '../../Template'
 
-export default function TemplateDefaultMain({ className, children, ...props }: ComponentPropsWithoutRef<'div'>) {
+export default function TemplateDefaultMain({ className, children, ...props }: ComponentProps<'div'>) {
   const { frontMatter, template, activePath } = useContext(LayoutContext)!
 
   return (

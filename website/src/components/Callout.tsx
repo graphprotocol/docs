@@ -1,4 +1,4 @@
-import type { ComponentPropsWithoutRef, ReactNode } from 'react'
+import type { ComponentProps, ReactNode } from 'react'
 
 import { classNames } from '@edgeandnode/gds'
 import { ExclamationMark, Lightbulb } from '@edgeandnode/gds/icons'
@@ -10,7 +10,7 @@ type CalloutType = (typeof calloutTypes)[number]
 const calloutTypes = ['note', 'tip', 'important', 'warning', 'caution'] as const
 const importantCalloutTypes: CalloutType[] = ['important', 'warning', 'caution']
 
-interface CalloutProps extends Omit<ComponentPropsWithoutRef<'blockquote'>, 'title'> {
+interface CalloutProps extends Omit<ComponentProps<'blockquote'>, 'title'> {
   /**
    * Defaults to `info`, or to `important` if `data-callout-type` is set to either `important`, `warning`, or `caution`.
    */
@@ -51,7 +51,7 @@ export const Callout = ({
         --:my-8 --:last:mb-0 -:is-[li>*]:my-4`,
         className,
       ])}
-      {...(props as ComponentPropsWithoutRef<'div'>)}
+      {...(props as ComponentProps<'div'>)}
     >
       <div className="flex size-6 shrink-0 items-center justify-center">
         {variant === 'info' ? (
