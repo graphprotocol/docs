@@ -1,22 +1,19 @@
 /**
- * @import {Element, Root} from 'hast'
+ * @import {Root} from 'hast'
  */
 
-/**
- * This is a private fork of https://github.com/rehypejs/rehype-unwrap-images to work around a Nextra bug.
- * See https://github.com/rehypejs/rehype-unwrap-images/pull/1 for why this won't be merged upstream.
- */
-
-import { interactive } from 'hast-util-interactive'
 import { whitespace } from 'hast-util-whitespace'
 import { SKIP, visit } from 'unist-util-visit'
 
-const unknown = 1
-const containsImage = 2
-const containsOther = 3
+const isImage = (node) =>
+  (node.type === 'element' && node.tagName === 'img') || (node.type === 'mdxJsxFlowElement' && node.name === 'img')
 
 /**
- * Remove the wrapping paragraph for images.
+ * This plugin does two things:
+ * 1. Removes the `p` tag when it only contains images (and whitespace)
+ * 2. Adds data attributes to help with image rendering:
+ *    - `data-wrapping-image` to links that contain an image
+ *    - `data-inline-image` to images that are in a paragraph with other content (text, links, etc.)
  *
  * @returns
  *   Transform.
@@ -32,54 +29,38 @@ export default function rehypeUnwrapImages() {
    */
   return function (tree) {
     visit(tree, 'element', function (node, index, parent) {
-      if (node.tagName === 'p' && parent && typeof index === 'number' && applicable(node, false) === containsImage) {
-        parent.children.splice(index, 1, ...node.children)
-        return [SKIP, index]
+      if (node.tagName === 'p' && parent && typeof index === 'number') {
+        // First pass: check if the paragraph contains any non-image content
+        const hasNonImageContent = node.children.some((child) => {
+          if (child.type === 'text') {
+            return !whitespace(child.value)
+          } else {
+            return !isImage(child)
+          }
+        })
+
+        // Second pass: add data attributes
+        node.children.forEach((child) => {
+          if (child.type === 'element' && child.tagName === 'a' && child.children.some(isImage)) {
+            child.properties = child.properties || {}
+            child.properties['data-wrapping-image'] = true
+          } else if (isImage(child) && hasNonImageContent) {
+            if (child.type === 'mdxJsxFlowElement') {
+              child.attributes = child.attributes || []
+              child.attributes.push({ type: 'mdxJsxAttribute', name: 'data-inline-image', value: true })
+            } else {
+              child.properties = child.properties || {}
+              child.properties['data-inline-image'] = true
+            }
+          }
+        })
+
+        // If the paragraph only contains images (and whitespace), remove it
+        if (!hasNonImageContent) {
+          parent.children.splice(index, 1, ...node.children)
+          return [SKIP, index]
+        }
       }
     })
   }
-}
-
-/**
- * Check if a node can be unraveled.
- *
- * @param {Element} node
- *   Node.
- * @param {boolean} inLink
- *   Whether the node is in a link.
- * @returns {1 | 2 | 3}
- *   Info.
- */
-function applicable(node, inLink) {
-  /** @type {1 | 2 | 3} */
-  let image = unknown
-  let index = -1
-
-  while (++index < node.children.length) {
-    const child = node.children[index]
-
-    if (child.type === 'text' && whitespace(child.value)) {
-      // Whitespace is fine.
-    } else if (
-      (child.type === 'element' && child.tagName === 'img') ||
-      (child.type === 'mdxJsxFlowElement' && child.name === 'img')
-    ) {
-      image = containsImage
-    } else if (!inLink && interactive(child)) {
-      // Cast as `interactive` is always `Element`.
-      const linkResult = applicable(/** @type {Element} */ (child), true)
-
-      if (linkResult === containsOther) {
-        return containsOther
-      }
-
-      if (linkResult === containsImage) {
-        image = containsImage
-      }
-    } else {
-      return containsOther
-    }
-  }
-
-  return image
 }

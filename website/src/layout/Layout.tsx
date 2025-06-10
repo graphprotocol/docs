@@ -1,18 +1,21 @@
 import merge from 'lodash/merge'
+import NextImage from 'next/image'
 import { NextSeo, type NextSeoProps } from 'next-seo'
 import type { NextraThemeLayoutProps } from 'nextra'
 import { useFSRoute, useRouter } from 'nextra/hooks'
 import { MDXProvider } from 'nextra/mdx'
 import { normalizePages } from 'nextra/normalize-pages'
-import { type ReactNode, useEffect, useState } from 'react'
+import { type ComponentProps, createContext, type ReactNode, useContext, useEffect, useState } from 'react'
 
 import type { WithOptional } from '@edgeandnode/common'
 import {
   ButtonOrLink,
+  classNames,
   ExperimentalAppLauncher,
   ExperimentalButton,
   ExperimentalCodeInline,
   ExperimentalLink,
+  type ExperimentalLinkProps,
   ExperimentalLocaleSwitcher,
   ExperimentalNavLink,
   type NestedStrings,
@@ -44,6 +47,7 @@ import {
   DocSearch,
   Heading,
   Image,
+  type ImageProps,
   NavigationGroup,
   NavigationItem,
   Table,
@@ -521,10 +525,9 @@ export default function Layout({ pageOpts, children }: NextraThemeLayoutProps<Fr
           <div>
             <MDXProvider
               components={{
-                // TODO: Get rid of the `as any`s
-                a: ExperimentalLink as any,
-                Link: ExperimentalLink,
+                a: LinkWrapper,
                 blockquote: Callout,
+                // TODO: Get rid of the `as any`
                 code: ExperimentalCodeInline as any,
                 h1: Heading.H1,
                 h2: Heading.H2,
@@ -532,7 +535,7 @@ export default function Layout({ pageOpts, children }: NextraThemeLayoutProps<Fr
                 h4: Heading.H4,
                 h5: Heading.H5,
                 h6: Heading.H6,
-                img: Image,
+                img: ImageWrapper,
                 // TODO: Fix "[Shiki] X instances have been created. Shiki is supposed to be used as a singleton" warnings
                 pre: CodeBlock,
                 // TODO: Build and use `ExperimentalTable`
@@ -604,4 +607,27 @@ export default function Layout({ pageOpts, children }: NextraThemeLayoutProps<Fr
       </div>
     </LayoutContext.Provider>
   )
+}
+
+const LinkContext = createContext<{} | null>(null)
+
+function LinkWrapper({ children, ...props }: ComponentProps<'a'>) {
+  if ('data-wrapping-image' in props) {
+    return (
+      <LinkContext.Provider value={{}}>
+        <a {...props}>{children}</a>
+      </LinkContext.Provider>
+    )
+  }
+  return <ExperimentalLink {...(props as ExperimentalLinkProps.ExternalLinkProps)}>{children}</ExperimentalLink>
+}
+
+function ImageWrapper({ src: passedSrc, className, ...props }: ImageProps) {
+  const linkContext = useContext(LinkContext)
+  if (linkContext || 'data-inline-image' in props) {
+    const src =
+      typeof passedSrc === 'object' ? ('default' in passedSrc ? passedSrc.default.src : passedSrc.src) : passedSrc
+    return <img src={src} alt="" className={classNames(['inline-block', className])} {...props} />
+  }
+  return <Image src={passedSrc} className={className} {...props} />
 }
