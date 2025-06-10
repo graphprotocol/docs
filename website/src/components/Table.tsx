@@ -1,8 +1,8 @@
-import type { ComponentPropsWithoutRef } from 'react'
+import type { ComponentProps } from 'react'
 
 import { classNames } from '@edgeandnode/gds'
 
-interface TableProps extends ComponentPropsWithoutRef<'table'> {
+interface TableProps extends ComponentProps<'table'> {
   variant?: 'default' | 'supported-networks'
 }
 

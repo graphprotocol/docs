@@ -1,5 +1,5 @@
 import { useMap } from '@react-hookz/web'
-import { type ComponentPropsWithoutRef, useContext } from 'react'
+import { type ComponentProps, useContext } from 'react'
 
 import { ExperimentalCodeInline } from '@edgeandnode/gds'
 
@@ -12,7 +12,7 @@ import TemplateDefaultMain from '../default/main'
 
 import { OpenApiProvider } from './OpenApiContext'
 
-export default function TemplateOpenApiMain({ children, ...props }: ComponentPropsWithoutRef<'div'>) {
+export default function TemplateOpenApiMain({ children, ...props }: ComponentProps<'div'>) {
   const { template } = useContext(LayoutContext)!
   const { t } = useI18n()
   const securitySchemes = useMap<string, string>() // Keeping this state here instead of in `OpenApiProvider` to persist it across OpenAPI pages

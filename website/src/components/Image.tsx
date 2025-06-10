@@ -1,10 +1,10 @@
-import type NextImage from 'next/image'
-import type { ComponentPropsWithoutRef } from 'react'
+import NextImage from 'next/image'
+import type { ComponentProps } from 'react'
 
 import { classNames } from '@edgeandnode/gds'
 
-interface ImageProps extends Omit<ComponentPropsWithoutRef<'img'>, 'src'> {
-  src?: ComponentPropsWithoutRef<typeof NextImage>['src']
+export interface ImageProps extends Omit<ComponentProps<'img'>, 'src'> {
+  src?: ComponentProps<typeof NextImage>['src']
 }
 
 export const Image = ({ src: passedSrc, alt, className, ...props }: ImageProps) => {

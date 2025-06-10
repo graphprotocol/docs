@@ -1,11 +1,4 @@
-import {
-  type ComponentPropsWithoutRef,
-  createContext,
-  type MouseEvent,
-  type ReactNode,
-  useContext,
-  useState,
-} from 'react'
+import { type ComponentProps, createContext, type MouseEvent, type ReactNode, useContext, useState } from 'react'
 
 import {
   ButtonOrLink,
@@ -16,7 +9,7 @@ import {
 } from '@edgeandnode/gds'
 import { CaretDown } from '@edgeandnode/gds/icons'
 
-export const NavigationGroup = ({ className, children, ...props }: ComponentPropsWithoutRef<'div'>) => {
+export const NavigationGroup = ({ className, children, ...props }: ComponentProps<'div'>) => {
   return (
     <div className={classNames(['overflow-clip border-b border-space-1500 px-4 py-2', className])} {...props}>
       <NavigationList>{children}</NavigationList>
@@ -28,7 +21,7 @@ export const NavigationListContext = createContext<{
   depth: number
 } | null>(null)
 
-export const NavigationList = ({ className, children, ...props }: ComponentPropsWithoutRef<'ul'>) => {
+export const NavigationList = ({ className, children, ...props }: ComponentProps<'ul'>) => {
   const ancestorNavigationListContext = useContext(NavigationListContext)
   const depth = ancestorNavigationListContext ? ancestorNavigationListContext.depth + 1 : 0
 

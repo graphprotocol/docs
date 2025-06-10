@@ -1,4 +1,4 @@
-import { type ComponentPropsWithoutRef, Fragment, useContext } from 'react'
+import { type ComponentProps, Fragment, useContext } from 'react'
 
 import { camelToKebab, ExperimentalCodeInline, ExperimentalSwitch, ExperimentalTag } from '@edgeandnode/gds'
 import { CaretDown } from '@edgeandnode/gds/icons'
@@ -10,7 +10,7 @@ import TemplateDefaultContent from '../default/content'
 
 import { OpenApiContext, PARAMETER_TYPES, type ParameterValue } from './OpenApiContext'
 
-export default function TemplateOpenApiContent({ children, ...props }: ComponentPropsWithoutRef<'div'>) {
+export default function TemplateOpenApiContent({ children, ...props }: ComponentProps<'div'>) {
   const openApiContext = useContext(OpenApiContext)
   const { t } = useI18n()
 

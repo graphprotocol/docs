@@ -1,11 +1,11 @@
 import { useSet } from '@react-hookz/web'
 import type { NextraMDXContent } from 'nextra'
-import type { ComponentPropsWithoutRef } from 'react'
+import type { ComponentProps } from 'react'
 
 import { MDXContentContext } from './shared'
 import { Template } from './Template'
 
-export function MDXContent({ toc: headings, children }: ComponentPropsWithoutRef<NextraMDXContent>) {
+export function MDXContent({ toc: headings, children }: ComponentProps<NextraMDXContent>) {
   const headingIdsInOrAboveView = useSet<string>()
 
   const markHeading = (id: string, inOrAboveView: boolean) => {

@@ -1,11 +1,11 @@
-import type { ComponentPropsWithoutRef } from 'react'
+import type { ComponentProps } from 'react'
 
 import { classNames } from '@edgeandnode/gds'
 
 import { useI18n } from '@/i18n'
 
 declare namespace VideoEmbedProps {
-  interface BaseProps extends Omit<ComponentPropsWithoutRef<'iframe'>, 'src'> {
+  interface BaseProps extends Omit<ComponentProps<'iframe'>, 'src'> {
     title: string
   }
   interface SrcProps extends BaseProps {
