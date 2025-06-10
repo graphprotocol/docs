@@ -1,4 +1,4 @@
-import { NetworksRegistry } from '@pinax/graph-networks-registry'
+import { type Network, NetworksRegistry } from '@pinax/graph-networks-registry'
 
 // Networks that should use the "mono" icon variant (TODO: add this feature to web3icons?)
 export const MONO_ICON_NETWORKS = [
@@ -41,6 +41,26 @@ export const getIconVariant = (networkId: string): 'mono' | 'branded' => {
   return MONO_ICON_NETWORKS.includes(networkId) ? 'mono' : 'branded'
 }
 
+// Support level for services
+export const getSubgraphsSupportLevel = (network: Network) => {
+  const hasSubgraphs = Boolean(network.services.subgraphs?.length || network.services.sps?.length)
+  if (!hasSubgraphs) return 'none'
+  if (network.issuanceRewards) return 'full'
+  return 'basic'
+}
+export const getSubstreamsSupportLevel = (network: Network) => {
+  const substreamCount = network.services.substreams?.length || 0
+  if (substreamCount === 0) return 'none'
+  if (substreamCount >= 2) return 'full'
+  return 'basic'
+}
+export const getFirehoseSupportLevel = (network: Network) => {
+  const firehoseCount = network.services.firehose?.length || 0
+  if (firehoseCount === 0) return 'none'
+  if (firehoseCount >= 2) return 'full'
+  return 'basic'
+}
+
 export async function getSupportedNetworks() {
   const registry = await NetworksRegistry.fromLatestVersion()
   return registry.networks
@@ -61,6 +81,10 @@ export async function getSupportedNetworks() {
           substreams,
           firehose,
           tokenApi,
+          rawNetwork: network,
+          subgraphsSupportLevel: getSubgraphsSupportLevel(network),
+          substreamsSupportLevel: getSubstreamsSupportLevel(network),
+          firehoseSupportLevel: getFirehoseSupportLevel(network),
         },
       ]
     })
