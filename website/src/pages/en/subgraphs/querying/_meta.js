@@ -1,7 +1,7 @@
 import titles from './_meta-titles.json'
 
 export default {
-  introduction: 'How to Query',
+  introduction: '',
   'managing-api-keys': '',
   'best-practices': '',
   'from-an-application': '',
