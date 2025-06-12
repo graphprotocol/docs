@@ -58,7 +58,7 @@ export function NetworksTable({ networks }: { networks: SupportedNetwork[] }) {
       <Callout variant="info" className="mb-6">
         <p>
           {t('index.supportedNetworks.infoText')}{' '}
-          <ExperimentalLink href="/indexing/chain-integration-overview/">
+          <ExperimentalLink href="https://edgeandnode.typeform.com/to/b3507xSL">
             {t('index.supportedNetworks.infoLink')}
           </ExperimentalLink>
           .
