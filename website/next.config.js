@@ -71,6 +71,13 @@ const withNextra = nextra({
         type: 'children',
         title: t('global.navigation.tokenApi'),
       },
+      '---4': {
+        type: 'separator',
+      },
+      'ai-suite': {
+        type: 'children',
+        title: t('global.navigation.ai-suite'),
+      },
       '---5': {
         type: 'separator',
       },
