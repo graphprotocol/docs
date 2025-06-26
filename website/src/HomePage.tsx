@@ -200,9 +200,7 @@ export default function HomePage({ supportedNetworks }: { supportedNetworks: Sup
                     !['boba-bnb', 'eos-evm', 'polygon-zkevm', 'solana-accounts'].includes(network.id),
                 )
                 // Filter out networks that don't have a proper monochrome logo
-                .filter((network) => {
-                  return network.id !== 'zora'
-                })
+                .filter((network) => network.id !== 'zora')
                 .map((network) => (
                   <li key={network.id} className="-mb-px -mr-px">
                     <Tooltip content={network.shortName}>

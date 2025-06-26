@@ -1,24 +1,21 @@
+import type { Root } from 'mdast'
 import { visit } from 'unist-util-visit'
 
+import 'mdast-util-to-hast'
+
 export default function remarkCallouts() {
-  return (tree) => {
+  return (tree: Root) => {
     visit(tree, 'blockquote', (node) => {
-      if (
-        node.children &&
-        node.children.length > 0 &&
-        node.children[0].type === 'paragraph' &&
-        node.children[0].children &&
-        node.children[0].children.length > 0 &&
-        node.children[0].children[0].type === 'text'
-      ) {
-        const firstText = node.children[0].children[0]
+      const firstChild = node.children[0]
+      if (firstChild?.type === 'paragraph' && firstChild.children[0]?.type === 'text') {
+        const firstText = firstChild.children[0]
         // Look for a callout marker like [!NOTE] or [!WARNING]
         const calloutRegex = /^\s*\[!([a-zA-Z]+)\]\s*(.*)/
         const match = calloutRegex.exec(firstText.value)
-        if (match) {
+        if (match?.[1]) {
           // Extract the callout type (e.g., "note") and remove the marker from the text
           const calloutType = match[1].toLowerCase()
-          firstText.value = match[2]
+          firstText.value = match[2] ?? ''
 
           // Attach the callout type as a data attribute
           node.data = node.data || {}
