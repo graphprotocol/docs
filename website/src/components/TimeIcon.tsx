@@ -5,7 +5,7 @@ import { HourglassDynamic } from '@edgeandnode/gds/icons'
 
 import { useI18n } from '@/i18n'
 
-export interface TimeIconProps extends ComponentProps<'div'> {
+interface TimeIconProps extends ComponentProps<'div'> {
   variant: 'reading' | 'duration'
   minutes: number
 }

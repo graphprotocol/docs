@@ -56,12 +56,11 @@ export function NetworksTable({ networks }: { networks: SupportedNetwork[] }) {
   return (
     <>
       <Callout variant="info" className="mb-6">
+        <p>{t('index.supportedNetworks.infoText')}</p>
         <p>
-          {t('index.supportedNetworks.infoText')}{' '}
           <ExperimentalLink href="https://edgeandnode.typeform.com/to/b3507xSL">
             {t('index.supportedNetworks.infoLink')}
           </ExperimentalLink>
-          .
         </p>
       </Callout>
 

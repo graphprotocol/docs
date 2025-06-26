@@ -34,7 +34,6 @@ export type LayoutContextProps = {
   lastUpdated: Date | null
   readingTime: ReadingTime | null
   remotePageUrl: string | null
-  // TODO: Replace the following by a more cleaned up `navigation` object
   flatDocsDirectories: ReturnType<typeof normalizePages>['flatDocsDirectories']
   activeIndex: ReturnType<typeof normalizePages>['activeIndex']
   activePath: ReturnType<typeof normalizePages>['activePath']
