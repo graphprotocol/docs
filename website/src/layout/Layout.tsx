@@ -43,6 +43,7 @@ import {
   SocialGitHub,
   SocialTelegram,
   SocialX,
+  Sparkle,
   Stack,
   Subgraph,
   Substreams,
@@ -197,6 +198,9 @@ export default function Layout({ pageOpts, children }: NextraThemeLayoutProps<Fr
         }
         if (routeWithoutLocale === '/token-api' || routeWithoutLocale.startsWith('/token-api/')) {
           return <APIToken alt="" />
+        }
+        if (routeWithoutLocale === '/ai-suite' || routeWithoutLocale.startsWith('/ai-suite/')) {
+          return <Sparkle alt="" variant={selected ? 'fill' : 'regular'} />
         }
         if (routeWithoutLocale === '/indexing' || routeWithoutLocale.startsWith('/indexing/')) {
           return <RoleIndexer alt="" />
