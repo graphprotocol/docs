@@ -43,7 +43,7 @@ export const Callout = ({
     <div
       data-variant={variant}
       className={classNames([
-        `flex gap-2 rounded-8 border p-4 ps-3
+        `text-body-small flex gap-2 rounded-8 border p-3
         data-[variant=important]:border-solar-500/50
         data-[variant=info]:border-galactic-500/50
         data-[variant=important]:bg-solar-500/10
@@ -53,7 +53,7 @@ export const Callout = ({
       ])}
       {...(props as ComponentProps<'div'>)}
     >
-      <div className="flex size-6 shrink-0 items-center justify-center">
+      <div className="flex h-[1lh] shrink-0 items-center justify-center">
         {variant === 'info' ? (
           <Lightbulb size={4} color="galactic-500" alt={!title ? t('global.content.callout.note') : ''} />
         ) : (
@@ -62,9 +62,9 @@ export const Callout = ({
       </div>
       <div
         className={`
-          text-body-xsmall flex-1
+          flex-1
           -:first:*:text-white
-          mdx-[:is(p,ul,ol):not(:last-child,:is(ul,ol)_*)]:mb-3
+          mdx-[:is(p,ul,ol):not(:last-child,:is(ul,ol)_*)]:mb-2
           mdx-[ul,ol]:gap-1
         `}
       >

@@ -1,3 +1,4 @@
+import { useMap } from '@react-hookz/web'
 import merge from 'lodash/merge'
 import NextImage from 'next/image'
 import { NextSeo, type NextSeoProps } from 'next-seo'
@@ -5,7 +6,16 @@ import type { NextraThemeLayoutProps } from 'nextra'
 import { useFSRoute, useRouter } from 'nextra/hooks'
 import { MDXProvider } from 'nextra/mdx'
 import { normalizePages } from 'nextra/normalize-pages'
-import { type ComponentProps, createContext, type ReactNode, useContext, useEffect, useState } from 'react'
+import {
+  type ComponentProps,
+  createContext,
+  type ReactNode,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react'
 
 import type { WithOptional } from '@edgeandnode/common'
 import {
@@ -48,7 +58,6 @@ import {
   DocSearch,
   Heading,
   Image,
-  type ImageProps,
   NavigationGroup,
   NavigationItem,
   Table,
@@ -68,6 +77,11 @@ const DocSearchHit = ({ hit, children }: { hit: { url: string }; children?: Reac
 export default function Layout({ pageOpts, children }: NextraThemeLayoutProps<FrontMatter>) {
   const { filePath, frontMatter, pageMap, readingTime, timestamp } = pageOpts
   const fsPath = useFSRoute()
+  const normalizedPages = normalizePages({
+    list: pageMap,
+    route: fsPath,
+  })
+  const activeRoute = normalizedPages.activePath.at(-1)?.route ?? null
   const router = useRouter()
   const { t, translations, locale } = useI18n()
   const [sidebarExpandedOnMobile, setSidebarExpandedOnMobile] = useState(false)
@@ -76,7 +90,7 @@ export default function Layout({ pageOpts, children }: NextraThemeLayoutProps<Fr
   // Collapse the sidebar on mobile when the route changes
   useEffect(() => {
     setSidebarExpandedOnMobile(false)
-  }, [router.pathname])
+  }, [activeRoute])
 
   // TODO: Create `useTailwindScreen` hook in GDS, with usage like `const screen = useTailwindScreen()` and then you can check `screen.md`, etc.
   const [mobile, setMobile] = useState(false)
@@ -88,171 +102,217 @@ export default function Layout({ pageOpts, children }: NextraThemeLayoutProps<Fr
     return () => mediaQueryList.removeEventListener('change', onChange)
   }, [])
 
-  const normalizedPages = normalizePages({
-    list: pageMap,
-    route: fsPath,
-  })
+  type PartialNavItem = WithOptional<(typeof normalizedPages.directories)[number], 'children'>
 
-  type PartialNavigationItem = WithOptional<(typeof normalizedPages.directories)[number], 'children'>
-
-  type NavigationItem = Omit<(typeof normalizedPages.directories)[number], 'children'> & {
-    children: NavigationItem[]
-    group: NavigationGroup
-    ancestors: NavigationItem[]
+  type NavItem = Omit<(typeof normalizedPages.directories)[number], 'children'> & {
+    children: NavItem[]
+    group: NavItemGroup
+    ancestors: NavItem[]
     frontMatter?: FrontMatter
   }
 
-  type NavigationGroup = {
+  type NavItemGroup = {
     title: string | undefined
     route: string | undefined
     href: string | undefined
-    items: NavigationItem[]
+    items: NavItem[]
   }
 
-  const getNavigationItemIcon = (item: NavigationItem) => {
-    const routeWithoutLocale = getRouteWithoutLocale(item.route)
-    const selected = getNavigationItemSelected(item.group.route ?? item.route)
-    if (routeWithoutLocale === '') {
-      return <House alt="" variant={selected ? 'fill' : 'regular'} />
-    }
-    if (routeWithoutLocale === '/about' || routeWithoutLocale.startsWith('/about/')) {
-      return <TheGraph alt="" />
-    }
-    if (routeWithoutLocale === '/supported-networks' || routeWithoutLocale.startsWith('/supported-networks/')) {
-      return <Stack alt="" variant={selected ? 'fill' : 'regular'} />
-    }
-    if (routeWithoutLocale === '/contracts' || routeWithoutLocale.startsWith('/contracts/')) {
-      return <Files alt="" variant={selected ? 'fill' : 'regular'} />
-    }
-    if (routeWithoutLocale === '/subgraphs' || routeWithoutLocale.startsWith('/subgraphs/')) {
-      return <Subgraph alt="" />
-    }
-    if (routeWithoutLocale === '/substreams' || routeWithoutLocale.startsWith('/substreams/')) {
-      return <Substreams alt="" />
-    }
-    if (routeWithoutLocale === '/sps' || routeWithoutLocale.startsWith('/sps/')) {
-      return <SubstreamsPoweredSubgraph alt="" />
-    }
-    if (routeWithoutLocale === '/token-api' || routeWithoutLocale.startsWith('/token-api/')) {
-      return <APIToken alt="" />
-    }
-    if (routeWithoutLocale === '/ai-suite' || routeWithoutLocale.startsWith('/ai-suite/')) {
-      return <Sparkle alt="" variant={selected ? 'fill' : 'regular'} />
-    }
-    if (routeWithoutLocale === '/indexing' || routeWithoutLocale.startsWith('/indexing/')) {
-      return <RoleIndexer alt="" />
-    }
-    if (
-      routeWithoutLocale === '/resources' ||
-      routeWithoutLocale.startsWith('/resources/') ||
-      routeWithoutLocale === '/archived' ||
-      routeWithoutLocale.startsWith('/archived/')
-    ) {
-      return <BookOpenText alt="" variant={selected ? 'fill' : 'regular'} />
-    }
-    return null
-  }
+  const selectedNavItemRef = useRef<NavItem | null>(null)
+  const navItemExpandedByRoute = useMap<string, boolean | 'manually-expanded'>()
 
-  const getNavigationItemHref = (item: NavigationItem) => {
-    let currentItem = item
-    while (currentItem.children.length > 0 && !currentItem.withIndexPage) {
-      currentItem = currentItem.children[0]!
-    }
-    return currentItem.route
-  }
-
-  const getRouteWithoutLocale = (route: string) => route.slice(3)
-  const activeRoute = normalizedPages.activePath.at(-1)?.route ?? null
-  let selectedItem: NavigationItem | null = null
-
-  const getNavigationItemSelected = (route: string) => {
-    if (route === activeRoute) {
-      return true
-    }
-
-    const parentRouteKey = frontMatter.parentRouteKey
-    if (parentRouteKey && getRouteWithoutLocale(route) === `/${parentRouteKey}`) {
-      return true
-    }
-
-    if (
-      selectedItem &&
-      (route === selectedItem.group.route || selectedItem.ancestors.some((ancestor) => route === ancestor.route))
-    ) {
-      return 'partially'
-    }
-    return false
-  }
-
-  const navigationGroups = normalizedPages.directories.reduce<NavigationGroup[]>(
-    (groups, partialItem: PartialNavigationItem) => {
-      const itemHasChildren = Boolean(partialItem.children?.length)
-      if (partialItem.type === 'children' && !itemHasChildren) return groups
-      /**
-       * When an item of type `children` doesn't have a title set in the meta file, we want to render it without a `NavigationItem` wrapper.
-       * Unfortunately, Nextra defaults `title` to `name`, so the way to check if it's empty is to check if it's equal to `name`, which should
-       * never happen with an explicitly set `title` because it should be title case whereas `name` will always be lowercase.
-       */
-      const itemHasNoWrapper = partialItem.type === 'children' && partialItem.title === partialItem.name
-      let currentGroup = groups[groups.length - 1]
-      /**
-       * Create a new group if it's the first one, if the current item is a separator, or if the current group has some items but no title
-       * (meaning its items are rendered at the top level instead of in an expandable panel) while the current item has children and a wrapper.
-       */
-      if (
-        !currentGroup ||
-        partialItem.type === 'separator' ||
-        (currentGroup.title === undefined && currentGroup.items.length > 0 && itemHasChildren && !itemHasNoWrapper)
-      ) {
-        groups.push({
-          title: partialItem.type === 'separator' ? partialItem.title : undefined,
-          route: undefined,
-          href: undefined,
-          items: [],
-        })
+  // Refresh the expansion state of nav items on load and when the route changes
+  useEffect(() => {
+    // Only keep the manually expanded items
+    for (const [route, expanded] of navItemExpandedByRoute.entries()) {
+      if (expanded !== 'manually-expanded') {
+        navItemExpandedByRoute.delete(route)
       }
-      if (partialItem.type === 'separator') return groups
-      currentGroup = groups[groups.length - 1]!
-      const item = (function getItem(
-        partialItem: PartialNavigationItem,
-        ancestors: NavigationItem[] = [],
-      ): NavigationItem {
-        const item = {
-          ...partialItem,
-          children: [] as NavigationItem[],
-          group: currentGroup,
-          ancestors,
-        }
-        if (partialItem.children) {
-          item.children = partialItem.children.map((child) => getItem(child, [...ancestors, item]))
-        }
-        if (item.route === activeRoute) {
-          selectedItem = item
-        }
-        return item
-      })(partialItem)
-      if (currentGroup.title === undefined && currentGroup.items.length === 0 && itemHasChildren && !itemHasNoWrapper) {
-        /**
-         * If the group has no title and the first item we want to add to it has children and a wrapper, give the item's title, route,
-         * href (if different from the first child's), and children to the group, instead of adding the item itself.
-         */
-        currentGroup.title = item.title
-        currentGroup.route = item.route
-        const href = getNavigationItemHref(item)
-        const firstChildHref = getNavigationItemHref(item.children[0]!)
-        currentGroup.href = href !== firstChildHref ? href : undefined
-        currentGroup.items.push(...item.children)
-      } else if (itemHasNoWrapper) {
-        // Otherwise, if the first or next item to add to the group has no wrapper, just add its children to it
-        currentGroup.items.push(...item.children)
-      } else {
-        // Otherwise, add the item (which may or may not have children) to the group
-        currentGroup.items.push(item)
+    }
+    // Expand the selected item's ancestors and group that are not already expanded (as to not override the manually expanded states)
+    if (selectedNavItemRef.current) {
+      const routesToExpand = [
+        selectedNavItemRef.current.route,
+        ...selectedNavItemRef.current.ancestors.map((ancestor) => ancestor.route),
+        selectedNavItemRef.current.group.route,
+      ]
+      for (const route of routesToExpand) {
+        if (route === undefined) continue
+        const alreadyExpanded = navItemExpandedByRoute.get(route)
+        if (alreadyExpanded) continue
+        navItemExpandedByRoute.set(route, true)
       }
-      return groups
-    },
-    [],
-  )
+    }
+  }, [activeRoute, navItemExpandedByRoute])
+
+  const { navItemGroups, getNavItemSelected, getNavItemExpanded, setNavItemExpanded, getNavItemIcon, getNavItemHref } =
+    useMemo(() => {
+      const getRouteWithoutLocale = (route: string) => route.slice(3)
+
+      const getNavItemSelected = (route: string) => {
+        if (route === activeRoute) {
+          return true
+        }
+        const parentRouteKey = frontMatter.parentRouteKey
+        if (parentRouteKey && getRouteWithoutLocale(route) === `/${parentRouteKey}`) {
+          return true
+        }
+        if (
+          selectedNavItemRef.current &&
+          selectedNavItemRef.current.ancestors.some((ancestor) => ancestor.route === route)
+        ) {
+          return 'partially'
+        }
+        return false
+      }
+
+      const getNavItemExpanded = (route: string) => Boolean(navItemExpandedByRoute.get(route))
+
+      const setNavItemExpanded = (route: string, expanded: boolean, manual?: boolean) => {
+        navItemExpandedByRoute.set(route, expanded ? (manual ? 'manually-expanded' : true) : false)
+      }
+
+      const getNavItemIcon = (navItem: NavItem) => {
+        const routeWithoutLocale = getRouteWithoutLocale(navItem.route)
+        const selected = getNavItemSelected(navItem.group.route ?? navItem.route)
+        if (routeWithoutLocale === '') {
+          return <House alt="" variant={selected ? 'fill' : 'regular'} />
+        }
+        if (routeWithoutLocale === '/about' || routeWithoutLocale.startsWith('/about/')) {
+          return <TheGraph alt="" />
+        }
+        if (routeWithoutLocale === '/supported-networks' || routeWithoutLocale.startsWith('/supported-networks/')) {
+          return <Stack alt="" variant={selected ? 'fill' : 'regular'} />
+        }
+        if (routeWithoutLocale === '/contracts' || routeWithoutLocale.startsWith('/contracts/')) {
+          return <Files alt="" variant={selected ? 'fill' : 'regular'} />
+        }
+        if (routeWithoutLocale === '/subgraphs' || routeWithoutLocale.startsWith('/subgraphs/')) {
+          return <Subgraph alt="" />
+        }
+        if (routeWithoutLocale === '/substreams' || routeWithoutLocale.startsWith('/substreams/')) {
+          return <Substreams alt="" />
+        }
+        if (routeWithoutLocale === '/sps' || routeWithoutLocale.startsWith('/sps/')) {
+          return <SubstreamsPoweredSubgraph alt="" />
+        }
+        if (routeWithoutLocale === '/token-api' || routeWithoutLocale.startsWith('/token-api/')) {
+          return <APIToken alt="" />
+        }
+        if (routeWithoutLocale === '/ai-suite' || routeWithoutLocale.startsWith('/ai-suite/')) {
+          return <Sparkle alt="" variant={selected ? 'fill' : 'regular'} />
+        }
+        if (routeWithoutLocale === '/indexing' || routeWithoutLocale.startsWith('/indexing/')) {
+          return <RoleIndexer alt="" />
+        }
+        if (
+          routeWithoutLocale === '/resources' ||
+          routeWithoutLocale.startsWith('/resources/') ||
+          routeWithoutLocale === '/archived' ||
+          routeWithoutLocale.startsWith('/archived/')
+        ) {
+          return <BookOpenText alt="" variant={selected ? 'fill' : 'regular'} />
+        }
+        return null
+      }
+
+      const getNavItemHref = (navItem: NavItem) => {
+        let currentNavItem = navItem
+        while (currentNavItem.children.length > 0 && !currentNavItem.withIndexPage) {
+          currentNavItem = currentNavItem.children[0]!
+        }
+        return currentNavItem.route
+      }
+
+      const navItemGroups = normalizedPages.directories.reduce<NavItemGroup[]>(
+        (groups, partialNavItem: PartialNavItem) => {
+          const navItemHasChildren = Boolean(partialNavItem.children?.length)
+          if (partialNavItem.type === 'children' && !navItemHasChildren) return groups
+
+          /**
+           * When an item of type `children` doesn't have a title set in the meta file, we want to render it without a `NavigationItem` wrapper.
+           * Unfortunately, Nextra defaults `title` to `name`, so the way to check if it's empty is to check if it's equal to `name`, which should
+           * never happen with an explicitly set `title` because it should be title case whereas `name` will always be lowercase.
+           */
+          const navItemHasNoWrapper = partialNavItem.type === 'children' && partialNavItem.title === partialNavItem.name
+          let currentGroup = groups[groups.length - 1]
+
+          /**
+           * Create a new group if it's the first one, if the current item is a separator, or if the current group has some items but no title
+           * (meaning its items are rendered at the top level instead of in an expandable panel) while the current item has children and a wrapper.
+           */
+          if (
+            !currentGroup ||
+            partialNavItem.type === 'separator' ||
+            (currentGroup.title === undefined &&
+              currentGroup.items.length > 0 &&
+              navItemHasChildren &&
+              !navItemHasNoWrapper)
+          ) {
+            groups.push({
+              title: partialNavItem.type === 'separator' ? partialNavItem.title : undefined,
+              route: undefined,
+              href: undefined,
+              items: [],
+            })
+          }
+
+          if (partialNavItem.type === 'separator') return groups
+          currentGroup = groups[groups.length - 1]!
+
+          const getNavItem = (partialNavItem: PartialNavItem, ancestors: NavItem[] = []) => {
+            const navItem: NavItem = {
+              ...partialNavItem,
+              children: [] as NavItem[],
+              group: currentGroup,
+              ancestors,
+            }
+            if (partialNavItem.children) {
+              navItem.children = partialNavItem.children.map((child) => getNavItem(child, [...ancestors, navItem]))
+            }
+            if (navItem.route === activeRoute) {
+              selectedNavItemRef.current = navItem
+            }
+            return navItem
+          }
+          const navItem = getNavItem(partialNavItem)
+
+          /**
+           * If the group has no title and the first item we want to add to it has children and a wrapper, give the item's title, route,
+           * href (if different from the first child's), and children to the group, instead of adding the item itself.
+           */
+          if (
+            currentGroup.title === undefined &&
+            currentGroup.items.length === 0 &&
+            navItemHasChildren &&
+            !navItemHasNoWrapper
+          ) {
+            currentGroup.title = navItem.title
+            currentGroup.route = navItem.route
+            const href = getNavItemHref(navItem)
+            currentGroup.href = href !== getNavItemHref(navItem.children[0]!) ? href : undefined
+            currentGroup.items.push(...navItem.children)
+          } else if (navItemHasNoWrapper) {
+            // Otherwise, if the first or next item to add to the group has no wrapper, just add its children to it
+            currentGroup.items.push(...navItem.children)
+          } else {
+            // Otherwise, add the item (which may or may not have children) to the group
+            currentGroup.items.push(navItem)
+          }
+          return groups
+        },
+        [],
+      )
+
+      return {
+        navItemGroups,
+        getNavItemSelected,
+        getNavItemExpanded,
+        setNavItemExpanded,
+        getNavItemIcon,
+        getNavItemHref,
+      }
+    }, [normalizedPages.directories, activeRoute, frontMatter.parentRouteKey, navItemExpandedByRoute])
 
   const socialImage =
     frontMatter.socialImage ??
@@ -287,6 +347,7 @@ export default function Layout({ pageOpts, children }: NextraThemeLayoutProps<Fr
         lastUpdated: timestamp ? new Date(timestamp) : null,
         readingTime: readingTime && readingTime.minutes > 1 ? readingTime : null,
         remotePageUrl: frontMatter.remotePageUrl || null,
+        // TODO: Replace the following by a more cleaned up `navigation` object
         flatDocsDirectories: normalizedPages.flatDocsDirectories,
         activeIndex: normalizedPages.activeIndex,
         activePath: normalizedPages.activePath,
@@ -480,27 +541,24 @@ export default function Layout({ pageOpts, children }: NextraThemeLayoutProps<Fr
               `}
             >
               <div className="gradient-mask-y h-full overflow-y-auto overflow-x-clip scrollbar-thin">
-                {/**
-                 * TODOs about the navigation system:
-                 * - Auto-expand the current item's ancestors on load and when the route changes
-                 * - Remember which groups/items are expanded at every level, so that closing and re-expanding an ancestor doesn't affect its children's state
-                 * - Remember if groups/items were manually expanded (with the caret) or auto-expanded (either by clicking on its title or by navigating to it
-                 *   or one of its children), then auto-close those that were auto-expanded when the user navigates to a different group/item
-                 */}
-                {navigationGroups.map((group, groupIndex) => {
+                {navItemGroups.map((group, groupIndex) => {
                   if (group.items.length === 0) {
                     return null
                   }
                   const groupContent = group.items.map((groupItem) =>
-                    (function renderItem(item: typeof groupItem) {
+                    (function renderNavItem(navItem) {
                       return (
                         <NavigationItem
-                          key={item.name}
-                          title={item.title}
-                          icon={getNavigationItemIcon(item)}
-                          href={getNavigationItemHref(item)}
-                          selected={getNavigationItemSelected(item.route)}
-                          children={item.children.length > 0 ? <>{item.children.map(renderItem)}</> : undefined}
+                          key={navItem.name}
+                          title={navItem.title}
+                          icon={getNavItemIcon(navItem)}
+                          href={getNavItemHref(navItem)}
+                          selected={getNavItemSelected(navItem.route)}
+                          expanded={getNavItemExpanded(navItem.route)}
+                          onExpandedChange={(expanded, manual) => setNavItemExpanded(navItem.route, expanded, manual)}
+                          children={
+                            navItem.children.length > 0 ? <>{navItem.children.map(renderNavItem)}</> : undefined
+                          }
                         />
                       )
                     })(groupItem),
@@ -510,9 +568,15 @@ export default function Layout({ pageOpts, children }: NextraThemeLayoutProps<Fr
                       {group.title !== undefined ? (
                         <NavigationItem
                           title={group.title}
-                          icon={getNavigationItemIcon(group.items[0]!)}
-                          href={group.href ?? getNavigationItemHref(group.items[0]!)}
-                          selected={group.route ? getNavigationItemSelected(group.route) : undefined}
+                          icon={getNavItemIcon(group.items[0]!)}
+                          href={group.href ?? getNavItemHref(group.items[0]!)}
+                          selected={group.route ? getNavItemSelected(group.route) : undefined}
+                          expanded={group.route ? getNavItemExpanded(group.route) : undefined}
+                          onExpandedChange={
+                            group.route
+                              ? (expanded, manual) => setNavItemExpanded(group.route!, expanded, manual)
+                              : undefined
+                          }
                         >
                           {groupContent}
                         </NavigationItem>
@@ -626,12 +690,19 @@ function LinkWrapper({ children, ...props }: ComponentProps<'a'>) {
   return <ExperimentalLink {...(props as ExperimentalLinkProps.ExternalLinkProps)}>{children}</ExperimentalLink>
 }
 
-function ImageWrapper({ src: passedSrc, className, ...props }: ImageProps) {
+interface ImageWrapperProps extends Omit<ComponentProps<'img'>, 'src'> {
+  src?: ComponentProps<typeof NextImage>['src']
+  placeholder?: ComponentProps<typeof NextImage>['placeholder']
+}
+
+function ImageWrapper({ src: passedSrc, placeholder: _placeholder, className, ...props }: ImageWrapperProps) {
   const linkContext = useContext(LinkContext)
+  const src =
+    typeof passedSrc === 'object' ? ('default' in passedSrc ? passedSrc.default.src : passedSrc.src) : passedSrc
+
   if (linkContext || 'data-inline-image' in props) {
-    const src =
-      typeof passedSrc === 'object' ? ('default' in passedSrc ? passedSrc.default.src : passedSrc.src) : passedSrc
     return <img src={src} alt="" className={classNames(['inline-block', className])} {...props} />
   }
-  return <Image src={passedSrc} className={className} {...props} />
+
+  return <Image src={src} className={className} {...props} />
 }
