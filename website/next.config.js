@@ -132,16 +132,6 @@ export default withNextra({
       destination: '/en/',
       permanent: true,
     },
-    {
-      source: '/:locale/graph-assistant/quick-start',
-      destination: '/:locale/ai-suite/graph-assistant/quick-start',
-      permanent: true,
-    },
-    {
-      source: '/graph-assistant/quick-start',
-      destination: '/en/ai-suite/graph-assistant/quick-start',
-      permanent: true,
-    },
     // If we ever change `output` to not be `export`, we should move all the redirects from `nginx.conf` here
   ],
   images: {
