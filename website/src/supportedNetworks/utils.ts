@@ -25,18 +25,6 @@ export const MONO_ICON_NETWORKS = [
   'zksync-era-sepolia',
 ]
 
-// Networks with Token API support (TODO: remove once the registry has this information)
-export const TOKEN_API_NETWORKS = [
-  'mainnet',
-  'base',
-  'bsc',
-  'arbitrum-one',
-  'matic',
-  'optimism',
-  'unichain',
-  'avalanche',
-]
-
 export const getIconVariant = (networkId: string): 'mono' | 'branded' => {
   return MONO_ICON_NETWORKS.includes(networkId) ? 'mono' : 'branded'
 }
@@ -60,6 +48,12 @@ export const getFirehoseSupportLevel = (network: Network) => {
   if (firehoseCount >= 2) return 'full'
   return 'basic'
 }
+export const getTokenApiSupportLevel = (network: Network) => {
+  const tokenApiCount = network.services.tokenApi?.length || 0
+  if (tokenApiCount === 0) return 'none'
+  // Token API is currently defined as a binary yes/no, so we'll consider that as 'full' support
+  return 'full'
+}
 
 export async function getSupportedNetworks() {
   const registry = await NetworksRegistry.fromLatestVersion()
@@ -69,7 +63,7 @@ export async function getSupportedNetworks() {
       const subgraphs = Boolean(network.services.subgraphs?.length)
       const substreams = Boolean(network.services.substreams?.length)
       const firehose = Boolean(network.services.firehose?.length)
-      const tokenApi = TOKEN_API_NETWORKS.includes(network.id)
+      const tokenApi = Boolean(network.services.tokenApi?.length)
       if (!subgraphs && !substreams && !firehose && !tokenApi) {
         return []
       }
@@ -85,6 +79,7 @@ export async function getSupportedNetworks() {
           subgraphsSupportLevel: getSubgraphsSupportLevel(network),
           substreamsSupportLevel: getSubstreamsSupportLevel(network),
           firehoseSupportLevel: getFirehoseSupportLevel(network),
+          tokenApiSupportLevel: getTokenApiSupportLevel(network),
         },
       ]
     })
