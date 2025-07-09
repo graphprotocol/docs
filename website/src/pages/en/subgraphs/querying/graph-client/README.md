@@ -80,7 +80,7 @@ GraphClient: Reading the configuration
 🕸️: Done! => .graphclient
 ```
 
-Now, the `.graphclient` artifact is generated for you, and you can import it directly from your code, and run your queries:
+Now that the `.graphclient` artifact is generated for you, you can import it directly from your code, and run your queries:
 
 ```ts
 import { execute } from '../.graphclient'
