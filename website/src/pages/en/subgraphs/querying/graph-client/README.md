@@ -530,7 +530,7 @@ This is helpful since you can implement custom code as part of your GraphQL sche
 
 > This document explains how to add custom mutations, but in fact you can add any GraphQL operation (query/mutation/subscriptions). See [Extending the unified schema article](https://graphql-mesh.com/docs/guides/extending-unified-schema) for more information about this feature.
 
-To get started, define a `additionalTypeDefs` section in your config file:
+To get started, define an `additionalTypeDefs` section in your config file:
 
 ```yaml
 additionalTypeDefs: |
