@@ -67,7 +67,7 @@ graphclient build
 
 > Note: you need to run this with `yarn` prefix, or add that as a script in your `package.json`.
 
-This should produce a ready-to-use standalone `execute` function, that you can use for running your application GraphQL operations, you should have an output similar to the following:
+This should produce a ready-to-use standalone `execute` function that you can use for running your application GraphQL operations. You should have an output similar to the following:
 
 ```sh
 GraphClient: Cleaning existing artifacts
