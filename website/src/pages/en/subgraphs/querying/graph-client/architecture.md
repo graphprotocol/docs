@@ -5,7 +5,7 @@ To address the need to support a distributed network, we plan to take several ac
 1. Compose multiple Subgraphs (on the client-side)
 2. Fallback to multiple indexers/sources/hosted services
 3. Automatic/Manual source picking strategy
-4. Agnostic core, with the ability to run integrate with any GraphQL client
+4. Agnostic core, with the ability to integrate with any GraphQL client
 
 ## Standalone mode
 
