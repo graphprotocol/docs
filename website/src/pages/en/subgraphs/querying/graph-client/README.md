@@ -449,7 +449,7 @@ sources:
         endpoint: https://api.thegraph.com/subgraphs/name/graphprotocol/compound-v2
 ```
 
-As long as there a no conflicts across the composed schemas, you can compose it, and then run a single query to both Subgraphs:
+As long as there are no conflicts across the composed schemas, you can compose it, and then run a single query to both Subgraphs:
 
 ```graphql
 query myQuery {
