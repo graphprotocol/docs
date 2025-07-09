@@ -2,7 +2,7 @@
 title: GraphTally Guide
 ---
 
-Learn about The Graph’s new payment system, **GraphTally** [(previously Timeline Aggregation Protocol)](https://docs.rs/tap_core/latest/tap_core/index.html). This system provides fast, efficient microtransactions with minimized trust.
+Learn about The Graph's new payment system, **GraphTally** [(previously Timeline Aggregation Protocol)](https://docs.rs/tap_core/latest/tap_core/index.html). This system provides fast, efficient microtransactions with minimized trust.
 
 ## Überblick
 
@@ -11,35 +11,30 @@ GraphTally is a drop-in replacement to the Scalar payment system currently in pl
 - Effiziente Abwicklung von Mikrozahlungen.
 - Fügt den Onchain-Transaktionen und -Kosten eine weitere Ebene der Konsolidierung hinzu.
 - Ermöglicht den Indexern die Kontrolle über Eingänge und Zahlungen und garantiert die Bezahlung von Abfragen.
-- Es ermöglicht dezentralisierte, vertrauenslose Gateways und verbessert die Leistung des `indexer-service` für mehrere Absender.
+- Enables decentralized, trustless gateways and improves indexer service performance for multiple senders.
 
-### Besonderheiten
+### How It Works
 
-GraphTally allows a sender to make multiple payments to a receiver, **Receipts**, which aggregates these payments into a single payment, a **Receipt Aggregate Voucher**, also known as a **RAV**. This aggregated payment can then be verified on the blockchain, reducing the number of transactions and simplifying the payment process.
+GraphTally allows a sender to make multiple payments to a receiver through **Receipts**, which are then aggregated into a single payment called a **Receipt Aggregate Voucher (RAV)**. This aggregated payment can be verified on the blockchain, reducing the number of transactions and simplifying the payment process.
 
-Für jede Abfrage sendet Ihnen das Gateway eine „signierte Quittung“, die in Ihrer Datenbank gespeichert wird. Dann werden diese Abfragen von einem „Tap-Agent“ durch eine Anfrage aggregiert. Anschließend erhalten Sie ein RAV. Sie können ein RAV aktualisieren, indem Sie es mit neueren Quittungen senden, wodurch ein neues RAV mit einem höheren Wert erzeugt wird.
+For each query, the gateway sends a signed receipt that is stored in your database. The `indexer-tap-agent` aggregates these receipts into RAVs through periodic requests. You can update a RAV by sending it with newer receipts, which generates a new RAV with an increased value.
 
 ### RAV-Details
 
-- Es ist Geld, das darauf wartet, an die Blockchain gesendet zu werden.
-
-- Es werden weiterhin Anträge auf Zusammenlegung stellen und sicherstellen, dass der Gesamtwert der nicht zusammengefassten Einnahmen `amount willing to lose` (den „Betrag, den man zu verlieren bereit ist“), nicht übersteigt.
-
+- RAVs represent money waiting to be sent to the blockchain.
+- The system continuously aggregates receipts to ensure that the total value of non-aggregated receipts does not exceed the configured `max_amount_willing_to_lose_grt`.
 - Jedes RAV kann einmal in den Verträgen eingelöst werden, weshalb sie nach Abschluss der Zuteilung versandt werden.
 
-### Einlösen des RAV
+### Redeeming RAVs
 
-Solange Sie `tap-agent` und `indexer-agent` ausführen, wird alles automatisch ausgeführt. Im Folgenden finden Sie eine detaillierte Aufschlüsselung des Prozesses:
+The redemption process is fully automated when running both `indexer-tap-agent` and `indexer-agent`:
 
-1. Ein Indexer schließt die Zuteilung ab.
-
-2. `<recently-closed-allocation-buffer> period, tap-agent` nimmt alle ausstehenden Quittungen für diese spezifische Zuteilung und fordert eine Aggregation in einem RAV an, wobei es als `last` gekennzeichnet wird.
-
-3. `indexer-agent` nimmt alle letzten RAVS und sendet Einlöseanforderungen an die Blockchain, die den Wert von ‚redeem_at‘ aktualisiert.
-
-4. Während der `<finality-time>`-Periode überwacht der `indexer-agent`, ob es in der Blockchain irgendwelche Reorganisationen gibt, die die Transaktion rückgängig machen.
-
-   - Wurde es rückgängig gemacht, wird das RAV erneut an die Blockchain gesendet. Wenn es nicht rückgängig gemacht wurde, wird es als `final` markiert.
+1. An Indexer closes an allocation.
+2. After the `recently-closed-allocation-buffer` period, `indexer-tap-agent` takes all pending receipts for that allocation and requests aggregation into a final RAV, marking it as `last`.
+3. `indexer-agent` takes all the last RAVs and sends redeem requests to the blockchain, updating the `redeem_at` value.
+4. During the `finality-time` period, `indexer-agent` monitors for blockchain reorganizations:
+   - If the transaction was reverted, the RAV is resent to the blockchain.
+   - If not reverted, it gets marked as `final`.
 
 ## Blockchain-Adressen
 
@@ -59,135 +54,259 @@ Solange Sie `tap-agent` und `indexer-agent` ausführen, wird alles automatisch a
 | Unterzeichner    | `0xfF4B7A5EfD00Ff2EC3518D4F250A27e4c29A2211`   | `0xFb142dE83E261e43a81e9ACEADd1c66A0DB121FE`  |
 | Aggregator       | `https://tap-aggregator.network.thegraph.com`  | `https://tap-aggregator.testnet.thegraph.com` |
 
-### Voraussetzungen
+## Voraussetzungen
 
-In addition to the typical requirements to run an indexer, you’ll need a `tap-escrow-subgraph` endpoint to query updates. You can use The Graph Network to query or host yourself on your `graph-node`.
+In addition to typical indexer requirements, you'll need a `tap-escrow-subgraph` endpoint to query escrow information. You can use The Graph Network to query or self-host on your `graph-node`:
 
 - [Graph TAP Arbitrum Sepolia Subgraph (für The Graph testnet)](https://thegraph.com/explorer/subgraphs/7ubx365MiqBH5iUz6XWXWT8PTof5BVAyEzdb8m17RvbD)
 - [Graph TAP Arbitrum One Subgraph (für The Graph mainnet)](https://thegraph.com/explorer/subgraphs/4sukbNVTzGELnhdnpyPqsf1QqtzNHEYKKmJkgaT8z6M1)
 
-> Hinweis: `indexer-agent` übernimmt derzeit nicht die Indizierung dieses Subgraphen, wie es beim Einsatz von Subgraphen im Netzwerk der Fall ist. Infolgedessen müssen Sie ihn manuell indizieren.
+> Note: `indexer-agent` does not currently handle the indexing of this Subgraph like it does for the Network Subgraph deployment. You must index it manually.
 
 ## Migrationsleitfaden
 
-### Software-Versionen
+### Software Requirements
 
-Die erforderliche Softwareversion finden Sie [hier](https://github.com/graphprotocol/indexer/blob/main/docs/networks/arbitrum-one.md#latest-releases).
+#### Required Versions
 
-### Schritte
+- **indexer-agent**: [Latest version supporting TAP](https://github.com/graphprotocol/indexer/releases)
+- **indexer-service-rs**: [Latest release](https://github.com/graphprotocol/indexer-rs/releases?q=indexer-service-rs)
+- **indexer-tap-agent**: [Latest release](https://github.com/graphprotocol/indexer-rs/releases?q=indexer-tap-agent)
 
-1. **Indexer-Agent**
-
-   - Folgen Sie dem [gleichen Prozess](https://github.com/graphprotocol/indexer/pkgs/container/indexer-agent#graph-protocol-indexer-components).
-   - Give the new argument `--tap-subgraph-endpoint` to activate the new GraphTally codepaths and enable redeeming of RAVs.
-
-2. **Indexer-Service**
-
-   - Ersetzen Sie Ihre aktuelle Konfiguration vollständig durch den [neuen Indexer-Service rs](https://github.com/graphprotocol/indexer-rs). Es wird empfohlen, dass Sie das [Containerbild](https://github.com/orgs/graphprotocol/packages?repo_name=indexer-rs) verwenden.
-   - Wie bei der älteren Version können Sie den Indexer-Service problemlos horizontal skalieren. Er ist immer noch zustandslos.
-
-3. **TAP Agent**
-
-   - Führen Sie immer _eine_ einzelne Instanz von [TAP Agent](https://github.com/graphprotocol/indexer-rs) aus. Es wird empfohlen, dass Sie das [Container-Image](https://github.com/orgs/graphprotocol/packages?repo_name=indexer-rs) verwenden.
-
-4. **Indexer-Service und TAP-Agent konfigurieren**
-
-   Die Konfiguration ist eine TOML-Datei, die von `indexer-service` und `tap-agent` gemeinsam genutzt wird und mit dem Argument `--config /path/to/config.toml` übergeben wird.
-
-   Sehen Sie sich die vollständige [Konfiguration] (https://github.com/graphprotocol/indexer-rs/blob/main/config/maximal-config-example.toml) und die [Standardwerte] (https://github.com/graphprotocol/indexer-rs/blob/main/config/default_values.toml) an.
-
-Für eine minimale Konfiguration verwenden Sie die folgende Vorlage:
+#### Docker Images
 
 ```bash
-# Sie müssen *alle* nachstehenden Werte ändern, um sie an Ihre Einrichtung anzupassen.
-#
-# Einige der nachstehenden Konfigurationswerte sind globale Graphnetzwerkwerte, die Sie hier finden können:
-# <https://github.com/graphprotocol/indexer/tree/main/docs/networks>
-#
-# Pro-Tipp: Wenn Sie einige Werte aus der Umgebung in diese Konfiguration laden müssen, können Sie
-# können Sie mit Umgebungsvariablen überschreiben. Zum Beispiel kann das Folgende ersetzt werden
-# durch [PREFIX]_DATABASE_POSTGRESURL, wobei PREFIX `INDEXER_SERVICE` oder `TAP_AGENT` sein kann:
-#
-# [Datenbank]
-# postgres_url = „postgresql://indexer:${POSTGRES_PASSWORD}@postgres:5432/indexer_components_0“
+# Indexer Service
+docker pull ghcr.io/graphprotocol/indexer-service-rs:latest
 
-[indexer]
-indexer_address = „0x1111111111111111111111111111111111111111“
-operator_mnemonic = „celery smart tip orange scare van steel radio dragon joy alarm crane“
-
-[database]
-# Die URL der Postgres-Datenbank, die für die Indexer-Komponenten verwendet wird. Die gleiche Datenbank
-# die vom `indexer-agent` verwendet wird. Es wird erwartet, dass `indexer-agent` die
-# die notwendigen Tabellen erstellt.
-postgres_url = „postgres://postgres@postgres:5432/postgres“
-
-[graph_node]
-# URL zum Abfrageendpunkt Ihres Graph-Knotens
-query_url = „<http://graph-node:8000>“
-# URL zum Status-Endpunkt Ihres Graph-Knotens
-status_url = „<http://graph-node:8000/graphql>“
-
-[subgraphs.network]
-# Abfrage-URL für den Graph-Netzwerk-Subgraphen.
-query_url = „<http://example.com/network-subgraph>“
-# Optional, Einsatz, der im lokalen `graph-node` zu suchen ist, falls lokal indiziert.
-# Die lokale Indizierung des Subgraphen wird empfohlen.
-# HINWEIS: Verwenden Sie nur `query_url` oder `deployment_id`.
-deployment_id = „Qmaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa“
-
-[subgraphs.escrow]
-# Abfrage-URL für den Escrow-Subgraphen.
-query_url = „<http://example.com/network-subgraph>“
-# Optional, Einsatz für die Suche im lokalen `Graph-Knoten`, falls lokal indiziert.
-# Die lokale Indizierung des Subgraphen wird empfohlen.
-# HINWEIS: Verwenden Sie nur `query_url` oder `deployment_id`.
-deployment_id = „Qmaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa“
-
-[blockchain]
-# Die Ketten-ID des Netzwerks, auf dem das Graph-Netzwerk läuft
-chain_id = 1337
-# Vertragsadresse des RAV-Prüfers (receipt aggregate voucher) von TAP.
-receipts_verifier_address = „0x2222222222222222222222222222222222222222“
-
-########################################
-# Spezifische Konfigurationen für tap-agent #
-########################################
-[tap]
-# Dies ist die Höhe der Gebühren, die Sie bereit sind, zu einem bestimmten Zeitpunkt zu riskieren. Zum Beispiel.
-# wenn der Sender lange genug keine RAVs mehr liefert und die Gebühren diesen Betrag
-# Betrag übersteigt, wird der Indexer-Service keine Anfragen mehr vom Absender annehmen
-# bis die Gebühren aggregiert sind.
-# HINWEIS: Verwenden Sie Strings für dezimale Werte, um Rundungsfehler zu vermeiden.
-# z.B.:
-# max_amount_willing_to_lose_grt = „0.1“
-max_Betrag_willig_zu_verlieren_grt = 20
-
-[tap.sender_aggregator_endpoints]
-# Key-Value aller Absender und ihrer Aggregator-Endpunkte
-# Dieser hier ist zum Beispiel für das E&N Testnetz-Gateway.
-0xDDE4cfFd3D9052A9cb618fC05a1Cd02be1f2F467 = „https://tap-aggregator.network.thegraph.com“
+# TAP Agent
+docker pull ghcr.io/graphprotocol/indexer-tap-agent:latest
 ```
 
-Anmerkungen:
+### Migration Steps
 
-- Die Werte für `tap.sender_aggregator_endpoints` finden Sie im Abschnitt [gateway](/indexing/tap/#gateway).
-- Die Werte für `blockchain.receipts_verifier_address` müssen entsprechend dem Abschnitt [Blockchain-Adressen] (/indexing/tap/#contracts) unter Verwendung der entsprechenden Ketten-ID verwendet werden.
+#### 1. Update Indexer Agent
 
-**Log Level**
+- Continue using your existing `indexer-agent`
+- Add the `--tap-subgraph-endpoint` argument to enable TAP functionality and RAV redemption
+- Example: `--tap-subgraph-endpoint https://api.thegraph.com/subgraphs/name/graphprotocol/tap-mainnet`
 
-- Sie können die Protokollstufe mit der Umgebungsvariablen `RUST_LOG` einstellen.
-- Es wird empfohlen, die Einstellung `RUST_LOG=indexer_tap_agent=debug,info` zu verwenden.
+#### 2. Replace Indexer Service
+
+- Fully replace your TypeScript indexer-service with `indexer-service-rs`
+- The new service is stateless and can be scaled horizontally
+- Use the same database as your existing setup
+
+#### 3. Deploy TAP Agent
+
+- Run exactly **one instance** of `indexer-tap-agent`
+- This component manages receipt aggregation and RAV creation
+- It must have access to the same database as other indexer components
+
+#### 4. Configuration
+
+Both `indexer-service-rs` and `indexer-tap-agent` share a TOML configuration file. Create a configuration file and pass it with `--config /path/to/config.toml`.
+
+##### Minimal Configuration Example
+
+```toml
+# Essential configuration for indexer-rs components
+# All values below must be updated to match your setup
+
+[indexer]
+indexer_address = "0x1111111111111111111111111111111111111111"
+operator_mnemonic = "your twelve word mnemonic phrase here ..."
+
+[database]
+# Use the same database as your indexer-agent
+postgres_url = "postgresql://user:password@localhost:5432/indexer_db"
+
+[graph_node]
+# Your graph-node endpoints
+query_url = "http://graph-node:8000"
+status_url = "http://graph-node:8000/graphql"
+
+[subgraphs.network]
+# The Graph Network Subgraph (use query_url OR deployment_id, not both)
+query_url = "https://api.thegraph.com/subgraphs/name/graphprotocol/graph-network-arbitrum"
+# deployment_id = "QmUVskWrz1ZiQZ76AtyhcfFDEH1ELnRpoyEhVL8p6NFTbR"
+
+[subgraphs.escrow]
+# TAP Escrow Subgraph (use query_url OR deployment_id, not both)
+query_url = "https://api.thegraph.com/subgraphs/name/graphprotocol/tap-arbitrum-one"
+# deployment_id = "QmPcbDomKwfsmVBNbvncU8gdWTvUiH9zVFYxDMc5ohpjvU"
+
+[blockchain]
+# For Arbitrum mainnet
+chain_id = 42161
+receipts_verifier_address = "0x33f9E93266ce0E108fc85DdE2f71dab555A0F05a"
+
+# For Arbitrum Sepolia testnet, use:
+# chain_id = 421614
+# receipts_verifier_address = "0xfC24cE7a4428A6B89B52645243662A02BA734ECF"
+
+[tap]
+# Maximum GRT amount to risk before requiring aggregation
+# Use string format to prevent rounding errors
+max_amount_willing_to_lose_grt = "0.1"
+
+[tap.sender_aggregator_endpoints]
+# Gateway endpoints for RAV aggregation
+# Mainnet
+"0xDDE4cfFd3D9052A9cb618fC05a1Cd02be1f2F467" = "https://tap-aggregator.network.thegraph.com"
+
+# For testnet, use:
+# "0xC3dDf37906724732FfD748057FEBe23379b0710D" = "https://tap-aggregator.testnet.thegraph.com"
+```
+
+##### Environment Variable Overrides
+
+You can override any configuration value using environment variables:
+
+```bash
+# Pattern: [PREFIX]__[SECTION]__[KEY]
+# PREFIX can be INDEXER_SERVICE or TAP_AGENT
+
+# Examples:
+export INDEXER_SERVICE__DATABASE__POSTGRES_URL="postgresql://..."
+export TAP_AGENT__TAP__MAX_AMOUNT_WILLING_TO_LOSE_GRT="0.5"
+export INDEXER_SERVICE__BLOCKCHAIN__RECEIPTS_VERIFIER_ADDRESS="0x..."
+```
+
+##### Advanced Configuration
+
+For all configuration options, see:
+
+- [Full configuration example](https://github.com/graphprotocol/indexer-rs/blob/main/crates/config/maximal-config-example.toml)
+- [Default values](https://github.com/graphprotocol/indexer-rs/blob/main/crates/config/default_values.toml)
+
+### Protokollierung
+
+Set the log level using the `RUST_LOG` environment variable:
+
+```bash
+# Recommended for production
+export RUST_LOG=indexer_service=info,indexer_tap_agent=info
+
+# For debugging
+export RUST_LOG=indexer_service=debug,indexer_tap_agent=debug
+
+# TAP-specific debugging
+export RUST_LOG=indexer_tap_agent=debug,info
+```
 
 ## Monitoring
 
 ### Metriken
 
-Alle Komponenten stellen den Port 7300 zur Abfrage durch prometheus zur Verfügung.
+All components expose Prometheus metrics on port 7300:
+
+- `http://indexer-service:7300/metrics`
+- `http://tap-agent:7300/metrics`
+
+Key metrics to monitor:
+
+- **Receipt Processing**: Track receipt validation, aggregation rates, and failures
+- **RAV Creation**: Monitor RAV request success/failure rates
+- **Unaggregated Fees**: Ensure fees stay below `max_amount_willing_to_lose_grt`
+- **Sender Balances**: Track escrow account balances and obligations
 
 ### Grafana-Dashboard
 
-Sie können [Grafana-Dashboard] (https://github.com/graphprotocol/indexer-rs/blob/main/docs/dashboard.json) herunterladen und importieren.
+Import the [official Grafana dashboard](https://github.com/graphprotocol/indexer-rs/blob/main/docs/dashboard.json) for comprehensive monitoring of:
 
-### Launchpad
+- TAP receipt flow and aggregation status
+- RAV creation and redemption lifecycle
+- System performance and error rates
+- Database query performance
 
-Derzeit gibt es eine WIP-Version von `indexer-rs` und `tap-agent`, die [hier](https://github.com/graphops/launchpad-charts/tree/main/charts/graph-network-indexer) zu finden ist.
+### Troubleshooting
+
+Common issues and solutions:
+
+1. **RAV requests failing**:
+   - Check aggregator endpoint connectivity
+   - Verify sender configuration in `tap.sender_aggregator_endpoints`
+   - Review debug logs for specific error messages
+
+2. **Receipts not aggregating**:
+   - Ensure `tap-agent` is running (only one instance)
+   - Check database connectivity
+   - Verify `max_amount_willing_to_lose_grt` is not too high
+
+3. **High unaggregated fees**:
+   - Lower `max_amount_willing_to_lose_grt` to trigger more frequent aggregation
+   - Check if specific senders are having aggregation issues
+   - Monitor the Grafana dashboard for aggregation patterns
+
+## Einsatz-Optionen
+
+### Docker Compose
+
+Example compose configuration for both services:
+
+```yaml
+version: '3.8'
+
+services:
+  indexer-service:
+    image: ghcr.io/graphprotocol/indexer-service-rs:latest
+    ports:
+      - '7600:7600' # Service port
+      - '7300:7300' # Metrics port
+    volumes:
+      - ./config.toml:/config.toml
+    command: ['--config', '/config.toml']
+    environment:
+      - RUST_LOG=indexer_service=info
+    restart: unless-stopped
+
+  tap-agent:
+    image: ghcr.io/graphprotocol/indexer-tap-agent:latest
+    ports:
+      - '7301:7300' # Metrics port (different host port)
+    volumes:
+      - ./config.toml:/config.toml
+    command: ['--config', '/config.toml']
+    environment:
+      - RUST_LOG=indexer_tap_agent=info
+    restart: unless-stopped
+```
+
+### Kubernetes
+
+For Kubernetes deployments, see the [Graph Launchpad charts](https://github.com/graphops/launchpad-charts/tree/main/charts/graph-network-indexer) which include:
+
+- Helm charts for both services
+- ConfigMap templates for configuration
+- Service and ingress definitions
+- Prometheus ServiceMonitor resources
+
+## Bewährte Praktiken
+
+1. **Database Performance**:
+   - Ensure your PostgreSQL instance has adequate resources
+   - Monitor query performance through metrics
+   - Regular maintenance of receipt tables
+
+2. **High Availability**:
+   - Run multiple `indexer-service-rs` instances behind a load balancer
+   - Keep `tap-agent` as a single instance with proper monitoring
+   - Use database connection pooling
+
+3. **Security**:
+   - Store operator mnemonic securely (use environment variables)
+   - Restrict database access to indexer components only
+   - Monitor for unusual receipt patterns
+
+4. **Capacity Planning**:
+   - Monitor receipt growth rate
+   - Plan database storage accordingly
+   - Set appropriate `max_amount_willing_to_lose_grt` based on query volume
+
+## Zusätzliche Ressourcen
+
+- [indexer-rs Repository](https://github.com/graphprotocol/indexer-rs)
+- [TAP Core Documentation](https://docs.rs/tap_core/latest/tap_core/)
+- [The Graph Discord](https://thegraph.com/discord) - Get help in the #indexers channel
+- [Support](https://github.com/graphprotocol/indexer-rs/issues) - Report issues or get help
