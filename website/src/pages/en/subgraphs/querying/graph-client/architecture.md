@@ -44,7 +44,7 @@ graph LR;
 
 ## Subgraph Execution Strategies
 
-Within every Subgraph defined as source, there will be a way to define it's source(s) indexer and the querying strategy, here are a few options:
+Within every Subgraph defined as source, there will be a way to define its source(s) indexer and the querying strategy, here are a few options:
 
 ```mermaid
 graph LR;
