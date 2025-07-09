@@ -48,12 +48,6 @@ export const getFirehoseSupportLevel = (network: Network) => {
   if (firehoseCount >= 2) return 'full'
   return 'basic'
 }
-export const getTokenApiSupportLevel = (network: Network) => {
-  const tokenApiCount = network.services.tokenApi?.length || 0
-  if (tokenApiCount === 0) return 'none'
-  // Token API is currently defined as a binary yes/no, so we'll consider that as 'full' support
-  return 'full'
-}
 
 export async function getSupportedNetworks() {
   const registry = await NetworksRegistry.fromLatestVersion()
@@ -79,7 +73,6 @@ export async function getSupportedNetworks() {
           subgraphsSupportLevel: getSubgraphsSupportLevel(network),
           substreamsSupportLevel: getSubstreamsSupportLevel(network),
           firehoseSupportLevel: getFirehoseSupportLevel(network),
-          tokenApiSupportLevel: getTokenApiSupportLevel(network),
         },
       ]
     })
