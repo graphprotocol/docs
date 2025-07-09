@@ -12,7 +12,7 @@ Developers who consume data from [The Graph](https://thegraph.com) GraphQL API o
 
 This library is intended to simplify the network aspect of data consumption for dApps. The tools provided within this repository are intended to run at build time, in order to make execution faster and performant at runtime.
 
-> The tools provided in this repo can be used as standalone, but you can also use it with any existing GraphQL Client!
+> The tools provided in this repo can be used as standalones, but you can also use them with any existing GraphQL Client!
 
 | Status | Feature                                                          | Notes                                                                                                                            |
 | :----: | ---------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
