@@ -482,7 +482,7 @@ For advanced use-cases with composition, please refer to the following resources
 
 If your project is written in TypeScript, you can leverage the power of [`TypedDocumentNode`](https://the-guild.dev/blog/typed-document-node) and have a fully-typed GraphQL client experience.
 
-The standalone mode of The GraphQL, and popular GraphQL client libraries like Apollo-Client and urql has built-in support for `TypedDocumentNode`!
+The standalone mode of The GraphQL, and popular GraphQL client libraries like Apollo-Client and urql have built-in support for `TypedDocumentNode`!
 
 The Graph Client CLI comes with a ready-to-use configuration for [GraphQL Code Generator](https://graphql-code-generator.com), and it can generate `TypedDocumentNode` based on your GraphQL operations.
 
