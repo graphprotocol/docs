@@ -1,11 +1,4 @@
-import {
-  type ComponentPropsWithoutRef,
-  createContext,
-  type MouseEvent,
-  type ReactNode,
-  useContext,
-  useState,
-} from 'react'
+import { type ComponentProps, createContext, type MouseEvent, type ReactNode, useContext, useState } from 'react'
 
 import {
   ButtonOrLink,
@@ -16,7 +9,7 @@ import {
 } from '@edgeandnode/gds'
 import { CaretDown } from '@edgeandnode/gds/icons'
 
-export const NavigationGroup = ({ className, children, ...props }: ComponentPropsWithoutRef<'div'>) => {
+export const NavigationGroup = ({ className, children, ...props }: ComponentProps<'div'>) => {
   return (
     <div className={classNames(['overflow-clip border-b border-space-1500 px-4 py-2', className])} {...props}>
       <NavigationList>{children}</NavigationList>
@@ -28,7 +21,7 @@ export const NavigationListContext = createContext<{
   depth: number
 } | null>(null)
 
-export const NavigationList = ({ className, children, ...props }: ComponentPropsWithoutRef<'ul'>) => {
+export const NavigationList = ({ className, children, ...props }: ComponentProps<'ul'>) => {
   const ancestorNavigationListContext = useContext(NavigationListContext)
   const depth = ancestorNavigationListContext ? ancestorNavigationListContext.depth + 1 : 0
 
@@ -41,11 +34,33 @@ export const NavigationList = ({ className, children, ...props }: ComponentProps
   )
 }
 
+// TODO: Use GDS's `useControlled` when the `OnChangeArgs` generic is added
+function useControlled<T, OnChangeValue extends T = T, OnChangeArgs extends any[] = []>(
+  controlledValue: T | undefined,
+  defaultValue: T,
+  onChange?: (value: OnChangeValue, ...args: OnChangeArgs) => void,
+) {
+  const [uncontrolledValue, setUncontrolledValue] = useState(
+    controlledValue !== undefined ? controlledValue : defaultValue,
+  )
+  const value = controlledValue !== undefined ? controlledValue : uncontrolledValue
+  const setValue = (newValue: OnChangeValue, ...args: OnChangeArgs) => {
+    if (newValue === value) return
+    onChange?.(newValue, ...args)
+    if (controlledValue === undefined) {
+      setUncontrolledValue(newValue)
+    }
+  }
+  return [value, setValue] as const
+}
+
 declare namespace NavigationItemProps {
   interface BaseProps {
     title: string
     icon?: ReactNode
     selected?: boolean | 'partially'
+    expanded?: boolean
+    onExpandedChange?: (expanded: boolean, manual: boolean) => void
   }
   type OmittedButtonOrLinkProps = 'title' | 'selected'
   interface ButtonProps extends BaseProps, Omit<ButtonOrLinkProps.ButtonProps, OmittedButtonOrLinkProps> {}
@@ -62,6 +77,8 @@ export const NavigationItem = ({
   title,
   icon,
   selected,
+  expanded: controlledExpanded,
+  onExpandedChange,
   onClick,
   className,
   children,
@@ -69,7 +86,7 @@ export const NavigationItem = ({
 }: NavigationItemProps) => {
   const navigationListContext = useContext(NavigationListContext)
   const depth = navigationListContext?.depth ?? 0
-  const [expandedIfChildren, setExpanded] = useState(false)
+  const [expandedIfChildren, setExpanded] = useControlled(controlledExpanded, false, onExpandedChange)
   const expanded = children ? expandedIfChildren : false
 
   return (
@@ -92,7 +109,7 @@ export const NavigationItem = ({
         <ButtonOrLink
           selected={selected === true}
           onClick={(event: MouseEvent<HTMLButtonElement & HTMLAnchorElement>) => {
-            setExpanded(true)
+            setExpanded(true, false)
             onClick?.(event)
           }}
           className={`
@@ -147,7 +164,7 @@ export const NavigationItem = ({
             variant="naked"
             size="xsmall"
             aria-expanded={expanded}
-            onClick={() => setExpanded((expanded) => !expanded)}
+            onClick={() => setExpanded(!expanded, true)}
           >
             <CaretDown
               alt={expanded ? 'Collapse' : 'Expand'}
@@ -167,12 +184,12 @@ export const NavigationItem = ({
             duration={300}
             mode="exit-enter"
             className={`
-              not-safari:group-data-[depth=1]/navigation-list:[--gds-transition-enter-translate-x:-16px]
-              not-safari:group-data-[depth=1]/navigation-list:[--gds-transition-exit-translate-x:-16px]
+              group-data-[depth=1]/navigation-list:[--gds-transition-enter-translate-x:-16px]
+              group-data-[depth=1]/navigation-list:[--gds-transition-exit-translate-x:-16px]
               not-in-group-data-[depth=1]/navigation-list:[--gds-transition-enter-opacity:1]
               not-in-group-data-[depth=1]/navigation-list:[--gds-transition-exit-opacity:1]
-              rtl:not-safari:group-data-[depth=1]/navigation-list:[--gds-transition-enter-translate-x:16px]
-              rtl:not-safari:group-data-[depth=1]/navigation-list:[--gds-transition-exit-translate-x:16px]
+              rtl:group-data-[depth=1]/navigation-list:[--gds-transition-enter-translate-x:16px]
+              rtl:group-data-[depth=1]/navigation-list:[--gds-transition-exit-translate-x:16px]
             `}
           >
             <NavigationList
@@ -197,9 +214,7 @@ export const NavigationItem = ({
                 data-expanded={expanded || undefined}
                 className={`
                   absolute -top-2 start-0 z-10 aspect-square w-full origin-[start] bg-space-1800 fill-none stroke-space-1500 transition duration-150
-                  safari:delay-150
                   not-data-[expanded]:opacity-0
-                  not-data-[expanded]:safari:delay-0
                   rtl:-scale-x-100
                 `}
               >
@@ -239,9 +254,7 @@ export const NavigationItem = ({
                 data-expanded={expanded || undefined}
                 className={`
                   absolute -bottom-2 start-0 aspect-square w-full origin-[start] bg-space-1800 fill-none stroke-space-1500 transition duration-150
-                  safari:delay-150
                   not-data-[expanded]:opacity-0
-                  not-data-[expanded]:safari:delay-0
                   nearest-group-[:has(ul:not(:scope_ul_*,[inert]_*)>li:last-child[data-expanded])]/navigation-item:opacity-0
                   nearest-group-[:has(ul:not(:scope_ul_*,[inert]_*)>li:last-child[data-expanded])]/navigation-item:delay-150
                   @style-[--docs-navigation-item-last=1]:opacity-0

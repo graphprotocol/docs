@@ -1,4 +1,4 @@
-import type { ComponentPropsWithoutRef, ReactNode } from 'react'
+import type { ComponentProps, ReactNode } from 'react'
 
 import { classNames } from '@edgeandnode/gds'
 import { ExclamationMark, Lightbulb } from '@edgeandnode/gds/icons'
@@ -10,7 +10,7 @@ type CalloutType = (typeof calloutTypes)[number]
 const calloutTypes = ['note', 'tip', 'important', 'warning', 'caution'] as const
 const importantCalloutTypes: CalloutType[] = ['important', 'warning', 'caution']
 
-interface CalloutProps extends Omit<ComponentPropsWithoutRef<'blockquote'>, 'title'> {
+interface CalloutProps extends Omit<ComponentProps<'blockquote'>, 'title'> {
   /**
    * Defaults to `info`, or to `important` if `data-callout-type` is set to either `important`, `warning`, or `caution`.
    */
@@ -43,7 +43,7 @@ export const Callout = ({
     <div
       data-variant={variant}
       className={classNames([
-        `flex gap-2 rounded-8 border p-4 ps-3
+        `text-body-small flex gap-2 rounded-8 border p-3
         data-[variant=important]:border-solar-500/50
         data-[variant=info]:border-galactic-500/50
         data-[variant=important]:bg-solar-500/10
@@ -51,9 +51,9 @@ export const Callout = ({
         --:my-8 --:last:mb-0 -:is-[li>*]:my-4`,
         className,
       ])}
-      {...(props as ComponentPropsWithoutRef<'div'>)}
+      {...(props as ComponentProps<'div'>)}
     >
-      <div className="flex size-6 shrink-0 items-center justify-center">
+      <div className="flex h-[1lh] shrink-0 items-center justify-center">
         {variant === 'info' ? (
           <Lightbulb size={4} color="galactic-500" alt={!title ? t('global.content.callout.note') : ''} />
         ) : (
@@ -62,9 +62,9 @@ export const Callout = ({
       </div>
       <div
         className={`
-          text-body-xsmall flex-1
+          flex-1
           -:first:*:text-white
-          mdx-[:is(p,ul,ol):not(:last-child,:is(ul,ol)_*)]:mb-3
+          mdx-[:is(p,ul,ol):not(:last-child,:is(ul,ol)_*)]:mb-2
           mdx-[ul,ol]:gap-1
         `}
       >

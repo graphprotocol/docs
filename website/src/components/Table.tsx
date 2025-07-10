@@ -1,8 +1,8 @@
-import type { ComponentPropsWithoutRef } from 'react'
+import type { ComponentProps } from 'react'
 
 import { classNames } from '@edgeandnode/gds'
 
-interface TableProps extends ComponentPropsWithoutRef<'table'> {
+interface TableProps extends ComponentProps<'table'> {
   variant?: 'default' | 'supported-networks'
 }
 
@@ -31,6 +31,7 @@ export const Table = ({ className, children, variant = 'default', ...props }: Ta
           -:nested-[th,td]:py-2.5
           ${isSupportedNetworks ? '-:nested-[td]:h-16 -:nested-[td]:align-middle' : '-:nested-[td]:align-top'}
           -:nested-[th]:font-medium
+          +:nested-icon:inline-flex
           mdx-[:is(p,ul,ol):not(:last-child,:is(ul,ol)_*)]:mb-3
           mdx-[ul,ol]:gap-1
         `}

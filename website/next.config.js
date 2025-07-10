@@ -2,14 +2,13 @@
 
 import nextra from 'nextra'
 import rehypeMdxCodeProps from 'rehype-mdx-code-props'
-import rehypeUnwrapImages from 'rehype-unwrap-images'
-import remarkCallouts from 'remark-callouts'
 
 import { defaultLocale, translate } from '@edgeandnode/gds'
 
-// Compile `i18n.ts` to `i18n.js` since we can't import `ts` files in `next.config.js`
 import { translations } from './dist/i18n.js'
-import { remarkTransformRemoteGitHub } from './src/remarkTransformRemoteGitHub.js'
+import rehypeUnwrapImages from './dist/mdxPlugins/rehypeUnwrapImages.js'
+import remarkCallouts from './dist/mdxPlugins/remarkCallouts.js'
+import remarkTransformRemoteDocs from './dist/mdxPlugins/remarkTransformRemoteDocs.js'
 
 const env = {
   ENVIRONMENT: process.env.ENVIRONMENT,
@@ -71,6 +70,13 @@ const withNextra = nextra({
         type: 'children',
         title: t('global.navigation.tokenApi'),
       },
+      '---4': {
+        type: 'separator',
+      },
+      'ai-suite': {
+        type: 'children',
+        title: t('global.navigation.ai-suite'),
+      },
       '---5': {
         type: 'separator',
       },
@@ -102,7 +108,7 @@ const withNextra = nextra({
     ]
   },
   mdxOptions: {
-    remarkPlugins: [remarkTransformRemoteGitHub, remarkCallouts],
+    remarkPlugins: [remarkCallouts, remarkTransformRemoteDocs],
     rehypePlugins: [rehypeUnwrapImages, rehypeMdxCodeProps],
   },
 })

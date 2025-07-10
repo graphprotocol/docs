@@ -11,7 +11,7 @@ import {
   Text,
   useDebounce,
 } from '@edgeandnode/gds'
-import { Check, EyeClosed } from '@edgeandnode/gds/icons'
+import { Check, Checks, EyeClosed } from '@edgeandnode/gds/icons'
 import { NetworkIcon } from '@edgeandnode/go'
 
 import { Callout, Table } from '@/components'
@@ -23,6 +23,13 @@ export function NetworksTable({ networks }: { networks: SupportedNetwork[] }) {
   const { t } = useI18n()
   const [immediateSearchQuery, setSearchQuery] = useState('')
   const [immediateShowTestnets, setShowTestnets] = useState(false)
+
+  const checkmark = (
+    <Check size={4} alt={t('index.supportedNetworks.tableLegend.icons.checkmark')} className="h-[0.75lh]" />
+  )
+  const checkmarks = (
+    <Checks size={4} alt={t('index.supportedNetworks.tableLegend.icons.checkmarks')} className="h-[0.75lh]" />
+  )
 
   const searchQuery = useDebounce(immediateSearchQuery, 200)
   const showTestnets = useDebounce(immediateShowTestnets, 200)
@@ -49,14 +56,64 @@ export function NetworksTable({ networks }: { networks: SupportedNetwork[] }) {
   return (
     <>
       <Callout variant="info" className="mb-6">
+        <p>{t('index.supportedNetworks.infoText')}</p>
         <p>
-          {t('index.supportedNetworks.infoText')}{' '}
-          <ExperimentalLink href="/indexing/chain-integration-overview/">
+          <ExperimentalLink href="https://edgeandnode.typeform.com/to/b3507xSL">
             {t('index.supportedNetworks.infoLink')}
           </ExperimentalLink>
-          .
         </p>
       </Callout>
+
+      <aside
+        className="mb-6 overflow-clip rounded-8 border border-space-1500 bg-space-1800"
+        aria-labelledby="networks-table-legend"
+      >
+        <h3 id="networks-table-legend" className="sr-only">
+          {t('index.supportedNetworks.tableLegend.legendTitle')}
+        </h3>
+        <div className="grid grid-cols-1 gap-px text-space-500 xs:grid-cols-2">
+          <div className="border-b border-r border-space-1500 p-4">
+            <span className="text-c10 mb-2 block text-white">Subgraphs</span>
+            <div className="flex gap-2">
+              {checkmark}
+              <span className="text-14">{t('index.supportedNetworks.tableLegend.subgraphs.basic')}</span>
+            </div>
+            <div className="flex gap-2">
+              {checkmarks}
+              <span className="text-14">{t('index.supportedNetworks.tableLegend.subgraphs.full')}</span>
+            </div>
+          </div>
+          <div className="border-b border-r border-space-1500 p-4 lg:border-r-0">
+            <span className="text-c10 mb-2 block text-white">Substreams</span>
+            <div className="flex gap-2">
+              {checkmark}
+              <span className="text-14">{t('index.supportedNetworks.tableLegend.substreams.basic')}</span>
+            </div>
+            <div className="flex gap-2">
+              {checkmarks}
+              <span className="text-14">{t('index.supportedNetworks.tableLegend.substreams.full')}</span>
+            </div>
+          </div>
+          <div className="border-b border-r border-space-1500 p-4">
+            <span className="text-c10 mb-2 block text-white">Firehose</span>
+            <div className="flex gap-2">
+              {checkmark}
+              <span className="text-14">{t('index.supportedNetworks.tableLegend.firehose.basic')}</span>
+            </div>
+            <div className="flex gap-2">
+              {checkmarks}
+              <span className="text-14">{t('index.supportedNetworks.tableLegend.firehose.full')}</span>
+            </div>
+          </div>
+          <div className="p-4">
+            <span className="text-c10 mb-2 block text-white">Token API</span>
+            <div className="flex gap-2">
+              {checkmark}
+              <span className="text-14">{t('index.supportedNetworks.tableLegend.tokenApi.supported')}</span>
+            </div>
+          </div>
+        </div>
+      </aside>
 
       <div className="mb-4 flex items-center gap-4">
         <div className="flex-grow">
@@ -103,9 +160,6 @@ export function NetworksTable({ networks }: { networks: SupportedNetwork[] }) {
               <th className="min-w-47">
                 <Text.C10>{t('index.supportedNetworks.tableHeaders.name')}</Text.C10>
               </th>
-              <th className="min-w-47">
-                <Text.C10>{t('index.supportedNetworks.tableHeaders.id')}</Text.C10>
-              </th>
               <th align="center">
                 <Text.C10>{t('index.supportedNetworks.tableHeaders.subgraphs')}</Text.C10>
               </th>
@@ -116,7 +170,7 @@ export function NetworksTable({ networks }: { networks: SupportedNetwork[] }) {
                 <Text.C10>{t('index.supportedNetworks.tableHeaders.firehose')}</Text.C10>
               </th>
               <th align="center">
-                <Text.C10>{t('index.supportedNetworks.tableHeaders.tokenapi')}</Text.C10>
+                <Text.C10>{t('index.supportedNetworks.tableHeaders.tokenApi')}</Text.C10>
               </th>
             </tr>
             {filteredNetworks.map((network) => (
@@ -125,26 +179,44 @@ export function NetworksTable({ networks }: { networks: SupportedNetwork[] }) {
                 className="group/table-row isolate -outline-offset-1 transition hocus-visible-within:bg-space-1600 has-[a:focus-visible]:outline-focus"
               >
                 <td>
-                  <ButtonOrLink href={`/supported-networks/${network.id}`} className="static outline-none">
-                    <span className="flex items-center gap-2">
-                      <NetworkIcon network={network} variant={getIconVariant(network.id)} size={5} />
-                      <span className="text-body-xsmall">{network.shortName}</span>
-                    </span>
-                    <span className="absolute inset-y-0 start-0 z-10 w-[1999px]" />
-                  </ButtonOrLink>
-                </td>
-                <td>
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="text-body-xsmall">{network.id}</span>
+                  <div className="static flex items-center justify-between gap-2">
+                    <ButtonOrLink href={`/supported-networks/${network.id}`} className="static outline-none">
+                      <div className="flex items-center gap-3">
+                        <NetworkIcon network={network} variant={getIconVariant(network.id)} size={5} />
+                        <div className="flex flex-col">
+                          <span className="text-body-xsmall leading-5 text-white">{network.shortName}</span>
+                          <span className="text-body-xsmall leading-5 text-space-500">{network.id}</span>
+                        </div>
+                      </div>
+                      <span className="absolute inset-y-0 start-0 z-10 w-[1999px]" />
+                    </ButtonOrLink>
                     <div className="z-20 shrink-0 opacity-0 transition group-focus-within/table-row:opacity-100 group-hover/table-row:opacity-100">
                       <ExperimentalCopyButton size="small" variant="tertiary" value={network.id} />
                     </div>
                   </div>
                 </td>
-                <td align="center">{network.subgraphs ? <Check size={4} alt="Checkmark" /> : null}</td>
-                <td align="center">{network.substreams ? <Check size={4} alt="Checkmark" /> : null}</td>
-                <td align="center">{network.firehose ? <Check size={4} alt="Checkmark" /> : null}</td>
-                <td align="center">{network.tokenApi ? <Check size={4} alt="Checkmark" /> : null}</td>
+                <td align="center">
+                  {network.subgraphsSupportLevel === 'full'
+                    ? checkmarks
+                    : network.subgraphsSupportLevel === 'basic'
+                      ? checkmark
+                      : null}
+                </td>
+                <td align="center">
+                  {network.substreamsSupportLevel === 'full'
+                    ? checkmarks
+                    : network.substreamsSupportLevel === 'basic'
+                      ? checkmark
+                      : null}
+                </td>
+                <td align="center">
+                  {network.firehoseSupportLevel === 'full'
+                    ? checkmarks
+                    : network.firehoseSupportLevel === 'basic'
+                      ? checkmark
+                      : null}
+                </td>
+                <td align="center">{network.tokenApi ? checkmark : null}</td>
               </tr>
             ))}
           </tbody>

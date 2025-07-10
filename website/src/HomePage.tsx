@@ -2,13 +2,13 @@ import { NetworkType } from '@pinax/graph-networks-registry'
 
 import { ButtonOrLink, ExperimentalLink, Tooltip } from '@edgeandnode/gds'
 import {
+  APIToken,
   Firehose,
   GraphExplorer,
   GraphNode,
   SocialYouTube,
   Subgraph,
   Substreams,
-  SubstreamsPoweredSubgraph,
 } from '@edgeandnode/gds/icons'
 import { NetworkIcon } from '@edgeandnode/go'
 
@@ -29,16 +29,64 @@ export default function HomePage({ supportedNetworks }: { supportedNetworks: Sup
             className="left-16 h-full max-w-none xs:-top-2 xs:left-0"
           />
         </div>
-        <div className="col-[container] py-28 xs:py-36">
-          <div className="max-w-120">
-            <h1 className="text-heading-xlarge text-white">{t('index.hero.title')}</h1>
-            <p className="mt-2">{t('index.hero.description')}</p>
-            {/*
-              <ExperimentalButtonGroup className="mt-4 prop-orientation-vertical xs:prop-orientation-horizontal">
-                <ExperimentalButton href="/about/">{t('index.hero.cta1')}</ExperimentalButton>
-                <ExperimentalButton href="/subgraphs/quick-start/">{t('index.hero.cta2')}</ExperimentalButton>
-              </ExperimentalButtonGroup>
-            */}
+        <div className="col-[container] py-28">
+          <div className="flex flex-col items-start gap-4 lg:flex-row">
+            <div className="flex-1 lg:mb-0 lg:max-w-84">
+              <h1 className="text-heading-xlarge text-white">{t('index.hero.title')}</h1>
+              <p className="mt-2 text-16">{t('index.hero.description')}</p>
+            </div>
+            <div className="flex w-full flex-1 justify-end lg:w-auto">
+              <div className="w-full overflow-clip rounded-8 border border-space-1600 bg-space-1800 lg:w-auto">
+                <div className="relative grid grid-cols-4 gap-px">
+                  {[
+                    'mainnet',
+                    'btc',
+                    'bsc',
+                    'solana-mainnet-beta',
+                    'avalanche',
+                    'stellar',
+                    'litecoin',
+                    'matic',
+                    'arbitrum-one',
+                    'sonic',
+                    'optimism',
+                    'sei-mainnet',
+                    'starknet-mainnet',
+                    'zksync-era',
+                    'celo',
+                    'metis',
+                  ]
+                    .map((id) => supportedNetworks.find((network) => network.id === id))
+                    .filter((network): network is typeof network & {} => Boolean(network))
+                    .map((network) => (
+                      <div key={network.id} className="-mb-px -mr-px">
+                        <ButtonOrLink
+                          href={`/supported-networks/${network.id}`}
+                          className="flex items-center justify-center border-b border-r border-space-1600 px-8 py-5 transition hover:bg-space-1600"
+                        >
+                          <NetworkIcon
+                            network={network}
+                            size={6}
+                            variant={
+                              network.id === 'stellar' || network.id === 'sonic' || network.id === 'zksync-era'
+                                ? 'mono'
+                                : 'branded'
+                            }
+                          />
+                        </ButtonOrLink>
+                      </div>
+                    ))}
+                  <ExperimentalLink
+                    href="/supported-networks"
+                    className="absolute bottom-0 right-0 flex h-[64px] w-[calc(100%-1px)] items-center justify-center text-14 backdrop-blur-md sm:w-[calc(50%-1px)]"
+                  >
+                    {t('index.supportedNetworks.seeAllNetworks', [
+                      supportedNetworks.filter((network) => network.networkType === NetworkType.Mainnet).length,
+                    ])}
+                  </ExperimentalLink>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -83,12 +131,14 @@ export default function HomePage({ supportedNetworks }: { supportedNetworks: Sup
             </div>
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
               <Card
-                title={t('index.products.sps.title')}
-                description={t('index.products.sps.description')}
-                cta={<ExperimentalLink href="/sps/tutorial/">{t('index.products.sps.cta')}</ExperimentalLink>}
+                title={t('index.products.tokenApi.title')}
+                description={t('index.products.tokenApi.description')}
+                cta={
+                  <ExperimentalLink href="/token-api/quick-start/">{t('index.products.tokenApi.cta')}</ExperimentalLink>
+                }
                 icon={
                   <div className="flex size-8 items-center justify-center rounded-4 bg-space-1400 text-white">
-                    <SubstreamsPoweredSubgraph size={4} />
+                    <APIToken size={4} />
                   </div>
                 }
               />
@@ -150,9 +200,7 @@ export default function HomePage({ supportedNetworks }: { supportedNetworks: Sup
                     !['boba-bnb', 'eos-evm', 'polygon-zkevm', 'solana-accounts'].includes(network.id),
                 )
                 // Filter out networks that don't have a proper monochrome logo
-                .filter((network) => {
-                  return network.id !== 'zora'
-                })
+                .filter((network) => network.id !== 'zora')
                 .map((network) => (
                   <li key={network.id} className="-mb-px -mr-px">
                     <Tooltip content={network.shortName}>

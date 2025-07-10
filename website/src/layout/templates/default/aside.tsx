@@ -1,5 +1,5 @@
 import { motion } from 'motion/react'
-import { type ComponentPropsWithoutRef, type CSSProperties, useContext } from 'react'
+import { type ComponentProps, type CSSProperties, useContext } from 'react'
 
 import { ButtonOrLink, reactNodeToString } from '@edgeandnode/gds'
 
@@ -7,7 +7,7 @@ import { useI18n } from '@/i18n'
 
 import { LayoutContext, MAX_HEADING_DEPTH, MDXContentContext } from '../../shared'
 
-export default function TemplateDefaultAside(props: ComponentPropsWithoutRef<'div'>) {
+export default function TemplateDefaultAside(props: ComponentProps<'div'>) {
   const { activeIndex } = useContext(LayoutContext)!
   const { headings, headingIsInOrAboveView } = useContext(MDXContentContext)!
   const { t } = useI18n()

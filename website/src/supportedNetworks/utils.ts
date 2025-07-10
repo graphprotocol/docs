@@ -1,4 +1,4 @@
-import { NetworksRegistry } from '@pinax/graph-networks-registry'
+import { type Network, NetworksRegistry } from '@pinax/graph-networks-registry'
 
 // Networks that should use the "mono" icon variant (TODO: add this feature to web3icons?)
 export const MONO_ICON_NETWORKS = [
@@ -25,11 +25,28 @@ export const MONO_ICON_NETWORKS = [
   'zksync-era-sepolia',
 ]
 
-// Networks with Token API support (TODO: remove once the registry has this information)
-export const TOKEN_API_NETWORKS = ['mainnet', 'base', 'bsc', 'arbitrum-one', 'matic', 'optimism']
-
 export const getIconVariant = (networkId: string): 'mono' | 'branded' => {
   return MONO_ICON_NETWORKS.includes(networkId) ? 'mono' : 'branded'
+}
+
+// Support level for services
+export const getSubgraphsSupportLevel = (network: Network) => {
+  const hasSubgraphs = Boolean(network.services.subgraphs?.length || network.services.sps?.length)
+  if (!hasSubgraphs) return 'none'
+  if (network.issuanceRewards) return 'full'
+  return 'basic'
+}
+export const getSubstreamsSupportLevel = (network: Network) => {
+  const substreamCount = network.services.substreams?.length || 0
+  if (substreamCount === 0) return 'none'
+  if (substreamCount >= 2) return 'full'
+  return 'basic'
+}
+export const getFirehoseSupportLevel = (network: Network) => {
+  const firehoseCount = network.services.firehose?.length || 0
+  if (firehoseCount === 0) return 'none'
+  if (firehoseCount >= 2) return 'full'
+  return 'basic'
 }
 
 export async function getSupportedNetworks() {
@@ -40,7 +57,7 @@ export async function getSupportedNetworks() {
       const subgraphs = Boolean(network.services.subgraphs?.length)
       const substreams = Boolean(network.services.substreams?.length)
       const firehose = Boolean(network.services.firehose?.length)
-      const tokenApi = TOKEN_API_NETWORKS.includes(network.id)
+      const tokenApi = Boolean(network.services.tokenApi?.length)
       if (!subgraphs && !substreams && !firehose && !tokenApi) {
         return []
       }
@@ -52,6 +69,10 @@ export async function getSupportedNetworks() {
           substreams,
           firehose,
           tokenApi,
+          rawNetwork: network,
+          subgraphsSupportLevel: getSubgraphsSupportLevel(network),
+          substreamsSupportLevel: getSubstreamsSupportLevel(network),
+          firehoseSupportLevel: getFirehoseSupportLevel(network),
         },
       ]
     })

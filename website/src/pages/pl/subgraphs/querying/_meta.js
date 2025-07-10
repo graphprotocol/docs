@@ -8,6 +8,6 @@ export default {
   'distributed-systems': '',
   'graphql-api': '',
   'subgraph-id-vs-deployment-id': '',
-  'graph-client': titles['graph-client'],
+  'graph-client': titles['graph-client'] ?? '',
   python: '',
 }
