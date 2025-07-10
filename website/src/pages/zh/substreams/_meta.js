@@ -5,5 +5,4 @@ export default {
   introduction: '',
   developing: titles.developing ?? '',
   publishing: '',
-  sps: titles.sps ?? '',
 }
