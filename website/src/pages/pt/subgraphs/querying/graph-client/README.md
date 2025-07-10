@@ -4,7 +4,7 @@ Este repositório é o lar das ferramentas de lado do consumidor do [The Graph](
 
 ## Contexto
 
-As ferramentas fornecidas neste repositório têm o propósito de enriquecer e ampliar o DX, e adicionar a camada necessária para dApps para a implementação de aplicações distribuídas.
+The tools provided in this repo are intended to enrich and extend the DX, and add the additional layer required for dApps to implement distributed applications.
 
 Programadores que consomem dados da API GraphQL, do [The Graph](https://thegraph.com), geralmente precisam de periféricos para facilitar o consumo de dados, e também de ferramentas que permitem o uso simultâneo de vários indexadores.
 
@@ -12,7 +12,7 @@ Programadores que consomem dados da API GraphQL, do [The Graph](https://thegraph
 
 Esta biblioteca tem o intuito de simplificar o aspeto de rede do consumo de dados para dApps. As ferramentas fornecidas neste repositório devem ser executadas em tempo de compilação, para torná-las mais rápidas e eficientes durante o tempo de execução.
 
-> As ferramentas fornecidas neste repositório podem ser usadas por si próprias, mas também podem ser usadas com qualquer cliente existente da GraphQL!
+> The tools provided in this repo can be used as standalones, but you can also use them with any existing GraphQL Client!
 
 | Status | Característica                                                            | Notas                                                                                                                                           |
 | :----: | ------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -67,7 +67,7 @@ graphclient build
 
 > Nota: é necessário executar isso com o prefixo `yarn`, ou adicioná-lo como um script no seu `package.json`.
 
-Isto deve produzir uma função `execute` autónoma, pronta para uso, que serve para executar as operações do GraphQL. A saída deve ser semelhante ao seguinte:
+This should produce a ready-to-use standalone `execute` function that you can use for running your application GraphQL operations. You should have an output similar to the following:
 
 ```sh
 GraphClient: A limpar artefactos existentes
@@ -80,7 +80,7 @@ GraphClient: A ler a configuração
 🕸️: Pronto! => .graphclient
 ```
 
-Agora, o artefacto `.graphclient` está gerado para você, e pode ser importado diretamente do seu código. Você pode executar os seus queries assim:
+Now that the `.graphclient` artifact is generated for you, you can import it directly from your code, and run your queries:
 
 ```ts
 import { execute } from '../.graphclient'
@@ -449,7 +449,7 @@ sources:
         endpoint: https://api.thegraph.com/subgraphs/name/graphprotocol/compound-v2
 ```
 
-Enquanto não houver conflitos entre os schemas compostos, você pode compor e então executar um único query para ambos os Subgraphs:
+As long as there are no conflicts across the composed schemas, you can compose it, and then run a single query to both Subgraphs:
 
 ```graphql
 query myQuery {
@@ -482,7 +482,7 @@ Para casos de uso avançados com composição, por favor consulte os seguintes r
 
 Se o seu projeto for escrito no TypeScript, você poderá aproveitar o poder de [`TypedDocumentNode`](https://the-guild.dev/blog/typed-document-node) e ter uma experiência de cliente GraphQL com tipos totalmente definidos.
 
-O modo autónomo da GraphQL, assim como bibliotecas populares de clientes da GraphQL como Apollo-Client e urql, tem suporte integrado ao `TypedDocumentNode`!
+The standalone mode of The GraphQL, and popular GraphQL client libraries like Apollo-Client and urql have built-in support for `TypedDocumentNode`!
 
 A CLI do Graph Client vem com uma configuração pronta para o [Gerador de Código da GraphQL](https://graphql-code-generator.com), e pode gerar `TypedDocumentNode` com base nas suas operações da GraphQL.
 
@@ -530,7 +530,7 @@ Isto é útil, já que você pode implementar códigos personalizados como parte
 
 > Este documento explica como adicionar mutações personalizadas, mas na verdade, você pode adicionar qualquer operação da GraphQL (query/mutação/assinaturas). Veja [Como estender o artigo do schema unificado](https://graphql-mesh.com/docs/guides/extending-unified-schema) para mais informações sobre este recurso.
 
-Para começar, defina uma seção `additionalTypeDefs` no seu arquivo de configuração:
+To get started, define an `additionalTypeDefs` section in your config file:
 
 ```yaml
 additionalTypeDefs: |
