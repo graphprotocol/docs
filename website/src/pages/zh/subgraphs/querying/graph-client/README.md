@@ -4,7 +4,7 @@
 
 ## 背景
 
-本节提供的工具旨在丰富和扩展DX, 并添加 dApp 所需的附加层以实现分布式应用程序。
+The tools provided in this repo are intended to enrich and extend the DX, and add the additional layer required for dApps to implement distributed applications.
 
 从GraphQL API 上[[The Graph](https://thegraph.com) 消耗数据的开发者常常需要外观才能使数据消耗更加容易， 而且还可以同时使用多个索引人的工具。
 
@@ -12,7 +12,7 @@
 
 这个库旨在简化dApp数据消耗的网络方面。 这个仓库中提供的工具是为了在构建时运行，以便在运行时更快地执行和运行。
 
-> 在这个仓库中提供的工具可以单独使用，但你也可以和任何现有的 GraphQL 客户端一起使用！
+> The tools provided in this repo can be used as standalones, but you can also use them with any existing GraphQL Client!
 
 |  状态 | 特征                                             | 注意：                                                                                                   |
 | :-: | ---------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
@@ -67,7 +67,7 @@ graphclient build
 
 > 注意：您需要使用 `yarn` 前缀运行此操作，或者在您的 `package.json` 中添加一个脚本。
 
-这将产生一个可随时使用的独立`执行`函数。 你可以用来运行你的应用程序 GraphQL 操作，你应该有一个类似于以下的输出：
+This should produce a ready-to-use standalone `execute` function that you can use for running your application GraphQL operations. You should have an output similar to the following:
 
 ```sh
 GraphClient: Cleaning existing artifacts
@@ -80,7 +80,7 @@ GraphClient: Reading the configuration
 🕸️: Done! => .graphclient
 ```
 
-现在，`.graphclient`的艺术品是为你生成的，你可以直接从你的代码中导入它，并运行你的查询：
+Now that the `.graphclient` artifact is generated for you, you can import it directly from your code, and run your queries:
 
 ```ts
 import { execute } from '../.graphclient'
@@ -449,7 +449,7 @@ sources:
         endpoint: https://api.thegraph.com/subgraphs/name/graphprotocol/compound-v2
 ```
 
-只要在合成模式之间没有冲突，您就可以编写它，然后对两个子图执行一个查询：
+As long as there are no conflicts across the composed schemas, you can compose it, and then run a single query to both Subgraphs:
 
 ```graphql
 query myQuery {
@@ -482,7 +482,7 @@ query myQuery {
 
 如果你的项目是在TypeScript写的，你可以利用[`TypedDocumentNode`](https://the-guild.dev/blog/typed-document-node)的力量，并且拥有一个完整的GraphQL客户端体验。
 
-The standalone mode of The GraphQL, and popular GraphQL client libraries like Apollo-Client and urql has built-in support for `TypedDocumentNode`!
+The standalone mode of The GraphQL, and popular GraphQL client libraries like Apollo-Client and urql have built-in support for `TypedDocumentNode`!
 
 The Graph客户端CLI带有一个现成配置的 [GraphQL 代码生成器](https://graphql-code-generator.com)，它可以根据您的 GraphQL 操作生成`TypedDocumentNode` 。
 
@@ -530,7 +530,7 @@ async function main() {
 
 > 本文档解释了如何添加自定义突变，但事实上，您可以添加任何GraphQL操作（查询/突变/订阅）。请参阅[扩展统一模式文章](https://graphql-mesh.com/docs/guides/extending-unified-schema)获取有关此功能的更多信息。
 
-要启动，请在配置文件中定义一个 `additionalTypeDefs` 部分：
+To get started, define an `additionalTypeDefs` section in your config file:
 
 ```yaml
 additionalTypeDefs: |
