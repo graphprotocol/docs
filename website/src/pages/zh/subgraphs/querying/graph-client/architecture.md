@@ -5,7 +5,7 @@
 1. 编写多个子图(在客户端)
 2. 返回到多个索引人/源/托管服务
 3. 自动/手动选取源策略
-4. Agnostic 核心，能够运行任何GraphQL客户端集成
+4. Agnostic core, with the ability to integrate with any GraphQL client
 
 ## 独立模式
 
@@ -44,7 +44,7 @@ graph LR;
 
 ## 子图执行策略
 
-在被定义为源的每一个子图中，都有一种方法来定义其源索引人和查询策略，下面是几个选项：
+Within every Subgraph defined as source, there will be a way to define its source(s) indexer and the querying strategy, here are a few options:
 
 ```mermaid
 graph LR;
@@ -85,7 +85,7 @@ graph LR;
     end
 ```
 
-> 我们可以配送几个内置策略，以及一个简单的接口，让开发者自己写。
+> We can ship several built-in strategies, along with a simple interface to allow developers to write their own.
 
 为了使战略概念走向极端，我们甚至可以建立一个订阅即时查询的魔力层， 带任何钩子, 并提供一个平滑的 DX 数据库：
 
