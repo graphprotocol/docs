@@ -5,7 +5,7 @@ Para resolver a necessidade de oferecer apoio a uma rede distribuída, temos pla
 1. Composição de múltiplos subgraphs (no lado do cliente)
 2. Retorno a múltiplos indexadores/fontes de dados/serviços hospedados
 3. Estratégia de seleção de fonte: automática/manual
-4. Núcleo agnóstico, capaz de integrar com qualquer cliente GraphQL
+4. Agnostic core, with the ability to integrate with any GraphQL client
 
 ## Modo avulso
 
@@ -44,7 +44,7 @@ graph LR;
 
 ## Estratégias de Execução de Subgraph
 
-Dentro de cada Subgraph definido como fonte, haverá uma maneira de definir o seu indexador(es) de fontes e a estratégia de queries; veja algumas opções:
+Within every Subgraph defined as source, there will be a way to define its source(s) indexer and the querying strategy, here are a few options:
 
 ```mermaid
 graph LR;
@@ -85,7 +85,7 @@ graph LR;
     end
 ```
 
-> Podemos enviar várias estratégias embutidas, junto a uma interface simples para permitir que os programadores escrevam as suas próprias.
+> We can ship several built-in strategies, along with a simple interface to allow developers to write their own.
 
 Para levar o conceito de estratégias ao extremo, podemos até construir uma camada mágica com um modelo de assinatura-como-query, com qualquer gancho, e fornecer um DX suave para dapps:
 
