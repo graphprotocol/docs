@@ -5,7 +5,7 @@ Pour répondre à la nécessité de prendre en charge un réseau distribué, nou
 1. Composer plusieurs subgraphs (côté client)
 2. Repli sur plusieurs Indexeurs/sources/services hébergés
 3. Stratégie de prélèvement automatique/manuel à la source
-4. Un noyau agnostique, avec la possibilité d'exécuter des intégrations avec n'importe quel client GraphQL
+4. Agnostic core, with the ability to integrate with any GraphQL client
 
 ## Mode Standalone
 
@@ -44,7 +44,7 @@ graph LR;
 
 ## Stratégies d'exécution des subgraphs
 
-Dans chaque subgraph défini comme source, il sera possible de définir l'Indexeur de la (des) source(s) et la stratégie d'interrogation, dont voici quelques exemples :
+Within every Subgraph defined as source, there will be a way to define its source(s) indexer and the querying strategy, here are a few options:
 
 ```mermaid
 graph LR;
@@ -85,7 +85,7 @@ graph LR;
     end
 ```
 
-> Nous pouvons proposer plusieurs stratégies intégrées, ainsi qu'une interface simple permettant aux développeurs d'écrire leurs propres stratégies.
+> We can ship several built-in strategies, along with a simple interface to allow developers to write their own.
 
 Pour pousser le concept de stratégies à l'extrême, nous pouvons même construire une couche magique qui fait de l'abonnement en tant que requête, avec n'importe quel crochet, et fournit un DX fluide pour les dapps :
 
