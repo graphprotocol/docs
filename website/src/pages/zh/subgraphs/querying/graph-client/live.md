@@ -38,6 +38,6 @@ query ExampleQuery @live(interval: 5000) {
 
 ## 集成
 
-因为整个网络图层 (与 `@live` 机制一起) 是在 `graph-client` 核心内实现的， 您可以使用每个GraphQL客户端的实时查询(例如Urql 或 Apollo-Client)，只要它支持流回应(`AsyncIterable`)。
+Since the entire network layer (along with the `@live` mechanism) is implemented inside `graph-client` core, you can use Live queries with every GraphQL client (such as Urql or Apollo-Client), as long as it supports streamed responses (`AsyncIterable`).
 
 GraphQL客户端缓存更新不需要额外设置。
