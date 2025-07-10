@@ -14,6 +14,7 @@ export const APIS = {
     document: tokenApi as OpenAPIV3_1.Document,
     sections: {
       EVM: '/token-api/evm',
+      SVM: '/token-api/svm',
       Monitoring: '/token-api/monitoring',
     },
   },
