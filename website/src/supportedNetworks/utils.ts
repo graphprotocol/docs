@@ -25,18 +25,6 @@ export const MONO_ICON_NETWORKS = [
   'zksync-era-sepolia',
 ]
 
-// Networks with Token API support (TODO: remove once the registry has this information)
-export const TOKEN_API_NETWORKS = [
-  'mainnet',
-  'base',
-  'bsc',
-  'arbitrum-one',
-  'matic',
-  'optimism',
-  'unichain',
-  'avalanche',
-]
-
 export const getIconVariant = (networkId: string): 'mono' | 'branded' => {
   return MONO_ICON_NETWORKS.includes(networkId) ? 'mono' : 'branded'
 }
@@ -69,7 +57,7 @@ export async function getSupportedNetworks() {
       const subgraphs = Boolean(network.services.subgraphs?.length)
       const substreams = Boolean(network.services.substreams?.length)
       const firehose = Boolean(network.services.firehose?.length)
-      const tokenApi = TOKEN_API_NETWORKS.includes(network.id)
+      const tokenApi = Boolean(network.services.tokenApi?.length)
       if (!subgraphs && !substreams && !firehose && !tokenApi) {
         return []
       }
