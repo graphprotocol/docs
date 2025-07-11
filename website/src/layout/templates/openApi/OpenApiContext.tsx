@@ -42,7 +42,7 @@ export function OpenApiProvider({ api, operation, securitySchemes, children }: O
                 ? parameter.schema.default
                 : 'example' in parameter.schema
                   ? parameter.schema.example
-                  : 'enum' in parameter.schema && parameter.schema.enum?.length
+                  : 'enum' in parameter.schema && parameter.schema.enum?.length && parameter.required
                     ? parameter.schema.enum[0]
                     : undefined
             const initialValue: ParameterValue =
