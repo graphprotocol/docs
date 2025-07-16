@@ -4,7 +4,7 @@
 
 ## Предисловие
 
-The tools provided in this repo are intended to enrich and extend the DX, and add the additional layer required for dApps to implement distributed applications.
+The tools provided in this repo are intended to enrich and extend the DX, and add the additional layer required for dApps in order to implement distributed applications.
 
 Разработчики, которые потребляют данные через GraphQL API от [The Graph](https://thegraph.com), часто нуждаются в периферийных инструментах для облегчения потребления данных, а также в инструментах, которые позволяют использовать несколько индексаторов одновременно.
 
@@ -12,7 +12,7 @@ The tools provided in this repo are intended to enrich and extend the DX, and ad
 
 Эта библиотека предназначена для упрощения сетевого аспекта потребления данных для децентрализованных приложений (dApps). Инструменты, предоставленные в этом репозитории, предназначены для работы во время сборки, чтобы сделать выполнение более быстрым и производительным в момент выполнения.
 
-> The tools provided in this repo can be used as standalones, but you can also use them with any existing GraphQL Client!
+> The tools provided in this repo can be used as standalone, but you can also use it with any existing GraphQL Client!
 
 | Статус | Функция                                                                    | Примечания                                                                                                                            |
 | :----: | -------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
@@ -67,7 +67,7 @@ graphclient build
 
 > Примечание: Вам нужно выполнить это с префиксом `yarn`, или добавить это как скрипт в свой `package.json`.
 
-This should produce a ready-to-use standalone `execute` function that you can use for running your application GraphQL operations. You should have an output similar to the following:
+This should produce a ready-to-use standalone `execute` function, that you can use for running your application GraphQL operations, you should have an output similar to the following:
 
 ```sh
 GraphClient: Очистка существующих артефактов 
@@ -80,7 +80,7 @@ GraphClient: Чтение конфигурации
 🕸️: Готово! => .graphclient
 ```
 
-Now that the `.graphclient` artifact is generated for you, you can import it directly from your code, and run your queries:
+Now, the `.graphclient` artifact is generated for you, and you can import it directly from your code, and run your queries:
 
 ```ts
 import { execute } from '../.graphclient'
@@ -449,7 +449,7 @@ sources:
         endpoint: https://api.thegraph.com/subgraphs/name/graphprotocol/compound-v2
 ```
 
-As long as there are no conflicts across the composed schemas, you can compose it, and then run a single query to both Subgraphs:
+As long as there a no conflicts across the composed schemas, you can compose it, and then run a single query to both Subgraphs:
 
 ```graphql
 query myQuery {
@@ -482,7 +482,7 @@ query myQuery {
 
 Если Ваш проект написан на TypeScript, Вы можете использовать возможности [`TypedDocumentNode`](https://the-guild.dev/blog/typed-document-node) и получить полностью типизированный опыт работы с GraphQL-клиентом.
 
-The standalone mode of The GraphQL, and popular GraphQL client libraries like Apollo-Client and urql have built-in support for `TypedDocumentNode`!
+The standalone mode of The GraphQL, and popular GraphQL client libraries like Apollo-Client and urql has built-in support for `TypedDocumentNode`!
 
 CLI Graph Client поставляется с готовой конфигурацией для [GraphQL Code Generator](https://graphql-code-generator.com) и может генерировать `TypedDocumentNode` на основе Ваших GraphQL-операций.
 
@@ -530,7 +530,7 @@ async function main() {
 
 > Этот документ объясняет, как добавить пользовательские мутации, но на самом деле Вы можете добавить любую операцию GraphQL (запросы/мутации/подписки). Для получения дополнительной информации о данной функции, см. статью [Расширение единой схемы](https://graphql-mesh.com/docs/guides/extending-unified-schema).
 
-To get started, define an `additionalTypeDefs` section in your config file:
+To get started, define a `additionalTypeDefs` section in your config file:
 
 ```yaml
 additionalTypeDefs: |
