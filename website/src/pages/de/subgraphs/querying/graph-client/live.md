@@ -38,6 +38,6 @@ query ExampleQuery @live(interval: 5000) {
 
 ## Integrationen
 
-Since the entire network layer (along with the `@live` mechanism) is implemented inside `graph-client` core, you can use Live queries with every GraphQL client (such as Urql or Apollo-Client), as long as it supports streamed responses (`AsyncIterable`).
+Since the entire network layer (along with the `@live` mechanism) is implemented inside `graph-client` core, you can use Live queries with every GraphQL client (such as Urql or Apollo-Client), as long as it supports streame responses (`AsyncIterable`).
 
 Für die Cache-Aktualisierung von GraphQL-Clients ist keine zusätzliche Einrichtung erforderlich.
