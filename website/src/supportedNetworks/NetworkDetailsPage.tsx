@@ -11,21 +11,21 @@ import {
   nonEvmNoTokenAPICards,
   nonEvmWithTokenAPICards,
 } from './ResourceCards'
-import { getIconVariant, type SupportedNetwork } from './utils'
+import { type SupportedNetwork } from './utils'
 
 export default function NetworkDetailsPage({ network }: { network: SupportedNetwork }) {
   const { t } = useI18n()
   const cards = (() => {
     if (network.evm) {
-      if (network.subgraphs && !network.substreams) {
+      if (network.subgraphsSupportLevel !== 'none' && network.substreamsSupportLevel === 'none') {
         return evmSubgraphsOnlyCards
-      } else if (network.tokenApi) {
+      } else if (network.tokenApiSupportLevel !== 'none') {
         return evmWithTokenAPICards
       } else {
         return evmNoTokenAPICards
       }
     } else {
-      if (network.tokenApi) {
+      if (network.tokenApiSupportLevel !== 'none') {
         return nonEvmWithTokenAPICards
       } else {
         return nonEvmNoTokenAPICards
@@ -36,7 +36,7 @@ export default function NetworkDetailsPage({ network }: { network: SupportedNetw
   return (
     <div className="col-[container]">
       <div className="mb-5 mt-12 flex flex-col gap-3">
-        <NetworkIcon network={network} variant={getIconVariant(network.id)} size={10} />
+        <NetworkIcon network={network} variant={network.iconVariant} size={10} />
         <h2 className="leading-tight mt-0 text-24 text-white">{network.fullName}</h2>
       </div>
 
