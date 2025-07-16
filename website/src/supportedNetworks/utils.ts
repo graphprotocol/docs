@@ -69,9 +69,9 @@ function getSubgraphsSupportLevelAndProvider(network: Network): ['none' | 'basic
   const providers = [...new Set([...(network.services.subgraphs || []), ...(network.services.sps || [])])]
   if (providers.length > 0) {
     let provider = providers[0]!
-    if (providers.some((provider) => /^((https?:)?\/\/)?api\.studio\.thegraph\.com\//.test(provider))) {
+    if (providers.some((provider) => /^((https?:)?\/\/)?api\.studio\.thegraph\.com(\/|$)/.test(provider))) {
       provider = 'Subgraph Studio'
-    } else if (providers.some((provider) => /^((https?:)?\/\/)?(www\.)?streamingfast\.io\//.test(provider))) {
+    } else if (providers.some((provider) => /^((https?:)?\/\/)?(www\.)?streamingfast\.io(\/|$)/.test(provider))) {
       provider = 'StreamingFast'
     }
     if (network.issuanceRewards) {
