@@ -5,7 +5,7 @@ Dağıtık bir ağı destekleme ihtiyacını karşılamak için, The Graph istem
 1. Birden fazla Subgraph'i (istemci tarafında) birleştirme
 2. Birden fazla endeksleyici/kaynak/sağlayıcı hizmetine geri dönüş (fallback) mekanizması
 3. Otomatik/Manuel kaynak seçme stratejisi
-4. Agnostic core, with the ability to integrate with any GraphQL client
+4. Agnostic core, with the ability to run integrate with any GraphQL client
 
 ## Bağımsız (standalone) mod
 
@@ -44,7 +44,7 @@ graph LR;
 
 ## Subgraph Yürütme Stratejileri
 
-Within every Subgraph defined as source, there will be a way to define its source(s) indexer and the querying strategy, here are a few options:
+Within every Subgraph defined as source, there will be a way to define it's source(s) indexer and the querying strategy, here are a few options:
 
 ```mermaid
 graph LR;
@@ -85,7 +85,7 @@ graph LR;
     end
 ```
 
-> We can ship several built-in strategies, along with a simple interface to allow developers to write their own.
+> We can ship a several built-in strategies, along with a simple interfaces to allow developers to write their own.
 
 Strateji kavramını en uç noktaya taşımak adına, herhangi bir hook ile çalışan ve abonelik modeliyle sorgu (subscription-as-query) yapan sihirli bir katman bile oluşturabiliriz. Bu sayede dapp’ler için akıcı bir geliştirici deneyimi (DX) sunabiliriz:
 
