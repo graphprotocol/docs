@@ -1,7 +1,7 @@
 import { type Network, NetworksRegistry } from '@pinax/graph-networks-registry'
 
 // Networks that should use the "mono" icon variant (TODO: add this feature to web3icons?)
-export const MONO_ICON_NETWORKS = [
+const MONO_ICON_NETWORKS = [
   'arweave-mainnet',
   'autonomys-taurus',
   'expchain-testnet',
@@ -25,58 +25,81 @@ export const MONO_ICON_NETWORKS = [
   'zksync-era-sepolia',
 ]
 
-export const getIconVariant = (networkId: string): 'mono' | 'branded' => {
-  return MONO_ICON_NETWORKS.includes(networkId) ? 'mono' : 'branded'
-}
-
-// Support level for services
-export const getSubgraphsSupportLevel = (network: Network) => {
-  const hasSubgraphs = Boolean(network.services.subgraphs?.length || network.services.sps?.length)
-  if (!hasSubgraphs) return 'none'
-  if (network.issuanceRewards) return 'full'
-  return 'basic'
-}
-export const getSubstreamsSupportLevel = (network: Network) => {
-  const substreamCount = network.services.substreams?.length || 0
-  if (substreamCount === 0) return 'none'
-  if (substreamCount >= 2) return 'full'
-  return 'basic'
-}
-export const getFirehoseSupportLevel = (network: Network) => {
-  const firehoseCount = network.services.firehose?.length || 0
-  if (firehoseCount === 0) return 'none'
-  if (firehoseCount >= 2) return 'full'
-  return 'basic'
-}
-
 export async function getSupportedNetworks() {
   const registry = await NetworksRegistry.fromLatestVersion()
   return registry.networks
     .flatMap((network) => {
-      const evm = network.caip2Id.startsWith('eip155:')
-      const subgraphs = Boolean(network.services.subgraphs?.length)
-      const substreams = Boolean(network.services.substreams?.length)
-      const firehose = Boolean(network.services.firehose?.length)
-      const tokenApi = Boolean(network.services.tokenApi?.length)
-      if (!subgraphs && !substreams && !firehose && !tokenApi) {
+      const [subgraphsSupportLevel, subgraphsProvider] = getSubgraphsSupportLevelAndProvider(network)
+      const substreamsSupportLevel = getSubstreamsSupportLevel(network)
+      const firehoseSupportLevel = getFirehoseSupportLevel(network)
+      const tokenApiSupportLevel = getTokenApiSupportLevel(network)
+      if (
+        subgraphsSupportLevel === 'none' &&
+        substreamsSupportLevel === 'none' &&
+        firehoseSupportLevel === 'none' &&
+        tokenApiSupportLevel === 'none'
+      ) {
         return []
       }
       return [
         {
           ...network,
-          evm,
-          subgraphs,
-          substreams,
-          firehose,
-          tokenApi,
-          rawNetwork: network,
-          subgraphsSupportLevel: getSubgraphsSupportLevel(network),
-          substreamsSupportLevel: getSubstreamsSupportLevel(network),
-          firehoseSupportLevel: getFirehoseSupportLevel(network),
+          evm: isEvm(network),
+          iconVariant: getIconVariant(network),
+          subgraphsSupportLevel,
+          subgraphsProvider,
+          substreamsSupportLevel,
+          firehoseSupportLevel,
+          tokenApiSupportLevel,
         },
       ]
     })
     .sort((a, b) => a.fullName.localeCompare(b.fullName))
+}
+
+function isEvm(network: Network) {
+  return network.caip2Id.startsWith('eip155:')
+}
+
+function getIconVariant(network: Network): 'mono' | 'branded' {
+  return MONO_ICON_NETWORKS.includes(network.id) ? 'mono' : 'branded'
+}
+
+function getSubgraphsSupportLevelAndProvider(network: Network): ['none' | 'basic' | 'full', string | null] {
+  const providers = [...new Set([...(network.services.subgraphs || []), ...(network.services.sps || [])])]
+  if (providers.length > 0) {
+    let provider = providers[0]!
+    if (providers.some((provider) => /^((https?:)?\/\/)?api\.studio\.thegraph\.com\//.test(provider))) {
+      provider = 'Subgraph Studio'
+    } else if (providers.some((provider) => /^((https?:)?\/\/)?(www\.)?streamingfast\.io\//.test(provider))) {
+      provider = 'StreamingFast'
+    }
+    if (network.issuanceRewards) {
+      return ['full', provider]
+    }
+    return ['basic', provider]
+  }
+  return ['none', null]
+}
+
+function getSubstreamsSupportLevel(network: Network): 'none' | 'basic' | 'full' {
+  const providerCount = network.services.substreams?.length || 0
+  if (providerCount >= 2) return 'full'
+  if (providerCount === 1) return 'basic'
+  return 'none'
+}
+
+function getFirehoseSupportLevel(network: Network): 'none' | 'basic' | 'full' {
+  const providerCount = network.services.firehose?.length || 0
+  if (providerCount >= 2) return 'full'
+  if (providerCount === 1) return 'basic'
+  return 'none'
+}
+
+function getTokenApiSupportLevel(network: Network): 'none' | 'full' {
+  const providerCount = network.services.tokenApi?.length || 0
+  if (providerCount >= 1) return 'full'
+  return 'none'
 }
 
 export type SupportedNetwork = Awaited<ReturnType<typeof getSupportedNetworks>>[number]

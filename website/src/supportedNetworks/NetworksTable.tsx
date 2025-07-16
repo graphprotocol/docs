@@ -9,6 +9,7 @@ import {
   ExperimentalSearch,
   ExperimentalToggleChip,
   Text,
+  Tooltip,
   useDebounce,
 } from '@edgeandnode/gds'
 import { Check, Checks, EyeClosed } from '@edgeandnode/gds/icons'
@@ -17,7 +18,7 @@ import { NetworkIcon } from '@edgeandnode/go'
 import { Callout, Table } from '@/components'
 import { useI18n } from '@/i18n'
 
-import { getIconVariant, type SupportedNetwork } from './utils'
+import { type SupportedNetwork } from './utils'
 
 export function NetworksTable({ networks }: { networks: SupportedNetwork[] }) {
   const { t } = useI18n()
@@ -109,7 +110,7 @@ export function NetworksTable({ networks }: { networks: SupportedNetwork[] }) {
             <span className="text-c10 mb-2 block text-white">Token API</span>
             <div className="flex gap-2">
               {checkmark}
-              <span className="text-14">{t('index.supportedNetworks.tableLegend.tokenApi.supported')}</span>
+              <span className="text-14">{t('index.supportedNetworks.tableLegend.tokenApi.full')}</span>
             </div>
           </div>
         </div>
@@ -182,7 +183,7 @@ export function NetworksTable({ networks }: { networks: SupportedNetwork[] }) {
                   <div className="static flex items-center justify-between gap-2">
                     <ButtonOrLink href={`/supported-networks/${network.id}`} className="static outline-none">
                       <div className="flex items-center gap-3">
-                        <NetworkIcon network={network} variant={getIconVariant(network.id)} size={5} />
+                        <NetworkIcon network={network} variant={network.iconVariant} size={5} />
                         <div className="flex flex-col">
                           <span className="text-body-xsmall leading-5 text-white">{network.shortName}</span>
                           <span className="text-body-xsmall leading-5 text-space-500">{network.id}</span>
@@ -196,11 +197,13 @@ export function NetworksTable({ networks }: { networks: SupportedNetwork[] }) {
                   </div>
                 </td>
                 <td align="center">
-                  {network.subgraphsSupportLevel === 'full'
-                    ? checkmarks
-                    : network.subgraphsSupportLevel === 'basic'
-                      ? checkmark
-                      : null}
+                  {network.subgraphsSupportLevel === 'full' ? (
+                    checkmarks
+                  ) : network.subgraphsSupportLevel === 'basic' ? (
+                    <Tooltip content={network.subgraphsProvider}>
+                      <span className="z-10">{checkmark}</span>
+                    </Tooltip>
+                  ) : null}
                 </td>
                 <td align="center">
                   {network.substreamsSupportLevel === 'full'
@@ -216,7 +219,7 @@ export function NetworksTable({ networks }: { networks: SupportedNetwork[] }) {
                       ? checkmark
                       : null}
                 </td>
-                <td align="center">{network.tokenApi ? checkmark : null}</td>
+                <td align="center">{network.tokenApiSupportLevel === 'full' ? checkmark : null}</td>
               </tr>
             ))}
           </tbody>
