@@ -5,7 +5,7 @@ Um der Notwendigkeit der Unterstützung eines verteilten Netzwerks gerecht zu we
 1. Mehrere Subgraphen zusammenstellen (auf der Client-Seite)
 2. Fallback auf mehrere Indexer/Quellen/gehostete Dienste
 3. Automatische/manuelle Kommissionierstrategie
-4. Agnostic core, with the ability to integrate with any GraphQL client
+4. Agnostic core, with the ability to run integrate with any GraphQL client
 
 ## Standalone-Modus
 
@@ -44,7 +44,7 @@ graph LR;
 
 ## Strategien für die Ausführung von Subgraphen
 
-Within every Subgraph defined as source, there will be a way to define its source(s) indexer and the querying strategy, here are a few options:
+Within every Subgraph defined as source, there will be a way to define it's source(s) indexer and the querying strategy, here are a few options:
 
 ```mermaid
 graph LR;
@@ -85,7 +85,7 @@ graph LR;
     end
 ```
 
-> We can ship several built-in strategies, along with a simple interface to allow developers to write their own.
+> We can ship a several built-in strategies, along with a simple interfaces to allow developers to write their own.
 
 Um das Konzept der Strategien auf die Spitze zu treiben, können wir sogar eine magische Schicht aufbauen, die Abonnement-als-Abfrage mit einem beliebigen Hook durchführt und einen reibungslosen DX für Dapps bietet:
 
