@@ -11,7 +11,7 @@ import { CaretDown } from '@edgeandnode/gds/icons'
 
 export const NavigationGroup = ({ className, children, ...props }: ComponentProps<'div'>) => {
   return (
-    <div className={classNames(['border-space-1500 overflow-clip border-b px-4 py-2', className])} {...props}>
+    <div className={classNames(['overflow-clip border-b border-space-1500 px-4 py-2', className])} {...props}>
       <NavigationList>{children}</NavigationList>
     </div>
   )
@@ -94,14 +94,14 @@ export const NavigationItem = ({
       data-expanded={expanded || undefined}
       className={classNames([
         `group/navigation-item
-        nearest-group-[>li:has(ul:not(:scope_ul_*,[inert]_*)>li:last-child[data-expanded])+]/navigation-list:[--docs-navigation-item-no-top-line:1]
         [--docs-navigation-item-expanded:0]
         [--docs-navigation-item-first:0]
         [--docs-navigation-item-last:0]
         [--docs-navigation-item-no-top-line:0]
         first:[--docs-navigation-item-first:1]
         last:[--docs-navigation-item-last:1]
-        data-[expanded]:[--docs-navigation-item-expanded:1]`,
+        data-[expanded]:[--docs-navigation-item-expanded:1]
+        nearest-group-[>li:has(ul:not(:scope_ul_*,[inert]_*)>li:last-child[data-expanded])+]/navigation-list:[--docs-navigation-item-no-top-line:1]`,
         className,
       ])}
     >
@@ -113,14 +113,14 @@ export const NavigationItem = ({
             onClick?.(event)
           }}
           className={`
-            text-body-small-tight text-space-500 flex flex-1 gap-1.5 py-1.5 ps-1 pe-2 transition
+            text-body-small-tight flex flex-1 gap-1.5 py-1.5 pe-2 ps-1 text-space-500 transition
+            hover:text-white
             group-data-[selected]/navigation-item-trigger:text-white
             group-data-[selected]/navigation-item-trigger:transition-none
-            hover:text-white
           `}
           {...props}
         >
-          <span className="nested-icon:size-4 flex size-6 shrink-0 items-center justify-center">
+          <span className="flex size-6 shrink-0 items-center justify-center nested-icon:size-4">
             {depth === 0 ? icon : null}
           </span>
           <span>{title}</span>
@@ -129,19 +129,19 @@ export const NavigationItem = ({
           <span className="absolute inset-y-0 start-3 flex w-1.5 flex-col items-center gap-1">
             <span
               className={`
-                bg-space-1500 @style-[--docs-navigation-item-no-top-line=1]:opacity-0 @style-[--docs-navigation-item-no-top-line=1]:delay-150 @style-[--docs-navigation-item-first=1]:not-in-group-data-[depth=2]/navigation-list:opacity-0 w-px
-                flex-1
-                transition
-                duration-150
+                w-px flex-1 bg-space-1500 transition duration-150
+                @style-[--docs-navigation-item-no-top-line=1]:opacity-0
+                @style-[--docs-navigation-item-no-top-line=1]:delay-150
+                @style-[--docs-navigation-item-first=1]:not-in-group-data-[depth=2]/navigation-list:opacity-0
               `}
             />
             <span
               className={`
-                bg-space-1500 nearest-group-[:has(:is(a,button):hover)]/navigation-item:bg-space-1300 +:group-data-[selected=partially]/navigation-item-trigger:bg-space-1100 +:group-data-[selected=true]/navigation-item-trigger:bg-purple-500
+                size-2 rounded-full bg-space-1500 transition
+                nearest-group-[:has(:is(a,button):hover)]/navigation-item:bg-space-1300
+                +:group-data-[selected=partially]/navigation-item-trigger:bg-space-1100
+                +:group-data-[selected=true]/navigation-item-trigger:bg-purple-500
                 +:group-data-[selected]/navigation-item-trigger:transition-none
-                size-2
-                rounded-full
-                transition
               `}
             />
             <span
@@ -151,10 +151,10 @@ export const NavigationItem = ({
                */
               data-expanded={expanded || undefined}
               className={`
-                bg-space-1500 @style-[--docs-navigation-item-last:1]:@style-[--docs-previous-navigation-item-last:1]:not-data-[expanded]:opacity-0 @style-[--docs-navigation-item-last:1]:@style-[--docs-previous-navigation-item-last:1]:not-data-[expanded]:delay-150 @style-[--docs-navigation-item-last:1]:@style-[--docs-previous-navigation-item-last:1]:not-data-[expanded]:duration-300 w-px
-                flex-1
-                transition
-                duration-150
+                w-px flex-1 bg-space-1500 transition duration-150
+                @style-[--docs-navigation-item-last:1]:@style-[--docs-previous-navigation-item-last:1]:not-data-[expanded]:opacity-0
+                @style-[--docs-navigation-item-last:1]:@style-[--docs-previous-navigation-item-last:1]:not-data-[expanded]:delay-150
+                @style-[--docs-navigation-item-last:1]:@style-[--docs-previous-navigation-item-last:1]:not-data-[expanded]:duration-300
               `}
             />
           </span>
@@ -170,9 +170,9 @@ export const NavigationItem = ({
               alt={expanded ? 'Collapse' : 'Expand'}
               size={3.5}
               className={`
-                group-data-[selected]/navigation-item-trigger:prop-color-white in-clickable-[[aria-expanded=true]]:-rotate-180
-                transition-transform
-                duration-300
+                transition-transform duration-300
+                group-data-[selected]/navigation-item-trigger:prop-color-white
+                in-clickable-[[aria-expanded=true]]:-rotate-180
               `}
             />
           </ExperimentalButton>
@@ -184,10 +184,10 @@ export const NavigationItem = ({
             duration={300}
             mode="exit-enter"
             className={`
-              not-in-group-data-[depth=1]/navigation-list:[--gds-transition-enter-opacity:1]
-              not-in-group-data-[depth=1]/navigation-list:[--gds-transition-exit-opacity:1]
               group-data-[depth=1]/navigation-list:[--gds-transition-enter-translate-x:-16px]
               group-data-[depth=1]/navigation-list:[--gds-transition-exit-translate-x:-16px]
+              not-in-group-data-[depth=1]/navigation-list:[--gds-transition-enter-opacity:1]
+              not-in-group-data-[depth=1]/navigation-list:[--gds-transition-exit-opacity:1]
               rtl:group-data-[depth=1]/navigation-list:[--gds-transition-enter-translate-x:16px]
               rtl:group-data-[depth=1]/navigation-list:[--gds-transition-exit-translate-x:16px]
             `}
@@ -213,7 +213,7 @@ export const NavigationItem = ({
                  */
                 data-expanded={expanded || undefined}
                 className={`
-                  bg-space-1800 stroke-space-1500 absolute start-0 -top-2 z-10 aspect-square w-full origin-[start] fill-none transition duration-150
+                  absolute -top-2 start-0 z-10 aspect-square w-full origin-[start] bg-space-1800 fill-none stroke-space-1500 transition duration-150
                   not-data-[expanded]:opacity-0
                   rtl:-scale-x-100
                 `}
@@ -240,7 +240,7 @@ export const NavigationItem = ({
                  */
                 data-expanded={expanded || undefined}
                 className={`
-                  bg-space-1500 absolute inset-y-0 start-0 w-px transition delay-75 duration-75
+                  absolute inset-y-0 start-0 w-px bg-space-1500 transition delay-75 duration-75
                   data-[expanded]:opacity-0
                   data-[expanded]:delay-150
                 `}
@@ -253,11 +253,11 @@ export const NavigationItem = ({
                  */
                 data-expanded={expanded || undefined}
                 className={`
-                  bg-space-1800 stroke-space-1500 nearest-group-[:has(ul:not(:scope_ul_*,[inert]_*)>li:last-child[data-expanded])]/navigation-item:opacity-0 nearest-group-[:has(ul:not(:scope_ul_*,[inert]_*)>li:last-child[data-expanded])]/navigation-item:delay-150 @style-[--docs-navigation-item-last=1]:opacity-0 absolute start-0 -bottom-2 aspect-square w-full origin-[start]
-                  fill-none
-                  transition
-                  duration-150
+                  absolute -bottom-2 start-0 aspect-square w-full origin-[start] bg-space-1800 fill-none stroke-space-1500 transition duration-150
                   not-data-[expanded]:opacity-0
+                  nearest-group-[:has(ul:not(:scope_ul_*,[inert]_*)>li:last-child[data-expanded])]/navigation-item:opacity-0
+                  nearest-group-[:has(ul:not(:scope_ul_*,[inert]_*)>li:last-child[data-expanded])]/navigation-item:delay-150
+                  @style-[--docs-navigation-item-last=1]:opacity-0
                   rtl:-scale-x-100
                 `}
               >

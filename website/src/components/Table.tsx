@@ -12,7 +12,7 @@ export const Table = ({ className, children, variant = 'default', ...props }: Ta
   return (
     <div
       className={classNames([
-        'gradient-mask-x -:text-body-small --:my-8 --:last:mb-0 -:is-[li>*]:my-4 overflow-x-auto overflow-y-clip',
+        'gradient-mask-x overflow-x-auto overflow-y-clip -:text-body-small --:my-8 --:last:mb-0 -:is-[li>*]:my-4',
         className,
       ])}
     >

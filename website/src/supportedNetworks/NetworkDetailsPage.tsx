@@ -35,9 +35,9 @@ export default function NetworkDetailsPage({ network }: { network: SupportedNetw
 
   return (
     <div className="col-[container]">
-      <div className="mt-12 mb-5 flex flex-col gap-3">
+      <div className="mb-5 mt-12 flex flex-col gap-3">
         <NetworkIcon network={network} variant={network.iconVariant} size={10} />
-        <h2 className="text-24 mt-0 leading-tight text-white">{network.fullName}</h2>
+        <h2 className="leading-tight mt-0 text-24 text-white">{network.fullName}</h2>
       </div>
 
       <div className="grid grid-cols-2 gap-4">

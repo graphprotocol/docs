@@ -52,31 +52,31 @@ export const Card = ({
       className={classNames([
         `text-body-xsmall
         [--gds-card-bg-hover:theme(colors.space-1600)]
+        [--gds-card-bg:transparent]
         [--gds-card-border-hover:theme(colors.space-1400)]
-        [--gds-card-border:theme(colors.space-1500)]
-        [--gds-card-bg:transparent]`,
+        [--gds-card-border:theme(colors.space-1500)]`,
         className,
       ])}
       {...props}
     >
-      <div className="xs:flex-row flex h-full flex-col gap-6">
+      <div className="flex h-full flex-col gap-6 xs:flex-row">
         {videoThumbnailSrc ? (
-          <div className="peer max-xs:mb-0 xs:me-0 xs:w-1/2 xs:max-w-64 xs:self-center -m-4 aspect-video">
-            <img src={videoThumbnailSrc} alt="" className="rounded-6 size-full object-cover" />
+          <div className="peer -m-4 aspect-video max-xs:mb-0 xs:me-0 xs:w-1/2 xs:max-w-64 xs:self-center">
+            <img src={videoThumbnailSrc} alt="" className="size-full rounded-6 object-cover" />
           </div>
         ) : null}
-        <div className="xs:peer-[:has(img)]:self-center flex flex-1 flex-col gap-6">
+        <div className="flex flex-1 flex-col gap-6 xs:peer-[:has(img)]:self-center">
           {icon && iconPosition === 'top' ? (
-            <div className="nested-icon:default-size-6 shrink-0 grow-[9999]">{icon}</div>
+            <div className="shrink-0 grow-[9999] nested-icon:default-size-6">{icon}</div>
           ) : null}
           <div className="flex grow gap-4">
-            {icon && iconPosition === 'side' ? <div className="nested-icon:default-size-6 shrink-0">{icon}</div> : null}
+            {icon && iconPosition === 'side' ? <div className="shrink-0 nested-icon:default-size-6">{icon}</div> : null}
             <div className="flex flex-col gap-2">
               {slotAboveTitle ? <div className="mb-1">{slotAboveTitle}</div> : null}
-              <h3 className="text-body-small-tight text-space-200 -my-0.5 font-medium">{title}</h3>
-              {description ? <p className="text-space-700 -mb-1">{description}</p> : null}
+              <h3 className="text-body-small-tight -my-0.5 text-space-200 font-medium">{title}</h3>
+              {description ? <p className="-mb-1 text-space-700">{description}</p> : null}
               {slotBelowDescription ? <div className="mt-1">{slotBelowDescription}</div> : null}
-              {cta ? <div className="text-body-xsmall-tight mt-1 -mb-0.5">{cta}</div> : null}
+              {cta ? <div className="text-body-xsmall-tight -mb-0.5 mt-1">{cta}</div> : null}
             </div>
           </div>
         </div>

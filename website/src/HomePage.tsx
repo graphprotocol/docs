@@ -22,21 +22,21 @@ export default function HomePage({ supportedNetworks }: { supportedNetworks: Sup
   return (
     <>
       <div className="graph-docs-not-markdown grid grid-cols-subgrid">
-        <div className="xs:h-90 pointer-events-none absolute inset-x-0 flex h-70 justify-center">
+        <div className="absolute inset-x-0 flex h-70 justify-center pointer-events-none xs:h-90">
           <img
             alt=""
             src={`${process.env.BASE_PATH}/img/home-bg.svg`}
-            className="xs:-top-2 xs:left-0 left-16 h-full max-w-none"
+            className="left-16 h-full max-w-none xs:-top-2 xs:left-0"
           />
         </div>
         <div className="col-[container] py-28">
           <div className="flex flex-col items-start gap-4 lg:flex-row">
             <div className="flex-1 lg:mb-0 lg:max-w-84">
               <h1 className="text-heading-xlarge text-white">{t('index.hero.title')}</h1>
-              <p className="text-16 mt-2">{t('index.hero.description')}</p>
+              <p className="mt-2 text-16">{t('index.hero.description')}</p>
             </div>
             <div className="flex w-full flex-1 justify-end lg:w-auto">
-              <div className="rounded-8 border-space-1600 bg-space-1800 w-full overflow-clip border lg:w-auto">
+              <div className="w-full overflow-clip rounded-8 border border-space-1600 bg-space-1800 lg:w-auto">
                 <div className="relative grid grid-cols-4 gap-px">
                   {[
                     'mainnet',
@@ -59,10 +59,10 @@ export default function HomePage({ supportedNetworks }: { supportedNetworks: Sup
                     .map((id) => supportedNetworks.find((network) => network.id === id))
                     .filter((network): network is typeof network & {} => Boolean(network))
                     .map((network) => (
-                      <div key={network.id} className="-mr-px -mb-px">
+                      <div key={network.id} className="-mb-px -mr-px">
                         <ButtonOrLink
                           href={`/supported-networks/${network.id}`}
-                          className="border-space-1600 hover:bg-space-1600 flex items-center justify-center border-r border-b px-8 py-5 transition"
+                          className="flex items-center justify-center border-b border-r border-space-1600 px-8 py-5 transition hover:bg-space-1600"
                         >
                           <NetworkIcon
                             network={network}
@@ -78,7 +78,7 @@ export default function HomePage({ supportedNetworks }: { supportedNetworks: Sup
                     ))}
                   <ExperimentalLink
                     href="/supported-networks"
-                    className="text-14 absolute right-0 bottom-0 flex h-[64px] w-[calc(100%-1px)] items-center justify-center backdrop-blur-md sm:w-[calc(50%-1px)]"
+                    className="absolute bottom-0 right-0 flex h-[64px] w-[calc(100%-1px)] items-center justify-center text-14 backdrop-blur-md sm:w-[calc(50%-1px)]"
                   >
                     {t('index.supportedNetworks.seeAllNetworks', [
                       supportedNetworks.filter((network) => network.networkType === NetworkType.Mainnet).length,
@@ -90,7 +90,7 @@ export default function HomePage({ supportedNetworks }: { supportedNetworks: Sup
           </div>
         </div>
       </div>
-      <div className="nested-[p:empty]:hidden col-[container]">
+      <div className="col-[container] nested-[p:empty]:hidden">
         <section>
           <Heading.H2 id="products" className="mt-0">
             {t('index.products.title')}
@@ -107,7 +107,7 @@ export default function HomePage({ supportedNetworks }: { supportedNetworks: Sup
                   </ExperimentalLink>
                 }
                 icon={
-                  <div className="rounded-4 flex size-8 items-center justify-center bg-purple-500 text-white">
+                  <div className="flex size-8 items-center justify-center rounded-4 bg-purple-500 text-white">
                     <Subgraph size={4} />
                   </div>
                 }
@@ -122,7 +122,7 @@ export default function HomePage({ supportedNetworks }: { supportedNetworks: Sup
                   </ExperimentalLink>
                 }
                 icon={
-                  <div className="rounded-4 bg-pink flex size-8 items-center justify-center text-white">
+                  <div className="flex size-8 items-center justify-center rounded-4 bg-pink text-white">
                     <Substreams size={4} />
                   </div>
                 }
@@ -137,7 +137,7 @@ export default function HomePage({ supportedNetworks }: { supportedNetworks: Sup
                   <ExperimentalLink href="/token-api/quick-start/">{t('index.products.tokenApi.cta')}</ExperimentalLink>
                 }
                 icon={
-                  <div className="rounded-4 bg-space-1400 flex size-8 items-center justify-center text-white">
+                  <div className="flex size-8 items-center justify-center rounded-4 bg-space-1400 text-white">
                     <APIToken size={4} />
                   </div>
                 }
@@ -151,7 +151,7 @@ export default function HomePage({ supportedNetworks }: { supportedNetworks: Sup
                   </ExperimentalLink>
                 }
                 icon={
-                  <div className="rounded-4 bg-space-1400 flex size-8 items-center justify-center text-white">
+                  <div className="flex size-8 items-center justify-center rounded-4 bg-space-1400 text-white">
                     <GraphNode size={4} />
                   </div>
                 }
@@ -165,7 +165,7 @@ export default function HomePage({ supportedNetworks }: { supportedNetworks: Sup
                   </ExperimentalLink>
                 }
                 icon={
-                  <div className="rounded-4 bg-space-1400 flex size-8 items-center justify-center text-white">
+                  <div className="flex size-8 items-center justify-center rounded-4 bg-space-1400 text-white">
                     <Firehose size={4} />
                   </div>
                 }
@@ -188,8 +188,8 @@ export default function HomePage({ supportedNetworks }: { supportedNetworks: Sup
               </ExperimentalLink>,
             ])}
           </p>
-          <div className="graph-docs-not-markdown rounded-8 border-space-1500 mt-8 overflow-clip border">
-            <ul className="grid-cols-auto-fill-16 text-space-500 grid gap-px">
+          <div className="graph-docs-not-markdown mt-8 overflow-clip rounded-8 border border-space-1500">
+            <ul className="grid grid-cols-auto-fill-16 gap-px text-space-500">
               {supportedNetworks
                 // TODO: Don't filter out testnets that don't have a mainnet
                 .filter((network) => network.networkType === NetworkType.Mainnet)
@@ -202,13 +202,13 @@ export default function HomePage({ supportedNetworks }: { supportedNetworks: Sup
                 // Filter out networks that don't have a proper monochrome logo
                 .filter((network) => network.id !== 'zora')
                 .map((network) => (
-                  <li key={network.id} className="-mr-px -mb-px">
+                  <li key={network.id} className="-mb-px -mr-px">
                     <Tooltip content={network.shortName}>
                       <ButtonOrLink
                         href={`/supported-networks/${network.id}`}
                         className={`
-                          border-space-1500 hover:bg-space-1600 flex aspect-square items-center justify-center border-r border-b -outline-offset-1
-                          transition
+                          flex aspect-square items-center justify-center border-b border-r border-space-1500 -outline-offset-1 transition
+                          hover:bg-space-1600
                         `}
                       >
                         <NetworkIcon network={network} size={6} />
@@ -289,7 +289,7 @@ export default function HomePage({ supportedNetworks }: { supportedNetworks: Sup
               href="https://www.youtube.com/@GraphProtocol"
               target="_blank"
               iconBefore={<SocialYouTube alt="" />}
-              className="text-14 text-space-200 top-[-3px]"
+              className="top-[-3px] text-14 text-space-200"
             >
               <span className="max-lg:hidden">{t('index.videos.watchOnYouTube')}</span>
               <span className="lg:hidden">YouTube</span>

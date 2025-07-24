@@ -30,8 +30,8 @@ export default function TemplateDefaultContent({ className, children, ...props }
       data-hide-content-header={frontMatter.hideContentHeader || undefined}
       data-unwrap-content={frontMatter.unwrapContent || undefined}
       className={classNames([
-        `group/layout-content-grid grid-cols-[1fr_[container-start]_minmax(auto,theme(spacing.192))_[container-end]_1fr] grid
-        grow
+        `group/layout-content-grid grid grow
+        grid-cols-[1fr_[container-start]_minmax(auto,theme(spacing.192))_[container-end]_1fr]
         grid-rows-[[header]_auto_[content]_1fr_[footer]_auto]
         gap-x-[var(--graph-docs-content-padding)]
         transition-[gap]
@@ -43,7 +43,7 @@ export default function TemplateDefaultContent({ className, children, ...props }
       {!frontMatter.hideContentHeader ? (
         <header className="col-[container] row-[header] pt-12 transition-[padding] duration-[var(--graph-docs-layout-transition-duration)]">
           {readingTime ? (
-            <span className="text-space-700 mb-3 flex items-center gap-1">
+            <span className="mb-3 flex items-center gap-1 text-space-700">
               <HourglassDynamic
                 alt={t('global.page.readingTime.minutes')}
                 filledPercentage={(readingTime.minutes / 15) * 100}
@@ -54,24 +54,25 @@ export default function TemplateDefaultContent({ className, children, ...props }
             </span>
           ) : null}
           {frontMatter.title ? (
-            <h1 className="text-heading-large xs:text-heading-xlarge text-white">{frontMatter.title}</h1>
+            <h1 className="text-heading-large text-white xs:text-heading-xlarge">{frontMatter.title}</h1>
           ) : null}
         </header>
       ) : null}
       <section
         className={`
-          text-body-medium text-space-300 -:mdx-[h2]:text-heading-medium -:mdx-[h3]:text-heading-small -:mdx-[h4,h5,h6]:text-heading-xsmall
+          text-body-medium col-[container] row-[content] pb-12 text-space-300
+          -:mdx-[h2]:text-heading-medium
+          -:mdx-[h3]:text-heading-small
+          -:mdx-[h4,h5,h6]:text-heading-xsmall
           -:xs:mdx-[h2]:text-heading-large
           -:xs:mdx-[h3]:text-heading-medium
           -:xs:mdx-[h4]:text-heading-small
-          col-[container]
-          row-[content]
-          pb-12
           group-data-[unwrap-content]/layout-content-grid:col-span-full
           group-data-[unwrap-content]/layout-content-grid:grid
           group-data-[unwrap-content]/layout-content-grid:auto-rows-max
           group-data-[unwrap-content]/layout-content-grid:grid-cols-subgrid
           ${/* The following allows one child to be full height by setting `row-[full]`; see https://codepen.io/benface/pen/PwoaKJg */ ''}
+          group-data-[unwrap-content]/layout-content-grid:grid-rows-[repeat(auto-fit,minmax(0,max-content))_[full]_minmax(0,1fr)]
           -:group-data-[unwrap-content]/layout-content-grid:*:col-span-full
           -:group-not-data-[hide-content-header]/layout-content-grid:first:*:mt-6
           -:nested-[div:has(>svg.flowchart):not(:last-child)]:mb-8
@@ -100,9 +101,8 @@ export default function TemplateDefaultContent({ className, children, ...props }
           -:mdx-[ul>li]:after:w-3
           -:mdx-[ul>li]:after:bg-space-1100
           -:mdx-[ul>li]:after:content-['']
-          -:md:mdx-[hr]:my-16
-          group-data-[unwrap-content]/layout-content-grid:grid-rows-[repeat(auto-fit,minmax(0,max-content))_[full]_minmax(0,1fr)]
           md:pb-16
+          -:md:mdx-[hr]:my-16
         `}
       >
         {children}
@@ -111,7 +111,7 @@ export default function TemplateDefaultContent({ className, children, ...props }
         <footer className="col-[container] row-[footer]">
           <div className="text-body-xsmall flex items-center pb-12">
             {lastUpdated ? (
-              <div className="text-body-xsmall text-space-700 flex items-center gap-1">
+              <div className="text-body-xsmall flex items-center gap-1 text-space-700">
                 <CalendarDynamic alt={t('global.page.lastUpdated')} date={lastUpdated.getDate()} />
                 <time
                   dateTime={lastUpdated.toISOString()}
@@ -130,7 +130,7 @@ export default function TemplateDefaultContent({ className, children, ...props }
               href={editPageUrl}
               target="_blank"
               iconBefore={<SocialGitHub alt="" />}
-              className="text-space-700 ms-auto"
+              className="ms-auto text-space-700"
             >
               {t('global.page.edit')}
             </ExperimentalLink>
@@ -138,8 +138,8 @@ export default function TemplateDefaultContent({ className, children, ...props }
           <ExperimentalDivider variant="subtle" />
           <div
             className={`
-              text-body-xsmall text-space-300 lg:text-body-small *:max-w-[min(theme(spacing.50),50%)] flex gap-8
-              py-12 *:flex *:flex-col *:gap-2 *:outline-offset-8 *:transition hover:*:text-white
+              text-body-xsmall flex gap-8 py-12 text-space-300 lg:text-body-small
+              *:flex *:max-w-[min(theme(spacing.50),50%)] *:flex-col *:gap-2 *:outline-offset-8 *:transition hover:*:text-white
               md:pb-16
             `}
           >

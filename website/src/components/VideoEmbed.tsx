@@ -26,7 +26,7 @@ export const VideoEmbed = ({ title, src, youtube, className, ...props }: VideoEm
   return (
     <figure
       className={classNames([
-        'graph-docs-not-markdown rounded-8 bg-space-1600 --:my-8 --:last:mb-0 -:is-[li>*]:my-4 p-2',
+        'graph-docs-not-markdown rounded-8 bg-space-1600 p-2 --:my-8 --:last:mb-0 -:is-[li>*]:my-4',
         className,
       ])}
     >
@@ -34,11 +34,11 @@ export const VideoEmbed = ({ title, src, youtube, className, ...props }: VideoEm
         src={src ?? `https://www.youtube.com/embed/${youtube}`}
         title={t('global.content.video')}
         allowFullScreen
-        className="rounded-4 bg-space-1800 aspect-video w-full"
+        className="aspect-video w-full rounded-4 bg-space-1800"
         {...props}
       />
       {title ? (
-        <figcaption className="text-body-xsmall text-space-700 mt-2 px-1 text-center">{title}</figcaption>
+        <figcaption className="text-body-xsmall mt-2 px-1 text-center text-space-700">{title}</figcaption>
       ) : null}
     </figure>
   )

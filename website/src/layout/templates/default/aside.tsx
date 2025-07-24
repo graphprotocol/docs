@@ -26,7 +26,7 @@ export default function TemplateDefaultAside(props: ComponentProps<'div'>) {
       <header className="mb-4">{t('global.page.onThisPage')}</header>
       <nav
         aria-label={t('global.page.tableOfContents')}
-        className="border-space-1500 flow-root overflow-y-clip border-s"
+        className="flow-root overflow-y-clip border-s border-space-1500"
       >
         <ul className="-my-1 -ms-px">
           {headings.map((heading, headingIndex) => {
@@ -47,9 +47,9 @@ export default function TemplateDefaultAside(props: ComponentProps<'div'>) {
                   href={`#${heading.id}`}
                   data-active={active ? 'true' : undefined}
                   className={`
-                    text-space-700 data-[active]:text-space-200 block py-1.5 ps-[calc((var(--depth)-1)*theme(spacing.3))]
-                    transition
+                    block py-1.5 ps-[calc((var(--depth)-1)*theme(spacing.3))] text-space-700 transition
                     hover:text-white
+                    data-[active]:text-space-200
                   `}
                   style={{ '--depth': heading.depth } as CSSProperties}
                 >
