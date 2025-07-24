@@ -66,14 +66,14 @@ export function NetworksTable({ networks }: { networks: SupportedNetwork[] }) {
       </Callout>
 
       <aside
-        className="mb-6 overflow-clip rounded-8 border border-space-1500 bg-space-1800"
+        className="rounded-8 border-space-1500 bg-space-1800 mb-6 overflow-clip border"
         aria-labelledby="networks-table-legend"
       >
         <h3 id="networks-table-legend" className="sr-only">
           {t('index.supportedNetworks.tableLegend.legendTitle')}
         </h3>
-        <div className="grid grid-cols-1 gap-px text-space-500 xs:grid-cols-2">
-          <div className="border-b border-r border-space-1500 p-4">
+        <div className="text-space-500 xs:grid-cols-2 grid grid-cols-1 gap-px">
+          <div className="border-space-1500 border-r border-b p-4">
             <span className="text-c10 mb-2 block text-white">Subgraphs</span>
             <div className="flex gap-2">
               {checkmark}
@@ -84,7 +84,7 @@ export function NetworksTable({ networks }: { networks: SupportedNetwork[] }) {
               <span className="text-14">{t('index.supportedNetworks.tableLegend.subgraphs.full')}</span>
             </div>
           </div>
-          <div className="border-b border-r border-space-1500 p-4 lg:border-r-0">
+          <div className="border-space-1500 border-r border-b p-4 lg:border-r-0">
             <span className="text-c10 mb-2 block text-white">Substreams</span>
             <div className="flex gap-2">
               {checkmark}
@@ -95,7 +95,7 @@ export function NetworksTable({ networks }: { networks: SupportedNetwork[] }) {
               <span className="text-14">{t('index.supportedNetworks.tableLegend.substreams.full')}</span>
             </div>
           </div>
-          <div className="border-b border-r border-space-1500 p-4">
+          <div className="border-space-1500 border-r border-b p-4">
             <span className="text-c10 mb-2 block text-white">Firehose</span>
             <div className="flex gap-2">
               {checkmark}
@@ -138,14 +138,14 @@ export function NetworksTable({ networks }: { networks: SupportedNetwork[] }) {
       </div>
 
       {filteredNetworks.length === 0 ? (
-        <div className="mb-16 flex flex-col items-center justify-center border-b border-space-1400 py-16 pb-16 text-center">
+        <div className="border-space-1400 mb-16 flex flex-col items-center justify-center border-b py-16 pb-16 text-center">
           <div className="text-space-700">
             <DottedRingsSpinner>
               <EyeClosed size="36px" color="purple-100" alt="Information" />
             </DottedRingsSpinner>
           </div>
-          <p className="text-body-large mb-2 mt-0 font-medium">{t('index.supportedNetworks.emptySearch.title')}</p>
-          <p className="text-body-small mb-6 max-w-90 text-space-700">
+          <p className="text-body-large mt-0 mb-2 font-medium">{t('index.supportedNetworks.emptySearch.title')}</p>
+          <p className="text-body-small text-space-700 mb-6 max-w-90">
             {t('index.supportedNetworks.emptySearch.description', [searchQuery])}
           </p>
           <div className="flex flex-wrap justify-center gap-3">
@@ -177,7 +177,7 @@ export function NetworksTable({ networks }: { networks: SupportedNetwork[] }) {
             {filteredNetworks.map((network) => (
               <tr
                 key={network.id}
-                className="group/table-row isolate -outline-offset-1 transition hocus-visible-within:bg-space-1600 has-[a:focus-visible]:outline-focus"
+                className="group/table-row hocus-visible-within:bg-space-1600 has-[a:focus-visible]:outline-focus isolate -outline-offset-1 transition"
               >
                 <td>
                   <div className="static flex items-center justify-between gap-2">
@@ -186,7 +186,7 @@ export function NetworksTable({ networks }: { networks: SupportedNetwork[] }) {
                         <NetworkIcon network={network} variant={network.iconVariant} size={5} />
                         <div className="flex flex-col">
                           <span className="text-body-xsmall leading-5 text-white">{network.shortName}</span>
-                          <span className="text-body-xsmall leading-5 text-space-500">{network.id}</span>
+                          <span className="text-body-xsmall text-space-500 leading-5">{network.id}</span>
                         </div>
                       </div>
                       <span className="absolute inset-y-0 start-0 z-10 w-[1999px]" />

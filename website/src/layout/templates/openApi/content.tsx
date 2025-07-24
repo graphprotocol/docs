@@ -24,7 +24,7 @@ export default function TemplateOpenApiContent({ children, ...props }: Component
     <TemplateDefaultContent {...props}>
       <p className="flex items-center gap-2">
         <ExperimentalTag className="shrink-0">{operation.method}</ExperimentalTag>
-        <code className="gradient-mask-x overflow-x-auto overflow-y-clip font-mono scrollbar-thin">
+        <code className="gradient-mask-x scrollbar-thin overflow-x-auto overflow-y-clip font-mono">
           {operation.path.split(/({[^}]+})/).map((part, index) => {
             if (part.startsWith('{')) {
               return (
@@ -69,7 +69,7 @@ export default function TemplateOpenApiContent({ children, ...props }: Component
                     <tr key={parameter.name}>
                       <td className="whitespace-nowrap">
                         <ExperimentalCodeInline className="whitespace-nowrap">{parameter.name}</ExperimentalCodeInline>
-                        <div className="mt-1 text-12 text-space-500">{parameter.schema.type}</div>
+                        <div className="text-12 text-space-500 mt-1">{parameter.schema.type}</div>
                       </td>
                       <td className="text-body-xsmall">
                         {parameter.description ? <p className="+:mb-0">{parameter.description}</p> : null}
@@ -144,10 +144,10 @@ export default function TemplateOpenApiContent({ children, ...props }: Component
                         ) : enumValues.length > 0 ? (
                           <div
                             className={`
-                              flex h-8 w-full items-center border border-space-1500 px-2 text-14 transition
-                              hover:border-space-1300
+                              border-space-1500 text-14 hover:border-space-1300 has-focus-visible:border-focus flex h-8 w-full items-center border
+                              px-2
+                              transition
                               active:transition-none
-                              has-focus-visible:border-focus
                             `}
                           >
                             <span className="me-1 w-0 flex-1 truncate">{parameterValue}</span>
@@ -156,7 +156,7 @@ export default function TemplateOpenApiContent({ children, ...props }: Component
                               aria-label={parameter.name}
                               value={parameterValue}
                               onChange={(event) => setParameterValue(event.target.value)}
-                              className="absolute left-0 top-0 h-full w-full opacity-0"
+                              className="absolute top-0 left-0 h-full w-full opacity-0"
                             >
                               <option value="">–</option>
                               {enumValues.map((value) => (
@@ -174,9 +174,9 @@ export default function TemplateOpenApiContent({ children, ...props }: Component
                             value={parameterValue}
                             onChange={(event) => setParameterValue(event.target.value)}
                             className={`
-                              h-8 w-full border border-space-1500 px-2 text-14 transition outline-none
-                              hover:border-space-1300
-                              focus-visible:border-focus
+                              border-space-1500 text-14 hover:border-space-1300 focus-visible:border-focus h-8 w-full border px-2
+                              transition
+                              outline-none
                               active:transition-none
                             `}
                           />

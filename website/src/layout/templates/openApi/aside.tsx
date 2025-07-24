@@ -250,7 +250,7 @@ function TemplateOpenApiAsideContent(props: ComponentProps<'div'>) {
         {snippetsChanged ? (
           <div
             key={snippets.shell}
-            className="animate-opacity-to-0 absolute inset-0 rounded-8 border border-solar-600 pointer-events-none animate-fill-forwards"
+            className="animate-opacity-to-0 rounded-8 border-solar-600 animate-fill-forwards pointer-events-none absolute inset-0 border"
           />
         ) : null}
       </div>
@@ -270,7 +270,7 @@ function TemplateOpenApiAsideContent(props: ComponentProps<'div'>) {
           {response ? (
             <div
               key={response.text}
-              className="animate-opacity-to-0 absolute inset-0 rounded-8 border border-solar-600 pointer-events-none animate-fill-forwards"
+              className="animate-opacity-to-0 rounded-8 border-solar-600 animate-fill-forwards pointer-events-none absolute inset-0 border"
             />
           ) : null}
         </div>

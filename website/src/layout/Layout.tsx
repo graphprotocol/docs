@@ -373,7 +373,7 @@ export default function Layout({ pageOpts, children }: NextraThemeLayoutProps<Fr
         {/* TODO: Fix issue where the page scrolls up when elements in the header are tabbed to */}
         <header
           className={`
-            sticky top-0 z-10 grid h-[var(--graph-docs-header-height)] grid-cols-[auto_auto_1fr] items-center border-b border-space-1500 bg-space-1800
+            border-space-1500 bg-space-1800 sticky top-0 z-10 grid h-[var(--graph-docs-header-height)] grid-cols-[auto_auto_1fr] items-center border-b
             md:grid-cols-[var(--graph-docs-sidebar-width)_auto]
           `}
         >
@@ -382,7 +382,7 @@ export default function Layout({ pageOpts, children }: NextraThemeLayoutProps<Fr
               <ButtonOrLink href="https://thegraph.com/">
                 <TheGraph size={7} color="white" />
               </ButtonOrLink>
-              <span className="me-4.5 ms-3.5 h-5 w-px shrink-0 bg-space-1300" />
+              <span className="bg-space-1300 ms-3.5 me-4.5 h-5 w-px shrink-0" />
               <ButtonOrLink
                 href="/"
                 className="text-body-large text-space-300 outline-offset-4 transition hover:text-white"
@@ -426,7 +426,7 @@ export default function Layout({ pageOpts, children }: NextraThemeLayoutProps<Fr
                 />
               </ExperimentalButton>
             </div>
-            <div className="ms-3.5 h-[var(--graph-docs-header-height)] w-px shrink-0 bg-space-1500 max-md:hidden" />
+            <div className="bg-space-1500 ms-3.5 h-[var(--graph-docs-header-height)] w-px shrink-0 max-md:hidden" />
           </div>
           <div className="flex min-w-auto items-center gap-2 px-[var(--graph-docs-header-padding)]">
             {/* TODO: Add breadcrumbs */}
@@ -467,14 +467,14 @@ export default function Layout({ pageOpts, children }: NextraThemeLayoutProps<Fr
                     variant="tertiary"
                     iconBefore={<MagnifyingGlass alt="" className="xl:hidden" />}
                     onClick={openModal}
-                    className="peer w-full prop-hide-label-true md:prop-size-small md:prop-hide-label-false xl:prop-hide-label-true"
+                    className="peer prop-hide-label-true md:prop-size-small md:prop-hide-label-false xl:prop-hide-label-true w-full"
                   >
                     {t('docsearch.button.buttonText')}
                   </ExperimentalButton>
                   <div
                     className={`
-                      absolute inset-0 flex items-center gap-1 px-2 text-12 text-space-500 transition pointer-events-none
-                      peer-hover:text-space-200
+                      text-12 text-space-500 peer-hover:text-space-200 pointer-events-none absolute inset-0 flex items-center gap-1 px-2
+                      transition
                       max-xl:hidden
                     `}
                   >
@@ -521,18 +521,18 @@ export default function Layout({ pageOpts, children }: NextraThemeLayoutProps<Fr
           <div
             onClick={() => setSidebarExpandedOnMobile(false)}
             className={`
-              absolute inset-0 z-10 hidden bg-space-1800/50 opacity-0 transition-[opacity,display]
-              duration-[var(--graph-docs-layout-transition-duration)] pointer-events-none transition-allow-discrete +:starting:opacity-0
+              bg-space-1800/50 transition-allow-discrete +:starting:opacity-0 pointer-events-none absolute inset-0 z-10
+              hidden opacity-0 transition-[opacity,display] duration-[var(--graph-docs-layout-transition-duration)]
+              max-md:group-data-[sidebar-expanded-on-mobile]/layout-sidebar-grid:pointer-events-auto
               max-md:group-data-[sidebar-expanded-on-mobile]/layout-sidebar-grid:block
               max-md:group-data-[sidebar-expanded-on-mobile]/layout-sidebar-grid:opacity-100
-              max-md:group-data-[sidebar-expanded-on-mobile]/layout-sidebar-grid:pointer-events-auto
             `}
           />
           <div className="sticky top-[var(--graph-docs-header-height)] z-10 h-[var(--graph-docs-viewport-height)]">
             <nav
               aria-label={t('global.navigation.title')}
               className={`
-                invisible absolute inset-y-0 end-0 w-[var(--graph-docs-sidebar-width)] border-e border-space-1500 bg-space-1800
+                border-space-1500 bg-space-1800 invisible absolute inset-y-0 end-0 w-[var(--graph-docs-sidebar-width)] border-e
                 transition-[transform,visibility]
                 duration-[var(--graph-docs-layout-transition-duration)]
                 max-md:group-data-[sidebar-expanded-on-mobile]/layout-sidebar-grid:visible
@@ -540,7 +540,7 @@ export default function Layout({ pageOpts, children }: NextraThemeLayoutProps<Fr
                 md:group-data-[sidebar-expanded-on-desktop]/layout-sidebar-grid:visible
               `}
             >
-              <div className="gradient-mask-y h-full overflow-y-auto overflow-x-clip scrollbar-thin">
+              <div className="gradient-mask-y scrollbar-thin h-full overflow-x-clip overflow-y-auto">
                 {navItemGroups.map((group, groupIndex) => {
                   if (group.items.length === 0) {
                     return null
@@ -615,7 +615,7 @@ export default function Layout({ pageOpts, children }: NextraThemeLayoutProps<Fr
               {children}
             </MDXProvider>
 
-            <footer className="border-t border-space-1500 px-[var(--graph-docs-footer-padding)] py-8">
+            <footer className="border-space-1500 border-t px-[var(--graph-docs-footer-padding)] py-8">
               <nav className="flex flex-col gap-6 md:flex-row md:items-start">
                 <div className="flex flex-1 flex-wrap items-center gap-x-6 gap-y-4 md:py-2">
                   <ExperimentalNavLink href="https://thegraph.com/" target="_self" variant="secondary">

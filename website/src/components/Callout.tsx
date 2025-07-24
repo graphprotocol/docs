@@ -43,12 +43,12 @@ export const Callout = ({
     <div
       data-variant={variant}
       className={classNames([
-        `text-body-small flex gap-2 rounded-8 border p-3
-        data-[variant=important]:border-solar-500/50
-        data-[variant=info]:border-galactic-500/50
-        data-[variant=important]:bg-solar-500/10
-        data-[variant=info]:bg-galactic-500/10
-        --:my-8 --:last:mb-0 -:is-[li>*]:my-4`,
+        `text-body-small rounded-8 data-[variant=important]:border-solar-500/50 data-[variant=info]:border-galactic-500/50 data-[variant=important]:bg-solar-500/10 data-[variant=info]:bg-galactic-500/10
+        --:my-8
+        --:last:mb-0
+        -:is-[li>*]:my-4
+        flex
+        gap-2 border p-3`,
         className,
       ])}
       {...(props as ComponentProps<'div'>)}
@@ -62,10 +62,10 @@ export const Callout = ({
       </div>
       <div
         className={`
-          flex-1
           -:first:*:text-white
           mdx-[:is(p,ul,ol):not(:last-child,:is(ul,ol)_*)]:mb-2
           mdx-[ul,ol]:gap-1
+          flex-1
         `}
       >
         {typeof title === 'string' ? <p>{title}</p> : title}
