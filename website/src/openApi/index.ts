@@ -86,7 +86,7 @@ function isParameterObject(
 function isExampleObject(
   value: OpenAPIV3_1.ExampleObject | OpenAPIV3_1.ReferenceObject,
 ): value is OpenAPIV3_1.ExampleObject {
-  return typeof value === 'object' && value !== null && 'value' in value
+  return 'value' in value
 }
 
 function transformParameter(parameter: OpenAPIV3_1.ParameterObject): ApiParameter {
