@@ -196,7 +196,7 @@ function TemplateOpenApiAsideContent(props: ComponentProps<'div'>) {
       : []),
     ...operation.potentialResponses.map((potentialResponse) => {
       const label = `${potentialResponse.status} ${t('global.openApi.responses.example')}`
-      const exampleResponseText = JSON.stringify(potentialResponse.example, null, 2)
+      const exampleResponseText = JSON.stringify(potentialResponse.example, undefined, 2) || ''
       return {
         label,
         content: (
