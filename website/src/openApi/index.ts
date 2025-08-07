@@ -83,6 +83,12 @@ function isParameterObject(
   return !('$ref' in value) && 'in' in value
 }
 
+function isExampleObject(
+  value: OpenAPIV3_1.ExampleObject | OpenAPIV3_1.ReferenceObject,
+): value is OpenAPIV3_1.ExampleObject {
+  return 'value' in value
+}
+
 function transformParameter(parameter: OpenAPIV3_1.ParameterObject): ApiParameter {
   const schema = (
     parameter.content ? Object.values(parameter.content)[0]?.schema : parameter.schema
@@ -158,11 +164,13 @@ export function getApi(apiId: ApiId, passedDocument?: OpenAPIV3_1.Document): Api
         if (!('content' in response) || typeof response.content !== 'object') continue
         const content = response.content['application/json'] ?? response.content['text/plain']
         if (!content || '$ref' in content || !content.schema || '$ref' in content.schema) continue
+        const exampleObject = content.examples ? Object.values(content.examples)[0] : undefined
+        const example = exampleObject && isExampleObject(exampleObject) ? exampleObject.value : content.example
         potentialResponses.push({
           ...response,
           status,
           schema: content.schema,
-          example: content.example,
+          example,
         })
       }
 
