@@ -73,18 +73,25 @@ const withNextra = nextra({
       '---4': {
         type: 'separator',
       },
+      hypergraph: {
+        type: 'children',
+        title: t('global.navigation.hypergraph'),
+      },
+      '---5': {
+        type: 'separator',
+      },
       'ai-suite': {
         type: 'children',
         title: t('global.navigation.ai-suite'),
       },
-      '---5': {
+      '---6': {
         type: 'separator',
       },
       indexing: {
         type: 'children',
         title: t('global.navigation.indexing'),
       },
-      '---6': {
+      '---7': {
         type: 'separator',
       },
       resources: {
