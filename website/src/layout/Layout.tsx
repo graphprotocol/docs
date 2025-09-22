@@ -36,6 +36,7 @@ import {
   BookOpenText,
   Files,
   House,
+  Hypergraph,
   MagnifyingGlass,
   RoleIndexer,
   SidebarSimple,
@@ -198,6 +199,9 @@ export default function Layout({ pageOpts, children }: NextraThemeLayoutProps<Fr
         }
         if (routeWithoutLocale === '/token-api' || routeWithoutLocale.startsWith('/token-api/')) {
           return <APIToken alt="" />
+        }
+        if (routeWithoutLocale === '/hypergraph' || routeWithoutLocale.startsWith('/hypergraph/')) {
+          return <Hypergraph alt="" />
         }
         if (routeWithoutLocale === '/ai-suite' || routeWithoutLocale.startsWith('/ai-suite/')) {
           return <Sparkle alt="" variant={selected ? 'fill' : 'regular'} />
