@@ -6,7 +6,7 @@ import tokenApi from './tokenApi.json'
 
 export const API_IDS = ['tokenApi'] as const
 
-export const APIS = {
+export const APIS: Record<ApiId, ApiConfig> = {
   tokenApi: {
     name: 'Token API',
     // url: 'https://token-api.thegraph.com/openapi', // production
@@ -39,7 +39,7 @@ export const APIS = {
       },
     },
   },
-} satisfies Record<ApiId, ApiConfig>
+}
 
 export type ApiId = (typeof API_IDS)[number]
 
@@ -142,9 +142,7 @@ export function getApi(apiId: ApiId, passedDocument?: OpenAPIV3_1.Document): Api
       if (typeof documentOperation !== 'object' || !('tags' in documentOperation) || !documentOperation.tags) continue
 
       // Get the section name and path from the tags
-      const sectionName = documentOperation.tags.find((tag) => tag in config.sections) as
-        | keyof typeof config.sections
-        | undefined
+      const sectionName = documentOperation.tags.find((tag) => tag in config.sections)
       const section = sectionName ? config.sections[sectionName] : undefined
       if (!sectionName || !section || !('operationId' in documentOperation) || !documentOperation.operationId) {
         continue
