@@ -1,8 +1,8 @@
 export default {
-  'collections': '',
-  'holders': '',
-  'items': '',
-  'ownerships': '',
-  'sales': '',
-  'transfers': '',
+  collections: '',
+  holders: '',
+  items: '',
+  ownerships: '',
+  sales: '',
+  transfers: '',
 }

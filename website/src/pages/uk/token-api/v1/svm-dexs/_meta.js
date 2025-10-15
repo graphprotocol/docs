@@ -1,6 +1,6 @@
 export default {
-  'dexes': '',
+  dexes: '',
   'pools-ohlc': '',
-  'pools': '',
-  'swaps': '',
+  pools: '',
+  swaps: '',
 }
