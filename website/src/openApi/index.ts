@@ -9,13 +9,34 @@ export const API_IDS = ['tokenApi'] as const
 export const APIS = {
   tokenApi: {
     name: 'Token API',
-    url: 'https://token-api.thegraph.com/openapi', // production
-    // url: 'https://token-api.service.stage.pinax.network/openapi', // staging
+    // url: 'https://token-api.thegraph.com/openapi', // production
+    url: 'https://token-api.service.stage.pinax.network/openapi', // staging
     document: tokenApi as OpenAPIV3_1.Document,
     sections: {
-      EVM: '/token-api/evm',
-      SVM: '/token-api/svm',
-      Monitoring: '/token-api/monitoring',
+      'EVM Tokens': {
+        path: '/token-api/v1/evm-tokens',
+        operationIdPrefixes: ['getV1Evm'],
+      },
+      'EVM DEXs': {
+        path: '/token-api/v1/evm-dexs',
+        operationIdPrefixes: ['getV1Evm'],
+      },
+      'EVM NFTs': {
+        path: '/token-api/v1/evm-nfts',
+        operationIdPrefixes: ['getV1EvmNft'],
+      },
+      'SVM Tokens': {
+        path: '/token-api/v1/svm-tokens',
+        operationIdPrefixes: ['getV1Svm'],
+      },
+      'SVM DEXs': {
+        path: '/token-api/v1/svm-dexs',
+        operationIdPrefixes: ['getV1Svm'],
+      },
+      Monitoring: {
+        path: '/token-api/v1/monitoring',
+        operationIdPrefixes: ['getV1'],
+      },
     },
   },
 } satisfies Record<ApiId, ApiConfig>
@@ -26,7 +47,12 @@ export type ApiConfig = {
   name: string
   url: string
   document: OpenAPIV3_1.Document
-  sections: Record<string, string>
+  sections: Record<string, ApiSectionConfig>
+}
+
+export type ApiSectionConfig = {
+  path: string
+  operationIdPrefixes?: string[]
 }
 
 export type ApiSection = {
@@ -119,14 +145,15 @@ export function getApi(apiId: ApiId, passedDocument?: OpenAPIV3_1.Document): Api
       const sectionName = documentOperation.tags.find((tag) => tag in config.sections) as
         | keyof typeof config.sections
         | undefined
-      const sectionPath = sectionName ? config.sections[sectionName] : undefined
-      if (!sectionName || !sectionPath || !('operationId' in documentOperation) || !documentOperation.operationId) {
+      const section = sectionName ? config.sections[sectionName] : undefined
+      if (!sectionName || !section || !('operationId' in documentOperation) || !documentOperation.operationId) {
         continue
       }
+      const operationId = documentOperation.operationId
       if (!sections[sectionName]) {
         sections[sectionName] = {
           name: sectionName,
-          path: sectionPath,
+          path: section.path,
           operations: [],
         }
       }
@@ -174,10 +201,19 @@ export function getApi(apiId: ApiId, passedDocument?: OpenAPIV3_1.Document): Api
         })
       }
 
+      const longestOperationIdPrefixThatMatches = (section.operationIdPrefixes ?? [])
+        .filter((prefix) => operationId.startsWith(prefix))
+        .sort((a, b) => b.length - a.length)[0]
+      const slug = camelToKebab(
+        longestOperationIdPrefixThatMatches
+          ? operationId.slice(longestOperationIdPrefixThatMatches.length)
+          : operationId,
+      )
+
       const operation: ApiOperation = {
         ...documentOperation,
-        operationId: documentOperation.operationId,
-        slug: camelToKebab(documentOperation.operationId),
+        operationId,
+        slug,
         method: method.toUpperCase(),
         baseUrl,
         path,
