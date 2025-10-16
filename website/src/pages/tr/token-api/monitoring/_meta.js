@@ -1,5 +1,5 @@
 export default {
-  'health': '',
-  'networks': '',
-  'version': '',
+  health: '',
+  networks: '',
+  version: '',
 }
