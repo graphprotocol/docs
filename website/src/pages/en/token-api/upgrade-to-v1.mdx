@@ -16,7 +16,7 @@ Used to describe endpoints supporting Solana (currently the only SVM chain suppo
 
 ## 🔑 Breaking Changes Summary
 
-### 1. **API Versioning**
+### 1. API Versioning
 
 All endpoints now use the `/v1` prefix.
 
@@ -34,7 +34,7 @@ GET /v1/evm/balances
 GET /v1/evm/nft/items
 ```
 
-### 2. **Route Structure Reorganization**
+### 2. Route Structure Reorganization
 
 #### 2.1 EVM Endpoints
 
@@ -92,7 +92,7 @@ Consolidated under `/v1/svm/*`
 
 ## 📝 Parameter Changes
 
-### 3. **Path Parameters → Query Parameters**
+### 3. Path Parameters → Query Parameters
 
 All path parameters have been moved to query parameters.
 
@@ -112,7 +112,7 @@ GET /v1/evm/holders?network=mainnet&contract=0x...
 GET /v1/evm/nft/items?network=mainnet&contract=0x...&token_id=5712
 ```
 
-### 4. **Standardized Parameter Naming**
+### 4. Standardized Parameter Naming
 
 All query parameters have been standardized to use snake_case naming convention.
 
@@ -136,7 +136,7 @@ All query parameters have been standardized to use snake_case naming convention.
 
 **Important:** `matic` network has been renamed to `polygon`.
 
-### 5. **Batched Parameters**
+### 5. Batched Parameters
 
 Many parameters now support batching - accepting single values or comma-separated strings.
 
@@ -151,17 +151,17 @@ Many parameters now support batching - accepting single values or comma-separate
 **Examples:**
 
 ```console
-# Single value
+## Single value
 ?contract=0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2
 
-# Comma-separated, single parameter
+## Comma-separated, single parameter
 ?contract=0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2,0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48
 
-# Repeated parameter values
+## Repeated parameter values
 ?contract=0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2&contract=0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48
 ```
 
-### 6. **New Parameters**
+### 6. New Parameters
 
 #### `include_null_balances`
 
@@ -175,7 +175,7 @@ Added to balance endpoints to optionally include zero/null balances.
 
 ## 🔄 Response Changes
 
-### 7. **Pagination Changes**
+### 7. Pagination Changes
 
 Pagination responses have been simplified. The API no longer computes total result counts due to performance and accuracy considerations when working with ClickHouse views and materialized tables.
 
@@ -212,21 +212,51 @@ Pagination responses have been simplified. The API no longer computes total resu
 
 **Important:** To retrieve all results, continue incrementing the `page` parameter until the API returns an empty `data` array. This indicates you've reached the end of the results.
 
-### 8. **Removed Parameters**
+### 8. Removed Parameters
 
 The following deprecated parameters have been removed:
 
 - `orderBy` - Results are now ordered by timestamp/block by default
 - `orderDirection` - Always descending (newest first)
 
+### 9. Cached Queries
+
+Queries are now cached on the ClickHouse side for better performance.
+
+You can specifically request to not use the cache by setting the `Cache-Control` header to `no-cache`.
+
+#### Example
+
+**Cache**
+
+```console
+$ curl -s 'https://token-api.thegraph.com/v1/...' | jq .statistics
+{
+  "bytes_read": 221,
+  "rows_read": 1,
+  "elapsed": 0.002212065
+}
+```
+
+**No cache**
+
+```console
+$ curl -s 'http://localhost:8000/v1/...' --header 'Cache-Control: no-cache' | jq .statistics
+{
+  "bytes_read": 14621174348,
+  "rows_read": 223244390,
+  "elapsed": 0.971064066
+}
+```
+
 ## 📚 Example Migrations
 
-### Old vs New: Get Token Balances
+### Example 1: Get Token Balances
 
 **Before:**
 
 ```bash
-GET /balances/evm/0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045?network_id=mainnet&contract=0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2
+GET /token/balances/evm/0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045?network_id=mainnet&contract=0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2
 ```
 
 **After:**
@@ -235,12 +265,74 @@ GET /balances/evm/0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045?network_id=mainnet&
 GET /v1/evm/balances?network=mainnet&address=0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045&contract=0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2
 ```
 
-### New Feature: Batched Queries
+### Example 2: Get NFT Items
+
+**Before:**
+
+```bash
+GET /nft/items/evm/contract/0xbd3531da5cf5857e7cfaa92426877b022e612cf8/token_id/5712?network_id=mainnet
+```
+
+**After:**
+
+```bash
+GET /v1/evm/nft/items?network=mainnet&contract=0xbd3531da5cf5857e7cfaa92426877b022e612cf8&token_id=5712
+```
+
+### Example 3: Get Token Transfers with Time Filter
+
+**Before:**
+
+```bash
+GET /token/transfers/evm?network_id=mainnet&from=0xd8da6bf26964af9d7eed9e03e53415d37aa96045&startTime=1735689600&endTime=1767225600
+```
+
+**After:**
+
+```bash
+GET /v1/evm/transfers?network=mainnet&from_address=0xd8da6bf26964af9d7eed9e03e53415d37aa96045&start_time=1735689600&end_time=1767225600
+```
+
+### Example 4: Get NFT Transfer Activities
+
+**Before:**
+
+```bash
+GET /nft/activities/evm?network_id=mainnet&contract=0xbd3531da5cf5857e7cfaa92426877b022e612cf8&anyAddress=0xd8da6bf26964af9d7eed9e03e53415d37aa96045
+```
+
+**After:**
+
+```bash
+GET /v1/evm/nft/transfers?network=mainnet&contract=0xbd3531da5cf5857e7cfaa92426877b022e612cf8&address=0xd8da6bf26964af9d7eed9e03e53415d37aa96045
+```
+
+### Example 5: Get Pool OHLC Data
+
+**Before:**
+
+```bash
+GET /token/ohlc/pools/evm/0x88e6A0c2dDD26FEEb64F039a2c41296FcB3f5640?network_id=mainnet&interval=1h&startTime=1735689600
+```
+
+**After:**
+
+```bash
+GET /v1/evm/pools/ohlc?network=mainnet&pool=0x88e6A0c2dDD26FEEb64F039a2c41296FcB3f5640&interval=1h&start_time=1735689600
+```
+
+### Example 6: Batched Query (New Feature)
 
 Query balances for multiple contracts in a single request:
 
 ```bash
 GET /v1/evm/balances?network=mainnet&address=0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045&contract=0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2,0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48
+```
+
+Query transfers from multiple addresses:
+
+```bash
+GET /v1/evm/transfers?network=mainnet&from_address=0xabc...,0xdef...,0x123...&start_time=1735689600
 ```
 
 ## ⚠️ Important Notes
