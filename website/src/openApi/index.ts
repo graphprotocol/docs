@@ -14,27 +14,27 @@ export const APIS: Record<ApiId, ApiConfig> = {
     document: tokenApi as OpenAPIV3_1.Document,
     sections: {
       'EVM Tokens': {
-        path: '/token-api/v1/evm-tokens',
+        path: '/token-api/evm-tokens',
         operationIdPrefixes: ['getV1Evm'],
       },
       'EVM DEXs': {
-        path: '/token-api/v1/evm-dexs',
+        path: '/token-api/evm-dexs',
         operationIdPrefixes: ['getV1Evm'],
       },
       'EVM NFTs': {
-        path: '/token-api/v1/evm-nfts',
+        path: '/token-api/evm-nfts',
         operationIdPrefixes: ['getV1EvmNft'],
       },
       'SVM Tokens': {
-        path: '/token-api/v1/svm-tokens',
+        path: '/token-api/svm-tokens',
         operationIdPrefixes: ['getV1Svm'],
       },
       'SVM DEXs': {
-        path: '/token-api/v1/svm-dexs',
+        path: '/token-api/svm-dexs',
         operationIdPrefixes: ['getV1Svm'],
       },
       Monitoring: {
-        path: '/token-api/v1/monitoring',
+        path: '/token-api/monitoring',
         operationIdPrefixes: ['getV1'],
       },
     },
