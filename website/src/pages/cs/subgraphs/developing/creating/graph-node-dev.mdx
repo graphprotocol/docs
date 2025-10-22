@@ -1,0 +1,132 @@
+---
+title: Graph Node Dev Mode
+---
+
+## Přehled
+
+Graph Node Developer Mode (GND) is a developer-friendly Graph Node runner designed for local Subgraph development. It simplifies setup by removing the need for IPFS and offering smart defaults like automatic database handling (on Unix) and live Subgraph redeployment.
+
+## Prerequisites
+
+* PostgreSQL installed and running
+* Access to an Ethereum RPC endpoint (e.g., Anvil, Hardhat)
+
+## Step 1. Set Up
+
+Install `gnd` using the Graph CLI:
+
+```
+graph node install
+```
+
+This installs the latest `gnd` binary to:
+
+* Unix: `~/.local/bin`
+* Windows: `%USERPROFILE%\gnd\bin`
+
+Ensure this directory is in your system `PATH`:
+
+```
+gnd --version
+```
+
+## Step 2. Usage
+
+Run `gnd` inside your Subgraph project directory.
+
+### Minimal Usage (Unix)
+
+```
+gnd --ethereum-rpc mainnet:http://localhost:<PORT>
+```
+
+### With Hot-Reloading
+
+```
+gnd --ethereum-rpc mainnet:http://localhost:<PORT> --watch
+```
+
+`--watch` enables automatic Subgraph redeploys when the build directory changes
+
+### Windows (Postgres URL required)
+
+```
+gnd --ethereum-rpc mainnet:http://localhost:<PORT> --postgres-url "postgre
+sql://graph:yourpassword@localhost:5432/graph-node"
+```
+
+## Step 3. PostgreSQL Setup on Windows
+
+After installing PostgreSQL, follow these steps:
+
+### 1. Launch `psql` as SUPERUSER
+
+```
+psql -U postgres
+```
+
+Replace postgres with your superuser name if different.
+
+### 2. Run the following commands
+
+```
+create user graph with password 'yourpassword';
+create database "graph-node" with owner=graph template=template0 encodi
+ng='UTF8' locale='C';
+\c graph-node
+create extension pg_trgm;
+create extension btree_gist;
+create extension postgres_fdw;
+grant usage on foreign data wrapper postgres_fdw to graph;
+```
+
+Use this URL when running `gnd`:
+
+```
+--postgres-url "postgresql://graph:yourpassword@localhost:5432/graph-nod
+e"
+```
+
+### 3. Flags & Options
+
+| Flag             | Popis                                                                                   |
+| ---------------- | --------------------------------------------------------------------------------------- |
+| `--watch`        | *(Optional)* Watches the Subgraph build directory and redeploys on changes.             |
+| `--manifests`    | Path(s) to manifest files. Format: `[BUILD_DIR:]/manifest`. Default: `./subgraph.yaml`. |
+| `--sources`      | Source manifest aliases for resolving shared data sources.                              |
+| `--database-dir` | Directory to store temporary Postgres instance (**Unix only**). Default: `./build`.     |
+| `--postgres-url` | URL for PostgreSQL DB. **Required on Windows.**                                         |
+| `--ethereum-rpc` | Format: `network[:capabilities]:URL`. **Required.**                                     |
+| `--ipfs`         | IPFS endpoint(s). Default: `https://api.thegraph.com/ipfs`.                             |
+
+## Step 4. Running a Subgraph
+
+To run a Subgraph:
+
+### 1. Navigate to your Subgraph directory
+
+```
+cd path/to/your-subgraph
+```
+
+### 2. Start gnd with an Ethereum RPC
+
+```
+gnd --ethereum-rpc mainnet:http://localhost:<PORT>
+```
+
+This will build and start the Subgraph.
+
+### 3. Query your Subgraph at
+
+```
+http://localhost:8000/subgraphs/name/subgraph-0/
+```
+
+## Notes
+
+* On Unix, if `-postgres-url` is not provided, `gnd` automatically starts a temporary Postgres instance in the `-database-dir` folder (default: `./build`).
+
+* On Windows, you must provide a valid `-postgres-url`.
+
+* IPFS is optional; `gnd` uses `https://api.thegraph.com/ipfs` by default.
