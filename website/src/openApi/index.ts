@@ -33,6 +33,14 @@ export const APIS: Record<ApiId, ApiConfig> = {
         path: '/token-api/svm-dexs',
         operationIdPrefixes: ['getV1Svm'],
       },
+      'TVM Tokens': {
+        path: '/token-api/tvm-tokens',
+        operationIdPrefixes: ['getV1Tvm'],
+      },
+      'TVM DEXs': {
+        path: '/token-api/tvm-dexs',
+        operationIdPrefixes: ['getV1Tvm'],
+      },
       Monitoring: {
         path: '/token-api/monitoring',
         operationIdPrefixes: ['getV1'],
