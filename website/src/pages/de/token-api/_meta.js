@@ -7,6 +7,8 @@ export default {
   'evm-nfts': titles['evm-nfts'] ?? '',
   'svm-tokens': titles['svm-tokens'] ?? '',
   'svm-dexs': titles['svm-dexs'] ?? '',
+  'tvm-tokens': titles['tvm-tokens'] ?? '',
+  'tvm-dexs': titles['tvm-dexs'] ?? '',
   monitoring: titles['monitoring'] ?? '',
   'endpoint-pricing': '',
   faq: '',
