@@ -94,6 +94,13 @@ const withNextra = nextra({
       '---7': {
         type: 'separator',
       },
+      'graph-horizon': {
+        type: 'children',
+        title: t('global.navigation.graph-horizon'),
+      },
+      '---8': {
+        type: 'separator',
+      },
       resources: {
         type: 'children',
         title: t('global.navigation.resources'),
