@@ -1,0 +1,88 @@
+---
+title: What changes with Graph Horizon?
+sidebarTitle: What's new
+---
+
+## For Indexers
+
+### Provisions: A New Way to Manage Stake
+
+Previously, when indexers staked GRT, it was automatically available for use across all protocol operations. This made sense since the protocol only supported one use case, that one of subgraphs. With Horizon, indexers must explicitly assign stake to a desired data service before it being available for operations for that specific data service. This is known as creating a data service "provision" or “provisioning stake”. This gives indexers more control over how their stake is used and which services they want to support. Once stake is “provisioned” and assigned, it’s up to the data service to work out how that stake can be utilized. For example, in the specific case of the `SubgraphService` the sequence would be as follows:
+
+- Indexer stakes GRT to the protocol
+- Indexer assigns staked GRT to the `SubgraphService` data service
+- Indexer uses (part of) provisioned stake to create allocations
+
+### Data Service Registration
+
+Registration is now handled by each data service when needed. For the `SubgraphService`, indexers register directly with it rather than using a separate `ServiceRegistry` contract. Each data service can define its own registration requirements, or may not require registration at all.
+
+### Payment Collection Changes
+
+Collecting payments, for example query fees for serving subgraphs, now requires locking a portion of stake as collateral. The amount of stake locked is determined by a `stake-to-fees` ratio - for example, collecting 10 GRT in fees might require locking 50 GRT in stake temporarily. This ensures economic security for the query services provided.
+
+### Subgraph Service: Long-Lived Allocations
+
+One of the most significant changes is the allocation lifecycle. In the current protocol, indexers must close and recreate allocations every 28 days to collect rewards. With the new `SubgraphService`, allocations can remain open indefinitely. Indexers simply present Proofs of Indexing (POIs) periodically to collect rewards without closing allocations.
+
+While allocations no longer need to be closed, indexers must now present POIs regularly to keep allocations fresh. If an allocation becomes stale due to not presenting POIs in time, the indexer forfeits rewards for that period. Unlike the current protocol where rewards can still be collected retroactively, Horizon enforces stricter timing requirements to ensure active participation.
+
+⚠️ **Important:** At Horizon launch the indexer stack will continue to operate using the current “short lived” allocation lifecycle for an easier transition. This means that allocations will be recycled typically every 28 days same as they do in the current version of the protocol. A future version of the indexer-agent will take advantage of “long lived” allocations.
+
+### Subgraph Service: legacy allocations
+
+During a transition period after the upgrade, indexers can continue to close their existing “legacy” allocations on the old system while opening new ones on the `SubgraphService`. New allocations will only be allowed to be opened using the `SubgraphService` so any indexer wanting to continue to operate would have to migrate.
+
+### Clarification on indexing rewards
+
+Horizon does not change the way indexing rewards work, the rewards formula remains the same. The only thing that changes is that in Horizon the calculation considers both legacy and horizon allocations when determining the amount of stake allocated to a subgraph. This does not change how rewards are issued nor the amount that is issued. For example, this two scenarios will have the same amount of rewards distributed:
+
+- Legacy allocation 1 with 10k GRT + Legacy allocation 2 with 10k GRT
+- Legacy allocation 1 with 10k GRT + Horizon allocation 1 with 10k GRT
+
+### Serving queries and the gateway behavior
+
+The indexer stack will support both the current and Horizon gateway infrastructure, which means with the same indexer stack version indexers will be able to serve queries before and after the Horizon upgrade. It’s worth clarifying however the gateway behavior:
+
+- Before Horizon, the gateway will serve queries using TAPv1 receipts.
+- After Horizon, the gateway will _only_ serve queries using TAPv2 (GraphTally) receipts. This means that indexers that have not upgraded their stack to Horizon will stop receiving queries. The gateway infrastructure will continue to accept old TAPv1 receipts and vouchers to ensure those can be redeemed and no fees are lost.
+
+## For Delegators
+
+### Per Data-Service Delegation
+
+Delegation is now more specific - delegators must choose both an indexer AND a data service to delegate to. This gives delegators more control and ensures their stake is only used for services they've explicitly approved. Existing delegations will automatically migrate to the `SubgraphService`.
+
+For practical purposes, The Graph's user interfaces will only support delegation to the `SubgraphService`. While Horizon's architecture allows delegation to other data services, supporting them would require UI changes or new interfaces. In the future as new data services emerge new user interfaces will likely do so, or existing ones will be upgraded to support them.
+
+### Potential Future Slashability
+
+While delegation is currently not slashable, the new system includes the capability for delegation to become slashable in the future. This would add an additional layer of economic security to the network by increasing the amount of stake at risk.
+
+Note that delegation slashing will not be enabled by default. If it is ever enabled, the system includes protection mechanisms where indexer stake would always be slashed first before any delegator funds are touched, providing a buffer for delegators.
+
+### No More Delegation Tax
+
+The 0.5% delegation tax has been completely removed, making it more economical for delegators to participate in the network.
+
+### Multiple Undelegation Requests
+
+Delegators can now have multiple undelegation requests processing simultaneously (up to 100), providing more flexibility in managing their stake.
+
+## Changes to Slashing
+
+### Flexible slashing percentage
+
+Instead of fixed slashing percentages, arbitrators now have the flexibility to determine appropriate slash amounts based on the severity and context of infractions (up to a cap of 10% of the indexer’s stake). This allows for more nuanced and fair dispute resolution. Note however that the new Arbitration Charter will recommend using a fixed slashing percentage unless the Arbitration team deems it necessary to adjust. The recommended value is 2.5% of the indexer’s stake.
+
+### Fisherman protection
+
+Fishermen can now reclaim their bonds if disputes aren't resolved within the dispute period, preventing their funds from being locked indefinitely.
+
+## What Stays the Same
+
+While Horizon brings significant improvements, several core elements remain unchanged:
+
+- **Curation mechanism**: The way subgraphs are signaled and curated remains the same
+- **Indexing rewards formula**: The calculation and distribution of indexing rewards follows the same formula
+- **GRT token**: The Graph Token (GRT) remains unchanged
