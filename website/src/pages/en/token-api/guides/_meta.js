@@ -1,4 +1,4 @@
 export default {
-  gbt: '',
+  gpt: '',
   'upgrade-to-v1': '',
 }
