@@ -5,6 +5,7 @@ import { NextSeo, type NextSeoProps } from 'next-seo'
 import type { NextraThemeLayoutProps } from 'nextra'
 import { useFSRoute, useRouter } from 'nextra/hooks'
 import { MDXProvider } from 'nextra/mdx'
+import { CodeTabs, CodeTab } from "@/components/CodeTabs"
 import { normalizePages } from 'nextra/normalize-pages'
 import {
   type ComponentProps,
@@ -614,6 +615,8 @@ export default function Layout({ pageOpts, children }: NextraThemeLayoutProps<Fr
                 table: Table,
                 VideoEmbed,
                 wrapper: MDXContent,
+                CodeTabs,
+                CodeTab,
               }}
             >
               {children}
