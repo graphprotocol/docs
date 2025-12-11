@@ -223,6 +223,118 @@ Common issues and solutions:
    - Check if specific senders are having aggregation issues
    - Monitor the Grafana dashboard for aggregation patterns
 
+## Horizon (TAP V2) Migration
+
+Horizon is the next-generation Graph protocol with updated smart contracts and a new receipt format (V2). This section covers how to enable Horizon support in your indexer stack.
+
+### Critical: Both Services Must Be Configured
+
+> **Warning**: `indexer-service-rs` and `indexer-tap-agent` have **separate configurations** and **both must have Horizon enabled** for V2 receipts to be processed correctly.
+>
+> A common misconfiguration is enabling Horizon only on `indexer-service` while leaving `tap-agent` in legacy mode. This results in:
+>
+> - `indexer-service` accepting V2 receipts and storing them in the database
+> - `tap-agent` ignoring all Horizon allocations (showing 0 allocations tracked)
+> - **No RAVs created, no redemptions possible**
+
+### Horizon Configuration Checklist
+
+#### Step 1: Obtain Horizon Contract Addresses
+
+You need two new addresses for Horizon (check [The Graph documentation](https://thegraph.com/docs/en/tap/#blockchain-addresses) for current values):
+
+| Contract                       | Purpose                                               |
+| ------------------------------ | ----------------------------------------------------- |
+| `receipts_verifier_address_v2` | TAP Verifier V2 contract for Horizon receipts         |
+| `subgraph_service_address`     | Subgraph Service contract for allocation verification |
+
+#### Step 2: Update Configuration File
+
+Add the Horizon settings to your shared TOML configuration:
+
+```toml
+[blockchain]
+chain_id = 42161
+# Legacy V1 verifier (keep for existing receipts)
+receipts_verifier_address = "0x33f9E93266ce0E108fc85DdE2f71dab555A0F05a"
+# Horizon V2 addresses
+receipts_verifier_address_v2 = "0x..." # Get from The Graph docs
+subgraph_service_address = "0x..."     # Get from The Graph docs
+
+[horizon]
+enabled = true
+```
+
+#### Step 3: Configure Environment Variables (if not using config file)
+
+If you use environment variables, you must set them for **both services**:
+
+```bash
+# For indexer-service
+export INDEXER_SERVICE__HORIZON__ENABLED=true
+export INDEXER_SERVICE__BLOCKCHAIN__RECEIPTS_VERIFIER_ADDRESS_V2="0x..."
+export INDEXER_SERVICE__BLOCKCHAIN__SUBGRAPH_SERVICE_ADDRESS="0x..."
+
+# For tap-agent (REQUIRED - don't forget this!)
+export TAP_AGENT__HORIZON__ENABLED=true
+export TAP_AGENT__BLOCKCHAIN__RECEIPTS_VERIFIER_ADDRESS_V2="0x..."
+export TAP_AGENT__BLOCKCHAIN__SUBGRAPH_SERVICE_ADDRESS="0x..."
+```
+
+#### Step 4: Verify Configuration
+
+After restarting both services, check the logs to confirm Horizon is active:
+
+**indexer-service logs (expected):**
+
+```
+INFO indexer_service_rs::service: Horizon mode configured - checking if Horizon contracts are active
+INFO indexer_service_rs::service: Horizon contracts detected - using Horizon migration mode
+```
+
+**tap-agent logs (expected):**
+
+```
+INFO indexer_tap_agent::agent: Horizon mode configured - checking if Horizon contracts are active
+INFO indexer_tap_agent::agent::sender_accounts_manager: horizon_active: true
+```
+
+**tap-agent logs (PROBLEM - Horizon not enabled):**
+
+```
+INFO indexer_tap_agent::agent: Horizon not configured - using pure legacy mode
+INFO indexer_tap_agent::agent::sender_accounts_manager: horizon_active: false
+```
+
+If you see "pure legacy mode" in tap-agent but have Horizon allocations, your receipts will not be processed!
+
+### Horizon Migration Modes
+
+When Horizon is enabled and contracts are detected:
+
+- **Hybrid Migration Mode**: The system accepts new V2 receipts while continuing to process existing V1 receipts
+- **V2 Receipts Only**: New queries generate V2 receipts (stored in `scalar_tap_receipts_v2` table)
+- **Legacy Processing**: Existing V1 receipts continue to be aggregated until allocations close
+
+### Troubleshooting Horizon
+
+1. **TAP agent shows 0 allocations but you have Horizon allocations**:
+   - Check that `TAP_AGENT__HORIZON__ENABLED=true` is set
+   - Verify `subgraph_service_address` is configured for tap-agent
+   - Look for "pure legacy mode" in tap-agent logs
+
+2. **"mismatched" allocations in tap-agent logs**:
+
+   ```
+   total: 788, legacy: 0, horizon: 788, mismatched: 788, normalized: 0
+   ```
+
+   This indicates tap-agent is in legacy mode but all your allocations are Horizon. Enable Horizon on tap-agent.
+
+3. **Receipts stored but not aggregated**:
+   - Confirm both services have matching `receipts_verifier_address_v2` values
+   - Check that `subgraph_service_address` matches between services
+
 ## Deployment Options
 
 ### Docker Compose
