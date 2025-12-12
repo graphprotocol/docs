@@ -2,7 +2,7 @@ export default {
   'subgraph-composition': '',
   'subgraph-debug-forking': '',
   near: '',
-  arweave: '',
+
   grafting: '',
   'subgraph-uncrashable': '',
   'transfer-to-the-graph': '',
