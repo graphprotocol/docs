@@ -2,182 +2,169 @@
 title: GraphTally Guide
 ---
 
-Learn about The Graph's new payment system, **GraphTally** [(previously Timeline Aggregation Protocol)](https://docs.rs/tap_core/latest/tap_core/index.html). This system provides fast, efficient microtransactions with minimized trust.
+Learn about The Graph's payment system, **GraphTally** [(previously Timeline Aggregation Protocol)](https://docs.rs/tap_core/latest/tap_core/index.html). GraphTally provides fast, efficient microtransactions with minimized trust.
 
 ## نظره عامة
 
-GraphTally is a drop-in replacement to the Scalar payment system currently in place. It provides the following key features:
+GraphTally is the payment system for The Graph, integrated into the core protocol through [Graph Horizon](/graph-horizon/overview). It enables efficient pay-per-query payments between gateways and indexers.
 
-- Efficiently handles micropayments.
-- Adds a layer of consolidations to onchain transactions and costs.
-- Allows Indexers control of receipts and payments, guaranteeing payment for queries.
-- Enables decentralized, trustless gateways and improves indexer service performance for multiple senders.
+Key benefits:
 
-### How It Works
+- **Efficient micropayments**: Pay-per-query without high transaction costs
+- **Reduced onchain costs**: Receipts aggregate into single blockchain transactions
+- **Payment guarantees**: Indexers control receipt aggregation, ensuring payment for served queries
+- **Trustless operation**: Decentralized gateways with cryptographic verification
 
-GraphTally allows a sender to make multiple payments to a receiver through **Receipts**, which are then aggregated into a single payment called a **Receipt Aggregate Voucher (RAV)**. This aggregated payment can be verified on the blockchain, reducing the number of transactions and simplifying the payment process.
+## How It Works
 
-For each query, the gateway sends a signed receipt that is stored in your database. The `indexer-tap-agent` aggregates these receipts into RAVs through periodic requests. You can update a RAV by sending it with newer receipts, which generates a new RAV with an increased value.
+GraphTally enables a sender (gateway) to make multiple payments to a receiver (indexer) through **Receipts**, which aggregate into a **Receipt Aggregate Voucher (RAV)**. RAVs can be verified and redeemed on the blockchain.
+
+**Payment flow:**
+
+1. Gateway sends a signed receipt with each query
+2. `indexer-service-rs` validates and stores receipts in your database
+3. `indexer-tap-agent` periodically aggregates receipts into RAVs
+4. RAVs accumulate value as new receipts arrive
+5. After allocation closure, the final RAV is redeemed onchain
 
 ### RAV Details
 
-- RAVs represent money waiting to be sent to the blockchain.
-- The system continuously aggregates receipts to ensure that the total value of non-aggregated receipts does not exceed the configured `max_amount_willing_to_lose_grt`.
-- Each RAV can be redeemed once in the contracts, which is why they are sent after the allocation is closed.
+- RAVs represent pending payments waiting for blockchain redemption
+- The system aggregates receipts continuously, keeping unaggregated value below `max_amount_willing_to_lose_grt`
+- Each RAV redeems once onchain, so final RAVs are created after allocation closure
 
 ### Redeeming RAVs
 
-The redemption process is fully automated when running both `indexer-tap-agent` and `indexer-agent`:
+RAV redemption is fully automated when running `indexer-tap-agent` and `indexer-agent`:
 
-1. An Indexer closes an allocation.
-2. After the `recently-closed-allocation-buffer` period, `indexer-tap-agent` takes all pending receipts for that allocation and requests aggregation into a final RAV, marking it as `last`.
-3. `indexer-agent` takes all the last RAVs and sends redeem requests to the blockchain, updating the `redeem_at` value.
+1. Indexer closes an allocation
+2. After the `recently-closed-allocation-buffer` period, `indexer-tap-agent` aggregates remaining receipts into a final RAV marked as `last`
+3. `indexer-agent` submits redeem transactions to the blockchain
 4. During the `finality-time` period, `indexer-agent` monitors for blockchain reorganizations:
-   - If the transaction was reverted, the RAV is resent to the blockchain.
-   - If not reverted, it gets marked as `final`.
+   - Reverted transactions are resubmitted
+   - Confirmed transactions are marked `final`
 
 ## Blockchain Addresses
 
 ### Contracts
 
-| Contract            | Arbitrum Mainnet (42161)                     | Arbitrum Sepolia (421614)                    |
-| ------------------- | -------------------------------------------- | -------------------------------------------- |
-| TAP Verifier        | `0x33f9E93266ce0E108fc85DdE2f71dab555A0F05a` | `0xfC24cE7a4428A6B89B52645243662A02BA734ECF` |
-| AllocationIDTracker | `0x5B2F33d7Ca6Ec88f5586f2528f58c20843D9FE7c` | `0xAaC28a10d707bbc6e02029f1bfDAEB5084b2aD11` |
-| Escrow              | `0x8f477709eF277d4A880801D01A140a9CF88bA0d3` | `0x1e4dC4f9F95E102635D8F7ED71c5CdbFa20e2d02` |
+| Contract          | Arbitrum Mainnet (42161)                     | Arbitrum Sepolia (421614)                    |
+| ----------------- | -------------------------------------------- | -------------------------------------------- |
+| TAP Verifier (V1) | `0x33f9E93266ce0E108fc85DdE2f71dab555A0F05a` | `0xfC24cE7a4428A6B89B52645243662A02BA734ECF` |
+| TAP Verifier (V2) | `0x8f69F5C07477Ac46FBc491B1E6D91E2be0111A9e` | `0x382863e7B662027117449bd2c49285582bbBd21B` |
+| Subgraph Service  | `0xb2Bb92d0DE618878E438b55D5846cfecD9301105` | `0xc24A3dAC5d06d771f657A48B20cE1a671B78f26b` |
+| TAP Escrow        | `0x8f477709eF277d4A880801D01A140a9CF88bA0d3` | `0x1e4dC4f9F95E102635D8F7ED71c5CdbFa20e2d02` |
 
 ### Gateway
 
-| Component  | Edge and Node Mainnet (Arbitrum Mainnet)      | Edge and Node Testnet (Arbitrum Sepolia)      |
+| Component  | Arbitrum Mainnet                              | Arbitrum Sepolia (Testnet)                    |
 | ---------- | --------------------------------------------- | --------------------------------------------- |
 | Sender     | `0xDDE4cfFd3D9052A9cb618fC05a1Cd02be1f2F467`  | `0xC3dDf37906724732FfD748057FEBe23379b0710D`  |
 | Signers    | `0xfF4B7A5EfD00Ff2EC3518D4F250A27e4c29A2211`  | `0xFb142dE83E261e43a81e9ACEADd1c66A0DB121FE`  |
 | Aggregator | `https://tap-aggregator.network.thegraph.com` | `https://tap-aggregator.testnet.thegraph.com` |
 
-## Prerequisites
-
-In addition to typical indexer requirements, you'll need a `tap-escrow-subgraph` endpoint to query escrow information. You can use The Graph Network to query or self-host on your `graph-node`:
-
-- [Graph TAP Arbitrum Sepolia Subgraph (for The Graph testnet)](https://thegraph.com/explorer/subgraphs/7ubx365MiqBH5iUz6XWXWT8PTof5BVAyEzdb8m17RvbD)
-- [Graph TAP Arbitrum One Subgraph (for The Graph mainnet)](https://thegraph.com/explorer/subgraphs/4sukbNVTzGELnhdnpyPqsf1QqtzNHEYKKmJkgaT8z6M1)
-
-> Note: `indexer-agent` does not currently handle the indexing of this Subgraph like it does for the Network Subgraph deployment. You must index it manually.
-
-## Migration Guide
+## Getting Started
 
 ### Software Requirements
 
-#### Required Versions
-
-- **indexer-agent**: [Latest version supporting TAP](https://github.com/graphprotocol/indexer/releases)
+- **indexer-agent**: [Latest version](https://github.com/graphprotocol/indexer/releases)
 - **indexer-service-rs**: [Latest release](https://github.com/graphprotocol/indexer-rs/releases?q=indexer-service-rs)
 - **indexer-tap-agent**: [Latest release](https://github.com/graphprotocol/indexer-rs/releases?q=indexer-tap-agent)
 
-#### Docker Images
+### Docker Images
 
 ```bash
-# Indexer Service
 docker pull ghcr.io/graphprotocol/indexer-service-rs:latest
-
-# TAP Agent
 docker pull ghcr.io/graphprotocol/indexer-tap-agent:latest
 ```
 
-### Migration Steps
+### Architecture Overview
 
-#### 1. Update Indexer Agent
+Your indexer stack consists of:
 
-- Continue using your existing `indexer-agent`
-- Add the `--tap-subgraph-endpoint` argument to enable TAP functionality and RAV redemption
-- Example: `--tap-subgraph-endpoint https://api.thegraph.com/subgraphs/name/graphprotocol/tap-mainnet`
+- **indexer-service-rs**: Handles incoming queries, validates receipts, routes to graph-node. Stateless and horizontally scalable.
+- **indexer-tap-agent**: Aggregates receipts into RAVs. Run exactly **one instance**.
+- **indexer-agent**: Manages allocations and redeems RAVs onchain.
 
-#### 2. Replace Indexer Service
+All three components share the same PostgreSQL database.
 
-- Fully replace your TypeScript indexer-service with `indexer-service-rs`
-- The new service is stateless and can be scaled horizontally
-- Use the same database as your existing setup
+### Configuration
 
-#### 3. Deploy TAP Agent
+Both `indexer-service-rs` and `indexer-tap-agent` use a shared TOML configuration file. Pass it with `--config /path/to/config.toml`.
 
-- Run exactly **one instance** of `indexer-tap-agent`
-- This component manages receipt aggregation and RAV creation
-- It must have access to the same database as other indexer components
-
-#### 4. Configuration
-
-Both `indexer-service-rs` and `indexer-tap-agent` share a TOML configuration file. Create a configuration file and pass it with `--config /path/to/config.toml`.
-
-##### Minimal Configuration Example
+#### Configuration Example
 
 ```toml
-# Essential configuration for indexer-rs components
-# All values below must be updated to match your setup
-
 [indexer]
 indexer_address = "0x1111111111111111111111111111111111111111"
 operator_mnemonic = "your twelve word mnemonic phrase here ..."
 
+# For key rotation, you can specify multiple mnemonics:
+# operator_mnemonics = [
+#     "current mnemonic phrase here",
+#     "previous mnemonic if you rotated keys"
+# ]
+
 [database]
-# Use the same database as your indexer-agent
 postgres_url = "postgresql://user:password@localhost:5432/indexer_db"
 
 [graph_node]
-# Your graph-node endpoints
 query_url = "http://graph-node:8000"
 status_url = "http://graph-node:8000/graphql"
 
 [subgraphs.network]
-# The Graph Network Subgraph (use query_url OR deployment_id, not both)
+# The Graph Network Subgraph (includes escrow data with Graph Horizon)
+# Use query_url for hosted service, or deployment_id for local indexing (recommended)
 query_url = "https://api.thegraph.com/subgraphs/name/graphprotocol/graph-network-arbitrum"
 # deployment_id = "QmUVskWrz1ZiQZ76AtyhcfFDEH1ELnRpoyEhVL8p6NFTbR"
 
-[subgraphs.escrow]
-# TAP Escrow Subgraph (use query_url OR deployment_id, not both)
-query_url = "https://api.thegraph.com/subgraphs/name/graphprotocol/tap-arbitrum-one"
-# deployment_id = "QmPcbDomKwfsmVBNbvncU8gdWTvUiH9zVFYxDMc5ohpjvU"
+# Note: With Graph Horizon, escrow data is included in the Network Subgraph.
+# The separate [subgraphs.escrow] config is only needed for legacy V1 receipt processing.
 
 [blockchain]
-# For Arbitrum mainnet
 chain_id = 42161
+# V1 TAP Verifier (for legacy receipts during migration)
 receipts_verifier_address = "0x33f9E93266ce0E108fc85DdE2f71dab555A0F05a"
+# V2 Horizon TAP Verifier
+receipts_verifier_address_v2 = "0x8f69F5C07477Ac46FBc491B1E6D91E2be0111A9e"
+subgraph_service_address = "0xb2Bb92d0DE618878E438b55D5846cfecD9301105"
 
-# For Arbitrum Sepolia testnet, use:
+# For testnet:
 # chain_id = 421614
 # receipts_verifier_address = "0xfC24cE7a4428A6B89B52645243662A02BA734ECF"
+# receipts_verifier_address_v2 = "0x382863e7B662027117449bd2c49285582bbBd21B"
+# subgraph_service_address = "0xc24A3dAC5d06d771f657A48B20cE1a671B78f26b"
 
 [tap]
-# Maximum GRT amount to risk before requiring aggregation
-# Use string format to prevent rounding errors
 max_amount_willing_to_lose_grt = "0.1"
 
 [tap.sender_aggregator_endpoints]
-# Gateway endpoints for RAV aggregation
-# Mainnet
+# Mainnet gateways
 "0xDDE4cfFd3D9052A9cb618fC05a1Cd02be1f2F467" = "https://tap-aggregator.network.thegraph.com"
+"0xDD6a6f76eb36B873C1C184e8b9b9e762FE216490" = "https://tap-aggregator-arbitrum-one.graphops.xyz"
 
-# For testnet, use:
+# For testnet:
 # "0xC3dDf37906724732FfD748057FEBe23379b0710D" = "https://tap-aggregator.testnet.thegraph.com"
+
+[horizon]
+enabled = true
 ```
 
-##### Environment Variable Overrides
+#### Environment Variable Overrides
 
-You can override any configuration value using environment variables:
+Override any configuration value using environment variables:
 
 ```bash
 # Pattern: [PREFIX]__[SECTION]__[KEY]
-# PREFIX can be INDEXER_SERVICE or TAP_AGENT
+# PREFIX: INDEXER_SERVICE or TAP_AGENT
 
-# Examples:
 export INDEXER_SERVICE__DATABASE__POSTGRES_URL="postgresql://..."
 export TAP_AGENT__TAP__MAX_AMOUNT_WILLING_TO_LOSE_GRT="0.5"
-export INDEXER_SERVICE__BLOCKCHAIN__RECEIPTS_VERIFIER_ADDRESS="0x..."
 ```
 
-##### Advanced Configuration
+#### Advanced Configuration
 
-For all configuration options, see:
-
-- [Full configuration example](https://github.com/graphprotocol/indexer-rs/blob/main/crates/config/maximal-config-example.toml)
+- [Full configuration reference](https://github.com/graphprotocol/indexer-rs/blob/main/crates/config/maximal-config-example.toml)
 - [Default values](https://github.com/graphprotocol/indexer-rs/blob/main/crates/config/default_values.toml)
 
 ### Logging
@@ -190,9 +177,6 @@ export RUST_LOG=indexer_service=info,indexer_tap_agent=info
 
 # For debugging
 export RUST_LOG=indexer_service=debug,indexer_tap_agent=debug
-
-# TAP-specific debugging
-export RUST_LOG=indexer_tap_agent=debug,info
 ```
 
 ## Monitoring
@@ -213,9 +197,9 @@ Key metrics to monitor:
 
 ### Grafana Dashboard
 
-Import the [official Grafana dashboard](https://github.com/graphprotocol/indexer-rs/blob/main/docs/dashboard.json) for comprehensive monitoring of:
+Import the [official Grafana dashboard](https://github.com/graphprotocol/indexer-rs/blob/main/docs/dashboard.json) for monitoring:
 
-- TAP receipt flow and aggregation status
+- Receipt flow and aggregation status
 - RAV creation and redemption lifecycle
 - System performance and error rates
 - Database query performance
@@ -230,7 +214,7 @@ Common issues and solutions:
    - Review debug logs for specific error messages
 
 2. **Receipts not aggregating**:
-   - Ensure `tap-agent` is running (only one instance)
+   - Ensure `indexer-tap-agent` is running (only one instance)
    - Check database connectivity
    - Verify `max_amount_willing_to_lose_grt` is not too high
 
@@ -239,21 +223,131 @@ Common issues and solutions:
    - Check if specific senders are having aggregation issues
    - Monitor the Grafana dashboard for aggregation patterns
 
+## Horizon (TAP V2) Migration
+
+Horizon is the next-generation Graph protocol with updated smart contracts and a new receipt format (V2). This section covers how to enable Horizon support in your indexer stack.
+
+### Critical: Both Services Must Be Configured
+
+> **Warning**: `indexer-service-rs` and `indexer-tap-agent` have **separate configurations** and **both must have Horizon enabled** for V2 receipts to be processed correctly.
+>
+> A common misconfiguration is enabling Horizon only on `indexer-service` while leaving `tap-agent` in legacy mode. This results in:
+>
+> - `indexer-service` accepting V2 receipts and storing them in the database
+> - `tap-agent` ignoring all Horizon allocations (showing 0 allocations tracked)
+> - **No RAVs created, no redemptions possible**
+
+### Horizon Configuration Checklist
+
+#### Step 1: Obtain Horizon Contract Addresses
+
+You need two new addresses for Horizon (check [The Graph documentation](#blockchain-addresses) for current values):
+
+| Contract                       | Purpose                                               |
+| ------------------------------ | ----------------------------------------------------- |
+| `receipts_verifier_address_v2` | TAP Verifier V2 contract for Horizon receipts         |
+| `subgraph_service_address`     | Subgraph Service contract for allocation verification |
+
+#### Step 2: Update Configuration File
+
+Add the Horizon settings to your shared TOML configuration:
+
+```toml
+[blockchain]
+chain_id = 42161
+# Legacy V1 verifier (keep for existing receipts)
+receipts_verifier_address = "0x33f9E93266ce0E108fc85DdE2f71dab555A0F05a"
+# Horizon V2 addresses
+receipts_verifier_address_v2 = "0x..." # Get from The Graph docs
+subgraph_service_address = "0x..."     # Get from The Graph docs
+
+[horizon]
+enabled = true
+```
+
+#### Step 3: Configure Environment Variables (if not using config file)
+
+If you use environment variables, you must set them for **both services**:
+
+```bash
+# For indexer-service
+export INDEXER_SERVICE__HORIZON__ENABLED=true
+export INDEXER_SERVICE__BLOCKCHAIN__RECEIPTS_VERIFIER_ADDRESS_V2="0x..."
+export INDEXER_SERVICE__BLOCKCHAIN__SUBGRAPH_SERVICE_ADDRESS="0x..."
+
+# For tap-agent (REQUIRED - don't forget this!)
+export TAP_AGENT__HORIZON__ENABLED=true
+export TAP_AGENT__BLOCKCHAIN__RECEIPTS_VERIFIER_ADDRESS_V2="0x..."
+export TAP_AGENT__BLOCKCHAIN__SUBGRAPH_SERVICE_ADDRESS="0x..."
+```
+
+#### Step 4: Verify Configuration
+
+After restarting both services, check the logs to confirm Horizon is active:
+
+**indexer-service logs (expected):**
+
+```
+INFO indexer_service_rs::service: Horizon mode configured - checking if Horizon contracts are active
+INFO indexer_service_rs::service: Horizon contracts detected - using Horizon migration mode
+```
+
+**tap-agent logs (expected):**
+
+```
+INFO indexer_tap_agent::agent: Horizon mode configured - checking if Horizon contracts are active
+INFO indexer_tap_agent::agent::sender_accounts_manager: horizon_active: true
+```
+
+**tap-agent logs (PROBLEM - Horizon not enabled):**
+
+```
+INFO indexer_tap_agent::agent: Horizon not configured - using pure legacy mode
+INFO indexer_tap_agent::agent::sender_accounts_manager: horizon_active: false
+```
+
+If you see "pure legacy mode" in tap-agent but have Horizon allocations, your receipts will not be processed!
+
+### Horizon Migration Modes
+
+When Horizon is enabled and contracts are detected:
+
+- **Hybrid Migration Mode**: The system accepts new V2 receipts while continuing to process existing V1 receipts
+- **V2 Receipts Only**: New queries generate V2 receipts (stored in `scalar_tap_receipts_v2` table)
+- **Legacy Processing**: Existing V1 receipts continue to be aggregated until allocations close
+
+### Troubleshooting Horizon
+
+1. **TAP agent shows 0 allocations but you have Horizon allocations**:
+   - Check that `TAP_AGENT__HORIZON__ENABLED=true` is set
+   - Verify `subgraph_service_address` is configured for tap-agent
+   - Look for "pure legacy mode" in tap-agent logs
+
+2. **"mismatched" allocations in tap-agent logs**:
+
+   ```
+   total: 788, legacy: 0, horizon: 788, mismatched: 788, normalized: 0
+   ```
+
+   This indicates tap-agent is in legacy mode but all your allocations are Horizon. Enable Horizon on tap-agent.
+
+3. **Receipts stored but not aggregated**:
+   - Confirm both services have matching `receipts_verifier_address_v2` values
+   - Check that `subgraph_service_address` matches between services
+
 ## Deployment Options
 
 ### Docker Compose
 
-Example compose configuration for both services:
+Example compose configuration:
 
 ```yaml
-version: '3.8'
-
 services:
   indexer-service:
     image: ghcr.io/graphprotocol/indexer-service-rs:latest
     ports:
-      - '7600:7600' # Service port
-      - '7300:7300' # Metrics port
+      - '7600:7600'
+      - '7300:7300'
     volumes:
       - ./config.toml:/config.toml
     command: ['--config', '/config.toml']
@@ -264,7 +358,7 @@ services:
   tap-agent:
     image: ghcr.io/graphprotocol/indexer-tap-agent:latest
     ports:
-      - '7301:7300' # Metrics port (different host port)
+      - '7301:7300'
     volumes:
       - ./config.toml:/config.toml
     command: ['--config', '/config.toml']
@@ -291,7 +385,7 @@ For Kubernetes deployments, see the [Graph Launchpad charts](https://github.com/
 
 2. **High Availability**:
    - Run multiple `indexer-service-rs` instances behind a load balancer
-   - Keep `tap-agent` as a single instance with proper monitoring
+   - Keep `indexer-tap-agent` as a single instance with proper monitoring
    - Use database connection pooling
 
 3. **Security**:
