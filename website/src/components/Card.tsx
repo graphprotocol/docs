@@ -18,14 +18,11 @@ export declare namespace CardProps {
   }
   interface ButtonProps extends BaseProps, Omit<ExperimentalCardProps.ButtonProps, OmittedExperimentalCardProps> {}
   interface ExternalLinkProps
-    extends BaseProps,
-      Omit<ExperimentalCardProps.ExternalLinkProps, OmittedExperimentalCardProps> {}
+    extends BaseProps, Omit<ExperimentalCardProps.ExternalLinkProps, OmittedExperimentalCardProps> {}
   interface ClientLinkProps
-    extends BaseProps,
-      Omit<ExperimentalCardProps.ClientLinkProps, OmittedExperimentalCardProps> {}
+    extends BaseProps, Omit<ExperimentalCardProps.ClientLinkProps, OmittedExperimentalCardProps> {}
   interface OtherElementProps
-    extends BaseProps,
-      Omit<ExperimentalCardProps.OtherElementProps, OmittedExperimentalCardProps> {}
+    extends BaseProps, Omit<ExperimentalCardProps.OtherElementProps, OmittedExperimentalCardProps> {}
 }
 
 type CardProps =

@@ -10,7 +10,7 @@ export default {
   'tvm-tokens': titles['tvm-tokens'] ?? '',
   'tvm-dexs': titles['tvm-dexs'] ?? '',
   monitoring: titles['monitoring'] ?? '',
-  'endpoints': titles['endpoints'] ?? '',
-  guides: 'Guides',
+  endpoints: titles['endpoints'] ?? '',
+  guides: titles['guides'] ?? '',
   faq: '',
 }
