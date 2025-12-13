@@ -5,7 +5,6 @@ import { NextSeo, type NextSeoProps } from 'next-seo'
 import type { NextraThemeLayoutProps } from 'nextra'
 import { useFSRoute, useRouter } from 'nextra/hooks'
 import { MDXProvider } from 'nextra/mdx'
-import { CodeTabs, CodeTab } from "@/components/CodeTabs"
 import { normalizePages } from 'nextra/normalize-pages'
 import {
   type ComponentProps,
@@ -65,6 +64,7 @@ import {
   Table,
   VideoEmbed,
 } from '@/components'
+import { CodeTab, CodeTabs } from '@/components/CodeTabs'
 import { useI18n } from '@/i18n'
 
 import { MDXContent } from './MDXContent'

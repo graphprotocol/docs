@@ -1,4 +1,4 @@
 export default {
-  'pricing': '',
-  'support': '',
+  pricing: '',
+  support: '',
 }
