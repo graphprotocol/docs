@@ -64,6 +64,7 @@ import {
   Table,
   VideoEmbed,
 } from '@/components'
+import { CodeTab, CodeTabs } from '@/components/CodeTabs'
 import { useI18n } from '@/i18n'
 
 import { MDXContent } from './MDXContent'
@@ -614,6 +615,8 @@ export default function Layout({ pageOpts, children }: NextraThemeLayoutProps<Fr
                 table: Table,
                 VideoEmbed,
                 wrapper: MDXContent,
+                CodeTabs,
+                CodeTab,
               }}
             >
               {children}
