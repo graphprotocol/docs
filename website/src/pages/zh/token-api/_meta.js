@@ -11,6 +11,6 @@ export default {
   'tvm-dexs': titles['tvm-dexs'] ?? '',
   monitoring: titles['monitoring'] ?? '',
   'endpoint-pricing': '',
+  guides: titles['guides'] ?? '',
   faq: '',
-  'upgrade-to-v1': '',
 }
