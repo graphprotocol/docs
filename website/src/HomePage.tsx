@@ -181,7 +181,7 @@ export default function HomePage({ supportedNetworks }: { supportedNetworks: Sup
           <p>
             {t('index.supportedNetworks.description.base', [
               <ExperimentalLink key="link-1" href="/supported-networks/">
-                90+ {t('index.supportedNetworks.description.networks')}
+                80+ {t('index.supportedNetworks.description.networks')}
               </ExperimentalLink>,
               <ExperimentalLink key="link" href="https://edgeandnode.typeform.com/to/b3507xSL">
                 {t('index.supportedNetworks.description.completeThisForm')}

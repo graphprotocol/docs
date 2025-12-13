@@ -35,6 +35,7 @@ import {
   APIToken,
   BookOpenText,
   Files,
+  Horizon,
   House,
   Hypergraph,
   MagnifyingGlass,
@@ -48,7 +49,6 @@ import {
   Stack,
   Subgraph,
   Substreams,
-  SubstreamsPoweredSubgraph,
   TheGraph,
   Translate,
 } from '@edgeandnode/gds/icons'
@@ -194,9 +194,6 @@ export default function Layout({ pageOpts, children }: NextraThemeLayoutProps<Fr
         if (routeWithoutLocale === '/substreams' || routeWithoutLocale.startsWith('/substreams/')) {
           return <Substreams alt="" />
         }
-        if (routeWithoutLocale === '/sps' || routeWithoutLocale.startsWith('/sps/')) {
-          return <SubstreamsPoweredSubgraph alt="" />
-        }
         if (routeWithoutLocale === '/token-api' || routeWithoutLocale.startsWith('/token-api/')) {
           return <APIToken alt="" />
         }
@@ -208,6 +205,9 @@ export default function Layout({ pageOpts, children }: NextraThemeLayoutProps<Fr
         }
         if (routeWithoutLocale === '/indexing' || routeWithoutLocale.startsWith('/indexing/')) {
           return <RoleIndexer alt="" />
+        }
+        if (routeWithoutLocale === '/graph-horizon' || routeWithoutLocale.startsWith('/graph-horizon/')) {
+          return <Horizon alt="" />
         }
         if (
           routeWithoutLocale === '/resources' ||
