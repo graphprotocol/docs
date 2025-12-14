@@ -56,6 +56,7 @@ import {
 import {
   Callout,
   CodeBlock,
+  CodeBlockTabs,
   DocSearch,
   Heading,
   Image,
@@ -64,7 +65,6 @@ import {
   Table,
   VideoEmbed,
 } from '@/components'
-import { CodeTab, CodeTabs } from '@/components/CodeTabs'
 import { useI18n } from '@/i18n'
 
 import { MDXContent } from './MDXContent'
@@ -611,12 +611,12 @@ export default function Layout({ pageOpts, children }: NextraThemeLayoutProps<Fr
                 img: ImageWrapper,
                 // TODO: Fix "[Shiki] X instances have been created. Shiki is supposed to be used as a singleton" warnings
                 pre: CodeBlock,
+                CodeBlock,
+                CodeBlockTabs,
                 // TODO: Build and use `ExperimentalTable`
                 table: Table,
                 VideoEmbed,
                 wrapper: MDXContent,
-                CodeTabs,
-                CodeTab,
               }}
             >
               {children}
