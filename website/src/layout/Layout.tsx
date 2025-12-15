@@ -56,6 +56,7 @@ import {
 import {
   Callout,
   CodeBlock,
+  CodeBlockTabs,
   DocSearch,
   Heading,
   Image,
@@ -610,6 +611,8 @@ export default function Layout({ pageOpts, children }: NextraThemeLayoutProps<Fr
                 img: ImageWrapper,
                 // TODO: Fix "[Shiki] X instances have been created. Shiki is supposed to be used as a singleton" warnings
                 pre: CodeBlock,
+                CodeBlock,
+                CodeBlockTabs,
                 // TODO: Build and use `ExperimentalTable`
                 table: Table,
                 VideoEmbed,
