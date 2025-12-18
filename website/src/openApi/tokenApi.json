@@ -3,7 +3,7 @@
   "info": {
     "title": "Token API",
     "description": "Power your apps & AI agents with real-time token data.",
-    "version": "3.6.3+5808c37 (2025-12-11)"
+    "version": "3.7.0+c6e986e (2025-12-18)"
   },
   "servers": [
     {
@@ -597,7 +597,7 @@
             "name": "start_time",
             "schema": {
               "type": "string",
-              "default": "2025-11-11"
+              "default": "2025-11-18"
             },
             "description": "UNIX timestamp in seconds or date string (e.g. \"2025-01-01T00:00:00Z\", \"2025-01-01\", ...)."
           },
@@ -1883,9 +1883,13 @@
                             "example": "uniswap_v3",
                             "type": "string",
                             "enum": [
+                              "uniswap_v1",
                               "uniswap_v2",
                               "uniswap_v3",
-                              "uniswap_v4"
+                              "uniswap_v4",
+                              "bancor",
+                              "curvefi",
+                              "balancer"
                             ]
                           },
                           "uaw": {
@@ -1897,6 +1901,21 @@
                           "last_activity": {
                             "description": "ISO 8601 datetime string",
                             "type": "string"
+                          },
+                          "network": {
+                            "description": "The Graph Network ID for EVM networks https://thegraph.com/networks",
+                            "example": "mainnet",
+                            "type": "string",
+                            "enum": [
+                              "arbitrum-one",
+                              "avalanche",
+                              "base",
+                              "bsc",
+                              "mainnet",
+                              "optimism",
+                              "polygon",
+                              "unichain"
+                            ]
                           }
                         },
                         "required": [
@@ -1904,7 +1923,8 @@
                           "protocol",
                           "uaw",
                           "transactions",
-                          "last_activity"
+                          "last_activity",
+                          "network"
                         ]
                       }
                     },
@@ -1970,7 +1990,8 @@
                           "protocol": "uniswap_v2",
                           "uaw": 10432787,
                           "transactions": 16029788,
-                          "last_activity": "2025-11-06 16:00:00"
+                          "last_activity": "2025-11-06 16:00:00",
+                          "network": "mainnet"
                         }
                       ]
                     }
@@ -2322,6 +2343,28 @@
             },
             "required": true,
             "description": "The Graph Network ID for EVM networks https://thegraph.com/networks"
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "default": 10,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1000
+            },
+            "description": "Number of items* returned in a single request.<br>*Plan restricted."
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "default": 1,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 767465558638
+            },
+            "description": "Page number to fetch.<br>Empty `data` array signifies end of results."
           }
         ]
       }
@@ -6870,7 +6913,7 @@
       "get": {
         "operationId": "getV1EvmPools",
         "summary": "Liquidity Pools",
-        "description": "Returns Uniswap liquidity pool metadata including token pairs, fees, and protocol versions.",
+        "description": "Returns DEX pool metadata including tokens, fees and protocol.",
         "tags": [
           "EVM DEXs"
         ],
@@ -6892,11 +6935,6 @@
                       "items": {
                         "type": "object",
                         "properties": {
-                          "factory": {
-                            "type": "string",
-                            "description": "Filter by factory address",
-                            "example": "0x5c69bee701ef814a2b6a3edd4b1652cb9cc5aa6f"
-                          },
                           "pool": {
                             "description": "Filter by pool address",
                             "type": "string",
@@ -6908,6 +6946,25 @@
                               {
                                 "type": "string"
                               }
+                            ]
+                          },
+                          "factory": {
+                            "type": "string",
+                            "description": "Filter by factory address",
+                            "example": "0x5c69bee701ef814a2b6a3edd4b1652cb9cc5aa6f"
+                          },
+                          "protocol": {
+                            "description": "Protocol name",
+                            "example": "uniswap_v3",
+                            "type": "string",
+                            "enum": [
+                              "uniswap_v1",
+                              "uniswap_v2",
+                              "uniswap_v3",
+                              "uniswap_v4",
+                              "bancor",
+                              "curvefi",
+                              "balancer"
                             ]
                           },
                           "input_token": {
@@ -6994,19 +7051,6 @@
                               "decimals"
                             ]
                           },
-                          "fee": {
-                            "type": "number"
-                          },
-                          "protocol": {
-                            "description": "Protocol name",
-                            "example": "uniswap_v3",
-                            "type": "string",
-                            "enum": [
-                              "uniswap_v2",
-                              "uniswap_v3",
-                              "uniswap_v4"
-                            ]
-                          },
                           "network": {
                             "description": "The Graph Network ID for EVM networks https://thegraph.com/networks",
                             "example": "mainnet",
@@ -7024,12 +7068,11 @@
                           }
                         },
                         "required": [
-                          "factory",
                           "pool",
+                          "factory",
+                          "protocol",
                           "input_token",
                           "output_token",
-                          "fee",
-                          "protocol",
                           "network"
                         ]
                       }
@@ -7092,8 +7135,9 @@
                     "value": {
                       "data": [
                         {
-                          "factory": "0x1f98431c8ad98523631ae4a59f267346ea31f984",
                           "pool": "0x88e6a0c2ddd26feeb64f039a2c41296fcb3f5640",
+                          "factory": "0x1f98431c8ad98523631ae4a59f267346ea31f984",
+                          "protocol": "uniswap_v3",
                           "input_token": {
                             "address": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
                             "symbol": "USDC",
@@ -7105,7 +7149,6 @@
                             "decimals": 18
                           },
                           "fee": 500,
-                          "protocol": "uniswap_v3",
                           "network": "mainnet"
                         }
                       ]
@@ -7591,9 +7634,13 @@
               "default": "",
               "type": "string",
               "enum": [
+                "uniswap_v1",
                 "uniswap_v2",
                 "uniswap_v3",
-                "uniswap_v4"
+                "uniswap_v4",
+                "bancor",
+                "curvefi",
+                "balancer"
               ]
             },
             "description": "Protocol name"
@@ -7626,7 +7673,7 @@
     "/v1/evm/pools/ohlc": {
       "get": {
         "operationId": "getV1EvmPoolsOhlc",
-        "summary": "Pool OHLCV Data",
+        "summary": "Pool OHLCV",
         "description": "Returns OHLCV price data for liquidity pools.\n\nOHLCV historical depth is subject to plan restrictions.",
         "tags": [
           "EVM DEXs"
@@ -7689,6 +7736,21 @@
                           },
                           "transactions": {
                             "type": "number"
+                          },
+                          "network": {
+                            "description": "The Graph Network ID for EVM networks https://thegraph.com/networks",
+                            "example": "mainnet",
+                            "type": "string",
+                            "enum": [
+                              "arbitrum-one",
+                              "avalanche",
+                              "base",
+                              "bsc",
+                              "mainnet",
+                              "optimism",
+                              "polygon",
+                              "unichain"
+                            ]
                           }
                         },
                         "required": [
@@ -7701,7 +7763,8 @@
                           "close",
                           "volume",
                           "uaw",
-                          "transactions"
+                          "transactions",
+                          "network"
                         ]
                       }
                     },
@@ -7772,7 +7835,8 @@
                           "close": 3989.7646037044765,
                           "volume": 32956701.586648002,
                           "uaw": 1363,
-                          "transactions": 3066
+                          "transactions": 3066,
+                          "network": "mainnet"
                         }
                       ]
                     }
@@ -8163,7 +8227,7 @@
             "name": "start_time",
             "schema": {
               "type": "string",
-              "default": "2025-11-11"
+              "default": "2025-11-18"
             },
             "description": "UNIX timestamp in seconds or date string (e.g. \"2025-01-01T00:00:00Z\", \"2025-01-01\", ...)."
           },
@@ -8205,7 +8269,7 @@
       "get": {
         "operationId": "getV1EvmSwaps",
         "summary": "Swap Events",
-        "description": "Returns DEX swap transactions from Uniswap protocols with token amounts and prices.",
+        "description": "Returns DEX swaps events with input & output token amounts.",
         "tags": [
           "EVM DEXs"
         ],
@@ -8380,9 +8444,13 @@
                             "example": "uniswap_v3",
                             "type": "string",
                             "enum": [
+                              "uniswap_v1",
                               "uniswap_v2",
                               "uniswap_v3",
-                              "uniswap_v4"
+                              "uniswap_v4",
+                              "bancor",
+                              "curvefi",
+                              "balancer"
                             ]
                           },
                           "summary": {
@@ -8895,6 +8963,33 @@
           },
           {
             "in": "query",
+            "name": "factory",
+            "schema": {
+              "type": "string",
+              "example": "0x5c69bee701ef814a2b6a3edd4b1652cb9cc5aa6f",
+              "anyOf": [
+                {
+                  "type": "string",
+                  "description": "Filter by factory address",
+                  "example": "0x5c69bee701ef814a2b6a3edd4b1652cb9cc5aa6f"
+                },
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "description": "Filter by factory address",
+                    "example": "0x5c69bee701ef814a2b6a3edd4b1652cb9cc5aa6f"
+                  }
+                }
+              ]
+            },
+            "description": "Filter by factory address<br>Single value or array of values* (separate multiple values with `,`)<br>*Plan restricted."
+          },
+          {
+            "in": "query",
             "name": "pool",
             "schema": {
               "type": "string",
@@ -9019,15 +9114,73 @@
           },
           {
             "in": "query",
+            "name": "input_contract",
+            "schema": {
+              "type": "string",
+              "example": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+              "anyOf": [
+                {
+                  "type": "string",
+                  "description": "Filter by contract address",
+                  "example": "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2"
+                },
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "description": "Filter by contract address",
+                    "example": "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2"
+                  }
+                }
+              ]
+            },
+            "description": "Filter by contract address<br>Single value or array of values* (separate multiple values with `,`)<br>*Plan restricted."
+          },
+          {
+            "in": "query",
+            "name": "output_contract",
+            "schema": {
+              "type": "string",
+              "example": "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
+              "anyOf": [
+                {
+                  "type": "string",
+                  "description": "Filter by contract address",
+                  "example": "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2"
+                },
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "description": "Filter by contract address",
+                    "example": "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2"
+                  }
+                }
+              ]
+            },
+            "description": "Filter by contract address<br>Single value or array of values* (separate multiple values with `,`)<br>*Plan restricted."
+          },
+          {
+            "in": "query",
             "name": "protocol",
             "schema": {
               "example": "uniswap_v3",
               "default": "",
               "type": "string",
               "enum": [
+                "uniswap_v1",
                 "uniswap_v2",
                 "uniswap_v3",
-                "uniswap_v4"
+                "uniswap_v4",
+                "bancor",
+                "curvefi",
+                "balancer"
               ]
             },
             "description": "Protocol name"
@@ -12161,6 +12314,28 @@
             },
             "required": true,
             "description": "The Graph Network ID for SVM networks https://thegraph.com/networks"
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "default": 10,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1000
+            },
+            "description": "Number of items* returned in a single request.<br>*Plan restricted."
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "default": 1,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 767465558638
+            },
+            "description": "Page number to fetch.<br>Empty `data` array signifies end of results."
           }
         ]
       }
@@ -13287,7 +13462,7 @@
     "/v1/svm/pools/ohlc": {
       "get": {
         "operationId": "getV1SvmPoolsOhlc",
-        "summary": "Pool OHLCV Data",
+        "summary": "Pool OHLCV",
         "description": "Provides pricing data in the Open/High/Low/Close/Volume (OHCLV) format for DEX pools.",
         "tags": [
           "SVM DEXs"
@@ -13841,7 +14016,7 @@
             "name": "start_time",
             "schema": {
               "type": "string",
-              "default": "2025-11-11"
+              "default": "2025-11-18"
             },
             "description": "UNIX timestamp in seconds or date string (e.g. \"2025-01-01T00:00:00Z\", \"2025-01-01\", ...)."
           },
@@ -16770,11 +16945,13 @@
                           },
                           "protocol": {
                             "description": "Protocol name",
-                            "example": "sunswap",
+                            "example": "uniswap_v2",
                             "type": "string",
                             "enum": [
-                              "justswap",
-                              "sunswap",
+                              "uniswap_v1",
+                              "uniswap_v2",
+                              "uniswap_v3",
+                              "uniswap_v4",
                               "sunpump"
                             ]
                           },
@@ -16787,6 +16964,14 @@
                           "last_activity": {
                             "type": "string",
                             "pattern": "^\\d{4}-\\d{2}-\\d{2}[T ]\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?(?:Z|[+-]\\d{2}:\\d{2})?$"
+                          },
+                          "network": {
+                            "description": "The Graph Network ID for TVM networks https://thegraph.com/networks",
+                            "example": "tron",
+                            "type": "string",
+                            "enum": [
+                              "tron"
+                            ]
                           }
                         },
                         "required": [
@@ -16794,7 +16979,8 @@
                           "protocol",
                           "transactions",
                           "uaw",
-                          "last_activity"
+                          "last_activity",
+                          "network"
                         ]
                       }
                     },
@@ -16856,11 +17042,12 @@
                     "value": {
                       "data": [
                         {
+                          "protocol": "uniswap_v1",
                           "factory": "TXk8rQSAvPvBBNtqSoY6nCfsXWCSSpTVQF",
-                          "protocol": "justswap",
-                          "transactions": 47301451,
-                          "uaw": 2562671,
-                          "last_activity": "2025-11-03 00:00:00"
+                          "last_activity": "2025-12-16 05:16:18",
+                          "transactions": 48269088,
+                          "uaw": 2848148,
+                          "network": "tron"
                         }
                       ]
                     }
@@ -17205,6 +17392,768 @@
             },
             "required": true,
             "description": "The Graph Network ID for TVM networks https://thegraph.com/networks"
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "default": 10,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1000
+            },
+            "description": "Number of items* returned in a single request.<br>*Plan restricted."
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "default": 1,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 767465558638
+            },
+            "description": "Page number to fetch.<br>Empty `data` array signifies end of results."
+          }
+        ]
+      }
+    },
+    "/v1/tvm/pools": {
+      "get": {
+        "operationId": "getV1TvmPools",
+        "summary": "Liquidity Pools",
+        "description": "Returns DEX pool metadata including tokens, fees and protocol.",
+        "tags": [
+          "TVM DEXs"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "factory": {
+                            "type": "string",
+                            "description": "Filter by factory address",
+                            "example": "0x5c69bee701ef814a2b6a3edd4b1652cb9cc5aa6f"
+                          },
+                          "pool": {
+                            "description": "Filter by pool address",
+                            "type": "string",
+                            "example": "0x88e6a0c2ddd26feeb64f039a2c41296fcb3f5640",
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "string"
+                              }
+                            ]
+                          },
+                          "input_token": {
+                            "type": "object",
+                            "properties": {
+                              "address": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "description": "Filter by address",
+                                    "example": "0xd8da6bf26964af9d7eed9e03e53415d37aa96045"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "symbol": {
+                                "anyOf": [
+                                  {
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "decimals": {
+                                "anyOf": [
+                                  {
+                                    "type": "number"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            },
+                            "required": [
+                              "address",
+                              "symbol",
+                              "decimals"
+                            ]
+                          },
+                          "output_token": {
+                            "type": "object",
+                            "properties": {
+                              "address": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "description": "Filter by address",
+                                    "example": "0xd8da6bf26964af9d7eed9e03e53415d37aa96045"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "symbol": {
+                                "anyOf": [
+                                  {
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "decimals": {
+                                "anyOf": [
+                                  {
+                                    "type": "number"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            },
+                            "required": [
+                              "address",
+                              "symbol",
+                              "decimals"
+                            ]
+                          },
+                          "fee": {
+                            "type": "number"
+                          },
+                          "protocol": {
+                            "description": "Protocol name",
+                            "example": "uniswap_v3",
+                            "type": "string",
+                            "enum": [
+                              "uniswap_v1",
+                              "uniswap_v2",
+                              "uniswap_v3",
+                              "uniswap_v4",
+                              "bancor",
+                              "curvefi",
+                              "balancer"
+                            ]
+                          },
+                          "network": {
+                            "description": "The Graph Network ID for EVM networks https://thegraph.com/networks",
+                            "example": "mainnet",
+                            "type": "string",
+                            "enum": [
+                              "arbitrum-one",
+                              "avalanche",
+                              "base",
+                              "bsc",
+                              "mainnet",
+                              "optimism",
+                              "polygon",
+                              "unichain"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "factory",
+                          "pool",
+                          "input_token",
+                          "output_token",
+                          "fee",
+                          "protocol",
+                          "network"
+                        ]
+                      }
+                    },
+                    "statistics": {
+                      "type": "object",
+                      "properties": {
+                        "elapsed": {
+                          "type": "number"
+                        },
+                        "rows_read": {
+                          "type": "number"
+                        },
+                        "bytes_read": {
+                          "type": "number"
+                        }
+                      }
+                    },
+                    "pagination": {
+                      "type": "object",
+                      "properties": {
+                        "previous_page": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 9007199254740991
+                        },
+                        "current_page": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 9007199254740991
+                        }
+                      },
+                      "required": [
+                        "previous_page",
+                        "current_page"
+                      ]
+                    },
+                    "results": {
+                      "type": "number"
+                    },
+                    "request_time": {
+                      "description": "ISO 8601 datetime string",
+                      "type": "string"
+                    },
+                    "duration_ms": {
+                      "type": "number"
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "statistics",
+                    "pagination",
+                    "results",
+                    "request_time",
+                    "duration_ms"
+                  ]
+                },
+                "examples": {
+                  "example": {
+                    "value": {
+                      "data": [
+                        {
+                          "pool": "TQn9Y2khEsLJW1ChVWFMSMeRDow5KcbLSE",
+                          "factory": "TXk8rQSAvPvBBNtqSoY6nCfsXWCSSpTVQF",
+                          "protocol": "uniswap_v1",
+                          "input_token": {
+                            "address": "T9yD14Nj9j7xAB4dbGeiX9h8unkKHxuWwb",
+                            "symbol": "TRX",
+                            "decimals": 6
+                          },
+                          "output_token": {
+                            "address": "TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t",
+                            "symbol": "USDT",
+                            "decimals": 6
+                          },
+                          "fee": 3000,
+                          "network": "tron"
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Client side error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "anyOf": [
+                        {
+                          "type": "number",
+                          "const": 400
+                        },
+                        {
+                          "type": "number",
+                          "const": 401
+                        },
+                        {
+                          "type": "number",
+                          "const": 403
+                        },
+                        {
+                          "type": "number",
+                          "const": 404
+                        },
+                        {
+                          "type": "number",
+                          "const": 405
+                        }
+                      ]
+                    },
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "authentication_failed",
+                        "bad_header",
+                        "missing_required_header",
+                        "bad_query_input",
+                        "forbidden",
+                        "method_not_allowed",
+                        "route_not_found",
+                        "unauthorized",
+                        "not_found_data"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "code",
+                    "message"
+                  ]
+                },
+                "examples": {
+                  "example": {
+                    "value": {
+                      "status": 400,
+                      "code": "bad_query_input",
+                      "message": "Invalid query parameter provided"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "anyOf": [
+                        {
+                          "type": "number",
+                          "const": 400
+                        },
+                        {
+                          "type": "number",
+                          "const": 401
+                        },
+                        {
+                          "type": "number",
+                          "const": 403
+                        },
+                        {
+                          "type": "number",
+                          "const": 404
+                        },
+                        {
+                          "type": "number",
+                          "const": 405
+                        }
+                      ]
+                    },
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "authentication_failed",
+                        "bad_header",
+                        "missing_required_header",
+                        "bad_query_input",
+                        "forbidden",
+                        "method_not_allowed",
+                        "route_not_found",
+                        "unauthorized",
+                        "not_found_data"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "code",
+                    "message"
+                  ]
+                },
+                "examples": {
+                  "example": {
+                    "value": {
+                      "status": 401,
+                      "code": "unauthorized",
+                      "message": "Authentication required"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "anyOf": [
+                        {
+                          "type": "number",
+                          "const": 400
+                        },
+                        {
+                          "type": "number",
+                          "const": 401
+                        },
+                        {
+                          "type": "number",
+                          "const": 403
+                        },
+                        {
+                          "type": "number",
+                          "const": 404
+                        },
+                        {
+                          "type": "number",
+                          "const": 405
+                        }
+                      ]
+                    },
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "authentication_failed",
+                        "bad_header",
+                        "missing_required_header",
+                        "bad_query_input",
+                        "forbidden",
+                        "method_not_allowed",
+                        "route_not_found",
+                        "unauthorized",
+                        "not_found_data"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "code",
+                    "message"
+                  ]
+                },
+                "examples": {
+                  "example": {
+                    "value": {
+                      "status": 403,
+                      "code": "forbidden",
+                      "message": "Access denied"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "anyOf": [
+                        {
+                          "type": "number",
+                          "const": 400
+                        },
+                        {
+                          "type": "number",
+                          "const": 401
+                        },
+                        {
+                          "type": "number",
+                          "const": 403
+                        },
+                        {
+                          "type": "number",
+                          "const": 404
+                        },
+                        {
+                          "type": "number",
+                          "const": 405
+                        }
+                      ]
+                    },
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "authentication_failed",
+                        "bad_header",
+                        "missing_required_header",
+                        "bad_query_input",
+                        "forbidden",
+                        "method_not_allowed",
+                        "route_not_found",
+                        "unauthorized",
+                        "not_found_data"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "code",
+                    "message"
+                  ]
+                },
+                "examples": {
+                  "example": {
+                    "value": {
+                      "status": 404,
+                      "code": "not_found_data",
+                      "message": "Resource not found"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server side error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "anyOf": [
+                        {
+                          "type": "number",
+                          "const": 500
+                        },
+                        {
+                          "type": "number",
+                          "const": 502
+                        },
+                        {
+                          "type": "number",
+                          "const": 504
+                        }
+                      ]
+                    },
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "bad_database_response",
+                        "connection_refused",
+                        "database_timeout",
+                        "internal_server_error"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "code",
+                    "message"
+                  ]
+                },
+                "examples": {
+                  "example": {
+                    "value": {
+                      "status": 500,
+                      "code": "internal_server_error",
+                      "message": "An unexpected error occurred"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "in": "query",
+            "name": "network",
+            "schema": {
+              "example": "tron",
+              "type": "string",
+              "enum": [
+                "tron"
+              ]
+            },
+            "required": true,
+            "description": "The Graph Network ID for TVM networks https://thegraph.com/networks"
+          },
+          {
+            "in": "query",
+            "name": "factory",
+            "schema": {
+              "type": "string",
+              "example": "TKWJdrQkqHisa1X8HUdHEfREvTzw4pMAaY",
+              "anyOf": [
+                {
+                  "type": "string",
+                  "description": "Filter by factory address",
+                  "example": "TKWJdrQkqHisa1X8HUdHEfREvTzw4pMAaY"
+                },
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "description": "Filter by factory address",
+                    "example": "TKWJdrQkqHisa1X8HUdHEfREvTzw4pMAaY"
+                  }
+                }
+              ]
+            },
+            "description": "Filter by factory address<br>Single value or array of values* (separate multiple values with `,`)<br>*Plan restricted."
+          },
+          {
+            "in": "query",
+            "name": "pool",
+            "schema": {
+              "type": "string",
+              "example": "TFGDbUyP8xez44C76fin3bn3Ss6jugoUwJ",
+              "anyOf": [
+                {
+                  "type": "string",
+                  "description": "Filter by pool address",
+                  "example": "TFGDbUyP8xez44C76fin3bn3Ss6jugoUwJ"
+                },
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "description": "Filter by pool address",
+                    "example": "TFGDbUyP8xez44C76fin3bn3Ss6jugoUwJ"
+                  }
+                }
+              ]
+            },
+            "description": "Filter by pool address<br>Single value or array of values* (separate multiple values with `,`)<br>*Plan restricted."
+          },
+          {
+            "in": "query",
+            "name": "input_token",
+            "schema": {
+              "type": "string",
+              "example": "TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t",
+              "anyOf": [
+                {
+                  "type": "string",
+                  "description": "Filter by contract address",
+                  "example": "TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t"
+                },
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "description": "Filter by contract address",
+                    "example": "TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t"
+                  }
+                }
+              ]
+            },
+            "description": "Filter by contract address<br>Single value or array of values* (separate multiple values with `,`)<br>*Plan restricted."
+          },
+          {
+            "in": "query",
+            "name": "output_token",
+            "schema": {
+              "type": "string",
+              "example": "TNUC9Qb1rRpS5CbWLmNMxXBjyFoydXjWFR",
+              "anyOf": [
+                {
+                  "type": "string",
+                  "description": "Filter by contract address",
+                  "example": "TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t"
+                },
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "description": "Filter by contract address",
+                    "example": "TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t"
+                  }
+                }
+              ]
+            },
+            "description": "Filter by contract address<br>Single value or array of values* (separate multiple values with `,`)<br>*Plan restricted."
+          },
+          {
+            "in": "query",
+            "name": "protocol",
+            "schema": {
+              "example": "uniswap_v2",
+              "default": "",
+              "type": "string",
+              "enum": [
+                "uniswap_v1",
+                "uniswap_v2",
+                "uniswap_v3",
+                "uniswap_v4",
+                "sunpump"
+              ]
+            },
+            "description": "Protocol name"
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "default": 10,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1000
+            },
+            "description": "Number of items* returned in a single request.<br>*Plan restricted."
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "default": 1,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 767465558638
+            },
+            "description": "Page number to fetch.<br>Empty `data` array signifies end of results."
           }
         ]
       }
@@ -17212,7 +18161,7 @@
     "/v1/tvm/pools/ohlc": {
       "get": {
         "operationId": "getV1TvmPoolsOhlc",
-        "summary": "Pool OHLCV Data",
+        "summary": "Pool OHLCV",
         "description": "Returns OHLCV price data for liquidity pools.\n\nOHLCV historical depth is subject to plan restrictions.",
         "tags": [
           "TVM DEXs"
@@ -17267,6 +18216,14 @@
                           },
                           "transactions": {
                             "type": "number"
+                          },
+                          "network": {
+                            "description": "The Graph Network ID for TVM networks https://thegraph.com/networks",
+                            "example": "tron",
+                            "type": "string",
+                            "enum": [
+                              "tron"
+                            ]
                           }
                         },
                         "required": [
@@ -17279,7 +18236,8 @@
                           "close",
                           "volume",
                           "uaw",
-                          "transactions"
+                          "transactions",
+                          "network"
                         ]
                       }
                     },
@@ -17350,7 +18308,8 @@
                           "close": 0.2880636266155062,
                           "volume": 15584135805763,
                           "uaw": 10,
-                          "transactions": 102081
+                          "transactions": 102081,
+                          "network": "tron"
                         }
                       ]
                     }
@@ -17726,7 +18685,7 @@
             "name": "start_time",
             "schema": {
               "type": "string",
-              "default": "2025-11-11"
+              "default": "2025-11-18"
             },
             "description": "UNIX timestamp in seconds or date string (e.g. \"2025-01-01T00:00:00Z\", \"2025-01-01\", ...)."
           },
@@ -17768,7 +18727,7 @@
       "get": {
         "operationId": "getV1TvmSwaps",
         "summary": "Swap Events",
-        "description": "Returns DEX swap transactions from Tron protocols with token amounts and prices.",
+        "description": "Returns DEX swaps events with input & output token amounts.",
         "tags": [
           "TVM DEXs"
         ],
@@ -17803,33 +18762,6 @@
                           "transaction_id": {
                             "type": "string"
                           },
-                          "transaction_index": {
-                            "type": "number"
-                          },
-                          "log_index": {
-                            "type": "number"
-                          },
-                          "log_ordinal": {
-                            "type": "number"
-                          },
-                          "log_address": {
-                            "type": "string",
-                            "description": "Filter by address",
-                            "example": "TRX9Uehj3GuFVh5jjVjNqb6q9cgVHJ4jGX"
-                          },
-                          "log_topic0": {
-                            "type": "string"
-                          },
-                          "protocol": {
-                            "description": "Protocol name",
-                            "example": "sunswap",
-                            "type": "string",
-                            "enum": [
-                              "justswap",
-                              "sunswap",
-                              "sunpump"
-                            ]
-                          },
                           "factory": {
                             "type": "string",
                             "description": "Filter by factory address",
@@ -17839,17 +18771,6 @@
                             "type": "string",
                             "description": "Filter by pool address",
                             "example": "TFGDbUyP8xez44C76fin3bn3Ss6jugoUwJ"
-                          },
-                          "user": {
-                            "type": "string",
-                            "description": "Filter by address",
-                            "example": "TRX9Uehj3GuFVh5jjVjNqb6q9cgVHJ4jGX"
-                          },
-                          "input_amount": {
-                            "type": "string"
-                          },
-                          "input_value": {
-                            "type": "number"
                           },
                           "input_token": {
                             "type": "object",
@@ -17876,12 +18797,6 @@
                               "decimals"
                             ]
                           },
-                          "output_amount": {
-                            "type": "string"
-                          },
-                          "output_value": {
-                            "type": "number"
-                          },
                           "output_token": {
                             "type": "object",
                             "properties": {
@@ -17907,6 +18822,54 @@
                               "decimals"
                             ]
                           },
+                          "caller": {
+                            "type": "string",
+                            "description": "Filter by address",
+                            "example": "TRX9Uehj3GuFVh5jjVjNqb6q9cgVHJ4jGX"
+                          },
+                          "sender": {
+                            "type": "string",
+                            "description": "Filter by address",
+                            "example": "TRX9Uehj3GuFVh5jjVjNqb6q9cgVHJ4jGX"
+                          },
+                          "recipient": {
+                            "type": "string",
+                            "description": "Filter by address",
+                            "example": "TRX9Uehj3GuFVh5jjVjNqb6q9cgVHJ4jGX"
+                          },
+                          "input_amount": {
+                            "type": "string"
+                          },
+                          "input_value": {
+                            "type": "number"
+                          },
+                          "output_amount": {
+                            "type": "string"
+                          },
+                          "output_value": {
+                            "type": "number"
+                          },
+                          "price": {
+                            "type": "number"
+                          },
+                          "price_inv": {
+                            "type": "number"
+                          },
+                          "protocol": {
+                            "description": "Protocol name",
+                            "example": "uniswap_v2",
+                            "type": "string",
+                            "enum": [
+                              "uniswap_v1",
+                              "uniswap_v2",
+                              "uniswap_v3",
+                              "uniswap_v4",
+                              "sunpump"
+                            ]
+                          },
+                          "summary": {
+                            "type": "string"
+                          },
                           "network": {
                             "description": "The Graph Network ID for TVM networks https://thegraph.com/networks",
                             "example": "tron",
@@ -17921,21 +18884,21 @@
                           "datetime",
                           "timestamp",
                           "transaction_id",
-                          "transaction_index",
-                          "log_index",
-                          "log_ordinal",
-                          "log_address",
-                          "log_topic0",
-                          "protocol",
                           "factory",
                           "pool",
-                          "user",
+                          "input_token",
+                          "output_token",
+                          "caller",
+                          "sender",
+                          "recipient",
                           "input_amount",
                           "input_value",
-                          "input_token",
                           "output_amount",
                           "output_value",
-                          "output_token",
+                          "price",
+                          "price_inv",
+                          "protocol",
+                          "summary",
                           "network"
                         ]
                       }
@@ -17998,35 +18961,33 @@
                     "value": {
                       "data": [
                         {
-                          "block_num": 77233509,
-                          "datetime": "2025-11-05 16:55:03",
-                          "timestamp": 1762361703,
-                          "transaction_id": "e74815245a8f1321ce5ede99cde8e021f75bf8e3d4f94cd8949d283eb56fee63",
-                          "transaction_index": 0,
-                          "log_index": 1,
-                          "log_ordinal": 662,
-                          "log_address": "TFGDbUyP8xez44C76fin3bn3Ss6jugoUwJ",
-                          "log_topic0": "d78ad95fa46c994b6551d0da85fc275fe613ce37657fb8d5e3d130840159d822",
-                          "protocol": "sunswap",
-                          "factory": "TKWJdrQkqHisa1X8HUdHEfREvTzw4pMAaY",
-                          "pool": "TFGDbUyP8xez44C76fin3bn3Ss6jugoUwJ",
-                          "user": "TXF1xDbVGdxFGbovmmmXvBGu8ZiE3Lq4mR",
-                          "input_amount": "170000000",
-                          "input_value": 170,
+                          "block_num": 28320009,
+                          "datetime": "2021-03-10 04:43:33",
+                          "timestamp": 1615351413,
+                          "transaction_id": "0x3e0f39b48dae8c49d3f95bc6206a632af484059764487b0c7d3e3c97bb433130",
+                          "factory": "TXk8rQSAvPvBBNtqSoY6nCfsXWCSSpTVQF",
+                          "pool": "TAqCH2kadHAugPEorFrpT7Kogqo2FckxWA",
+                          "caller": "TSLjVj4sL7uDWQXDbHyV3Kbgz1KL9jB78w",
+                          "sender": "TSLjVj4sL7uDWQXDbHyV3Kbgz1KL9jB78w",
+                          "recipient": "TSLjVj4sL7uDWQXDbHyV3Kbgz1KL9jB78w",
                           "input_token": {
-                            "address": "TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t",
-                            "symbol": "USDT",
-                            "name": "Tether USD",
-                            "decimals": 6
+                            "address": "TGc9XV7skLENAHPj4afCpBS8JSHv6box9C",
+                            "symbol": "",
+                            "decimals": 0
                           },
-                          "output_amount": "590270510",
-                          "output_value": 590.27051,
                           "output_token": {
-                            "address": "TNUC9Qb1rRpS5CbWLmNMxXBjyFoydXjWFR",
-                            "symbol": "WTRX",
-                            "name": "Wrapped TRX",
+                            "address": "T9yD14Nj9j7xAB4dbGeiX9h8unkKHxuWwb",
+                            "symbol": "TRX",
                             "decimals": 6
                           },
+                          "input_amount": "20000000",
+                          "input_value": 20000000,
+                          "output_amount": "1258054968",
+                          "output_value": 1258.054968,
+                          "price": 0.0000629027484,
+                          "price_inv": 15897.556552552798,
+                          "protocol": "uniswap_v1",
+                          "summary": "Swap 20.00 million  for 1.26 thousand TRX on Uniswap V1",
                           "network": "tron"
                         }
                       ]
@@ -18456,7 +19417,7 @@
           },
           {
             "in": "query",
-            "name": "user",
+            "name": "caller",
             "schema": {
               "type": "string",
               "example": "TXF1xDbVGdxFGbovmmmXvBGu8ZiE3Lq4mR",
@@ -18483,7 +19444,61 @@
           },
           {
             "in": "query",
-            "name": "input_token",
+            "name": "sender",
+            "schema": {
+              "type": "string",
+              "example": "TXF1xDbVGdxFGbovmmmXvBGu8ZiE3Lq4mR",
+              "anyOf": [
+                {
+                  "type": "string",
+                  "description": "Filter by address",
+                  "example": "TRX9Uehj3GuFVh5jjVjNqb6q9cgVHJ4jGX"
+                },
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "description": "Filter by address",
+                    "example": "TRX9Uehj3GuFVh5jjVjNqb6q9cgVHJ4jGX"
+                  }
+                }
+              ]
+            },
+            "description": "Filter by address<br>Single value or array of values* (separate multiple values with `,`)<br>*Plan restricted."
+          },
+          {
+            "in": "query",
+            "name": "recipient",
+            "schema": {
+              "type": "string",
+              "example": "TXF1xDbVGdxFGbovmmmXvBGu8ZiE3Lq4mR",
+              "anyOf": [
+                {
+                  "type": "string",
+                  "description": "Filter by address",
+                  "example": "TRX9Uehj3GuFVh5jjVjNqb6q9cgVHJ4jGX"
+                },
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "description": "Filter by address",
+                    "example": "TRX9Uehj3GuFVh5jjVjNqb6q9cgVHJ4jGX"
+                  }
+                }
+              ]
+            },
+            "description": "Filter by address<br>Single value or array of values* (separate multiple values with `,`)<br>*Plan restricted."
+          },
+          {
+            "in": "query",
+            "name": "input_contract",
             "schema": {
               "type": "string",
               "example": "TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t",
@@ -18510,7 +19525,7 @@
           },
           {
             "in": "query",
-            "name": "output_token",
+            "name": "output_contract",
             "schema": {
               "type": "string",
               "example": "TNUC9Qb1rRpS5CbWLmNMxXBjyFoydXjWFR",
@@ -18539,12 +19554,14 @@
             "in": "query",
             "name": "protocol",
             "schema": {
-              "example": "sunswap",
+              "example": "uniswap_v2",
               "default": "",
               "type": "string",
               "enum": [
-                "justswap",
-                "sunswap",
+                "uniswap_v1",
+                "uniswap_v2",
+                "uniswap_v3",
+                "uniswap_v4",
                 "sunpump"
               ]
             },
@@ -21096,9 +22113,9 @@
                 "examples": {
                   "example": {
                     "value": {
-                      "version": "3.6.3",
-                      "commit": "5808c37",
-                      "date": "2025-12-11",
+                      "version": "3.7.0",
+                      "commit": "c6e986e",
+                      "date": "2025-12-18",
                       "repo": "pinax-network/token-api"
                     }
                   }
