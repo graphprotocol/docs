@@ -3,6 +3,7 @@ export default {
   'subgraph-debug-forking': '',
   near: '',
   grafting: '',
+  'subgraph-linter': '',
   'subgraph-uncrashable': '',
   'transfer-to-the-graph': '',
   enums: '',
