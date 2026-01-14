@@ -1,0 +1,149 @@
+---
+title: Subgraph Linter
+sidebarTitle: Static Analysis with Subgraph Linter
+---
+
+[Subgraph Linter](https://github.com/graphops/subgraph-linter) is a static analysis tool for The Graph subgraphs. It analyzes your subgraph code before deployment and surfaces common patterns that lead to runtime crashes, corrupted entity state, silent data errors, or unnecessary performance overhead.
+
+It complements existing tools by helping you catch problems locally while writing code, rather than discovering them after deployment or in production. It does not replace testing (runtime or unit tests), but it can reduce the number of bugs that make it to production.
+
+## When to use it
+
+Run Subgraph Linter when you want to detect handler and mapping issues that don't often appear until indexing starts, such as:
+
+- Entities saved with missing required fields
+- Entity overwrite issues from concurrent/stale instances
+- Optional values force-unwrapped without checks
+- Divisions without guaranteeing a non-zero denominator
+- `@derivedFrom` fields mutated directly or left stale
+- Contract calls are used without being declared in the manifest
+
+These bugs usually compile fine, but crash at runtime or silently produce incorrect data. Subgraph Linter performs static analysis on your mapping code to detect these issues before deploying the subgraph.
+
+## How it works
+
+Subgraph Linter analyzes your subgraph manifest and the mapping files referenced by it. It understands how mappings are typically structured and tracks things such as:
+
+- Entity identity (type + id)
+- Loads, saves, and reloads
+- Helper call graphs (including nested helpers)
+- Assignments and mutations
+- Control flow guards (null checks, zero checks, short-circuit logic)
+
+From this, it applies a set of targeted checks designed specifically for problematic subgraph code patterns.
+
+## Key checks
+
+Subgraph Linter currently detects the following categories of issues:
+
+- `entity-overwrite`: Detects cases where a handler works with an entity instance that becomes stale after calling a helper (or other code path) that loads and saves the same entity, and then the handler saves its stale instance and overwrites those updates.
+- `unexpected-null`: Detects when entities may be saved in an invalid state—either because required fields weren’t initialized before `save()`, or because code attempts to assign to `@derivedFrom` fields.
+- `unchecked-load`: Detects risky patterns where `Entity.load(...)` is treated as always present (for example via `!`) instead of explicitly handling the case where the entity doesn’t exist yet.
+- `uncheckednonnull-`: Detects risky non-null assertions on values that can be missing at runtime, and encourages explicit guards instead of assuming the value is always set.
+- `division-guard`: Detects divisions where the denominator may be zero on some execution paths, and suggests guarding the value before dividing.
+- `derived-field-guard`: Detects cases where code updates “base” fields that require derived recomputation, but then saves without the helper(s) that keep derived values consistent.
+- `helper-return-contract`: Detects helper functions that can return entities without fully initializing required fields, and flags call sites where the returned entity is used/saved without completing initialization.
+- `undeclared-eth-call`: Detects contract calls made by a handler (including inside helpers it calls) that are not declared in the handler’s `calls:` block in `subgraph.yaml`, so you can add the declaration and align with Graph’s declared `eth_call` best practices.
+
+## Using Subgraph Linter
+
+The tool can be run in two ways:
+
+- As a CLI, suitable for local use or CI pipelines
+- As a VS Code extension, using an LSP server to highlight issues inline as you code
+
+### Using Subgraph Linter as CLI
+
+Build the linter locally:
+
+```bash
+cd subgraph-linter
+npm install
+npm run build
+```
+
+Run it against a subgraph manifest:
+
+```bash
+npm run check -- --manifest ../your-subgraph/subgraph.yaml
+```
+
+If your repository uses a non-standard TypeScript setup, you can specify a `tsconfig.json`:
+
+```bash
+npm run check -- --manifest ../your-subgraph/subgraph.yaml --tsconfig ../your-subgraph/tsconfig.json
+```
+
+You can also provide an explicit config file:
+
+```bash
+npm run check -- --manifest ../your-subgraph/subgraph.yaml --config ./subgraph-linter.config.json
+```
+
+_Configuration note:_ Subgraph Linter supports configurable severities per check. By default, checks have sensible severities, but you can override them to match your project’s tolerance. Only checks with effective severity `error` cause a non-zero exit code; warnings-only runs exit successfully.
+
+#### Configuration (severity overrides and suppression)
+
+Configuration lets teams apply the project-specific severities and tolerances described above. Subgraph Linter reads configuration from `subgraph-linter.config.json` (or the file passed via `--config`).
+
+The two main configuration features are:
+
+1. **Severity overrides** (treat certain checks as warnings or errors)
+2. **Comment-based suppression** (allow silencing diagnostics in exceptional cases)
+
+Example:
+
+```json
+{
+  "severityOverrides": {
+    "division-guard": "error",
+    "undeclared-eth-call": "warning"
+  },
+  "suppression": {
+    "allowWarnings": true,
+    "allowErrors": true
+  }
+}
+```
+
+#### Suppressing a warning or error with a comment
+
+In some cases, the linter may not be able to prove that a pattern is safe, but you may know it’s safe due to domain knowledge. In those cases, you can suppress a specific check on a specific line with:
+
+```tsx
+// [allow(derived-field-guard)]
+graphNetwork.save()
+```
+
+You can also suppress everything for a line using `// [allow(all)]`.
+
+### Using Subgraph Linter in VS Code
+
+The VS Code extension runs a diagnostics-only language server and shows Subgraph Linter results in the editor and the Problems panel.
+
+What to expect:
+
+- The extension auto-discovers `subgraph.yaml` files in your workspace (skipping `build/` and `dist/`).
+- If multiple manifests are found, it prompts you to select one and remembers the selection.
+- It runs on save by default (configurable).
+
+Commands:
+
+- **Subgraph Linter: Run Analysis** (`subgraph-linter.runAnalysis`)
+- **Subgraph Linter: Add Call Declaration** (`subgraph-linter.addCallDeclaration`)  
+  Offered as a quick fix for `undeclared-eth-call` diagnostics when a declaration can be generated.
+- **Suppress `<check-id>` on this line**  
+  Offered as a quick fix for Subgraph Linter diagnostics; inserts `// [allow(<check-id>)]`.
+
+Settings (prefix `subgraphLinter`):
+
+- `manifestPaths`: override manifest auto-discovery with explicit paths
+- `tsconfigPath`: pass an explicit `tsconfig.json` path to the analyzer
+- `configPath`: pass an explicit linter config path
+- `runOnSave`: run analysis when files are saved (default `true`)
+
+## Extending the linter
+
+Subgraph Linter is designed to grow as new subgraph failure patterns are discovered.
+
+See [ADDING_CHECKS.md](https://github.com/graphops/subgraph-linter/blob/main/ADDING_CHECKS.md) in the repository for a step-by-step guide.
