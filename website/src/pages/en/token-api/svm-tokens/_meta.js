@@ -3,6 +3,5 @@ export default {
   transfers: '',
   holders: '',
   balances: '',
-  'balances-native': '',
   owner: '',
 }

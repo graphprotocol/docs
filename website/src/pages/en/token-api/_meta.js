@@ -3,6 +3,7 @@ import titles from './_meta-titles.json'
 export default {
   'quick-start': '',
   'svm-tokens': titles['svm-tokens'] ?? '',
+  'svm-tokens-native': titles['svm-tokens-native'] ?? '',
   'svm-dexs': titles['svm-dexs'] ?? '',
   'evm-tokens': titles['evm-tokens'] ?? '',
   'evm-tokens-native': titles['evm-tokens-native'] ?? '',

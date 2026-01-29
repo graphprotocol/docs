@@ -9,12 +9,16 @@ export const API_IDS = ['tokenApi'] as const
 export const APIS: Record<ApiId, ApiConfig> = {
   tokenApi: {
     name: 'Token API',
-    // url: 'https://token-api.thegraph.com/openapi', // production
-    url: 'https://token-api.service.stage.pinax.network/openapi', // staging
+    url: 'https://token-api.thegraph.com/openapi', // production
+    // url: 'https://token-api.service.stage.pinax.network/openapi', // staging
     document: tokenApi as OpenAPIV3_1.Document,
     sections: {
       'SVM Tokens': {
         path: '/token-api/svm-tokens',
+        operationIdPrefixes: ['getV1Svm'],
+      },
+      'SVM Tokens (Native)': {
+        path: '/token-api/svm-tokens-native',
         operationIdPrefixes: ['getV1Svm'],
       },
       'SVM DEXs': {
