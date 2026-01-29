@@ -26,7 +26,6 @@ import {
   ExperimentalCodeInline,
   ExperimentalLink,
   type ExperimentalLinkProps,
-  ExperimentalLocaleSwitcher,
   ExperimentalNavLink,
   type NestedStrings,
   useIsomorphicLayoutEffect,
@@ -494,18 +493,6 @@ export default function Layout({ pageOpts, children }: NextraThemeLayoutProps<Fr
                 </div>
               )}
             </DocSearch>
-            <ExperimentalLocaleSwitcher>
-              {({ localeDetails }) => (
-                <ExperimentalButton
-                  variant="tertiary"
-                  iconBefore={<Translate alt={t('components.localeSwitcher.language')} />}
-                  className="prop-hide-label-true md:prop-size-small md:prop-hide-label-false"
-                >
-                  <span className="xl:hidden">{localeDetails.shortName}</span>
-                  <span className="max-xl:hidden">{localeDetails.displayName}</span>
-                </ExperimentalButton>
-              )}
-            </ExperimentalLocaleSwitcher>
             <ExperimentalAppLauncher
               variant="tertiary"
               className="prop-hide-label-true md:prop-size-small md:prop-hide-label-false"
