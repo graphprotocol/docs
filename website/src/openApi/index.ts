@@ -13,8 +13,24 @@ export const APIS: Record<ApiId, ApiConfig> = {
     // url: 'https://token-api.service.stage.pinax.network/openapi', // staging
     document: tokenApi as OpenAPIV3_1.Document,
     sections: {
-      'EVM Tokens': {
+      'SVM Tokens': {
+        path: '/token-api/svm-tokens',
+        operationIdPrefixes: ['getV1Svm'],
+      },
+      'SVM Tokens (Native)': {
+        path: '/token-api/svm-tokens-native',
+        operationIdPrefixes: ['getV1Svm'],
+      },
+      'SVM DEXs': {
+        path: '/token-api/svm-dexs',
+        operationIdPrefixes: ['getV1Svm'],
+      },
+      'EVM Tokens (ERC-20)': {
         path: '/token-api/evm-tokens',
+        operationIdPrefixes: ['getV1Evm'],
+      },
+      'EVM Tokens (Native)': {
+        path: '/token-api/evm-tokens-native',
         operationIdPrefixes: ['getV1Evm'],
       },
       'EVM DEXs': {
@@ -25,16 +41,12 @@ export const APIS: Record<ApiId, ApiConfig> = {
         path: '/token-api/evm-nfts',
         operationIdPrefixes: ['getV1EvmNft'],
       },
-      'SVM Tokens': {
-        path: '/token-api/svm-tokens',
-        operationIdPrefixes: ['getV1Svm'],
-      },
-      'SVM DEXs': {
-        path: '/token-api/svm-dexs',
-        operationIdPrefixes: ['getV1Svm'],
-      },
-      'TVM Tokens': {
+      'TVM Tokens (ERC-20)': {
         path: '/token-api/tvm-tokens',
+        operationIdPrefixes: ['getV1Tvm'],
+      },
+      'TVM Tokens (Native)': {
+        path: '/token-api/tvm-tokens-native',
         operationIdPrefixes: ['getV1Tvm'],
       },
       'TVM DEXs': {

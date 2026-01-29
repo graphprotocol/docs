@@ -1,8 +1,7 @@
 export default {
-  transfers: '',
   tokens: '',
-  balances: '',
-  'balances-native': '',
+  transfers: '',
   holders: '',
+  balances: '',
   owner: '',
 }
