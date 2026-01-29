@@ -18,11 +18,8 @@ export default function TemplateDefaultContent({ className, children, ...props }
   const editPageUrl =
     remotePageUrl ??
     (() => {
-      const [_src, _pages, locale, ...segments] = filePath.split('/')
-      // If the current page is in a language other than English, link to the English version, as translations are handled by Crowdin
-      return `https://github.com/graphprotocol/docs/blob/main/website/src/pages/${encodeURIComponent(
-        locale === 'en' || locale === '[locale]' ? locale : 'en',
-      )}/${segments.map(encodeURIComponent).join('/')}`
+      const [_src, _pages, ...segments] = filePath.split('/')
+      return `https://github.com/graphprotocol/docs/blob/main/website/src/pages/${segments.map(encodeURIComponent).join('/')}`
     })()
 
   return (

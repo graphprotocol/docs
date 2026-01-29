@@ -8,10 +8,6 @@ Direct contributions are much appreciated for simple things (corrections, small 
 
 Most of our docs are written in [Markdown](https://www.markdownguide.org/getting-started/), or more specifically, [MDX](https://mdxjs.com/docs/what-is-mdx/). The files that you’ll likely be updating are in [the `/website/src/pages/en` directory](https://github.com/graphprotocol/docs/tree/main/website/src/pages/en).
 
-> [!NOTE]
->
-> Changes should only be made to the English language version of pages, as translations are handled by [Crowdin](https://crowdin.com/). If you spot an issue with a translation, please open an issue to let us know!
-
 Once you located the file that you want to update, click on “Edit” which will create a new forked repo. You can make your edits there, and submit a PR. Alternatively, you can manually fork the repo, create a branch in your fork and make all the edits you want before submitting a PR. You can optionally [run the application locally](https://github.com/graphprotocol/docs/blob/main/README.md) to review your changes in context.
 
 ## Adding new pages

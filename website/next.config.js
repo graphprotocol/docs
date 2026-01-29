@@ -32,6 +32,7 @@ const withNextra = nextra({
   defaultShowCopyCode: false,
   readingTime: true,
   transformPageMap(pageMap) {
+    // TODO: Remove all locale-related code and move `pages/en` to just `pages`
     const route = pageMap[0] && 'route' in pageMap[0] ? pageMap[0].route : undefined
     const locale = typeof route === 'string' ? route.slice(1, 3) : defaultLocale
     const t = (/** @type {string} */ key) =>
