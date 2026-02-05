@@ -17,7 +17,7 @@ The minimum stake for an Indexer is currently set to 100K GRT.
 
 ### What are the revenue streams for an Indexer?
 
-**Query fee rebates** - Payments for serving queries on the network. These payments are mediated via state channels between an Indexer and a gateway. Each query request from a gateway contains a payment and the corresponding response a proof of query result validity.
+**Query fee rebates** - Payments for serving queries on the network. These payments are mediated via [GraphTally](/indexing/tap) between an Indexer and a gateway. Each query request from a gateway contains a signed receipt and the corresponding response a proof of query result validity.
 
 **Indexing rewards** - Generated via a 3% annual protocol wide inflation, the indexing rewards are distributed to Indexers who are indexing Subgraph deployments for the network.
 
@@ -127,13 +127,15 @@ Indexers may differentiate themselves by applying advanced techniques for making
 
 At the center of an Indexer's infrastructure is the Graph Node which monitors the indexed networks, extracts and loads data per a Subgraph definition and serves it as a [GraphQL API](/about/#how-the-graph-works). The Graph Node needs to be connected to an endpoint exposing data from each indexed network; an IPFS node for sourcing data; a PostgreSQL database for its store; and Indexer components which facilitate its interactions with the network.
 
-- **PostgreSQL database** - The main store for the Graph Node, this is where Subgraph data is stored. The Indexer service and agent also use the database to store state channel data, cost models, indexing rules, and allocation actions.
+- **PostgreSQL database** - The main store for the Graph Node, this is where Subgraph data is stored. The Indexer service, TAP agent, and Indexer agent also use the database to store receipt data, cost models, indexing rules, and allocation actions.
 
 - **Data endpoint** - For EVM-compatible networks, Graph Node needs to be connected to an endpoint that exposes an EVM-compatible JSON-RPC API. This may take the form of a single client or it could be a more complex setup that load balances across multiple. It's important to be aware that certain Subgraphs will require particular client capabilities such as archive mode and/or the parity tracing API.
 
 - **IPFS node (version less than 5)** - Subgraph deployment metadata is stored on the IPFS network. The Graph Node primarily accesses the IPFS node during Subgraph deployment to fetch the Subgraph manifest and all linked files. Network Indexers do not need to host their own IPFS node, an IPFS node for the network is hosted at https://ipfs.thegraph.com.
 
-- **Indexer service** - Handles all required external communications with the network. Shares cost models and indexing statuses, passes query requests from gateways on to a Graph Node, and manages the query payments via state channels with the gateway.
+- **Indexer service ([indexer-service-rs](https://github.com/graphprotocol/indexer-rs))** - Handles all required external communications with the network. Shares cost models and indexing statuses, passes query requests from gateways on to a Graph Node, and manages query payments via [GraphTally](/indexing/tap).
+
+- **TAP agent ([indexer-tap-agent](https://github.com/graphprotocol/indexer-rs))** - Aggregates GraphTally receipts into RAVs (Receipt Aggregate Vouchers) and reconciles redemptions. Exactly one instance should run per indexer.
 
 - **Indexer agent** - Facilitates the Indexers interactions onchain including registering on the network, managing Subgraph deployments to its Graph Node/s, and managing allocations.
 
@@ -155,12 +157,12 @@ Note: To support agile scaling, it is recommended that query and indexing concer
 | 8030 | Subgraph indexing status API | /graphql | --index-node-port | - |
 | 8040 | Prometheus metrics | /metrics | --metrics-port | - |
 
-#### Indexer Service
+#### Indexer Service (indexer-service-rs)
 
 | Port | Purpose | Routes | CLI Argument | Environment Variable |
 | --- | --- | --- | --- | --- |
-| 7600 | GraphQL HTTP server<br />(for paid Subgraph queries) | /subgraphs/id/...<br />/status<br />/channel-messages-inbox | --port | `INDEXER_SERVICE_PORT` |
-| 7300 | Prometheus metrics | /metrics | --metrics-port | - |
+| 7600 | GraphQL HTTP server<br />(for paid Subgraph queries) | /subgraphs/id/...<br />/status<br />/healthz<br />/cost<br />/info | --config | - |
+| 7300 | Prometheus metrics | /metrics | - | - |
 
 #### Indexer Agent
 
@@ -363,30 +365,28 @@ docker-compose up
 
 ### Indexer components
 
-To successfully participate in the network requires almost constant monitoring and interaction, so we've built a suite of Typescript applications for facilitating an Indexers network participation. There are three Indexer components:
+To successfully participate in the network requires almost constant monitoring and interaction, so we've built a suite of applications for facilitating an Indexers network participation. There are four Indexer components:
 
 - **Indexer agent** - The agent monitors the network and the Indexer's own infrastructure and manages which Subgraph deployments are indexed and allocated towards onchain and how much is allocated towards each.
 
-- **Indexer service** - The only component that needs to be exposed externally, the service passes on Subgraph queries to the graph node, manages state channels for query payments, shares important decision making information to clients like the gateways.
+- **[indexer-service-rs](https://github.com/graphprotocol/indexer-rs)** - The only component that needs to be exposed externally, the service passes on Subgraph queries to the graph node, validates [GraphTally](/indexing/tap) receipts, and shares important decision making information to clients like the gateways.
+
+- **[indexer-tap-agent](https://github.com/graphprotocol/indexer-rs)** - Aggregates GraphTally receipts into RAVs and manages receipt-to-payment lifecycle. Run exactly one instance per indexer.
 
 - **Indexer CLI** - The command line interface for managing the Indexer agent. It allows Indexers to manage cost models, manual allocations, actions queue, and indexing rules.
 
 #### Getting started
 
-The Indexer agent and Indexer service should be co-located with your Graph Node infrastructure. There are many ways to set up virtual execution environments for your Indexer components; here we'll explain how to run them on baremetal using NPM packages or source, or via kubernetes and docker on the Google Cloud Kubernetes Engine. If these setup examples do not translate well to your infrastructure there will likely be a community guide to reference, come say hi on [Discord](https://discord.gg/graphprotocol)! Remember to [stake in the protocol](/indexing/overview/#stake-in-the-protocol) before starting up your Indexer components!
+The Indexer agent, indexer-service-rs, and indexer-tap-agent should be co-located with your Graph Node infrastructure. There are many ways to set up virtual execution environments for your Indexer components; here we'll explain how to run them using docker or via kubernetes on the Google Cloud Kubernetes Engine. If these setup examples do not translate well to your infrastructure there will likely be a community guide to reference, come say hi on [Discord](https://discord.gg/graphprotocol)! Remember to [stake in the protocol](/indexing/overview/#stake-in-the-protocol) before starting up your Indexer components!
 
-#### From NPM packages
+#### Indexer agent (from NPM)
 
 ```sh
-npm install -g @graphprotocol/indexer-service
 npm install -g @graphprotocol/indexer-agent
 
 # Indexer CLI is a plugin for Graph CLI, so both need to be installed:
 npm install -g @graphprotocol/graph-cli
 npm install -g @graphprotocol/indexer-cli
-
-# Indexer service
-graph-indexer-service start ...
 
 # Indexer agent
 graph-indexer-agent start ...
@@ -398,58 +398,28 @@ graph indexer connect http://localhost:18000/
 graph indexer ...
 ```
 
-#### From source
+#### indexer-service-rs and indexer-tap-agent (Docker)
+
+The indexer-service-rs and indexer-tap-agent are Rust applications distributed as Docker images. See the [GraphTally guide](/indexing/tap) for detailed configuration.
 
 ```sh
-# From Repo root directory
-yarn
-
-# Indexer Service
-cd packages/indexer-service
-./bin/graph-indexer-service start ...
-
-# Indexer agent
-cd packages/indexer-agent
-./bin/graph-indexer-service start ...
-
-# Indexer CLI
-cd packages/indexer-cli
-./bin/graph-indexer-cli indexer connect http://localhost:18000/
-./bin/graph-indexer-cli indexer ...
+docker pull ghcr.io/graphprotocol/indexer-service-rs:latest
+docker pull ghcr.io/graphprotocol/indexer-tap-agent:latest
 ```
 
-#### Using docker
-
-- Pull images from the registry
+Run both services with a shared TOML configuration file:
 
 ```sh
-docker pull ghcr.io/graphprotocol/indexer-service:latest
-docker pull ghcr.io/graphprotocol/indexer-agent:latest
+# indexer-service-rs (horizontally scalable)
+docker run -p 7600:7600 -v ./config.toml:/config.toml \
+  ghcr.io/graphprotocol/indexer-service-rs:latest --config /config.toml
+
+# indexer-tap-agent (run exactly one instance)
+docker run -v ./config.toml:/config.toml \
+  ghcr.io/graphprotocol/indexer-tap-agent:latest --config /config.toml
 ```
 
-Or build images locally from source
-
-```sh
-# Indexer service
-docker build \
-  --build-arg NPM_TOKEN=<npm-token> \
-  -f Dockerfile.indexer-service \
-  -t indexer-service:latest \
-# Indexer agent
-docker build \
-  --build-arg NPM_TOKEN=<npm-token> \
-  -f Dockerfile.indexer-agent \
-  -t indexer-agent:latest \
-```
-
-- Run the components
-
-```sh
-docker run -p 7600:7600 -it indexer-service:latest ...
-docker run -p 18000:8000 -it indexer-agent:latest ...
-```
-
-**NOTE**: After starting the containers, the Indexer service should be accessible at [http://localhost:7600](http://localhost:7600) and the Indexer agent should be exposing the Indexer management API at [http://localhost:18000/](http://localhost:18000/).
+**NOTE**: After starting the containers, the indexer service should be accessible at [http://localhost:7600](http://localhost:7600) and the Indexer agent should be exposing the Indexer management API at [http://localhost:18000/](http://localhost:18000/).
 
 #### Using K8s and Terraform
 
@@ -488,30 +458,16 @@ graph-indexer-agent start \
   | pino-pretty
 ```
 
-#### Indexer service
+#### indexer-service-rs and indexer-tap-agent
+
+Both `indexer-service-rs` and `indexer-tap-agent` are configured using a shared TOML file. See the [GraphTally guide](/indexing/tap) for detailed configuration and deployment instructions.
 
 ```sh
-SERVER_HOST=localhost \
-SERVER_PORT=5432 \
-SERVER_DB_NAME=is_staging \
-SERVER_DB_USER=<DB_USERNAME> \
-SERVER_DB_PASSWORD=<DB_PASSWORD> \
-graph-indexer-service start \
-  --ethereum <MAINNET_ETH_ENDPOINT> \
-  --ethereum-network mainnet \
-  --mnemonic <MNEMONIC> \
-  --indexer-address <INDEXER_ADDRESS> \
-  --port 7600 \
-  --metrics-port 7300 \
-  --graph-node-query-endpoint http://localhost:8000/ \
-  --graph-node-status-endpoint http://localhost:8030/graphql \
-  --postgres-host localhost \
-  --postgres-port 5432 \
-  --postgres-username <DB_USERNAME> \
-  --postgres-password <DB_PASSWORD> \
-  --postgres-database is_staging \
-  --network-subgraph-endpoint http://query-node-0:8000/subgraphs/id/QmUzRg2HHMpbgf6Q4VHKNDbtBEJnyp5JWCh2gUX9AV6jXv \
-  | pino-pretty
+# Run indexer-service-rs
+indexer-service-rs --config /path/to/config.toml
+
+# Run indexer-tap-agent (exactly one instance)
+indexer-tap-agent --config /path/to/config.toml
 ```
 
 #### Indexer CLI

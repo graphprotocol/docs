@@ -44,16 +44,19 @@ RAV redemption is fully automated when running `indexer-tap-agent` and `indexer-
    - Reverted transactions are resubmitted
    - Confirmed transactions are marked `final`
 
+### Allocation Reconciliation
+
+The tap-agent automatically reconciles RAV redemptions using the network subgraph. It queries `paymentsEscrowTransactions` to track which RAVs have been redeemed onchain and detects blockchain reorganizations that may revert redemption transactions. Reconciliation runs every 5 minutes by default (configurable via `tap.allocation_reconciliation_interval_secs`).
+
 ## Blockchain Addresses
 
 ### Contracts
 
-| Contract          | Arbitrum Mainnet (42161)                     | Arbitrum Sepolia (421614)                    |
-| ----------------- | -------------------------------------------- | -------------------------------------------- |
-| TAP Verifier (V1) | `0x33f9E93266ce0E108fc85DdE2f71dab555A0F05a` | `0xfC24cE7a4428A6B89B52645243662A02BA734ECF` |
-| TAP Verifier (V2) | `0x8f69F5C07477Ac46FBc491B1E6D91E2be0111A9e` | `0x382863e7B662027117449bd2c49285582bbBd21B` |
-| Subgraph Service  | `0xb2Bb92d0DE618878E438b55D5846cfecD9301105` | `0xc24A3dAC5d06d771f657A48B20cE1a671B78f26b` |
-| TAP Escrow        | `0x8f477709eF277d4A880801D01A140a9CF88bA0d3` | `0x1e4dC4f9F95E102635D8F7ED71c5CdbFa20e2d02` |
+| Contract         | Arbitrum Mainnet (42161)                     | Arbitrum Sepolia (421614)                    |
+| ---------------- | -------------------------------------------- | -------------------------------------------- |
+| TAP Verifier     | `0x8f69F5C07477Ac46FBc491B1E6D91E2be0111A9e` | `0x382863e7B662027117449bd2c49285582bbBd21B` |
+| Subgraph Service | `0xb2Bb92d0DE618878E438b55D5846cfecD9301105` | `0xc24A3dAC5d06d771f657A48B20cE1a671B78f26b` |
+| TAP Escrow       | `0x8f477709eF277d4A880801D01A140a9CF88bA0d3` | `0x1e4dC4f9F95E102635D8F7ED71c5CdbFa20e2d02` |
 
 ### Gateway
 
@@ -68,8 +71,10 @@ RAV redemption is fully automated when running `indexer-tap-agent` and `indexer-
 ### Software Requirements
 
 - **indexer-agent**: [Latest version](https://github.com/graphprotocol/indexer/releases)
-- **indexer-service-rs**: [Latest release](https://github.com/graphprotocol/indexer-rs/releases?q=indexer-service-rs)
-- **indexer-tap-agent**: [Latest release](https://github.com/graphprotocol/indexer-rs/releases?q=indexer-tap-agent)
+- **indexer-service-rs** v2.0.0+: [Latest release](https://github.com/graphprotocol/indexer-rs/releases?q=indexer-service-rs)
+- **indexer-tap-agent** v2.0.0+: [Latest release](https://github.com/graphprotocol/indexer-rs/releases?q=indexer-tap-agent)
+
+> **Important**: Starting with v2.0.0, `indexer-service-rs` and `indexer-tap-agent` require Graph Horizon. Legacy V1 receipt support has been removed. Ensure you have the required Horizon contract addresses configured before upgrading.
 
 ### Docker Images
 
@@ -83,7 +88,7 @@ docker pull ghcr.io/graphprotocol/indexer-tap-agent:latest
 Your indexer stack consists of:
 
 - **indexer-service-rs**: Handles incoming queries, validates receipts, routes to graph-node. Stateless and horizontally scalable.
-- **indexer-tap-agent**: Aggregates receipts into RAVs. Run exactly **one instance**.
+- **indexer-tap-agent**: Aggregates receipts into RAVs and reconciles redemptions. Run exactly **one instance**.
 - **indexer-agent**: Manages allocations and redeems RAVs onchain.
 
 All three components share the same PostgreSQL database.
@@ -99,10 +104,12 @@ Both `indexer-service-rs` and `indexer-tap-agent` use a shared TOML configuratio
 indexer_address = "0x1111111111111111111111111111111111111111"
 operator_mnemonic = "your twelve word mnemonic phrase here ..."
 
-# For key rotation, you can specify multiple mnemonics:
+# For key rotation, you can specify multiple mnemonics.
+# All configured mnemonics are tried when creating attestation signers,
+# allowing allocations created with different operator keys to work.
+# The first mnemonic is used as the primary identity on the /info endpoint.
 # operator_mnemonics = [
-#     "current mnemonic phrase here",
-#     "previous mnemonic if you rotated keys"
+#     "previous mnemonic phrase here if you rotated keys"
 # ]
 
 [database]
@@ -113,25 +120,20 @@ query_url = "http://graph-node:8000"
 status_url = "http://graph-node:8000/graphql"
 
 [subgraphs.network]
-# The Graph Network Subgraph (includes escrow data with Graph Horizon)
+# The Graph Network Subgraph (includes escrow data for Horizon)
 # Use query_url for hosted service, or deployment_id for local indexing (recommended)
 query_url = "https://api.thegraph.com/subgraphs/name/graphprotocol/graph-network-arbitrum"
 # deployment_id = "QmUVskWrz1ZiQZ76AtyhcfFDEH1ELnRpoyEhVL8p6NFTbR"
 
-# Note: With Graph Horizon, escrow data is included in the Network Subgraph.
-# The separate [subgraphs.escrow] config is only needed for legacy V1 receipt processing.
-
 [blockchain]
 chain_id = 42161
-# V1 TAP Verifier (for legacy receipts during migration)
-receipts_verifier_address = "0x33f9E93266ce0E108fc85DdE2f71dab555A0F05a"
-# V2 Horizon TAP Verifier
 receipts_verifier_address_v2 = "0x8f69F5C07477Ac46FBc491B1E6D91E2be0111A9e"
 subgraph_service_address = "0xb2Bb92d0DE618878E438b55D5846cfecD9301105"
+# Legacy V1 verifier (deprecated in v2.0.0, can be removed from your config):
+# receipts_verifier_address = "0x33f9E93266ce0E108fc85DdE2f71dab555A0F05a"
 
 # For testnet:
 # chain_id = 421614
-# receipts_verifier_address = "0xfC24cE7a4428A6B89B52645243662A02BA734ECF"
 # receipts_verifier_address_v2 = "0x382863e7B662027117449bd2c49285582bbBd21B"
 # subgraph_service_address = "0xc24A3dAC5d06d771f657A48B20cE1a671B78f26b"
 
@@ -150,6 +152,23 @@ max_amount_willing_to_lose_grt = "0.1"
 enabled = true
 ```
 
+#### Required Configuration Fields
+
+The following fields are required for operation:
+
+| Field                          | Section               | Description                                   |
+| ------------------------------ | --------------------- | --------------------------------------------- |
+| `indexer_address`              | `[indexer]`           | Your indexer's Ethereum address               |
+| `operator_mnemonic`            | `[indexer]`           | BIP-39 mnemonic for the operator wallet       |
+| `postgres_url`                 | `[database]`          | PostgreSQL connection URL                     |
+| `query_url`                    | `[graph_node]`        | Graph Node query endpoint                     |
+| `status_url`                   | `[graph_node]`        | Graph Node status endpoint                    |
+| `query_url` or `deployment_id` | `[subgraphs.network]` | Network subgraph endpoint                     |
+| `chain_id`                     | `[blockchain]`        | Network chain ID (42161 for Arbitrum Mainnet) |
+| `receipts_verifier_address_v2` | `[blockchain]`        | TAP Verifier contract address                 |
+| `subgraph_service_address`     | `[blockchain]`        | SubgraphService contract address              |
+| `enabled = true`               | `[horizon]`           | Horizon mode (required)                       |
+
 #### Environment Variable Overrides
 
 Override any configuration value using environment variables:
@@ -167,6 +186,18 @@ export TAP_AGENT__TAP__MAX_AMOUNT_WILLING_TO_LOSE_GRT="0.5"
 - [Full configuration reference](https://github.com/graphprotocol/indexer-rs/blob/main/crates/config/maximal-config-example.toml)
 - [Default values](https://github.com/graphprotocol/indexer-rs/blob/main/crates/config/default_values.toml)
 
+### Receipt Validation
+
+`indexer-service-rs` validates every incoming receipt before storing it. The following checks are performed:
+
+- **Allocation eligibility**: The receipt targets a valid, active allocation
+- **Payer check**: The receipt's payer field matches a known sender
+- **Data service check**: The receipt's `data_service` field matches the configured `subgraph_service_address`
+- **Service provider check**: The receipt's `service_provider` matches the indexer's address
+- **Sender balance check**: The sender has sufficient escrow balance
+- **Value check**: The receipt value does not exceed `max_receipt_value_grt`
+- **Timestamp check**: The receipt timestamp is within acceptable bounds
+
 ### Logging
 
 Set the log level using the `RUST_LOG` environment variable:
@@ -180,6 +211,33 @@ export RUST_LOG=indexer_service=debug,indexer_tap_agent=debug
 ```
 
 ## Monitoring
+
+### Endpoints
+
+`indexer-service-rs` exposes the following HTTP endpoints:
+
+| Route                 | Method | Description                                             |
+| --------------------- | ------ | ------------------------------------------------------- |
+| `/subgraphs/id/:id`   | POST   | Main query endpoint for paid queries                    |
+| `/health/:deployment` | GET    | Deployment health status from graph-node                |
+| `/healthz`            | GET    | Service dependency health check (database + graph-node) |
+| `/status`             | POST   | Indexing status queries                                 |
+| `/cost`               | GET    | Cost model information                                  |
+| `/info`               | GET    | Operator address                                        |
+
+The `/healthz` endpoint checks connectivity to the PostgreSQL database and graph-node, returning a JSON response:
+
+```json
+{
+  "status": "healthy",
+  "checks": {
+    "database": { "status": "healthy" },
+    "graph_node": { "status": "healthy" }
+  }
+}
+```
+
+Returns HTTP 200 when all checks pass, or HTTP 503 when any dependency is unhealthy.
 
 ### Metrics
 
@@ -223,117 +281,42 @@ Common issues and solutions:
    - Check if specific senders are having aggregation issues
    - Monitor the Grafana dashboard for aggregation patterns
 
-## Horizon (TAP V2) Migration
+4. **Service startup fails with missing configuration**:
+   - Ensure `horizon.enabled = true` is set
+   - Verify both `receipts_verifier_address_v2` and `subgraph_service_address` are configured
+   - Check that the network subgraph is accessible
 
-Horizon is the next-generation Graph protocol with updated smart contracts and a new receipt format (V2). This section covers how to enable Horizon support in your indexer stack.
+## Upgrading to v2.0.0
 
-### Critical: Both Services Must Be Configured
+Version 2.0.0 of `indexer-service-rs` and `indexer-tap-agent` removes support for legacy V1 receipts. All receipt processing now uses Graph Horizon (GraphTally) exclusively.
 
-> **Warning**: `indexer-service-rs` and `indexer-tap-agent` have **separate configurations** and **both must have Horizon enabled** for V2 receipts to be processed correctly.
->
-> A common misconfiguration is enabling Horizon only on `indexer-service` while leaving `tap-agent` in legacy mode. This results in:
->
-> - `indexer-service` accepting V2 receipts and storing them in the database
-> - `tap-agent` ignoring all Horizon allocations (showing 0 allocations tracked)
-> - **No RAVs created, no redemptions possible**
+### What Changed
 
-### Horizon Configuration Checklist
+- **Horizon is required**: The `[horizon].enabled` field must be set to `true`. Configs with `enabled = false` are rejected at startup.
+- **V1 receipt handling removed**: The system no longer processes legacy V1 receipts or queries the escrow subgraph for V2 operations.
+- **`receipts_verifier_address` (V1) is deprecated**: This field is now optional and unused. You can remove it from your config.
+- **`receipts_verifier_address_v2` is required**: This must be set to the Horizon TAP Verifier contract address.
+- **`subgraph_service_address` is required**: This must be set to the SubgraphService contract address.
+- **Escrow data from network subgraph**: V2 escrow accounts are read from the network subgraph, not a separate escrow subgraph.
 
-#### Step 1: Obtain Horizon Contract Addresses
+### Migration Checklist
 
-You need two new addresses for Horizon (check [The Graph documentation](#blockchain-addresses) for current values):
+1. **Update your configuration**:
+   - Add `receipts_verifier_address_v2` and `subgraph_service_address` under `[blockchain]` if not already present
+   - Ensure `[horizon].enabled = true`
+   - You can remove `receipts_verifier_address` (the old V1 verifier) from your config
+   - The `[subgraphs.escrow]` section can be removed unless you serve the escrow subgraph proxy via `serve_escrow_subgraph = true` in the `[service]` section (most indexers do not need this)
 
-| Contract                       | Purpose                                               |
-| ------------------------------ | ----------------------------------------------------- |
-| `receipts_verifier_address_v2` | TAP Verifier V2 contract for Horizon receipts         |
-| `subgraph_service_address`     | Subgraph Service contract for allocation verification |
+2. **Ensure all V1 RAVs are redeemed**: Before upgrading, confirm that all pending V1 RAVs have been redeemed onchain. The new version cannot process V1 receipts.
 
-#### Step 2: Update Configuration File
+3. **Update Docker images**:
 
-Add the Horizon settings to your shared TOML configuration:
-
-```toml
-[blockchain]
-chain_id = 42161
-# Legacy V1 verifier (keep for existing receipts)
-receipts_verifier_address = "0x33f9E93266ce0E108fc85DdE2f71dab555A0F05a"
-# Horizon V2 addresses
-receipts_verifier_address_v2 = "0x..." # Get from The Graph docs
-subgraph_service_address = "0x..."     # Get from The Graph docs
-
-[horizon]
-enabled = true
-```
-
-#### Step 3: Configure Environment Variables (if not using config file)
-
-If you use environment variables, you must set them for **both services**:
-
-```bash
-# For indexer-service
-export INDEXER_SERVICE__HORIZON__ENABLED=true
-export INDEXER_SERVICE__BLOCKCHAIN__RECEIPTS_VERIFIER_ADDRESS_V2="0x..."
-export INDEXER_SERVICE__BLOCKCHAIN__SUBGRAPH_SERVICE_ADDRESS="0x..."
-
-# For tap-agent (REQUIRED - don't forget this!)
-export TAP_AGENT__HORIZON__ENABLED=true
-export TAP_AGENT__BLOCKCHAIN__RECEIPTS_VERIFIER_ADDRESS_V2="0x..."
-export TAP_AGENT__BLOCKCHAIN__SUBGRAPH_SERVICE_ADDRESS="0x..."
-```
-
-#### Step 4: Verify Configuration
-
-After restarting both services, check the logs to confirm Horizon is active:
-
-**indexer-service logs (expected):**
-
-```
-INFO indexer_service_rs::service: Horizon mode configured - checking if Horizon contracts are active
-INFO indexer_service_rs::service: Horizon contracts detected - using Horizon migration mode
-```
-
-**tap-agent logs (expected):**
-
-```
-INFO indexer_tap_agent::agent: Horizon mode configured - checking if Horizon contracts are active
-INFO indexer_tap_agent::agent::sender_accounts_manager: horizon_active: true
-```
-
-**tap-agent logs (PROBLEM - Horizon not enabled):**
-
-```
-INFO indexer_tap_agent::agent: Horizon not configured - using pure legacy mode
-INFO indexer_tap_agent::agent::sender_accounts_manager: horizon_active: false
-```
-
-If you see "pure legacy mode" in tap-agent but have Horizon allocations, your receipts will not be processed!
-
-### Horizon Migration Modes
-
-When Horizon is enabled and contracts are detected:
-
-- **Hybrid Migration Mode**: The system accepts new V2 receipts while continuing to process existing V1 receipts
-- **V2 Receipts Only**: New queries generate V2 receipts (stored in `scalar_tap_receipts_v2` table)
-- **Legacy Processing**: Existing V1 receipts continue to be aggregated until allocations close
-
-### Troubleshooting Horizon
-
-1. **TAP agent shows 0 allocations but you have Horizon allocations**:
-   - Check that `TAP_AGENT__HORIZON__ENABLED=true` is set
-   - Verify `subgraph_service_address` is configured for tap-agent
-   - Look for "pure legacy mode" in tap-agent logs
-
-2. **"mismatched" allocations in tap-agent logs**:
-
-   ```
-   total: 788, legacy: 0, horizon: 788, mismatched: 788, normalized: 0
+   ```bash
+   docker pull ghcr.io/graphprotocol/indexer-service-rs:latest
+   docker pull ghcr.io/graphprotocol/indexer-tap-agent:latest
    ```
 
-   This indicates tap-agent is in legacy mode but all your allocations are Horizon. Enable Horizon on tap-agent.
-
-3. **Receipts stored but not aggregated**:
-   - Confirm both services have matching `receipts_verifier_address_v2` values
-   - Check that `subgraph_service_address` matches between services
+4. **Restart both services** with the updated configuration.
 
 ## Deployment Options
 
