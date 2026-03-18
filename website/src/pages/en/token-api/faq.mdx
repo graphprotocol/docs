@@ -392,6 +392,29 @@ For EVM addresses, the API accepts hex addresses with either 42 or 40 characters
 
 SVM addresses are base58-encoded strings that are typically 32-44 characters long. They contain a mix of uppercase letters, lowercase letters, and numbers. Unlike Ethereum Mainnet addresses which are hexadecimal and start with "0x", Solana Mainnet addresses don't have a consistent prefix pattern.
 
+### Address field semantics
+
+Swap-related address fields are DEX-dependent and should not be treated as interchangeable.
+
+The API exposes:
+
+- `transaction_from` — the account that initiated the transaction onchain
+- `caller` — the account or contract that called the swap-relevant smart contract
+- `sender` — a field that, in many modern DEX integrations, is best interpreted as the end-user side of the swap flow
+- `recipient` — the swap recipient field when available from protocol data
+
+These fields may be the same in some protocols and different in others. For example, simpler Uniswap V2-style flows can be more direct, while Uniswap V3 and newer routed designs often involve routers or intermediary contracts, so the contract-level caller may differ from the wallet that initiated the transaction.
+
+The `sender` field deserves special attention. Although the field is named `sender`, in many modern DEX designs it more closely represents the user associated with the swap than a strict low-level transfer sender. This is because many protocols now route swaps through intermediary contracts, and those routers may handle both the send and receive side of token movement before funds reach the final user. In practice, `sender` is often best understood as a user-oriented field rather than a literal transfer sender across all DEX implementations.
+
+Because of this:
+
+- `transaction_from`, `caller`, `sender`, and `recipient` may all differ
+- `caller` should not be interpreted as the same as `transaction_from`
+- `sender` is often the most user-oriented address in the response, but its exact semantics still depend on the DEX implementation
+- `recipient` may refer to an intermediate contract rather than the final wallet beneficiary
+- TVM swap data does not include call data, which is why `caller` is not supported there
+
 ### Do I need special headers besides authentication?
 
 While recommended, `Accept: application/json` isn't strictly required as the API returns JSON by default. The critical header is `Authorization: Bearer <token>`. Ensure you make a GET request to the correct URL without trailing slashes or path typos (e.g., use `/v1/evm/balances` not `/v1/evm/balance`).
