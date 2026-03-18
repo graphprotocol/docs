@@ -135,6 +135,7 @@ Swaps are being reported via Aggregator programs and do not include amm_pool fie
 - Uniswap V4
 - SushiSwap V2
 - Balancer
+- Cow
 - Curve
 - Bancor
 - Ring Swap
@@ -143,6 +144,9 @@ Swaps are being reported via Aggregator programs and do not include amm_pool fie
 - PancakeSwap V2
 - Solidly V3
 - SushiSwap V3
+- KyberSwap Elastic
+- Dodo
+- WOOFi
 - Fraxswap V2
 - Verse Exchange
 - Integral
@@ -166,6 +170,9 @@ Swaps are being reported via Aggregator programs and do not include amm_pool fie
 - Balancer
 - Curve
 - Ramses
+- KyberSwap Elastic
+- WOOFi
+- Dodo
 - SushiSwap V2
 - Uniswap V2
 - Camelot
@@ -178,7 +185,7 @@ Swaps are being reported via Aggregator programs and do not include amm_pool fie
 - DXswap
 - Arbidex
 - Integral
-- Trader Joe
+- Cow
 
 #### Polygon Mainnet
 
@@ -191,6 +198,9 @@ Swaps are being reported via Aggregator programs and do not include amm_pool fie
 - Curve
 - Stabl.fi
 - SushiSwap V3
+- KyberSwap Elastic
+- Dodo
+- WOOFi
 - SweepnFlip
 - ApeSwap V2
 - DFYN
@@ -199,12 +209,14 @@ Swaps are being reported via Aggregator programs and do not include amm_pool fie
 - Wault Finance
 - DooarSwap
 - Elk
+- Cow
 
 #### Unichain Mainnet
 
 - Uniswap V4
 - Uniswap V3
 - Uniswap V2
+- KyberSwap Elastic
 
 #### BSC Mainnet
 
@@ -213,6 +225,9 @@ Swaps are being reported via Aggregator programs and do not include amm_pool fie
 - PancakeSwap V4
 - PancakeSwap V1
 - Biswap
+- Dodo
+- WOOFi
+- KyberSwap Elastic
 - ApeSwap V2
 - MDEX
 - BabySwap
@@ -222,7 +237,9 @@ Swaps are being reported via Aggregator programs and do not include amm_pool fie
 - Algebra (v3-style)
 - WaultSwap
 - BakerySwap
+- LFJ (Trader Joe)
 - SquadSwap
+- Cow
 
 #### Optimism Mainnet
 
@@ -233,14 +250,16 @@ Swaps are being reported via Aggregator programs and do not include amm_pool fie
 - Balancer
 - Curve
 - Beethoven X
+- KyberSwap Elastic
+- WOOFi
+- Dodo
 
 #### Avalanche C-Chain
 
-- Trader Joe V2.1
-- Trader Joe V3
-- Trader Joe V2
+- LFJ (Trader Joe)
 - Pangolin V2
 - Pangolin V1
+- KyberSwap Elastic
 - Elk Finance
 - Uniswap V4
 - Lydia Finance
@@ -253,8 +272,10 @@ Swaps are being reported via Aggregator programs and do not include amm_pool fie
 - Uniswap V3
 - Uniswap V2
 - Uniswap V4
+- Aerodrome
 - SushiSwap V2
 - Balancer
+- KyberSwap Elastic
 - Curve
 - BaseSwap
 - Alien Base V3
@@ -370,6 +391,29 @@ Large numeric values (like token amounts or supply) are returned as strings to a
 For EVM addresses, the API accepts hex addresses with either 42 or 40 characters, with or without the `0x` prefix. The endpoint is case-insensitive, so both lower and uppercase hex characters work. Ensure EVM addresses are exactly 42 characters, or 40 if you remove the prefix. For contract queries, use the token's contract address. For balance/transfer queries, use the wallet address.
 
 SVM addresses are base58-encoded strings that are typically 32-44 characters long. They contain a mix of uppercase letters, lowercase letters, and numbers. Unlike Ethereum Mainnet addresses which are hexadecimal and start with "0x", Solana Mainnet addresses don't have a consistent prefix pattern.
+
+### Address field semantics
+
+Swap-related address fields are DEX-dependent and should not be treated as interchangeable.
+
+The API exposes:
+
+- `transaction_from` — the account that initiated the transaction onchain
+- `caller` — the account or contract that called the swap-relevant smart contract
+- `sender` — a field that, in many modern DEX integrations, is best interpreted as the end-user side of the swap flow
+- `recipient` — the swap recipient field when available from protocol data
+
+These fields may be the same in some protocols and different in others. For example, simpler Uniswap V2-style flows can be more direct, while Uniswap V3 and newer routed designs often involve routers or intermediary contracts, so the contract-level caller may differ from the wallet that initiated the transaction.
+
+The `sender` field deserves special attention. Although the field is named `sender`, in many modern DEX designs it more closely represents the user associated with the swap than a strict low-level transfer sender. This is because many protocols now route swaps through intermediary contracts, and those routers may handle both the send and receive side of token movement before funds reach the final user. In practice, `sender` is often best understood as a user-oriented field rather than a literal transfer sender across all DEX implementations.
+
+Because of this:
+
+- `transaction_from`, `caller`, `sender`, and `recipient` may all differ
+- `caller` should not be interpreted as the same as `transaction_from`
+- `sender` is often the most user-oriented address in the response, but its exact semantics still depend on the DEX implementation
+- `recipient` may refer to an intermediate contract rather than the final wallet beneficiary
+- TVM swap data does not include call data, which is why `caller` is not supported there
 
 ### Do I need special headers besides authentication?
 
