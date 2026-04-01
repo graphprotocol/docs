@@ -28,9 +28,7 @@ export default function TemplateDefaultContent({ className, children, ...props }
   // blob URL into a raw.githubusercontent.com URL.  For local pages, build
   // the raw URL from the file path.
   const rawMarkdownUrl = remotePageUrl
-    ? remotePageUrl
-        .replace('https://github.com/', 'https://raw.githubusercontent.com/')
-        .replace('/blob/', '/')
+    ? remotePageUrl.replace('https://github.com/', 'https://raw.githubusercontent.com/').replace('/blob/', '/')
     : (() => {
         const [_src, _pages, ...segments] = filePath.split('/')
         return `https://raw.githubusercontent.com/graphprotocol/docs/main/website/src/pages/${segments.join('/')}`

@@ -40,19 +40,18 @@ export function CopyForLLM({ rawUrl }: CopyForLLMProps) {
     }
   }
 
-  const label =
-    status === 'copied' ? 'Copied!' : status === 'copying' ? 'Copying…' : 'Copy page'
+  const label = status === 'copied' ? 'Copied!' : status === 'copying' ? 'Copying…' : 'Copy page'
 
   return (
     <div ref={menuRef} className="relative flex items-center">
       {/* Primary button */}
       <button
-        onClick={copyMarkdown}
+        onClick={() => void copyMarkdown()}
         className="
-          flex items-center gap-1.5
-          rounded-s border border-space-1400
-          px-2.5 py-1
-          text-body-xsmall text-space-700
+          rounded-s text-body-xsmall flex
+          items-center gap-1.5 border
+          border-space-1400 px-2.5
+          py-1 text-space-700
           outline-offset-2 transition
           hover:border-space-1200 hover:text-space-300
         "
@@ -67,8 +66,8 @@ export function CopyForLLM({ rawUrl }: CopyForLLMProps) {
         aria-label="More options"
         aria-expanded={open}
         className="
-          flex items-center
-          rounded-e border border-s-0 border-space-1400
+          rounded-e flex
+          items-center border border-s-0 border-space-1400
           px-1.5 py-1
           text-space-700
           outline-offset-2 transition
@@ -80,9 +79,9 @@ export function CopyForLLM({ rawUrl }: CopyForLLMProps) {
 
       {/* Dropdown */}
       {open && (
-        <div className="absolute end-0 top-full z-20 mt-1.5 w-64 overflow-hidden rounded border border-space-1400 bg-space-1700 shadow-lg">
+        <div className="rounded absolute end-0 top-full z-20 mt-1.5 w-64 overflow-hidden border border-space-1400 bg-space-1700 shadow-lg">
           <button
-            onClick={copyMarkdown}
+            onClick={() => void copyMarkdown()}
             className="flex w-full items-start gap-3 px-4 py-3 text-start transition hover:bg-space-1600"
           >
             <ClipboardIcon className="mt-0.5 shrink-0 text-space-500" size={16} />
@@ -101,7 +100,7 @@ export function CopyForLLM({ rawUrl }: CopyForLLMProps) {
           >
             <MarkdownIcon className="mt-0.5 shrink-0 text-space-500" />
             <div>
-              <div className="text-body-small text-white">View as Markdown ↗</div>
+              <div className="text-body-small text-white">View as Markdown ↗</div>
               <div className="text-body-xsmall text-space-600">View this page as plain text</div>
             </div>
           </a>
@@ -115,13 +114,7 @@ export function CopyForLLM({ rawUrl }: CopyForLLMProps) {
 // Inline SVG icons (avoids adding an icon library dependency)
 // ---------------------------------------------------------------------------
 
-function ClipboardIcon({
-  className,
-  size = 14,
-}: {
-  className?: string
-  size?: number
-}) {
+function ClipboardIcon({ className, size = 14 }: { className?: string; size?: number }) {
   return (
     <svg
       width={size}
