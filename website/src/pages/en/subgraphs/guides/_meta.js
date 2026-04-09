@@ -9,5 +9,6 @@ export default {
   enums: '',
   'secure-api-keys-nextjs': '',
   polymarket: '',
+  agent0: '',
   'contract-analyzer': '',
 }
