@@ -10,7 +10,7 @@ export const APIS: Record<ApiId, ApiConfig> = {
   tokenApi: {
     name: 'Token API',
     url: 'https://token-api.thegraph.com/openapi', // production
-    // url: 'https://token-api.service.stage.pinax.network/openapi', // staging
+    // url: 'https://token-api.stage.pinax.network/openapi', // staging
     document: tokenApi as OpenAPIV3_1.Document,
     sections: {
       'SVM Tokens': {
@@ -52,6 +52,18 @@ export const APIS: Record<ApiId, ApiConfig> = {
       'TVM DEXs': {
         path: '/token-api/tvm-dexs',
         operationIdPrefixes: ['getV1Tvm'],
+      },
+      'Polymarket Markets': {
+        path: '/token-api/polymarket-markets',
+        operationIdPrefixes: ['getV1Polymarket', 'getV1PolymarketMarkets'],
+      },
+      'Polymarket Platform': {
+        path: '/token-api/polymarket-platform',
+        operationIdPrefixes: ['getV1Polymarket', 'getV1PolymarketPlatform'],
+      },
+      'Polymarket Users': {
+        path: '/token-api/polymarket-users',
+        operationIdPrefixes: ['getV1Polymarket', 'getV1PolymarketUsers'],
       },
       Monitoring: {
         path: '/token-api/monitoring',
@@ -219,13 +231,12 @@ export function getApi(apiId: ApiId, passedDocument?: OpenAPIV3_1.Document): Api
         })
       }
 
-      const longestOperationIdPrefixThatMatches = (section.operationIdPrefixes ?? [])
+      const operationIdPrefixMatches = (section.operationIdPrefixes ?? [])
         .filter((prefix) => operationId.startsWith(prefix))
-        .sort((a, b) => b.length - a.length)[0]
+        .sort((a, b) => b.length - a.length)
+      const bestOperationIdPrefixMatch = operationIdPrefixMatches.find((prefix) => prefix !== operationId) // longest prefix that isn't the entire operationId
       const slug = camelToKebab(
-        longestOperationIdPrefixThatMatches
-          ? operationId.slice(longestOperationIdPrefixThatMatches.length)
-          : operationId,
+        bestOperationIdPrefixMatch ? operationId.slice(bestOperationIdPrefixMatch.length) : operationId,
       )
 
       const operation: ApiOperation = {
