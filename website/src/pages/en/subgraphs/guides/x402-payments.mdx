@@ -1,0 +1,147 @@
+---
+title: Using x402 to Pay for Subgraph Data on The Graph Network
+sidebarTitle: x402 Subgraph Payments
+---
+
+Pay-per-query access to Subgraphs on The Graph Network using the x402 payment protocol.
+
+The Graph's Subgraph Gateways accept x402 payments for per-query access on The Graph Network. Agents and applications can pay in USDC over HTTP without an API key.
+
+## Overview
+
+The Graph's x402 Subgraph endpoints enable:
+
+- **Per-query access** to any Subgraph published on The Graph Network
+- **USDC payments** on Base (mainnet) and Base Sepolia (testnet)
+- **No API keys, accounts, or sessions**: payment and access happen in a single HTTP round trip
+- **Compatible with any x402 client**, with first-class support via `@graphprotocol/client-x402`
+
+The existing API-key endpoints continue to work unchanged with x402 is an additional access path under `/api/x402/...`.
+
+## How It Works
+
+1. The client sends a GraphQL query to an `/api/x402/...` endpoint.
+2. The Gateway responds with `402 Payment Required` and payment requirements (amount, network, asset, recipient).
+3. The client signs a USDC payment payload and retries the request with the payment header.
+4. The Gateway verifies the payment via a facilitator and returns the query result.
+
+## Network Environments
+
+| Environment | Base URL | Payment Network | USDC Token Address |
+| --- | --- | --- | --- |
+| Mainnet | `https://gateway.thegraph.com` | Base | `0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913` |
+| Testnet | `https://testnet.gateway.thegraph.com` | Base Sepolia | `0x036CbD53842c5426634e7929541eC2318f3dCF7e` |
+
+## Options for Accessing the API:
+
+### Option 1: API Key (Best for Humans)
+
+Get an API key from [Subgraph Studio](https://thegraph.com/studio) and include it in requests.
+
+**Endpoints:**
+- `POST /api/subgraphs/id/{subgraph_id}`
+- `POST /api/deployments/id/{deployment_id}`
+
+**Header:** `Authorization: Bearer <API_KEY>`
+
+### Option 2: x402 Payment (Best for Agents)
+
+Pay per query with USDC. No API key required.
+
+**Endpoints:**
+- `POST /api/x402/subgraphs/id/{subgraph_id}`
+- `POST /api/x402/deployments/id/{deployment_id}`
+
+## When to Use x402
+
+x402 is well suited to:
+
+- **Autonomous agents** and short-lived processes that can't store long-term credentials
+- **Per-query workloads** where pre-purchased credits don't fit the access pattern
+- **Integrations that prefer HTTP-native payment** over account creation and key management
+
+For sustained, high-volume application use, the existing API-key flow remains the recommended path.
+
+## Minimal Examples
+
+### Using API Key
+
+```bash
+curl -X POST https://gateway.thegraph.com/api/subgraphs/id/5zvR82QoaXYFyDEKLZ9t6v9adgnptxYpKpSbxtgVENFV \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"query": "{ tokens(first: 5) { symbol } }"}'
+```
+
+### Using x402 Payment
+
+Any x402 tooling that supports exact scheme will work with the gateway's x402 endpoints. We recommend to use the official Graph x402 client:
+
+```bash
+npm install @graphprotocol/client-x402
+```
+
+**Option A: Command Line**
+
+```bash
+export X402_PRIVATE_KEY=0xabc123...
+
+npx graphclient-x402 "{ pairs(first: 5) { id } }" \
+  --endpoint https://gateway.thegraph.com/api/x402/subgraphs/id/<SUBGRAPH_ID> \
+  --chain base
+```
+
+**Option B: Programmatic**
+
+```typescript
+import { createGraphQuery } from '@graphprotocol/client-x402'
+
+const query = createGraphQuery({
+  endpoint: 'https://gateway.thegraph.com/api/x402/subgraphs/id/<SUBGRAPH_ID>',
+  chain: 'base',
+})
+
+const result = await query('{ pairs(first: 5) { id } }')
+```
+
+**Option C: Typed SDK (full type safety)**
+
+```bash
+npm install @graphprotocol/client-cli @graphprotocol/client-x402
+```
+
+Configure `.graphclientrc.yml`:
+
+```yaml
+customFetch: '@graphprotocol/client-x402'
+
+sources:
+  - name: uniswap
+    handler:
+      graphql:
+        endpoint: https://gateway.thegraph.com/api/x402/subgraphs/id/<SUBGRAPH_ID>
+
+documents:
+  - ./src/queries/*.graphql
+```
+
+Build and use:
+
+```bash
+export X402_PRIVATE_KEY=0xabc123...
+export X402_CHAIN=base
+npx graphclient build
+```
+
+```typescript
+import { execute, GetPairsDocument } from './.graphclient'
+
+const result = await execute(GetPairsDocument, { first: 5 })
+```
+
+**Environment Variables:**
+- `X402_PRIVATE_KEY`: Wallet private key for payment signing
+- `X402_CHAIN`: `base` (mainnet) or `base-sepolia` (testnet)
+
+
+
