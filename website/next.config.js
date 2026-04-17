@@ -147,6 +147,11 @@ export default withNextra({
       destination: '/en/',
       permanent: true,
     },
+    {
+      source: '/en/ai-suite/token-api-skills/quick-setup',
+      destination: '/en/ai-suite/token-api-skills/setup',
+      permanent: true,
+    },
     // If we ever change `output` to not be `export`, we should move all the redirects from `nginx.conf` here
   ],
   images: {
