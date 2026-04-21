@@ -10,5 +10,6 @@ export default {
   'secure-api-keys-nextjs': '',
   polymarket: '',
   agent0: '',
+  'x402-payments': '',
   'contract-analyzer': '',
 }

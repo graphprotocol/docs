@@ -5,4 +5,6 @@ export default {
   'subgraph-mcp': titles['subgraph-mcp'],
   'token-api-mcp': titles['token-api-mcp'],
   'token-api-skills': titles['token-api-skills'],
+  'subgraph-skills': titles['subgraph-skills'],
+  'substreams-skills': titles['substreams-skills'],
 }
