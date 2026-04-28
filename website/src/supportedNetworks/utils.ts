@@ -44,6 +44,7 @@ export async function getSupportedNetworks() {
       return [
         {
           ...network,
+          ...(network.id === 'sei-mainnet' ? { docsUrl: 'https://docs.sei.io' } : {}),
           evm: isEvm(network),
           iconVariant: getIconVariant(network),
           subgraphsSupportLevel,
