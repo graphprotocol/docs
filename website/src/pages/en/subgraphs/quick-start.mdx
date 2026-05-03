@@ -65,7 +65,7 @@ When you initialize your Subgraph, the CLI will ask you for the following inform
 - **Ethereum network** (optional): You may need to specify which EVM-compatible network your Subgraph will be indexing data from.
 - **Contract address**: Locate the smart contract address you'd like to query data from.
 - **ABI**: If the ABI is not auto-populated, you will need to input it manually as a JSON file.
-- **Start Block**: You should input the start block where the contract was deployed to optimize Subgraph indexing of blockchain data.
+- **Start Block**: Set this to the block your contract was deployed in. Indexing earlier wastes time; indexing later misses events emitted before the start block.
 - **Contract Name**: Input the name of your contract.
 - **Index contract events as entities**: It is suggested that you set this to true, as it will automatically add mappings to your Subgraph for every emitted event.
 - **Add another contract** (optional): You can add another contract.
@@ -73,6 +73,13 @@ When you initialize your Subgraph, the CLI will ask you for the following inform
 See the following screenshot for an example of what to expect when initializing your Subgraph:
 
 ![Subgraph command](/img/CLI-Example.png)
+
+> [!NOTE] How to find your Start Block
+>
+> On a block explorer, open your contract and find the **contract creation transaction**. The block number of that transaction is your Start Block.
+>
+> - Etherscan and most EVM explorers: look for "Contract Creator" on the contract page, then click the creation transaction hash to see its block number.
+> - If you set the Start Block too low, the initial sync takes longer than necessary. If you set it too high, events emitted before that block are never indexed and you will need to redeploy.
 
 ### 4. Edit your Subgraph
 
@@ -180,3 +187,47 @@ After publishing, access your Subgraph's Query URL from [Graph Explorer](https:/
 You get access to 100,000 free queries/month with your Subgraph on The Graph Network.
 
 Refer to [Querying The Graph](/subgraphs/querying/introduction/) to structure GraphQL queries.
+
+## Troubleshooting
+
+A few issues come up often on first deploys. If something doesn't work, check here before filing an issue.
+
+### `graph codegen` fails with "Cannot find ABI"
+
+The CLI expects each ABI referenced in `subgraph.yaml` to exist at the path you gave under `abis:`.
+
+- Check the `abis` block in `subgraph.yaml` matches the filenames in your `abis/` directory exactly (case-sensitive).
+- If you downloaded the ABI from Etherscan, make sure you saved the raw JSON array, not the page's HTML.
+- Re-run `graph codegen` after any ABI or schema change. Skipping codegen is the most common cause of "type not found" errors in mappings.
+
+### `graph deploy` fails with "Unauthorized" or "Invalid deploy key"
+
+Deploy keys expire and are Subgraph-specific.
+
+- Re-copy the deploy key from the Subgraph page in [Subgraph Studio](https://thegraph.com/studio/) and run `graph auth <DEPLOY_KEY>` again.
+- If you recently rotated the key in Studio, any terminal that ran `graph auth` with the old key still has it cached. Re-authenticate before deploying.
+
+### Subgraph deploys but indexes no data
+
+If the Studio dashboard shows "Synced" but queries return empty, the Start Block is almost always wrong.
+
+- Verify the Start Block is the block the contract was deployed in, not a later block.
+- Confirm the events in your manifest's `eventHandlers` exactly match the events emitted by your contract's ABI, including indexed parameters.
+- Check the logs in the Studio dashboard for "event not found" or "no matching handler" warnings.
+
+### Indexing stalls partway through sync
+
+Usually a mapping handler error causes the indexer to stop at the failing block.
+
+- Open the Studio dashboard logs for your Subgraph. Failed handlers surface as `subgraph failed` errors with the block number and a stack trace.
+- Common causes: reading from a null field, calling a contract that hasn't been deployed yet at the current block, or unwrapping an `Option` that doesn't exist. See [Common AssemblyScript Issues](/subgraphs/developing/creating/graph-ts/common-issues/).
+- Fix the handler locally, bump the manifest's `specVersion` or redeploy under a new version label, then publish again.
+
+### Which path should I use: Studio or CLI?
+
+Both paths end with the same published Subgraph on The Graph Network.
+
+- **Studio path** is easier the first time. You deploy, watch indexing progress in the dashboard, then click **Publish** when you're happy.
+- **CLI path** (`graph publish`) skips the deploy-to-Studio step and publishes straight to the network via a browser wallet prompt. Faster once you're confident the Subgraph works.
+
+If you're learning, use Studio. If you're shipping a Subgraph you've already tested locally, use the CLI.
