@@ -65,6 +65,22 @@ export const APIS: Record<ApiId, ApiConfig> = {
         path: '/token-api/polymarket-users',
         operationIdPrefixes: ['getV1Polymarket', 'getV1PolymarketUsers'],
       },
+      'Hyperliquid Markets': {
+        path: '/token-api/hyperliquid-markets',
+        operationIdPrefixes: ['getV1Hyperliquid', 'getV1HyperliquidMarkets'],
+      },
+      'Hyperliquid Platform': {
+        path: '/token-api/hyperliquid-platform',
+        operationIdPrefixes: ['getV1Hyperliquid', 'getV1HyperliquidPlatform'],
+      },
+      'Hyperliquid Users': {
+        path: '/token-api/hyperliquid-users',
+        operationIdPrefixes: ['getV1Hyperliquid', 'getV1HyperliquidUsers'],
+      },
+      'Hyperliquid Vaults': {
+        path: '/token-api/hyperliquid-vaults',
+        operationIdPrefixes: ['getV1Hyperliquid', 'getV1HyperliquidVaults'],
+      },
       Monitoring: {
         path: '/token-api/monitoring',
         operationIdPrefixes: ['getV1'],
