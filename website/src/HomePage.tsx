@@ -40,21 +40,23 @@ export default function HomePage({ supportedNetworks }: { supportedNetworks: Sup
                 <div className="relative grid grid-cols-4 gap-px">
                   {[
                     'mainnet',
-                    'btc',
+                    'base',
                     'bsc',
                     'solana-mainnet-beta',
                     'avalanche',
-                    'stellar',
-                    'litecoin',
                     'matic',
+                    'hyper-evm',
                     'arbitrum-one',
-                    'sonic',
                     'optimism',
-                    'sei-mainnet',
-                    'starknet-mainnet',
+                    'unichain',
+                    'x-layer',
+                    'stellar',
+                    'monad',
+                    'tempo',
                     'zksync-era',
+                    'sonic',
                     'celo',
-                    'metis',
+                    'megaeth',
                   ]
                     .map((id) => supportedNetworks.find((network) => network.id === id))
                     .filter((network): network is typeof network & {} => Boolean(network))
@@ -129,19 +131,7 @@ export default function HomePage({ supportedNetworks }: { supportedNetworks: Sup
                 iconPosition="side"
               />
             </div>
-            <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-              <Card
-                title={t('index.products.tokenApi.title')}
-                description={t('index.products.tokenApi.description')}
-                cta={
-                  <ExperimentalLink href="/token-api/quick-start/">{t('index.products.tokenApi.cta')}</ExperimentalLink>
-                }
-                icon={
-                  <div className="flex size-8 items-center justify-center rounded-4 bg-space-1400 text-white">
-                    <APIToken size={4} />
-                  </div>
-                }
-              />
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
               <Card
                 title={t('index.products.graphNode.title')}
                 description={t('index.products.graphNode.description')}
@@ -181,9 +171,9 @@ export default function HomePage({ supportedNetworks }: { supportedNetworks: Sup
           <p>
             {t('index.supportedNetworks.description.base', [
               <ExperimentalLink key="link-1" href="/supported-networks/">
-                80+ {t('index.supportedNetworks.description.networks')}
+                60+ {t('index.supportedNetworks.description.networks')}
               </ExperimentalLink>,
-              <ExperimentalLink key="link" href="https://edgeandnode.typeform.com/to/b3507xSL">
+              <ExperimentalLink key="link" href="info@thegraph.foundation">
                 {t('index.supportedNetworks.description.completeThisForm')}
               </ExperimentalLink>,
             ])}
@@ -309,13 +299,6 @@ export default function HomePage({ supportedNetworks }: { supportedNetworks: Sup
               description={t('index.videos.whatIsDelegating.description')}
               slotBelowDescription={<TimeIcon variant="duration" minutes={4} className="mt-1" />}
               videoThumbnailSrc={`${process.env.BASE_PATH}/img/video-whatIsDelegating.jpg`}
-            />
-            <Card
-              href="https://www.youtube.com/watch?v=RmKi-Nq9E_A"
-              title={t('index.videos.howToIndexSolana.title')}
-              description={t('index.videos.howToIndexSolana.description')}
-              slotBelowDescription={<TimeIcon variant="duration" minutes={5} className="mt-1" />}
-              videoThumbnailSrc={`${process.env.BASE_PATH}/img/video-howToIndexSolana.jpg`}
             />
           </div>
         </section>
