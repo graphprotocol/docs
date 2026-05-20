@@ -106,13 +106,6 @@ export function NetworksTable({ networks }: { networks: SupportedNetwork[] }) {
               <span className="text-14">{t('index.supportedNetworks.tableLegend.firehose.full')}</span>
             </div>
           </div>
-          <div className="p-4">
-            <span className="text-c10 mb-2 block text-white">Token API</span>
-            <div className="flex gap-2">
-              {checkmark}
-              <span className="text-14">{t('index.supportedNetworks.tableLegend.tokenApi.full')}</span>
-            </div>
-          </div>
         </div>
       </aside>
 
@@ -170,9 +163,6 @@ export function NetworksTable({ networks }: { networks: SupportedNetwork[] }) {
               <th align="center">
                 <Text.C10>{t('index.supportedNetworks.tableHeaders.firehose')}</Text.C10>
               </th>
-              <th align="center">
-                <Text.C10>{t('index.supportedNetworks.tableHeaders.tokenApi')}</Text.C10>
-              </th>
             </tr>
             {filteredNetworks.map((network) => (
               <tr
@@ -219,7 +209,6 @@ export function NetworksTable({ networks }: { networks: SupportedNetwork[] }) {
                       ? checkmark
                       : null}
                 </td>
-                <td align="center">{network.tokenApiSupportLevel === 'full' ? checkmark : null}</td>
               </tr>
             ))}
           </tbody>
