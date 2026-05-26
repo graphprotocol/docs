@@ -5,5 +5,5 @@ export default {
   'subgraph-mcp': titles['subgraph-mcp'],
   'subgraph-skills': titles['subgraph-skills'],
   'substreams-mcp': titles['substreams-mcp'],
-  'substreams-skills': titles['substreams-skills']
+  'substreams-skills': titles['substreams-skills'],
 }
