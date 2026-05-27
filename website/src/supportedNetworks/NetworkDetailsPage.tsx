@@ -4,13 +4,7 @@ import { NetworkIcon } from '@edgeandnode/go'
 import { Card, TimeIcon } from '@/components'
 import { useI18n } from '@/i18n'
 
-import {
-  evmNoTokenAPICards,
-  evmSubgraphsOnlyCards,
-  evmWithTokenAPICards,
-  nonEvmNoTokenAPICards,
-  nonEvmWithTokenAPICards,
-} from './ResourceCards'
+import { evmCards, evmSubgraphsOnlyCards, nonEvmCards } from './ResourceCards'
 import { type SupportedNetwork } from './utils'
 
 export default function NetworkDetailsPage({ network }: { network: SupportedNetwork }) {
@@ -19,17 +13,11 @@ export default function NetworkDetailsPage({ network }: { network: SupportedNetw
     if (network.evm) {
       if (network.subgraphsSupportLevel !== 'none' && network.substreamsSupportLevel === 'none') {
         return evmSubgraphsOnlyCards
-      } else if (network.tokenApiSupportLevel !== 'none') {
-        return evmWithTokenAPICards
       } else {
-        return evmNoTokenAPICards
+        return evmCards
       }
     } else {
-      if (network.tokenApiSupportLevel !== 'none') {
-        return nonEvmWithTokenAPICards
-      } else {
-        return nonEvmNoTokenAPICards
-      }
+      return nonEvmCards
     }
   })()
 

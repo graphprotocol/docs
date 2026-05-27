@@ -67,39 +67,25 @@ const withNextra = nextra({
       '---3': {
         type: 'separator',
       },
-      'token-api': {
-        type: 'children',
-        title: t('global.navigation.tokenApi'),
-      },
-      '---4': {
-        type: 'separator',
-      },
-      hypergraph: {
-        type: 'children',
-        title: t('global.navigation.hypergraph'),
-      },
-      '---5': {
-        type: 'separator',
-      },
       'ai-suite': {
         type: 'children',
         title: t('global.navigation.ai-suite'),
       },
-      '---6': {
+      '---4': {
         type: 'separator',
       },
       indexing: {
         type: 'children',
         title: t('global.navigation.indexing'),
       },
-      '---7': {
+      '---5': {
         type: 'separator',
       },
       'graph-horizon': {
         type: 'children',
         title: t('global.navigation.graph-horizon'),
       },
-      '---8': {
+      '---6': {
         type: 'separator',
       },
       resources: {

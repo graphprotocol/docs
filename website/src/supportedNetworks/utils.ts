@@ -32,13 +32,7 @@ export async function getSupportedNetworks() {
       const [subgraphsSupportLevel, subgraphsProvider] = getSubgraphsSupportLevelAndProvider(network)
       const substreamsSupportLevel = getSubstreamsSupportLevel(network)
       const firehoseSupportLevel = getFirehoseSupportLevel(network)
-      const tokenApiSupportLevel = getTokenApiSupportLevel(network)
-      if (
-        subgraphsSupportLevel === 'none' &&
-        substreamsSupportLevel === 'none' &&
-        firehoseSupportLevel === 'none' &&
-        tokenApiSupportLevel === 'none'
-      ) {
+      if (subgraphsSupportLevel === 'none' && substreamsSupportLevel === 'none' && firehoseSupportLevel === 'none') {
         return []
       }
       return [
@@ -50,7 +44,6 @@ export async function getSupportedNetworks() {
           subgraphsProvider,
           substreamsSupportLevel,
           firehoseSupportLevel,
-          tokenApiSupportLevel,
         },
       ]
     })
@@ -93,12 +86,6 @@ function getFirehoseSupportLevel(network: Network): 'none' | 'basic' | 'full' {
   const providerCount = network.services.firehose?.length || 0
   if (providerCount >= 2) return 'full'
   if (providerCount === 1) return 'basic'
-  return 'none'
-}
-
-function getTokenApiSupportLevel(network: Network): 'none' | 'full' {
-  const providerCount = network.services.tokenApi?.length || 0
-  if (providerCount >= 1) return 'full'
   return 'none'
 }
 
