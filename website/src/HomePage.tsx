@@ -1,15 +1,7 @@
 import { NetworkType } from '@pinax/graph-networks-registry'
 
 import { ButtonOrLink, ExperimentalLink, Tooltip } from '@edgeandnode/gds'
-import {
-  APIToken,
-  Firehose,
-  GraphExplorer,
-  GraphNode,
-  SocialYouTube,
-  Subgraph,
-  Substreams,
-} from '@edgeandnode/gds/icons'
+import { Firehose, GraphExplorer, GraphNode, SocialYouTube, Subgraph, Substreams } from '@edgeandnode/gds/icons'
 import { NetworkIcon } from '@edgeandnode/go'
 
 import { Card, Heading, TimeIcon } from '@/components'
