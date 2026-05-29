@@ -5,6 +5,6 @@ export default {
   introduction: '',
   developing: titles.developing ?? '',
   publishing: '',
-  'skills': '',
+  skills: '',
   'substreams-mcp': '',
 }
