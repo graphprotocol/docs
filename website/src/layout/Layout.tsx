@@ -180,9 +180,6 @@ export default function Layout({ pageOpts, children }: NextraThemeLayoutProps<Fr
         if (routeWithoutLocale === '/about' || routeWithoutLocale.startsWith('/about/')) {
           return <TheGraph alt="" />
         }
-        if (routeWithoutLocale === '/ai-overview' || routeWithoutLocale.startsWith('/ai-overview/')) {
-          return <TheGraph alt="" />
-        }
         if (routeWithoutLocale === '/supported-networks' || routeWithoutLocale.startsWith('/supported-networks/')) {
           return <Stack alt="" variant={selected ? 'fill' : 'regular'} />
         }
