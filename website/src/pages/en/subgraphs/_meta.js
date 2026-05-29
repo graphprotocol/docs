@@ -2,6 +2,8 @@ import titles from './_meta-titles.json'
 
 export default {
   'quick-start': '',
+  'subgraph-mcp': titles['subgraph-mcp'],
+  skills: '',
   explorer: '',
   querying: titles.querying ?? '',
   developing: titles.developing ?? '',
