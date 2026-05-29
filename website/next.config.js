@@ -67,10 +67,7 @@ const withNextra = nextra({
       '---3': {
         type: 'separator',
       },
-      'ai-suite': {
-        type: 'children',
-        title: t('global.navigation.ai-suite'),
-      },
+      'ai-overview': '',
       '---4': {
         type: 'separator',
       },

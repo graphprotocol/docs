@@ -192,7 +192,7 @@ export default function Layout({ pageOpts, children }: NextraThemeLayoutProps<Fr
         if (routeWithoutLocale === '/substreams' || routeWithoutLocale.startsWith('/substreams/')) {
           return <Substreams alt="" />
         }
-        if (routeWithoutLocale === '/ai-suite' || routeWithoutLocale.startsWith('/ai-suite/')) {
+        if (routeWithoutLocale === '/ai-overview' || routeWithoutLocale.startsWith('/ai-overview/')) {
           return <Sparkle alt="" variant={selected ? 'fill' : 'regular'} />
         }
         if (routeWithoutLocale === '/indexing' || routeWithoutLocale.startsWith('/indexing/')) {

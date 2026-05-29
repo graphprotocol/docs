@@ -6,5 +6,5 @@ export default {
   developing: titles.developing ?? '',
   publishing: '',
   skills: '',
-  'substreams-mcp': '',
+  'substreams-mcp': titles['substreams-mcp'] ?? '',
 }
