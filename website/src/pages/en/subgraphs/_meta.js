@@ -6,8 +6,10 @@ export default {
   querying: titles.querying ?? '',
   developing: titles.developing ?? '',
   billing: '',
-  guides: titles.guides,
-  'best-practices': titles['best-practices'],
+  guides: titles.guides ?? '',
+  'best-practices': titles['best-practices'] ?? '',
   'fair-use-policy': '',
   'upgrade-indexer': '',
+  skills: '',
+  'subgraph-mcp': titles['subgraph-mcp'] ?? '',
 }
