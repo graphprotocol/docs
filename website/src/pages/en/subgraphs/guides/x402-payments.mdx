@@ -25,6 +25,8 @@ The existing API-key endpoints continue to work unchanged with x402 is an additi
 3. The client signs a USDC payment payload and retries the request with the payment header.
 4. The Gateway verifies the payment via a facilitator and returns the query result.
 
+> **Protocol version:** The gateway implements **x402 v2**. The signed payment payload must be sent in a `Payment-Signature` header (base64-encoded JSON containing `x402Version`, `accepted`, and `payload`). x402 v1 clients that send only `X-PAYMENT` will receive `402 Payment-Signature header is required` even after signing — use a v2-aware client such as `@graphprotocol/client-x402` or upgrade your SDK.
+
 ## Network Environments
 
 | Environment | Base URL | Payment Network | USDC Token Address |
@@ -63,6 +65,34 @@ x402 is well suited to:
 - **Integrations that prefer HTTP-native payment** over account creation and key management
 
 For sustained, high-volume application use, the existing API-key flow remains the recommended path.
+
+## Caveats
+
+### Payment applies even when no indexer is serving the Subgraph
+
+A valid `subgraph_id` or `deployment_id` is not a guarantee that any indexer is currently allocated to it. When no indexer is serving the deployment, the gateway responds with `200 OK` and the payload:
+
+```json
+{ "errors": [{ "message": "subgraph not found: no allocations" }] }
+```
+
+The USDC payment is still settled — there is no refund. To avoid charging for known-unserved deployments, check active allocations against the Graph Network Subgraph before paying:
+
+```graphql
+{
+  subgraphDeployment(id: "<ipfsHash>") {
+    indexerAllocations(where: { activeForIndexer_not: null }, first: 1) {
+      id
+    }
+  }
+}
+```
+
+If `indexerAllocations` is empty, no one is serving it — paying will produce the error above. Agent-side discovery layers should treat "0 active allocations" as an unservable Subgraph and either skip it or surface the warning.
+
+### Errors still cost USDC
+
+Any response from the gateway that includes a `Payment-Response` header has been settled on-chain. This includes responses containing GraphQL `errors` (bad query shape, missing fields, schema mismatch, "no allocations", etc.). Validate queries against `get_schema_by_subgraph_id` or a cached schema before paying.
 
 ## Minimal Examples
 
