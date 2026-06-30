@@ -1,5 +1,17 @@
 import { useEffect, useRef, useState } from 'react'
 
+/**
+ * Strip MDX-only noise (YAML frontmatter + `import` statements) so the copied
+ * text is clean Markdown an LLM can ingest directly, rather than raw page source.
+ */
+function cleanMdxForLLM(src: string): string {
+  return src
+    .replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n+/, '') // drop YAML frontmatter
+    .replace(/^\s*import\s.+$/gm, '') // drop import statements
+    .replace(/\n{3,}/g, '\n\n') // collapse blank-line runs
+    .trim()
+}
+
 interface CopyForLLMProps {
   /** URL to the raw Markdown source of this page */
   rawUrl: string
@@ -31,7 +43,7 @@ export function CopyForLLM({ rawUrl }: CopyForLLMProps) {
     setStatus('copying')
     try {
       const res = await fetch(rawUrl)
-      const text = await res.text()
+      const text = cleanMdxForLLM(await res.text())
       await navigator.clipboard.writeText(text)
       setStatus('copied')
       setTimeout(() => setStatus('idle'), 2000)
