@@ -53,6 +53,10 @@ const withNextra = nextra({
       '---1': {
         type: 'separator',
       },
+      'ai-overview': 'AI Tooling',
+      '---1b': {
+        type: 'separator',
+      },
       subgraphs: {
         type: 'children',
         title: t('global.navigation.subgraphs'),
@@ -67,20 +71,16 @@ const withNextra = nextra({
       '---3': {
         type: 'separator',
       },
-      'ai-overview': '',
-      '---4': {
-        type: 'separator',
-      },
       indexing: {
         type: 'children',
-        title: t('global.navigation.indexing'),
+        title: 'Indexer Tooling',
       },
       '---5': {
         type: 'separator',
       },
       'graph-horizon': {
         type: 'children',
-        title: t('global.navigation.graph-horizon'),
+        title: 'Data Services',
       },
       '---6': {
         type: 'separator',
@@ -88,10 +88,6 @@ const withNextra = nextra({
       resources: {
         type: 'children',
         title: t('global.navigation.resources'),
-      },
-      archived: {
-        type: 'children',
-        title: t('global.navigation.archived'),
       },
     }
 

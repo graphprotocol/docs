@@ -1,0 +1,68 @@
+---
+title: Standardized Subgraphs
+---
+
+## Overview
+
+**Standardized Subgraphs** are a family of open, reusable GraphQL schemas that normalize on-chain data across every protocol of the same type. Rather than each protocol exposing its own bespoke schema with its own terminology, every Subgraph built to a standard exposes the *same* entities, fields, and metrics, so a single set of queries works across all of them.
+
+The most widely adopted set of these schemas was created by [Messari](https://messari.io/), the core subgraph dev that builds and maintains standardized schemas for the major DeFi and web3 protocol categories on top of The Graph. Each schema extracts raw blockchain data and transforms it into meaningful, comparable metrics for products and analytics.
+
+> A standardized schema is a base contract, not a ceiling. Individual Subgraphs can add protocol-specific entities and fields on top of the standard, but the base is guaranteed, so downstream consumers can always rely on it.
+
+## Why Standardize
+
+**One set of queries for every protocol.** Every protocol has slightly different terminology and definitions, which makes it hard to make sense of their data. Because Standardized Subgraphs normalize all data the same way, you only need a single set of queries (or a single data pipeline) to pull data from every supported protocol of a given type. Comparing TVL across ten lending markets, or revenue across every DEX, becomes a single query pattern instead of ten integrations.
+
+**Normalized, comparable metrics.** Financial concepts like total revenue, supply-side revenue, protocol-side revenue, and total value locked are defined once and computed the same way everywhere. This saves consumers an enormous amount of reconciliation work and makes cross-protocol analytics trustworthy.
+
+**A battle-tested starting point for developers.** Designing a Subgraph schema from scratch is daunting; there are many edge cases and nuances to consider. The standardized schemas are battle-tested across a large set of production Subgraph implementations, which makes them an excellent foundation for any new Subgraph. Developers also inherit a library of reference implementations, shared common libraries, and validation tooling.
+
+**Predictable versioning.** Schemas follow [semantic versioning](https://semver.org/) strictly, and each Subgraph embeds three separate version fields on its `Protocol` entity so different stakeholders can track what they care about:
+
+| Field                | Who it's for        | What it tracks                                                                 |
+| -------------------- | ------------------- | ------------------------------------------------------------------------------ |
+| `schemaVersion`      | Data consumers      | Which version of the shared schema the Subgraph implements; signals breaking changes. |
+| `subgraphVersion`    | subgraph developers | The implementation version; refactors bump this with no impact on consumers.    |
+| `methodologyVersion` | Data consumers      | How metrics are calculated, so consumers can diff against methodology changes.  |
+
+## The Schemas
+
+The standardized schemas each cover one protocol category. Every schema shares a common backbone (`Token`, `Protocol`, pools or markets, daily and hourly snapshots for time-series data, and standardized revenue and usage metrics) while adding the entities specific to its domain.
+
+| Schema                    | Version | What it covers                                                                                                            |
+| ------------------------- | ------- | ------------------------------------------------------------------------------------------------------------------------- |
+| **Generic**               | 3.0.0   | The base template that all schemas build on. Defines `Token`, `Protocol`, `Pool`, `Account`, and the standard usage and financial snapshots. A good fit for protocols that don't map cleanly onto a more specific category. |
+| **DEX AMM**               | 1.3.2   | Automated market maker exchanges. Models `LiquidityPool`, `Swap`, `Deposit`, and `Withdraw` events, pool fees, and reward tokens. |
+| **DEX AMM (Extended)**    | 4.0.1   | AMMs with concentrated liquidity (e.g. Uniswap v3). Adds `Tick`, `Position`, and `PositionSnapshot` entities on top of the DEX AMM model. |
+| **DEX Aggregator**        | 1.0.2   | Trade aggregators that route across venues. Models `VirtualPool`, per-token daily snapshots, and `Swap` activity. |
+| **Lending / CDP**         | 3.1.0   | Lending, borrowing, and collateralized debt position protocols. Models `Market`, `Position`, `InterestRate`, and the full set of lending events: `Deposit`, `Withdraw`, `Borrow`, `Repay`, `Liquidate`, `Transfer`, and `Flashloan`. |
+| **Yield Aggregator**      | 1.3.1   | Vaults and yield optimizers. Models `Vault`, `VaultFee`, `Deposit`, and `Withdraw`, with reward-token accounting. |
+| **NFT Marketplace**       | 2.1.0   | NFT trading venues. Models `Marketplace`, `Collection`, and `Trade`, with support for multiple NFT standards and sale strategies. |
+| **Network**               | 1.2.0   | Layer-1 and layer-2 chain-level metrics. Models `Block`, `Author`, and `Chunk` with network-wide daily and hourly stats. |
+| **Bridge**                | 1.2.0   | Cross-chain bridges. Models `Pool`, `PoolRoute`, `CrosschainToken`, `BridgeTransfer`, and `BridgeMessage` to track liquidity and value moving across chains. |
+| **Derivatives (Perpetual Futures)** | 1.3.4 | Perpetual futures venues. Models `LiquidityPool`, `Position`, `CollateralIn` and `CollateralOut`, `Borrow`, `Swap`, and `Liquidate`. |
+| **Derivatives (Options)** | 1.3.2   | On-chain options protocols. Models `LiquidityPool`, `Position`, and `Option`, with call and put option typing. |
+
+## Shared Design Principles
+
+Because the schemas are meant to be consumed the same way regardless of protocol, they follow a consistent set of conventions.
+
+**Three ways to read quantitative data.** You can query an entity directly for *real-time* values (e.g. `totalValueLockedUSD` on a `Pool`), use [time-travel queries](https://thegraph.com/docs/en/subgraphs/querying/graphql-api/#time-travel-queries) for *point-in-time* historical values, or query the snapshot entities for *time-series* data (e.g. `PoolDailySnapshot`).
+
+**Standardized financial metrics.** Revenue is split consistently across every schema:
+
+- **Total Revenue**: all revenue generated by the protocol (e.g. the full swap fee on a DEX, all yield generated by a vault).
+- **Supply-Side Revenue**: the portion paid to suppliers, such as LPs on DEXs, depositors on lending protocols, and sellers on NFT marketplaces.
+- **Protocol-Side Revenue**: the portion claimed by the protocol itself (e.g. the protocol's cut of a swap fee, or a marketplace's sell fee).
+
+**Consistent naming and typing.** Token amounts are stored as `BigInt` to preserve precision (in wei), USD amounts and prices as `BigDecimal`, and rates as percentage `BigDecimal` values (70.5% is stored as `70.5`). Field prefixes carry meaning: `cumulative*` is the running sum since day one, `daily*` and `hourly*` apply to snapshot intervals, and unprefixed quantitative fields are spot values as of now.
+
+**Predictable IDs and usage definitions.** Entity IDs are derived from addresses, transaction hashes, and log indexes in documented ways, and "usage" is defined consistently: external user actions like swaps, deposits, and borrows count, while internal protocol actions, governance votes, and failed transactions do not.
+
+## Next Steps
+
+- Browse the standardized schemas and reference implementations in the [Messari Subgraphs repository](https://github.com/messari/subgraphs).
+- Read the full [schema documentation](https://github.com/messari/subgraphs/blob/master/docs/SCHEMA.md) for naming conventions, versioning, and entity design.
+- Learn how to [query a Subgraph](https://thegraph.com/docs/en/subgraphs/querying/introduction/) with the GraphQL API.
+- New to Subgraphs? Start with [Developing a Subgraph](https://thegraph.com/docs/en/subgraphs/developing/introduction/).

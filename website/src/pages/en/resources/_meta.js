@@ -5,6 +5,4 @@ export default {
   tokenomics: '',
   benefits: '',
   roles: titles.roles ?? '',
-  'migration-guides': titles['migration-guides'] ?? '',
-  'subgraph-studio-faq': '',
 }

@@ -24,14 +24,14 @@ export const evmCards = [
     icon: <Substreams size={6} />,
   },
   {
-    href: 'https://thegraph.com/docs/en/subgraphs/billing/',
+    href: 'https://thegraph.com/docs/en/subgraphs/providers/subgraph-studio/introduction/',
     titleKey: 'index.networkGuides.evm.billing.title' as const,
     descriptionKey: 'index.networkGuides.evm.billing.description' as const,
     minutes: 5,
     icon: <Substreams size={6} />, // TODO: Is this really the right icon for this?
   },
   {
-    href: 'https://thegraph.com/docs/en/subgraphs/explorer/',
+    href: 'https://thegraph.com/docs/en/subgraphs/existing-subgraphs/explorer/',
     titleKey: 'index.networkGuides.evm.graphExplorer.title' as const,
     descriptionKey: 'index.networkGuides.evm.graphExplorer.description' as const,
     minutes: 12,
@@ -53,14 +53,14 @@ export const evmSubgraphsOnlyCards = [
     icon: <Subgraph size={6} />,
   },
   {
-    href: 'https://thegraph.com/docs/en/subgraphs/explorer/',
+    href: 'https://thegraph.com/docs/en/subgraphs/existing-subgraphs/explorer/',
     titleKey: 'index.networkGuides.evm.graphExplorer.title' as const,
     descriptionKey: 'index.networkGuides.evm.graphExplorer.description' as const,
     minutes: 12,
     icon: <GraphExplorer size={6} />,
   },
   {
-    href: 'https://thegraph.com/docs/en/subgraphs/billing/',
+    href: 'https://thegraph.com/docs/en/subgraphs/providers/subgraph-studio/introduction/',
     titleKey: 'index.networkGuides.evm.billing.title' as const,
     descriptionKey: 'index.networkGuides.evm.billing.description' as const,
     minutes: 5,

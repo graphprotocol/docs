@@ -59,7 +59,7 @@ export function NetworksTable({ networks }: { networks: SupportedNetwork[] }) {
       <Callout variant="info" className="mb-6">
         <p>{t('index.supportedNetworks.infoText')}</p>
         <p>
-          <ExperimentalLink href="https://edgeandnode.typeform.com/to/b3507xSL">
+          <ExperimentalLink href="mailto:info@thegraph.foundation">
             {t('index.supportedNetworks.infoLink')}
           </ExperimentalLink>
         </p>
@@ -85,7 +85,7 @@ export function NetworksTable({ networks }: { networks: SupportedNetwork[] }) {
             </div>
           </div>
           <div className="border-b border-r border-space-1500 p-4 lg:border-r-0">
-            <span className="text-c10 mb-2 block text-white">Substreams</span>
+            <span className="text-c10 mb-2 block text-white">Firehose/Substreams</span>
             <div className="flex gap-2">
               {checkmark}
               <span className="text-14">{t('index.supportedNetworks.tableLegend.substreams.basic')}</span>
@@ -93,17 +93,6 @@ export function NetworksTable({ networks }: { networks: SupportedNetwork[] }) {
             <div className="flex gap-2">
               {checkmarks}
               <span className="text-14">{t('index.supportedNetworks.tableLegend.substreams.full')}</span>
-            </div>
-          </div>
-          <div className="border-b border-r border-space-1500 p-4">
-            <span className="text-c10 mb-2 block text-white">Firehose</span>
-            <div className="flex gap-2">
-              {checkmark}
-              <span className="text-14">{t('index.supportedNetworks.tableLegend.firehose.basic')}</span>
-            </div>
-            <div className="flex gap-2">
-              {checkmarks}
-              <span className="text-14">{t('index.supportedNetworks.tableLegend.firehose.full')}</span>
             </div>
           </div>
         </div>
