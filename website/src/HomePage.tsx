@@ -128,9 +128,7 @@ export default function HomePage({ supportedNetworks }: { supportedNetworks: Sup
                 title={t('index.products.graphNode.title')}
                 description={t('index.products.graphNode.description')}
                 cta={
-                  <ExperimentalLink href="/indexing/graph-node/">
-                    {t('index.products.graphNode.cta')}
-                  </ExperimentalLink>
+                  <ExperimentalLink href="/indexing/graph-node/">{t('index.products.graphNode.cta')}</ExperimentalLink>
                 }
                 icon={
                   <div className="flex size-8 items-center justify-center rounded-4 bg-space-1400 text-white">
@@ -141,11 +139,7 @@ export default function HomePage({ supportedNetworks }: { supportedNetworks: Sup
               <Card
                 title={t('index.products.firehose.title')}
                 description={t('index.products.firehose.description')}
-                cta={
-                  <ExperimentalLink href="/indexing/firehose/">
-                    {t('index.products.firehose.cta')}
-                  </ExperimentalLink>
-                }
+                cta={<ExperimentalLink href="/indexing/firehose/">{t('index.products.firehose.cta')}</ExperimentalLink>}
                 icon={
                   <div className="flex size-8 items-center justify-center rounded-4 bg-space-1400 text-white">
                     <Firehose size={4} />
