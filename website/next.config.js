@@ -73,7 +73,7 @@ const withNextra = nextra({
       },
       indexing: {
         type: 'children',
-        title: 'Indexer Tooling',
+        title: t('global.navigation.indexing'),
       },
       '---5': {
         type: 'separator',
