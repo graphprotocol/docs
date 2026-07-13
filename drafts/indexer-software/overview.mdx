@@ -1,0 +1,79 @@
+---
+title: Indexer Software Overview
+sidebarTitle: Overview
+---
+
+Indexer Software is the set of components an Indexer runs to participate in The Graph Network: an agent that manages allocations and redeems payments, a Rust service that answers paid queries, a Rust agent that turns query receipts into redeemable vouchers, and a CLI to operate it all. This section covers how to install, configure, and operate that software. For the economics and responsibilities of being an Indexer, see the [Indexing Overview](/indexing/overview/).
+
+## Components
+
+The modern Indexer stack spans two repositories — the TypeScript [`indexer`](https://github.com/graphprotocol/indexer) (agent + CLI) and the Rust [`indexer-rs`](https://github.com/graphprotocol/indexer-rs) (service + TAP agent):
+
+| Component | Language | What it does |
+| --- | --- | --- |
+| **Indexer Agent** | TypeScript | Monitors the network, manages allocations from your indexing rules, submits POIs, runs provision creation, and redeems RAVs on-chain. Owns database migrations. |
+| **Indexer Service** (`indexer-service-rs`) | Rust | Answers paid queries: validates [GraphTally](/indexing/indexer-software/graphtally/) receipts, routes queries to Graph Node, and returns attestations. Stateless and horizontally scalable. |
+| **Indexer TAP Agent** (`indexer-tap-agent`) | Rust | Aggregates query-fee receipts into Receipt Aggregate Vouchers (RAVs) and prepares them for redemption. Run **exactly one** instance. |
+| **Indexer CLI** | TypeScript | Command-line plugin for `graph-cli` to manage rules, allocations, provisions, cost models, and the action queue: `graph indexer ...` |
+| **Indexer Common** | TypeScript | Shared library used by the agent and CLI. Not run directly. |
+
+> `indexer-service-rs` and `indexer-tap-agent` supersede the legacy TypeScript `indexer-service`. From v2.0.0 they require [Graph Horizon](/graph-horizon/overview/) and no longer process legacy V1 receipts.
+
+All three runtime components — agent, service, and TAP agent — **share the same PostgreSQL database**. Only the Indexer Agent runs migrations against it; the Rust services read and write the same schema but must not run their own migrations.
+
+## How the pieces fit together
+
+```
+                         ┌────────────────────┐
+                         │   Indexer CLI      │  graph indexer ...
+                         │  (graph-cli plugin)│
+                         └─────────┬──────────┘
+                                   │ management API (:8000)
+   query + receipt                 ▼
+ ┌──────────┐   ┌─────────────────────┐   ┌────────────────────┐   ┌──────────────────┐
+ │ Gateway  │──►│ indexer-service-rs  │──►│    Graph Node      │   │ Network contracts│
+ │ (Sender) │   │ validate + route    │   │ (index/query)      │   │ + subgraphs      │
+ └──────────┘   └─────────┬───────────┘   └────────────────────┘   └────────┬─────────┘
+                          │ receipts                                        ▲
+                          ▼                                                 │
+                 ┌────────────────────┐        ┌────────────────────┐       │
+                 │  PostgreSQL (shared)│◄──────►│  indexer-tap-agent │       │
+                 └─────────┬───────────┘  RAVs  │ receipts → RAVs    │       │
+                           │                    └────────────────────┘       │
+                           ▼                                                 │
+                 ┌────────────────────┐    allocations, POIs, RAV redemption │
+                 │   Indexer Agent    │─────────────────────────────────────┘
+                 │ reconciliation loop│
+                 └────────────────────┘
+```
+
+## Architecture at a glance
+
+The **Indexer Agent** runs a **reconciliation loop**: it continuously compares the deployments you *should* be allocated to (per your [indexing rules](/indexing/indexer-software/allocations/indexing-rules/)) against your actual on-chain allocations, and queues the actions needed to close the gap. How much of this runs automatically is controlled by the [operation mode](/indexing/indexer-software/allocations/operation-modes/).
+
+The **query-fee path** is handled by the Rust services: `indexer-service-rs` validates each incoming GraphTally receipt and serves the query, and `indexer-tap-agent` aggregates those receipts into RAVs. When an allocation closes, the agent redeems the final RAV on-chain. See [GraphTally & Query Fees](/indexing/indexer-software/graphtally/).
+
+Underneath, the software relies on:
+
+- **PostgreSQL** — shared by the agent, service, and TAP agent. Stores indexing rules, the action queue, cost models, POI dispute data, and TAP receipts/RAVs. Migrations are owned by the agent (Umzug).
+- **Ethereum / Arbitrum** — on-chain transactions for allocations, provisions, and RAV redemption, submitted through the operator wallet.
+- **Network Subgraph** — the source of truth for protocol state (deployments, signal, allocations, and Horizon escrow accounts).
+- **GraphTally** — The Graph's trust-minimized micropayment system for query fees (formerly TAP). See [GraphTally & Query Fees](/indexing/indexer-software/graphtally/).
+
+## Graph Horizon support
+
+The Indexer Software supports [Graph Horizon](/graph-horizon/overview/), the protocol's data-services architecture. Key differences you'll encounter throughout this section:
+
+- **Provisions** replace the legacy single-stake model. Stake is provisioned to the `SubgraphService` data service. See [Managing Provisions](/indexing/indexer-software/managing-provisions/).
+- **New allocation operations** are available: `present-poi` (collect rewards without closing) and `resize` (change allocation size without closing).
+- **GraphTally (TAP v2)** uses collection-based aggregation with RAV v2; from `indexer-service-rs`/`indexer-tap-agent` v2.0.0, Horizon is required and V1 receipts are removed.
+- The agent runs a **dual-contract system**, supporting legacy and Horizon contracts simultaneously, and detects Horizon-enabled networks automatically.
+
+Horizon-only commands and options are marked as such throughout these pages.
+
+## Where to go next
+
+- [Install and Run](/indexing/indexer-software/install-and-run/) — get the agent, service, and TAP agent running.
+- [Managing Allocations](/indexing/indexer-software/allocations/overview/) — the core day-to-day workflow.
+- [GraphTally & Query Fees](/indexing/indexer-software/graphtally/) — how you get paid for queries.
+- [Reference](/indexing/indexer-software/reference/agent-configuration/) — full agent flags, service/TAP config, and CLI commands.

@@ -1,0 +1,136 @@
+---
+title: Action Queue
+sidebarTitle: Action Queue
+---
+
+The action queue is a staged approach to allocation management. Actions are queued, reviewed, approved, and then executed by a background worker. This enables oversight, batching, and integration with third-party tools. It works in all [operation modes](/indexing/indexer-software/allocations/operation-modes/).
+
+## How it works
+
+1. Actions are added to the queue — by the agent, the CLI, or the GraphQL API.
+2. Actions sit in `queued` status until approved.
+3. Approved actions are picked up by the execution worker (polls roughly every 30 seconds).
+4. The worker executes them on-chain and updates their status.
+
+## CLI commands
+
+```bash
+# View actions
+graph indexer actions get all
+graph indexer actions get --status queued
+graph indexer actions get --status approved
+graph indexer actions get --orderBy createdAt --orderDirection desc
+
+# Queue actions
+graph indexer actions queue allocate <deployment-id> <amount>
+graph indexer actions queue unallocate <deployment-id> <allocation-id>
+graph indexer actions queue reallocate <deployment-id> <allocation-id> <amount>
+graph indexer actions queue present-poi <deployment-id> <allocation-id>    # Horizon only
+graph indexer actions queue resize <deployment-id> <allocation-id> <amount> # Horizon only
+
+# Approve actions
+graph indexer actions approve <action-id> [<action-id> ...]
+graph indexer actions approve queued   # Approve all queued actions
+
+# Cancel / delete
+graph indexer actions cancel <action-id> [<action-id> ...]
+graph indexer actions delete <action-id> [<action-id> ...]
+
+# Update action parameters
+graph indexer actions update --status queued --type reallocate force true poi 0x...
+
+# Force immediate execution of approved actions
+graph indexer actions execute approved
+```
+
+## Action types
+
+| Type | Description | Required parameters |
+| --- | --- | --- |
+| `allocate` | Allocate stake to a deployment. | `deploymentID`, `amount` |
+| `unallocate` | Close an existing allocation. | `deploymentID`, `allocationID` (optional `poi`, `force`) |
+| `reallocate` | Atomically close an allocation and open a new one for the same deployment. | `deploymentID`, `allocationID`, `amount` (optional `poi`, `force`) |
+| `present-poi` *(Horizon)* | Collect indexing rewards by presenting a POI without closing. | `deploymentID`, `allocationID` (optional `poi`, `blockNumber`, `publicPOI`, `force`) |
+| `resize` *(Horizon)* | Change the allocated stake without closing. | `deploymentID`, `allocationID`, `amount` |
+
+## Action statuses
+
+| Status | Description |
+| --- | --- |
+| `queued` | Waiting for approval. |
+| `approved` | Ready for execution. |
+| `pending` | Being executed. |
+| `success` | Executed successfully. |
+| `failed` | Execution failed. |
+| `canceled` | Canceled before execution. |
+
+## Behavior by operation mode
+
+| Mode | Agent behavior | Your actions |
+| --- | --- | --- |
+| **AUTO** | Queues actions as `approved`. | You can still queue your own. |
+| **OVERSIGHT** | Queues actions as `queued`. | You must approve before execution. |
+| **MANUAL** | Queues nothing. | You queue and approve everything. |
+
+## GraphQL API
+
+The indexer management server exposes a GraphQL endpoint (default port `18000`) for programmatic access — the basis for third-party optimizer integrations.
+
+### Queries and mutations
+
+```graphql
+type Query {
+  action(actionID: String!): Action
+  actions(filter: ActionFilter, orderBy: ActionParams, orderDirection: OrderDirection, first: Int): [Action]!
+}
+
+type Mutation {
+  queueActions(actions: [ActionInput!]!): [Action]!
+  approveActions(actionIDs: [String!]!): [Action]!
+  cancelActions(actionIDs: [String!]!): [Action]!
+  deleteActions(actionIDs: [String!]!): Int!
+  updateAction(action: ActionInput!): Action!
+  updateActions(filter: ActionFilter!, action: ActionUpdateInput!): [Action]!
+  executeApprovedActions: [ActionResult!]!
+}
+```
+
+### Example — queue an action
+
+```graphql
+mutation queueActions($actions: [ActionInput!]!) {
+  queueActions(actions: $actions) {
+    id
+    type
+    deploymentID
+    amount
+    status
+  }
+}
+```
+
+```json
+{
+  "actions": [
+    {
+      "status": "queued",
+      "type": "allocate",
+      "deploymentID": "QmXYZ...",
+      "amount": "10000",
+      "source": "my-optimizer",
+      "reason": "High signal deployment",
+      "priority": 0
+    }
+  ]
+}
+```
+
+## Third-party integration
+
+The action queue lets external optimizers drive allocations while keeping a human in the loop:
+
+1. The optimizer analyzes network state and identifies optimal allocations.
+2. It queues actions via the GraphQL API with `status: queued`.
+3. You review the queued actions.
+4. You approve them via CLI or API.
+5. The execution worker processes the approved actions.

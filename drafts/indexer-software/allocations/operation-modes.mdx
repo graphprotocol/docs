@@ -1,0 +1,86 @@
+---
+title: Operation Modes
+sidebarTitle: Operation Modes
+---
+
+The Indexer Agent can manage your allocations automatically through a **reconciliation loop** — a background process that continuously monitors the network and adjusts allocations based on your [indexing rules](/indexing/indexer-software/allocations/indexing-rules/). The **operation mode** controls whether and how that loop runs.
+
+Set the mode with `--allocation-management` or `INDEXER_AGENT_ALLOCATION_MANAGEMENT`:
+
+| Mode | Reconciliation loop | Behavior | Best for |
+| --- | --- | --- | --- |
+| **AUTO** (default) | Runs | Agent decides, auto-approves, and executes. | Hands-off operation. |
+| **OVERSIGHT** | Runs | Agent decides and queues actions for your approval. | Review before execution. |
+| **MANUAL** | Skipped | You manage allocations yourself via the CLI. | Full manual control, third-party tools. |
+
+## What is the reconciliation loop?
+
+The reconciliation loop is the agent's core automation mechanism. On each cycle it:
+
+1. **Evaluates** which deployments you *should* be allocated to, based on your indexing rules.
+2. **Compares** that desired state against your actual on-chain allocations.
+3. **Queues actions** to reconcile the difference (allocate, unallocate, reallocate).
+
+```
+┌─────────────────────┐     ┌──────────────────────────┐     ┌─────────────┐
+│ Deployment          │ --> │ Allocation               │ --> │ Action      │
+│ Evaluation          │     │ Reconciliation           │     │ Executor    │
+│ "What SHOULD we     │     │ "What do we need to DO   │     │ Execute     │
+│  allocate to?"      │     │  to match desired state?"│     │ on-chain    │
+└─────────────────────┘     └──────────────────────────┘     └─────────────┘
+```
+
+In **AUTO** mode, queued actions are auto-approved and execute immediately. In **OVERSIGHT** mode, they wait for your approval. In **MANUAL** mode the loop doesn't run — you queue actions yourself.
+
+## Reconciliation loop details
+
+### Polling intervals
+
+The loop runs on two intervals: a **small interval** (`pollingInterval`) for frequently changing data, and a **large interval** (`pollingInterval * 5`) for stable data.
+
+| Data | Interval |
+| --- | --- |
+| Current epoch number | Large |
+| Max allocation duration | Large |
+| Indexing rules | Small |
+| Active deployments on Graph Node | Large (AUTO mode only) |
+| Network deployments | Small |
+| Active allocations | Small |
+| Recently closed allocations | Small |
+
+### Phase 1 — Deployment evaluation
+
+Determines which deployments you should be allocated to:
+
+- Fetches all deployments from the Network Subgraph.
+- Matches each against your indexing rules (deployment-specific or global).
+- Outputs `toAllocate: true/false` for each deployment.
+
+Decision basis options: `always`, `never`, `offchain` (index locally, don't allocate on-chain), or `rules` (evaluate against thresholds such as `minStake`, `minSignal`, `minAverageQueryFees`). See [Indexing Rules](/indexing/indexer-software/allocations/indexing-rules/).
+
+### Phase 2 — Allocation reconciliation
+
+Compares desired state against actual allocations and queues actions:
+
+| Condition | Action queued |
+| --- | --- |
+| Should allocate + no active allocation | ALLOCATE |
+| Shouldn't allocate + has active allocation | UNALLOCATE |
+| Should allocate + allocation expiring | REALLOCATE |
+
+An allocation is considered expiring when `currentEpoch >= createdAtEpoch + allocationLifetime`.
+
+## Safety mechanisms
+
+The agent includes safeguards against problematic allocations:
+
+1. **Health check** — won't allocate to deployments with a "failed" health status (when `safety=true` in the rule).
+2. **Zero-POI safety** — won't reallocate if the previous allocation closed with a zero POI.
+3. **Approved-actions check** — skips reconciliation while pending approved actions exist, preventing conflicts.
+4. **Network Subgraph protection** — never auto-allocates to the Network Subgraph unless explicitly enabled via `--allocate-on-network-subgraph`.
+
+## Related
+
+- [Indexing Rules](/indexing/indexer-software/allocations/indexing-rules/) — configure what the agent should allocate to.
+- [Action Queue](/indexing/indexer-software/allocations/action-queue/) — queue, approve, and execute actions.
+- [Direct Commands](/indexing/indexer-software/allocations/direct-commands/) — execute operations immediately.

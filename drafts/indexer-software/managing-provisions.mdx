@@ -1,0 +1,113 @@
+---
+title: Managing Provisions
+sidebarTitle: Managing Provisions
+---
+
+In [Graph Horizon](/graph-horizon/overview/), stake is assigned to **provisions** rather than held as a single pool. A provision commits a portion of your stake to a specific data service — currently the `SubgraphService`, which powers subgraph indexing and query serving. This page explains how provisions work and how to manage them with the Indexer CLI.
+
+## Stake terminology
+
+| Term | Meaning |
+| --- | --- |
+| **Indexer stake** | All tokens the Indexer has staked. |
+| **Idle stake** | Stake not assigned to a provision and not part of legacy allocations. |
+| **Provisioned stake** | Stake assigned to a provision. |
+| **Delegated stake** | Stake delegated to a specific (Indexer, provision). Pre-Horizon delegation is automatically credited to the `SubgraphService` provision. |
+| **Available stake** | Stake usable within the provision (for example, for allocations). Includes provisioned tokens plus delegated stake. |
+
+## Creating the SubgraphService provision
+
+The **Indexer Agent** performs the initial provision creation. It is attempted only when the agent starts, and only if the Indexer's idle stake exceeds 100k GRT:
+
+```
+idle stake > 100k GRT
+(indexer stake − legacy allocated stake) > 100k GRT
+```
+
+The agent must be configured with a maximum initial provision size:
+
+```sh
+# Environment variable
+INDEXER_AGENT_MAX_PROVISION_INITIAL_SIZE=100000
+```
+
+```yaml
+# Config file
+indexerOptions:
+  maxProvisionInitialSize: 100000
+```
+
+## Provision operations
+
+There are three basic operations on a provision:
+
+- **`provision()` / `addToProvision()`** — add idle stake to a provision.
+- **`thaw()`** — begin thawing available stake out of a provision (subject to a thawing period).
+- **`deprovision()`** — move thawed stake back into the idle stake pool.
+
+Getting stake into and out of the protocol still requires `stake()` and `unstake()` separately.
+
+These operations can be run through the Indexer CLI or Graph Explorer. The CLI is recommended because it is more flexible.
+
+### Graph Explorer
+
+- Staking through Graph Explorer automatically provisions the added stake to the `SubgraphService` (if the provision exists).
+- Unstaking/withdrawing automatically thaws and deprovisions stake from the provision.
+
+### Indexer CLI
+
+```sh
+$ graph indexer provision --help
+Manage indexer's provision
+
+    indexer provision get          List indexer provision details
+    indexer provision add          Add stake to the indexer's provision
+    indexer provision thaw         Thaw stake from the indexer's provision
+    indexer provision list-thaw    List thaw requests for the indexer's provision
+    indexer provision remove       Remove thawed stake from the indexer's provision
+```
+
+> **Note:** The provision must first be created by the Indexer Agent (see above) before these CLI commands can manage it.
+
+**Get provision details**
+
+```sh
+$ graph indexer --network arbitrum-one provision get
+```
+
+Shows `tokensProvisioned`, `tokensAllocated`, `tokensThawing`, `maxVerifierCut`, and `thawingPeriod` for each data service, plus your current idle stake.
+
+**Add stake to the provision**
+
+```sh
+$ graph indexer --network arbitrum-one provision add 100000
+```
+
+**Thaw stake from the provision**
+
+Multiple thaw requests can be in flight simultaneously. Each is subject to the provision's thawing period.
+
+```sh
+$ graph indexer --network arbitrum-one provision thaw 50000
+```
+
+**List ongoing thaw requests**
+
+Also shows thaw requests initiated through Graph Explorer.
+
+```sh
+$ graph indexer --network arbitrum-one provision list-thaw
+```
+
+**Remove thawed stake**
+
+Moves thawed stake back into the Indexer's idle stake pool.
+
+```sh
+$ graph indexer --network arbitrum-one provision remove
+```
+
+## Related
+
+- [Managing Allocations](/indexing/indexer-software/allocations/overview/) — how provisioned stake is put to work.
+- [Graph Horizon Overview](/graph-horizon/overview/) — the architecture behind provisions.

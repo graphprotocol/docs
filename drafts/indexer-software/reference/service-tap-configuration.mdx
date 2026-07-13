@@ -1,0 +1,123 @@
+---
+title: Service & TAP Agent Configuration
+sidebarTitle: Service & TAP Agent Config
+---
+
+Configuration reference for the Rust `indexer-service-rs` and `indexer-tap-agent` (the [`indexer-rs`](https://github.com/graphprotocol/indexer-rs) stack). Both binaries take a single shared TOML file via `--config`. For how these components fit into query-fee collection, see [GraphTally & Query Fees](/indexing/indexer-software/graphtally/); for the TypeScript agent's flags, see [Agent Configuration](/indexing/indexer-software/reference/agent-configuration/).
+
+> Authoritative templates live in the repo: the [minimal config](https://github.com/graphprotocol/indexer-rs/blob/main/crates/config/minimal-config-example.toml) (recommended), the [maximal config](https://github.com/graphprotocol/indexer-rs/blob/main/crates/config/maximal-config-example.toml), and [default values](https://github.com/graphprotocol/indexer-rs/blob/main/crates/config/default_values.toml).
+
+## Running
+
+```sh
+indexer-service-rs --config /path/to/config.toml
+indexer-tap-agent   --config /path/to/config.toml
+```
+
+Both read the same file. `postgres_url` must point at the **same database as `indexer-agent`**, and you must not run migrations from the `indexer-rs` stack — the agent owns migrations.
+
+## Example configuration
+
+```toml
+[indexer]
+indexer_address = "0x1111111111111111111111111111111111111111"
+operator_mnemonic = "your twelve word mnemonic phrase here ..."
+# For key rotation, specify multiple mnemonics; all are tried when creating
+# attestation signers. The first is the primary identity on /info.
+# operator_mnemonics = ["previous mnemonic phrase here if you rotated keys"]
+
+[database]
+postgres_url = "postgresql://user:password@localhost:5432/indexer_db"
+
+[graph_node]
+query_url = "http://graph-node:8000"
+status_url = "http://graph-node:8000/graphql"
+
+[subgraphs.network]
+# Network Subgraph (includes Horizon escrow data). Prefer local indexing via deployment_id.
+query_url = "https://api.thegraph.com/subgraphs/name/graphprotocol/graph-network-arbitrum"
+# deployment_id = "Qm..."
+
+[blockchain]
+chain_id = 42161
+receipts_verifier_address_v2 = "0x8f69F5C07477Ac46FBc491B1E6D91E2be0111A9e"
+subgraph_service_address = "0xb2Bb92d0DE618878E438b55D5846cfecD9301105"
+
+[tap]
+max_amount_willing_to_lose_grt = "0.1"
+
+[tap.sender_aggregator_endpoints]
+"0xDDE4cfFd3D9052A9cb618fC05a1Cd02be1f2F467" = "https://tap-aggregator.network.thegraph.com"
+
+[horizon]
+enabled = true
+```
+
+Swap the `[blockchain]` and aggregator values for testnet (`chain_id = 421614`, the Arbitrum Sepolia addresses). See the full address tables in [GraphTally & Query Fees](/indexing/indexer-software/graphtally/#blockchain-addresses).
+
+## Required fields
+
+| Field | Section | Description |
+| --- | --- | --- |
+| `indexer_address` | `[indexer]` | Your Indexer's Ethereum address. |
+| `operator_mnemonic` | `[indexer]` | BIP-39 mnemonic for the operator wallet. |
+| `postgres_url` | `[database]` | PostgreSQL connection URL (same DB as the agent). |
+| `query_url` | `[graph_node]` | Graph Node query endpoint. |
+| `status_url` | `[graph_node]` | Graph Node status endpoint. |
+| `query_url` or `deployment_id` | `[subgraphs.network]` | Network Subgraph endpoint. |
+| `chain_id` | `[blockchain]` | Network chain ID (`42161` Arbitrum One, `421614` Arbitrum Sepolia). |
+| `receipts_verifier_address_v2` | `[blockchain]` | TAP Verifier contract address. |
+| `subgraph_service_address` | `[blockchain]` | SubgraphService contract address. |
+| `enabled = true` | `[horizon]` | Horizon mode — required from v2.0.0. |
+
+## Environment variable overrides
+
+Any value can be overridden with environment variables, prefixed per binary and using `__` for nested fields:
+
+```bash
+# Pattern: [PREFIX]__[SECTION]__[KEY]   (PREFIX: INDEXER_SERVICE or TAP_AGENT)
+export INDEXER_SERVICE__DATABASE__POSTGRES_URL="postgresql://..."
+export TAP_AGENT__TAP__MAX_AMOUNT_WILLING_TO_LOSE_GRT="0.5"
+```
+
+## Routes (indexer-service-rs)
+
+| Route | Description |
+| --- | --- |
+| `/` | Greeting message. |
+| `/info` | Operator's public address. |
+| `/healthz` | Dependency health (database + Graph Node); HTTP 200 healthy, 503 otherwise. |
+| `/version` | Service version and dependencies. |
+| `/subgraphs/id/{id}` | Paid query endpoint; requires a receipt or valid token. |
+| `/subgraph/health/{id}` | Subgraph health state. |
+| `/status` | Routes to the Graph Node status API. |
+| `/cost` | Cost Model GraphQL API. See [Cost Models](/indexing/indexer-software/cost-models/). |
+| `/dips` | DIPs (Direct Indexing Payments) GraphQL API. |
+| `/escrow` | Escrow subgraph proxy (token-protected). |
+| `/network` | Network Subgraph proxy (token-protected). |
+
+## Logging
+
+```bash
+# Production
+export RUST_LOG=indexer_service=info,indexer_tap_agent=info
+# Debugging the receipt/RAV lifecycle
+export RUST_LOG=indexer_service=debug,indexer_tap_agent=debug
+```
+
+## Upgrading to v2.0.0
+
+v2.0.0 removes legacy V1 receipts; all processing uses Graph Horizon (GraphTally) exclusively.
+
+- **Horizon is required** — `[horizon].enabled = true`; configs with `enabled = false` are rejected at startup.
+- **`receipts_verifier_address_v2` and `subgraph_service_address` are required** under `[blockchain]`.
+- **`receipts_verifier_address` (V1) is deprecated** and can be removed.
+- **Escrow data comes from the Network Subgraph**, not a separate escrow subgraph; the `[subgraphs.escrow]` section can be removed unless you proxy the escrow subgraph via `serve_escrow_subgraph = true`.
+- **Redeem all V1 RAVs before upgrading** — the new version cannot process V1 receipts.
+
+After updating config and pulling the latest images, restart both services.
+
+## Deployment
+
+- **Docker Compose** — run `indexer-service-rs` (ports `7600` query, `7300` metrics) and `indexer-tap-agent` (metrics `7300`, commonly remapped to `7301`) with the config mounted and `RUST_LOG` set. See [Deploy the Stack](/indexing/indexer-software/deployment/overview/).
+- **Kubernetes** — the [Graph Launchpad charts](https://github.com/graphops/launchpad-charts/tree/main/charts/graph-network-indexer) include Helm charts, ConfigMap templates, and Prometheus ServiceMonitors for both services.

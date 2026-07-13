@@ -1,0 +1,70 @@
+---
+title: Auto-Graft
+sidebarTitle: Auto-Graft
+---
+
+Auto-graft lets the Indexer Agent automatically deploy and sync the dependencies of a grafted subgraph. Without it, deploying a grafted subgraph means manually identifying every dependency in the graft chain, deploying each in the right order, syncing each to its required block, and pausing it. Auto-graft does all of that for you, so a grafted subgraph deploys like any other.
+
+Grafting itself lets a new subgraph build on an existing one at a chosen block height, reusing already-indexed data instead of re-indexing from genesis. See the [subgraph grafting docs](/subgraphs/cookbook/grafting/) for authoring details.
+
+## Enabling auto-graft
+
+Auto-graft is **disabled by default** (as of agent v0.24.3) and requires an IPFS endpoint to fetch dependency manifests.
+
+```sh
+graph-indexer-agent start \
+  --enable-auto-graft \
+  --ipfs-endpoint https://ipfs.network.thegraph.com \
+  ...
+```
+
+| Setting | Flag / Env | Default |
+| --- | --- | --- |
+| Enable auto-graft | `--enable-auto-graft` / `INDEXER_AGENT_ENABLE_AUTO_GRAFT` | `false` |
+| IPFS endpoint | `--ipfs-endpoint` / `INDEXER_AGENT_IPFS_ENDPOINT` | `https://ipfs.network.thegraph.com` |
+
+> Prior to v0.24.3, auto-graft was enabled automatically whenever an IPFS endpoint was configured. It must now be enabled explicitly.
+
+## How it works
+
+When you deploy a subgraph that declares a graft, the agent:
+
+1. **Detects** the graft configuration in the subgraph manifest.
+2. **Resolves** the full dependency chain, recursively fetching manifests from IPFS.
+3. **Orders** dependencies from deepest to root so they deploy in the correct sequence.
+4. **Deploys** any missing dependencies.
+5. **Syncs** each dependency to its required block height.
+6. **Pauses** each dependency once it reaches its target block, to save resources.
+
+For a chain where your subgraph grafts from A at block 15M, A grafts from B at 10M, and B grafts from C at 5M, auto-graft deploys and syncs C → B → A in order, then begins indexing your subgraph from block 15M.
+
+## Monitoring progress
+
+Track auto-graft through the agent logs. Key messages include:
+
+- `Auto graft deploy subgraph dependencies` — process started
+- `graft dep chain found` — dependencies identified
+- `Begin syncing subgraph deployment to block` — a dependency is syncing
+- `Graft dependency has reached target block height. Continuing to index past graft point.` — dependency ready
+
+Check dependency status with the CLI:
+
+```sh
+graph indexer status
+graph indexer status <deployment-id>
+```
+
+## Troubleshooting
+
+| Problem | Likely cause and fix |
+| --- | --- |
+| `IPFS request failed` | Verify `INDEXER_AGENT_IPFS_ENDPOINT` is reachable and the manifest hash is valid. |
+| `Sync to block X deadline reached` | The dependency is syncing slowly — check Graph Node performance and that the chain is fully synced. |
+| `Subgraph not found in indexing status` | Confirm the dependency hash is correct and that the dependency was created successfully; check Graph Node logs. |
+| Circular dependency | Ensure the graft chain is linear; fix circular references in the manifests. |
+
+## Requirements
+
+- Graph Node running with grafting support (supported on all networks).
+- The Indexer must be able to reach an IPFS endpoint (`/api/v0` HTTP API).
+- Auto-graft explicitly enabled.

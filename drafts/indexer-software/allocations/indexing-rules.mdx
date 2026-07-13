@@ -1,0 +1,107 @@
+---
+title: Indexing Rules
+sidebarTitle: Indexing Rules
+---
+
+Indexing rules tell the agent which subgraph deployments to allocate to and how much stake to use. The [reconciliation loop](/indexing/indexer-software/allocations/operation-modes/) evaluates these rules and queues allocation actions through the [action queue](/indexing/indexer-software/allocations/action-queue/).
+
+> Rules drive automatic allocation decisions only in **AUTO** and **OVERSIGHT** modes. In **MANUAL** mode the reconciliation loop is skipped entirely and rules have no effect.
+
+## CLI commands
+
+```bash
+# Set a rule for a specific deployment
+graph indexer rules set <deployment-id> <key> <value> [<key> <value> ...]
+
+# Set the global (default) rule
+graph indexer rules set global <key> <value> [<key> <value> ...]
+
+# Get rules
+graph indexer rules get all
+graph indexer rules get <deployment-id>
+graph indexer rules get global
+
+# Delete a rule / clear all rules (keeps global)
+graph indexer rules delete <deployment-id>
+graph indexer rules clear
+
+# Shorthand commands
+graph indexer rules start <deployment-id>    # decisionBasis = always
+graph indexer rules stop <deployment-id>     # decisionBasis = never
+graph indexer rules maybe <deployment-id>    # decisionBasis = rules
+graph indexer rules prepare <deployment-id>  # decisionBasis = offchain
+```
+
+## Rule parameters
+
+### Decision basis
+
+The `decisionBasis` field determines whether the agent allocates to a deployment:
+
+| Value | Behavior |
+| --- | --- |
+| `always` | Always allocate to this deployment. |
+| `never` | Never allocate to this deployment. |
+| `offchain` | Index the deployment but don't allocate (no on-chain stake). |
+| `rules` | Evaluate against the threshold parameters below. |
+
+### Threshold parameters
+
+Applied when `decisionBasis` is `rules`:
+
+| Parameter | Description |
+| --- | --- |
+| `minStake` | Minimum total stake on the deployment. |
+| `minSignal` | Minimum curation signal on the deployment. |
+| `minAverageQueryFees` | Minimum average query fees. |
+| `maxSignal` | Maximum signal (avoid over-allocated deployments). |
+| `maxAllocationPercentage` | Maximum percentage of the Indexer's stake to allocate. |
+
+### Allocation parameters
+
+| Parameter | Description |
+| --- | --- |
+| `allocationAmount` | Amount of GRT to allocate. |
+| `allocationLifetime` | Number of epochs before reallocating. |
+| `parallelAllocations` | Number of parallel allocations to maintain. |
+
+### Safety parameters
+
+| Parameter | Description |
+| --- | --- |
+| `safety` | Enable safety checks (won't allocate to failed deployments). |
+| `requireSupported` | Only allocate if the deployment is on a supported network. |
+| `autoRenewal` | Automatically reallocate when an allocation expires. |
+
+## Global vs. deployment-specific rules
+
+The **global** rule supplies default values for all deployments. A **deployment-specific** rule overrides the global values for that deployment. The agent merges the two, with deployment-specific values taking precedence.
+
+## Examples
+
+```bash
+# Global defaults
+graph indexer rules set global \
+  decisionBasis rules \
+  minSignal 100 \
+  minStake 1000 \
+  allocationAmount 10000 \
+  safety true
+
+# Always allocate to a specific high-value deployment
+graph indexer rules set QmXYZ... decisionBasis always allocationAmount 50000
+
+# Index but don't allocate (offchain indexing)
+graph indexer rules set QmABC... decisionBasis offchain
+
+# Stop allocating to a deployment
+graph indexer rules stop QmDEF...
+```
+
+## How rules drive the reconciliation loop
+
+1. The agent fetches all deployments from the Network Subgraph.
+2. For each, it finds the applicable rule (deployment-specific or global).
+3. It evaluates the `decisionBasis`: `always` → allocate; `never` / `offchain` → don't allocate (offchain still indexes locally); `rules` → evaluate thresholds.
+4. It compares desired state against current allocations.
+5. It queues actions to reconcile: `allocate` (missing), `unallocate` (shouldn't hold), or `reallocate` (expiring).
