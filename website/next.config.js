@@ -54,21 +54,21 @@ const withNextra = nextra({
         type: 'separator',
       },
       'ai-overview': 'AI Tooling',
-      '---1b': {
+      '---2': {
         type: 'separator',
       },
       subgraphs: {
         type: 'children',
         title: t('global.navigation.subgraphs'),
       },
-      '---2': {
+      '---3': {
         type: 'separator',
       },
       substreams: {
         type: 'children',
         title: t('global.navigation.substreams'),
       },
-      '---3': {
+      '---4': {
         type: 'separator',
       },
       indexing: {
