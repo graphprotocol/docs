@@ -2,10 +2,8 @@ import titles from './_meta-titles.json'
 
 export default {
   introduction: '',
-  subgraphs: '',
   creating: titles.creating ?? '',
-  deploying: titles.deploying ?? '',
-  publishing: titles.publishing ?? '',
+  'deploying-publishing': titles['deploying-publishing'] ?? '',
   managing: titles.managing ?? '',
-  'developer-faq': '',
+  'developer-faq': 'Developer FAQ',
 }

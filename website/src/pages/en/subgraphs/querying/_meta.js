@@ -2,12 +2,10 @@ import titles from './_meta-titles.json'
 
 export default {
   introduction: '',
-  'managing-api-keys': '',
-  'best-practices': '',
-  'from-an-application': '',
-  'distributed-systems': '',
   'graphql-api': '',
-  'subgraph-id-vs-deployment-id': '',
+  'best-practices': '',
+  'from-an-application': 'Querying from Apps',
+  'subgraph-id-vs-deployment-id': 'Subgraph vs Deployment IDs',
   'graph-client': titles['graph-client'] ?? '',
-  python: '',
+  python: 'Querying in Python',
 }

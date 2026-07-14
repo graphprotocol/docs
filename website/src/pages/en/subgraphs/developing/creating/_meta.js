@@ -2,12 +2,11 @@ import titles from './_meta-titles.json'
 
 export default {
   'starting-your-subgraph': '',
-  'install-the-cli': '',
+  'install-the-cli': 'Graph CLI',
   'subgraph-manifest': '',
-  'ql-schema': '',
-  'assemblyscript-mappings': '',
-  'graph-node-dev': '',
-  advanced: '',
+  'ql-schema': 'GraphQL Schema',
+  'assemblyscript-mappings': 'AssemblyScript Mappings',
   'graph-ts': titles['graph-ts'] ?? '',
-  'unit-testing-framework': '',
+  'graph-node-dev': 'Local Dev Mode',
+  advanced: 'Advanced Features',
 }

@@ -210,14 +210,14 @@ export default function HomePage({ supportedNetworks }: { supportedNetworks: Sup
           <div className="graph-docs-not-markdown mt-8 grid gap-4">
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
               <Card
-                href="/subgraphs/explorer/"
+                href="/subgraphs/existing-subgraphs/explorer/"
                 title={t('index.guides.explorer.title')}
                 description={t('index.guides.explorer.description')}
                 icon={<GraphExplorer alt="" />}
                 slotAboveTitle={<TimeIcon variant="reading" minutes={10} />}
               />
               <Card
-                href="/subgraphs/developing/publishing/publishing-a-subgraph/"
+                href="/subgraphs/developing/deploying-publishing/publishing-a-subgraph/"
                 title={t('index.guides.publishASubgraph.title')}
                 description={t('index.guides.publishASubgraph.description')}
                 icon={<Subgraph alt="" />}
@@ -245,7 +245,7 @@ export default function HomePage({ supportedNetworks }: { supportedNetworks: Sup
                 slotAboveTitle={<TimeIcon variant="reading" minutes={4} />}
               />
               <Card
-                href="/subgraphs/querying/managing-api-keys/"
+                href="/subgraphs/providers/subgraph-studio/managing-api-keys/"
                 title={t('index.guides.apiKeyManagement.title')}
                 description={t('index.guides.apiKeyManagement.description')}
                 slotAboveTitle={<TimeIcon variant="reading" minutes={2} />}

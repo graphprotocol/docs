@@ -1,5 +1,5 @@
 export default {
-  'graph-node': '',
   firehose: '',
-  graphcast: '',
+  'graph-node': '',
+  graphcast: 'GraphCast',
 }
