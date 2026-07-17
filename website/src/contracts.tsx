@@ -1,7 +1,7 @@
-import ContractAddresses from '@graphprotocol/contracts/addresses.json'
 import HorizonAddresses from '@graphprotocol/address-book/horizon/addresses.json'
 import IssuanceAddresses from '@graphprotocol/address-book/issuance/addresses.json'
 import SubgraphServiceAddresses from '@graphprotocol/address-book/subgraph-service/addresses.json'
+import ContractAddresses from '@graphprotocol/contracts/addresses.json'
 
 import { getAddressLink } from '@edgeandnode/common'
 import { ExperimentalLink } from '@edgeandnode/gds'
