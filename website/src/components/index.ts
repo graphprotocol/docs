@@ -1,6 +1,7 @@
 export * from './Callout'
 export * from './Card'
 export * from './CodeBlock'
+export * from './CopyForLLM'
 export * from './DocSearch'
 export * from './Heading'
 export * from './Image'
