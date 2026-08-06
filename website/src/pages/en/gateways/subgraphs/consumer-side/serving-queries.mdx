@@ -1,0 +1,43 @@
+---
+title: Serving Queries
+---
+
+This page covers the consumer-facing mechanics of querying through a Gateway: how a consumer sends a query for a Subgraph, and how they authenticate. The internal routing and Indexer selection that happen behind these requests are covered in [Technical Overview](/gateways/subgraphs/components/overview/) and [Indexer Selection](/gateways/subgraphs/components/indexer-selection/).
+
+## How to Query a Subgraph
+
+A consumer queries a Subgraph by sending a GraphQL request to a Gateway endpoint for that Subgraph, with credentials in the header. The Gateway resolves the target, selects Indexers, and returns the response.
+
+Requests take one of two consumer-facing shapes:
+
+- **Subgraph ID:** `POST /api/subgraphs/id/{subgraph_id}`. The Gateway resolves the Subgraph ID to the appropriate deployment automatically (the latest deployment an Indexer reports as sufficiently synced). This is the usual path for a consumer who wants "the current version of this Subgraph."
+- **Deployment ID:** `POST /api/deployments/id/{deployment_id}`. The Deployment ID is the IPFS hash of a specific Subgraph manifest, used directly. This pins the consumer to an exact version.
+
+A minimal query against a running Gateway looks like this:
+
+```sh
+curl "https://your-gateway.example/api/subgraphs/id/<SUBGRAPH_ID>" \
+  -H 'content-type: application/json' \
+  -H "Authorization: Bearer <API_KEY>" \
+  -d '{"query":"{ _meta { block { number } } }"}'
+```
+
+The Gateway returns the first Indexer response that passes through its filters, with any fields the consumer did not request stripped out. If every selected Indexer fails, the Gateway re-selects until candidates are exhausted, so a data consumer generally sees a good response or a clear error rather than a hung request. On a Gateway whose escrow is unfunded or whose sender is not yet whitelisted by Indexers, paid queries return a `402`.
+
+## Authentication and API Keys
+
+Every request must carry credentials so a Gateway can attribute usage and enforce access. Graph Gateways support two methods:
+
+### API Keys
+
+API keys are the primary method for humans and applications, passed as `Authorization: Bearer <API_KEY>`. A Gateway Operator issues keys to their consumers and can attach restrictions that are enforced before a request runs:
+
+- **Subgraph allow-list:** restrict a key to a specific set of Subgraph IDs (empty means all). This is the mechanism behind serving only a curated set; see [Subgraph Collections](/gateways/subgraphs/consumer-side/subgraph-collections/).
+- **Domain allow-list:** restrict a key to specific `Origin` or `Referer` domains.
+- **Rate limits and status:** cap a key's throughput, or disable it without deleting it (for example, a service-shutoff or monthly-cap status).
+
+Keys can be issued from Subgraph Studio, or a Gateway Operator can mint and manage their own keys for their consumers, which is what enables independent branding and billing.
+
+### x402 Payments
+
+x402 is the method for autonomous agents and accountless consumers: pay-per-query in USDC on Base with no API key. The consumer's request is served against an automatic per-query payment negotiated and settled by the x402 protocol. The endpoints mirror the API-key paths under an `x402` prefix (for example, `POST /api/x402/subgraphs/id/{subgraph_id}`).

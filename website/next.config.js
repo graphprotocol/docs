@@ -75,6 +75,13 @@ const withNextra = nextra({
         type: 'children',
         title: t('global.navigation.indexing'),
       },
+      '---gateways': {
+        type: 'separator',
+      },
+      gateways: {
+        type: 'children',
+        title: 'Gateway Software',
+      },
       '---5': {
         type: 'separator',
       },

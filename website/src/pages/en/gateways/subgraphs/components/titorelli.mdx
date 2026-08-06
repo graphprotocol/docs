@@ -1,0 +1,51 @@
+---
+title: Titorelli
+---
+
+Titorelli is an optional data-science service that reinterprets the Kafka messages a Gateway emits, producing hourly aggregations used for analytics and billing, and to speed up the [escrow manager's](/gateways/subgraphs/components/graph-tally/) startup. It sits entirely on the Gateway's secondary data path: if Titorelli is down, query serving and payments are unaffected.
+
+Source: [`edgeandnode/titorelli`](https://github.com/edgeandnode/titorelli).
+
+![Gateway data pipeline, Kafka topics](/img/gateway/gateway-kafka-topics.png)
+
+## What Titorelli Does
+
+The Gateway exports raw operational data into Kafka topics (primarily through `gateway_queries` and `gateway_attestations`). Titorelli consumes the Gateway's query stream and rolls it up into hourly aggregations, emitting three derived topics:
+
+| Topic | Aggregated per hour | Used for |
+| --- | --- | --- |
+| `gateway_client_fees_hourly` | Per consumer / API key / deployment: GRT and USD fees, query count, success rate, average response time | Client billing, usage analytics |
+| `gateway_indexer_fees_hourly` | Per signer to receiver: GRT fees owed to each Indexer | Faster escrow-manager startup |
+| `gateway_indexer_qos_hourly` | Per Indexer / deployment / chain: success and failure counts, average seconds behind, average latency, average fee | Indexer QoS monitoring, network analytics |
+
+### Why Operators Run Titorelli
+
+- **Faster Escrow Manager Startup:** the escrow manager can read pre-aggregated `gateway_indexer_fees_hourly` instead of replaying raw receipt history to compute outstanding debt. This is currently the primary documented reason to run Titorelli.
+- **Client Billing:** `gateway_client_fees_hourly` gives a ready-made, per-API-key fee and usage feed for invoicing.
+- **QoS and Analytics:** `gateway_indexer_qos_hourly` provides hourly Indexer performance data for dashboards and network health monitoring (outlined in [Tracking QoS](/gateways/subgraphs/supply-side/tracking-qos/)).
+
+Each message is a protobuf with a `timestamp` (aggregation window start, unix ms) and a repeated list of aggregation rows. Full schemas are in the Titorelli README.
+
+## Titorelli Configuration
+
+Titorelli is configured with a single JSON file pointing at the Kafka cluster:
+
+```json
+{
+  "kafka": {
+    "bootstrap.servers": "example.com:9092",
+    "group.id": "titorelli",
+    "security.protocol": "sasl_ssl",
+    "sasl.mechanism": "SCRAM-SHA-256",
+    "sasl.username": "example_username",
+    "sasl.password": "example_password",
+    "ssl.ca.location": "./example.crt"
+  }
+}
+```
+
+When multiple Gateway environments share one Kafka cluster, the Gateway's `kafka_topic_environment` setting appends an environment qualifier to topic names (for example, `gateway_queries_staging`). Make sure Titorelli consumes and produces the matching environment-qualified topics.
+
+## When Operators Can Skip Running Titorelli
+
+Titorelli is optional. A minimal Gateway can serve queries and pay Indexers without it: the escrow manager will simply do more work at startup, and an Operator will need another path for client billing and QoS analytics. Run Titorelli when an Operator wants efficient escrow startup, per-client fee reporting, or Indexer QoS aggregation out of the box.

@@ -1,0 +1,36 @@
+---
+title: Routing Queries to Indexers
+---
+
+Routing queries is the core supply-side function of a Subgraph Gateway: for every query, a Gateway decides which Indexers execute it. This page covers how to use the Indexer Selection Algorithm to route, how to block specific Indexers, and how to bias routing towards preferred Indexers based on their performance.
+
+## Using the ISA to Route Queries
+
+The Indexer Selection Algorithm (ISA) is what turns "many Indexers can serve this" into "these up to three Indexers get it." For each query, a Gateway scores every candidate Indexer as a product of four curves, success rate, expected latency, seconds behind chain head, and slashable GRT, then greedily builds the best-value set per unit fee. While the full mechanics are in [Indexer Selection](/gateways/subgraphs/components/indexer-selection/) section, this page is about operating that component.
+
+A Gateway Operator influences routing through the ISA in three ways:
+
+- **Selection Weights:** each of the four dimensions has an importance exponent. Reference deployments expose these directly (e.g., `SELECTION_WEIGHT_SUCCESS_RATE`, etc.), where a blank value is `1.0` and reproduces stock behavior exactly. Raising the latency weight favors faster Indexers more, while lowering the slashable-GRT weight cares less about stake size. This is the "latency-vs-everything-else" dial, and it is the friendly front for the deeper curve parameters (logistic midpoints, steepness) that also live in a Gateway's JSON `selection` block.
+- **Fee Budget:** `QUERY_FEES_TARGET` sets the average fee an Operator is willing to pay per query, which bounds selection and applies economic pressure toward Indexers whose cost models fit an Operator's budget, which is covered in more detail in [Managing Escrow](/gateways/subgraphs/supply-side/managing-escrow/).
+- **Version Floors:** minimum Indexer and Graph Node versions exclude Indexers running stale software before scoring even begins.
+
+After changing any of these parameters, a Gateway Operator will need to re-render their config and restart their Gateway instance, then watch the routing distribution shift in their query metrics. This is a supply-side control, not a per-query one: Gateways are shaping the population a Gateway routes across, and the ISA does the per-query selection within it.
+
+## Blocking Indexers
+
+Sometimes the right action is to remove an Indexer (or a specific deployment on an Indexer) from consideration entirely, rather than merely scoring it down. A Gateway supports explicit blocking:
+
+- **Blocklist:** add a `(deployment, indexer)` block to exclude a specific Indexer from serving a specific deployment. This works today with no code change, and it is the tool for an Indexer that is serving bad data or dominating an Operator's error rate.
+- **POI Blocking:** optionally block Indexers whose public Proof of Indexing is associated with bad responses. When enabled, an Indexer whose POI is blocked is excluded until it returns a good POI. This ties routing to data correctness, complementing Fisherman dispute resolution.
+
+Blocking is a blunt, deliberate instrument. The ISA already routes around Indexers that degrade, through its runtime feedback loop, so reserve explicit blocks for cases an Operator wants to guarantee (a known-bad Indexer, a compromised deployment) rather than for ordinary performance variation. An Operator should watch their query metrics for a single Indexer dominating errors as the signal that a block may be warranted.
+
+## Sending Queries to Preferential Indexers
+
+The inverse of blocking is preferring: routing more of an Operator's traffic to Indexers they trust. There are several ways to express a preference without breaking the network's competitive routing:
+
+- **Bias by Weight:** if the Indexers an Operator prefers are preferred because they are faster, fresher, or better staked, raising the corresponding selection weights will naturally send them more traffic, because the ISA already rewards those properties.
+- **Prefer an Operator's own Indexer:** if a Gateway runs indexing themselves (see [Gateway Indexing Approaches](/gateways/subgraphs/consumer-side/indexing-approaches/)), that Indexer is a candidate like any other and will win selection when its quality and cost justify it, which is the network-aligned way to route to an Operator's own capacity.
+- **Pin a Specific Indexer (Diagnostic Only):** a Gateway can target a specific `(deployment, Indexer)` for cross-checking a particular Indexer's responses. This is intended for verification, not production routing; pinning removes the failover and quality guarantees the ISA provides, so it is not a way to run preferential production traffic.
+
+The healthy pattern is to encode what an Operator values as selection weights and let the ISA prefer the Indexers that satisfy those values, rather than hard-pinning traffic. That keeps failover, freshness, and cost control intact while still steering toward the Indexers an Operator trusts.

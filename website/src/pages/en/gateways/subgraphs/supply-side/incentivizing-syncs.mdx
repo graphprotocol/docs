@@ -1,0 +1,54 @@
+---
+title: Incentivizing Syncs
+---
+
+A Gateway can only route to Subgraphs that Indexers have actually synced and are serving queries. When a Subgraph that consumers need is under-indexed, or not indexed at all, getting it synced is often supply-side task depending on the payment/pricing model a Gateway has established. How Gateways do this depends on whether the chain in question has indexing rewards enabled or not. This page covers both cases.
+
+## Why Incentivizing Syncs is a Distinct Problem
+
+Query routing and paying for queries (covered in [Routing Queries to Indexers](/gateways/subgraphs/supply-side/routing-queries/) and [Managing Escrow](/gateways/subgraphs/supply-side/managing-escrow/)) only work once Indexers are already serving a deployment. Nothing about paying more per query causes a Subgraph to get indexed; query fees reward serving, not syncing. Incentivizing an Indexer to take on the up-front work of syncing a new deployment is a separate mechanism, and it is where a Gateway Operator has to think about the economics that attract indexing on The Graph Subgraph Network.
+
+## Chains with Indexing Rewards
+
+On chains where indexing rewards are enabled, the built-in mechanism is curation. Indexing rewards are funded by new GRT issuance (currently at 2-3% annually) and distributed to Subgraphs in proportion to the curation signal on them. Signaling on a Subgraph therefore does two things: it tells Indexers the Subgraph is worth indexing, and it directs a share of indexing rewards to whoever indexes it. More signal means more Indexers are willing to allocate to and sync that Subgraph.
+
+As of December 2022, curation on The Graph Network uses a flat bonding curve (see [GIP-0039: Curation v1.x](https://forum.thegraph.com/t/gip-0039-curation-v1-x/3613)). Under a flat curve, curation shares are minted at a constant price rather than along a rising curve, which means:
+
+- **Predictable cost:** signaling a given amount of GRT gets an Operator a proportional, predictable share, without an early-curator price advantage that a rising curve would create.
+- **Less speculative dynamics:** because shares are not cheaper for being early, curation behaves more like a straightforward signal of demand than a trading game.
+- **Simple mental model for operators:** to attract indexing on a rewards-enabled chain, add signal proportional to how much indexing attention an Operator wants to attract, and expect a proportional response.
+
+For a Gateway Operator, the practical move is to signal (or encourage their consumers to signal) on the Subgraphs an Operator needs served, often paired with the publication flow when a Subgraph is first published (see [Enabling Publication Flows](/gateways/subgraphs/consumer-side/publication-flows/)). A select amount of self-signal at publishing time is a common way to bootstrap indexing on a fresh Subgraph. As a rough guide to the quality of service each level of signal tends to attract. As of August 2026, the recommended signal is:
+
+- **10,000 GRT:** typically attracts 5+ Indexers, the level to aim for when a Subgraph is serving production traffic and an Operator wants redundancy well beyond the three Indexers a Gateway selects per query.
+- **5,000 GRT:** typically attracts 3+ Indexers, enough to cover a Gateway's per-query selection so that no single Indexer's outage leaves the Subgraph unserved.
+- **1,000 GRT:** typically attracts 1-2 Indexers, a reasonable starting point for a fresh or low-volume Subgraph, but thin enough that availability depends on very few operators.
+
+## Chains without Indexing Rewards
+
+Not every chain has indexing rewards enabled. On those chains, curation signal does not attract indexing the same way, because there are no issued rewards to direct, so an Operator needs to compensate Indexers for syncing through other means. The protocol's answer to this gap is **Indexing Payments**: a mechanism that pays Indexers directly to sync and serve a Subgraph through recurring on-chain payments, with no curation signal required. The payer funds an on-chain escrow, and Indexers accept agreements and collect payment by posting Proofs of Indexing (POIs), with either party able to exit gracefully.
+
+### In Progress: Indexing Payments (CHIPs and DIPs)
+
+Where query routing decides who serves a live query, Indexing Payments decide who an Operator (or the Foundation, or a chain) pays to index a Subgraph in the first place. The same underlying mechanism is expected to take two forms in practice:
+
+- **Chain-to-Indexer Payments (CHIPs):** used by The Graph Foundation, a chain, or another surrogate to fund a baseline level of support for a chain on The Graph Network — N Indexers syncing M Subgraphs within a fair-use policy at a defined quality of service. For an Operator, CHIPs is baseline coverage that multiple Gateways can build on to offset infrastructure costs, rather than something the Operator funds directly.
+- **Direct Indexing Payments (DIPs):** used by a Gateway Operator to pay the network's Indexers to sync specific Subgraphs on behalf of its own consumers — typically to "boost" Subgraphs beyond the CHIPs baseline, or to fund indexing on a chain where no baseline exists. This is the lever an Operator reaches for when a Subgraph matters to its product but on-chain rewards or baseline coverage do not yet attract indexing on their own.
+
+How these fit into the Foundation's broader chain-integration model, including how Operators source deals and split revenue, is covered in [Chain Integrations](/gateways/subgraphs/ecosystem/chain-integrations/).
+
+As of August 2026, [Indexing Payments is still a developing part of the protocol](https://github.com/graphprotocol/graph-improvement-proposals/blob/main/gips/0081.md): the model is defined in GIP-0081, with the on-chain agreement lifecycle, escrow, and Subgraph Service integration specified in GIP-0087 and GIP-0088. Treat the mechanism as forward-looking: the exact agreements, tooling, and availability are evolving, and this section will be expanded as they land. Do not communicate a timeline externally.
+
+### Off-Chain Deals
+
+Until Indexing Payments is live, Operators commonly arrange off-chain deals: a direct commercial agreement with one or more Indexers to sync and serve specific deployments, on agreed terms, for agreed compensation. This is the interim model that Indexing Payments is designed to replace, and the pragmatic path today when a Subgraph matters to an Operator's product but the on-chain incentives do not yet exist to attract indexing on their own. It resembles the enterprise and staging arrangements discussed in [Gateway Indexing Approaches](/gateways/subgraphs/consumer-side/indexing-approaches/), applied to syncing rather than serving.
+
+### Communicating Sync Requests to Indexers
+
+Whether through DIPs or an off-chain deal, syncing a new deployment ultimately requires talking to Indexers. Practical steps:
+
+- Identify Indexers already serving related deployments with good QoS (the Network Subgraph and Graph Explorer show who serves what).
+- Communicate the specific deployment an Operator needs synced, the expected query volume, and the terms being offered, through an Operator's Indexer relationships (see [Customer Support](/gateways/subgraphs/consumer-side/customer-support/) for the channels operators use).
+- Confirm the Indexer has synced and is serving before routing production traffic, and watch freshness and success rate as it ramps. See [Tracking QoS](/gateways/subgraphs/supply-side/tracking-qos/).
+
+Because a Gateway selects up to three Indexers per query, aim for at least three Indexers syncing any deployment an Operator wants served reliably, so that no single Indexer's outage leaves that Subgraph unserved.

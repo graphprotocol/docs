@@ -198,6 +198,30 @@ export default function Layout({ pageOpts, children }: NextraThemeLayoutProps<Fr
         if (routeWithoutLocale === '/indexing' || routeWithoutLocale.startsWith('/indexing/')) {
           return <RoleIndexer alt="" />
         }
+        if (routeWithoutLocale === '/gateways' || routeWithoutLocale.startsWith('/gateways/')) {
+          const maskUrl = `url(${process.env.BASE_PATH ?? ''}/img/gateway/subgraph-gateway-icon.png)`
+          return (
+            <span
+              aria-hidden="true"
+              style={{
+                display: 'inline-block',
+                // Match the sibling GDS nav icons: the NavigationItem icon slot sizes icons to size-4 (1rem)
+                width: '1rem',
+                height: '1rem',
+                backgroundColor: 'currentColor',
+                WebkitMaskImage: maskUrl,
+                maskImage: maskUrl,
+                WebkitMaskRepeat: 'no-repeat',
+                maskRepeat: 'no-repeat',
+                WebkitMaskPosition: 'center',
+                maskPosition: 'center',
+                // Inset the mark to ~75% so its visible size matches the sibling line-icons (which fill ~0.73-0.88 of their 16px box)
+                WebkitMaskSize: '75%',
+                maskSize: '75%',
+              }}
+            />
+          )
+        }
         if (routeWithoutLocale === '/graph-horizon' || routeWithoutLocale.startsWith('/graph-horizon/')) {
           return <Horizon alt="" />
         }

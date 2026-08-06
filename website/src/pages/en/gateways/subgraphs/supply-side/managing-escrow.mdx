@@ -1,0 +1,53 @@
+---
+title: Managing Escrow
+---
+
+Escrow is the GRT a Gateway Operator holds on-chain to pay Indexers, and keeping it funded is what keeps Indexers serving an Operator's Gateway. This page covers the escrow lifecycle, how Operators set the price they pay for query behavior, and how Indexers price their own service through Agora cost models. The payment protocol itself is covered in [Graph Tally](/gateways/subgraphs/components/graph-tally/).
+
+## The Escrow Lifecycle
+
+As a Graph Tally (TAP) Sender on Horizon (Arbitrum One), payment flows one way: a Gateway signs a receipt per query, Indexers aggregate receipts into RAVs through the Operator's aggregator, and Indexers redeem RAVs on-chain against the Operator's escrow. A Gateway Operator's job is to keep that escrow ahead of what is owed. The sequence to go live is:
+
+1. Fund the sender wallet with ETH (for gas) and GRT (to back escrow).
+2. Authorize the signer on the `GraphTallyCollector` (an EIP-712 proof binds the signer to the Operator's sender).
+3. Approve GRT to the `PaymentsEscrow` contract.
+4. Deposit into escrow, per receiver (per Indexer).
+
+Steps 2 and 4 are automated by the escrow-manager when it is running with signer authorization enabled: it reads outstanding query debt from the `gateway_queries` Kafka topic and sizes deposits up to the Operator's configured GRT allowance. Operators do not redeem RAVs; Indexers do. A Gateway Operator's responsibility is keeping escrow funded and the aggregator healthy.
+
+Two safety flags let an Operator validate before spending: run with payments not required and escrow in dry-run mode, and a Gateway will route, answer, and sign receipts while no funds move. Flip to real payments only after an Operator has watched the escrow-manager log the deposits it would make and confirmed the amounts and target contracts.
+
+Note that Operators should always pull Horizon contract addresses from the authoritative address book rather than hand-copying them. Never reuse legacy pre-Horizon escrow or dispute contracts. A mismatched collector or `SubgraphService` address causes Indexers to reject an Operator's receipts.
+
+## Monitoring Escrow
+
+The signals that matter most, exposed as escrow-manager metrics:
+
+- **`escrow_total_balance_grt` versus `escrow_total_debt_grt`:** keep balance comfortably above debt. A coverage ratio below 1x means Indexers may not be redeemable and will stop serving an Operator. Per-receiver detail is in `escrow_balance_grt{receiver}` and `escrow_debt_grt{receiver}`.
+- **`escrow_deposit_err`:** failed top-up transactions. Alert on these, as they reveal when a depleted escrow stalls payments.
+- **Aggregator health:** RAV request failures mean Indexers cannot get paid, so escrow will not draw down and Indexers may stop serving an Operator.
+
+Keep enough GRT in the sender wallet for the escrow-manager to top up balances, and tune the reconcile interval for how quickly an Operator's query volume runs balances down. See [Tracking QoS](/gateways/subgraphs/supply-side/tracking-qos/) for the broader monitoring picture.
+
+## Setting Prices for Indexer Query Behavior
+
+Gateway Operators control what they are willing to pay Indexers, which in turn shapes which Indexers serve an Operator and how well. The primary lever is the query fee target: the average fee, in USD terms, an Operator is willing to pay per query. It bounds what a Gateway will pay per indexer request and feeds directly into selection.
+
+The tradeoff is direct:
+
+- A higher fee target makes more Indexers economically viable and biases toward better QoS, at higher cost per query.
+- A lower fee target reduces cost per query but shrinks the set of Indexers willing to serve an Operator at that price, which can hurt availability and freshness.
+
+A Gateway's payment control system may pay slightly above an Indexer's cost model to hit an Operator's target average, clamped to the Operator's budget, so the fee target behaves as a smooth economic dial rather than a hard cutoff. This must be set to reflect the QoS that consumers are paying Gateways for: premium, low-latency products justify a higher target; bulk, cost-sensitive workloads justify a lower one. This is the supply-side complement to the pricing an Operator presents to consumers (see [Pricing & Payments](/gateways/subgraphs/consumer-side/pricing-payments/)).
+
+## How Indexers Use Agora Cost Models
+
+On the other side of the price, each Indexer sets its own fees using an Agora cost model, served by its `indexer-service` at `/cost`. Agora is a small declarative language that lets an Indexer express what it charges for different queries: a flat price per query, different prices for different Subgraphs or query shapes, or prices that scale with query complexity.
+
+When routing, a Gateway executes each candidate Indexer's cost model over the specific indexer request to get that Indexer's fee for that query, then favors cheaper Indexers, all else equal, by maximizing marginal score per unit fee. This means:
+
+- Indexers compete on price as well as quality. An Indexer that prices itself out of an Operator's budget simply is not selected.
+- Pricing is per-query and query-aware. A complex query can legitimately cost more than a trivial one, because the Indexer's cost model can say so.
+- An Operator's fee target and the Indexers' cost models meet at selection time. A Gateway reconciles what an Operator will pay with what each Indexer charges, per query, and routes accordingly.
+
+Gateways do not set Indexers' prices directly, but they shape them through Agora. What Gateways set is a budget and how much they value the four quality dimensions, and the ISA finds the best-value Indexers within that budget. Understanding Agora is mostly useful for interpreting why certain Indexers are or are not being selected at an Operator's current fee target.
