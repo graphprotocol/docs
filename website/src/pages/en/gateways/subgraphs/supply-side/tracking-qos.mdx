@@ -1,0 +1,292 @@
+---
+title: Tracking Gateway Quality of Service
+sidebarTitle: Tracking QoS
+---
+
+Routing well depends on knowing what an Operator's Indexers actually deliver. Quality of service (QoS) tracking is the supply-side feedback that tells an Operator which Indexers are fast, fresh, and reliable, which are degrading, and which Subgraphs are well served across the network.
+
+This page works outward in three layers:
+
+1. **The network data sources every Gateway reads.** The Network Subgraph and the Epoch Block Oracle (EBO) are not optional add-ons. A Gateway cannot route without the first, and cannot reason about Indexer supply per chain without the second.
+2. **An Operator's own telemetry.** Prometheus metrics and, optionally, Titorelli aggregations turn the Gateway's raw output into a durable per-Indexer and per-consumer view.
+3. **Publishing that view back out.** A QoS Subgraph takes those aggregations and makes them queryable, so Indexers can see how they are scored and consumers can verify service claims.
+
+## What QoS Tracking Is For
+
+A Gateway already reacts to quality in real time: every Indexer response feeds success rate and latency back into the [Indexer Selection Algorithm](/gateways/subgraphs/components/indexer-selection/), so degrading Indexers are scored down automatically. QoS tracking is the durable, aggregated view on top of that live loop. It answers questions the per-query feedback cannot:
+
+- Which Indexers consistently serve a deployment well over hours and days?
+- Where are the freshness or reliability gaps across the Subgraphs my consumers query?
+- Which Indexers are candidates for blocking, or for a preferential-routing relationship?
+- What usage and quality data do I need for billing consumers and reporting to customers?
+
+## The Network Data Sources a Gateway Requires
+
+Before any of the optional tooling on this page, two network-level data sources are part of running a Gateway at all. Everything else in this page layers on top of them.
+
+### The Network Subgraph
+
+The [Network Subgraph](https://thegraph.com/explorer/subgraphs/DZz4kDTdmzWLWsV373w2bSmoar3umKKH9y82SUKr5qmp?view=Query&chain=arbitrum-one) is a Gateway's source of truth for on-chain protocol state: which Indexers exist, their allocations, their stake, escrow accounts, and authorized signers. Gateways read it continuously to discover Indexers, and it cannot route a query without it (see [Technical Overview](/gateways/subgraphs/components/overview/)).
+
+For QoS purposes it is also the authoritative reference for who is allocated to what, how much stake is at risk, and which Indexers are actively serving a deployment, the on-chain complement to the performance data an Operator's Gateway observes directly. Combining the two (on-chain allocation and stake from the Network Subgraph, observed performance from an Operator's own telemetry) gives an Operator the full basis for routing, blocking, and preferential-routing decisions.
+
+### The Epoch Block Oracle (EBO)
+
+The [Epoch Block Oracle](https://thegraph.com/explorer/subgraphs/4KFYqUWRTZQ9gn7GPHC6YQ2q15chJfVrX43ezYcwkgxB?view=Query&chain=arbitrum-one) records the starting block of each epoch for every supported chain. It exists because The Graph Network spans many chains while the protocol's accounting (epochs, allocations, and the POIs Indexers submit to close allocations and claim rewards) needs a canonical notion of "where each chain was" at each epoch boundary. The EBO provides that canonical per-chain, per-epoch block reference.
+
+For a Gateway Operator, the EBO matters indirectly but importantly: it underpins whether Indexers can allocate to and be rewarded for indexing Subgraphs on a given chain, which affects which chains have healthy Indexer supply. When an Operator is assessing whether a chain is well served (or planning to incentivize syncs on it, per [Incentivizing Syncs](/gateways/subgraphs/supply-side/incentivizing-syncs/)), the EBO's coverage of that chain is part of the picture.
+
+The EBO is also worth understanding architecturally, because it is the same pattern the QoS Subgraph uses: an off-chain oracle posts compressed messages to a DataEdge contract, and a Subgraph indexes and interprets them. For an Operator that goes on to build a QoS oracle later in this page, [`graphprotocol/block-oracle`](https://github.com/graphprotocol/block-oracle) is a second reference implementation of that architecture with a more sophisticated encoding.
+
+## Aggregating Gateway Telemetry with Titorelli
+
+The Network Subgraph tells an Operator what the protocol says. It does not tell an Operator how any Indexer actually performed on their traffic; only an Operator's Gateway sees that. Titorelli is the optional data-science service that rolls a Gateway's raw Kafka output into hourly aggregations, and it is the primary tool for turning that observation into a durable record. Its `gateway_indexer_qos_hourly` topic aggregates, per Indexer, deployment, and chain: success and failure counts, average seconds behind chain head, average latency, and average fee. That is exactly the per-Indexer, per-deployment QoS picture an Operator needs to make routing and blocking decisions with confidence.
+
+Running [Titorelli](/gateways/subgraphs/components/titorelli/) also produces two other useful streams: `gateway_client_fees_hourly` (per-consumer usage and fees, for billing) and `gateway_indexer_fees_hourly` (per-Indexer fees owed, which also speeds up escrow-manager startup). It sits on a Gateway's secondary data path, so if it goes down, query serving and payments are unaffected; the aggregated view is simply lost until it recovers.
+
+An Operator that does not run Titorelli can still monitor live QoS through a Gateway's Prometheus metrics (query success rate, latency, per-Indexer selection and feedback) and the escrow-manager's metrics; the hourly aggregation is simply done manually or forgone.
+
+## The QoS Subgraph
+
+Titorelli and Prometheus give a Gateway Operator a private view of quality. A Gateway's QoS Subgraph makes that view public and permissionless: it takes a Gateway's own QoS aggregations, publishes them to IPFS, anchors a pointer on-chain, and indexes the result as a Subgraph that anyone can query on The Graph Network.
+
+The original instance is the [Gateway QoS Oracle Subgraph](https://thegraph.com/explorer/subgraphs/CnfJ5tC5cfAmt2tUyUaM6vPrtmNYasavkDDn793FkbN3?view=Query&chain=arbitrum-one), which publishes QoS data for the Gateway operated by Edge & Node on The Graph Network. The rationale and original design are described in [Off-Chain Data and web3 Data Pipelines](https://thegraph.com/blog/the-graph-off-chain-data-web3-data-pipelines/), and the reference implementation of the indexing Subgraph is [`juanmardefago/gateway-qos-oracle-example-subgraph`](https://github.com/juanmardefago/gateway-qos-oracle-example-subgraph), contributed by Juan Manuel Rodriguez Defago of GraphOps.
+
+### Why Publish QoS Data as a Subgraph
+
+Gateway telemetry is, by default, a closed dataset that only the Gateway Operator can see. That is a problem for a network whose supply side is independent:
+
+- **Indexers cannot see how they are being scored:** Publishing per-Indexer success rate, latency, and freshness gives Indexers the same view of their performance that a Gateway uses to route, so they can diagnose and fix problems rather than guess why traffic dropped.
+- **Consumers cannot verify service claims:** Published QoS data lets a data consumer check the quality of the Subgraphs they depend on, and compare Gateways, without taking any operator's word for it.
+- **The ecosystem cannot analyze the network:** Public QoS data is what makes third-party dashboards, Indexer leaderboards, and network health research possible without a data-sharing agreement with the operator.
+- **Nobody has to run an Operator's infrastructure to read it:** Because the output is a Subgraph, consumers query it at their own expense through the normal network path. There is no API to maintain, no rate limits to manage, and no dependency on the operator's uptime.
+
+For a Gateway Operator, the trade is straightforward: the Operator takes on a small, cheap publishing pipeline, and in exchange gets supply-side transparency that improves Indexer behavior and consumer trust without building a reporting product.
+
+### How the Pipeline Works
+
+The QoS Subgraph is an instance of a general pattern for getting off-chain computation into a Subgraph. Four stages:
+
+1. **Aggregate Off-chain:** A scheduled job reads a Gateway's query and Indexer telemetry (in practice, the Kafka topics described in [Titorelli](/gateways/subgraphs/components/titorelli/)) and computes QoS aggregations over a fixed window. The canonical oracle uses a five-minute window and emits two datasets per window: one keyed by Indexer and deployment, one keyed by deployment.
+2. **Publish the aggregation to IPFS.** Each dataset is serialized as a JSON array, one object per row, and added to IPFS. The job keeps the resulting content hash.
+3. **Post a Pointer On-chain:** The job sends a transaction to a [DataEdge](https://github.com/graphprotocol/graph-improvement-proposals/blob/main/grcs/0001-data-edge.md) contract on Gnosis carrying a small JSON payload with the topic name, the IPFS hash, and the window timestamp. DataEdge is a deliberately minimal contract: it has an empty `fallback()` and does nothing with the calldata. Its only job is to get bytes into a block cheaply so that a Subgraph can index them.
+4. **Index it with a Subgraph.** A Subgraph indexes calls to the DataEdge contract, parses the pointer, fetches the referenced IPFS file, and unpacks each row into entities. The QoS data is then queryable over GraphQL like any other Subgraph.
+
+A Gateway never has to be online for consumers to read this data, and the pipeline sits entirely on the secondary data path: if the oracle stops, query serving and Indexer payments are unaffected.
+
+### The Oracle Message Format
+
+The on-chain payload is intentionally small. The canonical oracle calls `submitQoSPayload(bytes)` on the DataEdge contract at `0x5b4293b4c0f36cb5d4448950830bc777759b6c4f` on Gnosis, with a payload of the form:
+
+```json
+{
+  "topic": "gateway_indexer_attempt_qos_5_minutes_prod_v3",
+  "hash": "QmTAVJrwSF3G7YbXBnzebGK5JwWhHnz8Pi4LCFNWmyVRCD",
+  "timestamp": 1785791100
+}
+```
+
+The mapping accepts either a single object or an array of them, so one transaction can carry several pointers.
+
+Two topics are in use, one per dataset:
+
+| Topic | Contents | Becomes |
+| --- | --- | --- |
+| `gateway_indexer_attempt_qos_5_minutes_prod_v3` | Per Indexer, per deployment: what each Indexer delivered on each attempt | `AllocationDataPoint` |
+| `gateway_query_result_qos_5_minutes_prod_v3` | Per deployment: what a Gateway returned to the consumer | `QueryDataPoint` |
+
+The topic name is the versioning mechanism. When the schema of the aggregation changes, the oracle moves to a new topic (`_v3` supersedes `_v2`), and the Subgraph's allowlist of accepted topics is updated. Messages on unrecognized topics are ignored. The Subgraph also enforces a submitter allowlist: a message from an address that is not an authorized submitter is recorded with `valid: false` and an error message, but its data is not processed. That allowlist is what makes the DataEdge contract safe to leave permissionless.
+
+### What a QoS Subgraph Exposes
+
+The schema separates raw five-minute data points from rolled-up daily aggregates, and provides three rollup dimensions.
+
+| Entity | Grain | Use |
+| --- | --- | --- |
+| `OracleMessage` | One per on-chain transaction | Audit the pipeline: was the message valid, who submitted it, when |
+| `MessageDataPoint` | One per IPFS file referenced | Row counts and provenance for a single window |
+| `AllocationDataPoint` | Indexer × deployment × 5 min | Finest-grained Indexer performance |
+| `QueryDataPoint` | Deployment × 5 min | Finest-grained end-consumer experience |
+| `AllocationDailyDataPoint` | Indexer × deployment × day | "How well did this Indexer serve this Subgraph today?" |
+| `IndexerDailyDataPoint` | Indexer × day | "How well did this Indexer serve overall today?" |
+| `QueryDailyDataPoint` | Deployment × day | "How well was this Subgraph served today?" |
+| `Indexer`, `SubgraphDeployment` | Lookup entities | Traverse from an Indexer address or deployment hash into its data points |
+
+The metrics themselves split along the same line as the two topics.
+
+**Indexer-Attempt Metrics** (on `AllocationDataPoint` and the daily rollups) describe what a specific Indexer delivered:
+
+- `proportion_indexer_200_responses` and `num_indexer_200_responses`: reliability
+- `avg_indexer_latency_ms`, `max_indexer_latency_ms`, `stdev_indexer_latency_ms`: speed and consistency
+- `avg_indexer_blocks_behind`, `max_indexer_blocks_behind`: freshness
+- `avg_query_fee`, `max_query_fee`, `total_query_fees`, `query_count`: cost and volume
+- `indexer_wallet`, `indexer_url`, `subgraph_deployment_ipfs_hash`, `chain_id`, `gateway_id`: identity and scope
+
+**Query-Result Metrics** (on `QueryDataPoint` and `QueryDailyDataPoint`) describe what the consumer actually experienced, after a Gateway has selected among Indexers, retried, and filtered:
+
+- `gateway_query_success_rate`: the number that matters to a consumer
+- `user_attributed_error_rate`: failures caused by the consumer's own request, separated out so they do not count against a Gateway or Indexers
+- `avg_gateway_latency_ms`, `max_gateway_latency_ms`, `stdev_gateway_latency_ms`: end-to-end latency including selection and retries
+- `most_recent_query_ts`, `query_count`, `avg_query_fee`, `total_query_fees`
+
+The distinction between the two is the useful part. Indexer-attempt metrics tell an Operator how the supply side is performing; query-result metrics tell an Operator how well a Gateway is compensating for it. A deployment can have mediocre Indexer latency and excellent Gateway success rate, which is precisely what a Gateway is for.
+
+### Querying the Canoncical QoS Subgraph
+
+Daily performance for a given Indexer, most recent day first:
+
+```graphql
+{
+  indexerDailyDataPoints(first: 10, orderBy: dayNumber, orderDirection: desc, where: { indexer_wallet: "0x..." }) {
+    dayNumber
+    query_count
+    proportion_indexer_200_responses
+    avg_indexer_latency_ms
+    avg_indexer_blocks_behind
+    avg_query_fee
+  }
+}
+```
+
+Which Indexers served a deployment best on a given day:
+
+```graphql
+{
+  allocationDailyDataPoints(
+    first: 20
+    orderBy: query_count
+    orderDirection: desc
+    where: { subgraph_deployment_ipfs_hash: "Qm...", dayNumber: 20000 }
+  ) {
+    indexer_wallet
+    query_count
+    proportion_indexer_200_responses
+    avg_indexer_latency_ms
+    max_indexer_blocks_behind
+  }
+}
+```
+
+Consumer-facing quality for a deployment over time:
+
+```graphql
+{
+  queryDailyDataPoints(
+    first: 30
+    orderBy: dayNumber
+    orderDirection: desc
+    where: { subgraph_deployment_ipfs_hash: "Qm..." }
+  ) {
+    dayNumber
+    query_count
+    gateway_query_success_rate
+    user_attributed_error_rate
+    avg_gateway_latency_ms
+  }
+}
+```
+
+To audit the pipeline rather than the data, query `oracleMessages` for `valid` and `errorMessage`, and `messageDataPoints` for the IPFS hash and row counts behind any window.
+
+## Running an Operator's Own QoS Oracle
+
+A Gateway Operator who wants to publish QoS data builds the same four stages. Nothing in the design is specific to any one Gateway: the DataEdge contract is permissionless, and the Subgraph is open source. What differentiates instances is the topic namespace, the submitter allowlist, and the `gateway_id` field carried on every row.
+
+### Step 1: Aggregate the Telemetry
+
+Start from a Gateway's Kafka output. The `gateway_queries` topic carries per-query records with the Indexer, deployment, chain, response status, latency, and fee, which is everything the two QoS datasets need. If an Operator runs [Titorelli](/gateways/subgraphs/components/titorelli/), `gateway_indexer_qos_hourly` already computes most of the Indexer-attempt aggregation on their behalf, though at hourly rather than five-minute grain.
+
+Decisions to make here:
+
+- **Window size:** The canonical oracle uses five minutes. Shorter windows mean more transactions and more IPFS files; longer windows mean cheaper operation but coarser data. Five minutes has proven a reasonable balance.
+- **Grain:** Aggregate to Indexer × deployment × chain for the attempt dataset, and deployment × chain for the result dataset. Do not publish per-query rows; the point of the aggregation is that the published dataset stays small and contains no consumer-identifying information.
+- **What to exclude:** API keys, consumer identity, and query bodies must not appear in the published data. Publish the quality of service, not who requested it.
+
+Emit each dataset as a JSON array of flat objects, using the field names in the schema above so the reference mapping can parse them without modification. Include `gateway_id` on every row so consumers can distinguish an Operator's data from other operators' if a topic namespace is ever shared.
+
+### Step 2: Publish to IPFS
+
+Add each window's JSON array to IPFS and keep the resulting content hash. Pin the content: if the file becomes unavailable before Indexers have processed the message, the corresponding window is lost from the Subgraph and cannot be recovered without republishing under the same hash.
+
+Retention is a real decision. The Subgraph only holds what Indexers have fetched, so the Operator's pinning policy determines how much history a fresh Indexer can sync from scratch. Pin indefinitely if the Subgraph should be resyncable from its start block; pin on a rolling window if only recent data matters, and set the Subgraph's `startBlock` and pruning to match.
+
+### Step 3: Post the Pointer On-Chain
+
+Send a transaction to a DataEdge contract with the `{topic, hash, timestamp}` payload. Two options:
+
+- **Reuse the existing DataEdge contract on Gnosis at `0x5b4293b4c0f36cb5d4448950830bc777759b6c4f`:** It is permissionless, so anyone can submit to it; the Operator's Subgraph submitter allowlist is what separates their messages from anyone else's. Use a dedicated topic namespace so the data does not collide with the canonical oracle's.
+- **Deploy a dedicated DataEdge:** The contract is trivial (an empty `fallback()`), which gives a clean namespace and a transaction stream that is entirely the Operator's. See [GRC-0001: DataEdge](https://github.com/graphprotocol/graph-improvement-proposals/blob/main/grcs/0001-data-edge.md).
+
+Gnosis is the conventional choice because gas is cheap enough that the on-chain cost is negligible. The original writeup put a comparable workload at roughly one to two dollars per month for about ten thousand transactions. Any chain that Graph Node supports will work; the cost profile is the main reason to prefer one.
+
+Run the submitter as a scheduled job with a dedicated hot wallet. The canonical implementation uses a cron-style automation task. Keep the wallet funded, monitor for failed submissions, and treat a submission gap as an alert: a missing window is a permanent hole in the published record.
+
+### Step 4: Build the Indexing Subgraph
+
+Fork [`juanmardefago/gateway-qos-oracle-example-subgraph`](https://github.com/juanmardefago/gateway-qos-oracle-example-subgraph) and change three things.
+
+**1. The manifest:** Point `source.address` at the Operator's DataEdge contract, set `network` to the chain being posted on, and set `startBlock` to the block of the first submission.
+
+```yaml
+specVersion: 1.0.0
+features:
+  - ipfsOnEthereumContracts
+indexerHints:
+  prune: auto
+schema:
+  file: ./schema.graphql
+dataSources:
+  - kind: ethereum
+    name: DataEdge
+    network: gnosis
+    source:
+      address: '0x5b4293b4c0f36cb5d4448950830bc777759b6c4f'
+      abi: DataEdge
+      startBlock: 46970110
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.9
+      language: wasm/assemblyscript
+      entities:
+        - OracleMessage
+      abis:
+        - name: DataEdge
+          file: ./abis/DataEdge.json
+      callHandlers:
+        - function: submitQoSPayload(bytes)
+          handler: handleSubmitQoSPayload
+      file: ./src/data-edge.ts
+```
+
+Note that this uses a call handler, not an event handler. DataEdge emits nothing; the data is the calldata, so the mapping reads `call.inputs._payload`. The ABI in the manifest exists only so Graph Node can decode the selector and argument; the contract itself does not implement it.
+
+**2. The constants:** Update `JSON_TOPICS` to the Operator's topic names and `SUBMITTER_WHITELIST` to its submitter addresses. These two lists are the entire trust model: the contract accepts anything, and the Subgraph decides what counts.
+
+**3. The schema and parsing, if the fields differ:** If an Operator publishes exactly the fields the reference implementation expects, the mapping works unchanged. To add metrics, add them to `schema.graphql` and to the corresponding `create*DataPoint` function, and add them to the daily rollup helpers if they should be aggregated.
+
+The mapping flow is worth understanding before modifying it. `handleSubmitQoSPayload` creates an `OracleMessage` keyed by transaction hash, checks the submitter against the allowlist, and, if the submitter is authorized, parses the JSON payload. For each accepted topic it calls `processIpfsHash`, which fetches the file, iterates the array, and creates one `AllocationDataPoint` or `QueryDataPoint` per row, choosing based on whether the topic name contains `indexer` or `query`. Each row creation also updates the relevant daily rollup entities in place, which is why the daily entities are mutable while the raw data points are immutable.
+
+**On IPFS access in mappings:** The reference implementation calls `ipfs.cat` inside the mapping, enabled by the `ipfsOnEthereumContracts` feature flag, and that is what the canonical deployment runs. It is the simplest approach, but it makes indexing dependent on the file being retrievable at index time: an Indexer that cannot fetch the file logs a warning and skips that window. [File data sources](https://thegraph.com/docs/en/subgraphs/developing/creating/advanced/#ipfsarweave-file-data-sources) are the alternative, and provide a retryable, template-based path for off-chain file content. An Operator building a new oracle rather than mirroring the canonical one should evaluate file data sources first, and expect to restructure the mapping into a template handler.
+
+### Step 5: Publish and Operate
+
+Deploy to Subgraph Studio, test against live submissions, and publish to The Graph Network so consumers can query it through the normal path. Signal enough curation to attract Indexers; see [Incentivizing Syncs](/gateways/subgraphs/supply-side/incentivizing-syncs/) for the levels that tend to attract how many.
+
+Ongoing operational concerns:
+
+- **Submission monitoring:** Alert on missed windows and on transactions that land but produce `valid: false` records, which usually means a submitter key rotated without a corresponding Subgraph update.
+- **Topic versioning:** When the aggregation schema changes, publish to a new topic and add it to `JSON_TOPICS` rather than changing the meaning of an existing topic. Consumers depending on the old shape keep working.
+- **History and pruning:** The canonical deployment sets `indexerHints: prune: auto` and a recent `startBlock`, so it serves a rolling window rather than the full history. Decide whether consumers need deep history, and set pinning, `startBlock`, and pruning consistently. These three have to agree, or the result is a Subgraph that claims history it cannot serve.
+- **Data hygiene:** Everything published is permanent and public. Review the aggregation output once before the first submission, and again whenever a field is added.
+
+## Putting It Together
+
+A healthy supply-side monitoring setup layers outward from the sources a Gateway cannot run without:
+
+- **The Network Subgraph** for authoritative on-chain state: who is allocated, with how much stake, to what.
+- **The EBO Subgraph** for per-chain allocation health, which tells an Operator where Indexer supply is likely to be thin.
+- **A Gateway's live selection feedback** for instant routing, reacting to quality query by query.
+- **Titorelli's hourly aggregations** for the durable per-Indexer and per-consumer view that live feedback cannot provide.
+- **QoS Subgraph** for publishing that view, so Indexers can see how they are scored and consumers can verify what they are getting.
+
+These join cleanly because they share keys. The Network Subgraph, a Gateway Operator's telemetry, and the QoS Subgraph all key on Indexer address and deployment IPFS hash, so a single analysis can combine an Indexer's stake and allocation size with its measured latency and freshness on the same deployment. Together they reveal not just that a query succeeded, but whether an Operator's Gateway is sourcing the best available service from the network, which is the whole point of tracking QoS.

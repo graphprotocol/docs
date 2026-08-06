@@ -1,0 +1,71 @@
+---
+title: Graph Tally for Gateway Operators
+sidebarTitle: Graph Tally
+---
+
+Graph Tally is the trust-minimized micropayment system that Subgraph Gateways use to pay Indexers for the queries they serve. It is what makes per-query payment economically viable: instead of one on-chain transaction per query, Indexers are paid through signed off-chain receipts that settle on-chain only periodically.
+
+Graph Tally was formerly known as TAP (Timeline Aggregation Protocol). The Gateway software documented here is Horizon-ready and generates TAP v2 receipts exclusively where "TAP v2" and "Graph Tally" refer to the same thing. Source and services now live in [`graphprotocol/graph-tally`](https://github.com/graphprotocol/graph-tally). The older [`tap-escrow-manager`](https://github.com/edgeandnode/tap-escrow-manager) repo is archived and superseded by the escrow manager in `graph-tally`. Specs: [GIP-0054](https://github.com/graphprotocol/graph-improvement-proposals/blob/main/gips/0054-timeline-aggregation-protocol.md) (original TAP) and [GIP-0066](https://github.com/graphprotocol/graph-improvement-proposals/blob/main/gips/0066-graph-horizon.md) (Graph Horizon / TAP v2).
+
+## How Graph Tally Scales Micropayments
+
+The Graph aims to support all queries for blockchain data. The most active Indexers already serve on the order of 500,000+ queries per day. Settling each query with its own on-chain transfer is impractical: even at roughly $0.09 per transfer on a low-cost L2, 500,000 queries per day would cost an Indexer about $45,000 per day in fees alone. Graph Tally moves payment off-chain and settles in batches, so the dominant on-chain cost becomes verifying a single ECDSA signature (around 3,000 gas, roughly $0.015 per redemption on Arbitrum at the figures in the source post).
+
+### Graph Tally's Core Properties
+
+- **High-throughput:** the bottleneck is ECDSA sign and verify, one of the fastest crypto operations.
+- **Stateless and scalable:** senders do not track totals, enabling distributed Gateways.
+- **Trust-minimized:** Receivers configure a risk threshold and can settle on-chain without further Sender interaction.
+- **Cost-efficient:** one signature verification per redemption instead of one transaction per query.
+
+## How Graph Tally Works
+
+Payments in The Graph Subgraph Network flows in one direction only -- from Gateways (the Sender) to Indexers (the Receiver). That one-way property is what removes the need for a dispute window: the Receiver has every incentive to post the latest, highest signed amount, so as long as receipts are validly signed there is nothing to dispute. Senders are also stateless: they sign the amount owed for each individual query rather than a running total, which lets a Gateway run distributed, horizontally-scaled senders.
+
+```
+Gateway (Sender)  ──signed receipt per query──▶  Indexer (Receiver)
+       ▲                                               │
+       │ RAV (signed aggregate)                        │ batches receipts
+       └───────────  aggregator  ◀─────────────────────┘
+                                                       │ redeems RAV
+          escrow manager ──funds──▶  Horizon escrow ◀──┘
+```
+
+The Graphy Tally payment flow goes as follows:
+
+1. **Receipts:** the Gateway sends a signed Receipt to the Indexer alongside each query, stating the amount owed for that single request (EIP-712 / ECDSA signed).
+2. **Accumulation:** the Indexer verifies and stores receipts, tallying the running total owed.
+3. **RAV request:** once the accumulated total reaches a threshold the Indexer is willing to risk, it sends all receipts up to a timestamp back to the Sender and requests aggregation.
+4. **RAV:** the Sender verifies the batch, computes the total, and returns a signed Receipt Aggregate Voucher (RAV), a single message representing the cumulative amount owed. Timestamps prevent double-spending: only receipts newer than the previous RAV's timestamp are added.
+5. **Settlement:** the Indexer can redeem the latest RAV on-chain against the Gateway's escrow to claim payment, and may accumulate multiple RAVs before submitting a single on-chain transaction.
+
+Because the Sender can decline to aggregate, the Receiver sets its threshold according to how much it trusts the Sender: the trust-minimized (not fully trustless) property of the system.
+
+## What Gateway Operators Run
+
+A Gateway Operator acts as the TAP Sender and runs two supporting services alongside the Gateway. Both are part of `graphprotocol/graph-tally`:
+
+| Service | Binary | Role |
+| --- | --- | --- |
+| Aggregator | `graph_tally_aggregator` | Public endpoint where Indexers submit batches of receipts and receive signed RAVs in return |
+| Escrow manager | `graph_tally_escrow_manager` | Maintains the on-chain GRT escrow balance the Gateway pays Indexers from, depositing enough to cover outstanding receipts |
+
+### Escrow Manager in Detail
+
+The escrow manager keeps the [Graph Horizon `PaymentsEscrow`](https://github.com/graphprotocol/contracts/blob/main/packages/horizon/contracts/payments/PaymentsEscrow.sol) funded so Indexers can always redeem. It monitors:
+
+- the [Network Subgraph](https://thegraph.com/explorer/subgraphs/DZz4kDTdmzWLWsV373w2bSmoar3umKKH9y82SUKr5qmp?view=Query&chain=arbitrum-one) for active allocations, escrow accounts, and authorized signers, and
+- Kafka topics for receipts and RAVs, which track outstanding debt to each Receiver.
+
+It then deposits GRT to keep balances ahead of what is owed. Startup is faster when the `gateway_indexer_fees_hourly` topic (produced by [Titorelli](/gateways/subgraphs/components/titorelli/)) is available, since it can read pre-aggregated fee history instead of replaying raw data.
+
+Key config options (single JSON file): `authorize_signers` (auto-authorize signers on startup), `dry_run` (skip contract calls for testing), `update_interval_seconds` (main loop polling), and `port_metrics` (Prometheus port, default 9090). Useful escrow metrics include `escrow_total_debt_grt`, `escrow_total_balance_grt`, `escrow_debt_grt{receiver}`, `escrow_balance_grt{receiver}`, and `escrow_deposit_ok` / `escrow_deposit_err`. See [Managing Escrow](/gateways/subgraphs/supply-side/managing-escrow/).
+
+## Wallets Gateway Operators Must Manage
+
+Graph Tally requires the Gateway Operator to manage at least two wallets:
+
+- **Sender:** needs ETH for transaction gas and GRT to allocate into TAP escrow to pay Indexers.
+- **Authorized signer:** used by the Gateway and aggregator to sign v2 receipts and RAVs. Signers must be authorized on-chain against the sender (the escrow manager can do this automatically when `authorize_signers` is `true`, or an Operator can call `authorizeSigner` manually on the escrow contract).
+
+See [Operating a Gateway](/gateways/subgraphs/components/operating-a-gateway/) for the full wallet, funding, and signer-authorization setup.

@@ -1,0 +1,86 @@
+---
+title: Subgraph Gateway Technical Overview
+sidebarTitle: Technical Overview
+---
+
+A technical overview of the Subgraph Gateway system: its components, the path a query takes, and the supporting services a Gateway Operator runs.
+
+![Subgraph Gateway system architecture](/img/gateway/gateway-architecture.png)
+
+## Subgraph Gateway at a Glance
+
+A Gateway has three primary responsibilities:
+
+1. **Manage Consumer Access and Billing:** authenticate consumers, issue and scope API keys, and collect payment for the queries they make.
+2. **Serve Client Requests:** accept GraphQL queries from consumers and return correct, low-latency responses.
+3. **Facilitate Indexer Payments:** pay the Indexers that serve those queries through Graph Tally.
+
+Everything else (data export, analytics, blocklists) is secondary: it is designed so that its failure has minimal impact on the three primary responsibilities. A Gateway is expected to be a reliable system that compensates for Indexers being individually unreliable.
+
+The system is built from a core Gateway process plus a set of supporting services and data sources:
+
+| Component | Function | Operator Run |
+| --- | --- | --- |
+| [Graph Gateway](https://github.com/graphprotocol/gateway) | Routes queries, discovers and selects Indexers, signs Graph Tally receipts | Yes |
+| [Indexer Selection](https://github.com/edgeandnode/candidate-selection) | Rewrites client request to Indexer request, choose Indexer response | Yes |
+| [Graph Tally Aggregator](https://github.com/graphprotocol/graph-tally/blob/main/crates/bin/aggregator/README.md) | Aggregates receipts into RAVs | Yes |
+| [Graph Tally Escrow Manager](https://github.com/graphprotocol/graph-tally/blob/main/crates/bin/escrow_manager/README.md) | Maintains on-chain GRT escrow balances to pay Indexers | Yes |
+| Kafka / Redpanda | Transport for exported query and attestation data | Yes |
+| [Titorelli](https://github.com/edgeandnode/titorelli) | Optional hourly aggregation over the Gateway's Kafka output | Optional |
+| [Network Subgraph](https://thegraph.com/explorer/subgraphs/DZz4kDTdmzWLWsV373w2bSmoar3umKKH9y82SUKr5qmp?view=Query&chain=arbitrum-one) | Indexes The Graph Network contracts, the source of truth for Subgraphs, deployments, and Indexer allocations | Optional |
+| [Indexer Service](https://github.com/graphprotocol/indexer-rs) | Serve queries, publish cost models and indexing status, collect receipts | Optional |
+
+## The Request Lifecycle
+
+### 1. Authentication
+
+Every client request must include credentials so the Gateway can associate it with a consumer and track usage for billing:
+
+- **API key:** issued from Subgraph Studio, passed as `Authorization: Bearer <API_KEY>`. Best for humans and applications. Keys may carry additional restrictions (allowed domains, Subgraphs, rate limits) that are checked before the request runs.
+- **x402:** pay-per-query in USDC on Base, no account required. Best for autonomous agents. The x402 protocol negotiates and settles payment automatically.
+
+### 2. Resolving the Request Path
+
+Requests take one of three shapes:
+
+- **Subgraph ID (from GNS contract):** must first be resolved to a deployment. The Gateway selects the latest deployment for which some Indexer reports an indexing status within 30 minutes of chain head; if none qualifies, it falls back to the latest deployment.
+- **Deployment ID (IPFS hash from manifest):** used directly.
+- **Deployment ID and Indexer address:** intended only for cross-checking a specific Indexer's responses. Not guaranteed to behave as expected for production data, and the rest of this flow assumes no Indexer address is pinned.
+
+### 3. Indexer Discovery
+
+To route a query, the Gateway must know which Indexers have active allocations on the target deployment. A Gateway learns this by periodically querying the Network Subgraph, which indexes The Graph Network contracts, through a subset of the Network's Indexers.
+
+Each Indexer registers a URL for its `indexer-service`. After collecting the on-chain allocation tree, the Gateway calls each active Indexer's `indexer-service` to fetch (a) software version, (b) per-allocation indexing status (based on how far the Indexer has progressed relative to chain head), and (c) an Indexer's Agora cost models.
+
+Optionally, the Gateway can block public Proofs of Indexing (POIs) associated with bad responses. When that is enabled, Indexers on affected deployments must submit their public POI during discovery. An Indexer whose POI is blocked is excluded until it returns a good POI.
+
+### 4. Indexer Selection
+
+The Gateway rewrites the client request into an indexer request (the client query plus any extra data the Gateway needs to track each Indexer's progress) and selects up to three Indexers to execute it. Selection uses a weighted product model over (a) success rate, (b) expected latency,(c) seconds behind chain head, (d) slashable GRT, and (e) fee from the Indexer's cost model, relative to the Gateway's budget.
+
+The full algorithm is documented in [Indexer Selection](/gateways/subgraphs/components/indexer-selection/) and is designed to be a component that can be iterated on to provide a Gateway Operator with a competitive advantage over other Gateways. While the existing Indexer Selection component is open-source, Gateway Operators may likely not open-source their own algorithms to sustain that advantage over competitors.
+
+### 5. Execution, Response, and Feedback
+
+The selected Indexers execute the indexer request in parallel. The first response that passes the Gateway's filters is returned to the client with any data the client did not request stripped out. Every Indexer response, including failures, feeds performance data back into the selection algorithm. If all selected Indexers fail, the Gateway repeats selection until the available Indexers are exhausted.
+
+### 6. Gateway-Indexer Payments
+
+Each indexer request is sent with a [Graph Tally v2](/gateways/subgraphs/components/graph-tally/) receipt signed by the Gateway (acting as a TAP sender). Indexers collect these receipts, periodically aggregate them into RAVs via the Gateway Operator's aggregator, and redeem RAVs on-chain against the Operator's escrow balance. The Gateway runs a control system that may pay Indexers slightly more than their cost model requests in order to hit a target average fee per query, clamped to the Gateway's budget.
+
+## Data Export (Secondary Path)
+
+The Gateway exports operational data to Kafka topics (`gateway_queries` and `gateway_attestations`) and consumes from `gateway_blocklist`. When multiple environments share a Kafka cluster, set `kafka_topic_environment` (for example, `"staging"` produces `gateway_queries_staging`).
+
+Optionally, [Titorelli](/gateways/subgraphs/components/titorelli/) aggregates these topics into hourly summaries used for analytics and to speed up escrow-manager startup. This entire path is designed to fail without affecting query serving or payments.
+
+![Gateway data pipeline, Kafka topics](/img/gateway/gateway-kafka-topics.png)
+
+## Operational Surface
+
+- **Configuration:** a single JSON config file passed as the first argument to the `graph-gateway` executable (structure defined in `src/config.rs`).
+- **Logging:** controlled by `RUST_LOG` (for example, `RUST_LOG="info,graph_gateway=debug"`). Each client request emits events under the `client_request` span; Indexer requests carry the `indexer_request` label.
+- **Metrics:** exposed for Prometheus at `:${METRICS_PORT}/metrics`.
+
+For wallets, escrow funding, and the full list of services to run, see [Operating a Gateway](/gateways/subgraphs/components/operating-a-gateway/). For a ready-to-run reference deployment, see [Gateway in a Box](/gateways/subgraphs/components/gateway-in-a-box/).
