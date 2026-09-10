@@ -69,9 +69,7 @@ declare namespace NavigationItemProps {
 }
 
 type NavigationItemProps =
-  | NavigationItemProps.ButtonProps
-  | NavigationItemProps.ExternalLinkProps
-  | NavigationItemProps.ClientLinkProps
+  NavigationItemProps.ButtonProps | NavigationItemProps.ExternalLinkProps | NavigationItemProps.ClientLinkProps
 
 export const NavigationItem = ({
   title,
