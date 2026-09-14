@@ -1,0 +1,188 @@
+## Indexing Anubis with Subgraphs
+
+Getting historical data off a smart contract is hard. You write your own indexer, run your own database, and handle chain reorganizations yourself. The Graph removes that work. It gives you an open API, called a Subgraph, that you query with GraphQL.
+
+Anubis is EVM-compatible, so the Subgraph workflow is the same as on most EVM chains. You point a Subgraph at your Anubis contract, define the entities you want, and Indexers on The Graph Network keep those entities current and queryable.
+
+> [!NOTE] Anubis is a selective-privacy chain. A Subgraph can only index data that is public on-chain. Transparent transactions, and the events they emit, are fully indexable. Data inside shielded (PLONK ZK) transactions is not visible on-chain, so it cannot be indexed. Design your contract's public events with this in mind if you want that data to be queryable.
+
+## Anubis network reference
+
+| Parameter    | Mainnet               | Testnet          |
+| ------------ | --------------------- | ---------------- |
+| Network name | ANUBIS Mainnet        | ANUBIS Testnet   |
+| Chain ID     | `6714` (`0x1a3a`)     | `2526` (`0x9de`) |
+| Gas token    | `gasDAI` (DAI-pegged) | `ANUBI`          |
+
+## Quick start
+
+Building a Subgraph for Anubis takes three steps:
+
+1. Initialize a Subgraph project from your Anubis contract.
+2. Publish it to The Graph Network for decentralized indexing.
+3. Query it over GraphQL with an API key.
+
+See the [Subgraph pricing page](https://thegraph.com/studio-pricing/) for current query rates and free-tier limits.
+
+> [!NOTE] Anubis is supported on The Graph Network, but does not currently have Subgraph Studio testing/staging support. Skip the standard `graph deploy` and Studio playground path. Instead, you can validate your Subgraph locally (see below) or publish directly to The Graph Network, where a decentralized Indexer that supports Anubis indexes it.
+
+### Step 1: Initialize your Subgraph project
+
+Install the Graph CLI with the package manager you prefer:
+
+```sh
+# npm
+npm install -g @graphprotocol/graph-cli@latest
+
+# or yarn
+yarn global add @graphprotocol/graph-cli
+```
+
+Verify the install:
+
+```sh
+graph --version
+```
+
+Initialize from your Anubis contract:
+
+```sh
+graph init
+```
+
+The CLI walks you through a set of prompts. Anubis is a custom EVM network, so provide the network details manually when asked:
+
+- **Protocol**: choose `ethereum`. Anubis is EVM-compatible.
+- **Subgraph slug**: an identifier for your Subgraph, for example `my-anubis-subgraph`.
+- **Directory**: where the project is scaffolded.
+- **Ethereum network**: enter `anubis` as the network identifier.
+- **Contract address**: the address of the contract you want to index. Find it on [browser.anubispace.org](https://browser.anubispace.org).
+- **ABI**: if the CLI cannot fetch the ABI, export it from your build artifacts or the Blockscout contract page. Supply it as a JSON file.
+- **Start block**: the block your contract was deployed at. Set this so indexing does not scan from genesis. The explorer shows the deployment block.
+- **Contract name**: the name of your contract.
+- **Index contract events as entities**: set this to `true`. The CLI then scaffolds entities and mappings for every emitted event.
+
+> [!NOTE] The `network` value you enter (`anubis`) must match the network identifier that The Graph has registered for Anubis. If `graph init` does not recognize the network, scaffold with any EVM network and set the `network` field manually in `subgraph.yaml` (next step).
+
+### Step 2: Write and build your Subgraph
+
+You work with three files:
+
+- **Manifest** (`subgraph.yaml`): defines which data sources your Subgraph indexes.
+- **Schema** (`schema.graphql`): defines the entities you want to query.
+- **Mappings** (`src/mapping.ts`): AssemblyScript that translates on-chain events into your entities.
+
+Point the manifest at Anubis:
+
+```yaml
+dataSources:
+  - kind: ethereum
+    name: MyContract
+    network: anubis # must match The Graph's Anubis network identifier
+    source:
+      address: '0xYourAnubisContractAddress'
+      abi: MyContract
+      startBlock: 123456 # your contract's deployment block
+```
+
+For a full walkthrough of schema and mapping authoring, see [Creating a Subgraph](/subgraphs/developing/creating/starting-your-subgraph/).
+
+Generate types and build:
+
+```sh
+graph codegen && graph build
+```
+
+**Optional: verify locally before publishing.** The Studio playground cannot index Anubis, so test indexing with a local [Graph Node](https://github.com/graphprotocol/graph-node) pointed at an Anubis RPC endpoint. In your `docker-compose.yml`, set the Ethereum environment to your Anubis network:
+
+```yaml
+environment:
+  ethereum: 'anubis:https://rpc.anubispace.org'
+```
+
+Create and deploy to your local node:
+
+```sh
+graph create --node http://localhost:8020/ my-anubis-subgraph
+graph deploy --node http://localhost:8020/ --ipfs http://localhost:5001 my-anubis-subgraph
+```
+
+Query the local endpoint until your entities look right, then publish.
+
+### Step 3: Publish to The Graph Network
+
+This is the recommended path for Anubis. Publishing is an on-chain action that:
+
+- makes your Subgraph available for decentralized [Indexers](/indexing/overview/) that support Anubis to index,
+- makes it publicly searchable and queryable in [Graph Explorer](https://thegraph.com/explorer/),
+- and makes it available for [Curators](/resources/roles/curating/) to add signal.
+
+Build, then publish from the Graph CLI:
+
+```sh
+graph codegen && graph build
+graph publish
+```
+
+A browser window opens. Connect your wallet, add metadata (name, description, image), and publish your Subgraph. The `--protocol-network` flag refers to where The Graph's protocol contracts live (Arbitrum One), not to Anubis.
+
+> [!TIP] During the publish transaction, you can add 500 GRT in curation signal to save on gas fees. Signal tells Indexers that your Subgraph is worth indexing. Any Subgraph with 500 GRT or more signal will automatically be indexed; without signal, no Indexer is incentivized to pick up your Subgraph.
+
+### Step 4: Query your Subgraph
+
+After you publish, open your Subgraph in [Graph Explorer](https://thegraph.com/explorer/) and copy its query URL from the **Query** button.
+
+1. Create an API key from the API Keys dashboard at [thegraph.com/studio](https://thegraph.com/studio/). This dashboard handles keys and billing for The Graph Network on Arbitrum, independent of which chains Studio can index.
+2. Send GraphQL queries to the query URL with your API key.
+
+See the [Subgraph pricing page](https://thegraph.com/studio-pricing/) for query rates, and [Querying The Graph](/subgraphs/querying/introduction/) for the full query API.
+
+## Appendix
+
+### Sample GraphQL query
+
+```graphql
+{
+  transfers(first: 5, orderBy: blockNumber, orderDirection: desc) {
+    id
+    from
+    to
+    value
+    blockNumber
+  }
+}
+```
+
+### Querying from JavaScript
+
+```js
+const query = `
+  {
+    transfers(first: 5, orderBy: blockNumber, orderDirection: desc) {
+      id
+      from
+      to
+      value
+      blockNumber
+    }
+  }
+`
+
+const res = await fetch('https://gateway.thegraph.com/api/<API_KEY>/subgraphs/id/<SUBGRAPH_ID>', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ query }),
+})
+
+const { data } = await res.json()
+console.log(data.transfers)
+```
+
+### Resources
+
+- [The Graph: Subgraphs overview](/subgraphs/developing/introduction/)
+- [Creating a Subgraph](/subgraphs/developing/creating/starting-your-subgraph/)
+- [Publishing a Subgraph](/subgraphs/developing/publishing/publishing-a-subgraph/)
+- [Querying The Graph](/subgraphs/querying/introduction/)
+- [Graph Explorer](https://thegraph.com/explorer/)
+- [Anubis Network docs](https://anubis-network.gitbook.io/anubis-network) and [ChainList (6714)](https://chainlist.org/chain/6714)

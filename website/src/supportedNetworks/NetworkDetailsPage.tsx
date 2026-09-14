@@ -1,14 +1,16 @@
 import { ExperimentalCopyButton, ExperimentalDescriptionList, ExperimentalLink } from '@edgeandnode/gds'
-import { NetworkIcon } from '@edgeandnode/go'
 
 import { Card, TimeIcon } from '@/components'
 import { useI18n } from '@/i18n'
 
+import { customNetworkContent } from './customContent'
+import { NetworkIcon } from './NetworkIcon'
 import { evmCards, evmSubgraphsOnlyCards, nonEvmCards } from './ResourceCards'
 import { type SupportedNetwork } from './utils'
 
 export default function NetworkDetailsPage({ network }: { network: SupportedNetwork }) {
   const { t } = useI18n()
+  const CustomContent = customNetworkContent[network.id]
   const cards = (() => {
     if (network.evm) {
       if (network.subgraphsSupportLevel !== 'none' && network.substreamsSupportLevel === 'none') {
@@ -76,6 +78,12 @@ export default function NetworkDetailsPage({ network }: { network: SupportedNetw
       </div>
 
       <hr />
+
+      {CustomContent && (
+        <div className="mb-16 mt-8">
+          <CustomContent />
+        </div>
+      )}
 
       <h3 className="text-h18">{t('index.supportedNetworks.guides')}</h3>
       <div className="grid grid-cols-6 gap-4">

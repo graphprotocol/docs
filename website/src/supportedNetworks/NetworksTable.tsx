@@ -13,11 +13,11 @@ import {
   useDebounce,
 } from '@edgeandnode/gds'
 import { Check, Checks, EyeClosed } from '@edgeandnode/gds/icons'
-import { NetworkIcon } from '@edgeandnode/go'
 
 import { Callout, Table } from '@/components'
 import { useI18n } from '@/i18n'
 
+import { NetworkIcon } from './NetworkIcon'
 import { type SupportedNetwork } from './utils'
 
 export function NetworksTable({ networks }: { networks: SupportedNetwork[] }) {
