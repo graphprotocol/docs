@@ -3,6 +3,7 @@ import { type ComponentProps, useContext } from 'react'
 import { ButtonOrLink, classNames, ExperimentalDivider, ExperimentalLink } from '@edgeandnode/gds'
 import { ArrowLeft, ArrowRight, CalendarDynamic, HourglassDynamic, SocialGitHub } from '@edgeandnode/gds/icons'
 
+import { CopyForLLM } from '@/components'
 import { useI18n } from '@/i18n'
 
 import { LayoutContext } from '../../shared'
@@ -21,6 +22,17 @@ export default function TemplateDefaultContent({ className, children, ...props }
       const [_src, _pages, ...segments] = filePath.split('/')
       return `https://github.com/graphprotocol/docs/blob/main/website/src/pages/${segments.map(encodeURIComponent).join('/')}`
     })()
+
+  // Derive the raw Markdown URL so users can copy it directly into an LLM.
+  // For remote pages (e.g. sourced from another repo), transform the GitHub
+  // blob URL into a raw.githubusercontent.com URL.  For local pages, build
+  // the raw URL from the file path.
+  const rawMarkdownUrl = remotePageUrl
+    ? remotePageUrl.replace('https://github.com/', 'https://raw.githubusercontent.com/').replace('/blob/', '/')
+    : (() => {
+        const [_src, _pages, ...segments] = filePath.split('/')
+        return `https://raw.githubusercontent.com/graphprotocol/docs/main/website/src/pages/${segments.join('/')}`
+      })()
 
   return (
     <div
@@ -68,7 +80,7 @@ export default function TemplateDefaultContent({ className, children, ...props }
           group-data-[unwrap-content]/layout-content-grid:grid
           group-data-[unwrap-content]/layout-content-grid:auto-rows-max
           group-data-[unwrap-content]/layout-content-grid:grid-cols-subgrid
-          ${/* The following allows one child to be full height by setting `row-[full]`; see https://codepen.io/benface/pen/PwoaKJg */ ''}
+          ${/* The following allows one child to be full height by setting \`row-[full]\`; see https://codepen.io/benface/pen/PwoaKJg */ ''}
           group-data-[unwrap-content]/layout-content-grid:grid-rows-[repeat(auto-fit,minmax(0,max-content))_[full]_minmax(0,1fr)]
           -:group-data-[unwrap-content]/layout-content-grid:*:col-span-full
           -:group-not-data-[hide-content-header]/layout-content-grid:first:*:mt-6
@@ -123,14 +135,17 @@ export default function TemplateDefaultContent({ className, children, ...props }
                 </time>
               </div>
             ) : null}
-            <ExperimentalLink
-              href={editPageUrl}
-              target="_blank"
-              iconBefore={<SocialGitHub alt="" />}
-              className="ms-auto text-space-700"
-            >
-              {t('global.page.edit')}
-            </ExperimentalLink>
+            <div className="ms-auto flex items-center gap-3">
+              <CopyForLLM rawUrl={rawMarkdownUrl} />
+              <ExperimentalLink
+                href={editPageUrl}
+                target="_blank"
+                iconBefore={<SocialGitHub alt="" />}
+                className="text-space-700"
+              >
+                {t('global.page.edit')}
+              </ExperimentalLink>
+            </div>
           </div>
           <ExperimentalDivider variant="subtle" />
           <div
