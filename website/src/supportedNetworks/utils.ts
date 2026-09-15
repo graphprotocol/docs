@@ -30,8 +30,11 @@ export async function getSupportedNetworks() {
   return registry.networks
     .flatMap((network) => {
       const [subgraphsSupportLevel, subgraphsProvider] = getSubgraphsSupportLevelAndProvider(network)
-      const substreamsSupportLevel = getSubstreamsSupportLevel(network)
-      const firehoseSupportLevel = getFirehoseSupportLevel(network)
+      // Substreams and Firehose share one combined signal (see getFirehoseSubstreamsSupportLevel);
+      // both columns render the same mark.
+      const firehoseSubstreamsSupportLevel = getFirehoseSubstreamsSupportLevel(network)
+      const substreamsSupportLevel = firehoseSubstreamsSupportLevel
+      const firehoseSupportLevel = firehoseSubstreamsSupportLevel
       if (subgraphsSupportLevel === 'none' && substreamsSupportLevel === 'none' && firehoseSupportLevel === 'none') {
         return []
       }
@@ -75,18 +78,16 @@ function getSubgraphsSupportLevelAndProvider(network: Network): ['none' | 'basic
   return ['none', null]
 }
 
-function getSubstreamsSupportLevel(network: Network): 'none' | 'basic' | 'full' {
-  const providerCount = network.services.substreams?.length || 0
-  if (providerCount >= 2) return 'full'
-  if (providerCount === 1) return 'basic'
-  return 'none'
-}
-
-function getFirehoseSupportLevel(network: Network): 'none' | 'basic' | 'full' {
-  const providerCount = network.services.firehose?.length || 0
-  if (providerCount >= 2) return 'full'
-  if (providerCount === 1) return 'basic'
-  return 'none'
+// Substreams and Firehose share a single support signal. Both are powered by the same
+// Firehose block data, so the table's "Base" vs "Extended (EVM only)" mark reflects the
+// network's block model, not how many providers serve the data.
+// - 'none'  -> no Firehose or Substreams provider is serving the network
+// - 'basic' -> base blocks + at least one Firehose or Substreams provider (renders as a single check)
+// - 'full'  -> extended (EVM) blocks + at least one Firehose or Substreams provider (renders as a double check)
+function getFirehoseSubstreamsSupportLevel(network: Network): 'none' | 'basic' | 'full' {
+  const hasProvider = (network.services.substreams?.length || 0) > 0 || (network.services.firehose?.length || 0) > 0
+  if (!hasProvider) return 'none'
+  return network.firehose?.evmExtendedModel ? 'full' : 'basic'
 }
 
 export type SupportedNetwork = Awaited<ReturnType<typeof getSupportedNetworks>>[number]

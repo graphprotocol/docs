@@ -1,10 +1,10 @@
 import { ExperimentalCopyButton, ExperimentalDescriptionList, ExperimentalLink } from '@edgeandnode/gds'
+import { NetworkIcon } from '@edgeandnode/go'
 
 import { Card, TimeIcon } from '@/components'
 import { useI18n } from '@/i18n'
 
 import { customNetworkContent } from './customContent'
-import { NetworkIcon } from './NetworkIcon'
 import { evmCards, evmSubgraphsOnlyCards, nonEvmCards } from './ResourceCards'
 import { type SupportedNetwork } from './utils'
 
