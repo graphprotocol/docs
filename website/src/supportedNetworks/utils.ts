@@ -1,37 +1,13 @@
 import { type Network, NetworksRegistry } from '@pinax/graph-networks-registry'
 
-// Networks that should use the "mono" icon variant (TODO: add this feature to web3icons?)
-const MONO_ICON_NETWORKS = [
-  'arweave-mainnet',
-  'autonomys-taurus',
-  'expchain-testnet',
-  'fraxtal',
-  'lens',
-  'lens-testnet',
-  'linea',
-  'linea-sepolia',
-  'lumia',
-  'mbase',
-  'megaeth-testnet',
-  'soneium',
-  'soneium-testnet',
-  'sonic',
-  'stellar',
-  'vana',
-  'vana-moksha',
-  'xlayer-mainnet',
-  'xlayer-sepolia',
-  'zksync-era',
-  'zksync-era-sepolia',
-]
-
 export async function getSupportedNetworks() {
   const registry = await NetworksRegistry.fromLatestVersion()
   return registry.networks
     .flatMap((network) => {
       const [subgraphsSupportLevel, subgraphsProvider] = getSubgraphsSupportLevelAndProvider(network)
-      // Substreams and Firehose share one combined signal (see getFirehoseSubstreamsSupportLevel);
-      // both columns render the same mark.
+      // Substreams and Firehose share one combined signal (see getFirehoseSubstreamsSupportLevel)
+      // and are shown together in a single "Firehose/Substreams" table column. The per-service
+      // aliases are kept for the network details page, which still branches on Substreams support.
       const firehoseSubstreamsSupportLevel = getFirehoseSubstreamsSupportLevel(network)
       const substreamsSupportLevel = firehoseSubstreamsSupportLevel
       const firehoseSupportLevel = firehoseSubstreamsSupportLevel
@@ -42,11 +18,12 @@ export async function getSupportedNetworks() {
         {
           ...network,
           evm: isEvm(network),
-          iconVariant: getIconVariant(network),
+          iconVariant: 'mono' as const,
           subgraphsSupportLevel,
           subgraphsProvider,
           substreamsSupportLevel,
           firehoseSupportLevel,
+          firehoseSubstreamsSupportLevel,
         },
       ]
     })
@@ -55,10 +32,6 @@ export async function getSupportedNetworks() {
 
 function isEvm(network: Network) {
   return network.caip2Id.startsWith('eip155:')
-}
-
-function getIconVariant(network: Network): 'mono' | 'branded' {
-  return MONO_ICON_NETWORKS.includes(network.id) ? 'mono' : 'branded'
 }
 
 function getSubgraphsSupportLevelAndProvider(network: Network): ['none' | 'basic' | 'full', string | null] {

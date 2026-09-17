@@ -147,10 +147,7 @@ export function NetworksTable({ networks }: { networks: SupportedNetwork[] }) {
                 <Text.C10>{t('index.supportedNetworks.tableHeaders.subgraphs')}</Text.C10>
               </th>
               <th align="center">
-                <Text.C10>{t('index.supportedNetworks.tableHeaders.substreams')}</Text.C10>
-              </th>
-              <th align="center">
-                <Text.C10>{t('index.supportedNetworks.tableHeaders.firehose')}</Text.C10>
+                <Text.C10>{t('index.supportedNetworks.tableHeaders.firehoseSubstreams')}</Text.C10>
               </th>
             </tr>
             {filteredNetworks.map((network) => (
@@ -185,16 +182,9 @@ export function NetworksTable({ networks }: { networks: SupportedNetwork[] }) {
                   ) : null}
                 </td>
                 <td align="center">
-                  {network.substreamsSupportLevel === 'full'
+                  {network.firehoseSubstreamsSupportLevel === 'full'
                     ? checkmarks
-                    : network.substreamsSupportLevel === 'basic'
-                      ? checkmark
-                      : null}
-                </td>
-                <td align="center">
-                  {network.firehoseSupportLevel === 'full'
-                    ? checkmarks
-                    : network.firehoseSupportLevel === 'basic'
+                    : network.firehoseSubstreamsSupportLevel === 'basic'
                       ? checkmark
                       : null}
                 </td>
