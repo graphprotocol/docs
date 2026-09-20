@@ -1,7 +1,7 @@
 import { ExperimentalCopyButton, ExperimentalDescriptionList, ExperimentalLink } from '@edgeandnode/gds'
 import { NetworkIcon } from '@edgeandnode/go'
 
-import { Card, TimeIcon } from '@/components'
+import { Card, Heading, TimeIcon } from '@/components'
 import { useI18n } from '@/i18n'
 
 import { customNetworkContent } from './customContent'
@@ -85,7 +85,7 @@ export default function NetworkDetailsPage({ network }: { network: SupportedNetw
         </div>
       )}
 
-      <h3 className="text-h18">{t('index.supportedNetworks.guides')}</h3>
+      <Heading.H3>{t('index.supportedNetworks.guides')}</Heading.H3>
       <div className="grid grid-cols-6 gap-4">
         {cards.map((card) => (
           <Card

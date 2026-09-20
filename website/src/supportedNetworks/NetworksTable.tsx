@@ -9,28 +9,44 @@ import {
   ExperimentalSearch,
   ExperimentalToggleChip,
   Text,
-  Tooltip,
   useDebounce,
 } from '@edgeandnode/gds'
-import { Check, Checks, EyeClosed } from '@edgeandnode/gds/icons'
+import { EyeClosed } from '@edgeandnode/gds/icons'
 import { NetworkIcon } from '@edgeandnode/go'
 
 import { Callout, Table } from '@/components'
 import { useI18n } from '@/i18n'
 
-import { type SupportedNetwork } from './utils'
+import { type SubgraphsTier, type SubstreamsTier, type SupportedNetwork } from './utils'
+
+// Chip labels and colors per support tier. STUDIO / NON-EVM use white (matching the mono
+// network icons); the higher tiers use the brand blue and green.
+const SUBGRAPHS_CHIPS: Record<Exclude<SubgraphsTier, 'none'>, { label: string; color: string }> = {
+  studio: { label: 'STUDIO', color: '#FFFFFF' },
+  network: { label: 'COMMUNITY', color: '#66D8FF' },
+  rewards: { label: 'REWARDS', color: '#4BCA81' },
+}
+const SUBSTREAMS_CHIPS: Record<Exclude<SubstreamsTier, 'none'>, { label: string; color: string }> = {
+  other: { label: 'NON-EVM', color: '#FFFFFF' },
+  base: { label: 'BASE', color: '#66D8FF' },
+  extended: { label: 'EXTENDED', color: '#4BCA81' },
+}
+
+function TierChip({ label, color }: { label: string; color: string }) {
+  return (
+    <span
+      className="text-c10 inline-flex items-center rounded-full border px-2 py-0.5 leading-none font-medium"
+      style={{ color, borderColor: color, backgroundColor: `${color}1f` }}
+    >
+      {label}
+    </span>
+  )
+}
 
 export function NetworksTable({ networks }: { networks: SupportedNetwork[] }) {
   const { t } = useI18n()
   const [immediateSearchQuery, setSearchQuery] = useState('')
   const [immediateShowTestnets, setShowTestnets] = useState(false)
-
-  const checkmark = (
-    <Check size={4} alt={t('index.supportedNetworks.tableLegend.icons.checkmark')} className="h-[0.75lh]" />
-  )
-  const checkmarks = (
-    <Checks size={4} alt={t('index.supportedNetworks.tableLegend.icons.checkmarks')} className="h-[0.75lh]" />
-  )
 
   const searchQuery = useDebounce(immediateSearchQuery, 200)
   const showTestnets = useDebounce(immediateShowTestnets, 200)
@@ -57,11 +73,11 @@ export function NetworksTable({ networks }: { networks: SupportedNetwork[] }) {
   return (
     <>
       <Callout variant="info" className="mb-6">
-        <p>{t('index.supportedNetworks.infoText')}</p>
         <p>
           <ExperimentalLink href="mailto:info@thegraph.foundation">
             {t('index.supportedNetworks.infoLink')}
-          </ExperimentalLink>
+          </ExperimentalLink>{' '}
+          {t('index.supportedNetworks.infoText')}
         </p>
       </Callout>
 
@@ -74,25 +90,37 @@ export function NetworksTable({ networks }: { networks: SupportedNetwork[] }) {
         </h3>
         <div className="grid grid-cols-1 gap-px text-space-500 xs:grid-cols-2">
           <div className="border-b border-r border-space-1500 p-4">
-            <span className="text-c10 mb-2 block text-white">Subgraphs</span>
-            <div className="flex gap-2">
-              {checkmark}
-              <span className="text-14">{t('index.supportedNetworks.tableLegend.subgraphs.basic')}</span>
-            </div>
-            <div className="flex gap-2">
-              {checkmarks}
-              <span className="text-14">{t('index.supportedNetworks.tableLegend.subgraphs.full')}</span>
+            <span className="text-c10 mb-3 block text-white">Subgraphs</span>
+            <div className="flex flex-col gap-2">
+              <div className="flex items-center gap-2">
+                <TierChip {...SUBGRAPHS_CHIPS.studio} />
+                <span className="text-14">{t('index.supportedNetworks.tableLegend.subgraphs.studio')}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <TierChip {...SUBGRAPHS_CHIPS.network} />
+                <span className="text-14">{t('index.supportedNetworks.tableLegend.subgraphs.network')}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <TierChip {...SUBGRAPHS_CHIPS.rewards} />
+                <span className="text-14">{t('index.supportedNetworks.tableLegend.subgraphs.rewards')}</span>
+              </div>
             </div>
           </div>
           <div className="border-b border-r border-space-1500 p-4 lg:border-r-0">
-            <span className="text-c10 mb-2 block text-white">Firehose/Substreams</span>
-            <div className="flex gap-2">
-              {checkmark}
-              <span className="text-14">{t('index.supportedNetworks.tableLegend.substreams.basic')}</span>
-            </div>
-            <div className="flex gap-2">
-              {checkmarks}
-              <span className="text-14">{t('index.supportedNetworks.tableLegend.substreams.full')}</span>
+            <span className="text-c10 mb-3 block text-white">Firehose/Substreams</span>
+            <div className="flex flex-col gap-2">
+              <div className="flex items-center gap-2">
+                <TierChip {...SUBSTREAMS_CHIPS.other} />
+                <span className="text-14">{t('index.supportedNetworks.tableLegend.substreams.other')}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <TierChip {...SUBSTREAMS_CHIPS.base} />
+                <span className="text-14">{t('index.supportedNetworks.tableLegend.substreams.base')}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <TierChip {...SUBSTREAMS_CHIPS.extended} />
+                <span className="text-14">{t('index.supportedNetworks.tableLegend.substreams.extended')}</span>
+              </div>
             </div>
           </div>
         </div>
@@ -173,20 +201,12 @@ export function NetworksTable({ networks }: { networks: SupportedNetwork[] }) {
                   </div>
                 </td>
                 <td align="center">
-                  {network.subgraphsSupportLevel === 'full' ? (
-                    checkmarks
-                  ) : network.subgraphsSupportLevel === 'basic' ? (
-                    <Tooltip content={network.subgraphsProvider}>
-                      <span className="z-10">{checkmark}</span>
-                    </Tooltip>
-                  ) : null}
+                  {network.subgraphsTier !== 'none' ? <TierChip {...SUBGRAPHS_CHIPS[network.subgraphsTier]} /> : null}
                 </td>
                 <td align="center">
-                  {network.firehoseSubstreamsSupportLevel === 'full'
-                    ? checkmarks
-                    : network.firehoseSubstreamsSupportLevel === 'basic'
-                      ? checkmark
-                      : null}
+                  {network.substreamsTier !== 'none' ? (
+                    <TierChip {...SUBSTREAMS_CHIPS[network.substreamsTier]} />
+                  ) : null}
                 </td>
               </tr>
             ))}

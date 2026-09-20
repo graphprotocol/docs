@@ -1,29 +1,37 @@
 import { type Network, NetworksRegistry } from '@pinax/graph-networks-registry'
 
+// The registry's `services.subgraphs` array may contain deployment URL strings and/or a
+// backstop-support entry (the `backstopSupport` field from the networks-registry). The
+// published package still types this as `string[]`, so entries are narrowed at runtime.
+type SubgraphsServiceEntry = string | { backstopSupport?: string; description?: string }
+
+export type SubgraphsTier = 'none' | 'studio' | 'network' | 'rewards'
+export type SubstreamsTier = 'none' | 'other' | 'base' | 'extended'
+
 export async function getSupportedNetworks() {
   const registry = await NetworksRegistry.fromLatestVersion()
   return registry.networks
     .flatMap((network) => {
-      const [subgraphsSupportLevel, subgraphsProvider] = getSubgraphsSupportLevelAndProvider(network)
-      // Substreams and Firehose share one combined signal (see getFirehoseSubstreamsSupportLevel)
-      // and are shown together in a single "Firehose/Substreams" table column. The per-service
-      // aliases are kept for the network details page, which still branches on Substreams support.
-      const firehoseSubstreamsSupportLevel = getFirehoseSubstreamsSupportLevel(network)
-      const substreamsSupportLevel = firehoseSubstreamsSupportLevel
-      const firehoseSupportLevel = firehoseSubstreamsSupportLevel
-      if (subgraphsSupportLevel === 'none' && substreamsSupportLevel === 'none' && firehoseSupportLevel === 'none') {
+      const subgraphsTier = getSubgraphsTier(network)
+      const substreamsTier = getSubstreamsTier(network)
+      // Drop networks that would show no chip in either product column.
+      if (subgraphsTier === 'none' && substreamsTier === 'none') {
         return []
       }
+      // Coarse support flags kept for the network details page, which only branches on
+      // whether each product is supported at all.
+      const subgraphsSupportLevel = subgraphsTier === 'none' ? 'none' : network.issuanceRewards ? 'full' : 'basic'
+      const substreamsSupportLevel =
+        substreamsTier === 'none' ? 'none' : substreamsTier === 'extended' ? 'full' : 'basic'
       return [
         {
           ...network,
           evm: isEvm(network),
           iconVariant: 'mono' as const,
+          subgraphsTier,
+          substreamsTier,
           subgraphsSupportLevel,
-          subgraphsProvider,
           substreamsSupportLevel,
-          firehoseSupportLevel,
-          firehoseSubstreamsSupportLevel,
         },
       ]
     })
@@ -34,33 +42,34 @@ function isEvm(network: Network) {
   return network.caip2Id.startsWith('eip155:')
 }
 
-function getSubgraphsSupportLevelAndProvider(network: Network): ['none' | 'basic' | 'full', string | null] {
-  const providers = [...new Set([...(network.services.subgraphs || []), ...(network.services.sps || [])])]
-  if (providers.length > 0) {
-    let provider = providers[0]!
-    if (providers.some((provider) => /^((https?:)?\/\/)?api\.studio\.thegraph\.com(\/|$)/.test(provider))) {
-      provider = 'Subgraph Studio'
-    } else if (providers.some((provider) => /^((https?:)?\/\/)?(www\.)?streamingfast\.io(\/|$)/.test(provider))) {
-      provider = 'StreamingFast'
-    }
-    if (network.issuanceRewards) {
-      return ['full', provider]
-    }
-    return ['basic', provider]
+// Subgraphs support has three tiers, in priority order (only the highest one applies):
+// - 'rewards' -> the network earns indexing rewards (`issuanceRewards: true`)
+// - 'network' -> community backstop support (any `backstopSupport` provider entry in
+//                `services.subgraphs`, e.g. InfraDAO or StreamingFast) but no issuance rewards
+// - 'studio'  -> deployable via Subgraph Studio (a studio deploy URL in
+//                `services.subgraphs`) but neither of the above
+function getSubgraphsTier(network: Network): SubgraphsTier {
+  if (network.issuanceRewards) return 'rewards'
+  const subgraphs = (network.services?.subgraphs ?? []) as SubgraphsServiceEntry[]
+  if (subgraphs.some((entry) => typeof entry === 'object' && Boolean(entry?.backstopSupport))) {
+    return 'network'
   }
-  return ['none', null]
+  if (subgraphs.some((entry) => typeof entry === 'string' && entry.includes('studio.thegraph.com'))) {
+    return 'studio'
+  }
+  return 'none'
 }
 
-// Substreams and Firehose share a single support signal. Both are powered by the same
-// Firehose block data, so the table's "Base" vs "Extended (EVM only)" mark reflects the
-// network's block model, not how many providers serve the data.
-// - 'none'  -> no Firehose or Substreams provider is serving the network
-// - 'basic' -> base blocks + at least one Firehose or Substreams provider (renders as a single check)
-// - 'full'  -> extended (EVM) blocks + at least one Firehose or Substreams provider (renders as a double check)
-function getFirehoseSubstreamsSupportLevel(network: Network): 'none' | 'basic' | 'full' {
-  const hasProvider = (network.services.substreams?.length || 0) > 0 || (network.services.firehose?.length || 0) > 0
+// Substreams/Firehose support has three tiers. A network needs at least one Firehose or
+// Substreams provider to show any of them; the tier then reflects the block model:
+// - 'other'    -> non-EVM network (the block-model tiers below are EVM-only)
+// - 'extended' -> EVM network serving the extended block model
+// - 'base'     -> EVM network serving the base block model
+function getSubstreamsTier(network: Network): SubstreamsTier {
+  const hasProvider = (network.services?.substreams?.length ?? 0) > 0 || (network.services?.firehose?.length ?? 0) > 0
   if (!hasProvider) return 'none'
-  return network.firehose?.evmExtendedModel ? 'full' : 'basic'
+  if (!isEvm(network)) return 'other'
+  return network.firehose?.evmExtendedModel ? 'extended' : 'base'
 }
 
 export type SupportedNetwork = Awaited<ReturnType<typeof getSupportedNetworks>>[number]

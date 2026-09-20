@@ -1,6 +1,8 @@
 import type { ComponentType } from 'react'
 
 import Anubis from './anubis.mdx'
+import Bsc from './bsc.mdx'
+import Polygon from './polygon.mdx'
 
 /**
  * Per-network custom content for Supported Networks landing pages.
@@ -17,4 +19,6 @@ import Anubis from './anubis.mdx'
  */
 export const customNetworkContent: Record<string, ComponentType> = {
   anubis: Anubis,
+  bsc: Bsc,
+  matic: Polygon,
 }
