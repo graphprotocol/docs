@@ -17,18 +17,19 @@ import { NetworkIcon } from '@edgeandnode/go'
 import { Callout, Table } from '@/components'
 import { useI18n } from '@/i18n'
 
+import { getNetworkSlug } from './slugs'
 import { type SubgraphsTier, type SubstreamsTier, type SupportedNetwork } from './utils'
 
 // Chip labels and colors per support tier. STUDIO / NON-EVM use white (matching the mono
 // network icons); the higher tiers use the brand blue and green.
 const SUBGRAPHS_CHIPS: Record<Exclude<SubgraphsTier, 'none'>, { label: string; color: string }> = {
   studio: { label: 'STUDIO', color: '#FFFFFF' },
-  network: { label: 'COMMUNITY', color: '#66D8FF' },
+  network: { label: 'COMMUNITY', color: '#4C9EFF' },
   rewards: { label: 'REWARDS', color: '#4BCA81' },
 }
 const SUBSTREAMS_CHIPS: Record<Exclude<SubstreamsTier, 'none'>, { label: string; color: string }> = {
   other: { label: 'NON-EVM', color: '#FFFFFF' },
-  base: { label: 'BASE', color: '#66D8FF' },
+  base: { label: 'BASE', color: '#4C9EFF' },
   extended: { label: 'EXTENDED', color: '#4BCA81' },
 }
 
@@ -185,7 +186,10 @@ export function NetworksTable({ networks }: { networks: SupportedNetwork[] }) {
               >
                 <td>
                   <div className="static flex items-center justify-between gap-2">
-                    <ButtonOrLink href={`/supported-networks/${network.id}`} className="static outline-none">
+                    <ButtonOrLink
+                      href={`/supported-networks/${getNetworkSlug(network.id)}`}
+                      className="static outline-none"
+                    >
                       <div className="flex items-center gap-3">
                         <NetworkIcon network={network} variant={network.iconVariant} size={5} />
                         <div className="flex flex-col">
