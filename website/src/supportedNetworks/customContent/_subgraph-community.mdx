@@ -1,0 +1,162 @@
+{/*
+  Reusable "community" Subgraph section.
+
+  The community model: publish Subgraphs directly to The Graph Network and add
+  curation signal so select Indexers on the network pick them up (a curation
+  backstop). Renders "### Indexing {Chain} with Subgraphs" + the Quick Start
+  (Steps 1-4). Each network page keeps its own intro and any chain-specific
+  "Find Existing Subgraphs" card grid inline.
+
+  Props:
+    - chainName     (required) short name in body copy, e.g. "BSC", "Polygon"
+    - title         (optional) heading name; defaults to chainName (e.g. "BNB Smart Chain")
+    - networkId     (required) `graph init` / manifest network id, e.g. "bsc", "matic"
+    - slug          (required) example Subgraph slug base, e.g. "bsc", "polygon"
+    - explorerUrl   (required) block explorer URL, e.g. "https://bscscan.com"
+    - explorerName  (required) explorer brand for the ABI hint, e.g. "BscScan", "Blockscout"
+    - rpcUrl        (required) RPC endpoint used for local verification
+    - customNetwork (optional) network not in `graph init`'s list; enter it manually
+    - noStudio      (optional) no Subgraph Studio staging; publish direct / verify locally
+*/}
+
+import { Callout, CodeBlock } from '@/components'
+import { ExperimentalCodeInline as Code } from '@edgeandnode/gds'
+
+### Indexing {props?.title ?? props?.chainName} with Subgraphs [#indexing-with-subgraphs]
+
+Getting smart contract data is hard. You write your own indexer, run your own database, and handle chain reorganizations yourself. The Graph removes that work, giving you an open API, called a [Subgraph](/subgraphs/overview/), that you query with GraphQL.
+
+{props.chainName} is EVM-compatible, so the Subgraph workflow is the same as on most EVM chains. You point a Subgraph at your {props.chainName} contract, define the entities you want, and Indexers on The Graph Network keep those entities current and queryable.
+
+#### Quick Start: Build Your Own Subgraph
+
+Building a Subgraph for {props.chainName} takes three steps:
+
+1. Initialize a Subgraph project from your {props.chainName} contract.
+2. Publish it to The Graph Network for decentralized indexing.
+3. Query it over GraphQL with an API key.
+
+See the [Subgraph pricing page](https://thegraph.com/studio-pricing/) for current query rates and free-tier limits.
+
+{props.noStudio && (
+  <Callout data-callout-type="note">
+    {props.chainName} is supported on The Graph Network, but does not currently have Subgraph Studio testing/staging support. Skip the standard <Code>graph deploy</Code> and Studio playground path. Instead, you can validate your Subgraph locally (see below) or publish directly to The Graph Network, where a decentralized Indexer that supports {props.chainName} indexes it.
+  </Callout>
+)}
+
+##### Step 1: Initialize your Subgraph project
+
+Install the Graph CLI with the package manager you prefer:
+
+```sh
+# npm
+npm install -g @graphprotocol/graph-cli@latest
+
+# or yarn
+yarn global add @graphprotocol/graph-cli
+```
+
+Verify the install:
+
+```sh
+graph --version
+```
+
+Initialize from your {props.chainName} contract:
+
+```sh
+graph init
+```
+
+The CLI walks you through a set of prompts{props.customNetwork ? `. ${props.chainName} is a custom EVM network, so provide the network details manually when asked` : ''}:
+
+- **Protocol**: choose `ethereum`. {props.chainName} is EVM-compatible.
+- **Subgraph slug**: an identifier for your Subgraph, for example <Code>{`my-${props.slug}-subgraph`}</Code>.
+- **Directory**: where the project is scaffolded.
+- **Ethereum network**: {props.customNetwork ? <>enter <Code>{props.networkId}</Code> as the network identifier.</> : <>select <Code>{props.networkId}</Code> from the list of supported networks.</>}
+- **Contract address**: the address of the contract you want to index. Find it on <a href={props.explorerUrl} target="_blank" rel="noreferrer">{props.explorerUrl.replace(/^https?:\/\//, '')}</a>.
+- **ABI**: if the CLI cannot fetch the ABI, export it from your build artifacts or the {props.explorerName} contract page. Supply it as a JSON file.
+- **Start block**: the block your contract was deployed at. Set this so indexing does not scan from genesis. The explorer shows the deployment block.
+- **Contract name**: the name of your contract.
+- **Index contract events as entities**: set this to `true`. The CLI then scaffolds entities and mappings for every emitted event.
+
+<Callout data-callout-type="note">
+  {props.customNetwork ? (
+    <>
+      The <Code>network</Code> value you enter (<Code>{props.networkId}</Code>) must match the network identifier that The Graph has registered for {props.chainName}. If <Code>graph init</Code> does not recognize the network, scaffold with any EVM network and set the <Code>network</Code> field manually in <Code>subgraph.yaml</Code> (next step).
+    </>
+  ) : (
+    <>
+      The <Code>network</Code> value for {props.chainName} is <Code>{props.networkId}</Code>. <Code>graph init</Code> recognizes it directly, so you can select it from the list of supported networks. You can also set the <Code>network</Code> field manually in <Code>subgraph.yaml</Code> (next step).
+    </>
+  )}
+</Callout>
+
+##### Step 2: Write and build your Subgraph
+
+You work with three files:
+
+- **Manifest:** `subgraph.yaml` defines which data sources your Subgraph indexes.
+- **Schema:** `schema.graphql` defines the entities you want to query.
+- **Mappings:** `src/mapping.ts` uses AssemblyScript that translates on-chain events into your entities.
+
+Point the manifest at {props.chainName}:
+
+<CodeBlock><code className="language-yaml">{`dataSources:
+  - kind: ethereum
+    name: MyContract
+    network: ${props.networkId}
+    source:
+      address: '0xYour${props.slug.split('-').map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join('')}ContractAddress'
+      abi: MyContract
+      startBlock: 123456 # your contract's deployment block`}</code></CodeBlock>
+
+For a full walkthrough of schema and mapping authoring, see [Creating a Subgraph](/subgraphs/developing/creating/starting-your-subgraph/).
+
+Generate types and build:
+
+```sh
+graph codegen && graph build
+```
+
+**Optional: verify locally before publishing.** {props.noStudio ? `The Studio playground cannot index ${props.chainName}, so test` : 'You can test'} indexing with a local [Graph Node](https://github.com/graphprotocol/graph-node) pointed at an RPC endpoint for {props.chainName}. In your `docker-compose.yml`, set the Ethereum environment to {props.customNetwork ? `your ${props.chainName} network` : props.chainName}:
+
+<CodeBlock><code className="language-yaml">{`environment:
+  ethereum: '${props.networkId}:${props.rpcUrl}'`}</code></CodeBlock>
+
+Create and deploy to your local node:
+
+<CodeBlock><code className="language-sh">{`graph create --node http://localhost:8020/ my-${props.slug}-subgraph
+graph deploy --node http://localhost:8020/ --ipfs http://localhost:5001 my-${props.slug}-subgraph`}</code></CodeBlock>
+
+Query the local endpoint until your entities look right, then publish.
+
+##### Step 3: Publish & Curate on The Graph Network
+
+{props.noStudio ? `This is the recommended path for ${props.chainName}.` : ''}
+
+Publishing is an on-chain action that:
+
+- makes your Subgraph available for decentralized [Indexers](/indexing/overview/){props.noStudio ? ` that support ${props.chainName}` : ''} to index,
+- makes it publicly searchable and queryable in [Graph Explorer](https://thegraph.com/explorer/),
+- and makes it available for [Curators](/resources/roles/curating/) to add signal.
+
+Build, then publish from the Graph CLI:
+
+```sh
+graph codegen && graph build
+graph publish
+```
+
+A browser window opens. Connect your wallet, add metadata (name, description, image), and publish your Subgraph. The `--protocol-network` flag refers to where The Graph's protocol contracts live (Arbitrum One), not to {props.chainName}.
+
+> [!TIP] During the publish transaction, you can add 500 GRT in curation signal to save on gas fees. Signal tells Indexers that your Subgraph is worth indexing. Any Subgraph with 500 GRT or more signal will automatically be indexed; without signal, no Indexer is incentivized to pick up your Subgraph.
+
+##### Step 4: Query your Subgraph
+
+After you publish, open your Subgraph in [Graph Explorer](https://thegraph.com/explorer/) and copy its query URL from the **Query** button.
+
+1. Create an API key from the API Keys dashboard at [thegraph.com/studio](https://thegraph.com/studio/). This dashboard handles {props.noStudio ? 'keys and billing for The Graph Network on Arbitrum, independent of which chains Studio can index' : 'API keys and billing for The Graph Network'}.
+2. Send GraphQL queries to the query URL with your API key.
+
+See the [Subgraph pricing page](https://thegraph.com/studio-pricing/) for query rates, and [Querying The Graph](/subgraphs/querying/introduction/) for the full query API.

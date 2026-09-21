@@ -1,32 +1,104 @@
 import type { ComponentType } from 'react'
 
 import Anubis from './anubis.mdx'
-import Blast from './blast.mdx'
+import Blast from './blast-mainnet.mdx'
 import Bsc from './bsc.mdx'
-import Btc from './bitcoin.mdx'
-import EthereumBeacon from './ethereum-beacon.mdx'
+import Btc from './btc.mdx'
+import EthereumBeacon from './mainnet-cl.mdx'
 import GnosisBeacon from './gnosis-cl.mdx'
-import HoodiBeacon from './ethereum-hoodi.mdx'
+import HoodiBeacon from './hoodi-cl.mdx'
 import HyperEvm from './hyper-evm.mdx'
-import Injective from './injective.mdx'
+import Injective from './injective-mainnet.mdx'
 import Ink from './ink.mdx'
 import Litecoin from './litecoin.mdx'
 import MegaEth from './megaeth.mdx'
 import Monad from './monad.mdx'
-import Polygon from './polygon.mdx'
+import Polygon from './matic.mdx'
 import Robinhood from './robinhood.mdx'
-import SepoliaBeacon from './ethereum-sepolia.mdx'
-import Solana from './solana.mdx'
+import SepoliaBeacon from './sepolia-cl.mdx'
+import Solana from './solana-mainnet-beta.mdx'
 import SolanaAccounts from './solana-accounts.mdx'
 import SolanaDevnet from './solana-devnet.mdx'
 import Starknet from './starknet-mainnet.mdx'
 import Stellar from './stellar.mdx'
 import Tron from './tron.mdx'
 import TronEvm from './tron-evm.mdx'
-import Vaulta from './vaulta.mdx'
+import Vaulta from './eos.mdx'
 import Wax from './wax.mdx'
 import WorldChain from './worldchain.mdx'
 import Zora from './zora.mdx'
+import ArbitrumOne from './arbitrum-one.mdx'
+import Arc from './arc.mdx'
+import Base from './base.mdx'
+import InjectiveEvm from './injective-evm.mdx'
+import Linea from './linea.mdx'
+import Ethereum from './mainnet.mdx'
+import Optimism from './optimism.mdx'
+import Soneium from './soneium.mdx'
+import Unichain from './unichain.mdx'
+import ArbitrumSepolia from './arbitrum-sepolia.mdx'
+import BaseSepolia from './base-sepolia.mdx'
+import Chapel from './chapel.mdx'
+import Hoodi from './hoodi.mdx'
+import InjectiveEvmTestnet from './injective-evm-testnet.mdx'
+import LineaSepolia from './linea-sepolia.mdx'
+import OptimismSepolia from './optimism-sepolia.mdx'
+import PolygonAmoy from './polygon-amoy.mdx'
+import RobinhoodSepolia from './robinhood-sepolia.mdx'
+import Sepolia from './sepolia.mdx'
+import SoneiumTestnet from './soneium-testnet.mdx'
+import UnichainTestnet from './unichain-testnet.mdx'
+import Avalanche from './avalanche.mdx'
+import Celo from './celo.mdx'
+import Tempo from './tempo.mdx'
+import XLayer from './xlayer-mainnet.mdx'
+import Near from './near-mainnet.mdx'
+import NearTestnet from './near-testnet.mdx'
+import StarknetTestnet from './starknet-testnet.mdx'
+import StellarTestnet from './stellar-testnet.mdx'
+import InjectiveTestnet from './injective-testnet.mdx'
+import Jungle4 from './jungle4.mdx'
+import WaxTestnet from './wax-testnet.mdx'
+import Boba from './boba.mdx'
+import BobaTestnet from './boba-testnet.mdx'
+import Fuse from './fuse.mdx'
+import FuseTestnet from './fuse-testnet.mdx'
+import Fraxtal from './fraxtal.mdx'
+import Rootstock from './rootstock.mdx'
+import RootstockTestnet from './rootstock-testnet.mdx'
+import Gnosis from './gnosis.mdx'
+import Scroll from './scroll.mdx'
+import Sonic from './sonic.mdx'
+import ZksyncEra from './zksync-era.mdx'
+import ArcTestnet from './arc-testnet.mdx'
+import Fuji from './fuji.mdx'
+import CeloSepolia from './celo-sepolia.mdx'
+import Chiliz from './chiliz.mdx'
+import ChilizTestnet from './chiliz-testnet.mdx'
+import Etherlink from './etherlink-mainnet.mdx'
+import EtherlinkShadownet from './etherlink-shadownet.mdx'
+import GnosisChiado from './gnosis-chiado.mdx'
+import Hemi from './hemi.mdx'
+import HemiSepolia from './hemi-sepolia.mdx'
+import Joc from './joc.mdx'
+import JocTestnet from './joc-testnet.mdx'
+import Peaq from './peaq.mdx'
+import ScrollSepolia from './scroll-sepolia.mdx'
+import SeiAtlantic from './sei-atlantic.mdx'
+import SeiMainnet from './sei-mainnet.mdx'
+import SonicTestnet from './sonic-testnet.mdx'
+import Stable from './stable.mdx'
+import TempoModerato from './tempo-moderato.mdx'
+import XLayerSepolia from './xlayer-sepolia.mdx'
+import Zilliqa from './zilliqa.mdx'
+import ZilliqaTestnet from './zilliqa-testnet.mdx'
+import ZksyncEraSepolia from './zksync-era-sepolia.mdx'
+import Kaia from './kaia.mdx'
+import KaiaTestnet from './kaia-testnet.mdx'
+import NeoX from './neox.mdx'
+import NeoXTestnet from './neox-testnet.mdx'
+import Viction from './viction.mdx'
+import Zetachain from './zetachain.mdx'
 
 /**
  * Per-network custom content for Supported Networks landing pages.
@@ -69,4 +141,80 @@ export const customNetworkContent: Record<string, ComponentType> = {
   tron: Tron,
   eos: Vaulta,
   wax: Wax,
+  // Substreams-only custom content (subgraph sections to be added later)
+  'arbitrum-one': ArbitrumOne,
+  arc: Arc,
+  base: Base,
+  'injective-evm': InjectiveEvm,
+  linea: Linea,
+  mainnet: Ethereum,
+  optimism: Optimism,
+  soneium: Soneium,
+  unichain: Unichain,
+  'arbitrum-sepolia': ArbitrumSepolia,
+  'base-sepolia': BaseSepolia,
+  chapel: Chapel,
+  hoodi: Hoodi,
+  'injective-evm-testnet': InjectiveEvmTestnet,
+  'linea-sepolia': LineaSepolia,
+  'optimism-sepolia': OptimismSepolia,
+  'polygon-amoy': PolygonAmoy,
+  'robinhood-sepolia': RobinhoodSepolia,
+  sepolia: Sepolia,
+  'soneium-testnet': SoneiumTestnet,
+  'unichain-testnet': UnichainTestnet,
+  avalanche: Avalanche,
+  celo: Celo,
+  tempo: Tempo,
+  'xlayer-mainnet': XLayer,
+  'near-mainnet': Near,
+  'near-testnet': NearTestnet,
+  'starknet-testnet': StarknetTestnet,
+  'stellar-testnet': StellarTestnet,
+  'injective-testnet': InjectiveTestnet,
+  jungle4: Jungle4,
+  'wax-testnet': WaxTestnet,
+  // Community Subgraph custom content
+  boba: Boba,
+  'boba-testnet': BobaTestnet,
+  fuse: Fuse,
+  'fuse-testnet': FuseTestnet,
+  fraxtal: Fraxtal,
+  rootstock: Rootstock,
+  'rootstock-testnet': RootstockTestnet,
+  // Community Subgraph — additional EVM chains
+  gnosis: Gnosis,
+  scroll: Scroll,
+  sonic: Sonic,
+  'zksync-era': ZksyncEra,
+  // Studio Subgraph (publishing enabled, no guaranteed indexing yet)
+  'arc-testnet': ArcTestnet,
+  fuji: Fuji,
+  'celo-sepolia': CeloSepolia,
+  chiliz: Chiliz,
+  'chiliz-testnet': ChilizTestnet,
+  'etherlink-mainnet': Etherlink,
+  'etherlink-shadownet': EtherlinkShadownet,
+  'gnosis-chiado': GnosisChiado,
+  hemi: Hemi,
+  'hemi-sepolia': HemiSepolia,
+  joc: Joc,
+  'joc-testnet': JocTestnet,
+  peaq: Peaq,
+  'scroll-sepolia': ScrollSepolia,
+  'sei-atlantic': SeiAtlantic,
+  'sei-mainnet': SeiMainnet,
+  'sonic-testnet': SonicTestnet,
+  stable: Stable,
+  'tempo-moderato': TempoModerato,
+  'xlayer-sepolia': XLayerSepolia,
+  zilliqa: Zilliqa,
+  'zilliqa-testnet': ZilliqaTestnet,
+  'zksync-era-sepolia': ZksyncEraSepolia,
+  kaia: Kaia,
+  'kaia-testnet': KaiaTestnet,
+  neox: NeoX,
+  'neox-testnet': NeoXTestnet,
+  viction: Viction,
+  zetachain: Zetachain,
 }

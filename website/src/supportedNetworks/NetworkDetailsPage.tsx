@@ -1,3 +1,5 @@
+import { Fragment } from 'react'
+
 import { ExperimentalCopyButton, ExperimentalDescriptionList, ExperimentalLink } from '@edgeandnode/gds'
 import { NetworkIcon } from '@edgeandnode/go'
 
@@ -5,23 +7,67 @@ import { Card, Heading, TimeIcon } from '@/components'
 import { useI18n } from '@/i18n'
 
 import { customNetworkContent } from './customContent'
-import { evmCards, evmSubgraphsOnlyCards, nonEvmCards } from './ResourceCards'
-import { type SupportedNetwork } from './utils'
+import { subgraphsAndSubstreamsCards, subgraphsOnlyCards, substreamsOnlyCards } from './ResourceCards'
+import { type SubgraphsTier, type SubstreamsTier, type SupportedNetwork } from './utils'
+
+// Product-support rows shown at the top of each network page. Labels mirror the tiers used
+// in the Supported Networks table (see ./utils), rendered here as plain text instead of chips.
+const SUBGRAPHS_STUDIO_URL = 'https://thegraph.com/studio/'
+const SUBGRAPHS_TIER_CONTENT: Record<
+  Exclude<SubgraphsTier, 'none'>,
+  { linkLabel: string; suffix?: { label: string; href?: string } }
+> = {
+  studio: { linkLabel: 'Subgraph Studio' },
+  network: { linkLabel: 'Subgraph Studio (API Keys)', suffix: { label: 'Community Indexing' } },
+  rewards: {
+    linkLabel: 'Subgraph Studio',
+    suffix: {
+      label: 'Network Rewards',
+      href: 'https://thegraph.com/docs/en/subgraphs/developing/deploying-publishing/publishing-a-subgraph/',
+    },
+  },
+}
+const SUBSTREAMS_MODEL_LABEL: Record<Exclude<SubstreamsTier, 'none'>, string> = {
+  other: 'Non-EVM',
+  base: 'Base EVM',
+  extended: 'Extended EVM',
+}
+// Substreams provider endpoints (from `services.substreams`) mapped to their public brand + link.
+const SUBSTREAMS_PROVIDERS: { match: string; name: string; href: string }[] = [
+  { match: 'streamingfast.io', name: 'The Graph Market', href: 'https://thegraph.market/' },
+  { match: 'pinax.network', name: 'Pinax Network', href: 'https://pinax.network/' },
+]
 
 export default function NetworkDetailsPage({ network }: { network: SupportedNetwork }) {
   const { t } = useI18n()
   const CustomContent = customNetworkContent[network.id]
+  // Providers listed under `services.substreams` in the networks registry, kept in a stable
+  // brand-preferred order (The Graph Market first, then Pinax Network).
+  const substreamsProviders = SUBSTREAMS_PROVIDERS.filter((provider) =>
+    (network.services?.substreams ?? []).some((url) => url.includes(provider.match)),
+  )
   const cards = (() => {
     if (network.evm) {
-      if (network.subgraphsSupportLevel !== 'none' && network.substreamsSupportLevel === 'none') {
-        return evmSubgraphsOnlyCards
-      } else {
-        return evmCards
+      const hasSubgraphs = network.subgraphsSupportLevel !== 'none'
+      const hasSubstreams = network.substreamsSupportLevel !== 'none'
+      if (hasSubgraphs && hasSubstreams) {
+        return subgraphsAndSubstreamsCards
       }
+      if (hasSubgraphs) {
+        return subgraphsOnlyCards
+      }
+      // EVM networks with Substreams support only.
+      return substreamsOnlyCards
     } else {
-      return nonEvmCards
+      return substreamsOnlyCards
     }
   })()
+  // The both-products card set fills a full 3x3 grid; the other sets use a 3-on-top,
+  // 2-on-bottom layout.
+  const guidesItemClassName =
+    cards.length === 6
+      ? 'col-span-full lg:col-span-2 lg:min-h-64'
+      : 'col-span-full [&:nth-child(-n+3)]:lg:col-span-2 [&:nth-child(-n+3)]:lg:min-h-64 [&:nth-child(n+4)]:lg:col-span-3'
 
   return (
     <div className="col-[container]">
@@ -34,6 +80,45 @@ export default function NetworkDetailsPage({ network }: { network: SupportedNetw
         <div className="col-span-2">
           <div>
             <ExperimentalDescriptionList size="medium">
+              {network.subgraphsTier !== 'none' &&
+                (() => {
+                  const subgraphs = SUBGRAPHS_TIER_CONTENT[network.subgraphsTier]
+                  return (
+                    <ExperimentalDescriptionList.Item label="Subgraphs">
+                      <ExperimentalLink className="text-14" href={SUBGRAPHS_STUDIO_URL} target="_blank">
+                        {subgraphs.linkLabel}
+                      </ExperimentalLink>
+                      {subgraphs.suffix && (
+                        <>
+                          {' • '}
+                          {subgraphs.suffix.href ? (
+                            <ExperimentalLink className="text-14" href={subgraphs.suffix.href} target="_blank">
+                              {subgraphs.suffix.label}
+                            </ExperimentalLink>
+                          ) : (
+                            subgraphs.suffix.label
+                          )}
+                        </>
+                      )}
+                    </ExperimentalDescriptionList.Item>
+                  )
+                })()}
+              {network.substreamsTier !== 'none' && (
+                <ExperimentalDescriptionList.Item
+                  label={`Substreams (${SUBSTREAMS_MODEL_LABEL[network.substreamsTier]})`}
+                >
+                  {substreamsProviders.length > 0
+                    ? substreamsProviders.map((provider, index) => (
+                        <Fragment key={provider.name}>
+                          {index > 0 && ' • '}
+                          <ExperimentalLink className="text-14" href={provider.href} target="_blank">
+                            {provider.name}
+                          </ExperimentalLink>
+                        </Fragment>
+                      ))
+                    : null}
+                </ExperimentalDescriptionList.Item>
+              )}
               <ExperimentalDescriptionList.Item label={t('index.supportedNetworks.type')}>
                 {network.networkType}
               </ExperimentalDescriptionList.Item>
@@ -94,7 +179,7 @@ export default function NetworkDetailsPage({ network }: { network: SupportedNetw
             title={t(card.titleKey)}
             description={t(card.descriptionKey)}
             slotAboveTitle={<TimeIcon variant="reading" minutes={card.minutes} />}
-            className="col-span-full [&:nth-child(-n+3)]:lg:col-span-2 [&:nth-child(-n+3)]:lg:min-h-64 [&:nth-child(n+4)]:lg:col-span-3"
+            className={guidesItemClassName}
             icon={card.icon}
           />
         ))}

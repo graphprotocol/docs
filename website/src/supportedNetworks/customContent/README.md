@@ -31,3 +31,34 @@ Networks not listed in `index.ts` render the default templated page, unchanged.
 
 - The `.mdx` is compiled by Nextra's loader as a non-page import, so the same remark plugins (callouts, etc.) and MDX component styling used across the docs apply automatically — the content looks native to the site.
 - The page only exists if the network is present in the **published** registry that the build fetches. Custom content here does not create the page; it only enriches a page that the registry already generates.
+
+## Reusable content blocks
+
+Common, repeated sections live in shared MDX partials (prefixed `_`) so a single
+edit updates every network that uses them. Import a partial and render it with
+the network-specific values as props.
+
+### Substreams section
+
+Two partials cover the standard "Indexing _{Chain}_ with Substreams" section for
+EVM networks, differing only by the block model the network is served with:
+
+- `_substreams-extended.mdx` — **extended** EVM block model (full transaction,
+  call, and event data). Used by chains like BSC, Polygon, Monad, Ink.
+- `_substreams-base.mdx` — **base** EVM block model (block, transaction, and
+  event/log data). Used by chains like Blast, MegaETH, TRON EVM.
+
+```mdx
+import SubstreamsExtended from './_substreams-extended.mdx'
+
+<SubstreamsExtended chainName="BSC" title="BNB Smart Chain" />
+```
+
+Props:
+
+- `chainName` (required) — short name used throughout the body copy (e.g. `BSC`).
+- `title` (optional) — heading display name; defaults to `chainName` (e.g.
+  `BNB Smart Chain` when `chainName` is `BSC`).
+
+Non-EVM networks (Solana, Bitcoin, Injective, Stellar, etc.) use bespoke
+Substreams wording and keep their section inline rather than using these blocks.
