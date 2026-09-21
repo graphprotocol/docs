@@ -50,8 +50,8 @@ function isEvm(network: Network) {
 //                `services.subgraphs`) but neither of the above
 function getSubgraphsTier(network: Network): SubgraphsTier {
   if (network.issuanceRewards) return 'rewards'
-  const subgraphs = (network.services?.subgraphs ?? []) as SubgraphsServiceEntry[]
-  if (subgraphs.some((entry) => typeof entry === 'object' && Boolean(entry?.backstopSupport))) {
+  const subgraphs = (network.services.subgraphs ?? []) as SubgraphsServiceEntry[]
+  if (subgraphs.some((entry) => typeof entry === 'object' && Boolean(entry.backstopSupport))) {
     return 'network'
   }
   if (subgraphs.some((entry) => typeof entry === 'string' && entry.includes('studio.thegraph.com'))) {
@@ -66,7 +66,7 @@ function getSubgraphsTier(network: Network): SubgraphsTier {
 // - 'extended' -> EVM network serving the extended block model
 // - 'base'     -> EVM network serving the base block model
 function getSubstreamsTier(network: Network): SubstreamsTier {
-  const hasProvider = (network.services?.substreams?.length ?? 0) > 0 || (network.services?.firehose?.length ?? 0) > 0
+  const hasProvider = (network.services.substreams?.length ?? 0) > 0 || (network.services.firehose?.length ?? 0) > 0
   if (!hasProvider) return 'none'
   if (!isEvm(network)) return 'other'
   return network.firehose?.evmExtendedModel ? 'extended' : 'base'

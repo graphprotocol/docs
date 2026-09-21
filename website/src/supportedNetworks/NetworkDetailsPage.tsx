@@ -44,7 +44,7 @@ export default function NetworkDetailsPage({ network }: { network: SupportedNetw
   // Providers listed under `services.substreams` in the networks registry, kept in a stable
   // brand-preferred order (The Graph Market first, then Pinax Network).
   const substreamsProviders = SUBSTREAMS_PROVIDERS.filter((provider) =>
-    (network.services?.substreams ?? []).some((url) => url.includes(provider.match)),
+    (network.services.substreams ?? []).some((url) => url.includes(provider.match)),
   )
   const cards = (() => {
     if (network.evm) {

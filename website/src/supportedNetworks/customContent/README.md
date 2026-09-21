@@ -34,19 +34,14 @@ Networks not listed in `index.ts` render the default templated page, unchanged.
 
 ## Reusable content blocks
 
-Common, repeated sections live in shared MDX partials (prefixed `_`) so a single
-edit updates every network that uses them. Import a partial and render it with
-the network-specific values as props.
+Common, repeated sections live in shared MDX partials (prefixed `_`) so a single edit updates every network that uses them. Import a partial and render it with the network-specific values as props.
 
 ### Substreams section
 
-Two partials cover the standard "Indexing _{Chain}_ with Substreams" section for
-EVM networks, differing only by the block model the network is served with:
+Two partials cover the standard "Indexing _{Chain}_ with Substreams" section for EVM networks, differing only by the block model the network is served with:
 
-- `_substreams-extended.mdx` — **extended** EVM block model (full transaction,
-  call, and event data). Used by chains like BSC, Polygon, Monad, Ink.
-- `_substreams-base.mdx` — **base** EVM block model (block, transaction, and
-  event/log data). Used by chains like Blast, MegaETH, TRON EVM.
+- `_substreams-extended.mdx` — **extended** EVM block model (full transaction, call, and event data). Used by chains like BSC, Polygon, Monad, Ink.
+- `_substreams-base.mdx` — **base** EVM block model (block, transaction, and event/log data). Used by chains like Blast, MegaETH, TRON EVM.
 
 ```mdx
 import SubstreamsExtended from './_substreams-extended.mdx'
@@ -57,8 +52,6 @@ import SubstreamsExtended from './_substreams-extended.mdx'
 Props:
 
 - `chainName` (required) — short name used throughout the body copy (e.g. `BSC`).
-- `title` (optional) — heading display name; defaults to `chainName` (e.g.
-  `BNB Smart Chain` when `chainName` is `BSC`).
+- `title` (optional) — heading display name; defaults to `chainName` (e.g. `BNB Smart Chain` when `chainName` is `BSC`).
 
-Non-EVM networks (Solana, Bitcoin, Injective, Stellar, etc.) use bespoke
-Substreams wording and keep their section inline rather than using these blocks.
+Non-EVM networks (Solana, Bitcoin, Injective, Stellar, etc.) use bespoke Substreams wording and keep their section inline rather than using these blocks.
