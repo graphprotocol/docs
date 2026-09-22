@@ -36,13 +36,14 @@ const SUBSTREAMS_MODEL_LABEL: Record<Exclude<SubstreamsTier, 'none'>, string> = 
 const SUBSTREAMS_PROVIDERS: { match: string; name: string; href: string }[] = [
   { match: 'streamingfast.io', name: 'The Graph Market', href: 'https://thegraph.market/' },
   { match: 'pinax.network', name: 'Pinax Network', href: 'https://pinax.network/' },
+  { match: 'data.nexus', name: 'Data Nexus', href: 'https://data.nexus/' },
 ]
 
 export default function NetworkDetailsPage({ network }: { network: SupportedNetwork }) {
   const { t } = useI18n()
   const CustomContent = customNetworkContent[network.id]
   // Providers listed under `services.substreams` in the networks registry, kept in a stable
-  // brand-preferred order (The Graph Market first, then Pinax Network).
+  // brand-preferred order (The Graph Market, then Pinax Network, then Data Nexus).
   const substreamsProviders = SUBSTREAMS_PROVIDERS.filter((provider) =>
     (network.services.substreams ?? []).some((url) => url.includes(provider.match)),
   )

@@ -53,5 +53,8 @@ Props:
 
 - `chainName` (required) — short name used throughout the body copy (e.g. `BSC`).
 - `title` (optional) — heading display name; defaults to `chainName` (e.g. `BNB Smart Chain` when `chainName` is `BSC`).
+- `keyProvider` (optional) — set to `"pinax"` when the network has no The Graph Market Substreams endpoint, so step 1 sends readers to [Pinax Network](https://app.pinax.network/) for an API key instead of thegraph.market.
+
+The provider sentence on each network page ("… via [The Graph Market] and [Pinax Network]") should list only the providers in that network's `services.substreams` entries in the registry: `streamingfast.io` → The Graph Market, `pinax.network` → Pinax Network, `data.nexus` → Data Nexus.
 
 Non-EVM networks (Solana, Bitcoin, Injective, Stellar, etc.) use bespoke Substreams wording and keep their section inline rather than using these blocks.
