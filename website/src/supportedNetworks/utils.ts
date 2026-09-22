@@ -1,16 +1,48 @@
-import { type Network, NetworksRegistry } from '@pinax/graph-networks-registry'
+import { type Network as PinaxNetwork } from '@pinax/graph-networks-registry'
 
-// The registry's `services.subgraphs` array may contain bare deployment URL strings and/or
-// structured `{ kind, provider, description }` entries, where `kind` is 'gateway', 'studio' or
-// 'backstop' (e.g. `{ kind: 'backstop', provider: 'infradao' }`). The legacy
-// `{ backstopSupport }` shape is still accepted so older registry versions keep working. The
-// published package may still type this as `string[]`, so entries are narrowed at runtime.
+// The networks registry is read straight from its published v0.8.x JSON rather than through
+// `@pinax/graph-networks-registry`. That library (latest 0.7.1) only fetches the v0.7.x feed,
+// which strips the structured `services.subgraphs` entries (gateway/studio/backstop) that the
+// Subgraphs tiers below depend on, and its parser types `subgraphs` as `string[]`.
+// The v0.8.x file is otherwise identical to v0.7.x. When a registry v0.9 ships, update these
+// URLs, or switch back to the library once a matching version is published.
+const REGISTRY_URLS = [
+  'https://networks-registry.thegraph.com/TheGraphNetworksRegistry_v0_8_x.json',
+  // Same file on GitHub, used if the primary host is unreachable (mirrors the library's fallback).
+  'https://raw.githubusercontent.com/graphprotocol/networks-registry/refs/heads/main/public/TheGraphNetworksRegistry_v0_8_x.json',
+]
+
+// v0.8 `services.subgraphs` entries: bare deployment URL strings and/or structured
+// `{ kind, provider, description }` entries, where `kind` is 'gateway', 'studio' or 'backstop'
+// (e.g. `{ kind: 'backstop', provider: 'infradao' }`). The legacy `{ backstopSupport }` shape
+// is still accepted.
 type SubgraphsServiceEntry =
   | string
   | { kind?: 'gateway' | 'studio' | 'backstop'; provider?: string; description?: string; backstopSupport?: string }
 
+// The library's `Network` type, with `services.subgraphs` widened to the v0.8 entry shape.
+type Network = Omit<PinaxNetwork, 'services'> & {
+  services: Omit<PinaxNetwork['services'], 'subgraphs'> & { subgraphs?: SubgraphsServiceEntry[] }
+}
+
+async function fetchRegistryNetworks(): Promise<Network[]> {
+  const errors: string[] = []
+  for (const url of REGISTRY_URLS) {
+    try {
+      const response = await fetch(url)
+      if (!response.ok) throw new Error(`HTTP ${response.status}`)
+      const registry = (await response.json()) as { networks?: Network[] }
+      if (!Array.isArray(registry.networks)) throw new Error('missing `networks` array')
+      return registry.networks
+    } catch (error) {
+      errors.push(`${url}: ${error instanceof Error ? error.message : String(error)}`)
+    }
+  }
+  throw new Error(`Failed to fetch the networks registry:\n${errors.join('\n')}`)
+}
+
 function getSubgraphsEntries(network: Network): SubgraphsServiceEntry[] {
-  return (network.services.subgraphs ?? []) as SubgraphsServiceEntry[]
+  return network.services.subgraphs ?? []
 }
 
 // Deployable via Subgraph Studio: a bare Studio deploy URL or a `kind: 'studio'` entry.
@@ -33,8 +65,8 @@ export type SubgraphsTier = 'none' | 'studio' | 'network' | 'rewards'
 export type SubstreamsTier = 'none' | 'other' | 'base' | 'extended'
 
 export async function getSupportedNetworks() {
-  const registry = await NetworksRegistry.fromLatestVersion()
-  return registry.networks
+  const networks = await fetchRegistryNetworks()
+  return networks
     .flatMap((network) => {
       const subgraphsStudio = hasStudioSupport(network)
       const subgraphsBackstop = hasBackstopSupport(network)
