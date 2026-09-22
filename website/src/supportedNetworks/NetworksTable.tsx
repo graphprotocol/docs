@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 
 import {
   ButtonOrLink,
+  classNames,
   DottedRingsSpinner,
   ExperimentalButton,
   ExperimentalCopyButton,
@@ -20,24 +21,51 @@ import { useI18n } from '@/i18n'
 import { getNetworkSlug } from './slugs'
 import { type SubgraphsTier, type SubstreamsTier, type SupportedNetwork } from './utils'
 
-// Chip labels and colors per support tier. STUDIO / NON-EVM use white (matching the mono
-// network icons); the higher tiers use the brand blue and green.
-const SUBGRAPHS_CHIPS: Record<Exclude<SubgraphsTier, 'none'>, { label: string; color: string }> = {
-  studio: { label: 'STUDIO', color: '#FFFFFF' },
-  network: { label: 'COMMUNITY', color: '#4C9EFF' },
-  rewards: { label: 'REWARDS', color: '#4BCA81' },
-}
-const SUBSTREAMS_CHIPS: Record<Exclude<SubstreamsTier, 'none'>, { label: string; color: string }> = {
-  other: { label: 'NON-EVM', color: '#FFFFFF' },
-  base: { label: 'BASE', color: '#4C9EFF' },
-  extended: { label: 'EXTENDED', color: '#4BCA81' },
+// GDS calls Galactic Aqua `turquoise` and Nebula Pink `pink`; `space` is its lavender-gray scale.
+// Balance the brighter hues with lower opacity, on both the page and hovered row surfaces.
+const TIER_CHIP_STYLES = {
+  purple: `[--tier-chip-accent:theme(colors.purple-400)]
+    border-purple-300/20 bg-purple-400/[0.19] data-[treatment=borderless]:bg-purple-400/[0.29]`,
+  aqua: `[--tier-chip-accent:theme(colors.turquoise)]
+    border-turquoise/10 bg-turquoise/[0.095] data-[treatment=borderless]:bg-turquoise/[0.12]`,
+  green: `[--tier-chip-accent:theme(colors.starfield-400)]
+    border-starfield-300/10 bg-starfield-400/[0.12] data-[treatment=borderless]:bg-starfield-400/[0.18]`,
+  neutral: `[--tier-chip-accent:theme(colors.space-500)]
+    border-space-500/15 bg-space-500/[0.12] data-[treatment=borderless]:bg-space-500/[0.18]`,
+  blue: `[--tier-chip-accent:theme(colors.astro-400)]
+    border-astro-300/20 bg-astro-400/[0.19] data-[treatment=borderless]:bg-astro-400/[0.29]`,
+  pink: `[--tier-chip-accent:theme(colors.pink)]
+    border-pink/10 bg-pink/[0.12] data-[treatment=borderless]:bg-pink/[0.18]`,
 }
 
-function TierChip({ label, color }: { label: string; color: string }) {
+type TierChipProps = { label: string; tone: keyof typeof TIER_CHIP_STYLES }
+
+const SUBGRAPHS_CHIPS: Record<Exclude<SubgraphsTier, 'none'>, TierChipProps> = {
+  studio: { label: 'STUDIO', tone: 'purple' },
+  network: { label: 'COMMUNITY', tone: 'aqua' },
+  rewards: { label: 'REWARDS', tone: 'green' },
+}
+const SUBSTREAMS_CHIPS: Record<Exclude<SubstreamsTier, 'none'>, TierChipProps> = {
+  other: { label: 'NON-EVM', tone: 'neutral' },
+  base: { label: 'BASE', tone: 'blue' },
+  extended: { label: 'EXTENDED', tone: 'pink' },
+}
+
+// Switch to 'borderless' to compare the stronger fill across the table and legend during development.
+const TIER_CHIP_TREATMENT: 'subtle-border' | 'borderless' = 'subtle-border'
+
+function TierChip({ label, tone }: TierChipProps) {
   return (
     <span
-      className="text-c10 inline-flex items-center rounded-full border px-2 py-0.5 leading-none font-medium"
-      style={{ color, borderColor: color, backgroundColor: `${color}1f` }}
+      data-treatment={TIER_CHIP_TREATMENT}
+      className={classNames([
+        `text-c10 inline-flex items-center rounded-full border
+        px-[calc(theme(spacing.2)*1.1)] py-[calc(theme(spacing[0.5])*1.1)]
+        text-[length:calc(theme(fontSize.10)*1.1)] leading-none tracking-normal
+        text-[color:color-mix(in_srgb,var(--tier-chip-accent)_30%,theme(colors.space-200))]
+        data-[treatment=borderless]:border-transparent`,
+        TIER_CHIP_STYLES[tone],
+      ])}
     >
       {label}
     </span>
