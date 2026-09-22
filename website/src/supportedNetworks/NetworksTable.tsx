@@ -21,14 +21,20 @@ import { useI18n } from '@/i18n'
 import { getNetworkSlug } from './slugs'
 import { type SubgraphsTier, type SubstreamsTier, type SupportedNetwork } from './utils'
 
-// Tier chips use a neutral -> blue -> green progression in both product columns: the entry tier
-// is neutral (GDS `space` lavender-gray), the middle tier blue (`astro`) and the top tier green
-// (`starfield`). Opacities are balanced per hue, on both the page and hovered row surfaces.
+// Tier chip tones. GDS calls Galactic Aqua `turquoise` and Nebula Pink `pink`; `space` is its
+// lavender-gray scale. Brighter hues use lower opacity so every chip reads with similar weight,
+// on both the page and hovered row surfaces.
 const TIER_CHIP_STYLES = {
   neutral: `[--tier-chip-accent:theme(colors.space-500)]
     border-space-500/15 bg-space-500/[0.12] data-[treatment=borderless]:bg-space-500/[0.18]`,
+  purple: `[--tier-chip-accent:theme(colors.purple-400)]
+    border-purple-300/20 bg-purple-400/[0.19] data-[treatment=borderless]:bg-purple-400/[0.29]`,
+  pink: `[--tier-chip-accent:theme(colors.pink)]
+    border-pink/10 bg-pink/[0.12] data-[treatment=borderless]:bg-pink/[0.18]`,
   blue: `[--tier-chip-accent:theme(colors.astro-400)]
     border-astro-300/20 bg-astro-400/[0.19] data-[treatment=borderless]:bg-astro-400/[0.29]`,
+  turquoise: `[--tier-chip-accent:theme(colors.turquoise)]
+    border-turquoise/10 bg-turquoise/[0.095] data-[treatment=borderless]:bg-turquoise/[0.12]`,
   green: `[--tier-chip-accent:theme(colors.starfield-400)]
     border-starfield-300/10 bg-starfield-400/[0.12] data-[treatment=borderless]:bg-starfield-400/[0.18]`,
 }
@@ -37,13 +43,13 @@ type TierChipProps = { label: string; tone: keyof typeof TIER_CHIP_STYLES }
 
 const SUBGRAPHS_CHIPS: Record<Exclude<SubgraphsTier, 'none'>, TierChipProps> = {
   studio: { label: 'STUDIO', tone: 'neutral' },
-  network: { label: 'COMMUNITY', tone: 'blue' },
-  rewards: { label: 'REWARDS', tone: 'green' },
+  network: { label: 'COMMUNITY', tone: 'purple' },
+  rewards: { label: 'REWARDS', tone: 'pink' },
 }
 const SUBSTREAMS_CHIPS: Record<Exclude<SubstreamsTier, 'none'>, TierChipProps> = {
-  other: { label: 'NON-EVM', tone: 'neutral' },
   base: { label: 'BASE', tone: 'blue' },
-  extended: { label: 'EXTENDED', tone: 'green' },
+  extended: { label: 'EXTENDED', tone: 'turquoise' },
+  other: { label: 'NON-EVM', tone: 'green' },
 }
 
 // Switch to 'borderless' to compare the stronger fill across the table and legend during development.
@@ -134,16 +140,16 @@ export function NetworksTable({ networks }: { networks: SupportedNetwork[] }) {
             <span className="text-c10 mb-3 block text-white">Firehose/Substreams</span>
             <div className="flex flex-col gap-2">
               <div className="flex items-center gap-2">
-                <TierChip {...SUBSTREAMS_CHIPS.other} />
-                <span className="text-14">{t('index.supportedNetworks.tableLegend.substreams.other')}</span>
-              </div>
-              <div className="flex items-center gap-2">
                 <TierChip {...SUBSTREAMS_CHIPS.base} />
                 <span className="text-14">{t('index.supportedNetworks.tableLegend.substreams.base')}</span>
               </div>
               <div className="flex items-center gap-2">
                 <TierChip {...SUBSTREAMS_CHIPS.extended} />
                 <span className="text-14">{t('index.supportedNetworks.tableLegend.substreams.extended')}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <TierChip {...SUBSTREAMS_CHIPS.other} />
+                <span className="text-14">{t('index.supportedNetworks.tableLegend.substreams.other')}</span>
               </div>
             </div>
           </div>
