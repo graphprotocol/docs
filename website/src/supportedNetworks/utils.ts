@@ -1,9 +1,34 @@
 import { type Network, NetworksRegistry } from '@pinax/graph-networks-registry'
 
-// The registry's `services.subgraphs` array may contain deployment URL strings and/or a
-// backstop-support entry (the `backstopSupport` field from the networks-registry). The
-// published package still types this as `string[]`, so entries are narrowed at runtime.
-type SubgraphsServiceEntry = string | { backstopSupport?: string; description?: string }
+// The registry's `services.subgraphs` array may contain bare deployment URL strings and/or
+// structured `{ kind, provider, description }` entries, where `kind` is 'gateway', 'studio' or
+// 'backstop' (e.g. `{ kind: 'backstop', provider: 'infradao' }`). The legacy
+// `{ backstopSupport }` shape is still accepted so older registry versions keep working. The
+// published package may still type this as `string[]`, so entries are narrowed at runtime.
+type SubgraphsServiceEntry =
+  | string
+  | { kind?: 'gateway' | 'studio' | 'backstop'; provider?: string; description?: string; backstopSupport?: string }
+
+function getSubgraphsEntries(network: Network): SubgraphsServiceEntry[] {
+  return (network.services.subgraphs ?? []) as SubgraphsServiceEntry[]
+}
+
+// Deployable via Subgraph Studio: a bare Studio deploy URL or a `kind: 'studio'` entry.
+function hasStudioSupport(network: Network): boolean {
+  return getSubgraphsEntries(network).some((entry) =>
+    typeof entry === 'string'
+      ? entry.includes('studio.thegraph.com')
+      : entry?.kind === 'studio' || Boolean(entry?.provider?.includes('studio.thegraph.com')),
+  )
+}
+
+// Community backstop indexing: a `kind: 'backstop'` entry (or the legacy `backstopSupport` field).
+function hasBackstopSupport(network: Network): boolean {
+  return getSubgraphsEntries(network).some(
+    (entry) =>
+      typeof entry === 'object' && entry !== null && (entry.kind === 'backstop' || Boolean(entry.backstopSupport)),
+  )
+}
 
 export type SubgraphsTier = 'none' | 'studio' | 'network' | 'rewards'
 export type SubstreamsTier = 'none' | 'other' | 'base' | 'extended'
@@ -12,7 +37,9 @@ export async function getSupportedNetworks() {
   const registry = await NetworksRegistry.fromLatestVersion()
   return registry.networks
     .flatMap((network) => {
-      const subgraphsTier = getSubgraphsTier(network)
+      const subgraphsStudio = hasStudioSupport(network)
+      const subgraphsBackstop = hasBackstopSupport(network)
+      const subgraphsTier = getSubgraphsTier(network, subgraphsStudio, subgraphsBackstop)
       const substreamsTier = getSubstreamsTier(network)
       // Drop networks that would show no chip in either product column.
       if (subgraphsTier === 'none' && substreamsTier === 'none') {
@@ -29,6 +56,8 @@ export async function getSupportedNetworks() {
           evm: isEvm(network),
           iconVariant: 'mono' as const,
           subgraphsTier,
+          subgraphsStudio,
+          subgraphsBackstop,
           substreamsTier,
           subgraphsSupportLevel,
           substreamsSupportLevel,
@@ -44,19 +73,15 @@ function isEvm(network: Network) {
 
 // Subgraphs support has three tiers, in priority order (only the highest one applies):
 // - 'rewards' -> the network earns indexing rewards (`issuanceRewards: true`)
-// - 'network' -> community backstop support (any `backstopSupport` provider entry in
+// - 'network' -> community backstop support (a `kind: 'backstop'` entry in
 //                `services.subgraphs`, e.g. InfraDAO or StreamingFast) but no issuance rewards
-// - 'studio'  -> deployable via Subgraph Studio (a studio deploy URL in
-//                `services.subgraphs`) but neither of the above
-function getSubgraphsTier(network: Network): SubgraphsTier {
+// - 'studio'  -> deployable via Subgraph Studio (a Studio deploy URL or `kind: 'studio'` entry
+//                in `services.subgraphs`) but neither of the above
+// A bare `kind: 'gateway'` entry on its own does not earn a tier.
+function getSubgraphsTier(network: Network, studio: boolean, backstop: boolean): SubgraphsTier {
   if (network.issuanceRewards) return 'rewards'
-  const subgraphs = (network.services.subgraphs ?? []) as SubgraphsServiceEntry[]
-  if (subgraphs.some((entry) => typeof entry === 'object' && Boolean(entry.backstopSupport))) {
-    return 'network'
-  }
-  if (subgraphs.some((entry) => typeof entry === 'string' && entry.includes('studio.thegraph.com'))) {
-    return 'studio'
-  }
+  if (backstop) return 'network'
+  if (studio) return 'studio'
   return 'none'
 }
 

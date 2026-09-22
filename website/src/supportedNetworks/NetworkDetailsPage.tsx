@@ -8,24 +8,24 @@ import { useI18n } from '@/i18n'
 
 import { customNetworkContent } from './customContent'
 import { subgraphsAndSubstreamsCards, subgraphsOnlyCards, substreamsOnlyCards } from './ResourceCards'
-import { type SubgraphsTier, type SubstreamsTier, type SupportedNetwork } from './utils'
+import { type SubstreamsTier, type SupportedNetwork } from './utils'
 
 // Product-support rows shown at the top of each network page. Labels mirror the tiers used
 // in the Supported Networks table (see ./utils), rendered here as plain text instead of chips.
+// The Subgraphs row is built from the underlying flags rather than the single top tier, so a
+// network that earns rewards *and* relies on backstop indexing (e.g. Rootstock) shows both.
 const SUBGRAPHS_STUDIO_URL = 'https://thegraph.com/studio/'
-const SUBGRAPHS_TIER_CONTENT: Record<
-  Exclude<SubgraphsTier, 'none'>,
-  { linkLabel: string; suffix?: { label: string; href?: string } }
-> = {
-  studio: { linkLabel: 'Subgraph Studio' },
-  network: { linkLabel: 'Subgraph Studio (API Keys)', suffix: { label: 'Community Indexing' } },
-  rewards: {
-    linkLabel: 'Subgraph Studio',
-    suffix: {
-      label: 'Network Rewards',
-      href: 'https://thegraph.com/docs/en/subgraphs/developing/deploying-publishing/publishing-a-subgraph/',
-    },
-  },
+const SUBGRAPHS_REWARDS_URL =
+  'https://thegraph.com/docs/en/subgraphs/developing/deploying-publishing/publishing-a-subgraph/'
+function getSubgraphsRow(network: SupportedNetwork): {
+  linkLabel: string
+  suffixes: { label: string; href?: string }[]
+} {
+  const suffixes: { label: string; href?: string }[] = []
+  if (network.subgraphsBackstop) suffixes.push({ label: 'Community Indexing' })
+  if (network.issuanceRewards) suffixes.push({ label: 'Network Rewards', href: SUBGRAPHS_REWARDS_URL })
+  // Networks without Studio deploys still use Studio for API keys and billing.
+  return { linkLabel: network.subgraphsStudio ? 'Subgraph Studio' : 'Subgraph Studio (API Keys)', suffixes }
 }
 const SUBSTREAMS_MODEL_LABEL: Record<Exclude<SubstreamsTier, 'none'>, string> = {
   other: 'Non-EVM',
@@ -82,24 +82,24 @@ export default function NetworkDetailsPage({ network }: { network: SupportedNetw
             <ExperimentalDescriptionList size="medium">
               {network.subgraphsTier !== 'none' &&
                 (() => {
-                  const subgraphs = SUBGRAPHS_TIER_CONTENT[network.subgraphsTier]
+                  const subgraphs = getSubgraphsRow(network)
                   return (
                     <ExperimentalDescriptionList.Item label="Subgraphs">
                       <ExperimentalLink className="text-14" href={SUBGRAPHS_STUDIO_URL} target="_blank">
                         {subgraphs.linkLabel}
                       </ExperimentalLink>
-                      {subgraphs.suffix && (
-                        <>
+                      {subgraphs.suffixes.map((suffix) => (
+                        <Fragment key={suffix.label}>
                           {' • '}
-                          {subgraphs.suffix.href ? (
-                            <ExperimentalLink className="text-14" href={subgraphs.suffix.href} target="_blank">
-                              {subgraphs.suffix.label}
+                          {suffix.href ? (
+                            <ExperimentalLink className="text-14" href={suffix.href} target="_blank">
+                              {suffix.label}
                             </ExperimentalLink>
                           ) : (
-                            subgraphs.suffix.label
+                            suffix.label
                           )}
-                        </>
-                      )}
+                        </Fragment>
+                      ))}
                     </ExperimentalDescriptionList.Item>
                   )
                 })()}
