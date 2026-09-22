@@ -54,7 +54,7 @@ export async function getSupportedNetworks() {
         {
           ...network,
           evm: isEvm(network),
-          iconVariant: 'mono' as const,
+          iconVariant: getIconVariant(network),
           subgraphsTier,
           subgraphsStudio,
           subgraphsBackstop,
@@ -65,6 +65,13 @@ export async function getSupportedNetworks() {
       ]
     })
     .sort((a, b) => a.fullName.localeCompare(b.fullName))
+}
+
+// Networks render with mono icons, except those the registry lists without a mono variant
+// (`icon.web3Icons.variants`, e.g. Zora), which fall back to their branded icon for now.
+function getIconVariant(network: Network): 'mono' | 'branded' {
+  const variants = network.icon?.web3Icons?.variants
+  return variants && !variants.includes('mono') && variants.includes('branded') ? 'branded' : 'mono'
 }
 
 function isEvm(network: Network) {
