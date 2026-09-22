@@ -47,9 +47,9 @@ const SUBGRAPHS_CHIPS: Record<Exclude<SubgraphsTier, 'none'>, TierChipProps> = {
   rewards: { label: 'REWARDS', tone: 'purple' },
 }
 const SUBSTREAMS_CHIPS: Record<Exclude<SubstreamsTier, 'none'>, TierChipProps> = {
-  base: { label: 'BASE', tone: 'neutral' },
-  extended: { label: 'EXTENDED', tone: 'turquoise' },
-  other: { label: 'NON-EVM', tone: 'green' },
+  base: { label: 'BASE', tone: 'turquoise' },
+  extended: { label: 'EXTENDED', tone: 'green' },
+  other: { label: 'NON-EVM', tone: 'neutral' },
 }
 
 // Switch to 'borderless' to compare the stronger fill across the table and legend during development.
