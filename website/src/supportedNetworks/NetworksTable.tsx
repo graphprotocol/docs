@@ -42,12 +42,12 @@ const TIER_CHIP_STYLES = {
 type TierChipProps = { label: string; tone: keyof typeof TIER_CHIP_STYLES }
 
 const SUBGRAPHS_CHIPS: Record<Exclude<SubgraphsTier, 'none'>, TierChipProps> = {
-  studio: { label: 'STUDIO', tone: 'neutral' },
-  network: { label: 'COMMUNITY', tone: 'purple' },
-  rewards: { label: 'REWARDS', tone: 'pink' },
+  studio: { label: 'STUDIO', tone: 'pink' },
+  network: { label: 'COMMUNITY', tone: 'blue' },
+  rewards: { label: 'REWARDS', tone: 'purple' },
 }
 const SUBSTREAMS_CHIPS: Record<Exclude<SubstreamsTier, 'none'>, TierChipProps> = {
-  base: { label: 'BASE', tone: 'blue' },
+  base: { label: 'BASE', tone: 'neutral' },
   extended: { label: 'EXTENDED', tone: 'turquoise' },
   other: { label: 'NON-EVM', tone: 'green' },
 }
