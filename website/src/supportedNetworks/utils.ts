@@ -18,15 +18,14 @@ function hasStudioSupport(network: Network): boolean {
   return getSubgraphsEntries(network).some((entry) =>
     typeof entry === 'string'
       ? entry.includes('studio.thegraph.com')
-      : entry?.kind === 'studio' || Boolean(entry?.provider?.includes('studio.thegraph.com')),
+      : entry.kind === 'studio' || Boolean(entry.provider?.includes('studio.thegraph.com')),
   )
 }
 
 // Community backstop indexing: a `kind: 'backstop'` entry (or the legacy `backstopSupport` field).
 function hasBackstopSupport(network: Network): boolean {
   return getSubgraphsEntries(network).some(
-    (entry) =>
-      typeof entry === 'object' && entry !== null && (entry.kind === 'backstop' || Boolean(entry.backstopSupport)),
+    (entry) => typeof entry !== 'string' && (entry.kind === 'backstop' || Boolean(entry.backstopSupport)),
   )
 }
 
