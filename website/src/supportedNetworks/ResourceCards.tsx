@@ -8,13 +8,29 @@ type Resource = {
   icon?: React.ReactNode
 }
 
-export const evmCards = [
+// EVM networks that support BOTH Subgraphs and Substreams. Subgraph guides fill the top
+// row; Substreams guides fill the bottom row (see the 3x3 grid in NetworkDetailsPage).
+export const subgraphsAndSubstreamsCards = [
   {
     href: 'https://thegraph.com/docs/en/subgraphs/quick-start/',
     titleKey: 'index.networkGuides.evm.subgraphQuickStart.title' as const,
     descriptionKey: 'index.networkGuides.evm.subgraphQuickStart.description' as const,
     minutes: 10,
     icon: <Subgraph size={6} />,
+  },
+  {
+    href: 'https://thegraph.com/docs/en/subgraphs/existing-subgraphs/explorer/',
+    titleKey: 'index.networkGuides.evm.graphExplorer.title' as const,
+    descriptionKey: 'index.networkGuides.evm.graphExplorer.description' as const,
+    minutes: 12,
+    icon: <GraphExplorer size={6} />,
+  },
+  {
+    href: 'https://thegraph.com/docs/en/subgraphs/providers/subgraph-studio/introduction/',
+    titleKey: 'index.networkGuides.evm.studioBilling.title' as const,
+    descriptionKey: 'index.networkGuides.evm.studioBilling.description' as const,
+    minutes: 5,
+    icon: <MoneyWavy alt="Money" size={6} />,
   },
   {
     href: 'https://thegraph.com/docs/en/substreams/quick-start/',
@@ -24,27 +40,22 @@ export const evmCards = [
     icon: <Substreams size={6} />,
   },
   {
-    href: 'https://thegraph.com/docs/en/subgraphs/providers/subgraph-studio/introduction/',
-    titleKey: 'index.networkGuides.evm.billing.title' as const,
-    descriptionKey: 'index.networkGuides.evm.billing.description' as const,
-    minutes: 5,
-    icon: <Substreams size={6} />, // TODO: Is this really the right icon for this?
-  },
-  {
-    href: 'https://thegraph.com/docs/en/subgraphs/existing-subgraphs/explorer/',
-    titleKey: 'index.networkGuides.evm.graphExplorer.title' as const,
-    descriptionKey: 'index.networkGuides.evm.graphExplorer.description' as const,
-    minutes: 12,
-  },
-  {
     href: 'https://substreams.dev/',
     titleKey: 'index.networkGuides.evm.substreamsDev.title' as const,
     descriptionKey: 'index.networkGuides.evm.substreamsDev.description' as const,
     minutes: 5,
+    icon: <Substreams size={6} />,
+  },
+  {
+    href: 'https://thegraph.com/docs/en/substreams/providers/the-graph-market/',
+    titleKey: 'index.networkGuides.evm.substreamsPricing.title' as const,
+    descriptionKey: 'index.networkGuides.evm.substreamsPricing.description' as const,
+    minutes: 5,
+    icon: <MoneyWavy alt="Money" size={6} />,
   },
 ]
 
-export const evmSubgraphsOnlyCards = [
+export const subgraphsOnlyCards = [
   {
     href: 'https://thegraph.com/docs/en/subgraphs/quick-start/',
     titleKey: 'index.networkGuides.evm.subgraphQuickStart.title' as const,
@@ -80,7 +91,7 @@ export const evmSubgraphsOnlyCards = [
   },
 ]
 
-export const nonEvmCards = [
+export const substreamsOnlyCards = [
   {
     href: 'https://thegraph.com/docs/en/substreams/quick-start/',
     titleKey: 'index.networkGuides.evm.substreamsQuickStart.title' as const,

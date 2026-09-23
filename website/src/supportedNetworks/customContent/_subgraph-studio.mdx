@@ -1,0 +1,115 @@
+{/* Reusable "studio" Subgraph section.
+
+For chains where Subgraph publishing is ENABLED but there is no guaranteed indexing on The Graph Network yet: develop, test, and query through Subgraph Studio (https://thegraph.com/docs/en/subgraphs/developing/deploying-publishing/using-subgraph-studio/). Renders "### Indexing {Chain} with Subgraphs" + a prominent no-guaranteed-indexing callout + the Studio Quick Start (Steps 1-4). Each network page keeps its own intro inline.
+
+Props: - chainName (required) short name in body copy, e.g. "Sei", "Chiliz" - title (optional) heading name; defaults to chainName - networkId (required) `graph init` / manifest network id, e.g. "sei-mainnet" - slug (required) example Subgraph slug base, e.g. "sei" - explorerUrl (required) block explorer URL, e.g. "https://seitrace.com" - explorerName (required) explorer brand for the ABI hint, e.g. "Seitrace", "Blockscout" */}
+
+import { Callout, CodeBlock } from '@/components'
+import { ExperimentalCodeInline as Code } from '@edgeandnode/gds'
+
+### Indexing {props?.title ?? props?.chainName} with Subgraphs [#indexing-with-subgraphs]
+
+Getting smart contract data is hard. You write your own indexer, run your own database, and handle chain reorganizations yourself. The Graph removes that work, giving you an open API, called a [Subgraph](/subgraphs/overview/), that you query with GraphQL.
+
+{props.chainName} is EVM-compatible, so the Subgraph workflow is the same as on most EVM chains. You develop and test your Subgraph in [Subgraph Studio](/subgraphs/developing/deploying-publishing/using-subgraph-studio/), then query it through the development endpoint.
+
+<Callout data-callout-type="important">
+  Subgraph publishing is enabled for {props.chainName}, but no guaranteed indexing is available via The Graph Network at
+  this time. You can develop, test, and publish your Subgraph in [Subgraph
+  Studio](/subgraphs/developing/deploying-publishing/using-subgraph-studio/), but Indexers on the decentralized network
+  are not guaranteed to index and serve it yet.
+</Callout>
+
+#### Quick Start: Build Your Own Subgraph
+
+Building a Subgraph for {props.chainName} takes four steps:
+
+1. Create your Subgraph in Subgraph Studio.
+2. Initialize a Subgraph project from your {props.chainName} contract.
+3. Deploy it to Subgraph Studio and test it in the playground.
+4. Query it over GraphQL with the development endpoint.
+
+See the [Subgraph pricing page](https://thegraph.com/studio-pricing/) for current query rates and free-tier limits.
+
+##### Step 1: Create your Subgraph in Subgraph Studio
+
+Open [Subgraph Studio](https://thegraph.com/studio/) and connect your wallet (MetaMask, Coinbase Wallet, WalletConnect, or Safe). Create a Subgraph, then copy its **slug** and your **deploy key** from the Subgraph details page — you use both from the CLI. For a full walkthrough, see [Using Subgraph Studio](/subgraphs/developing/deploying-publishing/using-subgraph-studio/).
+
+##### Step 2: Initialize your Subgraph project
+
+Install the Graph CLI with the package manager you prefer:
+
+```sh
+# npm
+npm install -g @graphprotocol/graph-cli@latest
+
+# or yarn
+yarn global add @graphprotocol/graph-cli
+```
+
+Initialize from your {props.chainName} contract:
+
+```sh
+graph init
+```
+
+The CLI walks you through a set of prompts:
+
+- **Protocol**: choose `ethereum`. {props.chainName} is EVM-compatible.
+- **Subgraph slug**: use the slug of the Subgraph you created in Subgraph Studio, for example <Code>{`my-${props.slug}-subgraph`}</Code>.
+- **Directory**: where the project is scaffolded.
+- **Ethereum network**: select <Code>{props.networkId}</Code> from the list of supported networks.
+- **Contract address**: the address of the contract you want to index. Find it on <a href={props.explorerUrl} target="_blank" rel="noreferrer">{props.explorerUrl.replace(/^https?:\/\//, '')}</a>.
+- **ABI**: if the CLI cannot fetch the ABI, export it from your build artifacts or the {props.explorerName} contract page. Supply it as a JSON file.
+- **Start block**: the block your contract was deployed at. Set this so indexing does not scan from genesis. The explorer shows the deployment block.
+- **Contract name**: the name of your contract.
+- **Index contract events as entities**: set this to `true`. The CLI then scaffolds entities and mappings for every emitted event.
+
+Point the manifest at {props.chainName}:
+
+<CodeBlock>
+  <code className="language-yaml">{`dataSources:
+  - kind: ethereum
+    name: MyContract
+    network: ${props.networkId}
+    source:
+      address: '0xYour${props.slug
+        .split('-')
+        .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+        .join('')}ContractAddress'
+      abi: MyContract
+      startBlock: 123456 # your contract's deployment block`}</code>
+</CodeBlock>
+
+For a full walkthrough of schema and mapping authoring, see [Creating a Subgraph](/subgraphs/developing/creating/starting-your-subgraph/). Then generate types and build:
+
+```sh
+graph codegen && graph build
+```
+
+##### Step 3: Deploy to Subgraph Studio
+
+Authenticate the CLI with the deploy key from your Subgraph details page:
+
+```sh
+graph auth <DEPLOY_KEY>
+```
+
+Then deploy your Subgraph to Subgraph Studio (the CLI asks for a version label such as `0.0.1`):
+
+```sh
+graph deploy <SUBGRAPH_SLUG>
+```
+
+Deploying pushes your Subgraph to Subgraph Studio, where you can test it in the playground and check indexing logs. It does not publish it to the decentralized network — see [Using Subgraph Studio](/subgraphs/developing/deploying-publishing/using-subgraph-studio/) for details.
+
+##### Step 4: Query your Subgraph
+
+Once your Subgraph is syncing in Studio, test your queries against the **development query URL** shown on the Subgraph details page.
+
+1. Create an API key from the API Keys dashboard at [thegraph.com/studio](https://thegraph.com/studio/).
+2. Send GraphQL queries to the development query URL with your API key. The development endpoint is rate-limited (currently 3,000 queries per day).
+
+You can [publish your Subgraph to The Graph Network](/subgraphs/developing/deploying-publishing/publishing-a-subgraph/) at any time, but Indexers are not guaranteed to serve {props.chainName} Subgraphs yet, so the Subgraph Studio development endpoint is the reliable way to query today.
+
+See [Querying The Graph](/subgraphs/querying/introduction/) for the full query API.

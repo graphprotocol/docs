@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 
 import {
   ButtonOrLink,
+  classNames,
   DottedRingsSpinner,
   ExperimentalButton,
   ExperimentalCopyButton,
@@ -9,28 +10,73 @@ import {
   ExperimentalSearch,
   ExperimentalToggleChip,
   Text,
-  Tooltip,
   useDebounce,
 } from '@edgeandnode/gds'
-import { Check, Checks, EyeClosed } from '@edgeandnode/gds/icons'
+import { EyeClosed } from '@edgeandnode/gds/icons'
 import { NetworkIcon } from '@edgeandnode/go'
 
 import { Callout, Table } from '@/components'
 import { useI18n } from '@/i18n'
 
-import { type SupportedNetwork } from './utils'
+import { getNetworkSlug } from './slugs'
+import { type SubgraphsTier, type SubstreamsTier, type SupportedNetwork } from './utils'
+
+// Tier chip tones. GDS calls Galactic Aqua `turquoise` and Nebula Pink `pink`; `space` is its
+// lavender-gray scale. Brighter hues use lower opacity so every chip reads with similar weight,
+// on both the page and hovered row surfaces.
+const TIER_CHIP_STYLES = {
+  neutral: `[--tier-chip-accent:theme(colors.space-500)]
+    border-space-500/15 bg-space-500/[0.12] data-[treatment=borderless]:bg-space-500/[0.18]`,
+  purple: `[--tier-chip-accent:theme(colors.purple-400)]
+    border-purple-300/20 bg-purple-400/[0.19] data-[treatment=borderless]:bg-purple-400/[0.29]`,
+  pink: `[--tier-chip-accent:theme(colors.pink)]
+    border-pink/10 bg-pink/[0.12] data-[treatment=borderless]:bg-pink/[0.18]`,
+  blue: `[--tier-chip-accent:theme(colors.astro-400)]
+    border-astro-300/20 bg-astro-400/[0.19] data-[treatment=borderless]:bg-astro-400/[0.29]`,
+  turquoise: `[--tier-chip-accent:theme(colors.turquoise)]
+    border-turquoise/10 bg-turquoise/[0.095] data-[treatment=borderless]:bg-turquoise/[0.12]`,
+  green: `[--tier-chip-accent:theme(colors.starfield-400)]
+    border-starfield-300/10 bg-starfield-400/[0.12] data-[treatment=borderless]:bg-starfield-400/[0.18]`,
+}
+
+type TierChipProps = { label: string; tone: keyof typeof TIER_CHIP_STYLES }
+
+const SUBGRAPHS_CHIPS: Record<Exclude<SubgraphsTier, 'none'>, TierChipProps> = {
+  studio: { label: 'STUDIO', tone: 'blue' },
+  network: { label: 'COMMUNITY', tone: 'purple' },
+  rewards: { label: 'REWARDS', tone: 'pink' },
+}
+const SUBSTREAMS_CHIPS: Record<Exclude<SubstreamsTier, 'none'>, TierChipProps> = {
+  base: { label: 'BASE', tone: 'turquoise' },
+  extended: { label: 'EXTENDED', tone: 'green' },
+  other: { label: 'NON-EVM', tone: 'neutral' },
+}
+
+// Switch to 'borderless' to compare the stronger fill across the table and legend during development.
+const TIER_CHIP_TREATMENT: 'subtle-border' | 'borderless' = 'subtle-border'
+
+function TierChip({ label, tone }: TierChipProps) {
+  return (
+    <span
+      data-treatment={TIER_CHIP_TREATMENT}
+      className={classNames([
+        `text-c10 inline-flex items-center rounded-full border
+        px-[calc(theme(spacing.2)*1.1)] py-[calc(theme(spacing[0.5])*1.1)]
+        text-[length:calc(theme(fontSize.10)*1.1)] leading-none tracking-normal
+        text-[color:color-mix(in_srgb,var(--tier-chip-accent)_30%,theme(colors.space-200))]
+        data-[treatment=borderless]:border-transparent`,
+        TIER_CHIP_STYLES[tone],
+      ])}
+    >
+      {label}
+    </span>
+  )
+}
 
 export function NetworksTable({ networks }: { networks: SupportedNetwork[] }) {
   const { t } = useI18n()
   const [immediateSearchQuery, setSearchQuery] = useState('')
   const [immediateShowTestnets, setShowTestnets] = useState(false)
-
-  const checkmark = (
-    <Check size={4} alt={t('index.supportedNetworks.tableLegend.icons.checkmark')} className="h-[0.75lh]" />
-  )
-  const checkmarks = (
-    <Checks size={4} alt={t('index.supportedNetworks.tableLegend.icons.checkmarks')} className="h-[0.75lh]" />
-  )
 
   const searchQuery = useDebounce(immediateSearchQuery, 200)
   const showTestnets = useDebounce(immediateShowTestnets, 200)
@@ -57,11 +103,11 @@ export function NetworksTable({ networks }: { networks: SupportedNetwork[] }) {
   return (
     <>
       <Callout variant="info" className="mb-6">
-        <p>{t('index.supportedNetworks.infoText')}</p>
         <p>
           <ExperimentalLink href="mailto:info@thegraph.foundation">
             {t('index.supportedNetworks.infoLink')}
-          </ExperimentalLink>
+          </ExperimentalLink>{' '}
+          {t('index.supportedNetworks.infoText')}
         </p>
       </Callout>
 
@@ -74,25 +120,37 @@ export function NetworksTable({ networks }: { networks: SupportedNetwork[] }) {
         </h3>
         <div className="grid grid-cols-1 gap-px text-space-500 xs:grid-cols-2">
           <div className="border-b border-r border-space-1500 p-4">
-            <span className="text-c10 mb-2 block text-white">Subgraphs</span>
-            <div className="flex gap-2">
-              {checkmark}
-              <span className="text-14">{t('index.supportedNetworks.tableLegend.subgraphs.basic')}</span>
-            </div>
-            <div className="flex gap-2">
-              {checkmarks}
-              <span className="text-14">{t('index.supportedNetworks.tableLegend.subgraphs.full')}</span>
+            <span className="text-c10 mb-3 block text-white">Subgraphs</span>
+            <div className="flex flex-col gap-2">
+              <div className="flex items-center gap-2">
+                <TierChip {...SUBGRAPHS_CHIPS.studio} />
+                <span className="text-14">{t('index.supportedNetworks.tableLegend.subgraphs.studio')}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <TierChip {...SUBGRAPHS_CHIPS.network} />
+                <span className="text-14">{t('index.supportedNetworks.tableLegend.subgraphs.network')}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <TierChip {...SUBGRAPHS_CHIPS.rewards} />
+                <span className="text-14">{t('index.supportedNetworks.tableLegend.subgraphs.rewards')}</span>
+              </div>
             </div>
           </div>
           <div className="border-b border-r border-space-1500 p-4 lg:border-r-0">
-            <span className="text-c10 mb-2 block text-white">Firehose/Substreams</span>
-            <div className="flex gap-2">
-              {checkmark}
-              <span className="text-14">{t('index.supportedNetworks.tableLegend.substreams.basic')}</span>
-            </div>
-            <div className="flex gap-2">
-              {checkmarks}
-              <span className="text-14">{t('index.supportedNetworks.tableLegend.substreams.full')}</span>
+            <span className="text-c10 mb-3 block text-white">Firehose/Substreams</span>
+            <div className="flex flex-col gap-2">
+              <div className="flex items-center gap-2">
+                <TierChip {...SUBSTREAMS_CHIPS.base} />
+                <span className="text-14">{t('index.supportedNetworks.tableLegend.substreams.base')}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <TierChip {...SUBSTREAMS_CHIPS.extended} />
+                <span className="text-14">{t('index.supportedNetworks.tableLegend.substreams.extended')}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <TierChip {...SUBSTREAMS_CHIPS.other} />
+                <span className="text-14">{t('index.supportedNetworks.tableLegend.substreams.other')}</span>
+              </div>
             </div>
           </div>
         </div>
@@ -147,10 +205,7 @@ export function NetworksTable({ networks }: { networks: SupportedNetwork[] }) {
                 <Text.C10>{t('index.supportedNetworks.tableHeaders.subgraphs')}</Text.C10>
               </th>
               <th align="center">
-                <Text.C10>{t('index.supportedNetworks.tableHeaders.substreams')}</Text.C10>
-              </th>
-              <th align="center">
-                <Text.C10>{t('index.supportedNetworks.tableHeaders.firehose')}</Text.C10>
+                <Text.C10>{t('index.supportedNetworks.tableHeaders.firehoseSubstreams')}</Text.C10>
               </th>
             </tr>
             {filteredNetworks.map((network) => (
@@ -160,7 +215,10 @@ export function NetworksTable({ networks }: { networks: SupportedNetwork[] }) {
               >
                 <td>
                   <div className="static flex items-center justify-between gap-2">
-                    <ButtonOrLink href={`/supported-networks/${network.id}`} className="static outline-none">
+                    <ButtonOrLink
+                      href={`/supported-networks/${getNetworkSlug(network.id)}`}
+                      className="static outline-none"
+                    >
                       <div className="flex items-center gap-3">
                         <NetworkIcon network={network} variant={network.iconVariant} size={5} />
                         <div className="flex flex-col">
@@ -176,27 +234,12 @@ export function NetworksTable({ networks }: { networks: SupportedNetwork[] }) {
                   </div>
                 </td>
                 <td align="center">
-                  {network.subgraphsSupportLevel === 'full' ? (
-                    checkmarks
-                  ) : network.subgraphsSupportLevel === 'basic' ? (
-                    <Tooltip content={network.subgraphsProvider}>
-                      <span className="z-10">{checkmark}</span>
-                    </Tooltip>
+                  {network.subgraphsTier !== 'none' ? <TierChip {...SUBGRAPHS_CHIPS[network.subgraphsTier]} /> : null}
+                </td>
+                <td align="center">
+                  {network.substreamsTier !== 'none' ? (
+                    <TierChip {...SUBSTREAMS_CHIPS[network.substreamsTier]} />
                   ) : null}
-                </td>
-                <td align="center">
-                  {network.substreamsSupportLevel === 'full'
-                    ? checkmarks
-                    : network.substreamsSupportLevel === 'basic'
-                      ? checkmark
-                      : null}
-                </td>
-                <td align="center">
-                  {network.firehoseSupportLevel === 'full'
-                    ? checkmarks
-                    : network.firehoseSupportLevel === 'basic'
-                      ? checkmark
-                      : null}
                 </td>
               </tr>
             ))}
