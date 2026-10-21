@@ -9,24 +9,16 @@ import { useI18n } from '@/i18n'
 import { customNetworkContent } from './customContent'
 import { NetworkContext } from './NetworkContext'
 import { subgraphsAndSubstreamsCards, subgraphsOnlyCards, substreamsOnlyCards } from './ResourceCards'
-import { type SubstreamsTier, type SupportedNetwork } from './utils'
+import { type SubgraphsTier, type SubstreamsTier, type SupportedNetwork } from './utils'
 
-// Product-support rows shown at the top of each network page. Labels mirror the tiers used
-// in the Supported Networks table (see ./utils), rendered here as plain text instead of chips.
-// The Subgraphs row is built from the underlying flags rather than the single top tier, so a
-// network that earns rewards *and* relies on backstop indexing (e.g. Rootstock) shows both.
+// Product-support rows shown at the top of each network page. The Subgraphs row has two lines:
+// payments always run through Subgraph Studio (API keys and billing), and indexing mirrors the
+// network's top Subgraphs tier in the Supported Networks table (see `getSubgraphsTier` in ./utils).
 const SUBGRAPHS_STUDIO_URL = 'https://thegraph.com/studio/'
-const SUBGRAPHS_REWARDS_URL =
-  'https://thegraph.com/docs/en/subgraphs/developing/deploying-publishing/publishing-a-subgraph/'
-function getSubgraphsRow(network: SupportedNetwork): {
-  linkLabel: string
-  suffixes: { label: string; href?: string }[]
-} {
-  const suffixes: { label: string; href?: string }[] = []
-  if (network.subgraphsBackstop) suffixes.push({ label: 'Community Indexing' })
-  if (network.issuanceRewards) suffixes.push({ label: 'Network Rewards', href: SUBGRAPHS_REWARDS_URL })
-  // Networks without Studio deploys still use Studio for API keys and billing.
-  return { linkLabel: network.subgraphsStudio ? 'Subgraph Studio' : 'Subgraph Studio (API Keys)', suffixes }
+const SUBGRAPHS_INDEXING_LABEL: Record<Exclude<SubgraphsTier, 'none'>, string> = {
+  rewards: 'Network Rewards',
+  network: 'Community Support',
+  studio: 'Subgraph Studio',
 }
 const SUBSTREAMS_MODEL_LABEL: Record<Exclude<SubstreamsTier, 'none'>, string> = {
   other: 'Non-EVM',
@@ -82,29 +74,16 @@ export default function NetworkDetailsPage({ network }: { network: SupportedNetw
         <div className="col-span-2">
           <div>
             <ExperimentalDescriptionList size="medium">
-              {network.subgraphsTier !== 'none' &&
-                (() => {
-                  const subgraphs = getSubgraphsRow(network)
-                  return (
-                    <ExperimentalDescriptionList.Item label="Subgraphs">
-                      <ExperimentalLink className="text-14" href={SUBGRAPHS_STUDIO_URL} target="_blank">
-                        {subgraphs.linkLabel}
-                      </ExperimentalLink>
-                      {subgraphs.suffixes.map((suffix) => (
-                        <Fragment key={suffix.label}>
-                          {' • '}
-                          {suffix.href ? (
-                            <ExperimentalLink className="text-14" href={suffix.href} target="_blank">
-                              {suffix.label}
-                            </ExperimentalLink>
-                          ) : (
-                            suffix.label
-                          )}
-                        </Fragment>
-                      ))}
-                    </ExperimentalDescriptionList.Item>
-                  )
-                })()}
+              {network.subgraphsTier !== 'none' && (
+                <ExperimentalDescriptionList.Item label="Subgraphs">
+                  <div>
+                    <ExperimentalLink className="text-14" href={SUBGRAPHS_STUDIO_URL} target="_blank">
+                      Payments: Subgraph Studio
+                    </ExperimentalLink>
+                  </div>
+                  <div>Indexing: {SUBGRAPHS_INDEXING_LABEL[network.subgraphsTier]}</div>
+                </ExperimentalDescriptionList.Item>
+              )}
               {network.substreamsTier !== 'none' && (
                 <ExperimentalDescriptionList.Item
                   label={`Substreams (${SUBSTREAMS_MODEL_LABEL[network.substreamsTier]})`}
