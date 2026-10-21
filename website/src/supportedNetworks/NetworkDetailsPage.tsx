@@ -76,12 +76,14 @@ export default function NetworkDetailsPage({ network }: { network: SupportedNetw
             <ExperimentalDescriptionList size="medium">
               {network.subgraphsTier !== 'none' && (
                 <ExperimentalDescriptionList.Item label="Subgraphs">
-                  <div>
-                    <ExperimentalLink className="text-14" href={SUBGRAPHS_STUDIO_URL} target="_blank">
-                      Payments: Subgraph Studio
-                    </ExperimentalLink>
-                  </div>
-                  <div>Indexing: {SUBGRAPHS_INDEXING_LABEL[network.subgraphsTier]}</div>
+                  <span className="flex flex-col">
+                    <span>
+                      <ExperimentalLink className="text-14" href={SUBGRAPHS_STUDIO_URL} target="_blank">
+                        Payments: Subgraph Studio
+                      </ExperimentalLink>
+                    </span>
+                    <span>Indexing: {SUBGRAPHS_INDEXING_LABEL[network.subgraphsTier]}</span>
+                  </span>
                 </ExperimentalDescriptionList.Item>
               )}
               {network.substreamsTier !== 'none' && (
