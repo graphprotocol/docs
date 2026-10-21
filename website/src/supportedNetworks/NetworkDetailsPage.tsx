@@ -7,6 +7,7 @@ import { Card, Heading, TimeIcon } from '@/components'
 import { useI18n } from '@/i18n'
 
 import { customNetworkContent } from './customContent'
+import { NetworkContext } from './NetworkContext'
 import { subgraphsAndSubstreamsCards, subgraphsOnlyCards, substreamsOnlyCards } from './ResourceCards'
 import { type SubstreamsTier, type SupportedNetwork } from './utils'
 
@@ -167,7 +168,9 @@ export default function NetworkDetailsPage({ network }: { network: SupportedNetw
 
       {CustomContent && (
         <div className="mb-16 mt-8">
-          <CustomContent />
+          <NetworkContext.Provider value={network}>
+            <CustomContent />
+          </NetworkContext.Provider>
         </div>
       )}
 

@@ -23,8 +23,6 @@ import Etherlink from './etherlink-mainnet.mdx'
 import EtherlinkShadownet from './etherlink-shadownet.mdx'
 import Fraxtal from './fraxtal.mdx'
 import Fuji from './fuji.mdx'
-import Fuse from './fuse.mdx'
-import FuseTestnet from './fuse-testnet.mdx'
 import Gnosis from './gnosis.mdx'
 import GnosisChiado from './gnosis-chiado.mdx'
 import GnosisBeacon from './gnosis-cl.mdx'
@@ -41,8 +39,6 @@ import Ink from './ink.mdx'
 import Joc from './joc.mdx'
 import JocTestnet from './joc-testnet.mdx'
 import Jungle4 from './jungle4.mdx'
-import Kaia from './kaia.mdx'
-import KaiaTestnet from './kaia-testnet.mdx'
 import Linea from './linea.mdx'
 import LineaSepolia from './linea-sepolia.mdx'
 import Litecoin from './litecoin.mdx'
@@ -51,8 +47,6 @@ import EthereumBeacon from './mainnet-cl.mdx'
 import Polygon from './matic.mdx'
 import MegaEth from './megaeth.mdx'
 import Monad from './monad.mdx'
-import Near from './near-mainnet.mdx'
-import NearTestnet from './near-testnet.mdx'
 import NeoX from './neox.mdx'
 import NeoXTestnet from './neox-testnet.mdx'
 import Optimism from './optimism.mdx'
@@ -87,7 +81,6 @@ import Tron from './tron.mdx'
 import TronEvm from './tron-evm.mdx'
 import Unichain from './unichain.mdx'
 import UnichainTestnet from './unichain-testnet.mdx'
-import Viction from './viction.mdx'
 import Wax from './wax.mdx'
 import WaxTestnet from './wax-testnet.mdx'
 import WorldChain from './worldchain.mdx'
@@ -97,7 +90,6 @@ import Zetachain from './zetachain.mdx'
 import Zilliqa from './zilliqa.mdx'
 import ZilliqaTestnet from './zilliqa-testnet.mdx'
 import ZksyncEra from './zksync-era.mdx'
-import ZksyncEraSepolia from './zksync-era-sepolia.mdx'
 import Zora from './zora.mdx'
 
 /**
@@ -167,8 +159,6 @@ export const customNetworkContent: Record<string, ComponentType> = {
   celo: Celo,
   tempo: Tempo,
   'xlayer-mainnet': XLayer,
-  'near-mainnet': Near,
-  'near-testnet': NearTestnet,
   'starknet-testnet': StarknetTestnet,
   'stellar-testnet': StellarTestnet,
   'injective-testnet': InjectiveTestnet,
@@ -177,8 +167,6 @@ export const customNetworkContent: Record<string, ComponentType> = {
   // Community Subgraph custom content
   boba: Boba,
   'boba-testnet': BobaTestnet,
-  fuse: Fuse,
-  'fuse-testnet': FuseTestnet,
   fraxtal: Fraxtal,
   rootstock: Rootstock,
   'rootstock-testnet': RootstockTestnet,
@@ -210,11 +198,7 @@ export const customNetworkContent: Record<string, ComponentType> = {
   'xlayer-sepolia': XLayerSepolia,
   zilliqa: Zilliqa,
   'zilliqa-testnet': ZilliqaTestnet,
-  'zksync-era-sepolia': ZksyncEraSepolia,
-  kaia: Kaia,
-  'kaia-testnet': KaiaTestnet,
   neox: NeoX,
   'neox-testnet': NeoXTestnet,
-  viction: Viction,
   zetachain: Zetachain,
 }
