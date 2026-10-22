@@ -5,5 +5,4 @@ export default {
   'subgraph-composition': 'Composable Subgraphs',
   enums: 'Using Enums',
   'secure-api-keys-nextjs': 'Securing API Keys with Next.js',
-  near: 'NEAR Subgraphs',
 }

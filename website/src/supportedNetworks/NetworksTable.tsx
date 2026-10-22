@@ -21,7 +21,7 @@ import { useI18n } from '@/i18n'
 import { getNetworkSlug } from './slugs'
 import { type SubgraphsTier, type SubstreamsTier, type SupportedNetwork } from './utils'
 
-// Tier chip tones. GDS calls Galactic Aqua `turquoise` and Nebula Pink `pink`; `space` is its
+// Tier chip tones. GDS calls Galactic Aqua `turquoise`, Nebula Pink `pink`, and its yellow scale `solar`; `space` is its
 // lavender-gray scale. Brighter hues use lower opacity so every chip reads with similar weight,
 // on both the page and hovered row surfaces.
 const TIER_CHIP_STYLES = {
@@ -37,6 +37,8 @@ const TIER_CHIP_STYLES = {
     border-turquoise/10 bg-turquoise/[0.095] data-[treatment=borderless]:bg-turquoise/[0.12]`,
   green: `[--tier-chip-accent:theme(colors.starfield-400)]
     border-starfield-300/10 bg-starfield-400/[0.12] data-[treatment=borderless]:bg-starfield-400/[0.18]`,
+  yellow: `[--tier-chip-accent:theme(colors.solar-300)]
+    border-solar-300/10 bg-solar-300/[0.12] data-[treatment=borderless]:bg-solar-300/[0.18]`,
 }
 
 type TierChipProps = { label: string; tone: keyof typeof TIER_CHIP_STYLES }
@@ -49,7 +51,7 @@ const SUBGRAPHS_CHIPS: Record<Exclude<SubgraphsTier, 'none'>, TierChipProps> = {
 const SUBSTREAMS_CHIPS: Record<Exclude<SubstreamsTier, 'none'>, TierChipProps> = {
   base: { label: 'BASE', tone: 'turquoise' },
   extended: { label: 'EXTENDED', tone: 'green' },
-  other: { label: 'NON-EVM', tone: 'neutral' },
+  other: { label: 'NON-EVM', tone: 'yellow' },
 }
 
 // Switch to 'borderless' to compare the stronger fill across the table and legend during development.
