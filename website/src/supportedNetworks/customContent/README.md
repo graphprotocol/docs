@@ -81,3 +81,19 @@ import SubgraphCommunity from './_subgraph-community.mdx'
 ```
 
 Studio indexing support is read from the registry, not from props. `NetworkDetailsPage` provides the current network through `NetworkContext` (`../NetworkContext.tsx`), and when a network has no `kind: 'studio'` entry in `services.subgraphs`, `_subgraph-community.mdx` shows a warning to publish to The Graph Network for indexing, followed by the `description` of each `kind: 'backstop'` entry (e.g. "InfraDAO provides indexing support for all published Subgraphs with 500+ GRT in signal on Anubis Mainnet."). The curation signal recommended in the publish step is also registry-driven (`RecommendedSignal`): 1,000 GRT on networks with `issuanceRewards: true`, 500 GRT on community-only networks. Update the registry, not the page, to change any of these.
+
+### "Get API Key" buttons
+
+Every "Indexing _{Chain}_ with Subgraphs" and "Indexing _{Chain}_ with Substreams" section heading is a `ProductSectionHeading` (`../GetApiKeyButton.tsx`): a standard `h2` with a primary GDS "Get API Key" button beside it (the button wraps below the heading on narrow screens). Pass the heading text as `title`, not as children, so MDX doesn't wrap it in a paragraph inside the `h2`:
+
+```mdx
+import { ProductSectionHeading } from '@/supportedNetworks/GetApiKeyButton'
+
+<ProductSectionHeading
+  product="substreams"
+  id="indexing-bitcoin-with-substreams"
+  title="Indexing Bitcoin with Substreams"
+/>
+```
+
+`product="subgraphs"` links to the Subgraph Studio API Keys page. `product="substreams"` links to The Graph Market, falling back to Pinax Network only when the registry lists no The Graph Market endpoint for the network. The shared partials already include it; add it by hand to bespoke (non-EVM) Substreams sections.

@@ -54,3 +54,13 @@ export function SubgraphStudioIndexingNotice({ chainName }: { chainName: string 
 export function RecommendedSignal() {
   return <>{useCurrentNetwork()?.issuanceRewards ? '1,000' : '500'}</>
 }
+
+/** Renders `rewards` on networks that earn indexing rewards (`issuanceRewards: true`), `otherwise` elsewhere. */
+export function IndexingRewardsText({ rewards, otherwise }: { rewards: ReactNode; otherwise: ReactNode }) {
+  return <>{useCurrentNetwork()?.issuanceRewards ? rewards : otherwise}</>
+}
+
+/** Renders its children unless `hide` is set; lets MDX partials make a markdown block optional per page. */
+export function ShowUnless({ hide, children }: { hide?: boolean; children?: ReactNode }) {
+  return <>{hide ? null : children}</>
+}
