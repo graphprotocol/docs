@@ -194,7 +194,7 @@ type Stats @aggregation(intervals: ["hour", "day"], source: "Data") {
 ### Types and Query-Friendly Modeling
 
 - **Sort by numbers, not strings:** Store amounts as `Int` or `BigInt`. String order puts "10" before "2".
-- **Put sort keys on the entity itself:** GraphQL queries cannot order by a nested field, so add a `createdAt` or similar field where you sort.
+- **Put frequent sort keys on the entity itself:** Queries can sort by a field of a related entity, one level deep (for example `orderBy: owner__name`), but this is slower than sorting by the entity's own field and supports only `String` and `ID` fields. For sort keys your app uses often, such as `createdAt`, store the field on the entity.
 - **Store facts, compute state:** Do not store a value that changes with time but has no event, such as a "LOCKED" status after a lock period. Store the timestamps and durations; [compute the state in the app](https://thegraph.com/blog/subgraph-devex-tips/).
 - **Keep counters current:** Fields such as `positionCount` let apps paginate without counting. Update every affected entity in the same handler.
 - **Avoid deep nesting:** Give frequently read data a direct path, not a chain of five nested relationships.
@@ -240,7 +240,7 @@ Requires `specVersion` 1.2.0.
 
 ```yaml
 eventHandlers:
-  - event: TransferWithPool(address indexed, address indexed, uint256, bytes32 indexed)
+  - event: TransferWithPool(indexed address,indexed address,uint256,indexed bytes32)
     handler: handleTransferWithPool
     calls:
       poolInfo: ERC20[event.address].getPoolInfo(event.params.to)
@@ -254,7 +254,7 @@ eventHandlers:
 ### Entity Reads and Writes
 
 - **Save only what changed:** Do not load and save entities that the handler does not modify.
-- **Use `loadInBlock()` for entities created earlier in the same block:** It skips the database round trip for a [lookup that would miss](/subgraphs/developing/creating/graph-ts/api/). It returns `null` if the entity was not created in the current block, even if it exists in the store.
+- **Use `loadInBlock()` for entities written earlier in the same block:** It returns an entity that was created, or updated and saved, in the current block, and skips the database round trip for a [lookup that would miss](/subgraphs/developing/creating/graph-ts/api/#looking-up-entities-created-within-a-block). It returns `null` if the entity was not written in the current block, even if it exists in the store. A non-null result does not prove the entity was newly created.
 - **Do not overwrite fresh data with a stale copy:** If a helper loads and saves an entity, reload it in the caller before you save. [Subgraph Linter](/subgraphs/tooling/subgraph-linter/) flags this as `entity-overwrite`.
 - **Update every affected entity in one handler:** A stake event can change the protocol total, the user total, and the position. Update all three so that [totals stay in sync](https://thegraph.com/blog/subgraph-devex-tips/).
 - **Use `try_` for calls that can revert:** A reverting `decimals()` or `symbol()` is one of the most common causes of a crashed Subgraph. Set a default value and keep indexing.
@@ -308,7 +308,7 @@ indexerHints:
 ### Iterate Faster During Development
 
 - **Use a recent `startBlock` locally:** Restore the real block before you publish ([Graph Node Dev Mode](/subgraphs/developing/creating/graph-node-dev/)).
-- **Run Graph Node in watch mode:** `gnd dev --watch` rebuilds when files change. Always pass `--node` to `gnd deploy`; without it, `gnd deploy` targets Subgraph Studio.
+- **Run two watchers for hot reloading:** `gnd dev --watch` watches the build output and redeploys it, but it does not compile. Run `gnd build --watch` (or `graph build --watch`) in a second terminal so that edits to mappings, the schema, or the manifest are recompiled; `gnd dev --watch` then picks up the new build. Always pass `--node` to `gnd deploy`; without it, `gnd deploy` targets Subgraph Studio.
 - **Debug with forking:** Point a local Graph Node at a remote deployment that failed at block X. The local node fetches entities from the remote store, so you [reproduce the failure without syncing to block X](/subgraphs/best-practices/subgraph-debug-forking/).
 - **Use operator staging for full-history checks:** Some Gateway Operators offer a staging environment with logs, for syncs too large to run locally.
 - **Expect faster re-syncs on hosted providers:** Some providers cache `eth_call` and log results, so a second sync of the same contracts reuses them ([Goldsky](https://docs.goldsky.com/subgraphs/guides/performance) documents a permanent RPC cache).
@@ -332,7 +332,7 @@ graft:
 ```
 
 - **Graft-safe:** changes inside mappings or the manifest, such as a fixed handler or a removed handler.
-- **Not graft-safe:** changing or removing field types, and large mapping rewrites. Schema changes such as immutable entities or `Bytes` IDs also break graft compatibility.
+- **Not graft-safe:** changing field types (including switching IDs to `Bytes`), making nullable fields non-nullable, and large mapping rewrites. Marking an entity immutable is supported only if the copied history has no updates or deletions of it. See [compatible schema changes](/subgraphs/best-practices/grafting/#compatible-schema-changes).
 - **Grafting does not make later blocks faster.** [Remaining blocks index faster only if the new code does less work per event](https://docs.goldsky.com/subgraphs/guides/performance).
 - **Not for The Graph Network.** The docs do not recommend grafting for mainnet Subgraphs on the network. Some Indexers may not support it.
 - **Pruning conflict:** you cannot graft at a pruned block.
