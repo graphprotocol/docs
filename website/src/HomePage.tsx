@@ -239,7 +239,7 @@ export default function HomePage({ supportedNetworks }: { supportedNetworks: Sup
                 slotAboveTitle={<TimeIcon variant="reading" minutes={9} />}
               />
               <Card
-                href="/subgraphs/cookbook/timeseries/"
+                href="/subgraphs/best-practices/timeseries/"
                 title={t('index.guides.timeseries.title')}
                 description={t('index.guides.timeseries.description')}
                 slotAboveTitle={<TimeIcon variant="reading" minutes={4} />}
@@ -251,7 +251,7 @@ export default function HomePage({ supportedNetworks }: { supportedNetworks: Sup
                 slotAboveTitle={<TimeIcon variant="reading" minutes={2} />}
               />
               <Card
-                href="/subgraphs/cookbook/transfer-to-the-graph/"
+                href="/subgraphs/best-practices/transfer-to-the-graph/"
                 title={t('index.guides.transferToTheGraph.title')}
                 description={t('index.guides.transferToTheGraph.description')}
                 slotAboveTitle={<TimeIcon variant="reading" minutes={3} />}

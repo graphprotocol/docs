@@ -41,7 +41,7 @@ Common, repeated sections live in shared MDX partials (prefixed `_`) so a single
 Two partials cover the standard "Indexing _{Chain}_ with Substreams" section for EVM networks, differing only by the block model the network is served with:
 
 - `_substreams-extended.mdx` — **extended** EVM block model (full transaction, call, and event data). Used by chains like BSC, Polygon, Monad, Ink.
-- `_substreams-base.mdx` — **base** EVM block model (block, transaction, and event/log data). Used by chains like Blast, MegaETH, TRON EVM.
+- `_substreams-base.mdx` — **base** EVM block model (block, transaction, and event/log data). Used by chains like MegaETH, TRON EVM, zkSync Era.
 
 ```mdx
 import SubstreamsExtended from './_substreams-extended.mdx'
