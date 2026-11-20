@@ -7,6 +7,7 @@ ENV ENVIRONMENT=$ENVIRONMENT
 ENV ORIGIN=$ORIGIN
 
 ENV PNPM_HOME="/usr/bin"
+ENV NODE_OPTIONS="--max-old-space-size=8192"
 
 RUN apk add --no-cache git
 RUN npm install -g corepack@latest
@@ -17,6 +18,7 @@ WORKDIR /app
 COPY . ./
 
 RUN pnpm install --frozen-lockfile
+RUN pnpm prebuild:ci
 RUN pnpm build
 
 FROM nginx:1.16.0-alpine

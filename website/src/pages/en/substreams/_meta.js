@@ -1,8 +1,11 @@
 import titles from './_meta-titles.json'
 
 export default {
+  overview: '',
   'quick-start': '',
-  introduction: '',
-  developing: titles.developing,
+  providers: titles.providers ?? '',
+  'public-substreams': titles['public-substreams'] ?? '',
+  developing: titles.developing ?? '',
   publishing: '',
+  tooling: titles.tooling ?? '',
 }

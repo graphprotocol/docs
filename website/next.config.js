@@ -1,13 +1,14 @@
 // @ts-check
 
 import nextra from 'nextra'
-import rehypeUnwrapImages from 'rehype-unwrap-images'
+import rehypeMdxCodeProps from 'rehype-mdx-code-props'
 
 import { defaultLocale, translate } from '@edgeandnode/gds'
 
-// Compile `i18n.ts` to `i18n.js` since we can't import `ts` files in `next.config.js`
 import { translations } from './dist/i18n.js'
-import { remarkTransformRemoteGitHub } from './src/remarkTransformRemoteGitHub.js'
+import rehypeUnwrapImages from './dist/mdxPlugins/rehypeUnwrapImages.js'
+import remarkCallouts from './dist/mdxPlugins/remarkCallouts.js'
+import remarkTransformRemoteDocs from './dist/mdxPlugins/remarkTransformRemoteDocs.js'
 
 const env = {
   ENVIRONMENT: process.env.ENVIRONMENT,
@@ -25,12 +26,13 @@ const env = {
 }
 
 const withNextra = nextra({
-  theme: './src/Layout.tsx',
+  theme: './src/layout/Layout.tsx',
   search: false,
   codeHighlight: false,
   defaultShowCopyCode: false,
   readingTime: true,
   transformPageMap(pageMap) {
+    // TODO: Remove all locale-related code and move `pages/en` to just `pages`
     const route = pageMap[0] && 'route' in pageMap[0] ? pageMap[0].route : undefined
     const locale = typeof route === 'string' ? route.slice(1, 3) : defaultLocale
     const t = (/** @type {string} */ key) =>
@@ -42,6 +44,7 @@ const withNextra = nextra({
         (key),
       )
 
+    // TODO: Move back to `src/pages/en/_meta.js` and add `src/pages/en/_meta-titles.json` for the translations
     const metaFile = {
       index: t('index.title'),
       about: '',
@@ -50,23 +53,20 @@ const withNextra = nextra({
       '---1': {
         type: 'separator',
       },
+      'ai-overview': 'AI Tooling',
+      '---2': {
+        type: 'separator',
+      },
       subgraphs: {
         type: 'children',
         title: t('global.navigation.subgraphs'),
       },
-      '---2': {
+      '---3': {
         type: 'separator',
       },
       substreams: {
         type: 'children',
         title: t('global.navigation.substreams'),
-      },
-      '---3': {
-        type: 'separator',
-      },
-      sps: {
-        type: 'children',
-        title: t('global.navigation.sps'),
       },
       '---4': {
         type: 'separator',
@@ -75,16 +75,26 @@ const withNextra = nextra({
         type: 'children',
         title: t('global.navigation.indexing'),
       },
+      '---gateways': {
+        type: 'separator',
+      },
+      gateways: {
+        type: 'children',
+        title: 'Gateway Software',
+      },
       '---5': {
+        type: 'separator',
+      },
+      'graph-horizon': {
+        type: 'children',
+        title: 'Data Services',
+      },
+      '---6': {
         type: 'separator',
       },
       resources: {
         type: 'children',
         title: t('global.navigation.resources'),
-      },
-      archived: {
-        type: 'children',
-        title: t('global.navigation.archived'),
       },
     }
 
@@ -99,8 +109,8 @@ const withNextra = nextra({
     ]
   },
   mdxOptions: {
-    remarkPlugins: [remarkTransformRemoteGitHub],
-    rehypePlugins: [rehypeUnwrapImages],
+    remarkPlugins: [remarkCallouts, remarkTransformRemoteDocs],
+    rehypePlugins: [rehypeUnwrapImages, rehypeMdxCodeProps],
   },
 })
 

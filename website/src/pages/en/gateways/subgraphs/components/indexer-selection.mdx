@@ -1,0 +1,75 @@
+---
+title: Indexer Selection Algorithm
+---
+
+When a query arrives for a deployment, many Indexers may be able to serve it. The [Indexer Selection Algorithm (ISA)](https://github.com/edgeandnode/candidate-selection) decides which Indexers actually get the request, balancing quality, freshness, economic security, and cost. The ISA is the core of how a Gateway delivers high QoS on top of an unreliable set of independent Indexers.
+
+## How the Indexer Selection Algorithm Does
+
+The ISA selects up to three Indexers per query such that:
+
+- the response is fast and likely to succeed,
+- the data is close to chain head,
+- the serving Indexers have meaningful economic stake at risk, and
+- cost stays within the Gateway's budget.
+
+At least one Indexer is always selected, provided at least one candidate has a non-zero score.
+
+## How the Indexer Selection Algorithm Works
+
+Each candidate Indexer is scored using a [weighted product model](https://en.wikipedia.org/wiki/Weighted_product_model): this takes individual factor scores, multiplied together, and then normalizes them between `[0, 1]`. Because the factors are multiplied rather than added, a near-zero score on any single factor drags the whole candidate down. An Indexer that is fast and cheap but failing most requests, or far behind chain head, scores poorly overall. This makes the model intolerant of weak spots, which is exactly what a Gateway Operator wants for high QoS.
+
+### Per-Candidate Factors
+
+A candidate's score is the product of four factor scores:
+
+```
+score = success_rate_score × latency_score × seconds_behind_score × slashable_grt_score
+```
+
+| Factor | Intuition | Curve behavior |
+| --- | --- | --- |
+| Success rate | Reliability of recent responses | `success_rate^7`, punishes anything below near-perfect reliability very steeply (floor around 1e-8) |
+| Latency | Expected response time | Logistic curve centered around 400 ms; high latency is penalized but floored (around 0.001) because extreme latency already shows up as timeouts and failures |
+| Seconds behind chain head | Data freshness | Logistic decay; full credit near the head, falling off past around 30 seconds behind |
+| Slashable GRT | Economic security, skin in the game | Rises toward 1 as stake increases; around 0.8 at the 100,000 GRT minimum stake |
+
+### Fee and Budget
+
+Fees are handled separately rather than inside the product. More specifically, fees come from each Indexer's Agora cost model, served by `indexer-service` at `/cost`. The Gateway executes the cost model over the indexer request to get each Indexer's fee, then favors cheaper Indexers, when all else equal. Concretely, selection maximizes marginal score per unit fee (the fee is clamped to a small minimum so free quotes do not divide by zero). Fees are clamped to the Gateway's budget, and the Gateway's payment control system may pay slightly above a cost model to hit a target average fee per query.
+
+## Selecting a Set, Not Just the Best One
+
+Indexer selection is greedy and marginal. The Gateway does not simply take the top three scorers. It builds the set one Indexer at a time, each time adding the candidate that most improves the combined score of the set per unit of fee, and stops once no remaining candidate adds positive marginal value (or the limit of three is reached).
+
+This matters because the value of a set of Indexers is not the sum of their individual scores. The combined score accounts for correlation across the set:
+
+- **Combined Success Rate:** models the probability that at least one selected Indexer returns a usable response, ordering candidates by latency so faster responders count first. Adding a second reliable Indexer raises the odds the client gets an answer.
+- **Combined Latency:** a probability-weighted blend across the set. A fast-but-flaky Indexer paired with a slower-but-reliable one yields good expected latency.
+- **Combined Seconds Behind:** uses the worst (maximum) lag in the set. The set is only as fresh as its stalest member.
+- **Combined Slashable GRT:** uses the minimum stake in the set. The set is only as economically secure as its least-staked member.
+
+The result is diversification: the Gateway favors a small set whose members complement each other rather than three near-identical candidates.
+
+## Runtime Feedback Loop
+
+Selection is not static. Every Indexer response, success or failure and its observed latency, feeds back into the performance data (`ExpectedPerformance`: success rate and latency) used for future scoring. Indexers that degrade are scored down automatically and quickly stop being selected while Indexers that recover earn their way back in. Combined with the failover behavior (if all selected Indexers fail, the Gateway re-selects until candidates are exhausted), this is what lets the Gateway maintain high QoS over a constantly shifting Indexer set.
+
+## Innovating on Selection Models
+
+The ISA described here is a strong default, not a fixed ceiling. Because selection is where a Gateway turns an unreliable Indexer set into a quality-of-service guarantee, it is also the most valuable place for a Gateway Operator to differentiate. Operators are encouraged to innovate on new selection models to provide a Gateway Operator with a competitive advantage over other competitors. While the existing Indexer Selection component will remain open-source, Gateway Operators may likely not open-source their own algorithms to sustain that advantage over competitors.
+
+Several directions are open for exploration:
+
+- **Tune the Weights:** the curves and weights live in `candidate-selection` and can be reasoned about (each scoring function links to a Desmos graph in source). A Gateway Operator can raise the importance of latency, freshness, or economic security to match the profile their customers care about. Reference deployments expose per-dimension importance exponents so the common cases can be tuned without code changes (see [Routing Queries to Indexers](/gateways/subgraphs/supply-side/routing-queries/)).
+- **Add New Factors:** nothing prevents extending the product model with additional normalized factors (e.g. geographic proximity, historical dispute record, per-customer preferences) as long as each is expressed on a `[0, 1]` scale.
+- **Explore New Models:** the weighted product model is one approach. Operators serving specialized workloads (e.g. low-latency trading data, archival analytics, agent traffic) may find that different scoring or set-construction strategies serve their users better, and the reference implementation is a starting point rather than a mandate.
+
+Selection models that improve QoS or cost efficiency benefit the whole ecosystem, and sharing improvements back is encouraged.
+
+## Why Gateway Operators Should Care
+
+- **QoS Without Manual Tuning:** the model continuously routes around slow, stale, or failing Indexers.
+- **Cost Control:** budget-relative fee scoring keeps per-query spend predictable.
+- **Security-Aware Routing:** slashable-GRT weighting biases toward Indexers with real economic accountability, complementing POI and Fisherman verification.
+- **Configurable:** the curves and weights can be reasoned about and tuned if an Operator needs to understand or change selection behavior.

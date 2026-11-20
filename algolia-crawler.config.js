@@ -1,18 +1,11 @@
+// Changes to this config should be manually mirrored to https://crawler.algolia.com/admin
 new Crawler({
   appId: 'WQ5FYJCL00',
   apiKey: '[SECRET]',
   schedule: 'every 7 days',
   indexPrefix: '',
   rateLimit: 8,
-  startUrls: [
-    'https://thegraph.com/docs/en/',
-    'https://thegraph.com/docs/ar/',
-    'https://thegraph.com/docs/es/',
-    'https://thegraph.com/docs/ja/',
-    'https://thegraph.com/docs/ko/',
-    'https://thegraph.com/docs/vi/',
-    'https://thegraph.com/docs/zh/',
-  ],
+  startUrls: ['https://thegraph.com/docs/en/'],
   ignoreQueryParams: ['source', 'utm_*'],
   actions: [
     {

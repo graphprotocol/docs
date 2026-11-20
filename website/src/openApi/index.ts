@@ -1,0 +1,283 @@
+import type { OpenAPIV3_1 } from 'openapi-types'
+
+import { camelToKebab } from '@edgeandnode/gds'
+
+import tokenApi from './tokenApi.json'
+
+export const API_IDS = ['tokenApi'] as const
+
+export const APIS: Record<ApiId, ApiConfig> = {
+  tokenApi: {
+    name: 'Token API',
+    url: 'https://token-api.thegraph.com/openapi', // production
+    // url: 'https://token-api.stage.pinax.network/openapi', // staging
+    document: tokenApi as OpenAPIV3_1.Document,
+    sections: {
+      'SVM Tokens': {
+        path: '/token-api/svm-tokens',
+        operationIdPrefixes: ['getV1Svm'],
+      },
+      'SVM Tokens (Native)': {
+        path: '/token-api/svm-tokens-native',
+        operationIdPrefixes: ['getV1Svm'],
+      },
+      'SVM DEXs': {
+        path: '/token-api/svm-dexs',
+        operationIdPrefixes: ['getV1Svm'],
+      },
+      'EVM Tokens (ERC-20)': {
+        path: '/token-api/evm-tokens',
+        operationIdPrefixes: ['getV1Evm'],
+      },
+      'EVM Tokens (Native)': {
+        path: '/token-api/evm-tokens-native',
+        operationIdPrefixes: ['getV1Evm'],
+      },
+      'EVM DEXs': {
+        path: '/token-api/evm-dexs',
+        operationIdPrefixes: ['getV1Evm'],
+      },
+      'EVM NFTs': {
+        path: '/token-api/evm-nfts',
+        operationIdPrefixes: ['getV1EvmNft'],
+      },
+      'TVM Tokens (ERC-20)': {
+        path: '/token-api/tvm-tokens',
+        operationIdPrefixes: ['getV1Tvm'],
+      },
+      'TVM Tokens (Native)': {
+        path: '/token-api/tvm-tokens-native',
+        operationIdPrefixes: ['getV1Tvm'],
+      },
+      'TVM DEXs': {
+        path: '/token-api/tvm-dexs',
+        operationIdPrefixes: ['getV1Tvm'],
+      },
+      'Polymarket Markets': {
+        path: '/token-api/polymarket-markets',
+        operationIdPrefixes: ['getV1Polymarket', 'getV1PolymarketMarkets'],
+      },
+      'Polymarket Platform': {
+        path: '/token-api/polymarket-platform',
+        operationIdPrefixes: ['getV1Polymarket', 'getV1PolymarketPlatform'],
+      },
+      'Polymarket Users': {
+        path: '/token-api/polymarket-users',
+        operationIdPrefixes: ['getV1Polymarket', 'getV1PolymarketUsers'],
+      },
+      'Hyperliquid Markets': {
+        path: '/token-api/hyperliquid-markets',
+        operationIdPrefixes: ['getV1Hyperliquid', 'getV1HyperliquidMarkets'],
+      },
+      'Hyperliquid Platform': {
+        path: '/token-api/hyperliquid-platform',
+        operationIdPrefixes: ['getV1Hyperliquid', 'getV1HyperliquidPlatform'],
+      },
+      'Hyperliquid Users': {
+        path: '/token-api/hyperliquid-users',
+        operationIdPrefixes: ['getV1Hyperliquid', 'getV1HyperliquidUsers'],
+      },
+      'Hyperliquid Vaults': {
+        path: '/token-api/hyperliquid-vaults',
+        operationIdPrefixes: ['getV1Hyperliquid', 'getV1HyperliquidVaults'],
+      },
+      Monitoring: {
+        path: '/token-api/monitoring',
+        operationIdPrefixes: ['getV1'],
+      },
+    },
+  },
+}
+
+export type ApiId = (typeof API_IDS)[number]
+
+export type ApiConfig = {
+  name: string
+  url: string
+  document: OpenAPIV3_1.Document
+  sections: Record<string, ApiSectionConfig>
+}
+
+export type ApiSectionConfig = {
+  path: string
+  operationIdPrefixes?: string[]
+}
+
+export type ApiSection = {
+  name: string
+  path: string
+  operations: ApiOperation[]
+}
+
+export type ApiParameter = Omit<OpenAPIV3_1.ParameterObject, 'schema' | 'content'> & {
+  schema: Omit<OpenAPIV3_1.SchemaObject, 'description'>
+  serializationFormat?: string
+}
+
+export type ApiSecurityScheme = OpenAPIV3_1.SecuritySchemeObject & {
+  schemeId: string
+  name: string
+  scheme?: string
+  bearerFormat?: string
+  in?: string
+}
+
+export type ApiPotentialResponse = Omit<OpenAPIV3_1.ResponseObject, 'content' | 'links'> & {
+  status: string
+  schema: OpenAPIV3_1.SchemaObject
+  example: any
+}
+
+export type ApiOperation = Omit<OpenAPIV3_1.OperationObject, 'responses'> & {
+  operationId: string
+  slug: string
+  method: string
+  baseUrl: string
+  path: string
+  pathParameters: ApiParameter[]
+  queryParameters: ApiParameter[]
+  headerParameters: ApiParameter[]
+  cookieParameters: ApiParameter[]
+  securitySchemes: ApiSecurityScheme[]
+  potentialResponses: ApiPotentialResponse[]
+}
+
+export type Api = {
+  config: Omit<ApiConfig, 'document'>
+  document: OpenAPIV3_1.Document
+  sections: Record<string, ApiSection>
+  operations: Record<string, ApiOperation>
+}
+
+export const isApiId = (value: string): value is ApiId => API_IDS.includes(value as ApiId)
+
+function isParameterObject(
+  value: OpenAPIV3_1.ParameterObject | OpenAPIV3_1.ReferenceObject,
+): value is OpenAPIV3_1.ParameterObject {
+  return !('$ref' in value) && 'in' in value
+}
+
+function isExampleObject(
+  value: OpenAPIV3_1.ExampleObject | OpenAPIV3_1.ReferenceObject,
+): value is OpenAPIV3_1.ExampleObject {
+  return 'value' in value
+}
+
+function transformParameter(parameter: OpenAPIV3_1.ParameterObject): ApiParameter {
+  const schema = (
+    parameter.content ? Object.values(parameter.content)[0]?.schema : parameter.schema
+  ) as OpenAPIV3_1.SchemaObject
+  return {
+    ...parameter,
+    schema,
+    description: parameter.description ?? schema.description ?? undefined,
+    required: parameter.required ?? schema.required?.includes(parameter.name) ?? false,
+    serializationFormat: parameter.content ? Object.keys(parameter.content)[0] : undefined,
+  }
+}
+
+export function getApi(apiId: ApiId, passedDocument?: OpenAPIV3_1.Document): Api {
+  const api = APIS[apiId]
+  const { document: staticDocument, ...config } = api
+  const document = passedDocument || staticDocument
+
+  const sections: Record<string, ApiSection> = {}
+  const operations: Record<string, ApiOperation> = {}
+
+  for (const [path, documentPath] of Object.entries(document.paths ?? {})) {
+    if (!documentPath) continue
+    for (const [method, documentOperation] of Object.entries(documentPath)) {
+      if (typeof documentOperation !== 'object' || !('tags' in documentOperation) || !documentOperation.tags) continue
+
+      // Get the section name and path from the tags
+      const sectionName = documentOperation.tags.find((tag) => tag in config.sections)
+      const section = sectionName ? config.sections[sectionName] : undefined
+      if (!sectionName || !section || !('operationId' in documentOperation) || !documentOperation.operationId) {
+        continue
+      }
+      const operationId = documentOperation.operationId
+      if (!sections[sectionName]) {
+        sections[sectionName] = {
+          name: sectionName,
+          path: section.path,
+          operations: [],
+        }
+      }
+
+      // Get the first production-looking server URL and ensure it has no trailing slash (known limitation: we only support one server)
+      const servers = documentOperation.servers ?? documentPath.servers ?? document.servers
+      const server =
+        servers?.find((server) => server.description?.toLowerCase().includes('production')) ??
+        servers?.find((server) => !server.url.includes('localhost'))
+      const baseUrl = server?.url.replace(/\/$/, '') ?? ''
+
+      const parameters = (documentOperation.parameters ?? []).filter(isParameterObject)
+      const securitySchemes: ApiSecurityScheme[] = []
+      const securityRequirements = documentOperation.security ?? document.security ?? []
+      for (const securityRequirement of securityRequirements) {
+        for (const [schemeId, _scopes] of Object.entries(securityRequirement)) {
+          const securityScheme = document.components?.securitySchemes?.[schemeId]
+          if (securityScheme && !('$ref' in securityScheme)) {
+            securitySchemes.push({
+              ...securityScheme,
+              schemeId,
+              name: 'name' in securityScheme ? securityScheme.name : schemeId,
+              description:
+                ('description' in securityScheme ? securityScheme.description : undefined) ??
+                (securityScheme.type === 'http' && securityScheme.scheme === 'bearer'
+                  ? `Bearer Token${securityScheme.bearerFormat ? ` (${securityScheme.bearerFormat})` : ''}`
+                  : undefined),
+            })
+          }
+        }
+      }
+
+      const potentialResponses: ApiPotentialResponse[] = []
+      for (const [status, response] of Object.entries(documentOperation.responses)) {
+        if (!('content' in response) || typeof response.content !== 'object') continue
+        const content = response.content['application/json'] ?? response.content['text/plain']
+        if (!content || '$ref' in content || !content.schema || '$ref' in content.schema) continue
+        const exampleObject = content.examples ? Object.values(content.examples)[0] : undefined
+        const example = exampleObject && isExampleObject(exampleObject) ? exampleObject.value : content.example
+        potentialResponses.push({
+          ...response,
+          status,
+          schema: content.schema,
+          example,
+        })
+      }
+
+      const operationIdPrefixMatches = (section.operationIdPrefixes ?? [])
+        .filter((prefix) => operationId.startsWith(prefix))
+        .sort((a, b) => b.length - a.length)
+      const bestOperationIdPrefixMatch = operationIdPrefixMatches.find((prefix) => prefix !== operationId) // longest prefix that isn't the entire operationId
+      const slug = camelToKebab(
+        bestOperationIdPrefixMatch ? operationId.slice(bestOperationIdPrefixMatch.length) : operationId,
+      )
+
+      const operation: ApiOperation = {
+        ...documentOperation,
+        operationId,
+        slug,
+        method: method.toUpperCase(),
+        baseUrl,
+        path,
+        pathParameters: parameters.filter((p) => p.in === 'path').map(transformParameter),
+        queryParameters: parameters.filter((p) => p.in === 'query').map(transformParameter),
+        headerParameters: parameters.filter((p) => p.in === 'header').map(transformParameter),
+        cookieParameters: parameters.filter((p) => p.in === 'cookie').map(transformParameter),
+        securitySchemes,
+        potentialResponses,
+      }
+      operations[operation.operationId] = operation
+      sections[sectionName].operations.push(operation)
+    }
+  }
+
+  return {
+    config,
+    document,
+    sections,
+    operations,
+  }
+}

@@ -1,13 +1,13 @@
-import { type ComponentPropsWithoutRef, type ElementType, useContext, useEffect } from 'react'
+import { type ComponentProps, type ElementType, useContext, useEffect } from 'react'
 import { useInView } from 'react-intersection-observer'
 
-import { classNames, Link } from '@edgeandnode/gds'
+import { classNames, ExperimentalButton } from '@edgeandnode/gds'
 import { Link as LinkIcon } from '@edgeandnode/gds/icons'
 
 import { useI18n } from '@/i18n'
-import { MDXContentContext } from '@/Layout'
+import { MDXContentContext } from '@/layout'
 
-interface HeadingProps extends ComponentPropsWithoutRef<'h1'> {
+interface HeadingProps extends ComponentProps<'h1'> {
   as?: ElementType
 }
 
@@ -34,15 +34,20 @@ const BaseHeading = ({ as: Element = 'h1', id, className, children, ...props }: 
       {id ? (
         <span
           className={`
-            absolute end-[calc(100%+theme(spacing.3))] top-0 opacity-0 transition
-            group-hocus-visible-within/heading:opacity-100
+            absolute end-[calc(100%+theme(spacing[2.5]))] top-0 flex h-[1lh] items-center opacity-0 transition
+            group-hover/heading:opacity-100
+            group-has-focus-visible/heading:opacity-100
             max-md:hidden
           `}
         >
-          {/* TODO: Use `ExperimentalLink` or naked `ExperimentalButton` */}
-          <Link inline underline={false} href={`#${id}`}>
-            <LinkIcon alt={t('global.page.linkToThisSection')} className="prop-size-[0.85em]" />
-          </Link>
+          <ExperimentalButton
+            variant="naked"
+            size="large"
+            href={`#${id}`}
+            className="+:**:text-[1em] +:nested-icon:prop-size-[0.85em]"
+          >
+            <LinkIcon alt={t('global.page.linkToThisSection')} />
+          </ExperimentalButton>
         </span>
       ) : null}
     </Element>

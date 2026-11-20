@@ -1,8 +1,8 @@
-import type { ComponentPropsWithoutRef, ReactNode } from 'react'
+import type { ComponentProps, ReactNode } from 'react'
 
 import { classNames, ExperimentalCodeBlock, type ExperimentalCodeBlockProps } from '@edgeandnode/gds'
 
-interface CodeBlockProps extends Omit<ComponentPropsWithoutRef<'pre'>, 'children'> {
+interface CodeBlockProps extends Omit<ComponentProps<'pre'>, 'children'> {
   children?:
     | ReactNode
     | {
@@ -28,10 +28,25 @@ export const CodeBlock = ({ className, children, ...props }: CodeBlockProps) => 
     <ExperimentalCodeBlock
       language={language as ExperimentalCodeBlockProps['language']}
       lineNumbers={lineCount > 1}
-      className={classNames(['graph-docs-not-markdown mt-8 not-last:mb-8', className])}
-      {...(props as ComponentPropsWithoutRef<'div'>)}
+      className={classNames([
+        `graph-docs-not-markdown
+        --:not-in-group/code-block-tabs:my-8
+        --:not-in-group/code-block-tabs:last:mb-0
+        -:not-in-group/code-block-tabs:is-[li>*]:my-4`,
+        className,
+      ])}
+      {...(props as ComponentProps<'div'>)}
     >
       {code}
     </ExperimentalCodeBlock>
+  )
+}
+
+export const CodeBlockTabs = ({ className, ...props }: ComponentProps<typeof ExperimentalCodeBlock.Tabs>) => {
+  return (
+    <ExperimentalCodeBlock.Tabs
+      className={classNames(['graph-docs-not-markdown --my-8 -:is-[li>*]:my-4', className])}
+      {...props}
+    />
   )
 }
