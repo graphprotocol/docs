@@ -1,6 +1,7 @@
-import { useRef } from 'react'
+import { type FocusEvent, type MouseEvent, type PointerEvent, useEffect, useRef, useState } from 'react'
 
-import { ExperimentalCopyButton, type ExperimentalCopyButtonProps } from '@edgeandnode/gds'
+import { ExperimentalButton, type ExperimentalButtonProps, Tooltip } from '@edgeandnode/gds'
+import { CopyInteractive } from '@edgeandnode/gds/icons'
 
 import { useI18n } from '@/i18n'
 
@@ -40,7 +41,7 @@ export function toLlmMarkdown(source: string, { title, url }: { title?: string; 
   return `${[heading, `Source: ${url}`, content].filter(Boolean).join('\n\n')}\n`
 }
 
-interface CopyPageButtonProps extends Omit<ExperimentalCopyButtonProps, 'value' | 'children'> {
+interface CopyPageButtonProps extends Omit<ExperimentalButtonProps.ButtonProps, 'children'> {
   /** URL of the page's source file on GitHub (the "Edit on GitHub" URL). */
   sourceUrl: string
   /** Page title, added as a heading since the frontmatter is removed. */
@@ -48,11 +49,19 @@ interface CopyPageButtonProps extends Omit<ExperimentalCopyButtonProps, 'value' 
 }
 
 /**
- * Copies the current page as Markdown, for pasting into an LLM.
+ * Copies the current page as Markdown, for pasting into an LLM. Built from the same parts as
+ * `ExperimentalCopyButton`, but only confirms once the page has actually been copied.
  */
 export function CopyPageButton({ sourceUrl, title, onClick, onFocus, onPointerEnter, ...props }: CopyPageButtonProps) {
   const { t } = useI18n()
   const markdown = useRef<Promise<string> | null>(null)
+  const [status, setStatus] = useState<'idle' | 'copied' | 'failed'>('idle')
+
+  useEffect(() => {
+    if (status === 'idle') return
+    const timer = setTimeout(() => setStatus('idle'), 2000)
+    return () => clearTimeout(timer)
+  }, [status])
 
   // Start loading on hover or focus, so the source is usually ready by the time the button is clicked
   const load = () => {
@@ -84,24 +93,36 @@ export function CopyPageButton({ sourceUrl, title, onClick, onFocus, onPointerEn
   }
 
   return (
-    <ExperimentalCopyButton
-      size="small"
-      tooltipText={t('global.page.copied')}
-      onPointerEnter={(event) => {
-        onPointerEnter?.(event)
-        void load()
+    <Tooltip
+      content={{
+        text: status === 'failed' ? t('global.page.copyFailed') : t('global.page.copied'),
+        type: 'kpi',
       }}
-      onFocus={(event) => {
-        onFocus?.(event)
-        void load()
-      }}
-      onClick={(event) => {
-        onClick?.(event)
-        void copy().catch(() => undefined)
-      }}
-      {...props}
+      open={status !== 'idle'}
     >
-      {t('global.page.copy')}
-    </ExperimentalCopyButton>
+      <ExperimentalButton
+        size="small"
+        iconAfter={<CopyInteractive alt="" copied={status === 'copied'} />}
+        onPointerEnter={(event: PointerEvent<HTMLButtonElement>) => {
+          onPointerEnter?.(event)
+          void load()
+        }}
+        onFocus={(event: FocusEvent<HTMLButtonElement>) => {
+          onFocus?.(event)
+          void load()
+        }}
+        onClick={(event: MouseEvent<HTMLButtonElement>) => {
+          onClick?.(event)
+          setStatus('idle')
+          copy().then(
+            () => setStatus('copied'),
+            () => setStatus('failed'),
+          )
+        }}
+        {...props}
+      >
+        {t('global.page.copy')}
+      </ExperimentalButton>
+    </Tooltip>
   )
 }
