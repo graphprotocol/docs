@@ -1,6 +1,15 @@
 import { type ComponentProps, Fragment, useContext } from 'react'
+import Markdown from 'react-markdown'
+import rehypeRaw from 'rehype-raw'
+import remarkGfm from 'remark-gfm'
 
-import { camelToKebab, ExperimentalCodeInline, ExperimentalSwitch, ExperimentalTag } from '@edgeandnode/gds'
+import {
+  camelToKebab,
+  ExperimentalCodeInline,
+  ExperimentalLink,
+  ExperimentalSwitch,
+  ExperimentalTag,
+} from '@edgeandnode/gds'
 import { CaretDown } from '@edgeandnode/gds/icons'
 
 import { Heading, Table } from '@/components'
@@ -72,7 +81,15 @@ export default function TemplateOpenApiContent({ children, ...props }: Component
                         <div className="mt-1 text-12 text-space-500">{parameter.schema.type}</div>
                       </td>
                       <td className="text-body-xsmall">
-                        {parameter.description ? <p className="+:mb-0">{parameter.description}</p> : null}
+                        {parameter.description ? (
+                          <Markdown
+                            rehypePlugins={[rehypeRaw]}
+                            remarkPlugins={[remarkGfm]}
+                            components={{ a: ExperimentalLink as any, code: ExperimentalCodeInline as any }}
+                          >
+                            {parameter.description}
+                          </Markdown>
+                        ) : null}
                         <ul className="mt-1 empty:hidden">
                           {parameter.schema.default ? (
                             <li>
@@ -209,7 +226,17 @@ export default function TemplateOpenApiContent({ children, ...props }: Component
                         {potentialResponse.status}
                       </ExperimentalTag>
                     </td>
-                    <td className="text-body-xsmall">{potentialResponse.description}</td>
+                    <td className="text-body-xsmall">
+                      {potentialResponse.description ? (
+                        <Markdown
+                          rehypePlugins={[rehypeRaw]}
+                          remarkPlugins={[remarkGfm]}
+                          components={{ a: ExperimentalLink as any, code: ExperimentalCodeInline as any }}
+                        >
+                          {potentialResponse.description}
+                        </Markdown>
+                      ) : null}
+                    </td>
                   </tr>
                 )
               })}

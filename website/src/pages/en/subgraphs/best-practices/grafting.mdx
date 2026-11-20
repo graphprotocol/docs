@@ -1,0 +1,249 @@
+---
+title: Graft a Subgraph to Ship Fixes and Replace Contracts
+---
+
+Grafting lets you deploy a new Subgraph that starts from an existing Subgraph's indexed data instead of from scratch. Use it in two situations: to ship a fix for a Subgraph that failed on a bug, and to move to a contract redeployed at a new address while keeping the old contract's history. Both skip a full re-index. This page covers how grafting works, when not to use it, and a walkthrough for each scenario.
+
+## What Grafting Is
+
+When you deploy a Subgraph whose manifest contains a `graft` block, Graph Node copies the data of the `base` Subgraph up to and including the given `block`, then continues indexing the new Subgraph from that block on. Copying is much faster than indexing, though the initial copy can still take several hours for a very large Subgraph.
+
+The base Subgraph must exist on the same Graph Node and must have indexed at least up to the graft block. Because of this, treat a grafted Subgraph as temporary: use it during development or an emergency, then replace it with an equivalent non-grafted version.
+
+## Set Up Grafting
+
+Add two items to the new Subgraph's manifest:
+
+```yaml
+features:
+  - grafting
+graft:
+  base: Qm... # Deployment ID of the base Subgraph
+  block: 6000000 # Last block to copy from the base Subgraph
+```
+
+- **`features`:** Declare `grafting` here. Grafting does not work without it.
+- **`graft.base`:** The **Deployment ID** of the base Subgraph (the `Qm...` IPFS hash), not its Subgraph ID. See [Subgraph ID vs Deployment ID](/subgraphs/querying/subgraph-id-vs-deployment-id/).
+- **`graft.block`:** The last block to copy. Choose it carefully: for a failed Subgraph, use the block of the last correctly processed event. A wrong block can lose or duplicate data.
+
+### Compatible Schema Changes
+
+The grafted Subgraph's schema does not have to match the base schema exactly, but it must be compatible with it. It must be a valid schema on its own, and it may differ from the base schema only in these ways:
+
+- It adds or removes entity types
+- It removes attributes from entity types
+- It adds nullable attributes to entity types
+- It turns non-nullable attributes into nullable attributes
+- It adds values to enums
+- It adds or removes interfaces
+- It changes for which entity types an interface is implemented
+
+Any other change, such as changing a field's type or making a nullable field non-nullable, is not graft-compatible. That includes switching an entity's `id` to [`Bytes`](/subgraphs/best-practices/immutable-entities-bytes-as-ids/). Marking a mutable entity as [immutable](/subgraphs/best-practices/immutable-entities-bytes-as-ids/) is supported only if the copied history contains no updates or deletions of that entity.
+
+## When Not to Use Grafting
+
+- **Subgraphs on The Graph Network:** Grafting is not recommended for Subgraphs published to The Graph Network, and some Indexers may not support it. Publish your first version to the network without grafting. You cannot graft a Subgraph from The Graph Network back to Subgraph Studio.
+- **Incompatible schema changes:** If the fix needs a schema change outside the list above, re-index instead.
+- **Large mapping rewrites:** If the fix changes how events are processed across the board, the new logic may not be consistent with data indexed under the old logic, which leads to incorrect data.
+- **Pruned blocks:** You cannot graft at a block that has been [pruned](/subgraphs/best-practices/pruning/). If you graft often, keep a pruning window that covers it.
+- **Speeding up the rest of a sync:** Grafting skips the blocks before the graft point only. Later blocks index faster only if the new code does less work per event.
+
+Always test a graft in a development environment before you rely on it in production.
+
+## Scenario 1: Ship a Fix for a Failed Subgraph
+
+When a Subgraph stops indexing because of a bug, grafting lets you deploy the fix right away. The new version copies everything the failed version indexed, so data services stay available and no history is lost.
+
+1. **Find the graft block:** Find the block of the last event the failed Subgraph processed correctly.
+2. **Fix the mapping:** Implement the fix in your mapping code, for example in `handleWithdrawal`.
+3. **Add the graft:** Point `graft.base` at the failed deployment's Deployment ID, and `graft.block` at the block from step 1.
+4. **Deploy:** Authenticate with the Graph CLI and run `graph deploy`.
+5. **Verify:** Confirm that indexing resumes from the graft point and that the fix resolves the error.
+
+Here is the manifest for the fixed version. The data source is unchanged; only the mapping and the `graft` block are new:
+
+```yaml
+specVersion: 1.3.0
+schema:
+  file: ./schema.graphql
+dataSources:
+  - kind: ethereum/contract
+    name: SmartContract
+    network: sepolia
+    source:
+      address: '0xYourContractAddress'
+      abi: Lock
+      startBlock: 5000000
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.9
+      language: wasm/assemblyscript
+      entities:
+        - Withdrawal
+      abis:
+        - name: Lock
+          file: ./abis/Lock.json
+      eventHandlers:
+        - event: Withdrawal(uint256,uint256)
+          handler: handleWithdrawal # fixed handler
+      file: ./src/lock.ts
+features:
+  - grafting
+graft:
+  base: QmFailedDeploymentID # Deployment ID of the failed Subgraph
+  block: 6000000 # Last correctly indexed block
+```
+
+## Scenario 2: Replace a Contract and Keep Its History
+
+When you redeploy a contract at a new address, for example after an upgrade, graft a new Subgraph that tracks the new contract onto the Subgraph that tracked the old one. The new Subgraph serves the old contract's history and the new contract's events from one endpoint.
+
+This walkthrough replaces a contract with an identical one (a new address, the same code) on Sepolia.
+
+### Build the Base Subgraph
+
+To build and deploy the existing Subgraph used in this guide, use the example repo below. For the basics of building a Subgraph, see the [Quick Start](/subgraphs/quick-start/).
+
+- [Subgraph example repo](https://github.com/Shiyasmohd/grafting-tutorial)
+
+> Note: The contract used in the Subgraph was taken from the following [Hackathon Starterkit](https://github.com/schmidsi/hackathon-starterkit).
+
+### Base Subgraph Manifest
+
+The Subgraph manifest `subgraph.yaml` identifies the data sources for the Subgraph, the triggers of interest, and the functions that should be run in response to those triggers. This is the manifest for the base Subgraph:
+
+```yaml
+specVersion: 1.3.0
+schema:
+  file: ./schema.graphql
+dataSources:
+  - kind: ethereum
+    name: Lock
+    network: sepolia
+    source:
+      address: '0xb3aabe721794b85fe4e72134795c2f93b4eb7e63'
+      abi: Lock
+      startBlock: 5955690
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.9
+      language: wasm/assemblyscript
+      entities:
+        - Withdrawal
+      abis:
+        - name: Lock
+          file: ./abis/Lock.json
+      eventHandlers:
+        - event: Withdrawal(uint256,uint256)
+          handler: handleWithdrawal
+      file: ./src/lock.ts
+```
+
+- The `Lock` data source is the ABI and contract address you get when you compile and deploy the contract
+- The network should correspond to an indexed network being queried. Because this example runs on Sepolia testnet, the network is `sepolia`
+- The `mapping` section defines the triggers of interest and the functions that should be run in response to those triggers. In this case, the Subgraph listens for the `Withdrawal` event and calling the `handleWithdrawal` function when it is emitted.
+
+### Deploy the Base Subgraph
+
+1. Go to [Subgraph Studio](https://thegraph.com/studio/) and create a Subgraph on Sepolia testnet called `graft-example`
+2. Follow the directions in the `AUTH & DEPLOY` section on your Subgraph page in the `graft-example` folder from the repo
+3. Once finished, verify the Subgraph is indexing properly. If you run the following command in The Graph Playground
+
+```graphql
+{
+  withdrawals(first: 5) {
+    id
+    amount
+    when
+  }
+}
+```
+
+It returns something like this:
+
+```
+{
+  "data": {
+    "withdrawals": [
+      {
+        "id": "0xe8323d21c4f104607b10b0fff9fc24b9612b9488795dea8196b2d5f980d3dc1d0a000000",
+        "amount": "0",
+        "when": "1716394824"
+      },
+      {
+        "id": "0xea1cee35036f2cacb72f2a336be3e54ab911f5bebd58f23400ebb8ecc5cfc45203000000",
+        "amount": "0",
+        "when": "1716394848"
+      }
+    ]
+  }
+}
+```
+
+Once the base Subgraph is indexing properly, you can graft onto it.
+
+### Deploy the Grafted Subgraph
+
+The graft replacement subgraph.yaml will have a new contract address. This could happen when you update your dapp, redeploy a contract, etc.
+
+1. Go to [Subgraph Studio](https://thegraph.com/studio/) and create a Subgraph on Sepolia testnet called `graft-replacement`
+2. Create a new manifest. The `subgraph.yaml` for `graft-replacement` contains a different contract address and new information about how it should graft. These are the `block` of the [last event emitted](https://sepolia.etherscan.io/tx/0xea1cee35036f2cacb72f2a336be3e54ab911f5bebd58f23400ebb8ecc5cfc452) you care about by the old contract and the `base` of the old Subgraph. The `base` Subgraph ID is the `Deployment ID` of your original `graft-example` Subgraph. You can find this in Subgraph Studio.
+3. Follow the directions in the `AUTH & DEPLOY` section on your Subgraph page in the `graft-replacement` folder from the repo
+4. Once finished, verify the Subgraph is indexing properly. If you run the following command in The Graph Playground
+
+```graphql
+{
+  withdrawals(first: 5) {
+    id
+    amount
+    when
+  }
+}
+```
+
+It should return the following:
+
+```
+{
+  "data": {
+    "withdrawals": [
+      {
+        "id": "0xe8323d21c4f104607b10b0fff9fc24b9612b9488795dea8196b2d5f980d3dc1d0a000000",
+        "amount": "0",
+        "when": "1716394824"
+      },
+      {
+        "id": "0xea1cee35036f2cacb72f2a336be3e54ab911f5bebd58f23400ebb8ecc5cfc45203000000",
+        "amount": "0",
+        "when": "1716394848"
+      },
+      {
+        "id": "0x2410475f76a44754bae66d293d14eac34f98ec03a3689cbbb56a716d20b209af06000000",
+        "amount": "0",
+        "when": "1716429732"
+      }
+    ]
+  }
+}
+```
+
+You can see that the `graft-replacement` Subgraph is indexing from older `graft-example` data and newer data from the new contract address. The original contract emitted two `Withdrawal` events, [Event 1](https://sepolia.etherscan.io/tx/0xe8323d21c4f104607b10b0fff9fc24b9612b9488795dea8196b2d5f980d3dc1d) and [Event 2](https://sepolia.etherscan.io/tx/0xea1cee35036f2cacb72f2a336be3e54ab911f5bebd58f23400ebb8ecc5cfc452). The new contract emitted one `Withdrawal` after, [Event 3](https://sepolia.etherscan.io/tx/0x2410475f76a44754bae66d293d14eac34f98ec03a3689cbbb56a716d20b209af). The two previously indexed transactions (Event 1 and 2) and the new transaction (Event 3) were combined together in the `graft-replacement` Subgraph.
+
+The grafted Subgraph now serves the full history across both contracts.
+
+> Note: The grafted manifest in this walkthrough has one data source, for the new contract. It copies the old contract's data up to the graft block, but it does not index any events the old contract emits after that block. If the old contract can still emit events you need, keep a data source for it in the grafted manifest too.
+
+## After Grafting
+
+- **Republish without grafting:** Once the grafted version is stable, deploy a non-grafted version for long-term maintenance. Relying on a graft indefinitely complicates future updates.
+- **Keep both contracts after a contract replacement:** A non-grafted version indexes from scratch, so it needs two data sources, one for the old contract (with its original `startBlock`) and one for the new contract. If you only replace the address, the non-grafted version indexes only the new contract's data.
+- **Move your apps:** Point every app and service at the new, non-grafted version.
+- **Keep the old version serving** until the new one has fully synced.
+
+## Learn More
+
+- [Grafting onto existing Subgraphs](/subgraphs/developing/creating/advanced/#grafting-onto-existing-subgraphs): the manifest reference.
+- [Debug with Subgraph Forking](/subgraphs/best-practices/subgraph-debug-forking/): find and fix the bug locally before you graft.
+- Grafting examples for popular contracts: [Curve](https://github.com/messari/subgraphs/blob/master/subgraphs/curve-finance/protocols/curve-finance/config/templates/curve.template.yaml), [ERC-721](https://github.com/messari/subgraphs/blob/master/subgraphs/erc721-metadata/subgraph.yaml), and [Uniswap](https://github.com/messari/subgraphs/blob/master/subgraphs/uniswap-v3-forks/protocols/uniswap-v3/config/templates/uniswapV3Template.yaml).
+- [Data source templates](/subgraphs/developing/creating/subgraph-manifest/#data-source-templates): another way to handle contracts that change over time.
+- [Guides & Best Practices overview](/subgraphs/best-practices/overview/): the full checklist and how this page fits with the rest of the section.

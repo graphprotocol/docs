@@ -130,7 +130,7 @@ function TemplateOpenApiAsideContent(props: ComponentProps<'div'>) {
 
   const snippets = objectFromEntries(
     objectKeys(snippetLanguages).map((language) => {
-      let code = (snippet.convert(language) || [])[0] ?? ''
+      let code = snippet.convert(language)[0] || ''
       // Unencode placeholders potentially present in the URL
       for (const placeholder of [
         ...Object.values(PLACEHOLDERS),

@@ -6,19 +6,88 @@ import tokenApi from './tokenApi.json'
 
 export const API_IDS = ['tokenApi'] as const
 
-export const APIS = {
+export const APIS: Record<ApiId, ApiConfig> = {
   tokenApi: {
     name: 'Token API',
     url: 'https://token-api.thegraph.com/openapi', // production
-    // url: 'https://token-api.service.stage.pinax.network/openapi', // staging
+    // url: 'https://token-api.stage.pinax.network/openapi', // staging
     document: tokenApi as OpenAPIV3_1.Document,
     sections: {
-      EVM: '/token-api/evm',
-      SVM: '/token-api/svm',
-      Monitoring: '/token-api/monitoring',
+      'SVM Tokens': {
+        path: '/token-api/svm-tokens',
+        operationIdPrefixes: ['getV1Svm'],
+      },
+      'SVM Tokens (Native)': {
+        path: '/token-api/svm-tokens-native',
+        operationIdPrefixes: ['getV1Svm'],
+      },
+      'SVM DEXs': {
+        path: '/token-api/svm-dexs',
+        operationIdPrefixes: ['getV1Svm'],
+      },
+      'EVM Tokens (ERC-20)': {
+        path: '/token-api/evm-tokens',
+        operationIdPrefixes: ['getV1Evm'],
+      },
+      'EVM Tokens (Native)': {
+        path: '/token-api/evm-tokens-native',
+        operationIdPrefixes: ['getV1Evm'],
+      },
+      'EVM DEXs': {
+        path: '/token-api/evm-dexs',
+        operationIdPrefixes: ['getV1Evm'],
+      },
+      'EVM NFTs': {
+        path: '/token-api/evm-nfts',
+        operationIdPrefixes: ['getV1EvmNft'],
+      },
+      'TVM Tokens (ERC-20)': {
+        path: '/token-api/tvm-tokens',
+        operationIdPrefixes: ['getV1Tvm'],
+      },
+      'TVM Tokens (Native)': {
+        path: '/token-api/tvm-tokens-native',
+        operationIdPrefixes: ['getV1Tvm'],
+      },
+      'TVM DEXs': {
+        path: '/token-api/tvm-dexs',
+        operationIdPrefixes: ['getV1Tvm'],
+      },
+      'Polymarket Markets': {
+        path: '/token-api/polymarket-markets',
+        operationIdPrefixes: ['getV1Polymarket', 'getV1PolymarketMarkets'],
+      },
+      'Polymarket Platform': {
+        path: '/token-api/polymarket-platform',
+        operationIdPrefixes: ['getV1Polymarket', 'getV1PolymarketPlatform'],
+      },
+      'Polymarket Users': {
+        path: '/token-api/polymarket-users',
+        operationIdPrefixes: ['getV1Polymarket', 'getV1PolymarketUsers'],
+      },
+      'Hyperliquid Markets': {
+        path: '/token-api/hyperliquid-markets',
+        operationIdPrefixes: ['getV1Hyperliquid', 'getV1HyperliquidMarkets'],
+      },
+      'Hyperliquid Platform': {
+        path: '/token-api/hyperliquid-platform',
+        operationIdPrefixes: ['getV1Hyperliquid', 'getV1HyperliquidPlatform'],
+      },
+      'Hyperliquid Users': {
+        path: '/token-api/hyperliquid-users',
+        operationIdPrefixes: ['getV1Hyperliquid', 'getV1HyperliquidUsers'],
+      },
+      'Hyperliquid Vaults': {
+        path: '/token-api/hyperliquid-vaults',
+        operationIdPrefixes: ['getV1Hyperliquid', 'getV1HyperliquidVaults'],
+      },
+      Monitoring: {
+        path: '/token-api/monitoring',
+        operationIdPrefixes: ['getV1'],
+      },
     },
   },
-} satisfies Record<ApiId, ApiConfig>
+}
 
 export type ApiId = (typeof API_IDS)[number]
 
@@ -26,7 +95,12 @@ export type ApiConfig = {
   name: string
   url: string
   document: OpenAPIV3_1.Document
-  sections: Record<string, string>
+  sections: Record<string, ApiSectionConfig>
+}
+
+export type ApiSectionConfig = {
+  path: string
+  operationIdPrefixes?: string[]
 }
 
 export type ApiSection = {
@@ -116,17 +190,16 @@ export function getApi(apiId: ApiId, passedDocument?: OpenAPIV3_1.Document): Api
       if (typeof documentOperation !== 'object' || !('tags' in documentOperation) || !documentOperation.tags) continue
 
       // Get the section name and path from the tags
-      const sectionName = documentOperation.tags.find((tag) => tag in config.sections) as
-        | keyof typeof config.sections
-        | undefined
-      const sectionPath = sectionName ? config.sections[sectionName] : undefined
-      if (!sectionName || !sectionPath || !('operationId' in documentOperation) || !documentOperation.operationId) {
+      const sectionName = documentOperation.tags.find((tag) => tag in config.sections)
+      const section = sectionName ? config.sections[sectionName] : undefined
+      if (!sectionName || !section || !('operationId' in documentOperation) || !documentOperation.operationId) {
         continue
       }
+      const operationId = documentOperation.operationId
       if (!sections[sectionName]) {
         sections[sectionName] = {
           name: sectionName,
-          path: sectionPath,
+          path: section.path,
           operations: [],
         }
       }
@@ -174,10 +247,18 @@ export function getApi(apiId: ApiId, passedDocument?: OpenAPIV3_1.Document): Api
         })
       }
 
+      const operationIdPrefixMatches = (section.operationIdPrefixes ?? [])
+        .filter((prefix) => operationId.startsWith(prefix))
+        .sort((a, b) => b.length - a.length)
+      const bestOperationIdPrefixMatch = operationIdPrefixMatches.find((prefix) => prefix !== operationId) // longest prefix that isn't the entire operationId
+      const slug = camelToKebab(
+        bestOperationIdPrefixMatch ? operationId.slice(bestOperationIdPrefixMatch.length) : operationId,
+      )
+
       const operation: ApiOperation = {
         ...documentOperation,
-        operationId: documentOperation.operationId,
-        slug: camelToKebab(documentOperation.operationId),
+        operationId,
+        slug,
         method: method.toUpperCase(),
         baseUrl,
         path,
