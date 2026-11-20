@@ -31,12 +31,10 @@ import {
   useIsomorphicLayoutEffect,
 } from '@edgeandnode/gds'
 import {
-  APIToken,
   BookOpenText,
   Files,
   Horizon,
   House,
-  Hypergraph,
   MagnifyingGlass,
   RoleIndexer,
   SidebarSimple,
@@ -57,6 +55,7 @@ import {
   CodeBlock,
   CodeBlockTabs,
   DocSearch,
+  HashRedirect,
   Heading,
   Image,
   NavigationGroup,
@@ -194,17 +193,35 @@ export default function Layout({ pageOpts, children }: NextraThemeLayoutProps<Fr
         if (routeWithoutLocale === '/substreams' || routeWithoutLocale.startsWith('/substreams/')) {
           return <Substreams alt="" />
         }
-        if (routeWithoutLocale === '/token-api' || routeWithoutLocale.startsWith('/token-api/')) {
-          return <APIToken alt="" />
-        }
-        if (routeWithoutLocale === '/hypergraph' || routeWithoutLocale.startsWith('/hypergraph/')) {
-          return <Hypergraph alt="" />
-        }
-        if (routeWithoutLocale === '/ai-suite' || routeWithoutLocale.startsWith('/ai-suite/')) {
+        if (routeWithoutLocale === '/ai-overview' || routeWithoutLocale.startsWith('/ai-overview/')) {
           return <Sparkle alt="" variant={selected ? 'fill' : 'regular'} />
         }
         if (routeWithoutLocale === '/indexing' || routeWithoutLocale.startsWith('/indexing/')) {
           return <RoleIndexer alt="" />
+        }
+        if (routeWithoutLocale === '/gateways' || routeWithoutLocale.startsWith('/gateways/')) {
+          const maskUrl = `url(${process.env.BASE_PATH ?? ''}/img/gateway/subgraph-gateway-icon.png)`
+          return (
+            <span
+              aria-hidden="true"
+              style={{
+                display: 'inline-block',
+                // Match the sibling GDS nav icons: the NavigationItem icon slot sizes icons to size-4 (1rem)
+                width: '1rem',
+                height: '1rem',
+                backgroundColor: 'currentColor',
+                WebkitMaskImage: maskUrl,
+                maskImage: maskUrl,
+                WebkitMaskRepeat: 'no-repeat',
+                maskRepeat: 'no-repeat',
+                WebkitMaskPosition: 'center',
+                maskPosition: 'center',
+                // Inset the mark to ~75% so its visible size matches the sibling line-icons (which fill ~0.73-0.88 of their 16px box)
+                WebkitMaskSize: '75%',
+                maskSize: '75%',
+              }}
+            />
+          )
         }
         if (routeWithoutLocale === '/graph-horizon' || routeWithoutLocale.startsWith('/graph-horizon/')) {
           return <Horizon alt="" />
@@ -600,6 +617,7 @@ export default function Layout({ pageOpts, children }: NextraThemeLayoutProps<Fr
                 pre: CodeBlock,
                 CodeBlock,
                 CodeBlockTabs,
+                HashRedirect,
                 // TODO: Build and use `ExperimentalTable`
                 table: Table,
                 VideoEmbed,

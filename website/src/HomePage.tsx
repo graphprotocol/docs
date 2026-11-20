@@ -1,15 +1,7 @@
 import { NetworkType } from '@pinax/graph-networks-registry'
 
 import { ButtonOrLink, ExperimentalLink, Tooltip } from '@edgeandnode/gds'
-import {
-  APIToken,
-  Firehose,
-  GraphExplorer,
-  GraphNode,
-  SocialYouTube,
-  Subgraph,
-  Substreams,
-} from '@edgeandnode/gds/icons'
+import { Firehose, GraphExplorer, GraphNode, SocialYouTube, Subgraph, Substreams } from '@edgeandnode/gds/icons'
 import { NetworkIcon } from '@edgeandnode/go'
 
 import { Card, Heading, TimeIcon } from '@/components'
@@ -40,21 +32,23 @@ export default function HomePage({ supportedNetworks }: { supportedNetworks: Sup
                 <div className="relative grid grid-cols-4 gap-px">
                   {[
                     'mainnet',
-                    'btc',
+                    'base',
                     'bsc',
                     'solana-mainnet-beta',
                     'avalanche',
-                    'stellar',
-                    'litecoin',
                     'matic',
+                    'hyper-evm',
                     'arbitrum-one',
-                    'sonic',
                     'optimism',
-                    'sei-mainnet',
-                    'starknet-mainnet',
+                    'unichain',
+                    'x-layer',
+                    'stellar',
+                    'monad',
+                    'tempo',
                     'zksync-era',
+                    'sonic',
                     'celo',
-                    'metis',
+                    'megaeth',
                   ]
                     .map((id) => supportedNetworks.find((network) => network.id === id))
                     .filter((network): network is typeof network & {} => Boolean(network))
@@ -129,19 +123,7 @@ export default function HomePage({ supportedNetworks }: { supportedNetworks: Sup
                 iconPosition="side"
               />
             </div>
-            <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-              <Card
-                title={t('index.products.tokenApi.title')}
-                description={t('index.products.tokenApi.description')}
-                cta={
-                  <ExperimentalLink href="/token-api/quick-start/">{t('index.products.tokenApi.cta')}</ExperimentalLink>
-                }
-                icon={
-                  <div className="flex size-8 items-center justify-center rounded-4 bg-space-1400 text-white">
-                    <APIToken size={4} />
-                  </div>
-                }
-              />
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
               <Card
                 title={t('index.products.graphNode.title')}
                 description={t('index.products.graphNode.description')}
@@ -181,9 +163,9 @@ export default function HomePage({ supportedNetworks }: { supportedNetworks: Sup
           <p>
             {t('index.supportedNetworks.description.base', [
               <ExperimentalLink key="link-1" href="/supported-networks/">
-                80+ {t('index.supportedNetworks.description.networks')}
+                {t('index.supportedNetworks.description.networks')}
               </ExperimentalLink>,
-              <ExperimentalLink key="link" href="https://edgeandnode.typeform.com/to/b3507xSL">
+              <ExperimentalLink key="link" href="info@thegraph.foundation">
                 {t('index.supportedNetworks.description.completeThisForm')}
               </ExperimentalLink>,
             ])}
@@ -228,14 +210,14 @@ export default function HomePage({ supportedNetworks }: { supportedNetworks: Sup
           <div className="graph-docs-not-markdown mt-8 grid gap-4">
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
               <Card
-                href="/subgraphs/explorer/"
+                href="/subgraphs/existing-subgraphs/explorer/"
                 title={t('index.guides.explorer.title')}
                 description={t('index.guides.explorer.description')}
                 icon={<GraphExplorer alt="" />}
                 slotAboveTitle={<TimeIcon variant="reading" minutes={10} />}
               />
               <Card
-                href="/subgraphs/developing/publishing/publishing-a-subgraph/"
+                href="/subgraphs/developing/deploying-publishing/publishing-a-subgraph/"
                 title={t('index.guides.publishASubgraph.title')}
                 description={t('index.guides.publishASubgraph.description')}
                 icon={<Subgraph alt="" />}
@@ -257,19 +239,19 @@ export default function HomePage({ supportedNetworks }: { supportedNetworks: Sup
                 slotAboveTitle={<TimeIcon variant="reading" minutes={9} />}
               />
               <Card
-                href="/subgraphs/cookbook/timeseries/"
+                href="/subgraphs/best-practices/timeseries/"
                 title={t('index.guides.timeseries.title')}
                 description={t('index.guides.timeseries.description')}
                 slotAboveTitle={<TimeIcon variant="reading" minutes={4} />}
               />
               <Card
-                href="/subgraphs/querying/managing-api-keys/"
+                href="/subgraphs/providers/subgraph-studio/managing-api-keys/"
                 title={t('index.guides.apiKeyManagement.title')}
                 description={t('index.guides.apiKeyManagement.description')}
                 slotAboveTitle={<TimeIcon variant="reading" minutes={2} />}
               />
               <Card
-                href="/subgraphs/cookbook/transfer-to-the-graph/"
+                href="/subgraphs/best-practices/transfer-to-the-graph/"
                 title={t('index.guides.transferToTheGraph.title')}
                 description={t('index.guides.transferToTheGraph.description')}
                 slotAboveTitle={<TimeIcon variant="reading" minutes={3} />}
@@ -309,13 +291,6 @@ export default function HomePage({ supportedNetworks }: { supportedNetworks: Sup
               description={t('index.videos.whatIsDelegating.description')}
               slotBelowDescription={<TimeIcon variant="duration" minutes={4} className="mt-1" />}
               videoThumbnailSrc={`${process.env.BASE_PATH}/img/video-whatIsDelegating.jpg`}
-            />
-            <Card
-              href="https://www.youtube.com/watch?v=RmKi-Nq9E_A"
-              title={t('index.videos.howToIndexSolana.title')}
-              description={t('index.videos.howToIndexSolana.description')}
-              slotBelowDescription={<TimeIcon variant="duration" minutes={5} className="mt-1" />}
-              videoThumbnailSrc={`${process.env.BASE_PATH}/img/video-howToIndexSolana.jpg`}
             />
           </div>
         </section>

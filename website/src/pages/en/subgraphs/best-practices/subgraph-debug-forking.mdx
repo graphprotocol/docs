@@ -1,0 +1,100 @@
+---
+title: Debug Faster with Subgraph Forking
+---
+
+Syncing a Subgraph to the block where it failed can take hours, and every attempted fix means another wait. **Subgraph forking**, developed by [LimeChain](https://limechain.tech/), removes that wait: you reproduce and fix the failure locally without syncing to the failing block. This guide shows how to use it.
+
+## What Subgraph Forking Is
+
+**Subgraph forking** is the process of lazily fetching entities from _another_ Subgraph's store (usually a remote one).
+
+In the context of debugging, **Subgraph forking** allows you to debug your failed Subgraph at block _X_ without needing to wait to sync-up to block _X_.
+
+## How It Works
+
+When you deploy a Subgraph to a remote Graph Node for indexing and it fails at block _X_, the good news is that the Graph Node will still serve GraphQL queries using its store, which is synced-up to block _X_. You can use this up-to-date store to fix the bug that occurs at block _X_.
+
+In short, you _fork the failing Subgraph_ from a remote Graph Node that is guaranteed to have the Subgraph indexed up to block _X_ in order to provide the locally deployed Subgraph being debugged at block _X_ an up-to-date view of the indexing state.
+
+## Example: Fix a Failing Gravatar Subgraph
+
+To stay focused on debugging, this example uses the [example-Subgraph](https://github.com/graphprotocol/graph-tooling/tree/main/examples/ethereum-gravatar) indexing the Ethereum Gravity smart contract.
+
+Here are the handlers that index `Gravatar`s. They look correct:
+
+```tsx
+export function handleNewGravatar(event: NewGravatar): void {
+  let gravatar = new Gravatar(event.params.id.toHex().toString())
+  gravatar.owner = event.params.owner
+  gravatar.displayName = event.params.displayName
+  gravatar.imageUrl = event.params.imageUrl
+  gravatar.save()
+}
+
+export function handleUpdatedGravatar(event: UpdatedGravatar): void {
+  let gravatar = Gravatar.load(event.params.id.toI32().toString())
+  if (gravatar == null) {
+    log.critical('Gravatar not found!', [])
+    return
+  }
+  gravatar.owner = event.params.owner
+  gravatar.displayName = event.params.displayName
+  gravatar.imageUrl = event.params.imageUrl
+  gravatar.save()
+}
+```
+
+When you deploy this Subgraph to [Subgraph Studio](https://thegraph.com/studio/), it fails with the _"Gravatar not found!"_ error.
+
+The usual way to attempt a fix is:
+
+1. Make a change in the mappings that you believe will solve the issue.
+2. Re-deploy the Subgraph to [Subgraph Studio](https://thegraph.com/studio/) (or another remote Graph Node).
+3. Wait for it to sync.
+4. If it breaks again, go back to step 1.
+
+Step 3 is what makes this slow. **Subgraph forking** removes it:
+
+0. Spin-up a local Graph Node with the **_appropriate fork-base_** set.
+1. Make a change in the mappings source, which you believe will solve the issue.
+2. Deploy to the local Graph Node, **_forking the failing Subgraph_** and **_starting from the problematic block_**.
+3. If it breaks again, go back to step 1.
+
+Two terms need explaining:
+
+- **`fork-base`** is the base URL of the remote store. When you append a Subgraph ID, the result (`<fork-base>/<subgraph-id>`) is a valid GraphQL endpoint for that Subgraph's store.
+- **Forking the failing Subgraph** means passing its ID to `graph deploy` with `--debug-fork`:
+
+```bash
+$ graph deploy <subgraph-name> --debug-fork <subgraph-id> --ipfs http://localhost:5001 --node http://localhost:8020
+```
+
+Also set `dataSources.source.startBlock` in the manifest to the problematic block, so the local node skips the blocks before it and reads that state from the fork.
+
+Here is the full fix for the Gravatar example:
+
+1. Start a local Graph Node ([setup instructions](https://github.com/graphprotocol/graph-node#running-a-local-graph-node)) with the `fork-base` option set to `https://api.thegraph.com/subgraphs/id/`, so that it can fork the failing Subgraph deployed to [Subgraph Studio](https://thegraph.com/studio/).
+
+```
+$ cargo run -p graph-node --release -- \
+    --postgres-url postgresql://USERNAME[:PASSWORD]@localhost:5432/graph-node \
+    --ethereum-rpc NETWORK_NAME:[CAPABILITIES]:URL \
+    --ipfs 127.0.0.1:5001
+    --fork-base https://api.thegraph.com/subgraphs/id/
+```
+
+2. Inspect the handlers. The two handlers use different `id` representations for `Gravatar`s. While `handleNewGravatar` converts it to a hex (`event.params.id.toHex()`), `handleUpdatedGravatar` uses an int32 (`event.params.id.toI32()`) which causes the `handleUpdatedGravatar` to panic with "Gravatar not found!". Change both handlers to convert the `id` to hex.
+3. Deploy the fixed Subgraph to the local Graph Node, **_forking the failing Subgraph_** and setting `dataSources.source.startBlock` to `6190343` in `subgraph.yaml`:
+
+```bash
+$ graph deploy gravity --debug-fork QmNp169tKvomnH3cPXTfGg4ZEhAHA6kEq5oy1XDqAxqHmW --ipfs http://localhost:5001 --node http://localhost:8020
+```
+
+4. Check the local Graph Node logs to confirm that the handler now succeeds at the problematic block.
+5. Deploy the fixed Subgraph to Subgraph Studio or another remote Graph Node.
+
+## Learn More
+
+- [Graph Node Dev Mode](/subgraphs/developing/creating/graph-node-dev/): run and iterate on a Subgraph locally.
+- [Grafting](/subgraphs/best-practices/grafting/): ship the fix without a full re-index.
+- [Guides & Best Practices overview](/subgraphs/best-practices/overview/): the full checklist and how this page fits with the rest of the section.

@@ -1,17 +1,5 @@
 # @graphprotocol/graph-ts
 
-## 0.38.2
-
-### Patch Changes
-
-- [#2008](https://github.com/graphprotocol/graph-tooling/pull/2008) [`b9b911e`](https://github.com/graphprotocol/graph-tooling/commit/b9b911e67a5fd404696c1e3d2e68539b1f478724) Thanks [@PaulRBerg](https://github.com/PaulRBerg)! - fixed log namespace reference
-
-## 0.38.1
-
-### Patch Changes
-
-- [#2006](https://github.com/graphprotocol/graph-tooling/pull/2006) [`3fb730b`](https://github.com/graphprotocol/graph-tooling/commit/3fb730bdaf331f48519e1d9fdea91d2a68f29fc9) Thanks [@YaroShkvorets](https://github.com/YaroShkvorets)! - fix global variables in wasm
-
 ## 0.38.0
 
 ### Minor Changes

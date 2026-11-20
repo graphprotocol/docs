@@ -1,0 +1,80 @@
+---
+title: Operating a Gateway
+---
+
+A practical reference for what Gateway Operators actually run, fund, and monitor to stand up a Subgraph Gateway. This page frames the work as two sides: the consumer side (everything facing the developers who query a Gateway) and the supply side (everything facing the Indexers who serve those queries). The conceptual components are covered in [Technical Overview](/gateways/subgraphs/components/overview/), [Indexer Selection](/gateways/subgraphs/components/indexer-selection/), [Graph Tally](/gateways/subgraphs/components/graph-tally/), and [Titorelli](/gateways/subgraphs/components/titorelli/). For a ready-to-run reference deployment, see [Gateway in a Box](/gateways/subgraphs/components/gateway-in-a-box/).
+
+## The Two Sides of a Gateway
+
+A Gateway sits between two populations and owes each of them something different:
+
+- [**Consumer-Side:**](/gateways/subgraphs/consumer-side/overview/) Customers present credentials, send GraphQL queries, and expect fast, correct answers with predictable pricing. A Gateway Operator's responsibilities are authentication, API keys, routing, pricing and billing, data curation, and support.
+- [**Supply-Side:**](/gateways/subgraphs/supply-side/overview/) Indexers serve a Gateway's queries and expect to be paid reliably. An Operator's responsibilities here are Indexer selection and routing, escrow funding, sync incentives, and quality-of-service tracking.
+
+## Subgraph Gateway Components
+
+| Service | Required | Purpose |
+| --- | --- | --- |
+| [Graph Gateway](https://github.com/graphprotocol/gateway) | Yes | Routes queries, discovers and selects Indexers, signs Graph Tally receipts |
+| [Indexer Selection](https://github.com/edgeandnode/candidate-selection) | Yes | Rewrites client request to Indexer request, choose Indexer response |
+| [Graph Tally Aggregator](https://github.com/graphprotocol/graph-tally/blob/main/crates/bin/aggregator/README.md) | Yes | Aggregates Indexer receipts into signed RAVs |
+| [Graph Tally Escrow Manager](https://github.com/graphprotocol/graph-tally/blob/main/crates/bin/escrow_manager/README.md) | Yes | Keeps the on-chain GRT escrow funded to pay Indexers |
+| Kafka / Redpanda | Yes | Transports exported query and receipt data; escrow manager reads from it |
+| [Titorelli](https://github.com/edgeandnode/titorelli) | Optional | Hourly aggregations for billing, QoS, and faster escrow startup |
+
+Gateway Operators also depend on two external data sources: the [Network Subgraph](https://thegraph.com/explorer/subgraphs/DZz4kDTdmzWLWsV373w2bSmoar3umKKH9y82SUKr5qmp?view=Query&chain=arbitrum-one) (on-chain allocation and escrow state) and the Indexers' `indexer-service` endpoints (status, cost models, query serving).
+
+## Supply-Side Wallets and Escrow Setup
+
+Gateway Operators act as a Graph Tally (TAP) Sender, which means managing at least two wallets:
+
+| Wallet | Funds it needs | Used for |
+| --- | --- | --- |
+| Sender | ETH (gas) and GRT (escrow) | Allocating GRT into TAP escrow to pay Indexers; on-chain escrow transactions |
+| Authorized Signer | None (signing only) | Signing Graph Tally v2 receipts (gateway) and RAVs (aggregator) |
+
+The authorized signer must be authorized on-chain against the sender before it can sign valid receipts.
+
+- **Automatic:** set `authorize_signers: true` in the escrow-manager config and provide the signer secret keys in the `signers` field; signers are authorized on startup.
+- **Manual:** find the escrow contract for the Operator's network, connect the sender address, and call `authorizeSigner` (with a generated `proof` and `proofDeadline`) on the contract's Write tab. Repeat per signer. The exact proof-generation script is in the escrow-manager README.
+
+Gateway Operators should treat sender and signer keys as production secrets. The sender controls real GRT and ETH; signer keys can authorize payments.
+
+The escrow manager keeps the [Graph Horizon `PaymentsEscrow`](https://github.com/graphprotocol/contracts/blob/main/packages/horizon/contracts/payments/PaymentsEscrow.sol) balance ahead of outstanding receipts so Indexers can always redeem RAVs. Keep enough GRT in the sender wallet for it to top up balances; a depleted escrow stalls payments and Indexers will stop serving the Operator. Full detail is in [Managing Escrow](/gateways/subgraphs/supply-side/managing-escrow/).
+
+## Consumer-Side Authentication Setup
+
+Gateways authenticate inbound requests two ways. Operators can support either or both:
+
+| Method | Best for | Endpoints | Auth |
+| --- | --- | --- | --- |
+| API key | Humans, applications | `POST /api/subgraphs/id/{subgraph_id}`, `POST /api/deployments/id/{deployment_id}` | `Authorization: Bearer <API_KEY>` |
+| x402 | Humans, AI agents | `POST /api/x402/subgraphs/id/{subgraph_id}`, `POST /api/x402/deployments/id/{deployment_id}` | Pay-per-query in USDC; no key required |
+
+API keys can be issued from from within a Gateway Operator's user interface or from within Subgraph Studio. API keys can carry restrictions (allowed domains, Subgraphs, rate limits) enforced before a request runs. x402 settles per query in USDC on Base (Base Sepolia on testnet). Full detail is in [Serving Queries](/gateways/subgraphs/consumer-side/serving-queries/) and [Pricing & Payments](/gateways/subgraphs/consumer-side/pricing-payments/).
+
+## Gateway Configuration
+
+- **Gateway:** a single JSON config file passed as the first argument to `graph-gateway` (structure defined in `src/config.rs`). Set `kafka_topic_environment` when sharing a Kafka cluster across environments (for example, `"staging"` produces `gateway_queries_staging`).
+- **Escrow Manager, Aggregator, and Titorelli:** each takes its own JSON config (Kafka connection, contract and network settings, intervals, metrics port).
+- **Logging:** `RUST_LOG` controls levels per module, for example `RUST_LOG="info,graph_gateway=debug"`. Client requests log under the `client_request` span; Indexer requests carry the `indexer_request` label.
+
+## Gateway Monitoring
+
+Run Prometheus against each service:
+
+- **Gateway:** metrics at `:${METRICS_PORT}/metrics` (definitions in `metrics.rs`). Watch query success rate, latency, and per-Indexer selection and feedback.
+- **Escrow Manager:** metrics on `port_metrics` (default 9090). Key gauges and counters: `escrow_total_debt_grt`, `escrow_total_balance_grt`, `escrow_debt_grt{receiver}`, `escrow_balance_grt{receiver}`, `escrow_deposit_ok`, `escrow_deposit_err`, `escrow_loop_duration_seconds`.
+
+Alert especially on escrow balance falling toward outstanding debt and on deposit errors; both directly threaten an Operator's ability to pay Indexers and therefore to serve queries. More in-depth QoS tracking is covered in [Tracking QoS](/gateways/subgraphs/supply-side/tracking-qos/).
+
+## Gateway Bootstrapping Checklist
+
+1. Provision sender and signer wallets; fund the sender with ETH and GRT.
+2. Stand up Kafka / Redpanda and create the Gateway topics.
+3. Deploy the Gateway with its JSON config; confirm it discovers Indexers via the Network Subgraph.
+4. Deploy the aggregator (a public endpoint Indexers can reach).
+5. Deploy the escrow manager; authorize signers (auto or manual); confirm escrow deposits in `dry_run` first, then live.
+6. Optionally deploy Titorelli for billing and QoS aggregation and faster escrow startup.
+7. Issue API keys and/or enable x402; run test queries against a high-volume deployment (e.g. Uniswap).
+8. Wire Prometheus and set alerts on escrow balance and deposit errors.

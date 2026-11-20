@@ -26,10 +26,7 @@ export declare namespace CardProps {
 }
 
 type CardProps =
-  | CardProps.ButtonProps
-  | CardProps.ExternalLinkProps
-  | CardProps.ClientLinkProps
-  | CardProps.OtherElementProps
+  CardProps.ButtonProps | CardProps.ExternalLinkProps | CardProps.ClientLinkProps | CardProps.OtherElementProps
 
 export const Card = ({
   title,

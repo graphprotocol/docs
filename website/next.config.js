@@ -53,62 +53,48 @@ const withNextra = nextra({
       '---1': {
         type: 'separator',
       },
+      'ai-overview': 'AI Tooling',
+      '---2': {
+        type: 'separator',
+      },
       subgraphs: {
         type: 'children',
         title: t('global.navigation.subgraphs'),
       },
-      '---2': {
+      '---3': {
         type: 'separator',
       },
       substreams: {
         type: 'children',
         title: t('global.navigation.substreams'),
       },
-      '---3': {
-        type: 'separator',
-      },
-      'token-api': {
-        type: 'children',
-        title: t('global.navigation.tokenApi'),
-      },
       '---4': {
-        type: 'separator',
-      },
-      hypergraph: {
-        type: 'children',
-        title: t('global.navigation.hypergraph'),
-      },
-      '---5': {
-        type: 'separator',
-      },
-      'ai-suite': {
-        type: 'children',
-        title: t('global.navigation.ai-suite'),
-      },
-      '---6': {
         type: 'separator',
       },
       indexing: {
         type: 'children',
         title: t('global.navigation.indexing'),
       },
-      '---7': {
+      '---gateways': {
+        type: 'separator',
+      },
+      gateways: {
+        type: 'children',
+        title: 'Gateway Software',
+      },
+      '---5': {
         type: 'separator',
       },
       'graph-horizon': {
         type: 'children',
-        title: t('global.navigation.graph-horizon'),
+        title: 'Data Services',
       },
-      '---8': {
+      '---6': {
         type: 'separator',
       },
       resources: {
         type: 'children',
         title: t('global.navigation.resources'),
-      },
-      archived: {
-        type: 'children',
-        title: t('global.navigation.archived'),
       },
     }
 

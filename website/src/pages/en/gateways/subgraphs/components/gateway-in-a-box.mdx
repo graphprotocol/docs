@@ -1,0 +1,95 @@
+---
+title: Gateway in a Box (Beta)
+---
+
+Gateway in a Box (gib) is a self-hostable Subgraph Gateway for The Graph Horizon on Arbitrum One, packaged in a Docker Compose bundle. It exists to let a service provider stand up a working, TAP-native, Horizon-ready Gateway without a multi-day setup ceremony. It is a community reference deployment (a [Nightswatch](https://github.com/nightswatchhq/gib) project, MIT licensed), not an official Graph Foundation release, and it is a good starting point for understanding what a minimal production Gateway actually runs.
+
+## What is in the Box
+
+Under the hood, gib wires together a Gateway fork (TAP v2 / Horizon-native) plus the `graph-tally` aggregator and escrow-manager, a Redpanda bus, and optional Prometheus and Grafana, all configured from a single `.env` file. An Operator's consumer API keys are their own; no Subgraph Studio account is needed for an Operator's users (topology bootstrap currently does require a read-only Studio key, discussed below).
+
+| Service                  | Role                                                                         |
+| ------------------------ | ---------------------------------------------------------------------------- |
+| `gateway`                | Routes queries, signs TAP v2 receipts                                        |
+| `tap-aggregator`         | Public endpoint that aggregates receipts into RAVs for Indexers              |
+| `escrow-manager`         | Auto-authorizes the signer and tops up escrow                                |
+| `redpanda`               | Kafka-API bus for receipts and attestations (the fee-metering bus, required) |
+| `prometheus` + `grafana` | Optional `monitoring` profile: escrow and query dashboards                   |
+
+```
+                                  Gateway in a Box
+                      ┌──────────────────────────────────────────────┐
+   client ──query──▶  │  gateway  ── signs TAP v2 receipts           │
+   (Bearer key)       │     │                                        │
+                      │     ├─▶ trusted_indexers ─▶ network subgraph │  indexer discovery
+                      │     └─▶ selected indexers ─▶ query results   │
+                      │                                              │
+                      │  redpanda  ◀─ query fee records (metering)   │
+                      │     │                                        │
+                      │  escrow-manager ─▶ PaymentsEscrow (on-chain) │  auto top-up
+                      │  tap-aggregator ─▶ RAVs for indexers (public)│
+                      └──────────────────────────────────────────────┘
+```
+
+## Footprint
+
+gib is light. Measured on Arbitrum One with the full network topology resident (around 16,000 Subgraphs, 26,000 deployments, 12,500 indexings):
+
+| Component       | Resident memory |
+| --------------- | --------------- |
+| gateway (VmRSS) | around 207 MB   |
+| redpanda        | around 330 MB   |
+| tap-aggregator  | around 10 MB    |
+| Full stack      | around 570 MB   |
+
+A 2 GB, 1 vCPU box runs it comfortably. A Gateway holds the network topology in memory, but that cost is around 200 MB in practice. Disk needs are a few GB for images plus Redpanda retention.
+
+## Quickstart
+
+Prerequisites: Docker and Compose, `gettext-base` (`envsubst`), `python3`, and optionally Foundry's `cast` for key generation (Docker is used as a fallback). A funded sender wallet is only needed for real payments.
+
+```sh
+git clone https://github.com/nightswatchhq/gib && cd gib
+
+cp .env.example .env               # 1. fill the TODOs (SENDER_ADDRESS, TOPOLOGY_STUDIO_KEY, GATEWAY_API_KEYS)
+./scripts/fetch-addresses.sh       # 2. auto-fill verified Horizon addresses -> config/addresses.env
+./scripts/gen-keys.sh              # 3. generate sender + signer keys -> ./secrets
+./scripts/render.sh                # 4. render runtime/{gateway.json,escrow-manager.json,.env}
+docker compose --env-file runtime/.env up -d   # 5. go
+```
+
+gib ships payment-safe by default: `PAYMENT_REQUIRED=false` and `ESCROW_DRY_RUN=true`, so an Operator can validate query routing before a single wei moves. Flip both when an Operator is ready for real payments. See [Managing Escrow](/gateways/subgraphs/supply-side/managing-escrow/).
+
+## The Smoke Test
+
+`gib smoke` is the self-test every operator should run before asking any Indexer to whitelist them. It runs one command against a running deployment, touches nothing on-chain, and needs no funded keys:
+
+```sh
+docker compose --profile smoke run --rm smoke
+```
+
+It self-configures from the Operator's rendered `runtime/gateway.json` and prints a pass/fail table. The checks prove, end to end, that topology synced, a real query selected candidate Indexers and attached receipts, the running Gateway signed with the Operator's configured signer, those receipts aggregate into a RAV that recovers to the Operator's signer with the correct EIP-712 domain and value, RAV fields match the Operator's sender and SubgraphService, and tampered or wrong-key receipts are rejected. A green result is the credibility artifact an Operator brings to Indexers.
+
+## The Onboarding Wall (Why Fresh Deployments Return 402)
+
+A fresh gib deployment signs valid receipts that every Indexer rejects with a `402`. This is protocol design, not a defect, and it is the one part of running a Gateway an Operator cannot do alone.
+
+Indexers only serve paid queries from senders they have explicitly whitelisted. The whitelist is the Indexer's `[tap.sender_aggregator_endpoints]` config: a map of `sender address` to `your aggregator URL`. It is simultaneously the trust list (whose receipts the Indexer will accept) and the address book (where the Indexer's `tap-agent` sends receipts to be turned into RAVs). A sender that is not in the map is rejected, because an unredeemable receipt is a loss the Indexer eats.
+
+An established Gateway avoids this wall only because every Indexer already carries its sender in their config out of the box. That pre-installed trust is the onboarding moat; it is protocol-level and social, not technical, and it is the same wall any independent Gateway faces. Getting Indexers to accept a Gateway is covered in [Routing Queries to Indexers](/gateways/subgraphs/supply-side/routing-queries/), and the aggregator handshake in [Managing Escrow](/gateways/subgraphs/supply-side/managing-escrow/).
+
+A realistic onboarding sequence is: pick the target Subgraphs an Operator's users query, identify the Indexers serving them with good QoS, make the ask to each (the Operator's `gib smoke` output, the one config line mapping the Operator's sender to the Operator's aggregator URL, and confirmation the Operator funded per-Indexer escrow), verify with a paid query, then expand. Because a Gateway selects up to three Indexers per query, three or more accepting Indexers per target Subgraph is the practical point at which that Subgraph serves reliably.
+
+## Deploying a Subgraph Gateway with Skill
+
+For operators using Claude Code, the [companion `gib-skill` plugin](https://github.com/nightswatchhq/gib-skill) acts as a concierge for the whole flow. It is not a generator (gib's own scripts do the mechanics); it adds the judgment around them. The skill interviews an Operator (target box, vhost domains, topology source, key count, fee target, stage, monitoring), hardens the box if it is shared, deploys gib at its pinned release, runs `gib smoke`, and interprets the result, then hands off with exactly what is proven and what still needs escrow and Indexer onboarding.
+
+```
+/deploy-gateway
+```
+
+Key hygiene is non-negotiable in the skill: sender and signer private keys are generated on the box and never leave it. The only key allowed through chat is the read-only topology (Studio) key, which signs nothing and holds no funds.
+
+## Status and Boundary
+
+gib verifies the payment path up to a signed, verified RAV: signing, EIP-712 domain, Gateway and aggregator signer consistency, and aggregation, all provable by the operator alone. What remains is on-chain and cooperation-dependent: the Indexer's whitelist entry, escrow funding, and the Indexer redeeming RAVs against the Operator's escrow on-chain. A fresh Gateway returns `402` to paid queries by design until an operator funds escrow and Indexers whitelist the sender; that `402` is itself the evidence that the receipts are valid. Every operator must still supply a topology source, fund escrow, and get Indexers to whitelist their sender.

@@ -2,16 +2,22 @@ import { translate } from '@edgeandnode/gds'
 import { buildDynamicMDX } from 'nextra/remote'
 
 import { supportedLocales, translations } from '@/i18n'
-import { getSupportedNetworks } from '@/supportedNetworks'
+import { getNetworkSlug, getSupportedNetworks, resolveSlugToNetworkId } from '@/supportedNetworks'
 import NetworkDetailsPage from '@/supportedNetworks/NetworkDetailsPage'
 
 export const getStaticPaths = async () => {
   const networks = await getSupportedNetworks()
   const paths = []
   for (const locale of supportedLocales) {
+    const seen = new Set()
     for (const network of networks) {
+      // Several networks can share one slug (e.g. both Solana networks -> `solana`),
+      // so emit each slug once.
+      const slug = getNetworkSlug(network.id)
+      if (seen.has(slug)) continue
+      seen.add(slug)
       paths.push({
-        params: { locale, id: network.id },
+        params: { locale, id: slug },
       })
     }
   }
@@ -26,7 +32,9 @@ export const getStaticProps = async ({ params }) => {
     }
   }
   const networks = await getSupportedNetworks()
-  const network = networks.find((n) => n.id === id)
+  // `id` here is the URL slug; resolve it back to the registry network id.
+  const networkId = resolveSlugToNetworkId(id)
+  const network = networks.find((n) => n.id === networkId)
   if (!network) {
     return {
       notFound: true,
