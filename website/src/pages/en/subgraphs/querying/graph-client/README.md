@@ -23,13 +23,13 @@ This library is intended to simplify the network aspect of data consumption for 
 | ✅ | Cross-chain Subgraph Handling | Use similar subgraphs as a single source |
 | ✅ | Raw Execution (standalone mode) | without a wrapping GraphQL client |
 | ✅ | Local (client-side) Mutations |  |
-| ✅ | [Automatic Block Tracking](../packages/block-tracking/README.md) | tracking block numbers [as described here](https://thegraph.com/docs/en/developer/distributed-systems/#polling-for-updated-data) |
-| ✅ | [Automatic Pagination](../packages/auto-pagination/README.md) | doing multiple requests in a single call to fetch more than the indexer limit |
+| ✅ | [Automatic Block Tracking](https://github.com/graphprotocol/graph-client/blob/main/packages/block-tracking/README.md) | tracking block numbers [as described here](https://thegraph.com/docs/en/developer/distributed-systems/#polling-for-updated-data) |
+| ✅ | [Automatic Pagination](https://github.com/graphprotocol/graph-client/blob/main/packages/auto-pagination/README.md) | doing multiple requests in a single call to fetch more than the indexer limit |
 | ✅ | Integration with `@apollo/client` |  |
 | ✅ | Integration with `urql` |  |
 | ✅ | TypeScript support | with built-in GraphQL Codegen and `TypedDocumentNode` |
 | ✅ | [`@live` queries](./live.md) | Based on polling |
-| ✅ | [x402 Pay-per-query](../packages/x402/README.md) | Query paid endpoints with automatic payment handling |
+| ✅ | [x402 Pay-per-query](https://github.com/graphprotocol/graph-client/blob/main/packages/x402/README.md) | Query paid endpoints with automatic payment handling |
 
 > You can find an [extended architecture design here](./architecture.md)
 
@@ -122,8 +122,8 @@ Unless you use CommonJS(`require`) specifically, we'd recommend you to use `js` 
 
 `graphclient --fileType js`
 
-- [An example for JavaScript usage in CommonJS syntax with JSON files](../examples/javascript-cjs)
-- [An example for JavaScript usage in ESM syntax](../examples/javascript-esm)
+- [An example for JavaScript usage in CommonJS syntax with JSON files](https://github.com/graphprotocol/graph-client/tree/main/examples/javascript-cjs)
+- [An example for JavaScript usage in ESM syntax](https://github.com/graphprotocol/graph-client/tree/main/examples/javascript-esm)
 
 #### The Graph Client DevTools
 
@@ -141,20 +141,20 @@ And open http://localhost:4000/ to use GraphiQL. You can now experiment with you
 
 #### Examples
 
-You can also refer to [examples directory in this repo](../examples), for more advanced examples and integration examples:
+You can also refer to [examples directory in the Graph Client repository](https://github.com/graphprotocol/graph-client/tree/main/examples), for more advanced examples and integration examples:
 
-- [TypeScript & React example with raw `execute` and built-in GraphQL-Codegen](../examples/execute)
-- [TS/JS NodeJS standalone mode](../examples/node)
-- [Client-Side GraphQL Composition](../examples/composition)
-- [Integration with Urql and React](../examples/urql)
-- [Integration with NextJS and TypeScript](../examples/nextjs)
-- [Integration with Apollo-Client and React](../examples/apollo)
-- [Integration with React-Query](../examples/react-query)
+- [TypeScript & React example with raw `execute` and built-in GraphQL-Codegen](https://github.com/graphprotocol/graph-client/tree/main/examples/execute)
+- [TS/JS NodeJS standalone mode](https://github.com/graphprotocol/graph-client/tree/main/examples/node)
+- [Client-Side GraphQL Composition](https://github.com/graphprotocol/graph-client/tree/main/examples/composition)
+- [Integration with Urql and React](https://github.com/graphprotocol/graph-client/tree/main/examples/urql)
+- [Integration with NextJS and TypeScript](https://github.com/graphprotocol/graph-client/tree/main/examples/nextjs)
+- [Integration with Apollo-Client and React](https://github.com/graphprotocol/graph-client/tree/main/examples/apollo)
+- [Integration with React-Query](https://github.com/graphprotocol/graph-client/tree/main/examples/react-query)
 - _Cross-chain merging (same Subgraph, different chains)_
-- - [Parallel SDK calls](../examples/cross-chain-sdk)
-- - [Parallel internal calls with schema extensions](../examples/cross-chain-extension)
-- [Customize execution with Transforms (auto-pagination and auto-block-tracking)](../examples/transforms)
-- [x402 Pay-per-query (CLI, programmatic, and typed SDK)](../examples/client-x402)
+- - [Parallel SDK calls](https://github.com/graphprotocol/graph-client/tree/main/examples/cross-chain-sdk)
+- - [Parallel internal calls with schema extensions](https://github.com/graphprotocol/graph-client/tree/main/examples/cross-chain-extension)
+- [Customize execution with Transforms (auto-pagination and auto-block-tracking)](https://github.com/graphprotocol/graph-client/tree/main/examples/transforms)
+- [x402 Pay-per-query (CLI, programmatic, and typed SDK)](https://github.com/graphprotocol/graph-client/tree/main/examples/client-x402)
 
 ### Advanced Examples/Features
 
@@ -371,7 +371,7 @@ sources:
           ignoreOperationNames: [NotFollowed]
 ```
 
-[You can try a working example here](../examples/transforms)
+[You can try a working example here](https://github.com/graphprotocol/graph-client/tree/main/examples/transforms)
 
 #### Automatic Pagination
 
@@ -427,7 +427,7 @@ sources:
           validateSchema: true
 ```
 
-[You can try a working example here](../examples/transforms)
+[You can try a working example here](https://github.com/graphprotocol/graph-client/tree/main/examples/transforms)
 
 #### Client-side Composition
 
@@ -476,7 +476,7 @@ You can also resolve conflicts, rename parts of the schema, add custom GraphQL f
 
 For advanced use-cases with composition, please refer to the following resources:
 
-- [Advanced Composition Example](../examples/composition)
+- [Advanced Composition Example](https://github.com/graphprotocol/graph-client/tree/main/examples/composition)
 - [GraphQL-Mesh Schema transformations](https://graphql-mesh.com/docs/transforms/transforms-introduction)
 - [GraphQL-Tools Schema-Stitching documentation](https://graphql-tools.com/docs/schema-stitching/stitch-combining-schemas)
 
@@ -523,7 +523,7 @@ async function main() {
 }
 ```
 
-> You can find a [TypeScript project example here](../examples/urql).
+> You can find a [TypeScript project example here](https://github.com/graphprotocol/graph-client/tree/main/examples/urql).
 
 #### Client-Side Mutations
 
@@ -611,4 +611,4 @@ execute(
 
 ## License
 
-Released under the [MIT license](../LICENSE).
+Released under the [MIT license](https://github.com/graphprotocol/graph-client/blob/main/LICENSE).
