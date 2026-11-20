@@ -2,6 +2,7 @@ import titles from './_meta-titles.json'
 
 export default {
   introduction: '',
+  'choosing-a-gateway': '',
   'graphql-api': '',
   'best-practices': '',
   'from-an-application': 'Querying from Apps',

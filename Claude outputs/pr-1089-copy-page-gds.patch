@@ -1,0 +1,204 @@
+diff --git a/website/src/components/CopyPageButton.tsx b/website/src/components/CopyPageButton.tsx
+new file mode 100644
+index 00000000..fa18f118
+--- /dev/null
++++ b/website/src/components/CopyPageButton.tsx
+@@ -0,0 +1,128 @@
++import { type FocusEvent, type MouseEvent, type PointerEvent, useEffect, useRef, useState } from 'react'
++
++import { ExperimentalButton, type ExperimentalButtonProps, Tooltip } from '@edgeandnode/gds'
++import { CopyInteractive } from '@edgeandnode/gds/icons'
++
++import { useI18n } from '@/i18n'
++
++/**
++ * Turn an "Edit on GitHub" URL (`/blob/` for local pages, `/tree/` for remote pages) into the URL of the raw file.
++ */
++export function getRawSourceUrl(githubUrl: string) {
++  return githubUrl.replace(
++    /^https:\/\/github\.com\/([^/]+)\/([^/]+)\/(?:blob|tree)\//,
++    'https://raw.githubusercontent.com/$1/$2/',
++  )
++}
++
++const FENCE = /^\s*(```|~~~)/
++const MDX_IMPORT = /^import\s.+\sfrom\s+['"][^'"]+['"];?\s*$|^import\s+['"][^'"]+['"];?\s*$/
++
++/**
++ * Turn a page's MDX source into Markdown that can be pasted into an LLM: replace the YAML frontmatter with the
++ * page title and its URL, and remove MDX `import` lines. Lines inside code blocks are never removed.
++ */
++export function toLlmMarkdown(source: string, { title, url }: { title?: string; url: string }) {
++  let inFence = false
++  const body = source
++    .replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n/, '')
++    .split(/\r?\n/)
++    .filter((line) => {
++      if (FENCE.test(line)) inFence = !inFence
++      return inFence || !MDX_IMPORT.test(line)
++    })
++    .join('\n')
++    .replace(/\n{3,}/g, '\n\n')
++    .trim()
++  // Pages sourced from other repos keep their own `# Title`, so only add one when it's missing
++  const ownHeading = /^# .*/.exec(body)?.[0]
++  const heading = ownHeading ?? (title ? `# ${title}` : null)
++  const content = ownHeading ? body.slice(ownHeading.length).trim() : body
++  return `${[heading, `Source: ${url}`, content].filter(Boolean).join('\n\n')}\n`
++}
++
++interface CopyPageButtonProps extends Omit<ExperimentalButtonProps.ButtonProps, 'children'> {
++  /** URL of the page's source file on GitHub (the "Edit on GitHub" URL). */
++  sourceUrl: string
++  /** Page title, added as a heading since the frontmatter is removed. */
++  title?: string
++}
++
++/**
++ * Copies the current page as Markdown, for pasting into an LLM. Built from the same parts as
++ * `ExperimentalCopyButton`, but only confirms once the page has actually been copied.
++ */
++export function CopyPageButton({ sourceUrl, title, onClick, onFocus, onPointerEnter, ...props }: CopyPageButtonProps) {
++  const { t } = useI18n()
++  const markdown = useRef<Promise<string> | null>(null)
++  const [status, setStatus] = useState<'idle' | 'copied' | 'failed'>('idle')
++
++  useEffect(() => {
++    if (status === 'idle') return
++    const timer = setTimeout(() => setStatus('idle'), 2000)
++    return () => clearTimeout(timer)
++  }, [status])
++
++  // Start loading on hover or focus, so the source is usually ready by the time the button is clicked
++  const load = () => {
++    if (!markdown.current) {
++      const promise = fetch(getRawSourceUrl(sourceUrl))
++        .then((response) => {
++          if (!response.ok) throw new Error(`Failed to load ${response.url} (${response.status})`)
++          return response.text()
++        })
++        .then((source) => toLlmMarkdown(source, { title, url: window.location.href.split('#')[0]! }))
++      // Allow a retry if loading failed
++      promise.catch(() => {
++        markdown.current = null
++      })
++      markdown.current = promise
++    }
++    return markdown.current
++  }
++
++  const copy = async () => {
++    const text = load()
++    // Safari only allows writing to the clipboard during the click itself, so pass it the pending text
++    if (typeof ClipboardItem !== 'undefined' && 'write' in navigator.clipboard) {
++      const blob = text.then((value) => new Blob([value], { type: 'text/plain' }))
++      await navigator.clipboard.write([new ClipboardItem({ 'text/plain': blob })])
++    } else {
++      await navigator.clipboard.writeText(await text)
++    }
++  }
++
++  return (
++    <Tooltip
++      content={{
++        text: status === 'failed' ? t('global.page.copyFailed') : t('global.page.copied'),
++        type: 'kpi',
++      }}
++      open={status !== 'idle'}
++    >
++      <ExperimentalButton
++        size="small"
++        iconAfter={<CopyInteractive alt="" copied={status === 'copied'} />}
++        onPointerEnter={(event: PointerEvent<HTMLButtonElement>) => {
++          onPointerEnter?.(event)
++          void load()
++        }}
++        onFocus={(event: FocusEvent<HTMLButtonElement>) => {
++          onFocus?.(event)
++          void load()
++        }}
++        onClick={(event: MouseEvent<HTMLButtonElement>) => {
++          onClick?.(event)
++          setStatus('idle')
++          copy().then(
++            () => setStatus('copied'),
++            () => setStatus('failed'),
++          )
++        }}
++        {...props}
++      >
++        {t('global.page.copy')}
++      </ExperimentalButton>
++    </Tooltip>
++  )
++}
+diff --git a/website/src/components/index.ts b/website/src/components/index.ts
+index 64ec47d4..73a36db6 100644
+--- a/website/src/components/index.ts
++++ b/website/src/components/index.ts
+@@ -1,6 +1,7 @@
+ export * from './Callout'
+ export * from './Card'
+ export * from './CodeBlock'
++export * from './CopyPageButton'
+ export * from './DocSearch'
+ export * from './HashRedirect'
+ export * from './Heading'
+diff --git a/website/src/layout/templates/default/content.tsx b/website/src/layout/templates/default/content.tsx
+index d8397b04..7b4e6903 100644
+--- a/website/src/layout/templates/default/content.tsx
++++ b/website/src/layout/templates/default/content.tsx
+@@ -3,6 +3,7 @@ import { type ComponentProps, useContext } from 'react'
+ import { ButtonOrLink, classNames, ExperimentalDivider, ExperimentalLink } from '@edgeandnode/gds'
+ import { ArrowLeft, ArrowRight, CalendarDynamic, HourglassDynamic, SocialGitHub } from '@edgeandnode/gds/icons'
+ 
++import { CopyPageButton } from '@/components'
+ import { useI18n } from '@/i18n'
+ 
+ import { LayoutContext } from '../../shared'
+@@ -39,17 +40,20 @@ export default function TemplateDefaultContent({ className, children, ...props }
+     >
+       {!frontMatter.hideContentHeader ? (
+         <header className="col-[container] row-[header] pt-12 transition-[padding] duration-[var(--graph-docs-layout-transition-duration)]">
+-          {readingTime ? (
+-            <span className="mb-3 flex items-center gap-1 text-space-700">
+-              <HourglassDynamic
+-                alt={t('global.page.readingTime.minutes')}
+-                filledPercentage={(readingTime.minutes / 15) * 100}
+-              />
+-              <p className="text-body-small">
+-                {Math.ceil(readingTime.minutes)} {t('global.page.readingTime.minutes')}
+-              </p>
+-            </span>
+-          ) : null}
++          <div className="mb-3 flex items-center gap-4">
++            {readingTime ? (
++              <span className="flex items-center gap-1 text-space-700">
++                <HourglassDynamic
++                  alt={t('global.page.readingTime.minutes')}
++                  filledPercentage={(readingTime.minutes / 15) * 100}
++                />
++                <p className="text-body-small">
++                  {Math.ceil(readingTime.minutes)} {t('global.page.readingTime.minutes')}
++                </p>
++              </span>
++            ) : null}
++            <CopyPageButton sourceUrl={editPageUrl} title={frontMatter.title} className="ms-auto" />
++          </div>
+           {frontMatter.title ? (
+             <h1 className="text-heading-large text-white xs:text-heading-xlarge">{frontMatter.title}</h1>
+           ) : null}
+diff --git a/website/src/pages/en/global.json b/website/src/pages/en/global.json
+index a39d29fd..19332bd2 100644
+--- a/website/src/pages/en/global.json
++++ b/website/src/pages/en/global.json
+@@ -19,6 +19,9 @@
+     "previous": "Previous page",
+     "next": "Next page",
+     "edit": "Edit on GitHub",
++    "copy": "Copy page",
++    "copied": "Copied as Markdown",
++    "copyFailed": "Couldn't copy this page",
+     "onThisPage": "On this page",
+     "tableOfContents": "Table of contents",
+     "linkToThisSection": "Link to this section"

@@ -50,7 +50,7 @@ An Operator that does not run Titorelli can still monitor live QoS through a Gat
 
 Titorelli and Prometheus give a Gateway Operator a private view of quality. A Gateway's QoS Subgraph makes that view public and permissionless: it takes a Gateway's own QoS aggregations, publishes them to IPFS, anchors a pointer on-chain, and indexes the result as a Subgraph that anyone can query on The Graph Network.
 
-The original instance is the [Gateway QoS Oracle Subgraph](https://thegraph.com/explorer/subgraphs/CnfJ5tC5cfAmt2tUyUaM6vPrtmNYasavkDDn793FkbN3?view=Query&chain=arbitrum-one), which publishes QoS data for the Gateway operated by Edge & Node on The Graph Network. The rationale and original design are described in [Off-Chain Data and web3 Data Pipelines](https://thegraph.com/blog/the-graph-off-chain-data-web3-data-pipelines/), and the reference implementation of the indexing Subgraph is [`juanmardefago/gateway-qos-oracle-example-subgraph`](https://github.com/juanmardefago/gateway-qos-oracle-example-subgraph), contributed by Juan Manuel Rodriguez Defago of GraphOps.
+The original instance is the [Gateway QoS Oracle Subgraph](https://thegraph.com/explorer/subgraphs/CnfJ5tC5cfAmt2tUyUaM6vPrtmNYasavkDDn793FkbN3?view=Query&chain=arbitrum-one), which publishes QoS data for The Graph Foundation's Gateway on The Graph Network. This page calls it the Foundation's QoS Oracle. Every Endorsed Gateway Operator also publishes per-Indexer QoS data; see [Working with The Graph Foundation](/gateways/subgraphs/ecosystem/working-with-the-foundation/#transparency-data). The rationale and original design are described in [Off-Chain Data and web3 Data Pipelines](https://thegraph.com/blog/the-graph-off-chain-data-web3-data-pipelines/), and the reference implementation of the indexing Subgraph is [`juanmardefago/gateway-qos-oracle-example-subgraph`](https://github.com/juanmardefago/gateway-qos-oracle-example-subgraph), contributed by Juan Manuel Rodriguez Defago of GraphOps.
 
 ### Why Publish QoS Data as a Subgraph
 
@@ -67,7 +67,7 @@ For a Gateway Operator, the trade is straightforward: the Operator takes on a sm
 
 The QoS Subgraph is an instance of a general pattern for getting off-chain computation into a Subgraph. Four stages:
 
-1. **Aggregate Off-chain:** A scheduled job reads a Gateway's query and Indexer telemetry (in practice, the Kafka topics described in [Titorelli](/gateways/subgraphs/components/titorelli/)) and computes QoS aggregations over a fixed window. The canonical oracle uses a five-minute window and emits two datasets per window: one keyed by Indexer and deployment, one keyed by deployment.
+1. **Aggregate Off-chain:** A scheduled job reads a Gateway's query and Indexer telemetry (in practice, the Kafka topics described in [Titorelli](/gateways/subgraphs/components/titorelli/)) and computes QoS aggregations over a fixed window. The Foundation's QoS Oracle uses a five-minute window and emits two datasets per window: one keyed by Indexer and deployment, one keyed by deployment.
 2. **Publish the aggregation to IPFS.** Each dataset is serialized as a JSON array, one object per row, and added to IPFS. The job keeps the resulting content hash.
 3. **Post a Pointer On-chain:** The job sends a transaction to a [DataEdge](https://github.com/graphprotocol/graph-improvement-proposals/blob/main/grcs/0001-data-edge.md) contract on Gnosis carrying a small JSON payload with the topic name, the IPFS hash, and the window timestamp. DataEdge is a deliberately minimal contract: it has an empty `fallback()` and does nothing with the calldata. Its only job is to get bytes into a block cheaply so that a Subgraph can index them.
 4. **Index it with a Subgraph.** A Subgraph indexes calls to the DataEdge contract, parses the pointer, fetches the referenced IPFS file, and unpacks each row into entities. The QoS data is then queryable over GraphQL like any other Subgraph.
@@ -76,7 +76,7 @@ A Gateway never has to be online for consumers to read this data, and the pipeli
 
 ### The Oracle Message Format
 
-The on-chain payload is intentionally small. The canonical oracle calls `submitQoSPayload(bytes)` on the DataEdge contract at `0x5b4293b4c0f36cb5d4448950830bc777759b6c4f` on Gnosis, with a payload of the form:
+The on-chain payload is intentionally small. The Foundation's QoS Oracle calls `submitQoSPayload(bytes)` on the DataEdge contract at `0x5b4293b4c0f36cb5d4448950830bc777759b6c4f` on Gnosis, with a payload of the form:
 
 ```json
 {
@@ -198,7 +198,7 @@ Start from a Gateway's Kafka output. The `gateway_queries` topic carries per-que
 
 Decisions to make here:
 
-- **Window size:** The canonical oracle uses five minutes. Shorter windows mean more transactions and more IPFS files; longer windows mean cheaper operation but coarser data. Five minutes has proven a reasonable balance.
+- **Window size:** The Foundation's QoS Oracle uses five minutes. Shorter windows mean more transactions and more IPFS files; longer windows mean cheaper operation but coarser data. Five minutes has proven a reasonable balance.
 - **Grain:** Aggregate to Indexer × deployment × chain for the attempt dataset, and deployment × chain for the result dataset. Do not publish per-query rows; the point of the aggregation is that the published dataset stays small and contains no consumer-identifying information.
 - **What to exclude:** API keys, consumer identity, and query bodies must not appear in the published data. Publish the quality of service, not who requested it.
 
@@ -214,12 +214,12 @@ Retention is a real decision. The Subgraph only holds what Indexers have fetched
 
 Send a transaction to a DataEdge contract with the `{topic, hash, timestamp}` payload. Two options:
 
-- **Reuse the existing DataEdge contract on Gnosis at `0x5b4293b4c0f36cb5d4448950830bc777759b6c4f`:** It is permissionless, so anyone can submit to it; the Operator's Subgraph submitter allowlist is what separates their messages from anyone else's. Use a dedicated topic namespace so the data does not collide with the canonical oracle's.
+- **Reuse the existing DataEdge contract on Gnosis at `0x5b4293b4c0f36cb5d4448950830bc777759b6c4f`:** It is permissionless, so anyone can submit to it; the Operator's Subgraph submitter allowlist is what separates their messages from anyone else's. Use a dedicated topic namespace so the data does not collide with the Foundation's QoS Oracle.
 - **Deploy a dedicated DataEdge:** The contract is trivial (an empty `fallback()`), which gives a clean namespace and a transaction stream that is entirely the Operator's. See [GRC-0001: DataEdge](https://github.com/graphprotocol/graph-improvement-proposals/blob/main/grcs/0001-data-edge.md).
 
 Gnosis is the conventional choice because gas is cheap enough that the on-chain cost is negligible. The original writeup put a comparable workload at roughly one to two dollars per month for about ten thousand transactions. Any chain that Graph Node supports will work; the cost profile is the main reason to prefer one.
 
-Run the submitter as a scheduled job with a dedicated hot wallet. The canonical implementation uses a cron-style automation task. Keep the wallet funded, monitor for failed submissions, and treat a submission gap as an alert: a missing window is a permanent hole in the published record.
+Run the submitter as a scheduled job with a dedicated hot wallet. The Foundation's QoS Oracle uses a cron-style automation task. Keep the wallet funded, monitor for failed submissions, and treat a submission gap as an alert: a missing window is a permanent hole in the published record.
 
 ### Step 4: Build the Indexing Subgraph
 
@@ -266,7 +266,7 @@ Note that this uses a call handler, not an event handler. DataEdge emits nothing
 
 The mapping flow is worth understanding before modifying it. `handleSubmitQoSPayload` creates an `OracleMessage` keyed by transaction hash, checks the submitter against the allowlist, and, if the submitter is authorized, parses the JSON payload. For each accepted topic it calls `processIpfsHash`, which fetches the file, iterates the array, and creates one `AllocationDataPoint` or `QueryDataPoint` per row, choosing based on whether the topic name contains `indexer` or `query`. Each row creation also updates the relevant daily rollup entities in place, which is why the daily entities are mutable while the raw data points are immutable.
 
-**On IPFS access in mappings:** The reference implementation calls `ipfs.cat` inside the mapping, enabled by the `ipfsOnEthereumContracts` feature flag, and that is what the canonical deployment runs. It is the simplest approach, but it makes indexing dependent on the file being retrievable at index time: an Indexer that cannot fetch the file logs a warning and skips that window. [File data sources](https://thegraph.com/docs/en/subgraphs/developing/creating/advanced/#ipfsarweave-file-data-sources) are the alternative, and provide a retryable, template-based path for off-chain file content. An Operator building a new oracle rather than mirroring the canonical one should evaluate file data sources first, and expect to restructure the mapping into a template handler.
+**On IPFS access in mappings:** The reference implementation calls `ipfs.cat` inside the mapping, enabled by the `ipfsOnEthereumContracts` feature flag, and that is what the Foundation's QoS Oracle deployment runs. It is the simplest approach, but it makes indexing dependent on the file being retrievable at index time: an Indexer that cannot fetch the file logs a warning and skips that window. [File data sources](https://thegraph.com/docs/en/subgraphs/developing/creating/advanced/#ipfsarweave-file-data-sources) are the alternative, and provide a retryable, template-based path for off-chain file content. An Operator building a new oracle rather than mirroring the Foundation's QoS Oracle should evaluate file data sources first, and expect to restructure the mapping into a template handler.
 
 ### Step 5: Publish and Operate
 
@@ -276,7 +276,7 @@ Ongoing operational concerns:
 
 - **Submission monitoring:** Alert on missed windows and on transactions that land but produce `valid: false` records, which usually means a submitter key rotated without a corresponding Subgraph update.
 - **Topic versioning:** When the aggregation schema changes, publish to a new topic and add it to `JSON_TOPICS` rather than changing the meaning of an existing topic. Consumers depending on the old shape keep working.
-- **History and pruning:** The canonical deployment sets `indexerHints: prune: auto` and a recent `startBlock`, so it serves a rolling window rather than the full history. Decide whether consumers need deep history, and set pinning, `startBlock`, and pruning consistently. These three have to agree, or the result is a Subgraph that claims history it cannot serve.
+- **History and pruning:** The Foundation's QoS Oracle deployment sets `indexerHints: prune: auto` and a recent `startBlock`, so it serves a rolling window rather than the full history. Decide whether consumers need deep history, and set pinning, `startBlock`, and pruning consistently. These three have to agree, or the result is a Subgraph that claims history it cannot serve.
 - **Data hygiene:** Everything published is permanent and public. Review the aggregation output once before the first submission, and again whenever a field is added.
 
 ## Putting It Together

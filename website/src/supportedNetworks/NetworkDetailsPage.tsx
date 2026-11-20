@@ -10,9 +10,10 @@ import { subgraphsAndSubstreamsCards, subgraphsOnlyCards, substreamsOnlyCards } 
 import { type SubgraphsTier, type SubstreamsTier, type SupportedNetwork } from './utils'
 
 // Product-support rows shown at the top of each network page. The Subgraphs row has two lines:
-// payments always run through Subgraph Studio (API keys and billing), and indexing mirrors the
-// network's top Subgraphs tier in the Supported Networks table (see `getSubgraphsTier` in ./utils).
-const SUBGRAPHS_STUDIO_URL = 'https://thegraph.com/studio/'
+// gateways (The Graph Foundation's Gateway, with keys and billing in Subgraph Studio, and other
+// Gateway Operators, listed on the Providers overview), and indexing, which mirrors the network's top
+// Subgraphs tier in the Supported Networks table (see `getSubgraphsTier` in ./utils).
+const SUBGRAPH_PROVIDERS_URL = '/subgraphs/providers/overview/'
 const SUBGRAPHS_INDEXING_LABEL: Record<Exclude<SubgraphsTier, 'none'>, string> = {
   rewards: 'The Graph Network',
   network: 'Community Support',
@@ -77,8 +78,8 @@ export default function NetworkDetailsPage({ network }: { network: SupportedNetw
                 <ExperimentalDescriptionList.Item label="Subgraphs">
                   <span className="flex flex-col items-end text-right">
                     <span>
-                      <ExperimentalLink className="text-14" href={SUBGRAPHS_STUDIO_URL} target="_blank">
-                        Payments: Subgraph Studio
+                      <ExperimentalLink className="text-14" href={SUBGRAPH_PROVIDERS_URL}>
+                        Gateways: The Foundation's Gateway and others
                       </ExperimentalLink>
                     </span>
                     <span>Indexing: {SUBGRAPHS_INDEXING_LABEL[network.subgraphsTier]}</span>

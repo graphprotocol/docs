@@ -1,7 +1,7 @@
 export default {
-  introduction: '',
+  overview: '',
+  'deploying-to-studio': '',
   'managing-api-keys': 'Managing API Keys',
-  'upgrade-indexer': '',
-  'fair-use-policy': '',
+  billing: '',
   'studio-faq': '',
 }

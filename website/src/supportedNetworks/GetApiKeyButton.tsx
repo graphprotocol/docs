@@ -8,6 +8,7 @@ import { Heading } from '@/components'
 import { useCurrentNetwork } from './NetworkContext'
 
 const SUBGRAPH_STUDIO_API_KEYS_URL = 'https://thegraph.com/studio/apikeys/'
+const SUBGRAPH_PROVIDERS_URL = '/subgraphs/providers/overview/'
 const SUBSTREAMS_KEY_PROVIDERS = [
   { match: 'streamingfast.io', href: 'https://thegraph.market/' },
   { match: 'pinax.network', href: 'https://app.pinax.network/' },
@@ -18,7 +19,8 @@ type Product = 'subgraphs' | 'substreams'
 /**
  * "Get API Key" call to action for a network page's Subgraphs or Substreams section.
  *
- * - `subgraphs` links to the API Keys page in Subgraph Studio.
+ * - `subgraphs` links to the API Keys page in Subgraph Studio, which issues keys for The Graph Foundation's
+ *   Gateway, with a secondary link to the Providers overview for other Gateway Operators.
  * - `substreams` links to The Graph Market, the preferred provider. Networks the registry lists
  *   without a The Graph Market endpoint fall back to Pinax Network, since a The Graph Market key
  *   would not stream that network.
@@ -33,7 +35,12 @@ export function GetApiKeyButton({ product }: { product: Product }) {
         )?.href ?? 'https://thegraph.market/')
 
   return (
-    <span className="graph-docs-not-markdown shrink-0">
+    <span className="graph-docs-not-markdown flex shrink-0 flex-wrap items-center gap-2">
+      {product === 'subgraphs' ? (
+        <ExperimentalButton variant="tertiary" size="large" href={SUBGRAPH_PROVIDERS_URL}>
+          Other Gateway Operators
+        </ExperimentalButton>
+      ) : null}
       <ExperimentalButton
         variant="primary"
         size="large"
