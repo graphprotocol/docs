@@ -10,11 +10,27 @@ export const APIS: Record<ApiId, ApiConfig> = {
   tokenApi: {
     name: 'Token API',
     url: 'https://token-api.thegraph.com/openapi', // production
-    // url: 'https://token-api.service.stage.pinax.network/openapi', // staging
+    // url: 'https://token-api.stage.pinax.network/openapi', // staging
     document: tokenApi as OpenAPIV3_1.Document,
     sections: {
-      'EVM Tokens': {
+      'SVM Tokens': {
+        path: '/token-api/svm-tokens',
+        operationIdPrefixes: ['getV1Svm'],
+      },
+      'SVM Tokens (Native)': {
+        path: '/token-api/svm-tokens-native',
+        operationIdPrefixes: ['getV1Svm'],
+      },
+      'SVM DEXs': {
+        path: '/token-api/svm-dexs',
+        operationIdPrefixes: ['getV1Svm'],
+      },
+      'EVM Tokens (ERC-20)': {
         path: '/token-api/evm-tokens',
+        operationIdPrefixes: ['getV1Evm'],
+      },
+      'EVM Tokens (Native)': {
+        path: '/token-api/evm-tokens-native',
         operationIdPrefixes: ['getV1Evm'],
       },
       'EVM DEXs': {
@@ -25,21 +41,45 @@ export const APIS: Record<ApiId, ApiConfig> = {
         path: '/token-api/evm-nfts',
         operationIdPrefixes: ['getV1EvmNft'],
       },
-      'SVM Tokens': {
-        path: '/token-api/svm-tokens',
-        operationIdPrefixes: ['getV1Svm'],
-      },
-      'SVM DEXs': {
-        path: '/token-api/svm-dexs',
-        operationIdPrefixes: ['getV1Svm'],
-      },
-      'TVM Tokens': {
+      'TVM Tokens (ERC-20)': {
         path: '/token-api/tvm-tokens',
+        operationIdPrefixes: ['getV1Tvm'],
+      },
+      'TVM Tokens (Native)': {
+        path: '/token-api/tvm-tokens-native',
         operationIdPrefixes: ['getV1Tvm'],
       },
       'TVM DEXs': {
         path: '/token-api/tvm-dexs',
         operationIdPrefixes: ['getV1Tvm'],
+      },
+      'Polymarket Markets': {
+        path: '/token-api/polymarket-markets',
+        operationIdPrefixes: ['getV1Polymarket', 'getV1PolymarketMarkets'],
+      },
+      'Polymarket Platform': {
+        path: '/token-api/polymarket-platform',
+        operationIdPrefixes: ['getV1Polymarket', 'getV1PolymarketPlatform'],
+      },
+      'Polymarket Users': {
+        path: '/token-api/polymarket-users',
+        operationIdPrefixes: ['getV1Polymarket', 'getV1PolymarketUsers'],
+      },
+      'Hyperliquid Markets': {
+        path: '/token-api/hyperliquid-markets',
+        operationIdPrefixes: ['getV1Hyperliquid', 'getV1HyperliquidMarkets'],
+      },
+      'Hyperliquid Platform': {
+        path: '/token-api/hyperliquid-platform',
+        operationIdPrefixes: ['getV1Hyperliquid', 'getV1HyperliquidPlatform'],
+      },
+      'Hyperliquid Users': {
+        path: '/token-api/hyperliquid-users',
+        operationIdPrefixes: ['getV1Hyperliquid', 'getV1HyperliquidUsers'],
+      },
+      'Hyperliquid Vaults': {
+        path: '/token-api/hyperliquid-vaults',
+        operationIdPrefixes: ['getV1Hyperliquid', 'getV1HyperliquidVaults'],
       },
       Monitoring: {
         path: '/token-api/monitoring',
@@ -207,13 +247,12 @@ export function getApi(apiId: ApiId, passedDocument?: OpenAPIV3_1.Document): Api
         })
       }
 
-      const longestOperationIdPrefixThatMatches = (section.operationIdPrefixes ?? [])
+      const operationIdPrefixMatches = (section.operationIdPrefixes ?? [])
         .filter((prefix) => operationId.startsWith(prefix))
-        .sort((a, b) => b.length - a.length)[0]
+        .sort((a, b) => b.length - a.length)
+      const bestOperationIdPrefixMatch = operationIdPrefixMatches.find((prefix) => prefix !== operationId) // longest prefix that isn't the entire operationId
       const slug = camelToKebab(
-        longestOperationIdPrefixThatMatches
-          ? operationId.slice(longestOperationIdPrefixThatMatches.length)
-          : operationId,
+        bestOperationIdPrefixMatch ? operationId.slice(bestOperationIdPrefixMatch.length) : operationId,
       )
 
       const operation: ApiOperation = {

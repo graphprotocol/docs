@@ -99,5 +99,4 @@ graph LR;
     sc[Smart Contract]-->|change event|op;
 ```
 
-With this mechanism, developers can write and execute GraphQL `subscription`, but under the hood we'll execute a GraphQL `query` to The Graph indexers, and allow to connect any external hook/probe for re-running the operation.
-This way, we can watch for changes on the Smart Contract itself, and the GraphQL client will fill the gap on the need to real-time changes from The Graph.
+With this mechanism, developers can write and execute GraphQL `subscription`, but under the hood we'll execute a GraphQL `query` to The Graph indexers, and allow to connect any external hook/probe for re-running the operation. This way, we can watch for changes on the Smart Contract itself, and the GraphQL client will fill the gap on the need to real-time changes from The Graph.
