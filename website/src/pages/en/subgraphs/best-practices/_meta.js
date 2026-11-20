@@ -10,5 +10,6 @@ export default {
   'subgraph-debug-forking': 'Debug with Subgraph Forking',
   grafting: 'Grafting',
   'subgraph-composition': 'Subgraph Composition',
+  benefits: 'The Graph Network vs. Self Hosting',
   'transfer-to-the-graph': 'Transfer to The Graph',
 }

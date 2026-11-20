@@ -4,6 +4,7 @@ export default {
   introduction: '',
   creating: titles.creating ?? '',
   'deploying-publishing': titles['deploying-publishing'] ?? '',
+  curating: 'Curating',
   managing: titles.managing ?? '',
   'developer-faq': 'Developer FAQ',
 }
