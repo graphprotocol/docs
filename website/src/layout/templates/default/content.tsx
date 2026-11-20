@@ -3,6 +3,7 @@ import { type ComponentProps, useContext } from 'react'
 import { ButtonOrLink, classNames, ExperimentalDivider, ExperimentalLink } from '@edgeandnode/gds'
 import { ArrowLeft, ArrowRight, CalendarDynamic, HourglassDynamic, SocialGitHub } from '@edgeandnode/gds/icons'
 
+import { CopyPageButton } from '@/components'
 import { useI18n } from '@/i18n'
 
 import { LayoutContext } from '../../shared'
@@ -39,17 +40,20 @@ export default function TemplateDefaultContent({ className, children, ...props }
     >
       {!frontMatter.hideContentHeader ? (
         <header className="col-[container] row-[header] pt-12 transition-[padding] duration-[var(--graph-docs-layout-transition-duration)]">
-          {readingTime ? (
-            <span className="mb-3 flex items-center gap-1 text-space-700">
-              <HourglassDynamic
-                alt={t('global.page.readingTime.minutes')}
-                filledPercentage={(readingTime.minutes / 15) * 100}
-              />
-              <p className="text-body-small">
-                {Math.ceil(readingTime.minutes)} {t('global.page.readingTime.minutes')}
-              </p>
-            </span>
-          ) : null}
+          <div className="mb-3 flex items-center gap-4">
+            {readingTime ? (
+              <span className="flex items-center gap-1 text-space-700">
+                <HourglassDynamic
+                  alt={t('global.page.readingTime.minutes')}
+                  filledPercentage={(readingTime.minutes / 15) * 100}
+                />
+                <p className="text-body-small">
+                  {Math.ceil(readingTime.minutes)} {t('global.page.readingTime.minutes')}
+                </p>
+              </span>
+            ) : null}
+            <CopyPageButton sourceUrl={editPageUrl} title={frontMatter.title} className="ms-auto" />
+          </div>
           {frontMatter.title ? (
             <h1 className="text-heading-large text-white xs:text-heading-xlarge">{frontMatter.title}</h1>
           ) : null}
