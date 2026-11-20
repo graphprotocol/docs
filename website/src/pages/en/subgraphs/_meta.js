@@ -9,5 +9,4 @@ export default {
   querying: titles.querying ?? '',
   tooling: titles.tooling ?? '',
   'best-practices': titles['best-practices'] ?? '',
-  guides: titles.guides ?? '',
 }

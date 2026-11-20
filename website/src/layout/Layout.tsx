@@ -55,6 +55,7 @@ import {
   CodeBlock,
   CodeBlockTabs,
   DocSearch,
+  HashRedirect,
   Heading,
   Image,
   NavigationGroup,
@@ -616,6 +617,7 @@ export default function Layout({ pageOpts, children }: NextraThemeLayoutProps<Fr
                 pre: CodeBlock,
                 CodeBlock,
                 CodeBlockTabs,
+                HashRedirect,
                 // TODO: Build and use `ExperimentalTable`
                 table: Table,
                 VideoEmbed,

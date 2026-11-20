@@ -1,0 +1,411 @@
+---
+title: Subgraph Guides & Best Practices
+sidebarTitle: Overview
+---
+
+Most slow Subgraphs are slow because of their design or their RPC source, not their hardware. The fixes are usually small schema, manifest, or mapping changes. This section collects the guides and best practices for building Subgraphs that sync fast, answer queries fast, and stay healthy. This page is the map: it gives you a checklist, explains each practice, and links to the page in this section that covers it in depth.
+
+**Where to start:** Use the checklist below. For a Subgraph that already syncs slowly, go to [Speeding Up Sync Time and Iteration](#speeding-up-sync-time-and-iteration) first to find the bottleneck.
+
+## Pages in This Section
+
+The pages follow the order of this overview, from contract design to migration.
+
+| Page | Use it to |
+| --- | --- |
+| [Avoid eth_calls](/subgraphs/best-practices/avoid-eth-calls/) | Design contract events so handlers read data from events, and declare the calls you keep |
+| [Immutable Entities and Bytes IDs](/subgraphs/best-practices/immutable-entities-bytes-as-ids/) | Cut storage and speed up writes and queries with immutable entities and `Bytes` IDs |
+| [Arrays with @derivedFrom](/subgraphs/best-practices/derivedfrom/) | Model one-to-many relationships without arrays that grow |
+| [Timeseries and Aggregations](/subgraphs/best-practices/timeseries/) | Let the database compute hourly and daily metrics |
+| [Categorize Data with Enums](/subgraphs/best-practices/enums/) | Restrict fields to a fixed set of valid values |
+| [Pruning with indexerHints](/subgraphs/best-practices/pruning/) | Drop history you do not query to keep the database small |
+| [Secure API Keys with Next.js](/subgraphs/best-practices/secure-api-keys-nextjs/) | Keep your API key out of frontend code |
+| [Debug with Subgraph Forking](/subgraphs/best-practices/subgraph-debug-forking/) | Reproduce a failure at block X without syncing to block X |
+| [Grafting](/subgraphs/best-practices/grafting/) | Ship a fix for a failed Subgraph, or move to a redeployed contract, without a full re-index |
+| [Subgraph Composition](/subgraphs/best-practices/subgraph-composition/) | Build a Subgraph on top of up to five source Subgraphs |
+| [Transfer to The Graph](/subgraphs/best-practices/transfer-to-the-graph/) | Move an existing Subgraph from another platform to The Graph Network |
+
+## Subgraph Performance Checklist
+
+Check each item before you publish. Items in the first group have the largest effect on sync time.
+
+**Sync speed**
+
+- `startBlock` is the contract's deployment block, not 0
+- Event handlers only; no block handlers without a filter, and call handlers only where events are missing
+- No `eth_call` for data that is already in `event.params`
+- Values that never change (`name`, `symbol`, `decimals`) are fetched once and stored on an entity
+- Remaining `eth_calls` are declared in the manifest (`specVersion` 1.2.0 or higher)
+- Handlers save only the entities they changed
+- Only the events the schema needs have handlers; topic filters narrow the rest
+
+**Schema and storage**
+
+- Event-log entities use `@entity(immutable: true)`
+- IDs use `Bytes`, built with `concatI32()`, not string concatenation
+- One-to-many relationships use `@derivedFrom`, not arrays that grow
+- Time-bucketed metrics use timeseries and aggregations (`specVersion` 1.1.0 or higher)
+- `indexerHints.prune` is set (`auto`, or a block count if you need Time Travel Queries or grafting)
+- Numeric fields that you sort by are `Int` or `BigInt`, not `String`
+
+**Reliability**
+
+- Contract calls that can revert use `try_` with a default value
+- Subgraph Linter and Matchstick unit tests pass
+- Grafting, if used for a hotfix, is followed by a non-grafted republish
+
+## Start with the Smart Contract
+
+The fastest Subgraph reads everything it needs from events. If you can still change the contract, [design its events for indexing](https://thegraph.com/blog/subgraph-devex-tips/). This removes the need for most `eth_calls`, which are [the most common cause of slow syncs](https://thegraph.com/blog/subgraph-optimization-tips/).
+
+- **Emit an event for every state change:** A Subgraph rebuilds contract state from events. Stake, unstake, claim, and configuration changes each need an event.
+- **Put the full payload in the event:** Include the address, amount, and any context the Subgraph needs. An event that carries only an ID forces a contract call for every other value.
+- **Balance detail against gas:** Each extra event field costs gas. Include only what the Subgraph needs, not every possible field.
+- **Index the arguments you will filter on:** Indexed arguments enable topic filters in the manifest (see the next section).
+
+```solidity
+// Forces eth_calls: the Subgraph must look up the user and amount
+event Stake(uint256 indexed positionId);
+
+// Indexing-ready: all data is in the event
+event Stake(uint256 indexed positionId, address indexed user, uint256 amount);
+```
+
+The official [Avoid eth_calls](/subgraphs/best-practices/avoid-eth-calls/) page shows the same pattern: replace a `Transfer` event plus a `getPoolInfo()` call with a `TransferWithPool` event that carries `poolInfo` directly.
+
+## Manifest: Start Blocks, Handlers, and Filters
+
+The [manifest](/subgraphs/developing/creating/subgraph-manifest/) decides how many blocks and triggers the Subgraph processes. Fewer blocks and fewer triggers mean a faster sync.
+
+| Setting | What to do | Why | Min `specVersion` |
+| --- | --- | --- | --- |
+| `startBlock` | Set it to the block of the contract-creation transaction | With `startBlock: 0`, the Subgraph scans the full chain history before it finds the first event ([Goldsky](https://docs.goldsky.com/subgraphs/guides/performance)) | Any |
+| `endBlock` | Set it for a contract that is retired or replaced | The data source stops processing after that block ([advanced features](/subgraphs/developing/creating/advanced/)) | 0.0.9 |
+| Handler type | Use event handlers. Use call handlers and block handlers only when no event exists | Event handlers are far more performant and work on every EVM chain | Any |
+| Block handler filters | Never use a block handler with no filter. Use `polling` (every N blocks) or `once` (initialization) | A block handler with no filter runs on every block | 0.0.8 |
+| Topic filters (`topic1` to `topic3`) | Filter events on indexed arguments, such as specific addresses | The handler runs only for matching events | 1.2.0 |
+| `receipt: true` | Turn it on only for the handlers that need the transaction receipt | Receipts add data to fetch. Use them to read related logs in the same transaction instead of making calls ([Messari](https://github.com/messari/subgraphs/blob/master/docs/PERFORMANCE.md)) | 0.0.5 |
+| Unused handlers | Remove handlers for events the schema does not use | Each trigger costs a handler run | Any |
+
+**Call handler limits:** call handlers and the `call` block filter depend on the Parity tracing API. Some networks do not support it, including BNB Chain and Arbitrum (the docs also name Polygon and Optimism for the `call` filter). A Subgraph that uses them on those networks does not start syncing.
+
+**Topic filter logic:** values inside one topic are OR ([topic filters](/subgraphs/developing/creating/advanced/)). Different topics are AND.
+
+```yaml
+eventHandlers:
+  - event: Transfer(indexed address,indexed address,uint256)
+    handler: handleTransfer
+    topic1: ['0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045'] # only transfers from this address
+blockHandlers:
+  - handler: handleSnapshot
+    filter:
+      kind: polling
+      every: 100
+```
+
+**Handler order:** In each block, event and call handlers run by transaction index. Inside one transaction, event handlers run first, then call handlers, in manifest order. Block handlers run last ([Developer FAQ](/subgraphs/developing/developer-faq/)). Handlers of a new dynamic data source start after all existing handlers for that block.
+
+**Local testing tip:** set `startBlock` to a recent block for fast feedback. Restore the real start block before you publish ([Graph Node Dev Mode](/subgraphs/developing/creating/graph-node-dev/)).
+
+## Subgraph Schema Design
+
+Graph Node, the indexing engine under a Subgraph, stores every entity version in PostgreSQL so that it can handle reorgs and serve Time Travel Queries. Every update writes a new row. Schema choices that cut rows and row size speed up both indexing and queries.
+
+### Immutable Entities
+
+Add `(immutable: true)` to [entities that never change after creation](/subgraphs/best-practices/immutable-entities-bytes-as-ids/), such as one entity per onchain event. Graph Node then skips block-range updates and can use database indexes that are [cheaper to build and maintain](https://thegraph.com/blog/two-simple-subgraph-performance-improvements/).
+
+```graphql
+type Transfer @entity(immutable: true) {
+  id: Bytes!
+  from: Bytes!
+  to: Bytes!
+  value: BigInt!
+}
+```
+
+Do not make an entity immutable if any field changes over time, such as a `status` field. A write to an immutable entity causes an indexing error.
+
+### Bytes as IDs
+
+Use `Bytes` for IDs. [Strings take about twice the storage](/subgraphs/best-practices/immutable-entities-bytes-as-ids/) of byte strings for binary data, and string comparison is locale-aware, which costs much more than bytewise comparison.
+
+```typescript
+// Slow: builds a String ID
+let id = event.transaction.hash.toHexString().concat('-').concat(event.logIndex.toString())
+
+// Fast: builds a Bytes ID
+let id = event.transaction.hash.concatI32(event.logIndex.toI32())
+
+// Day bucket ID
+let id = Bytes.fromI32(event.block.timestamp.toI32() / 86400)
+
+// Address constants
+const BEEF_ADDRESS = Bytes.fromHexString('0xdead...beef')
+```
+
+- Remove `toHexString()` calls where the ID was an address or hash.
+- `Bytes` IDs sort in hex order. To sort by a number, add a `BigInt` field (such as `tokenId`) and order by it.
+- Keep `String` IDs only if IDs must be human-readable, or if an external data model needs them.
+
+### @derivedFrom Instead of Growing Arrays
+
+An array field is copied in full on every update, so an array that grows bloats the database fast. The [blog guidance](https://thegraph.com/blog/improve-subgraph-performance-avoiding-large-arrays/) is that arrays under about 50 entries are fine; larger arrays that change often are not. Store the link on the child and [derive the array on the parent](/subgraphs/best-practices/derivedfrom/).
+
+```graphql
+type Post @entity {
+  id: Bytes!
+  comments: [Comment!]! @derivedFrom(field: "post")
+}
+
+type Comment @entity {
+  id: Bytes!
+  content: String!
+  post: Post!
+}
+```
+
+- Derived fields are read-only in mappings. Use [`loadRelated()`](/subgraphs/developing/creating/graph-ts/api/) to read them in a handler (graph-node 0.31.0, graph-ts 0.31.0, graph-cli 0.51.0 or later).
+
+### Timeseries and Aggregations
+
+For time-bucketed metrics (hourly volume, daily totals), [let the database compute aggregates](/subgraphs/best-practices/timeseries/). Requires `specVersion` 1.1.0.
+
+```graphql
+type Data @entity(timeseries: true) {
+  id: Int8!
+  timestamp: Timestamp!
+  price: BigDecimal!
+}
+
+type Stats @aggregation(intervals: ["hour", "day"], source: "Data") {
+  id: Int8!
+  timestamp: Timestamp!
+  sum: BigDecimal! @aggregate(fn: "sum", arg: "price")
+}
+```
+
+- Timeseries entities are always immutable. Graph Node sets `id` and `timestamp`.
+- Functions: `sum`, `count`, `min`, `max`, `first`, `last`. `count` supports `cumulative: true`.
+- `arg` can be an expression, for example a product of two fields, `greatest`, `least`, `coalesce`, or `case when`.
+- Non-aggregated fields (such as a token reference) are dimensions. Aggregates are computed per dimension value.
+- Query timestamp filters use microseconds since epoch, not milliseconds. Pass `current` to include the open interval.
+
+### Types and Query-Friendly Modeling
+
+- **Sort by numbers, not strings:** Store amounts as `Int` or `BigInt`. String order puts "10" before "2".
+- **Put frequent sort keys on the entity itself:** Queries can sort by a field of a related entity, one level deep (for example `orderBy: owner__name`), but this is slower than sorting by the entity's own field and supports only `String` and `ID` fields. For sort keys your app uses often, such as `createdAt`, store the field on the entity.
+- **Store facts, compute state:** Do not store a value that changes with time but has no event, such as a "LOCKED" status after a lock period. Store the timestamps and durations; [compute the state in the app](https://thegraph.com/blog/subgraph-devex-tips/).
+- **Keep counters current:** Fields such as `positionCount` let apps paginate without counting. Update every affected entity in the same handler.
+- **Avoid deep nesting:** Give frequently read data a direct path, not a chain of five nested relationships.
+- **Use enums for fixed categories:** A field with a known set of values (marketplace, status, order type) should be an [enum](/subgraphs/best-practices/enums/), not a free-form `String`. Enums reject invalid values and typos.
+
+## Mapping Subgraph Efficiency
+
+Handler cost multiplies by event count. A small waste in a handler that runs millions of times adds hours to a sync. An `eth_call` is [the most expensive thing a handler can do](/subgraphs/best-practices/avoid-eth-calls/).
+
+### Why `eth_calls` are Slow
+
+- [Each call is an RPC round trip](https://thegraph.com/blog/improve-subgraph-performance-reduce-eth-calls/) with a typical call at 100 ms to several seconds.
+- Graph Node adds the block hash to each call (EIP-1898) so that results stay correct across reorgs. This makes the call harder for the node to resolve.
+- Undeclared calls run one at a time, during handler execution.
+- To find calls in a codebase, search for `.bind(`.
+
+### Remove or Reduce Calls
+
+1. **Read from the event:** Check `event.params` before you add any call. Values such as reserves are often already in the event.
+2. **Cache values that do not change:** Fetch `name`, `symbol`, and `decimals` once, when the entity is first created, then [reuse the stored value](https://docs.goldsky.com/subgraphs/guides/performance).
+3. **Compute in the Subgraph:** Derive values such as `totalSupply` from mint and burn events instead of calling the contract.
+4. **Declare the calls you keep:** Declared calls run in parallel before the handler, and the handler reads the result from an in-memory cache.
+
+```typescript
+function getOrCreateToken(address: Address): Token {
+  let token = Token.load(address)
+  if (token == null) {
+    token = new Token(address)
+    let contract = ERC20.bind(address)
+    let symbol = contract.try_symbol()
+    token.symbol = symbol.reverted ? '???' : symbol.value
+    let decimals = contract.try_decimals()
+    token.decimals = decimals.reverted ? 18 : decimals.value
+    token.save()
+  }
+  return token
+}
+```
+
+### Declared `eth_calls`
+
+Requires `specVersion` 1.2.0.
+
+```yaml
+eventHandlers:
+  - event: TransferWithPool(indexed address,indexed address,uint256,indexed bytes32)
+    handler: handleTransferWithPool
+    calls:
+      poolInfo: ERC20[event.address].getPoolInfo(event.params.to)
+```
+
+- The label before the colon appears only in error messages.
+- The format after the colon is `Contract[address].function(params)`. `address` and `params` can be `event.address` or `event.params.<name>`.
+- In the handler, bind the contract and make the call as usual. Graph Node returns the cached result ([Goldsky guide to declared calls](https://docs.goldsky.com/subgraphs/guides/declared-eth-calls)).
+- [Declared calls](/subgraphs/developing/creating/advanced/) work only with event handlers. They reduce call time but do not remove it.
+
+### Entity Reads and Writes
+
+- **Save only what changed:** Do not load and save entities that the handler does not modify.
+- **Use `loadInBlock()` for entities written earlier in the same block:** It returns an entity that was created, or updated and saved, in the current block, and skips the database round trip for a [lookup that would miss](/subgraphs/developing/creating/graph-ts/api/#looking-up-entities-created-within-a-block). It returns `null` if the entity was not written in the current block, even if it exists in the store. A non-null result does not prove the entity was newly created.
+- **Do not overwrite fresh data with a stale copy:** If a helper loads and saves an entity, reload it in the caller before you save. [Subgraph Linter](/subgraphs/tooling/subgraph-linter/) flags this as `entity-overwrite`.
+- **Update every affected entity in one handler:** A stake event can change the protocol total, the user total, and the position. Update all three so that [totals stay in sync](https://thegraph.com/blog/subgraph-devex-tips/).
+- **Use `try_` for calls that can revert:** A reverting `decimals()` or `symbol()` is one of the most common causes of a crashed Subgraph. Set a default value and keep indexing.
+
+## Subgraph Storage and Queries
+
+### Prune History You Do Not Query
+
+[Pruning](/subgraphs/best-practices/pruning/) removes old entity versions up to a given block. A smaller database answers queries faster. Set it with `indexerHints` (requires `specVersion` 1.0.0).
+
+```yaml
+specVersion: 1.3.0
+schema:
+  file: ./schema.graphql
+indexerHints:
+  prune: auto
+```
+
+| Option | Keeps | Use when |
+| --- | --- | --- |
+| `auto` | The minimum history the Indexer sets | Default for graph-cli 0.66.0 and later. Best for most app-facing Subgraphs |
+| `<number>` | That many recent blocks | You need Time Travel Queries or grafting over a known window |
+| `never` | Full history | Default when `indexerHints` is absent. You need Time Travel Queries over all history |
+
+- You cannot graft at a pruned block. If you graft often, keep a block count that covers your window (the docs suggest about six months).
+- `prune: auto` is not recommended with Time Travel Queries.
+
+### Write Efficient Queries
+
+- **Use static query strings with variables.** [Do not build query strings at runtime](/subgraphs/querying/best-practices/). Variables let the server cache, sanitize, and statically analyze queries.
+- **Request only the fields you use.** Use `@include(if: ...)` and `@skip(if: ...)` for optional fields.
+- **Paginate large lists.** graph-client supports automatic pagination and block tracking.
+- **Fetch related data in one query.** A direct entity relationship avoids an [N+1 pattern](https://thegraph.com/blog/subgraph-devex-tips/) of one query per item.
+- **Keep your API key out of the browser.** Send queries from a server, for example with [Next.js server components](/subgraphs/best-practices/secure-api-keys-nextjs/), and restrict the key to specific Subgraphs and domains in Subgraph Studio.
+
+## Speeding Up Sync Time and Iteration
+
+[Find the bottleneck before you change code](https://blog.ormilabs.com/why-subgraph-syncing-is-slow/). A Subgraph [processes blocks in sequence](https://www.streamingfast.io/blog/common-questions/why-is-my-subgraph-syncing-slow), so tuning reduces the work per block but cannot remove the walk through history.
+
+### Diagnose the Bottleneck
+
+| Symptom | Likely cause | First fix |
+| --- | --- | --- |
+| Sync rate is low and constant | Structural: a large block range processed in sequence | Raise `startBlock`, or move extraction to Substreams |
+| Sync rate drops sharply at certain blocks | Specific activity triggers contract calls or heavy writes | Fix that handler: cache, declare, or remove calls |
+| Slow from the start, even with light handlers | `startBlock` too early, or a block handler with no filter | Set the deployment block; add a `polling` filter |
+| Slow on every Subgraph on the same chain | RPC or provider latency | Use a faster endpoint (self-hosted) or check provider status |
+| First sync slow, later syncs faster | Cold environment: no shared block or call cache yet | Expected. Judge speed on a warm re-sync |
+| Published on The Graph Network but not syncing at all | No Indexer has picked up the Subgraph | [Add curation signal](/subgraphs/developing/curating/#how-much-signal-to-add) to attract Indexers |
+
+### Iterate Faster During Development
+
+- **Use a recent `startBlock` locally:** Restore the real block before you publish ([Graph Node Dev Mode](/subgraphs/developing/creating/graph-node-dev/)).
+- **Run two watchers for hot reloading:** `gnd dev --watch` watches the build output and redeploys it, but it does not compile. Run `gnd build --watch` (or `graph build --watch`) in a second terminal so that edits to mappings, the schema, or the manifest are recompiled; `gnd dev --watch` then picks up the new build. Always pass `--node` to `gnd deploy`; without it, `gnd deploy` targets Subgraph Studio.
+- **Debug with forking:** Point a local Graph Node at a remote deployment that failed at block X. The local node fetches entities from the remote store, so you [reproduce the failure without syncing to block X](/subgraphs/best-practices/subgraph-debug-forking/).
+- **Use operator staging for full-history checks:** Some Gateway Operators offer a staging environment with logs, for syncs too large to run locally.
+- **Expect faster re-syncs on hosted providers:** Some providers cache `eth_call` and log results, so a second sync of the same contracts reuses them ([Goldsky](https://docs.goldsky.com/subgraphs/guides/performance) documents a permanent RPC cache).
+
+### Grafting
+
+Grafting starts a new deployment from an existing deployment's data at a chosen block, so [a fix does not need a full re-index](/subgraphs/best-practices/grafting/).
+
+1. Find the last block that indexed correctly.
+2. Build the fix. Add `grafting` under `features`.
+3. Set `graft.base` to the failed deployment's Deployment ID (not its Subgraph ID) and `graft.block` to that block.
+4. Deploy, confirm indexing resumes at the graft point, and confirm the fix.
+5. Republish a non-grafted version once it is stable, and move all consumers to it.
+
+```yaml
+features:
+  - grafting
+graft:
+  base: Qm... # Deployment ID of the failed deployment
+  block: 6000000
+```
+
+- **Graft-safe:** changes inside mappings or the manifest, such as a fixed handler or a removed handler.
+- **Not graft-safe:** changing field types (including switching IDs to `Bytes`), making nullable fields non-nullable, and large mapping rewrites. Marking an entity immutable is supported only if the copied history has no updates or deletions of it. See [compatible schema changes](/subgraphs/best-practices/grafting/#compatible-schema-changes).
+- **Grafting does not make later blocks faster.** [Remaining blocks index faster only if the new code does less work per event](https://docs.goldsky.com/subgraphs/guides/performance).
+- **Not for The Graph Network.** The docs do not recommend grafting for mainnet Subgraphs on the network. Some Indexers may not support it.
+- **Pruning conflict:** you cannot graft at a pruned block.
+
+Grafting also works when a contract is redeployed at a new address: the new Subgraph indexes the new contract and keeps the old contract's history. The [Grafting](/subgraphs/best-practices/grafting/) page walks through both scenarios.
+
+### When the Design is the Limit
+
+- **Rebuild lean and cut over.** If the fix needs schema changes, deploy a leaner version under a new name, keep the original serving, and switch after the new one syncs. Keep live-state entities and raw events; drop per-event pricing, unused metadata, and per-event calls.
+- **Split it with Subgraph composition.** Build small source Subgraphs that each index one set of events, then [compose them](/subgraphs/best-practices/subgraph-composition/) into one Subgraph for your app. Each source syncs and resyncs on its own.
+- **Use a Substreams-powered Subgraph.** Substreams processes history in parallel, then streams live blocks. The schema and query interface can stay the same. [The Graph blog](https://thegraph.com/blog/substreams-powered-subgraphs/) reports one case that went from 1,440 hours to 20 hours.
+
+## Subgraph Reliability and Testing
+
+A crash at block 15 million costs a full re-sync or a graft. Catch bugs before you deploy.
+
+- **Run Subgraph Linter:** It is a [static analysis tool](/subgraphs/tooling/subgraph-linter/), as a CLI or a VS Code extension. Its checks include `entity-overwrite`, `unexpected-null`, `unchecked-load`, `division-guard`, `derived-field-guard`, and `undeclared-eth-call`. Only checks set to `error` fail a CI run.
+- **Write unit tests with Matchstick:** [Mock events, contract calls](/subgraphs/tooling/unit-testing-framework/) (including reverts), IPFS files, and `loadInBlock` results.
+- **Handle missing entities:** Do not force-unwrap `Entity.load(...)` with `!`. Handle the case where the entity does not exist yet.
+- **Guard divisions and reverts.** Check for a zero denominator. Use `try_` calls with defaults.
+- **Know the limits of non-fatal errors:** The `nonFatalErrors` feature lets a synced Subgraph skip a handler that fails deterministically. [The Graph Network does not support it](/subgraphs/developing/creating/advanced/), so do not publish to the network with it.
+- **Version deliberately:** Deploy a contract upgrade or schema change as a new version, not an edit to the live one. Keep the old version serving until the new one syncs.
+
+## Move an Existing Subgraph to The Graph
+
+A Subgraph that runs on another platform can move to The Graph Network without code changes. Deploy it to Subgraph Studio from its source code or its IPFS hash, publish it, and add curation signal so that Indexers pick it up. Apps keep the same schema and queries; only the query URL changes. See [Transfer to The Graph](/subgraphs/best-practices/transfer-to-the-graph/).
+
+## Benchmarks and Evidence
+
+In a [controlled test from April 2022](https://thegraph.com/blog/two-simple-subgraph-performance-improvements/), using immutable entities and `Bytes` IDs together cut time per block by 28%, sync time by 26%, and storage by 48%. The test compared four variants of one Subgraph.
+
+| Variant                      | Avg time per block (ms) | Sync time (hours) | Storage (GB) | Storage reduction |
+| ---------------------------- | ----------------------- | ----------------- | ------------ | ----------------- |
+| Base (`ID` strings, mutable) | 268                     | 352               | 143          | none              |
+| Immutable entities           | 217                     | 292               | 89           | 37%               |
+| `Bytes` IDs                  | 225                     | 299               | 115          | 20%               |
+| Both                         | 194                     | 259               | 74           | 48%               |
+
+**Other measured findings (Messari, Uniswap v2 Subgraph):**
+
+- Adding hourly metrics entities changed speed by less than 0.2% (4.5646 vs. 4.5724 blocks per second). The author named event and call handlers as the main bottleneck.
+- A price oracle that made a Chainlink call per event was about 35% slower. After skipping the call before the feed existed and pricing each token once per block, the gap fell to about 4%.
+
+**Results vary by workload.** Gains depend on how much time a Subgraph spends on database writes compared to contract calls and reads. Test changes against your own Subgraph before and after.
+
+## Sources
+
+**The Graph docs: this section**
+
+- [Improve query speed with Subgraph pruning](/subgraphs/best-practices/pruning/)
+- [Use @derivedFrom for arrays](/subgraphs/best-practices/derivedfrom/)
+- [Immutable entities and Bytes as IDs](/subgraphs/best-practices/immutable-entities-bytes-as-ids/)
+- [Avoid eth_calls](/subgraphs/best-practices/avoid-eth-calls/)
+- [Timeseries and aggregations](/subgraphs/best-practices/timeseries/)
+- [Graft a Subgraph to ship fixes and replace contracts](/subgraphs/best-practices/grafting/)
+- [Debug with Subgraph forking](/subgraphs/best-practices/subgraph-debug-forking/)
+
+**The Graph docs: related pages**
+
+- [Subgraph manifest](/subgraphs/developing/creating/subgraph-manifest/)
+- [Advanced Subgraph features](/subgraphs/developing/creating/advanced/)
+- [graph-ts API](/subgraphs/developing/creating/graph-ts/api/)
+- [Developer FAQ](/subgraphs/developing/developer-faq/)
+- [Graph Node Dev Mode](/subgraphs/developing/creating/graph-node-dev/)
+- [Subgraph Linter](/subgraphs/tooling/subgraph-linter/)
+- [Unit testing framework](/subgraphs/tooling/unit-testing-framework/)
+- [Querying best practices](/subgraphs/querying/best-practices/)
+
+**The Graph blog**
+
+- [Improve Subgraph indexing performance easily: reduce eth_calls](https://thegraph.com/blog/improve-subgraph-performance-reduce-eth-calls/)
+- [Best practices in Subgraph development: avoiding large arrays](https://thegraph.com/blog/improve-subgraph-performance-avoiding-large-arrays/)
+- [Two simple Subgraph performance improvements](https://thegraph.com/blog/two-simple-subgraph-performance-improvements/)
+- [9 time and money saving Subgraph optimizations](https://thegraph.com/blog/subgraph-optimization-tips/)
+- [The Subgraph DevEx Blueprint](https://thegraph.com/blog/subgraph-devex-tips/)
+- [Boost indexing performance with Substreams-powered Subgraphs](https://thegraph.com/blog/substreams-powered-subgraphs/)

@@ -8,7 +8,6 @@ import ArcTestnet from './arc-testnet.mdx'
 import Avalanche from './avalanche.mdx'
 import Base from './base.mdx'
 import BaseSepolia from './base-sepolia.mdx'
-import Blast from './blast-mainnet.mdx'
 import Boba from './boba.mdx'
 import BobaTestnet from './boba-testnet.mdx'
 import Bsc from './bsc.mdx'
@@ -18,6 +17,7 @@ import CeloSepolia from './celo-sepolia.mdx'
 import Chapel from './chapel.mdx'
 import Chiliz from './chiliz.mdx'
 import ChilizTestnet from './chiliz-testnet.mdx'
+import Elysium from './elysium.mdx'
 import Vaulta from './eos.mdx'
 import Etherlink from './etherlink-mainnet.mdx'
 import EtherlinkShadownet from './etherlink-shadownet.mdx'
@@ -54,7 +54,6 @@ import OptimismSepolia from './optimism-sepolia.mdx'
 import Peaq from './peaq.mdx'
 import PolygonAmoy from './polygon-amoy.mdx'
 import Robinhood from './robinhood.mdx'
-import RobinhoodSepolia from './robinhood-sepolia.mdx'
 import Rootstock from './rootstock.mdx'
 import RootstockTestnet from './rootstock-testnet.mdx'
 import Scroll from './scroll.mdx'
@@ -71,8 +70,6 @@ import SoneiumTestnet from './soneium-testnet.mdx'
 import Sonic from './sonic.mdx'
 import SonicTestnet from './sonic-testnet.mdx'
 import Stable from './stable.mdx'
-import Starknet from './starknet-mainnet.mdx'
-import StarknetTestnet from './starknet-testnet.mdx'
 import Stellar from './stellar.mdx'
 import StellarTestnet from './stellar-testnet.mdx'
 import Tempo from './tempo.mdx'
@@ -107,16 +104,17 @@ import Zora from './zora.mdx'
  */
 export const customNetworkContent: Record<string, ComponentType> = {
   anubis: Anubis,
+  base: Base,
   bsc: Bsc,
   matic: Polygon,
   ink: Ink,
   'hyper-evm': HyperEvm,
+  elysium: Elysium,
   robinhood: Robinhood,
   monad: Monad,
   worldchain: WorldChain,
   zora: Zora,
   btc: Btc,
-  'blast-mainnet': Blast,
   'mainnet-cl': EthereumBeacon,
   'hoodi-cl': HoodiBeacon,
   'sepolia-cl': SepoliaBeacon,
@@ -127,7 +125,6 @@ export const customNetworkContent: Record<string, ComponentType> = {
   'solana-devnet': SolanaDevnet,
   'solana-mainnet-beta': Solana,
   'solana-accounts': SolanaAccounts,
-  'starknet-mainnet': Starknet,
   stellar: Stellar,
   'tron-evm': TronEvm,
   tron: Tron,
@@ -136,7 +133,6 @@ export const customNetworkContent: Record<string, ComponentType> = {
   // Substreams-only custom content (subgraph sections to be added later)
   'arbitrum-one': ArbitrumOne,
   arc: Arc,
-  base: Base,
   'injective-evm': InjectiveEvm,
   linea: Linea,
   mainnet: Ethereum,
@@ -151,7 +147,6 @@ export const customNetworkContent: Record<string, ComponentType> = {
   'linea-sepolia': LineaSepolia,
   'optimism-sepolia': OptimismSepolia,
   'polygon-amoy': PolygonAmoy,
-  'robinhood-sepolia': RobinhoodSepolia,
   sepolia: Sepolia,
   'soneium-testnet': SoneiumTestnet,
   'unichain-testnet': UnichainTestnet,
@@ -159,7 +154,6 @@ export const customNetworkContent: Record<string, ComponentType> = {
   celo: Celo,
   tempo: Tempo,
   'xlayer-mainnet': XLayer,
-  'starknet-testnet': StarknetTestnet,
   'stellar-testnet': StellarTestnet,
   'injective-testnet': InjectiveTestnet,
   jungle4: Jungle4,

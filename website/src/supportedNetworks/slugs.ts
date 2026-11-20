@@ -5,7 +5,6 @@
 // whose page and metadata render for that slug.
 export const networkSlugs: Record<string, string> = {
   btc: 'bitcoin',
-  'blast-mainnet': 'blast',
   'mainnet-cl': 'ethereum-beacon',
   'hoodi-cl': 'ethereum-hoodi',
   'sepolia-cl': 'ethereum-sepolia',
