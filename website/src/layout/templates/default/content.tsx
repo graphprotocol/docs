@@ -52,7 +52,7 @@ export default function TemplateDefaultContent({ className, children, ...props }
                 </p>
               </span>
             ) : null}
-            <CopyPageButton sourceUrl={editPageUrl} title={frontMatter.title} className="ms-auto" />
+            <CopyPageButton key={editPageUrl} sourceUrl={editPageUrl} title={frontMatter.title} className="ms-auto" />
           </div>
           {frontMatter.title ? (
             <h1 className="text-heading-large text-white xs:text-heading-xlarge">{frontMatter.title}</h1>
