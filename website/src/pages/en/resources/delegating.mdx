@@ -179,7 +179,7 @@ Horizon adds the technical ability to slash delegated stake. Slashing is not ena
 
 ## How to Undelegate on The Graph
 
-You can withdraw your delegated tokens through [Graph Explorer](https://thegraph.com/explorer) or, if the Explorer UI is having issues, directly through [Arbiscan](https://arbiscan.io/). Either way, your tokens are subject to the [undelegation period](#the-undelegation-period) before you can withdraw them.
+For a delegation on Arbitrum One, you can start undelegating in [Graph Explorer](https://thegraph.com/explorer/delegate?chain=arbitrum-one) or [directly through the staking contract on Arbiscan](#undelegate-using-arbiscan). Once the [undelegation period](#the-undelegation-period) ends, you can withdraw the GRT to your wallet.
 
 A common reason to undelegate is that your Indexer is no longer eligible for indexing rewards. If your Indexer stops qualifying, your delegation stops earning indexing rewards too. Check your Indexer's status on the [REO dashboard](https://reo.thegraph.com/), and see [How Does Rewards Eligibility Impact Delegating?](#how-does-rewards-eligibility-impact-delegating) before you move your stake.
 
@@ -195,32 +195,24 @@ A common reason to undelegate is that your Indexer is no longer eligible for ind
 
    ![Undelegate button](/img/undelegate-button.png)
 
-6. After approximately [28 epochs](https://thegraph.com/explorer/network/epochs?chain=arbitrum-one) (28 days), return to the **Delegating** tab and find the Indexer you undelegated from.
-7. Click the three dots next to the Indexer and withdraw your tokens.
+6. Enter the amount in GRT or select **Max** to undelegate the full amount. Review and confirm the transaction in your wallet.
+7. After the 28-day undelegation period, return to the **Delegating** tab, find the same Indexer, and choose **Withdraw** from its menu.
 
 ### Undelegate Using Arbiscan
 
-This process is primarily useful if the UI in Graph Explorer experiences issues:
+Open the [HorizonStaking proxy on Arbiscan](https://arbiscan.io/address/0x00669A4CF01450B64E8A2A20E9b1FCB71E61eF03#code) and select the three-input version of each function below. If the proxy's read or write tab does not list them, add the HorizonStaking implementation ABI as a custom ABI for the proxy address. The [deployment record](https://github.com/graphprotocol/contracts/blob/main/packages/horizon/addresses.json) lists the verified implementation under `42161` (Arbitrum One).
 
-1. Find your delegation transaction on Arbiscan.
-   - Here's an [example transaction on Arbiscan](https://arbiscan.io/tx/0xcf2110eac897099f821064445041031efb32786392bdbe7544a4cb7a6b2e4f9a)
-2. Go to **Transaction Action**, where you can find the staking extension contract:
-   - [This is the staking extension contract for the example listed above](https://arbiscan.io/address/0x00669A4CF01450B64E8A2A20E9b1FCB71E61eF03)
-3. Click the **Contract** tab. ![Contract tab on Arbiscan, between NFT Transfers and Events](/img/arbiscan-contract.png)
-4. Scroll to the bottom and copy the Contract ABI. There should be a small button next to it that allows you to copy everything.
-5. Click your profile button in the top-right corner of the page. If you don't have an Arbiscan account yet, create one.
-6. In your profile, click **Custom ABI**.
-7. Paste the custom ABI you copied from the staking extension contract, and add the custom ABI for the address: 0x00669A4CF01450B64E8A2A20E9b1FCB71E61eF03 (**sample address**).
-8. Go back to the [staking extension contract](https://arbiscan.io/address/0x00669A4CF01450B64E8A2A20E9b1FCB71E61eF03#writeProxyContract). Now, call the `unstake` function in the [Write as Proxy tab](https://arbiscan.io/address/0x00669A4CF01450B64E8A2A20E9b1FCB71E61eF03#writeProxyContract), which has been added thanks to the custom ABI, with the number of tokens that you delegated.
-9. If you don't know how many tokens you delegated, you can call `getDelegation` on the Read Custom tab. You will need to paste your address (delegator address) and the address of the Indexer that you delegated to, as shown in the following screenshot:
+1. **Look up your shares.** Read `getDelegation(serviceProvider, verifier, delegator)`. Enter your Indexer's address first, the Arbitrum One SubgraphService address (`0xb2Bb92d0DE618878E438b55D5846cfecD9301105`) second, and the wallet address that holds your delegation third. This read costs no gas. The returned `shares` value is your active share balance in that pool.
+2. **Start undelegating.** From the wallet that holds the delegation, call `undelegate(serviceProvider, verifier, shares)` with the same Indexer and SubgraphService addresses. To exit the whole position, use the exact integer returned in step 1. For a partial exit, enter the number of pool shares you want to redeem. If you prefer to specify an amount in GRT, use [Graph Explorer](#undelegate-using-graph-explorer).
+3. **Withdraw after thawing.** Once the request matures, call `withdrawDelegated(serviceProvider, verifier, nThawRequests)` from the same wallet. Use the same two addresses and enter `0` for `nThawRequests` to withdraw all matured requests for that pool.
 
-   ![Both of the addresses needed](/img/get-delegate.png)
-   - This will return three numbers. The first number is the amount you can unstake.
+### Legacy Delegations on Ethereum Mainnet
 
-10. After you have called `unstake`, you can withdraw after approximately 28 epochs (28 days) by calling the `withdraw` function.
-11. You can see how much you will have available to withdraw by calling `getWithdrawableDelegatedTokens` on the Read Custom tab and passing it your delegation tuple. See screenshot below:
+If your delegation is still on Ethereum mainnet, open the [L1Staking proxy on Etherscan](https://etherscan.io/address/0xF55041E37E12cD407ad00CE2910B8269B01263b9#code). Use the [legacy StakingExtension ABI](https://etherscan.io/address/0xA479c00cDa8C07bce458D7a826C7b091672EB92C#code) at the proxy address.
 
-    ![Call `getWithdrawableDelegatedTokens` to see amount of tokens that can be withdrawn](/img/withdraw-available.png)
+1. Read `getDelegation(indexer, delegator)` with your Indexer's address and your wallet address to find your `shares`.
+2. From that wallet, call `undelegate(indexer, shares)` with the number of shares you want to redeem.
+3. Once the tokens unlock, call `withdrawDelegated(indexer, newIndexer)` with `0x0000000000000000000000000000000000000000` as `newIndexer` to withdraw the GRT to your wallet.
 
 ## Delegator FAQs and Bugs
 
