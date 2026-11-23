@@ -1,0 +1,237 @@
+---
+title: Indexing Rewards Eligibility
+sidebarTitle: Rewards Eligibility
+---
+
+The Rewards Eligibility Oracle (REO) ties indexing rewards to the service an Indexer delivers on The Graph Network. To stay eligible for indexing rewards, an Indexer must meet a published minimum service standard. Indexers that fall below it stop receiving indexing rewards until they meet it again.
+
+REO does not change total protocol issuance, but does change which Indexers receive indexing rewards, moving the reward condition from proof of presence to proof of work. REO was introduced in [GIP-0079](https://github.com/graphprotocol/graph-improvement-proposals/blob/main/gips/0079.md) and deployed as part of [GIP-0088](https://github.com/graphprotocol/graph-improvement-proposals/blob/main/gips/0088.md).
+
+## Why REO Exists
+
+Indexing rewards were distributed according to curation signal and allocated stake. Neither of those measures whether an Indexer served a single query. An Indexer could hold stake, open allocations, present POIs, and collect indexing rewards without ever answering a request from a data consumer.
+
+As a result, part of the indexing rewards went to Indexers that were not delivering value to the network: they were not serving queries, and they were not indexing data that consumers used. REO closes that gap. The protocol issues the same amount of GRT as before. More of it now reaches Indexers who serve queries.
+
+## Rewards Eligibility Criteria
+
+The standard measures whether an Indexer serves queries, and whether it serves them across enough Subgraphs for the stake it holds.
+
+### Active REO Criteria (as of November 17, 2026)
+
+An Indexer is eligible for indexing rewards when it is online on **5 or more separate days** within a rolling **28-day window.** A day counts as online when the Indexer serves at least 1 qualifying query on each of its required number of Subgraphs.
+
+A **qualifying query** must satisfy all of the following at the same time:
+
+- **HTTP status:** the query returns `200 OK`.
+- **Latency:** the query responds in **under 5,000 ms**.
+- **Freshness:** the Indexer is **within 50,000 blocks** of chainhead when it serves the query.
+
+**Required number of Subgraphs is the greater of 10 or 1 Subgraph per 4M GRT in stake** (i.e. total stake ÷ 4,000,000 GRT, rounded up). The 10-Subgraph minimum applies to every Indexer. The stake-based number applies only above 40M GRT of total stake.
+
+**Total stake** is the GRT you have provisioned to the Subgraph Service plus the GRT delegated to that provision. Delegation counts only up to the 16x delegation ratio, and GRT that is thawing does not count. REO reads your total stake once at each daily run and applies the resulting minimum to every day in the 28-day window.
+
+REO evaluates service data once a day and renews eligibility on-chain for the Indexers that qualify. Eligibility lasts **14 days** from renewal, so an Indexer that keeps serving is re-qualified well before the previous period runs out. Once you qualify and an authorized Oracle submits the corresponding transaction on-chain, you can continue claiming indexing rewards for the duration of your qualification period, even if the active eligibility criteria change during it.
+
+Here are some examples with the current and Projected criteria:
+
+| Total stake | Step 3 | Step 4 | Phase 2 End Goal |
+| ----------- | ------ | ------ | ---------------- |
+| 30M GRT     | 10     | 10     | 30               |
+| 50M GRT     | 10     | 13     | 50               |
+| 100M GRT    | 10     | 25     | 100              |
+| 200M GRT    | 10     | 50     | 200              |
+
+## Projected Changes (Late 2026-Early 2027)
+
+The criteria get stricter over time. Announced changes carry at least a **14-day** window before they take effect, published with the data behind them.
+
+The Subgraph requirement is moving toward an end goal of **1 Subgraph for each 1M GRT of total stake**. An Indexer with 100M GRT would serve queries on at least 100 Subgraphs. The ratio tightens in steps so Indexers can add capacity gradually. Each step is announced separately with its own effective date and at least 14 days' notice. If your total stake is close to the next threshold, plan capacity toward the end goal rather than only the current step.
+
+## Criteria History and Past Versions
+
+The requirement has tightened in steps since launch:
+
+| Phase | Step | Requirement per online day |
+| --- | --- | --- |
+| 1 | 1 | 1 qualifying query on 1 Subgraph |
+| 1 | 2 | 1 qualifying query on each of 5 Subgraphs |
+| 1 | 3 | 1 qualifying query on each of 10 Subgraphs |
+| 2 | 4 | 1 qualifying query on each of N Subgraphs where N is the greater of 10 or 1 Subgraph per 4M GRT in stake |
+| 2 | 5 | 1 qualifying query on each of N Subgraphs where N is the greater of 10 or 1 Subgraph per 3M GRT in stake |
+| 2 | 6 | 1 qualifying query on each of N Subgraphs where N is the greater of 10 or 1 Subgraph per 2M GRT in stake |
+| 2 | 7 | 1 qualifying query on each of N Subgraphs where N is the greater of 10 or 1 Subgraph per 1M GRT in stake |
+
+For the effective date of each step, see the changelog in the Eligibility Criteria document below.
+
+**Phase 1 (Steps 1 to 3)** set a baseline so that every Indexer receiving rewards serves across a meaningful set of Subgraphs. **Phase 2 (from Step 4)** scales the requirement with stake, so the Indexers that receive the most rewards do the most work. The days-online requirement, the query-quality conditions, the 14-day eligibility period, and the fail-safes have not changed across any step.
+
+The [Eligibility Criteria document](https://github.com/graphprotocol/rewards-eligibility-oracle/blob/main/ELIGIBILITY_CRITERIA.md) is the canonical source for the standard. It has three sections:
+
+- **Upcoming Eligibility Criteria** lists announced changes and their effective dates.
+- **Active Eligibility Criteria** lists the requirements in force today.
+- **Eligibility Requirements Changelog** records every requirement that has ever applied, with its effective date, change type, and a written justification.
+
+To read a past version of the standard:
+
+1. Open the [file history](https://github.com/graphprotocol/rewards-eligibility-oracle/commits/main/ELIGIBILITY_CRITERIA.md) for the Eligibility Criteria document.
+2. Select the commit that covers the date you need.
+3. Use **View file** on that commit to see the document exactly as it read at that time.
+
+Each commit URL is a permanent link. Cite the commit SHA when you need to reference the criteria as they stood on a specific date, for example in a dispute or a post-mortem.
+
+## Checking Your Eligibility Status
+
+### REO Dashboard
+
+The [REO dashboard](https://reo.thegraph.com/) publishes the status of every Indexer on the network. It shows each Indexer's current status, its qualifying streak in days, the transaction that last renewed it, and the date its eligibility expires.
+
+The dashboard reports four statuses:
+
+| Status | Meaning | Action |
+| --- | --- | --- |
+| **Active** | Eligible. Renewed recently. | None. |
+| **Grace** | Still eligible, but the renewal window is closing. | Check that you are still serving qualifying queries across your required Subgraphs. |
+| **Expired** | Was eligible. The renewal period passed without a renewal. | Resume serving qualifying queries to re-qualify. |
+| **Unqualified** | Has never been eligible. | Follow [How to Become Eligible](#how-to-become-eligible). |
+
+**On-Chain:** The `RewardsEligibilityOracle` contract exposes `isEligible(address indexer)`, which returns the current eligibility of any Indexer address. The Rewards Manager calls this function at claim time.
+
+**Network Subgraph:** Every POI presentation records the reward condition that applied. See [POI Observability](#poi-observability) below.
+
+## How to Become Eligible
+
+Eligibility is automatic. There is no application, no registration, and no appeal process. Serve qualifying queries and the oracle renews you on its next daily run.
+
+To qualify:
+
+1. **Work out your required number of Subgraphs:** the greater of 10 or 1 Subgraph per 4M GRT in stake (i.e. your total stake ÷ 4M GRT, rounded up).
+2. **Allocate to at least that many Subgraphs.** Indexing rewards follow curation signal, so these are usually Subgraphs with signal. See [Curating](/subgraphs/developing/curating/) for how signal attracts Indexers.
+3. **Sync each Subgraph to within 50,000 blocks of chainhead** and keep it there. A lagging Subgraph serves queries that do not count.
+4. **Confirm your Indexer service is reachable and healthy.** Queries must return `200 OK` in under 5,000 ms to count.
+5. **Serve at least one qualifying query on each required Subgraph per day**, on 5 or more days within any 28-day window.
+6. **Check the dashboard after the next daily oracle run** to confirm your status changed.
+
+If you are already serving production traffic across your required Subgraphs, you clear this standard without doing anything extra. The steps above matter most when you are a new operator, returning from downtime, serving a narrow set of Subgraphs, or holding enough stake to raise your required number.
+
+## What Happens When You Do Not Qualify
+
+An Indexer that does not meet the standard stops receiving indexing rewards. Rewards are withheld, not confiscated.
+
+When an ineligible Indexer presents a Proof of Indexing (POI) that would otherwise pay, the transaction **reverts** and the rewards stay pending. If the Indexer regains eligibility before the allocation goes stale, the rewards are still there to claim.
+
+Key points:
+
+- **Your stake is untouched.** You can keep operating, keep serving queries, and keep earning query fees the entire time.
+- **The revert only affects reward-bearing POIs** (a valid, non-zero POI, on an old-enough allocation, on a non-denied Subgraph). It does not block you from operating the allocation in other ways.
+- **You are never locked into an allocation.** While ineligible you can still:
+  - **Present a zero POI**, which succeeds and resets the staleness clock to keep the allocation alive, but forfeits that period's rewards.
+  - **Close the allocation**, which succeeds and lets you exit cleanly. Any uncollected rewards are reclaimed.
+- **Eligibility returns automatically** as soon as you meet the standard again.
+
+> **Note:** By default the Indexer agent combines "present POI" with "close allocation" when closing allocations. An ineligible Indexer closing an allocation this way will see the transaction revert.
+
+## POI Observability
+
+Every POI presentation records the **reward condition** that applied. If a POI did not pay what you expected, the condition tells you why. This is surfaced through the network Subgraph:
+
+```graphql
+{
+  allocations {
+    id
+    latestPoiCondition
+  }
+}
+```
+
+```json
+{
+  "data": {
+    "allocations": [
+      {
+        "id": "0x001a42df17784fe5efcd14dcb138b91df116aa62",
+        "latestPoiCondition": "StalePoi"
+      },
+      {
+        "id": "0x01d1522d4646b6119a2623d9b784cb9f1dfb924b",
+        "latestPoiCondition": "StalePoi"
+      }
+    ]
+  }
+}
+```
+
+## Reward Conditions
+
+The protocol records a reward condition every time a POI is presented. The condition determines what happens to the rewards for that presentation.
+
+| Condition | Trigger | Scope | Rewards outcome | Notes |
+| --- | --- | --- | --- | --- |
+| `NONE` | Valid POI on a non-denied Subgraph, eligible allocation | Allocation | **Collected** |  |
+| `NO_SIGNAL` | Zero total curation signal globally | Global | **Reclaimed** |  |
+| `SUBGRAPH_DENIED` | Subgraph is on the denylist | Subgraph | **Preserved** | Claimable if the Subgraph is undenied and the allocation was not closed |
+| `BELOW_MINIMUM_SIGNAL` | Subgraph signal below `minimumSubgraphSignal` | Subgraph | **Reclaimed** |  |
+| `NO_ALLOCATED_TOKENS` | Subgraph has signal but zero allocated tokens | Subgraph | **Reclaimed** |  |
+| `STALE_POI` | POI presented after the staleness deadline | Allocation | **Reclaimed** |  |
+| `ZERO_POI` | POI is `bytes32(0)` | Allocation | **Reclaimed** |  |
+| `ALLOCATION_TOO_YOUNG` | Allocation created in the current epoch | Allocation | **Preserved** | Claimable next epoch if the allocation was not closed |
+| `CLOSE_ALLOCATION` | Allocation being closed with uncollected rewards | Allocation | **Reclaimed** |  |
+| `INDEXER_INELIGIBLE` | Indexer fails the eligibility check at claim time | Indexer | **Preserved**, transaction reverts | Claimable if you regain eligibility before staleness |
+
+The protocol evaluates these conditions in order when you present a POI, and the first match wins:
+
+1. **Stale POI:** `STALE_POI` (Reclaimed)
+2. **POI is `0x0`:** `ZERO_POI` (Reclaimed)
+3. **Created this epoch:** `ALLOCATION_TOO_YOUNG` (Preserved)
+4. **Subgraph denied:** `SUBGRAPH_DENIED` (Preserved)
+5. **No rewards accrued:** `NO_SIGNAL`, `BELOW_MINIMUM_SIGNAL`, or `NO_ALLOCATED_TOKENS` (Reclaimed)
+6. **Indexer ineligible:** `INDEXER_INELIGIBLE` (Preserved, transaction reverts)
+7. **Otherwise:** `NONE` (Collected)
+
+> **Note:** Reclaiming does not take indexing rewards that Indexers previously earned. Before this upgrade, rewards that could not be paid (stale POI, denied Subgraph, and similar) were silently dropped and never minted to anyone. Those same rewards are now minted to a protocol reclaim address instead.
+
+## For Delegators
+
+Delegated stake follows the Indexer that holds it. **If your Indexer is not eligible for indexing rewards, you do not receive indexing rewards either.**
+
+Choosing an Indexer has always been the Delegator's decision. That decision now determines whether your delegation earns indexing rewards at all.
+
+What to do:
+
+1. **Look up your Indexer on the [REO dashboard](https://reo.thegraph.com/).** Check its status and its qualifying streak.
+2. **Watch for the grace status.** It means your Indexer is still eligible but needs to renew soon. Acting at grace is better than acting after it expires.
+3. **If your Indexer stops qualifying, move your delegation.** The [Delegate page in Graph Explorer](https://thegraph.com/explorer/delegate?chain=arbitrum-one) lists active Indexers alongside what they have allocated and the Subgraphs they serve.
+
+Moving delegated stake takes time. Undelegating is subject to an undelegation period before the GRT can be moved. This is why monitoring beats reacting. Importantly, query fees are not affected by REO. This standard applies to indexing rewards only.
+
+For the full Delegator view, see [Delegating](/resources/delegating/).
+
+## What Is Not Changing
+
+REO does not change the following:
+
+- The allocation lifecycle: open, present POIs, close.
+- How and when POIs are presented, and the POI cadence.
+- The staleness model. Allocations still go stale if you stop presenting POIs.
+- Delegation, provisions, and stake mechanics.
+- The rewards rate: Issuance to indexing rewards is the same as before the upgrade.
+
+Two pieces of protocol plumbing ship alongside REO but change nothing today. The **Issuance Allocator** routes protocol issuance and can split it across destinations later; at launch it routes 100% to indexing rewards, exactly as before. The **Direct Indexer Payments (DIPs)** contracts are deployed but dormant. When either is activated, a change to the indexing rewards rate will be communicated at that time.
+
+## Fail-safes
+
+REO is designed so that it cannot accidentally deny rewards to the whole network:
+
+- If the oracle stops posting updates for **7 days**, every Indexer is treated as eligible again. A stalled oracle cannot block rewards.
+- Governance can disconnect the oracle entirely at any time, which restores the previous behavior immediately.
+
+The code is open, so anyone can read the exact logic that decides eligibility. The oracle runs on a fixed daily schedule and writes a record of each evaluation, showing which Indexers qualified and why.
+
+## Additional Resources
+
+- [REO dashboard](https://reo.thegraph.com/)
+- [Eligibility Criteria document](https://github.com/graphprotocol/rewards-eligibility-oracle/blob/main/ELIGIBILITY_CRITERIA.md) and its [file history](https://github.com/graphprotocol/rewards-eligibility-oracle/commits/main/ELIGIBILITY_CRITERIA.md)
+- [rewards-eligibility-oracle repository](https://github.com/graphprotocol/rewards-eligibility-oracle)
+- [GIP-0079](https://github.com/graphprotocol/graph-improvement-proposals/blob/main/gips/0079.md) and [GIP-0088](https://github.com/graphprotocol/graph-improvement-proposals/blob/main/gips/0088.md)
+- [Indexing Overview](/indexing/overview/)
+- [Delegating](/resources/delegating/)
