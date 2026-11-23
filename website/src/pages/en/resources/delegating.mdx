@@ -214,10 +214,105 @@ If your delegation is still on Ethereum mainnet, open the [L1Staking proxy on Et
 2. From that wallet, call `undelegate(indexer, shares)` with the number of shares you want to redeem.
 3. Once the tokens unlock, call `withdrawDelegated(indexer, newIndexer)` with `0x0000000000000000000000000000000000000000` as `newIndexer` to withdraw the GRT to your wallet.
 
-## Delegator FAQs and Bugs
+## The Graph Delegator FAQs and Common Bugs
 
-### MetaMask "Pending Transaction" Bug
+### The Graph Delegator Frequently Asked Questions (FAQs)
 
-At times, attempts to delegate to Indexers via MetaMask can fail and result in prolonged periods of "Pending" or "Queued" transaction attempts.
+#### Do I need to claim my rewards?
 
-To fix it, restart the browser (for example, enter `chrome://restart` in Chrome or `about:restart` in Firefox), which will cancel all previous attempts without gas being subtracted from the wallet. Several users who have encountered this issue have reported successful transactions after restarting their browser and attempting to delegate.
+No. Your share of an Indexer's rewards is added to its delegation pool, which raises the value of your delegation automatically. Rewards compound, because each payout is added to the balance that earns the next one. There is nothing to claim. To take rewards out, you undelegate and withdraw.
+
+#### Why doesn't my balance go up every day?
+
+Indexing rewards accrue while an Indexer's allocations are open, but they are paid into the delegation pool only when the Indexer closes or collects on an allocation. An Indexer can do this at any point in a 1 to 28-day window, so your balance tends to rise in steps rather than daily. If your balance has not moved in more than 28 days, check the Indexer's status on the [REO dashboard](https://reo.thegraph.com/) and see [How Does Rewards Eligibility Impact Delegating?](#how-does-rewards-eligibility-impact-delegating)
+
+#### Why are some delegation charts and stats missing in Graph Explorer?
+
+In December 2025, Graph Explorer removed some precalculated delegation analytics, such as unrealized rewards and some historical charts, after contract upgrades made them hard to compute at scale. Your delegation and rewards on-chain were not affected. Some tables have since been restored. For the latest status, see the [status page](https://status.thegraph.com/), or check your exact balance on Arbiscan as described below.
+
+#### How do I check my exact delegation balance on-chain?
+
+You can read your balance directly from the HorizonStaking contract on Arbiscan:
+
+1. Open the [HorizonStaking contract on Arbiscan](https://arbiscan.io/address/0x00669A4CF01450B64E8A2A20E9b1FCB71E61eF03#readProxyContract) and go to **Read as Proxy**.
+2. Call `getDelegation` with the Indexer's address as `serviceProvider`, the SubgraphService address `0xb2Bb92d0DE618878E438b55D5846cfecD9301105` as `verifier`, and your wallet address as `delegator`. Note the `shares` value.
+3. Call `getDelegationPool` with the same `serviceProvider` and `verifier`. Note the pool's `tokens` and `shares`.
+4. Your balance in GRT is `pool tokens × your shares ÷ pool shares`. All three values use 18 decimals, so divide the result by 10^18. This balance includes rewards paid into the pool so far. It does not include GRT you have already undelegated.
+
+#### Did Graph Horizon change my delegation?
+
+No action was needed. When Horizon launched, existing delegations moved automatically to the Subgraph Service for the same Indexer. You did not need to undelegate or delegate again. See [Choosing a Data Service](#choosing-a-data-service) for what per-service delegation means.
+
+#### Do I need ETH to delegate?
+
+Yes. Delegating, undelegating, and withdrawing are transactions on Arbitrum One, so your wallet needs a small amount of ETH on Arbitrum One to pay gas. There is no protocol fee on the GRT itself. See [No Delegation Tax](#no-delegation-tax).
+
+#### Why does delegating take two transactions?
+
+The first transaction approves the protocol to use your GRT. The second transaction delegates it. Your wallet asks you to confirm each one.
+
+#### Do I earn rewards while my GRT is undelegating?
+
+No. GRT stops earning as soon as you undelegate, and it earns nothing during the 28-day [undelegation period](#the-undelegation-period).
+
+#### I undelegated more than 28 days ago. Why isn't my GRT in my wallet?
+
+Undelegated GRT does not return to your wallet on its own. After the undelegation period ends, you must withdraw it. In Graph Explorer, open the Indexer from your profile's **Delegating** tab and use the **Withdraw** option. Until you withdraw, the GRT stays in the protocol and earns nothing. See [How to Undelegate on The Graph](#how-to-undelegate-on-the-graph).
+
+#### Can I move my delegation to another Indexer without waiting?
+
+No. To switch Indexers, undelegate from the current one, wait out the 28-day undelegation period, withdraw, and then delegate to the new Indexer. This is why it's worth [watching your Indexer's eligibility](#how-does-rewards-eligibility-impact-delegating) and acting before it lapses.
+
+#### Can I undelegate in several parts?
+
+Yes. Under Horizon, you can have up to 1,000 undelegation requests open at once. Each request goes through its own 28-day undelegation period and does not reset the others.
+
+#### Can my delegated GRT be slashed?
+
+Not today. Horizon adds the technical ability to slash delegated stake, but it is not enabled for delegation on the Subgraph Service. If it is ever turned on, an Indexer's own stake is slashed before any delegated GRT. See [Future Slashability](#future-slashability).
+
+#### What happens if my Indexer stops qualifying for indexing rewards?
+
+Your delegation stops earning indexing rewards too, until the Indexer qualifies again or you move your delegation. Query fees are not affected. See [How Does Rewards Eligibility Impact Delegating?](#how-does-rewards-eligibility-impact-delegating)
+
+#### I delegated on Ethereum mainnet years ago. Where is my delegation?
+
+Delegations made before The Graph moved to Arbitrum One stay on Ethereum mainnet until they are undelegated and withdrawn there. In Graph Explorer, switch the network selector in the top right from **Arbitrum One** to **Ethereum (Deprecated)** to look for them. If your delegation does not appear, ask in [The Graph Discord](https://discord.gg/graphprotocol) before sending any transactions to a legacy contract.
+
+#### I delegate from a vesting (token lock) contract. Do the same steps apply?
+
+Not always. Vesting contracts forward transactions to the protocol on your behalf, so the Graph Explorer flow may not work as shown on this page. Ask in [The Graph Discord](https://discord.gg/graphprotocol) for help with your specific contract.
+
+### The Graph Delegator Common Bugs and Fixes
+
+#### "Undelegate failure" or "Withdraw failure"
+
+If Graph Explorer shows a failure message when you undelegate or withdraw:
+
+1. Make sure your wallet and Graph Explorer are both on the network where your delegation lives, which is usually **Arbitrum One**.
+2. Make sure you have enough ETH on Arbitrum One for gas. If you need more, see [Bridging GRT](/resources/bridging-grt/).
+3. Look up your wallet address on [Arbiscan](https://arbiscan.io/) to see whether the transaction was sent and why it failed.
+4. Try again later, or from a different wallet app. Some users have fixed this by switching wallets.
+5. If you delegated from a vesting contract, ask in [The Graph Discord](https://discord.gg/graphprotocol). If Graph Explorer keeps failing, you can [undelegate using Arbiscan](#undelegate-using-arbiscan) instead.
+
+#### Stuck on "Approving funds"
+
+Check your wallet to confirm that the approval transaction went through. Then close the delegation pane and start again. If the approval succeeded, you will not need to approve the same or a smaller amount again.
+
+#### MetaMask "Pending Transaction" bug
+
+At times, attempts to delegate through MetaMask can fail and sit in "Pending" or "Queued" for a long time. To fix it, restart the browser (for example, enter `chrome://restart` in Chrome or `about:restart` in Firefox), which cancels the stuck attempts without using gas. Several users have reported successful transactions after restarting their browser and trying again.
+
+#### Hardware wallet won't confirm the transaction
+
+If you use a Ledger or another hardware wallet and the confirm button stays inactive, update the device firmware and its Ethereum app, and allow contract data or blind signing in the Ethereum app's settings. If it still won't confirm, try connecting the hardware wallet through a different wallet app.
+
+#### My delegation doesn't show up in Graph Explorer
+
+Check that your wallet is connected and that the network selector in the top right of Graph Explorer matches the network you delegated on. If you have the right network and the delegation still doesn't appear, [check your balance on Arbiscan](#how-do-i-check-my-exact-delegation-balance-on-chain).
+
+### Getting Help
+
+Ask questions in the Delegators channels in [The Graph Discord](https://discord.gg/graphprotocol) or on [The Graph Forum](https://forum.thegraph.com/).
+
+> **Beware of scams:** The Graph has no live support service outside its official Discord server. No one from The Graph will message you first, and no one will ever ask for your seed phrase or private key. Never connect your wallet to a site someone sends you in a direct message.
