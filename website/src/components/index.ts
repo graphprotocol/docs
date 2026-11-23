@@ -1,6 +1,7 @@
 export * from './Callout'
 export * from './Card'
 export * from './CodeBlock'
+export * from './CopyPageButton'
 export * from './DocSearch'
 export * from './HashRedirect'
 export * from './Heading'
