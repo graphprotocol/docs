@@ -504,17 +504,19 @@ Total time taken = max (3, 2, 4) = 4 seconds
 
 #### Example Configuration in Subgraph Manifest
 
+> This feature is available from `specVersion: 1.2.0`
+
 Declared `eth_calls` can access the `event.address` of the underlying event as well as all the `event.params`.
 
 `subgraph.yaml` using `event.address`:
 
 ```yaml
 eventHandlers:
-event: Swap(indexed address,indexed address,int256,int256,uint160,uint128,int24)
-handler: handleSwap
-calls:
-  global0X128: Pool[event.address].feeGrowthGlobal0X128()
-  global1X128: Pool[event.address].feeGrowthGlobal1X128()
+  - event: Swap(indexed address,indexed address,int256,int256,uint160,uint128,int24)
+    handler: handleSwap
+    calls:
+      global0X128: Pool[event.address].feeGrowthGlobal0X128()
+      global1X128: Pool[event.address].feeGrowthGlobal1X128()
 ```
 
 Details for the example above:
@@ -528,8 +530,31 @@ Details for the example above:
 
 ```yaml
 calls:
-  - ERC20DecimalsToken0: ERC20[event.params.token0].decimals()
+  ERC20DecimalsToken0: ERC20[event.params.token0].decimals()
 ```
+
+`calls` is a map from labels to calls, not a list, so each entry is written as `label: call` without a leading `-`.
+
+#### Accessing struct fields
+
+> This feature is available from `specVersion: 1.4.0`
+
+When an event parameter is a struct (a tuple in the ABI), a declared call can read one of its fields, either by position or by name:
+
+```yaml
+eventHandlers:
+  - event: AssetTransfer((address,uint256,bool),address,uint256)
+    handler: handleAssetTransfer
+    calls:
+      asset_owner: Contract[event.address].getOwner(event.params.asset.0)
+  - event: ComplexAssetCreated(((address,uint256,bool),string,uint256[]),uint256)
+    handler: handleComplexAssetCreated
+    calls:
+      base_asset_owner: Contract[event.address].getOwner(event.params.complexAsset.base.addr)
+```
+
+- `event.params.asset.0` reads the first field of the `asset` struct.
+- `event.params.complexAsset.base.addr` reads the `addr` field of the `base` struct nested inside `complexAsset`. Field names come from the event's ABI.
 
 ### Grafting onto Existing Subgraphs
 
