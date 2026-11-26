@@ -6,10 +6,18 @@ on:
     branches:
       - main
 
+# Builds the staging image and pushes it to ghcr.io; it deploys nothing.
+# Staging runs on stg-apps-us-central1, delivered by Argo CD and Kargo from
+# graphprotocol/graph-infra: Kargo follows this image's `latest` tag, which only
+# builds of the default branch move.
+
+permissions:
+  actions: write # cancel-workflow-action
+  contents: read
+  packages: write
+
 env:
   BASE_IMAGE: ghcr.io/graphprotocol/graph-docs-staging
-  HEALTH_CHECK_URL: https://staging.thegraph.com/docs
-  APP_NAME: graph-docs
 
 jobs:
   build:
@@ -41,32 +49,5 @@ jobs:
             ORIGIN=https://staging.thegraph.com
           tags: |
             ${{ env.BASE_IMAGE }}:${{ github.sha }}
-            ${{ env.BASE_IMAGE }}:latest
+            ${{ github.ref == format('refs/heads/{0}', github.event.repository.default_branch) && format('{0}:latest', env.BASE_IMAGE) || '' }}
           push: true
-
-  deploy:
-    runs-on: ubuntu-latest
-    needs: build
-    steps:
-      - name: Check out the repo
-        uses: actions/checkout@v4
-
-      - name: Authenticate to GCP
-        uses: google-github-actions/auth@v2
-        with:
-          credentials_json: ${{ secrets.GCP_THE_GRAPH_STAGING }}
-
-      - name: Set up kubectl
-        uses: google-github-actions/get-gke-credentials@v2
-        with:
-          cluster_name: hosted-service
-          location: us-central1-a
-
-      - name: Set a new k8s image and apply the manifests
-        run: .github/scripts/kustomize-apply.sh staging $APP_NAME=$BASE_IMAGE:$GITHUB_SHA
-
-      - name: Wait for pods to be ready
-        run: .github/scripts/kubectl-wait-ready.sh $APP_NAME
-
-      - name: Check the endpoints
-        run: .github/scripts/npx-wait-on/run.sh $HEALTH_CHECK_URL
