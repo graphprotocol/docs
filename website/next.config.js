@@ -50,10 +50,6 @@ const withNextra = nextra({
       about: '',
       'supported-networks': '',
       contracts: '',
-      '---1': {
-        type: 'separator',
-      },
-      'ai-overview': 'AI Tooling',
       '---2': {
         type: 'separator',
       },
@@ -90,6 +86,10 @@ const withNextra = nextra({
         title: 'Data Services',
       },
       '---6': {
+        type: 'separator',
+      },
+      'ai-overview': 'AI Tooling',
+      '---7': {
         type: 'separator',
       },
       resources: {

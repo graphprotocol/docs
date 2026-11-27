@@ -26,7 +26,7 @@ export const subgraphsAndSubstreamsCards = [
     icon: <GraphExplorer size={6} />,
   },
   {
-    href: 'https://thegraph.com/docs/en/subgraphs/providers/graph-foundation/overview/',
+    href: 'https://thegraph.com/docs/en/subgraphs/providers/overview/',
     titleKey: 'index.networkGuides.evm.studioBilling.title' as const,
     descriptionKey: 'index.networkGuides.evm.studioBilling.description' as const,
     minutes: 5,
@@ -71,7 +71,7 @@ export const subgraphsOnlyCards = [
     icon: <GraphExplorer size={6} />,
   },
   {
-    href: 'https://thegraph.com/docs/en/subgraphs/providers/graph-foundation/overview/',
+    href: 'https://thegraph.com/docs/en/subgraphs/providers/overview/',
     titleKey: 'index.networkGuides.evm.billing.title' as const,
     descriptionKey: 'index.networkGuides.evm.billing.description' as const,
     minutes: 5,
