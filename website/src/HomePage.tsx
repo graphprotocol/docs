@@ -245,7 +245,7 @@ export default function HomePage({ supportedNetworks }: { supportedNetworks: Sup
                 slotAboveTitle={<TimeIcon variant="reading" minutes={4} />}
               />
               <Card
-                href="/subgraphs/providers/subgraph-studio/managing-api-keys/"
+                href="/subgraphs/providers/graph-foundation/managing-api-keys/"
                 title={t('index.guides.apiKeyManagement.title')}
                 description={t('index.guides.apiKeyManagement.description')}
                 slotAboveTitle={<TimeIcon variant="reading" minutes={2} />}
