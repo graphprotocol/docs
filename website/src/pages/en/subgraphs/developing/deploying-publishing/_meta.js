@@ -1,4 +1,5 @@
 export default {
-  'multiple-networks': '',
+  'testing-and-staging': '',
   'publishing-a-subgraph': 'Publish to Network',
+  'multiple-networks': '',
 }
