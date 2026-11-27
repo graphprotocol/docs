@@ -1,5 +1,5 @@
 export default {
-  'using-subgraph-studio': '',
-  'multiple-networks': '',
+  'testing-and-staging': '',
   'publishing-a-subgraph': 'Publish to Network',
+  'multiple-networks': '',
 }

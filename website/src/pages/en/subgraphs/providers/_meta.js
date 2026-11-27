@@ -1,5 +1,7 @@
 import titles from './_meta-titles.json'
 
 export default {
-  'subgraph-studio': titles['subgraph-studio'] ?? '',
+  overview: '',
+  'graph-foundation': titles['graph-foundation'] ?? '',
+  graphops: '',
 }

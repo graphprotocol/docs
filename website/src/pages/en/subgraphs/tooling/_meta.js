@@ -7,5 +7,4 @@ export default {
   'subgraph-uncrashable': 'Subgraph Uncrashable',
   'subgraph-linter': 'Subgraph Linter',
   'unit-testing-framework': 'Matchstick Unit Testing',
-  'x402-payments': 'x402 Payments',
 }
